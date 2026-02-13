@@ -1,0 +1,3 @@
+MARKUP = 1.8
+FILL = ' '
+USD_RATE = 85
