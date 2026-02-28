@@ -56,7 +56,9 @@ def _row(media: str, item: str, ref: str, qty: int, unit_price_override=None):
     else:
         unit_price = PRICE_MASTER.get(item, 0)
 
-    return (media, item, ref, qty, unit_price * qty)
+    total = unit_price * qty
+
+    return (media, item, ref, qty, unit_price, total)
 
 
 # -------------------------------------------------
@@ -72,7 +74,7 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
     rows = []
 
     # -------------------------------------------------
-    # COMBUSTION AIR LINE (FULLY DYNAMIC)
+    # COMBUSTION AIR LINE
     # -------------------------------------------------
     rows += [
 
@@ -172,7 +174,7 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
     ]
 
     # -------------------------------------------------
-    # MG LINE (FULLY DYNAMIC PRICING)
+    # MG LINE
     # -------------------------------------------------
     rows += [
 
@@ -225,7 +227,7 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
     ]
 
     # -------------------------------------------------
-    # STATIC / MISC ITEMS
+    # STATIC ITEMS
     # -------------------------------------------------
     for media, item, ref, qty in static_items():
         rows.append(_row(media, item, ref, qty))
@@ -235,7 +237,7 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
     # -------------------------------------------------
     df = pd.DataFrame(
         rows,
-        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "TOTAL"],
+        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "UNIT PRICE", "TOTAL"],
     )
 
     # -------------------------------------------------
@@ -264,8 +266,8 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
             df,
             pd.DataFrame(
                 [
-                    ("", "BOUGHT OUT ITEMS", "", "", bought_out_total),
-                    ("", "ENCON ITEMS", "", "", encon_total),
+                    ("", "BOUGHT OUT ITEMS", "", "", "", bought_out_total),
+                    ("", "ENCON ITEMS", "", "", "", encon_total),
                 ],
                 columns=df.columns,
             ),

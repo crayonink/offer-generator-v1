@@ -9,27 +9,62 @@ cursor = conn.cursor()
 # ----------------------------
 # AGR TABLE
 # ----------------------------
+# ----------------------------
+# AGR TABLE
+# ----------------------------
+cursor.execute("DROP TABLE IF EXISTS agr_master")  # ← add this line
+
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS agr_master (
-    min_flow REAL,
-    max_flow REAL,
-    nb INTEGER,
-    price REAL
+CREATE TABLE IF NOT EXISTS agr_master  (
+    enag        TEXT PRIMARY KEY,
+    item_code   TEXT,
+    nb          INTEGER,
+    connection  TEXT,
+    ratio       TEXT,
+    compact     TEXT,
+    currency    TEXT,
+    list_price  REAL,
+    pmax_mbar   INTEGER
 )
 """)
 
 cursor.execute("DELETE FROM agr_master")
 
 agr_data = [
-    (0, 200, 40, 30000),
-    (201, 300, 50, 38000),
-    (301, 450, 80, 48250),
-    (451, 650, 100, 60000),
-    (651, 999999, 150, 75000),
+    ("ENAG-001", "AG02V",   15,  "Threaded", "1:1",         "No",  "INR", 11463.27,  500),
+    ("ENAG-002", "AG02VR",  15,  "Threaded", "1:1 to 1:10", "No",  "INR", 14877.38,  500),
+    ("ENAG-003", "AG03V",   20,  "Threaded", "1:1",         "No",  "INR", 11463.27,  500),
+    ("ENAG-004", "AG03VR",  20,  "Threaded", "1:1 to 1:10", "No",  "INR", 14877.38,  500),
+    ("ENAG-005", "AG04V",   25,  "Threaded", "1:1",         "No",  "INR", 11463.27,  500),
+    ("ENAG-006", "AG04VR",  25,  "Threaded", "1:1 to 1:10", "No",  "INR", 14877.38,  500),
+    ("ENAG-007", "AG05V",   32,  "Threaded", "1:1",         "No",  "INR", 18336.71,  500),
+    ("ENAG-008", "AG05VR",  32,  "Threaded", "1:1 to 1:10", "No",  "INR", 21750.82,  500),
+    ("ENAG-009", "AG06V",   40,  "Threaded", "1:1",         "No",  "INR", 18336.71,  500),
+    ("ENAG-010", "AG06VR",  40,  "Threaded", "1:1 to 1:10", "No",  "INR", 21750.82,  500),
+    ("ENAG-011", "AG07V",   50,  "Threaded", "1:1",         "No",  "INR", 22711.75,  500),
+    ("ENAG-012", "AG07VR",  50,  "Threaded", "1:1 to 1:10", "No",  "INR", 26125.86,  500),
+    ("ENAG-013", "AG08AV",  65,  "Flanged",  "1:1",         "No",  "INR", 67158.48,  500),
+    ("ENAG-014", "AG08AVR", 65,  "Flanged",  "1:1 to 1:10", "No",  "INR", 70572.59,  500),
+    ("ENAG-015", "AG09AV",  80,  "Flanged",  "1:1",         "No",  "INR", 73873.65,  500),
+    ("ENAG-016", "AG09AVR", 80,  "Flanged",  "1:1 to 1:10", "No",  "INR", 77287.76,  500),
+    ("ENAG-017", "AG10AV",  100, "Flanged",  "1:1",         "No",  "INR", 142099.33, 500),
+    ("ENAG-018", "AG10AVR", 100, "Flanged",  "1:1 to 1:10", "No",  "INR", 145513.44, 500),
+    ("ENAG-019", "AG32AV",  32,  "Flanged",  "1:1",         "No",  "INR", 25725.66,  500),
+    ("ENAG-020", "AG32AVR", 32,  "Flanged",  "1:1 to 1:10", "No",  "INR", 29139.77,  500),
+    ("ENAG-021", "AG40AV",  40,  "Flanged",  "1:1",         "No",  "INR", 21556.37,  500),
+    ("ENAG-022", "AG40AVR", 40,  "Flanged",  "1:1 to 1:10", "No",  "INR", 24970.48,  500),
+    ("ENAG-023", "AG50AV",  50,  "Flanged",  "1:1",         "No",  "INR", 27225.83,  500),
+    ("ENAG-024", "AG50AVR", 50,  "Flanged",  "1:1 to 1:10", "No",  "INR", 30639.94,  500),
+    ("ENAG-025", "AGP02V",  15,  "Threaded", "1:1",         "Yes", "INR", 8377.01,   500),
+    ("ENAG-026", "AGP02VR", 15,  "Threaded", "1:1 to 1:10", "Yes", "INR", 11791.12,  500),
+    ("ENAG-027", "AGP03V",  20,  "Threaded", "1:1",         "Yes", "INR", 8377.01,   500),
+    ("ENAG-028", "AGP03VR", 20,  "Threaded", "1:1 to 1:10", "Yes", "INR", 11791.12,  500),
+    ("ENAG-029", "AGP04V",  25,  "Threaded", "1:1",         "Yes", "INR", 8377.01,   500),
+    ("ENAG-030", "AGP04VR", 25,  "Threaded", "1:1 to 1:10", "Yes", "INR", 11791.12,  500),
 ]
 
 cursor.executemany(
-    "INSERT INTO agr_master VALUES (?, ?, ?, ?)",
+    "INSERT INTO agr_master VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     agr_data
 )
 

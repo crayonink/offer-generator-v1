@@ -100,14 +100,14 @@ def write_calculation_sheet(
     ws["I4"] = round(burner_results.extra_firing_rate_nm3hr, 2)
 
     ws["H5"] = "V = VELOCITY (m/s)"
-    ws["I5"] = 12.7
+    ws["I5"] = 17
     ws["I5"].fill = YELLOW
 
     ws["H6"] = "d = Inner Dia (mm)"
     ws["I6"] = round(pipe_results.ng_pipe_inner_dia_mm, 2)
     ws["I6"].fill = YELLOW
 
-    ws["I7"] = "125 NB"
+    ws["I7"] = f"{pipe_results.ng_pipe_nb} NB"
 
     # =================================================
     # AIR PIPE SIZE CALCULATION
