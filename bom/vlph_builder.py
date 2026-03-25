@@ -6,16 +6,14 @@ from bom.selectors.selection_engine import select_equipment
 
 
 # -------------------------------------------------
-# LEGACY EXCLUSION RULES
+# CONSTANTS
 # -------------------------------------------------
+
 BOUGHT_OUT_EXCLUDE_ITEMS = {
     "RATIO CONTROLLER",
 }
 
 
-# -------------------------------------------------
-# LEGACY ITEM SEQUENCE (EXACT MATCH)
-# -------------------------------------------------
 LEGACY_ITEM_SEQUENCE = [
     "COMPENSATOR",
     "PRESSURE GAUGE WITH TNV",
@@ -48,13 +46,19 @@ LEGACY_ITEM_SEQUENCE = [
 
 
 # -------------------------------------------------
-# HELPER
+# HELPERS
 # -------------------------------------------------
+
 def _row(media: str, item: str, ref: str, qty: int, unit_price_override=None):
+
     if unit_price_override is not None:
         unit_price = unit_price_override
     else:
         unit_price = PRICE_MASTER.get(item, 0)
+
+    if unit_price == 0:
+        # Avoid silent pricing issues
+        print(f"⚠️ WARNING: No price found for '{item}'")
 
     total = unit_price * qty
 
@@ -64,11 +68,15 @@ def _row(media: str, item: str, ref: str, qty: int, unit_price_override=None):
 # -------------------------------------------------
 # MAIN BUILDER
 # -------------------------------------------------
+
 def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
 
+    # -------------------------------------------------
+    # EQUIPMENT SELECTION (use pipe results, not burner internals)
+    # -------------------------------------------------
     equipment = select_equipment(
-        ng_flow_nm3hr=burner_results.extra_firing_rate_nm3hr,
-        air_flow_nm3hr=burner_results.air_qty_nm3hr,
+        ng_flow_nm3hr=pipe_results.ng_pipe_inner_dia_mm,   # ← FIXED FLOW SOURCE
+        air_flow_nm3hr=pipe_results.air_pipe_inner_dia_mm,
     )
 
     rows = []
@@ -77,28 +85,9 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
     # COMBUSTION AIR LINE
     # -------------------------------------------------
     rows += [
-
-        _row(
-            "COMB AIR",
-            "COMPENSATOR",
-            f'{equipment["compensator"]["nb"]} NB F150#',
-            1,
-            unit_price_override=equipment["compensator"]["price"],
-        ),
-
-        _row(
-            "COMB AIR",
-            "PRESSURE GAUGE WITH TNV",
-            '0–2000 mm WC, Dial 4"',
-            1,
-        ),
-
-        _row(
-            "COMB AIR",
-            "PRESSURE SWITCH LOW",
-            '0–150 mBAR',
-            1,
-        ),
+        _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
+        _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0–2000 mm WC, Dial 4"', 1),
+        _row("COMB AIR", "PRESSURE SWITCH LOW", '0–150 mBAR', 1),
 
         _row(
             "COMB AIR",
@@ -133,14 +122,7 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
         _row("NG PILOT LINE", "BALL VALVE", "20 NB", 2),
         _row("NG PILOT LINE", "BALL VALVE (Pilot Burner)", "20 NB", 1),
         _row("NG PILOT LINE", "BALL VALVE (UV LINE)", "15 NB", 1),
-
-        _row(
-            "NG PILOT LINE",
-            "PRESSURE GAUGE WITH NV",
-            '0–1600 mm WC, Dial 4"',
-            1,
-        ),
-
+        _row("NG PILOT LINE", "PRESSURE GAUGE WITH NV", '0–1600 mm WC, Dial 4"', 1),
         _row("NG PILOT LINE", "PRESSURE SWITCH HIGH + LOW", "", 2),
         _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1),
 
@@ -151,37 +133,22 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
             1,
         ),
 
-        _row(
-            "NG PILOT LINE",
-            "FLEXIBLE HOSE (Pilot Burner)",
-            "20 NB, 1500 mm",
-            1,
-        ),
-
-        _row(
-            "NG PILOT LINE",
-            "FLEXIBLE HOSE (UV LINE)",
-            "15 NB, 1500 mm",
-            1,
-        ),
-
-        _row(
-            "NG PILOT LINE",
-            "FLEXIBLE HOSE PIPE",
-            "15 NB - 1500 mm LONG",
-            1,
-        ),
+        _row("NG PILOT LINE", "FLEXIBLE HOSE (Pilot Burner)", "20 NB, 1500 mm", 1),
+        _row("NG PILOT LINE", "FLEXIBLE HOSE (UV LINE)", "15 NB, 1500 mm", 1),
+        _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE", "15 NB - 1500 mm LONG", 1),
     ]
 
     # -------------------------------------------------
     # MG LINE
     # -------------------------------------------------
     rows += [
-
         _row(
             "MG LINE",
             "NG GAS TRAIN",
-            f'FLOW: {equipment["ng_gas_train"]["flow_nm3hr"]} Nm3/hr',
+            f'{equipment["ng_gas_train"]["inlet_nb"]} x '
+            f'{equipment["ng_gas_train"]["outlet_nb"]} | '
+            f'Range: {equipment["ng_gas_train"]["min_flow"]}-'
+            f'{equipment["ng_gas_train"]["max_flow"]} Nm3/hr',
             1,
             unit_price_override=equipment["ng_gas_train"]["price"],
         ),
@@ -199,7 +166,6 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
     # ENCON ITEMS
     # -------------------------------------------------
     rows += [
-
         _row(
             "ENCON ITEMS",
             "ENCON MG BURNER WITH B. BLOCK",
@@ -214,10 +180,10 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
             "ENCON ITEMS",
             "COMBUSTION AIR BLOWER",
             f'{equipment["blower"]["hp"]} HP, '
-            f'{equipment["blower"]["pressure_mm_wc"]}" WC, '
-            f'{equipment["blower"]["flow_nm3hr"]} Nm3/hr',
+            f'{equipment["blower"]["pressure"]}" WC, '
+            f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
             1,
-            unit_price_override=equipment["blower"]["price"],
+            unit_price_override=equipment["blower"]["price_basic"],
         ),
 
         _row("ENCON ITEMS", "PILOT BURNER", "10 KW", 1),
@@ -241,7 +207,7 @@ def build_vlph_120t_df(*, burner_results, pipe_results) -> pd.DataFrame:
     )
 
     # -------------------------------------------------
-    # LEGACY ORDER
+    # ORDER
     # -------------------------------------------------
     order_map = {name: i for i, name in enumerate(LEGACY_ITEM_SEQUENCE)}
     df["_order"] = df["ITEM NAME"].map(order_map).fillna(999)

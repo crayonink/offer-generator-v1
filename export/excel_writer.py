@@ -4,6 +4,7 @@ Matches legacy Excel logic EXACTLY
 """
 
 import pandas as pd
+import io
 from typing import Dict
 from openpyxl import load_workbook
 from export.calculation_sheet import write_calculation_sheet
@@ -11,15 +12,10 @@ from export.calculation_sheet import write_calculation_sheet
 
 # -------------------------------------------------
 # LEGACY EXCLUSION RULES
-# These items APPEAR in BOM
-# but DO NOT contribute to BOUGHT OUT ITEMS cost
 # -------------------------------------------------
 BOUGHT_OUT_EXCLUDE_ITEMS = {
-    # Instruments / internal
     "COMPENSATOR",
     "PRESSURE GAUGE WITH TNV",
-   
-    # Controller counted under ENCON margin
     "RATIO CONTROLLER",
 }
 
@@ -33,10 +29,9 @@ def write_excel(
 ):
     """
     Writes Excel with:
-    - VLPH BOM
-    - Correct legacy BOUGHT OUT / ENCON totals
+    - BOM sheet
     - Cost Summary
-    - Calculation sheet
+    - Calculation sheet (via openpyxl)
     """
 
     # -------------------------------------------------
@@ -45,8 +40,12 @@ def write_excel(
     with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
         workbook = writer.book
 
-        # ---------- BOM ----------
-        bom_df = sheets["VLPH-120T"].copy()
+        # Identify BOM sheet
+        bom_sheet_name = next(
+            name for name in sheets.keys() if name != "Cost Summary"
+        )
+
+        bom_df = sheets[bom_sheet_name].copy()
 
         # Ensure numeric totals
         bom_df["TOTAL"] = pd.to_numeric(
@@ -59,41 +58,23 @@ def write_excel(
             "TOTAL",
         ].sum()
 
-        print(
-        bom_df.loc[
-        bom_df["ITEM NAME"].isin(BOUGHT_OUT_EXCLUDE_ITEMS),
-        ["ITEM NAME", "QTY", "TOTAL"]
-    ]
-)
-
-
-        # ---------- BOUGHT OUT TOTAL (LEGACY LOGIC) ----------
+        # ---------- BOUGHT OUT TOTAL ----------
         bought_out_total = bom_df.loc[
             (bom_df["MEDIA"] != "ENCON ITEMS")
             & (~bom_df["ITEM NAME"].isin(BOUGHT_OUT_EXCLUDE_ITEMS)),
             "TOTAL",
         ].sum()
 
-        # ---------- Append TOTAL rows (DISPLAY ONLY) ----------
-        totals_df = pd.DataFrame(
-            [
-               
-                
-            ]
-        )
-
-        final_bom_df = pd.concat(
-            [bom_df, totals_df],
-            ignore_index=True,
-        )
+        # ---------- Final BOM ----------
+        final_bom_df = bom_df.copy()
 
         final_bom_df.to_excel(
             writer,
-            sheet_name="VLPH-120T",
+            sheet_name=bom_sheet_name,
             index=False,
         )
 
-        worksheet = writer.sheets["VLPH-120T"]
+        worksheet = writer.sheets[bom_sheet_name]
 
         header_fmt = workbook.add_format({
             "bold": True,
@@ -120,15 +101,25 @@ def write_excel(
     buffer.seek(0)
     wb = load_workbook(buffer)
 
-    # Insert calculation sheet as FIRST sheet (legacy behavior)
-    ws = wb.create_sheet("Calculation", 0)
+    if burner_inputs is not None:
+        ws = wb.create_sheet("Calculation", 0)
 
-    write_calculation_sheet(
-        ws,
-        burner_inputs,
-        burner_results,
-        pipe_results,
-    )
+        write_calculation_sheet(
+            ws,
+            burner_inputs,
+            burner_results,
+            pipe_results,
+        )
 
+    # -------------------------------------------------
+    # 🔥 CRITICAL FIX: Save into fresh buffer
+    # -------------------------------------------------
+    new_buffer = io.BytesIO()
+    wb.save(new_buffer)
+    new_buffer.seek(0)
+
+    # Replace original buffer safely
+    buffer.truncate(0)
     buffer.seek(0)
-    wb.save(buffer)
+    buffer.write(new_buffer.getvalue())
+    buffer.seek(0)

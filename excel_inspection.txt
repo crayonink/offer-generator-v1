@@ -1,0 +1,1152 @@
+Sheets: ['Rates', ' Oil Burner', 'HV  Oil Burner', 'Recuperator', 'Gas Burner', 'Blower', 'HPU', 'Rad Heat (TATA)', 'GAIL GAS Burner', 'Rad Heat', 'BURNER', 'Horizontal', 'Vertical']
+
+
+==============================
+===== SHEET: Rates =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- Price List Data 17-07-21
+- Unnamed: 1
+- Price june 2025
+- Previous Price
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+
+Sample Rows:
+   Price List Data 17-07-21  Unnamed: 1  Price june 2025  Previous Price  Unnamed: 4  Unnamed: 5 Unnamed: 6  Unnamed: 7  Unnamed: 8        Unnamed: 9 Unnamed: 10 Unnamed: 11     Unnamed: 12  Unnamed: 13  Unnamed: 14           Unnamed: 15  Unnamed: 16  Unnamed: 17       Unnamed: 18  Unnamed: 19     Unnamed: 20 Unnamed: 21  Unnamed: 22  Unnamed: 23
+0                       NaN         NaN              NaN             NaN         NaN         NaN        NaN         NaN         NaN               NaN         NaN         NaN             NaN          NaN          NaN                   NaN          NaN          NaN               NaN          NaN             NaN         NaN          NaN          NaN
+1                       1.0  C.I. Gills            170.0           170.0         NaN         NaN        NaN         NaN         NaN  Bought Out Items         NaN         NaN             NaN          NaN          NaN  ENCON PURCHASE PRICE          NaN          NaN               NaN          NaN             NaN         NaN          NaN          NaN
+2                       2.0    C.I. Hub            375.0           375.0         NaN         NaN        NaN         NaN         NaN               NaN  Price 2025         NaN  Previous price          NaN          NaN                  ITEM          NaN          NaN  PRICE (Rs.) 2025          NaN  previous price         NaN          NaN          NaN
+
+
+--- HEADER = 1 ---
+Columns:
+- Unnamed: 0
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+
+Sample Rows:
+   Unnamed: 0  Unnamed: 1  Unnamed: 2  Unnamed: 3  Unnamed: 4  Unnamed: 5 Unnamed: 6  Unnamed: 7  Unnamed: 8            Unnamed: 9 Unnamed: 10 Unnamed: 11     Unnamed: 12  Unnamed: 13  Unnamed: 14           Unnamed: 15  Unnamed: 16  Unnamed: 17       Unnamed: 18  Unnamed: 19     Unnamed: 20 Unnamed: 21  Unnamed: 22  Unnamed: 23
+0           1  C.I. Gills       170.0       170.0         NaN         NaN        NaN         NaN         NaN      Bought Out Items         NaN         NaN             NaN          NaN          NaN  ENCON PURCHASE PRICE          NaN          NaN               NaN          NaN             NaN         NaN          NaN          NaN
+1           2    C.I. Hub       375.0       375.0         NaN         NaN        NaN         NaN         NaN                   NaN  Price 2025         NaN  Previous price          NaN          NaN                  ITEM          NaN          NaN  PRICE (Rs.) 2025          NaN  previous price         NaN          NaN          NaN
+2           3    Coupling       350.0       250.0         NaN         NaN        NaN         NaN         NaN  Casting Burner Parts         100      Per Kg              90          NaN          NaN   SEQUENCE CONTROLLER          NaN          NaN               NaN      10640.0          5935.4         NaN          NaN          NaN
+
+
+==============================
+===== SHEET:  Oil Burner =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- BURNER PARTS-2A/3A
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- BURNER PARTS-4A
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- BURNER PARTS-5A/6A
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+- Unnamed: 24
+- Unnamed: 25
+- Unnamed: 26
+- BURNER PARTS-7A
+- Unnamed: 28
+- Unnamed: 29
+- Unnamed: 30
+- Unnamed: 31
+- Unnamed: 32
+- Unnamed: 33
+- Unnamed: 34
+
+Sample Rows:
+  BURNER PARTS-2A/3A              Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Unnamed: 6    Unnamed: 7 Unnamed: 8 BURNER PARTS-4A          Unnamed: 10 Unnamed: 11 Unnamed: 12 Unnamed: 13 Unnamed: 14 Unnamed: 15   Unnamed: 16  Unnamed: 17 BURNER PARTS-5A/6A             Unnamed: 19 Unnamed: 20 Unnamed: 21 Unnamed: 22 Unnamed: 23 Unnamed: 24   Unnamed: 25  Unnamed: 26 BURNER PARTS-7A                                     Unnamed: 28 Unnamed: 29 Unnamed: 30 Unnamed: 31 Unnamed: 32 Unnamed: 33   Unnamed: 34
+0              S.NO.             PARTICULARS        QTY       UNIT       RATE     AMOUNT   M/C COST  TOTAL AMOUNT        NaN           S.NO.          PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT          NaN              S.NO.             PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT          NaN           S.NO.                                     PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT
+1                NaN                     NaN        NaN        NaN        NaN        NaN        NaN           NaN        NaN             NaN                  NaN         NaN         NaN         NaN         NaN         NaN           NaN          NaN                NaN                     NaN         NaN         NaN         NaN         NaN         NaN           NaN          NaN             NaN                                             NaN         NaN         NaN         NaN         NaN         NaN           NaN
+2                  1  ENCON-2A/3A BASE PLATE       10.5        Kgs        100       1050        500          1550        NaN               1  ENCON-4A BASE PLATE        13.5         Kgs         100        1350         500          1850          NaN                  1  ENCON-5A/6A BASE PLATE          24         Kgs         100        2400         550          2950          NaN               1  ENCON-7A AIR TUBE-205(dia)*180(I.D)*375(Lenth)       22.24         Kgs          80      1779.2         NaN        1779.2
+
+
+--- HEADER = 1 ---
+Columns:
+- S.NO.
+- PARTICULARS
+- QTY
+- UNIT
+- RATE
+- AMOUNT
+- M/C COST
+- TOTAL AMOUNT
+- Unnamed: 8
+- S.NO..1
+- PARTICULARS.1
+- QTY.1
+- UNIT.1
+- RATE.1
+- AMOUNT.1
+- M/C COST.1
+- TOTAL AMOUNT.1
+- Unnamed: 17
+- S.NO..2
+- PARTICULARS.2
+- QTY.2
+- UNIT.2
+- RATE.2
+- AMOUNT.2
+- M/C COST.2
+- TOTAL AMOUNT.2
+- Unnamed: 26
+- S.NO..3
+- PARTICULARS.3
+- QTY.3
+- UNIT.3
+- RATE.3
+- AMOUNT.3
+- M/C COST.3
+- TOTAL AMOUNT.3
+
+Sample Rows:
+   S.NO.             PARTICULARS   QTY UNIT RATE AMOUNT M/C COST TOTAL AMOUNT Unnamed: 8 S.NO..1        PARTICULARS.1 QTY.1 UNIT.1 RATE.1  AMOUNT.1  M/C COST.1  TOTAL AMOUNT.1  Unnamed: 17  S.NO..2           PARTICULARS.2  QTY.2 UNIT.2 RATE.2  AMOUNT.2  M/C COST.2  TOTAL AMOUNT.2  Unnamed: 26  S.NO..3                                   PARTICULARS.3  QTY.3 UNIT.3 RATE.3  AMOUNT.3  M/C COST.3  TOTAL AMOUNT.3
+0    NaN                     NaN   NaN  NaN  NaN    NaN      NaN          NaN        NaN     NaN                  NaN   NaN    NaN    NaN       NaN         NaN             NaN          NaN      NaN                     NaN    NaN    NaN    NaN       NaN         NaN             NaN          NaN      NaN                                             NaN    NaN    NaN    NaN       NaN         NaN             NaN
+1    1.0  ENCON-2A/3A BASE PLATE  10.5  Kgs  100   1050      500         1550        NaN       1  ENCON-4A BASE PLATE  13.5    Kgs    100    1350.0       500.0          1850.0          NaN      1.0  ENCON-5A/6A BASE PLATE   24.0    Kgs    100    2400.0       550.0          2950.0          NaN      1.0  ENCON-7A AIR TUBE-205(dia)*180(I.D)*375(Lenth)  22.24    Kgs     80   1779.20         NaN         1779.20
+2    2.0     ENCON-2A/3AAIR TUBE   3.9  Kgs  100    390      500          890        NaN       2    ENCON-4A AIR TUBE   6.8    Kgs    100     680.0       500.0          1180.0          NaN      2.0     ENCON-5A/6AAIR TUBE   16.8    Kgs    100    1680.0       500.0          2180.0          NaN      2.0      M.S.FLANGE-300 (dia)* 195 (I.D)*12MM Thick   7.68    Kgs     72    552.96      1500.0         2052.96
+
+
+==============================
+===== SHEET: HV  Oil Burner =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+-  HV BURNER PARTS-2A/3A
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+-  HV BURNER PARTS-4A
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+-  HV BURNER PARTS-5A/6A
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+- Unnamed: 24
+- Unnamed: 25
+- Unnamed: 26
+-  HV BURNER PARTS-7A
+- Unnamed: 28
+- Unnamed: 29
+- Unnamed: 30
+- Unnamed: 31
+- Unnamed: 32
+- Unnamed: 33
+- Unnamed: 34
+
+Sample Rows:
+   HV BURNER PARTS-2A/3A                Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Unnamed: 6    Unnamed: 7  Unnamed: 8  HV BURNER PARTS-4A            Unnamed: 10 Unnamed: 11 Unnamed: 12 Unnamed: 13 Unnamed: 14 Unnamed: 15   Unnamed: 16  Unnamed: 17  HV BURNER PARTS-5A/6A               Unnamed: 19 Unnamed: 20 Unnamed: 21 Unnamed: 22 Unnamed: 23 Unnamed: 24   Unnamed: 25  Unnamed: 26  HV BURNER PARTS-7A                                     Unnamed: 28 Unnamed: 29 Unnamed: 30 Unnamed: 31 Unnamed: 32 Unnamed: 33   Unnamed: 34
+0                  S.NO.               PARTICULARS        QTY       UNIT       RATE     AMOUNT   M/C COST  TOTAL AMOUNT         NaN               S.NO.            PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT          NaN                  S.NO.               PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT          NaN               S.NO.                                     PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT
+1                      1         H.V. BURNER-2A/3A        NaN        NaN        NaN        NaN        NaN          3850         NaN                   1         H.V. BURNER-4A         NaN         NaN         NaN         NaN         NaN          4410          NaN                      1         H.V. BURNER-5A/6A         NaN         NaN         NaN         NaN         NaN          8320          NaN                   1  ENCON-7A AIR TUBE-205(dia)*180(I.D)*375(Lenth)       22.24         Kgs          80      1779.2         NaN        1779.2
+2                      2  H.V. BURNER block -2A/3A        NaN        NaN        NaN        NaN        NaN          9102         NaN                   2  H.V. BURNER block -4A         NaN         NaN         NaN         NaN         NaN         11454          NaN                      2  H.V. BURNER block -5A/6A         NaN         NaN         NaN         NaN         NaN         16654          NaN                   2      M.S.FLANGE-300 (dia)* 195 (I.D)*12MM Thick        7.68         Kgs          72      552.96        1500       2052.96
+
+
+--- HEADER = 1 ---
+Columns:
+- S.NO.
+- PARTICULARS
+- QTY
+- UNIT
+- RATE
+- AMOUNT
+- M/C COST
+- TOTAL AMOUNT
+- Unnamed: 8
+- S.NO..1
+- PARTICULARS.1
+- QTY.1
+- UNIT.1
+- RATE.1
+- AMOUNT.1
+- M/C COST.1
+- TOTAL AMOUNT.1
+- Unnamed: 17
+- S.NO..2
+- PARTICULARS.2
+- QTY.2
+- UNIT.2
+- RATE.2
+- AMOUNT.2
+- M/C COST.2
+- TOTAL AMOUNT.2
+- Unnamed: 26
+- S.NO..3
+- PARTICULARS.3
+- QTY.3
+- UNIT.3
+- RATE.3
+- AMOUNT.3
+- M/C COST.3
+- TOTAL AMOUNT.3
+
+Sample Rows:
+   S.NO.                              PARTICULARS  QTY UNIT    RATE  AMOUNT M/C COST  TOTAL AMOUNT  Unnamed: 8  S.NO..1                       PARTICULARS.1  QTY.1 UNIT.1 RATE.1  AMOUNT.1  M/C COST.1  TOTAL AMOUNT.1  Unnamed: 17  S.NO..2                          PARTICULARS.2  QTY.2 UNIT.2 RATE.2  AMOUNT.2  M/C COST.2  TOTAL AMOUNT.2  Unnamed: 26  S.NO..3                                   PARTICULARS.3  QTY.3 UNIT.3 RATE.3  AMOUNT.3  M/C COST.3  TOTAL AMOUNT.3
+0    1.0                        H.V. BURNER-2A/3A  NaN  NaN     NaN     NaN      NaN        3850.0         NaN      1.0                      H.V. BURNER-4A    NaN    NaN    NaN       NaN         NaN          4410.0          NaN      1.0                      H.V. BURNER-5A/6A    NaN    NaN    NaN       NaN         NaN          8320.0          NaN      1.0  ENCON-7A AIR TUBE-205(dia)*180(I.D)*375(Lenth)  22.24    Kgs     80   1779.20         NaN         1779.20
+1    2.0                 H.V. BURNER block -2A/3A  NaN  NaN     NaN     NaN      NaN        9102.0         NaN      2.0               H.V. BURNER block -4A    NaN    NaN    NaN       NaN         NaN         11454.0          NaN      2.0               H.V. BURNER block -5A/6A    NaN    NaN    NaN       NaN         NaN         16654.0          NaN      2.0      M.S.FLANGE-300 (dia)* 195 (I.D)*12MM Thick   7.68    Kgs     72    552.96      1500.0         2052.96
+2    3.0  ENCON-2A/3A BUTTERFLY VALVE-2.5 (INCH )  1.0   NO  1500.0  1500.0      NaN        1500.0         NaN      3.0  ENCON-4A BUTTERFLY VALVE-4 (INCH )    1.0     NO   1650    1650.0         NaN          1650.0          NaN      3.0  ENCON-5A/6A BUTTERFLY VALVE-4 (INCH )    1.0     NO   1650    1650.0         NaN          1650.0          NaN      3.0                           M.S. PIPE-100NB*125MM   1.00     NO    135    135.00         NaN          135.00
+
+
+==============================
+===== SHEET: Recuperator =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- Recuperator F
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Recuperator HT
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+
+Sample Rows:
+  Recuperator F               Unnamed: 1      Unnamed: 2             Unnamed: 3               Unnamed: 4           Unnamed: 5          Unnamed: 6       Unnamed: 7 Unnamed: 8 Unnamed: 9  Unnamed: 10  Unnamed: 11 Recuperator HT           Unnamed: 13     Unnamed: 14      Unnamed: 15 Unnamed: 16 Unnamed: 17  Unnamed: 18  Unnamed: 19
+0         Model  MS Tube "C" Class (mtr)  CI Gills (Nos)  M.S. Angle 65,50 (Kg)  M.S. Angle 100,100 (Kg)  M.S Plate 16mm* 5mm  Hardware Bolt (KG)  M.S.Chanel (Kg)  Toal Cost        NaN          NaN          NaN          Model  M.S. Plate 16mm*10mm  M.S. Plate 5mm  M.S. Angle 50*6   S.S Sheet  Total Cost          NaN          NaN
+1          10 F                       38             NaN                    269                      103                  200                  18               98  141832.08        NaN          NaN          NaN           1 HT                    29             129                9          62     67286.7          NaN          NaN
+2          20 F                       64             NaN                    270                       56                  450                  20              NaN  204389.64        NaN          NaN          NaN           2 HT                    32             150                9          86    86493.42          NaN          NaN
+
+
+--- HEADER = 1 ---
+Columns:
+- Model
+- MS Tube "C" Class (mtr)
+- CI Gills (Nos)
+- M.S. Angle 65,50 (Kg)
+- M.S. Angle 100,100 (Kg)
+- M.S Plate 16mm* 5mm
+- Hardware Bolt (KG)
+- M.S.Chanel (Kg)
+- Toal Cost
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Model.1
+- M.S. Plate 16mm*10mm
+- M.S. Plate 5mm
+- M.S. Angle 50*6
+- S.S Sheet
+- Total Cost
+- Unnamed: 18
+- Unnamed: 19
+
+Sample Rows:
+  Model MS Tube "C" Class (mtr) CI Gills (Nos) M.S. Angle 65,50 (Kg) M.S. Angle 100,100 (Kg) M.S Plate 16mm* 5mm Hardware Bolt (KG) M.S.Chanel (Kg)  Toal Cost Unnamed: 9  Unnamed: 10  Unnamed: 11 Model.1 M.S. Plate 16mm*10mm M.S. Plate 5mm M.S. Angle 50*6 S.S Sheet Total Cost  Unnamed: 18  Unnamed: 19
+0  10 F                      38            NaN                   269                     103                 200                 18              98  141832.08        NaN          NaN          NaN    1 HT                   29            129               9        62    67286.7          NaN          NaN
+1  20 F                      64            NaN                   270                      56                 450                 20             NaN  204389.64        NaN          NaN          NaN    2 HT                   32            150               9        86   86493.42          NaN          NaN
+2  30 F                     128            NaN                   427                     279                 795                 30             NaN  396550.44        NaN          NaN          NaN    5 HT                   53            311            13.5       223  204461.01          NaN          NaN
+
+
+==============================
+===== SHEET: Gas Burner =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- BURNER PARTS 50 NM³              (GAIL design Hole Type)
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- BURNER PARTS 100 NM³  (GAIL design Hole Type)
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- BURNER PARTS 150 NM³  (GAIL design Hole Type)
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+- Unnamed: 24
+- Unnamed: 25
+
+Sample Rows:
+  BURNER PARTS 50 NM³              (GAIL design Hole Type)   Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Unnamed: 6    Unnamed: 7  Unnamed: 8 BURNER PARTS 100 NM³  (GAIL design Hole Type)  Unnamed: 10 Unnamed: 11 Unnamed: 12 Unnamed: 13 Unnamed: 14 Unnamed: 15   Unnamed: 16  Unnamed: 17  BURNER PARTS 150 NM³  (GAIL design Hole Type)  Unnamed: 19 Unnamed: 20 Unnamed: 21 Unnamed: 22 Unnamed: 23 Unnamed: 24   Unnamed: 25
+0                                                    S.NO.  PARTICULARS        QTY       UNIT       RATE     AMOUNT   M/C COST  TOTAL AMOUNT         NaN                                         S.NO.  PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT          NaN                                            5.0  PARTICULARS         QTY        UNIT        RATE      AMOUNT    M/C COST  TOTAL AMOUNT
+1                                                      NaN          NaN        NaN        NaN        NaN        NaN        NaN           NaN         NaN                                           NaN          NaN         NaN         NaN         NaN         NaN         NaN           NaN          NaN                                            NaN          NaN         NaN         NaN         NaN         NaN         NaN           NaN
+2                                                        1    S.S PIPE          19        Kgs        330       6270        NaN          6270         NaN                                             1    S.S PIPE           34         Kgs         330       11220         NaN         11220          NaN                                            1.0    S.S PIPE           34         Kgs         330       11220         NaN         11220
+
+
+--- HEADER = 1 ---
+Columns:
+- S.NO.
+- PARTICULARS
+- QTY
+- UNIT
+- RATE
+- AMOUNT
+- M/C COST
+- TOTAL AMOUNT
+- Unnamed: 8
+- S.NO..1
+- PARTICULARS.1
+- QTY.1
+- UNIT.1
+- RATE.1
+- AMOUNT.1
+- M/C COST.1
+- TOTAL AMOUNT.1
+- Unnamed: 17
+- 5
+- PARTICULARS.2
+- QTY.2
+- UNIT.2
+- RATE.2
+- AMOUNT.2
+- M/C COST.2
+- TOTAL AMOUNT.2
+
+Sample Rows:
+  S.NO. PARTICULARS  QTY UNIT RATE AMOUNT M/C COST TOTAL AMOUNT  Unnamed: 8 S.NO..1 PARTICULARS.1 QTY.1 UNIT.1 RATE.1 AMOUNT.1 M/C COST.1 TOTAL AMOUNT.1  Unnamed: 17    5 PARTICULARS.2  QTY.2 UNIT.2 RATE.2  AMOUNT.2  M/C COST.2  TOTAL AMOUNT.2
+0   NaN         NaN  NaN  NaN  NaN    NaN      NaN          NaN         NaN     NaN           NaN   NaN    NaN    NaN      NaN        NaN            NaN          NaN  NaN           NaN    NaN    NaN    NaN       NaN         NaN             NaN
+1     1   S.S PIPE    19  Kgs  330   6270      NaN         6270         NaN       1     S.S PIPE     34    Kgs    330    11220        NaN          11220          NaN  1.0     S.S PIPE    34.0    Kgs    330   11220.0         NaN         11220.0
+2     2   M.S PLATE   27  Kgs   72   1944      NaN         1944         NaN       2     M.S PLATE    42    Kgs     72     3024        NaN           3024          NaN  2.0     M.S PLATE   42.0    Kgs     72    3024.0         NaN          3024.0
+
+
+==============================
+===== SHEET: Blower =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- ENCON FUEL COMBUSTORS BLOWERS (DIRECT MOUNTED) (W.E.F Jul'21)
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+- Unnamed: 24
+
+Sample Rows:
+  ENCON FUEL COMBUSTORS BLOWERS (DIRECT MOUNTED) (W.E.F Jul'21) Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4                Unnamed: 5             Unnamed: 6              Unnamed: 7     Unnamed: 8 Unnamed: 9      Unnamed: 10                  Unnamed: 11            Unnamed: 12 Unnamed: 13             Unnamed: 14 Unnamed: 15 Unnamed: 16 Unnamed: 17 Unnamed: 18 Unnamed: 19  Unnamed: 20  Unnamed: 21  Unnamed: 22  Unnamed: 23  Unnamed: 24
+0                                               MEDIUM PRESSURE        NaN        NaN        NaN        NaN                       NaN                    NaN            PERKIN Rates            NaN        NaN              NaN                          NaN                    NaN         NaN                     NaN         NaN         NaN         NaN         NaN         NaN          NaN          NaN          NaN          NaN          NaN
+1                                                         MODEL       H.P.        CFM    NM3 /HR   PRESSURE      PRICE Without motor       PRICE  With motor  Blower weight \nApprox  Per Kg. Price     Amount  Motor Price ABB      PRICE Without,\n motor       PRICE  With motor         NaN  * Raised 12% from Last         NaN         NaN         NaN         NaN         NaN          NaN          NaN          NaN          NaN          NaN
+2                                                    ENCON 28/3          3        300        510   28” W.G.                     50400                  69000                     130            NaN      28000            12500                        50400                  69150         NaN                   12320  215.384615       45000  192.307692        0.12         NaN      57000.0     0.210526          NaN      18750.0     1.521916
+
+
+--- HEADER = 1 ---
+Columns:
+-       MEDIUM PRESSURE
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- PERKIN Rates
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+- Unnamed: 24
+
+Sample Rows:
+        MEDIUM PRESSURE Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4                Unnamed: 5             Unnamed: 6            PERKIN Rates     Unnamed: 8 Unnamed: 9      Unnamed: 10                  Unnamed: 11            Unnamed: 12 Unnamed: 13             Unnamed: 14 Unnamed: 15 Unnamed: 16 Unnamed: 17 Unnamed: 18 Unnamed: 19  Unnamed: 20  Unnamed: 21  Unnamed: 22  Unnamed: 23  Unnamed: 24
+0                 MODEL       H.P.        CFM    NM3 /HR   PRESSURE      PRICE Without motor       PRICE  With motor  Blower weight \nApprox  Per Kg. Price     Amount  Motor Price ABB      PRICE Without,\n motor       PRICE  With motor         NaN  * Raised 12% from Last         NaN         NaN         NaN         NaN         NaN          NaN          NaN          NaN          NaN          NaN
+1            ENCON 28/3          3        300        510   28” W.G.                     50400                  69000                     130            NaN      28000            12500                        50400                  69150         NaN                   12320  215.384615       45000  192.307692        0.12         NaN      57000.0     0.210526          NaN      18750.0     1.521916
+2            ENCON 28/5          5        550        930   28” W.G.                     51500                  76000                     160            NaN      28622            16200                      51519.6                75819.6         NaN                   16170    178.8875       46000  159.722222    0.119991         NaN      66000.0     0.151515          NaN      24300.0     1.502783
+
+
+==============================
+===== SHEET: HPU =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- Costing of Heating & Pumping Unit 3 KW                              Date :  01.07.2022
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Costing of Heating & Pumping Unit 6 KW                             Date :  01.07.2022
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+- Unnamed: 23
+- Unnamed: 24
+- Unnamed: 25
+- Unnamed: 26
+- Unnamed: 27
+- Unnamed: 28
+- Unnamed: 29
+- Unnamed: 30
+- Unnamed: 31
+- Costing of Heating & Pumping Unit 9 KW                           Date :  01.07.2022
+- Unnamed: 33
+- Unnamed: 34
+- Unnamed: 35
+- Unnamed: 36
+- Unnamed: 37
+- Unnamed: 38
+- Unnamed: 39
+- Unnamed: 40
+- Unnamed: 41
+- Unnamed: 42
+- Unnamed: 43
+- Unnamed: 44
+- Unnamed: 45
+- Unnamed: 46
+- Unnamed: 47
+- Costing of Heating & Pumping Unit 12 KW                              Date :  01.07.2022
+- Unnamed: 49
+- Unnamed: 50
+- Unnamed: 51
+- Unnamed: 52
+- Unnamed: 53
+- Unnamed: 54
+- Unnamed: 55
+- Unnamed: 56
+- Unnamed: 57
+- Unnamed: 58
+- Unnamed: 59
+- Unnamed: 60
+- Unnamed: 61
+- Unnamed: 62
+- Unnamed: 63
+- Costing of Heating & Pumping Unit 16 KW                              Date :  01.07.2022
+- Unnamed: 65
+- Unnamed: 66
+- Unnamed: 67
+- Unnamed: 68
+- Unnamed: 69
+- Unnamed: 70
+- Unnamed: 71
+- Unnamed: 72
+- Unnamed: 73
+- Unnamed: 74
+- Unnamed: 75
+- Unnamed: 76
+- Unnamed: 77
+- Unnamed: 78
+- Unnamed: 79
+- Costing of Heating & Pumping Unit 20 KW                           Date :  01.07.2022
+- Unnamed: 81
+- Unnamed: 82
+- Unnamed: 83
+- Unnamed: 84
+- Unnamed: 85
+- Unnamed: 86
+- Unnamed: 87
+- Unnamed: 88
+- Unnamed: 89
+- Unnamed: 90
+- Unnamed: 91
+- Unnamed: 92
+- Unnamed: 93
+- Unnamed: 94
+- Unnamed: 95
+- Costing of Heating & Pumping Unit 24 KW                              Date :  01.07.2022
+- Unnamed: 97
+- Unnamed: 98
+- Unnamed: 99
+- Unnamed: 100
+- Unnamed: 101
+- Unnamed: 102
+- Unnamed: 103
+- Unnamed: 104
+- Unnamed: 105
+- Unnamed: 106
+- Unnamed: 107
+- Unnamed: 108
+- Unnamed: 109
+- Unnamed: 110
+- Costing of Heating & Pumping Unit 30 KW                             Date :  01.07.2022
+- Unnamed: 112
+- Unnamed: 113
+- Unnamed: 114
+- Unnamed: 115
+- Unnamed: 116
+- Unnamed: 117
+- Unnamed: 118
+- Unnamed: 119
+- Unnamed: 120
+- Unnamed: 121
+- Unnamed: 122
+- Unnamed: 123
+- Unnamed: 124
+- Unnamed: 125
+- Unnamed: 126
+- Costing of Heating & Pumping Unit 36 KW                            Date :  01.07.2022
+- Unnamed: 128
+- Unnamed: 129
+- Unnamed: 130
+- Unnamed: 131
+- Unnamed: 132
+- Unnamed: 133
+- Unnamed: 134
+- Unnamed: 135
+- Unnamed: 136
+- Unnamed: 137
+- Unnamed: 138
+- Unnamed: 139
+- Unnamed: 140
+- Unnamed: 141
+- Unnamed: 142
+- Costing of Heating & Pumping Unit 48 KW                              Date :  01.07.2022
+- Unnamed: 144
+- Unnamed: 145
+- Unnamed: 146
+- Unnamed: 147
+- Unnamed: 148
+- Unnamed: 149
+- Unnamed: 150
+- Unnamed: 151
+- Unnamed: 152
+- Unnamed: 153
+- Unnamed: 154
+- Unnamed: 155
+- Unnamed: 156
+- Unnamed: 157
+
+Sample Rows:
+  Costing of Heating & Pumping Unit 3 KW                              Date :  01.07.2022 Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Unnamed: 6 Unnamed: 7 Unnamed: 8 Unnamed: 9 Unnamed: 10 Unnamed: 11 Unnamed: 12 Unnamed: 13 Unnamed: 14  Unnamed: 15 Costing of Heating & Pumping Unit 6 KW                             Date :  01.07.2022 Unnamed: 17 Unnamed: 18 Unnamed: 19 Unnamed: 20 Unnamed: 21 Unnamed: 22 Unnamed: 23 Unnamed: 24 Unnamed: 25 Unnamed: 26 Unnamed: 27 Unnamed: 28 Unnamed: 29 Unnamed: 30  Unnamed: 31 Costing of Heating & Pumping Unit 9 KW                           Date :  01.07.2022 Unnamed: 33 Unnamed: 34 Unnamed: 35 Unnamed: 36 Unnamed: 37 Unnamed: 38 Unnamed: 39 Unnamed: 40 Unnamed: 41 Unnamed: 42 Unnamed: 43 Unnamed: 44 Unnamed: 45 Unnamed: 46  Unnamed: 47 Costing of Heating & Pumping Unit 12 KW                              Date :  01.07.2022 Unnamed: 49 Unnamed: 50 Unnamed: 51 Unnamed: 52 Unnamed: 53 Unnamed: 54 Unnamed: 55 Unnamed: 56 Unnamed: 57 Unnamed: 58 Unnamed: 59 Unnamed: 60 Unnamed: 61 Unnamed: 62  Unnamed: 63 Costing of Heating & Pumping Unit 16 KW                              Date :  01.07.2022 Unnamed: 65 Unnamed: 66 Unnamed: 67 Unnamed: 68 Unnamed: 69 Unnamed: 70 Unnamed: 71 Unnamed: 72 Unnamed: 73 Unnamed: 74 Unnamed: 75 Unnamed: 76 Unnamed: 77 Unnamed: 78  Unnamed: 79 Costing of Heating & Pumping Unit 20 KW                           Date :  01.07.2022 Unnamed: 81 Unnamed: 82 Unnamed: 83 Unnamed: 84 Unnamed: 85 Unnamed: 86 Unnamed: 87 Unnamed: 88 Unnamed: 89 Unnamed: 90 Unnamed: 91 Unnamed: 92 Unnamed: 93 Unnamed: 94  Unnamed: 95 Costing of Heating & Pumping Unit 24 KW                              Date :  01.07.2022 Unnamed: 97 Unnamed: 98 Unnamed: 99 Unnamed: 100 Unnamed: 101 Unnamed: 102 Unnamed: 103 Unnamed: 104 Unnamed: 105 Unnamed: 106 Unnamed: 107 Unnamed: 108 Unnamed: 109  Unnamed: 110 Costing of Heating & Pumping Unit 30 KW                             Date :  01.07.2022 Unnamed: 112 Unnamed: 113 Unnamed: 114 Unnamed: 115 Unnamed: 116 Unnamed: 117 Unnamed: 118 Unnamed: 119 Unnamed: 120 Unnamed: 121 Unnamed: 122 Unnamed: 123 Unnamed: 124 Unnamed: 125  Unnamed: 126 Costing of Heating & Pumping Unit 36 KW                            Date :  01.07.2022 Unnamed: 128 Unnamed: 129 Unnamed: 130 Unnamed: 131 Unnamed: 132 Unnamed: 133 Unnamed: 134 Unnamed: 135 Unnamed: 136 Unnamed: 137 Unnamed: 138 Unnamed: 139 Unnamed: 140 Unnamed: 141  Unnamed: 142 Costing of Heating & Pumping Unit 48 KW                              Date :  01.07.2022 Unnamed: 144 Unnamed: 145 Unnamed: 146 Unnamed: 147 Unnamed: 148 Unnamed: 149 Unnamed: 150 Unnamed: 151 Unnamed: 152 Unnamed: 153 Unnamed: 154 Unnamed: 155 Unnamed: 156 Unnamed: 157
+0                                                                               Duplex 1        NaN        NaN        NaN        NaN        NaN   Duplex 2        NaN        NaN        NaN     Simplex         NaN         NaN         NaN         NaN          NaN                                                                              Duplex 1         NaN         NaN         NaN         NaN         NaN    Duplex 2         NaN         NaN         NaN     Simplex         NaN         NaN         NaN         NaN          NaN                                                                            Duplex 1         NaN         NaN         NaN         NaN         NaN    Duplex 2         NaN         NaN         NaN     Simplex         NaN         NaN         NaN         NaN          NaN                                                                                Duplex 1         NaN         NaN         NaN         NaN         NaN    Duplex 2         NaN         NaN         NaN     Simplex         NaN         NaN         NaN         NaN          NaN                                                                                Duplex 1         NaN         NaN         NaN         NaN         NaN    Duplex 2         NaN         NaN         NaN     Simplex         NaN         NaN         NaN         NaN          NaN                                                                             Duplex 1         NaN         NaN         NaN         NaN         NaN    Duplex 2         NaN         NaN         NaN     Simplex         NaN         NaN         NaN         NaN          NaN                                                                                Duplex 1         NaN         NaN         NaN          NaN          NaN     Duplex 2          NaN          NaN          NaN      Simplex          NaN          NaN          NaN           NaN                                                                               Duplex 1          NaN          NaN          NaN          NaN          NaN     Duplex 2          NaN          NaN          NaN      Simplex          NaN          NaN          NaN          NaN           NaN                                                                              Duplex 1          NaN          NaN          NaN          NaN          NaN     Duplex 2          NaN          NaN          NaN      Simplex          NaN          NaN          NaN          NaN           NaN                                                                                Duplex 1          NaN          NaN          NaN          NaN          NaN     Duplex 2          NaN          NaN          NaN      Simplex          NaN          NaN          NaN          NaN
+1                                                                                 S No.      Items        Qty.       Unit       Rate     Amount        NaN        NaN        NaN        NaN         NaN         NaN         NaN         NaN         NaN          NaN                                                                                S No.       Items         Qty.        Unit        Rate      Amount         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN          NaN                                                                              S No.       Items         Qty.        Unit        Rate      Amount         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN          NaN                                                                                  S No.       Items         Qty.        Unit        Rate      Amount         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN          NaN                                                                                  S No.       Items         Qty.        Unit        Rate      Amount         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN          NaN                                                                               S No.       Items         Qty.        Unit        Rate      Amount         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN         NaN          NaN                                                                                  S No.       Items         Qty.        Unit         Rate       Amount          NaN          NaN          NaN          NaN          NaN          NaN          NaN          NaN           NaN                                                                                 S No.        Items          Qty.         Unit         Rate       Amount          NaN          NaN          NaN          NaN          NaN          NaN          NaN          NaN          NaN           NaN                                                                                S No.        Items          Qty.         Unit         Rate       Amount          NaN          NaN          NaN          NaN          NaN          NaN          NaN          NaN          NaN           NaN                                                                                  S No.        Items          Qty.         Unit         Rate       Amount          NaN          NaN          NaN          NaN          NaN          NaN          NaN          NaN          NaN
+2                                                                                    NaN        NaN        NaN        NaN        NaN        NaN       Qty.       Unit       Rate     Amount        Qty.        Unit        Rate      Amount  Pre. Price          NaN                                                                                   NaN         NaN         NaN         NaN         NaN         NaN        Qty.        Unit        Rate      Amount        Qty.        Unit        Rate      Amount  Pre. Price          NaN                                                                                 NaN         NaN         NaN         NaN         NaN         NaN        Qty.        Unit        Rate      Amount        Qty.        Unit        Rate      Amount  Pre. Price          NaN                                                                                     NaN         NaN         NaN         NaN         NaN         NaN        Qty.        Unit        Rate      Amount        Qty.        Unit        Rate      Amount  Pre. Price          NaN                                                                                     NaN         NaN         NaN         NaN         NaN         NaN        Qty.        Unit        Rate      Amount        Qty.        Unit        Rate      Amount  Pre. Price          NaN                                                                                  NaN         NaN         NaN         NaN         NaN         NaN        Qty.        Unit        Rate      Amount        Qty.        Unit        Rate      Amount   Pre.Price          NaN                                                                                     NaN         NaN         NaN         NaN          NaN          NaN         Qty.         Unit         Rate       Amount         Qty.         Unit         Rate       Amount           NaN                                                                                    NaN          NaN          NaN          NaN          NaN          NaN         Qty.         Unit         Rate       Amount         Qty.         Unit         Rate       Amount   Pre. Price           NaN                                                                                   NaN          NaN          NaN          NaN          NaN          NaN         Qty.         Unit         Rate       Amount         Qty.         Unit         Rate       Amount    Pre Price           NaN                                                                                     NaN          NaN          NaN          NaN          NaN          NaN         Qty.         Unit         Rate       Amount         Qty.         Unit         Rate       Amount   Pre. Price
+
+
+--- HEADER = 1 ---
+Columns:
+- Duplex 1
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Duplex 2
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Simplex
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Duplex 1.1
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Duplex 2.1
+- Unnamed: 23
+- Unnamed: 24
+- Unnamed: 25
+- Simplex.1
+- Unnamed: 27
+- Unnamed: 28
+- Unnamed: 29
+- Unnamed: 30
+- Unnamed: 31
+- Duplex 1.2
+- Unnamed: 33
+- Unnamed: 34
+- Unnamed: 35
+- Unnamed: 36
+- Unnamed: 37
+- Duplex 2.2
+- Unnamed: 39
+- Unnamed: 40
+- Unnamed: 41
+- Simplex.2
+- Unnamed: 43
+- Unnamed: 44
+- Unnamed: 45
+- Unnamed: 46
+- Unnamed: 47
+- Duplex 1.3
+- Unnamed: 49
+- Unnamed: 50
+- Unnamed: 51
+- Unnamed: 52
+- Unnamed: 53
+- Duplex 2.3
+- Unnamed: 55
+- Unnamed: 56
+- Unnamed: 57
+- Simplex.3
+- Unnamed: 59
+- Unnamed: 60
+- Unnamed: 61
+- Unnamed: 62
+- Unnamed: 63
+- Duplex 1.4
+- Unnamed: 65
+- Unnamed: 66
+- Unnamed: 67
+- Unnamed: 68
+- Unnamed: 69
+- Duplex 2.4
+- Unnamed: 71
+- Unnamed: 72
+- Unnamed: 73
+- Simplex.4
+- Unnamed: 75
+- Unnamed: 76
+- Unnamed: 77
+- Unnamed: 78
+- Unnamed: 79
+- Duplex 1.5
+- Unnamed: 81
+- Unnamed: 82
+- Unnamed: 83
+- Unnamed: 84
+- Unnamed: 85
+- Duplex 2.5
+- Unnamed: 87
+- Unnamed: 88
+- Unnamed: 89
+- Simplex.5
+- Unnamed: 91
+- Unnamed: 92
+- Unnamed: 93
+- Unnamed: 94
+- Unnamed: 95
+- Duplex 1.6
+- Unnamed: 97
+- Unnamed: 98
+- Unnamed: 99
+- Unnamed: 100
+- Unnamed: 101
+- Duplex 2.6
+- Unnamed: 103
+- Unnamed: 104
+- Unnamed: 105
+- Simplex.6
+- Unnamed: 107
+- Unnamed: 108
+- Unnamed: 109
+- Unnamed: 110
+- Duplex 1.7
+- Unnamed: 112
+- Unnamed: 113
+- Unnamed: 114
+- Unnamed: 115
+- Unnamed: 116
+- Duplex 2.7
+- Unnamed: 118
+- Unnamed: 119
+- Unnamed: 120
+- Simplex.7
+- Unnamed: 122
+- Unnamed: 123
+- Unnamed: 124
+- Unnamed: 125
+- Unnamed: 126
+- Duplex 1.8
+- Unnamed: 128
+- Unnamed: 129
+- Unnamed: 130
+- Unnamed: 131
+- Unnamed: 132
+- Duplex 2.8
+- Unnamed: 134
+- Unnamed: 135
+- Unnamed: 136
+- Simplex.8
+- Unnamed: 138
+- Unnamed: 139
+- Unnamed: 140
+- Unnamed: 141
+- Unnamed: 142
+- Duplex 1.9
+- Unnamed: 144
+- Unnamed: 145
+- Unnamed: 146
+- Unnamed: 147
+- Unnamed: 148
+- Duplex 2.9
+- Unnamed: 150
+- Unnamed: 151
+- Unnamed: 152
+- Simplex.9
+- Unnamed: 154
+- Unnamed: 155
+- Unnamed: 156
+- Unnamed: 157
+
+Sample Rows:
+  Duplex 1                       Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Duplex 2 Unnamed: 7 Unnamed: 8 Unnamed: 9 Simplex Unnamed: 11 Unnamed: 12 Unnamed: 13 Unnamed: 14  Unnamed: 15 Duplex 1.1                      Unnamed: 17 Unnamed: 18 Unnamed: 19 Unnamed: 20 Unnamed: 21 Duplex 2.1 Unnamed: 23 Unnamed: 24 Unnamed: 25 Simplex.1 Unnamed: 27 Unnamed: 28 Unnamed: 29 Unnamed: 30  Unnamed: 31 Duplex 1.2                      Unnamed: 33 Unnamed: 34 Unnamed: 35 Unnamed: 36 Unnamed: 37 Duplex 2.2 Unnamed: 39 Unnamed: 40 Unnamed: 41 Simplex.2 Unnamed: 43 Unnamed: 44 Unnamed: 45 Unnamed: 46  Unnamed: 47 Duplex 1.3                      Unnamed: 49 Unnamed: 50 Unnamed: 51 Unnamed: 52 Unnamed: 53 Duplex 2.3 Unnamed: 55 Unnamed: 56 Unnamed: 57 Simplex.3 Unnamed: 59 Unnamed: 60 Unnamed: 61 Unnamed: 62  Unnamed: 63 Duplex 1.4                      Unnamed: 65 Unnamed: 66 Unnamed: 67 Unnamed: 68 Unnamed: 69 Duplex 2.4 Unnamed: 71 Unnamed: 72 Unnamed: 73 Simplex.4 Unnamed: 75 Unnamed: 76 Unnamed: 77 Unnamed: 78  Unnamed: 79 Duplex 1.5                      Unnamed: 81 Unnamed: 82 Unnamed: 83 Unnamed: 84 Unnamed: 85 Duplex 2.5 Unnamed: 87 Unnamed: 88 Unnamed: 89 Simplex.5 Unnamed: 91 Unnamed: 92 Unnamed: 93 Unnamed: 94  Unnamed: 95 Duplex 1.6                      Unnamed: 97 Unnamed: 98 Unnamed: 99 Unnamed: 100 Unnamed: 101 Duplex 2.6 Unnamed: 103 Unnamed: 104 Unnamed: 105 Simplex.6 Unnamed: 107 Unnamed: 108 Unnamed: 109  Unnamed: 110 Duplex 1.7                     Unnamed: 112 Unnamed: 113 Unnamed: 114 Unnamed: 115 Unnamed: 116 Duplex 2.7 Unnamed: 118 Unnamed: 119 Unnamed: 120 Simplex.7 Unnamed: 122 Unnamed: 123 Unnamed: 124 Unnamed: 125  Unnamed: 126 Duplex 1.8                     Unnamed: 128 Unnamed: 129 Unnamed: 130 Unnamed: 131 Unnamed: 132 Duplex 2.8 Unnamed: 134 Unnamed: 135 Unnamed: 136 Simplex.8 Unnamed: 138 Unnamed: 139 Unnamed: 140 Unnamed: 141  Unnamed: 142 Duplex 1.9                      Unnamed: 144 Unnamed: 145 Unnamed: 146 Unnamed: 147 Unnamed: 148 Duplex 2.9 Unnamed: 150 Unnamed: 151 Unnamed: 152 Simplex.9 Unnamed: 154 Unnamed: 155 Unnamed: 156 Unnamed: 157
+0   S No.                            Items        Qty.       Unit       Rate     Amount      NaN        NaN        NaN        NaN     NaN         NaN         NaN         NaN         NaN          NaN     S No.                            Items         Qty.        Unit        Rate      Amount        NaN         NaN         NaN         NaN       NaN         NaN         NaN         NaN         NaN          NaN     S No.                            Items         Qty.        Unit        Rate      Amount        NaN         NaN         NaN         NaN       NaN         NaN         NaN         NaN         NaN          NaN     S No.                            Items         Qty.        Unit        Rate      Amount        NaN         NaN         NaN         NaN       NaN         NaN         NaN         NaN         NaN          NaN     S No.                            Items         Qty.        Unit        Rate      Amount        NaN         NaN         NaN         NaN       NaN         NaN         NaN         NaN         NaN          NaN     S No.                            Items         Qty.        Unit        Rate      Amount        NaN         NaN         NaN         NaN       NaN         NaN         NaN         NaN         NaN          NaN     S No.                            Items         Qty.        Unit         Rate       Amount        NaN          NaN          NaN          NaN       NaN          NaN          NaN          NaN           NaN     S No.                            Items          Qty.         Unit         Rate       Amount        NaN          NaN          NaN          NaN       NaN          NaN          NaN          NaN          NaN           NaN     S No.                            Items          Qty.         Unit         Rate       Amount        NaN          NaN          NaN          NaN       NaN          NaN          NaN          NaN          NaN           NaN     S No.                             Items          Qty.         Unit         Rate       Amount        NaN          NaN          NaN          NaN       NaN          NaN          NaN          NaN          NaN
+1      NaN                              NaN        NaN        NaN        NaN        NaN     Qty.       Unit       Rate     Amount    Qty.        Unit        Rate      Amount  Pre. Price          NaN        NaN                              NaN         NaN         NaN         NaN         NaN       Qty.        Unit        Rate      Amount      Qty.        Unit        Rate      Amount  Pre. Price          NaN        NaN                              NaN         NaN         NaN         NaN         NaN       Qty.        Unit        Rate      Amount      Qty.        Unit        Rate      Amount  Pre. Price          NaN        NaN                              NaN         NaN         NaN         NaN         NaN       Qty.        Unit        Rate      Amount      Qty.        Unit        Rate      Amount  Pre. Price          NaN        NaN                              NaN         NaN         NaN         NaN         NaN       Qty.        Unit        Rate      Amount      Qty.        Unit        Rate      Amount  Pre. Price          NaN        NaN                              NaN         NaN         NaN         NaN         NaN       Qty.        Unit        Rate      Amount      Qty.        Unit        Rate      Amount   Pre.Price          NaN        NaN                              NaN         NaN         NaN          NaN          NaN       Qty.         Unit         Rate       Amount      Qty.         Unit         Rate       Amount           NaN        NaN                              NaN          NaN          NaN          NaN          NaN       Qty.         Unit         Rate       Amount      Qty.         Unit         Rate       Amount   Pre. Price           NaN        NaN                              NaN          NaN          NaN          NaN          NaN       Qty.         Unit         Rate       Amount      Qty.         Unit         Rate       Amount    Pre Price           NaN        NaN                               NaN          NaN          NaN          NaN          NaN       Qty.         Unit         Rate       Amount      Qty.         Unit         Rate       Amount   Pre. Price
+2        1  M.S Channel 75x40(2700 mm long)         20         Kg         71       1420     25.9         kg         71     1838.9      20          Kg          71        1420          71          NaN          1  M.S Channel 75x40(2700 mm long)          20          Kg          71        1420       25.9          kg          71      1838.9        20          Kg          71        1420          71          NaN          1  M.S Channel 75x40(2900 mm long)        21.4          Kg          71      1519.4       42.8          kg          71      3038.8      21.4          Kg          71      1519.4          71          NaN          1  M.S Channel 75x40(3200 mm long)        22.8          Kg          71      1618.8       45.6          kg          71      3237.6      22.8          Kg          71      1618.8          71          NaN          1  M.S Channel 75x40(3200 mm long)        22.8          Kg          71      1618.8       45.6          kg          71      3237.6      22.8          Kg          71      1618.8          71          NaN          1  M.S Channel 75x40(3400 mm long)          25          Kg          71        1775         48          kg          71        3408        25          Kg          71        1775          71          NaN          1  M.S Channel 75x40(3600 mm long)        25.7          Kg           71       1824.7       51.4           kg           71       3649.4      25.7           Kg           71       1824.7          49.7          1  M.S Channel 75x40(3600 mm long)         25.7           Kg           71       1824.7       51.4           kg           71       3649.4      25.7           Kg           71       1824.7           71           NaN          1  M.S Channel 75x40(3600 mm long)         25.7           Kg           71       1824.7       51.4           kg           71       3649.4      25.7           Kg           71       1824.7           71           NaN          1  M.S Channel 100x50( 5 mtr. long)         47.8           Kg           71       3393.8       68.8           kg           71       4884.8      47.8           Kg           71       3393.8           71
+
+
+==============================
+===== SHEET: Rad Heat (TATA) =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- PRICE LIST OF RAD-HEAT GAS HEATING ELEMENTS (W.E.F Aug'22)
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+
+Sample Rows:
+  PRICE LIST OF RAD-HEAT GAS HEATING ELEMENTS (W.E.F Aug'22) Unnamed: 1                              Unnamed: 2 Unnamed: 3            Unnamed: 4  Unnamed: 5 Unnamed: 6   Unnamed: 7 Unnamed: 8 Unnamed: 9 Unnamed: 10 Unnamed: 11 Unnamed: 12 Unnamed: 13 Unnamed: 14  Unnamed: 15  Unnamed: 16     Unnamed: 17  Unnamed: 18  Unnamed: 19  Unnamed: 20  Unnamed: 21 Unnamed: 22
+0                                                        NaN        NaN                                     NaN        NaN                   NaN         NaN        NaN          Mtr        NaN         MS          SS          MS          SS          MS          SS          NaN          NaN             NaN          NaN          NaN          NaN          NaN         NaN
+1                                                     MODEL      OUTPUT  NOMINAL GAS PER BURNER M³/HR                  NaN  PRICE WITH SS TUBING         NaN        Dia  Tube length      Elbow  Tube Cost         NaN  Elbow Cost         NaN  total Cost         NaN          NaN          NaN             NaN          NaN          NaN          NaN          NaN         NaN
+2                                                        NaN        NaN                                     LPG         NG                   NaN         NaN        NaN          NaN        NaN        NaN         NaN         NaN         NaN         NaN         NaN          NaN         17.0  M.S. Sheet 4mm         72.0          NaN          NaN          NaN         NaN
+
+
+--- HEADER = 1 ---
+Columns:
+- Unnamed: 0
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Mtr
+- Unnamed: 8
+- MS
+- SS
+- MS.1
+- SS.1
+- MS.2
+- SS.2
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+
+Sample Rows:
+  Unnamed: 0 Unnamed: 1                              Unnamed: 2 Unnamed: 3            Unnamed: 4  Unnamed: 5 Unnamed: 6          Mtr Unnamed: 8         MS           SS        MS.1    SS.1        MS.2         SS.2  Unnamed: 15  Unnamed: 16     Unnamed: 17  Unnamed: 18  Unnamed: 19  Unnamed: 20  Unnamed: 21 Unnamed: 22
+0     MODEL      OUTPUT  NOMINAL GAS PER BURNER M³/HR                  NaN  PRICE WITH SS TUBING         NaN        Dia  Tube length      Elbow  Tube Cost          NaN  Elbow Cost     NaN  total Cost          NaN          NaN          NaN             NaN          NaN          NaN          NaN          NaN         NaN
+1        NaN        NaN                                     LPG         NG                   NaN         NaN        NaN          NaN        NaN        NaN          NaN         NaN     NaN         NaN          NaN          NaN         17.0  M.S. Sheet 4mm         72.0          NaN          NaN          NaN         NaN
+2     ARE-13       9 KW                                    0.43       1.11           168099.5658         NaN         60            6          8        810  8349.891459         NaN  4800.0         810  13149.89146          NaN         18.0  M.S. Sheet 5mm         72.0          NaN          NaN          NaN         NaN
+
+
+==============================
+===== SHEET: GAIL GAS Burner =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- Unnamed: 0
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+
+Sample Rows:
+   Unnamed: 0                            Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Unnamed: 6 Unnamed: 7 Unnamed: 8
+0         NaN                                   NaN        NaN        NaN        NaN        NaN        NaN        NaN        NaN
+1         NaN  A.   GAIL GAS BURNER (FOR FURNACES)         NaN        NaN        NaN        NaN        NaN        NaN        NaN
+2         NaN                                   NaN        NaN        NaN        NaN        NaN        NaN        NaN        NaN
+
+
+--- HEADER = 1 ---
+Columns:
+- Unnamed: 0
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+
+Sample Rows:
+   Unnamed: 0                            Unnamed: 1 Unnamed: 2         Unnamed: 3    Unnamed: 4 Unnamed: 5       Unnamed: 6  Unnamed: 7  Unnamed: 8
+0         NaN  A.   GAIL GAS BURNER (FOR FURNACES)         NaN                NaN           NaN        NaN              NaN         NaN         NaN
+1         NaN                                   NaN        NaN                NaN           NaN        NaN              NaN         NaN         NaN
+2         NaN                           Burner Size     Burner  C.I. Burner Plate  Burner Block       Hose  Butterfly Valve  Ball Valve  Burner SET
+
+
+==============================
+===== SHEET: Rad Heat =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- PRICE LIST OF RAD-HEAT GAS HEATING ELEMENTS (W.E.F Aug'22)
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+- Unnamed: 14
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+
+Sample Rows:
+  PRICE LIST OF RAD-HEAT GAS HEATING ELEMENTS (W.E.F Aug'22) Unnamed: 1                              Unnamed: 2 Unnamed: 3            Unnamed: 4  Unnamed: 5 Unnamed: 6   Unnamed: 7 Unnamed: 8 Unnamed: 9 Unnamed: 10 Unnamed: 11 Unnamed: 12 Unnamed: 13 Unnamed: 14  Unnamed: 15  Unnamed: 16     Unnamed: 17  Unnamed: 18  Unnamed: 19  Unnamed: 20  Unnamed: 21 Unnamed: 22
+0                                                        NaN        NaN                                     NaN        NaN                   NaN         NaN        NaN          Mtr        NaN         MS          SS          MS          SS          MS          SS          NaN          NaN             NaN          NaN          NaN          NaN          NaN         NaN
+1                                                     MODEL      OUTPUT  NOMINAL GAS PER BURNER M³/HR                  NaN  PRICE WITH SS TUBING         NaN        Dia  Tube length      Elbow  Tube Cost         NaN  Elbow Cost         NaN  total Cost         NaN          NaN          NaN             NaN          NaN          NaN          NaN          NaN         NaN
+2                                                        NaN        NaN                                     LPG         NG                   NaN         NaN        NaN          NaN        NaN        NaN         NaN         NaN         NaN         NaN         NaN          NaN         17.0  M.S. Sheet 4mm         72.0          NaN          NaN          NaN         NaN
+
+
+--- HEADER = 1 ---
+Columns:
+- Unnamed: 0
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Mtr
+- Unnamed: 8
+- MS
+- SS
+- MS.1
+- SS.1
+- MS.2
+- SS.2
+- Unnamed: 15
+- Unnamed: 16
+- Unnamed: 17
+- Unnamed: 18
+- Unnamed: 19
+- Unnamed: 20
+- Unnamed: 21
+- Unnamed: 22
+
+Sample Rows:
+  Unnamed: 0 Unnamed: 1                              Unnamed: 2 Unnamed: 3            Unnamed: 4  Unnamed: 5 Unnamed: 6          Mtr Unnamed: 8         MS           SS        MS.1    SS.1        MS.2         SS.2  Unnamed: 15  Unnamed: 16     Unnamed: 17  Unnamed: 18  Unnamed: 19  Unnamed: 20  Unnamed: 21 Unnamed: 22
+0     MODEL      OUTPUT  NOMINAL GAS PER BURNER M³/HR                  NaN  PRICE WITH SS TUBING         NaN        Dia  Tube length      Elbow  Tube Cost          NaN  Elbow Cost     NaN  total Cost          NaN          NaN          NaN             NaN          NaN          NaN          NaN          NaN         NaN
+1        NaN        NaN                                     LPG         NG                   NaN         NaN        NaN          NaN        NaN        NaN          NaN         NaN     NaN         NaN          NaN          NaN         17.0  M.S. Sheet 4mm         72.0          NaN          NaN          NaN         NaN
+2     ARE-13       9 KW                                    0.43       1.11                165000         NaN         60            6          8        810  8349.891459         NaN  4800.0         810  13149.89146          NaN         18.0  M.S. Sheet 5mm         72.0          NaN          NaN          NaN         NaN
+
+
+==============================
+===== SHEET: BURNER =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- Unnamed: 0
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+
+Sample Rows:
+                                                                    Unnamed: 0    Unnamed: 1   Unnamed: 2        Unnamed: 3                          Unnamed: 4          Unnamed: 5         Unnamed: 6       Unnamed: 7   Unnamed: 8 Unnamed: 9  Unnamed: 10  Unnamed: 11  Unnamed: 12
+0  PRICE FOR VARIOUS SIZES OF ENCON `FILM’ BURNER & ACCESSORIES (W.E.F JUL'22)           NaN          NaN               NaN                                 NaN                 NaN                NaN              NaN          NaN        NaN          NaN          NaN          NaN
+1                                                                          NaN           NaN          NaN               NaN                                 NaN                 NaN                NaN              NaN          NaN        NaN          NaN          NaN          NaN
+2                                                                  Burner Size  Burner Alone  Micro Valve  C.I.Burner Plate  High Al.  whyteHeat K Burner Block  Flexible Hoses Set  `Y’ type Strainer  Butterfly Valve  Burner Set         NaN          NaN          NaN          NaN
+
+
+--- HEADER = 1 ---
+Columns:
+- PRICE FOR VARIOUS SIZES OF ENCON `FILM’ BURNER & ACCESSORIES (W.E.F JUL'22)
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+
+Sample Rows:
+  PRICE FOR VARIOUS SIZES OF ENCON `FILM’ BURNER & ACCESSORIES (W.E.F JUL'22)    Unnamed: 1   Unnamed: 2        Unnamed: 3                          Unnamed: 4          Unnamed: 5         Unnamed: 6       Unnamed: 7   Unnamed: 8 Unnamed: 9  Unnamed: 10  Unnamed: 11  Unnamed: 12
+0                                                                         NaN           NaN          NaN               NaN                                 NaN                 NaN                NaN              NaN          NaN        NaN          NaN          NaN          NaN
+1                                                                 Burner Size  Burner Alone  Micro Valve  C.I.Burner Plate  High Al.  whyteHeat K Burner Block  Flexible Hoses Set  `Y’ type Strainer  Butterfly Valve  Burner Set         NaN          NaN          NaN          NaN
+2                                                                    ENCON 2A         14500         4600              5418                                7200                2360               1125             3000        38203        NaN          NaN          NaN          NaN
+
+
+==============================
+===== SHEET: Horizontal =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- S.NO.
+- 10 TON HORIZONTAL LADLE PREHEATER
+- QTY
+- AMOUNT(Rs.)
+- Unnamed: 4
+- S.NO..1
+- 15 TON HORIZONTAL LADLE PREHEATER
+- QTY.1
+- AMOUNT(Rs.).1
+- Unnamed: 9
+- S.NO..2
+- 20 TON HORIZONTAL LADLE PREHEATER
+- QTY.2
+- AMOUNT(Rs.).2
+
+Sample Rows:
+  S.NO. 10 TON HORIZONTAL LADLE PREHEATER        QTY AMOUNT(Rs.)  Unnamed: 4 S.NO..1  15 TON HORIZONTAL LADLE PREHEATER      QTY.1 AMOUNT(Rs.).1 Unnamed: 9 S.NO..2  20 TON HORIZONTAL LADLE PREHEATER      QTY.2 AMOUNT(Rs.).2
+0     1                      MS Structure  1096 Kgs.      165700         NaN       1                       MS Structure  1236 Kgs.        186900        NaN       1                       MS Structure  1416 Kgs.        214100
+1     2             Combustion Equipment:        NaN         NaN         NaN       2              Combustion Equipment:        NaN           NaN        NaN       2              Combustion Equipment:        NaN           NaN
+2   NaN          a. Encon Film Burner -3A         3A       38803         NaN     NaN  a. Encon Film Burner (4A) – 1Set.          1         44987        NaN     NaN  a. Encon Film Burner (4A) – 1Set.          1         44987
+
+
+--- HEADER = 1 ---
+Columns:
+- 1
+- MS Structure
+- 1096 Kgs.
+- 165700
+- Unnamed: 4
+- 1.1
+- MS Structure.1
+- 1236 Kgs.
+- 186900
+- Unnamed: 9
+- 1.2
+- MS Structure.2
+- 1416 Kgs.
+- 214100
+
+Sample Rows:
+     1              MS Structure 1096 Kgs. 165700  Unnamed: 4  1.1                     MS Structure.1 1236 Kgs.  186900 Unnamed: 9  1.2                     MS Structure.2 1416 Kgs.  214100
+0    2     Combustion Equipment:       NaN    NaN         NaN    2              Combustion Equipment:       NaN     NaN        NaN    2              Combustion Equipment:       NaN     NaN
+1  NaN  a. Encon Film Burner -3A        3A  38803         NaN  NaN  a. Encon Film Burner (4A) – 1Set.         1   44987        NaN  NaN  a. Encon Film Burner (4A) – 1Set.         1   44987
+2  NaN           b. Blower 5/40"     5/40"  81000         NaN  NaN           b. Blower 10/40” – 1 No.         1  109260        NaN  NaN           b. Blower 15/40” – 1 No.         1  121140
+
+
+==============================
+===== SHEET: Vertical =====
+==============================
+
+--- RAW HEADER (default) ---
+Columns:
+- Unnamed: 0
+- Unnamed: 1
+- Unnamed: 2
+- Unnamed: 3
+- Unnamed: 4
+- Unnamed: 5
+- Unnamed: 6
+- Unnamed: 7
+- Unnamed: 8
+- Unnamed: 9
+- Unnamed: 10
+- Unnamed: 11
+- Unnamed: 12
+- Unnamed: 13
+
+Sample Rows:
+  Unnamed: 0                         Unnamed: 1 Unnamed: 2   Unnamed: 3  Unnamed: 4 Unnamed: 5                            Unnamed: 6 Unnamed: 7   Unnamed: 8  Unnamed: 9 Unnamed: 10                        Unnamed: 11 Unnamed: 12  Unnamed: 13
+0      S.NO.  DESCRIPTION( Vertical 10 ton lps)        QTY  AMOUNT(Rs.)         NaN      S.NO.  DESCRIPTION( Vertical 12-14 ton lps)        QTY  AMOUNT(Rs.)         NaN       S.NO.  DESCRIPTION( Vertical 15 ton lps)         QTY  AMOUNT(Rs.)
+1          1                       MS Structure  1096 Kgs.     165715.2         NaN          1                          MS Structure  1130 Kgs.       170856         NaN           1                       MS Structure    1215Kgs.       183708
+2          2              Combustion Equipment:        NaN          NaN         NaN          2                 Combustion Equipment:        NaN          NaN         NaN           2              Combustion Equipment:         NaN          NaN
+
+
+--- HEADER = 1 ---
+Columns:
+- S.NO.
+- DESCRIPTION( Vertical 10 ton lps)
+- QTY
+- AMOUNT(Rs.)
+- Unnamed: 4
+- S.NO..1
+- DESCRIPTION( Vertical 12-14 ton lps)
+- QTY.1
+- AMOUNT(Rs.).1
+- Unnamed: 9
+- S.NO..2
+- DESCRIPTION( Vertical 15 ton lps)
+- QTY.2
+- AMOUNT(Rs.).2
+
+Sample Rows:
+  S.NO. DESCRIPTION( Vertical 10 ton lps)        QTY AMOUNT(Rs.)  Unnamed: 4 S.NO..1 DESCRIPTION( Vertical 12-14 ton lps)      QTY.1 AMOUNT(Rs.).1  Unnamed: 9 S.NO..2  DESCRIPTION( Vertical 15 ton lps)     QTY.2 AMOUNT(Rs.).2
+0     1                      MS Structure  1096 Kgs.    165715.2         NaN       1                         MS Structure  1130 Kgs.        170856         NaN       1                       MS Structure  1215Kgs.        183708
+1     2             Combustion Equipment:        NaN         NaN         NaN       2                Combustion Equipment:        NaN           NaN         NaN       2              Combustion Equipment:       NaN           NaN
+2   NaN          a. Encon Film Burner -3A         3A       38803         NaN     NaN    a. Encon Film Burner (4A) – 1Set.          1         44987         NaN     NaN  a. Encon Film Burner (4A) – 1Set.         1         44987
+

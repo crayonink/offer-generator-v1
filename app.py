@@ -1,216 +1,274 @@
-# main app
+# -------------------------------------------------
+# MAIN APP
+# -------------------------------------------------
+
 import streamlit as st
 import io
 import pandas as pd
+import re
+import os
+import pickle
 
-# -----------------------------
-# Internal modules
-# -----------------------------
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+from google_auth_oauthlib.flow import InstalledAppFlow
+
 from config import MARKUP
+
+# VLHP calculation
 from calculations.burner import BurnerInputs, calculate_burner
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
+
+# REGEN calculation
+from calculations.regen_burner import (
+    RegenBurnerInputs,
+    calculate_regen_burner,
+    AVAILABLE_KW
+)
+
+# BOM builders
 from bom.vlph_builder import build_vlph_120t_df
+
+# NEW PIPELINE
+from engine.run_pipeline import run_pipeline
+from bom.selectors.selection_engine import SystemType
+
+# summaries & export
 from summary.cost_summary import build_cost_summary_df
 from export.excel_writer import write_excel
 from export.word_writer import generate_word_offer
 
 
 # -------------------------------------------------
+# CONFIG
+# -------------------------------------------------
+
+FOLDER_ID = "1HKNWIisZzO03CE_WMLuqg17zjMxpd81M"
+
+FUEL_CV_MAP = {
+    "LDO": 10200,
+    "Furnace Oil": 10000,
+    "Diesel": 10200,
+    "LPG": 11000,
+    "Natural Gas": 8500,
+    "Furnace Gas": 1000,
+    "Producer Gas": 1200,
+    "Coke Oven Gas": 4300,
+    "Mixed Gas": 2500,
+    "Miscellaneous Gas": 2000,
+}
+
+
+# -------------------------------------------------
+# GOOGLE DRIVE UPLOAD
+# -------------------------------------------------
+
+def upload_excel_to_google_sheets(buffer, filename):
+    SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+
+    creds = None
+
+    if os.path.exists("token.pickle"):
+        with open("token.pickle", "rb") as token:
+            creds = pickle.load(token)
+
+    if not creds:
+        flow = InstalledAppFlow.from_client_secrets_file(
+            "client_secret.json", SCOPES
+        )
+        creds = flow.run_local_server(port=0)
+
+        with open("token.pickle", "wb") as token:
+            pickle.dump(creds, token)
+
+    drive_service = build("drive", "v3", credentials=creds)
+
+    buffer.seek(0)
+
+    media = MediaIoBaseUpload(
+        buffer,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    file = drive_service.files().create(
+        body={"name": f"{filename}.xlsx", "parents": [FOLDER_ID]},
+        media_body=media,
+        fields="id"
+    ).execute()
+
+    return f"https://docs.google.com/spreadsheets/d/{file['id']}"
+
+
+# -------------------------------------------------
 # SESSION STATE
 # -------------------------------------------------
-if "excel_buffer" not in st.session_state:
-    st.session_state.excel_buffer = None
 
-if "word_buffer" not in st.session_state:
-    st.session_state.word_buffer = None
+def init_session_state():
+    if "excel_buffer" not in st.session_state:
+        st.session_state.excel_buffer = None
+    if "word_buffer" not in st.session_state:
+        st.session_state.word_buffer = None
+    if "regen_results" not in st.session_state:
+        st.session_state.regen_results = None
 
 
 # -------------------------------------------------
-# PAGE CONFIG
+# INPUT SECTIONS (UNCHANGED)
 # -------------------------------------------------
+
+def render_commercial_inputs():
+    st.subheader("Step 1: Customer & Organization Details")
+
+    company_name = st.text_input("Company Name")
+    company_address = st.text_area("Company Address")
+
+    project_name = st.selectbox(
+        "Project",
+        ["Ladle Preheater", "Preheater Hoods", "Dryers"]
+    )
+
+    fuel_category = st.selectbox("Fuel Category", ["Oil", "Gas"])
+
+    if fuel_category == "Oil":
+        fuel_type = st.selectbox("Fuel Type", ["LDO", "Furnace Oil", "Diesel"])
+    else:
+        fuel_type = st.selectbox(
+            "Fuel Type",
+            list(FUEL_CV_MAP.keys()),
+        )
+
+    fuel_cv_default = FUEL_CV_MAP.get(fuel_type, 8500)
+
+    poc_designation = st.text_input("Point of Contact (Designation)")
+    poc_name = st.text_input("POC Name")
+    mobile_no = st.text_input("Mobile Number")
+    email = st.text_input("Email")
+
+    return locals()
+
+
+def render_equipment_inputs():
+    st.subheader("Step 2: Equipment Configuration")
+
+    equipment_type = st.selectbox(
+        "Equipment",
+        ["Ladle", "Tundish", "AOD Vessel", "Launder"]
+    )
+
+    num_burners = st.number_input("Number of Burners", min_value=1, value=2)
+
+    burner_type = st.selectbox(
+        "Burner Type",
+        ["Conventional", "Oxyfuel", "Oxy-enriched", "Regenerative"]
+    )
+
+    control_type = st.selectbox("Control System", ["Automatic", "Manual"])
+
+    return locals()
+
+
+def render_regen_inputs(fuel_cv_default):
+    st.subheader("Step 3: Regen Burner Inputs")
+
+    power_kw = st.selectbox("Burner Power (kW)", AVAILABLE_KW)
+    num_burners = st.number_input("Number of Burner Pairs", min_value=1, value=2)
+
+    fuel_type = st.text_input("Fuel Type", value="Natural Gas")
+    fuel_cv = st.number_input("Fuel CV", value=int(fuel_cv_default))
+
+    return {
+        "power_kw": power_kw,
+        "num_burners": num_burners,
+        "fuel_type": fuel_type,
+        "fuel_cv": fuel_cv,
+    }
+
+
+# -------------------------------------------------
+# REGEN OFFER (UPDATED)
+# -------------------------------------------------
+
+def generate_regen_offer(commercial, equipment, regen_values):
+
+    # STEP 1: Existing engineering calc (to get flows)
+    regen_results = calculate_regen_burner(
+        RegenBurnerInputs(**regen_values)
+    )
+
+    # STEP 2: Use flows in new pipeline
+    result = run_pipeline(
+    system_type=SystemType.REGEN,
+    capacity_kw=regen_values["power_kw"],
+    ng_flow_nm3hr = regen_results.ng_flow_nm3hr,
+    air_flow_nm3hr=regen_results.air_flow_nm3hr/ regen_results.num_burners,
+)
+
+    bom_df = result["bom"]
+
+    # STEP 3: Export
+    buffer = io.BytesIO()
+    write_excel(buffer, {"REGEN": bom_df}, None, None, None)
+    buffer.seek(0)
+
+    return buffer, regen_results, result
+
+
+# -------------------------------------------------
+# MAIN
+# -------------------------------------------------
+
 st.set_page_config(page_title="Offer Generator", layout="centered")
 st.title("Offer Generator")
 
+init_session_state()
 
-# -------------------------------------------------
-# STEP 1: COMMERCIAL DETAILS
-# -------------------------------------------------
-st.subheader("Step 1: Customer & Organization Details")
+commercial = render_commercial_inputs()
+st.divider()
 
-company_name = st.text_input("Company Name")
-company_address = st.text_area("Company Address")
+equipment = render_equipment_inputs()
+st.divider()
 
-project_name = st.selectbox(
-    "Project",
-    ["Ladle Preheater", "Preheater Hoods", "Dryers"]
-)
+is_regen = equipment["burner_type"] == "Regenerative"
 
-fuel_type = st.selectbox("Fuel Type", ["Oil", "Gas"])
-
-poc_designation = st.text_input("Point of Contact (Designation)")
-poc_name = st.text_input("POC Name")
-mobile_no = st.text_input("Mobile Number")
+if is_regen:
+    regen_values = render_regen_inputs(commercial["fuel_cv_default"])
 
 st.divider()
 
 
-# -------------------------------------------------
-# STEP 2: BURNER INPUTS
-# -------------------------------------------------
-st.subheader("Step 2: Burner Size Calculation – Inputs")
-
-input_df = pd.DataFrame({
-    "Parameter": [
-        "Ti",
-        "Tf",
-        "Actual Refractory Weight",
-        "MG Fuel CV",
-        "Time Taken"
-    ],
-    "Value": [
-        650.0,
-        1200.0,
-        21500.0,
-        8500.0,
-        1.0
-    ],
-    "Unit": ["°C", "°C", "Kg", "Kcal/Nm³", "Hours"]
-})
-
-edited_df = st.data_editor(
-    input_df,
-    hide_index=True,
-    num_rows="fixed",
-    use_container_width=True
-)
-
-values = dict(zip(edited_df["Parameter"], edited_df["Value"]))
-
-Ti = values["Ti"]
-Tf = values["Tf"]
-refractory_weight = values["Actual Refractory Weight"]
-fuel_cv = values["MG Fuel CV"]
-time_taken_hr = values["Time Taken"]
-
-st.divider()
-
-
-# -------------------------------------------------
-# GENERATE FILES
-# -------------------------------------------------
 if st.button("Generate Offer & Calculation Excel"):
 
-    # -----------------------------
-    # Validation
-    # -----------------------------
-    if not company_name or not company_address or not poc_name or not mobile_no:
-        st.error("Please fill all mandatory commercial fields")
-        st.stop()
+    if is_regen:
+        excel_buffer, regen_results, result = generate_regen_offer(
+            commercial, equipment, regen_values
+        )
 
-    # -----------------------------
-    # BURNER CALCULATION
-    # -----------------------------
-    burner_inputs = BurnerInputs(
-        Ti=Ti,
-        Tf=Tf,
-        refractory_weight=refractory_weight,
-        fuel_cv=fuel_cv,
-        time_taken_hr=time_taken_hr,
-    )
+        st.session_state.regen_results = regen_results
 
-    burner_results = calculate_burner(burner_inputs)
+        # 👇 NEW: Show total cost
+        st.metric("Total Cost (₹)", f"{result['total_cost']:,.0f}")
 
-    # -----------------------------
-    # PIPE CALCULATION
-    # -----------------------------
-    pipe_inputs = PipeInputs(
-        ng_flow_nm3hr=burner_results.extra_firing_rate_nm3hr,
-        air_flow_nm3hr=burner_results.air_qty_nm3hr,
-    )
+    st.session_state.excel_buffer = excel_buffer
 
-    pipe_results = calculate_pipe_sizes(pipe_inputs)
-
-    # -----------------------------
-    # BOM
-    # -----------------------------
-    vlph_df = build_vlph_120t_df(
-        burner_results=burner_results,
-        pipe_results=pipe_results,
-    )
-
-    # -----------------------------
-    # ✅ COST SUMMARY (LEGACY SAFE)
-    # -----------------------------
-    bought_out_cost = vlph_df.loc[
-        vlph_df["MEDIA"] != "ENCON ITEMS", "TOTAL"
-    ].sum()
-
-    inhouse_sell = vlph_df.loc[
-        vlph_df["MEDIA"] == "ENCON ITEMS", "TOTAL"
-    ].sum()
-
-    bought_out_sell = bought_out_cost * MARKUP
-    inhouse_cost = inhouse_sell / MARKUP
-
-    cost_summary_df = build_cost_summary_df(
-        bought_out_cost=bought_out_cost,
-        bought_out_sell=bought_out_sell,
-        inhouse_cost=inhouse_cost,
-        inhouse_sell=inhouse_sell,
-    )
-
-    # -----------------------------
-    # WRITE EXCEL
-    # -----------------------------
-    st.session_state.excel_buffer = io.BytesIO()
-
-    write_excel(
-        buffer=st.session_state.excel_buffer,
-        sheets={
-            "VLPH-120T": vlph_df,
-            "Cost Summary": cost_summary_df,
-        },
-        burner_inputs=burner_inputs,
-        burner_results=burner_results,
-        pipe_results=pipe_results,
-    )
-
-    st.session_state.excel_buffer.seek(0)
-
-    # -----------------------------
-    # WORD OFFER
-    # -----------------------------
-    offer_context = {
-        "company_name": company_name,
-        "company_address": company_address,
-        "project_name": project_name,
-        "fuel_type": fuel_type,
-        "poc_name": poc_name,
-        "poc_designation": poc_designation,
-        "mobile_no": mobile_no,
-    }
+    try:
+        sheet_url = upload_excel_to_google_sheets(
+            excel_buffer,
+            f"{commercial['company_name']}_Costing"
+        )
+        st.success(f"Google Sheet created: {sheet_url}")
+    except Exception as e:
+        st.error(f"Upload failed: {e}")
 
     st.session_state.word_buffer = generate_word_offer(
         template_path="Offer_Template.docx",
-        context=offer_context,
+        context={**commercial, **equipment},
     )
 
 
-# -------------------------------------------------
-# DOWNLOAD BUTTONS
-# -------------------------------------------------
 if st.session_state.excel_buffer:
-    st.download_button(
-        "⬇ Download Costing Excel",
-        st.session_state.excel_buffer,
-        file_name="Costing.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    st.download_button("Download Excel", st.session_state.excel_buffer)
 
 if st.session_state.word_buffer:
-    st.download_button(
-        "⬇ Download Word Offer",
-        st.session_state.word_buffer,
-        file_name="Final_Offer.docx",
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    )
+    st.download_button("Download Word", st.session_state.word_buffer)
+
+    st.write(regen_results)

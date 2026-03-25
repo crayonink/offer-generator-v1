@@ -8,8 +8,7 @@ import math
 
 
 # -------------------------------------------------
-# AGR AVAILABLE NB (FROM SPECIFICATION FILE)
-# AGR does NOT exist beyond 100 NB
+# AVAILABLE NB (STANDARD)
 # -------------------------------------------------
 AVAILABLE_AGR_NB = [15, 20, 25, 32, 40, 50, 65, 80, 100]
 
@@ -35,7 +34,7 @@ def round_to_available_agr_nb(diameter_mm: float) -> int:
 class PipeInputs:
     ng_flow_nm3hr: float
     air_flow_nm3hr: float
-    ng_velocity_ms: float = 17.0   # Locked as per approved calculation sheet
+    ng_velocity_ms: float = 17.0   # Design velocity
     air_velocity_ms: float = 15.0
 
 
@@ -46,13 +45,35 @@ class PipeInputs:
 class PipeResults:
     ng_pipe_inner_dia_mm: float
     ng_pipe_nb: int
+    ng_actual_velocity_ms: float
+
     air_pipe_inner_dia_mm: float
+    air_pipe_nb: int
+    air_actual_velocity_ms: float
+
+
+# -------------------------------------------------
+# HELPER
+# -------------------------------------------------
+def _velocity(flow_m3s, diameter_mm):
+    area = math.pi * (diameter_mm / 1000) ** 2 / 4
+    return flow_m3s / area
 
 
 # -------------------------------------------------
 # MAIN CALCULATION FUNCTION
 # -------------------------------------------------
 def calculate_pipe_sizes(inputs: PipeInputs) -> PipeResults:
+
+    # -----------------------------
+    # VALIDATION
+    # -----------------------------
+    if inputs.ng_flow_nm3hr <= 0:
+        raise ValueError("ng_flow_nm3hr must be > 0")
+
+    if inputs.air_flow_nm3hr <= 0:
+        raise ValueError("air_flow_nm3hr must be > 0")
+
     # -----------------------------
     # NG PIPE CALCULATION
     # -----------------------------
@@ -60,8 +81,10 @@ def calculate_pipe_sizes(inputs: PipeInputs) -> PipeResults:
     ng_area = ng_flow_m3s / inputs.ng_velocity_ms
     ng_dia_mm = math.sqrt((4 * ng_area) / math.pi) * 1000
 
-    # Round to next available AGR NB
     ng_nb = round_to_available_agr_nb(ng_dia_mm)
+
+    # Recalculate actual velocity after rounding
+    ng_actual_velocity = _velocity(ng_flow_m3s, ng_nb)
 
     # -----------------------------
     # AIR PIPE CALCULATION
@@ -70,8 +93,19 @@ def calculate_pipe_sizes(inputs: PipeInputs) -> PipeResults:
     air_area = air_flow_m3s / inputs.air_velocity_ms
     air_dia_mm = math.sqrt((4 * air_area) / math.pi) * 1000
 
+    air_nb = round_to_available_agr_nb(air_dia_mm)
+
+    air_actual_velocity = _velocity(air_flow_m3s, air_nb)
+
+    # -----------------------------
+    # RESULT
+    # -----------------------------
     return PipeResults(
         ng_pipe_inner_dia_mm=ng_dia_mm,
         ng_pipe_nb=ng_nb,
+        ng_actual_velocity_ms=ng_actual_velocity,
+
         air_pipe_inner_dia_mm=air_dia_mm,
+        air_pipe_nb=air_nb,
+        air_actual_velocity_ms=air_actual_velocity,
     )

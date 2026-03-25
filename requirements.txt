@@ -1,8 +1,0 @@
-streamlit
-pandas
-openpyxl
-xlsxwriter
-python-docx
-docxtpl
-
-

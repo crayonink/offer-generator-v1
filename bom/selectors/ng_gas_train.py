@@ -1,28 +1,62 @@
 import sqlite3
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 
 
-def select_ng_gas_train(required_flow_nm3hr: float, burner_model: str) -> dict:
+def select_ng_gas_train(required_flow_nm3hr: float) -> dict:
     """
-    Select NG Gas Train based on burner model.
+    Select NG Gas Train based on required flow.
+    Uses flow range logic (min_flow <= flow <= max_flow).
     """
 
-    conn = sqlite3.connect("vlph.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT flow_nm3hr, price
+        SELECT inlet_nb, outlet_nb, min_flow, max_flow, price_inr
         FROM gas_train_master
-        WHERE burner_model = ?
+        WHERE ? BETWEEN min_flow AND max_flow
         LIMIT 1
-    """, (burner_model,))
+    """, (required_flow_nm3hr,))
 
     row = cursor.fetchone()
     conn.close()
 
     if not row:
-        raise ValueError(f"No Gas Train found for burner {burner_model}")
+        raise ValueError(
+            f"No suitable NG Gas Train found for required flow {required_flow_nm3hr}"
+        )
 
     return {
-        "flow_nm3hr": row[0],
-        "price": row[1],
+        "inlet_nb": row[0],
+        "outlet_nb": row[1],
+        "min_flow": row[2],
+        "max_flow": row[3],
+        "price": row[4],
     }
+
+
+# -------------------------------------------------
+# DEBUG BLOCK
+# -------------------------------------------------
+if __name__ == "__main__":
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM gas_train_master")
+    rows = cursor.fetchall()
+
+    cursor.execute("PRAGMA table_info(gas_train_master)")
+    columns = [col[1] for col in cursor.fetchall()]
+    print(" | ".join(columns))
+    print("-" * 100)
+
+    for row in rows:
+        print(" | ".join(str(v) for v in row))
+
+    print(f"\nTotal rows: {len(rows)}")
+
+    conn.close()

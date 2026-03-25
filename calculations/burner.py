@@ -14,6 +14,8 @@ class BurnerInputs:
     refractory_weight: float       # Kg
     fuel_cv: float                 # Kcal/Nm3
     time_taken_hr: float           # Hours
+    refractory_heat_factor: float = 0.25   # Can vary
+    efficiency: float = 0.52               # Can vary
 
 
 @dataclass
@@ -35,20 +37,36 @@ def calculate_burner(inputs: BurnerInputs) -> BurnerResults:
     Matches your Excel logic EXACTLY
     """
 
+    # Safety checks
+    if inputs.time_taken_hr <= 0:
+        raise ValueError("time_taken_hr must be greater than zero")
+
+    if inputs.fuel_cv <= 0:
+        raise ValueError("fuel_cv must be greater than zero")
+
+    if inputs.efficiency <= 0:
+        raise ValueError("efficiency must be greater than zero")
+
     # Average temperature to be raised
     avg_temp_rise = ((inputs.Tf + 200) / 2) - ((inputs.Ti + 100) / 2)
 
     # Firing rate
-    firing_rate_kcal = inputs.refractory_weight * 0.25 * avg_temp_rise
+    firing_rate_kcal = (
+        inputs.refractory_weight
+        * inputs.refractory_heat_factor
+        * avg_temp_rise
+    )
 
     # Heat load
-    heat_load_kcal = firing_rate_kcal / 0.52
+    heat_load_kcal = firing_rate_kcal / inputs.efficiency
 
     # Fuel consumption
     fuel_consumption_nm3 = heat_load_kcal / inputs.fuel_cv
 
     # Calculated firing rate (Nm3/hr)
-    calculated_firing_rate_nm3hr = fuel_consumption_nm3 / inputs.time_taken_hr
+    calculated_firing_rate_nm3hr = (
+        fuel_consumption_nm3 / inputs.time_taken_hr
+    )
 
     # 10% extra firing rate
     extra_firing_rate_nm3hr = calculated_firing_rate_nm3hr * 1.1

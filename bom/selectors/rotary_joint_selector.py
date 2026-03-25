@@ -1,30 +1,34 @@
 import sqlite3
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 
 
-def select_rotary_joint(air_flow_nm3hr: float) -> dict:
+def select_rotary_joint(nb: int) -> dict:
     """
-    Select Rotary Joint from DB
+    Select Rotary Joint based on NB
     """
 
-    conn = sqlite3.connect("vlph.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT nb, price
+        SELECT price
         FROM rotary_joint_master
-        WHERE ? BETWEEN min_flow AND max_flow
+        WHERE nb = ?
         LIMIT 1
-    """, (air_flow_nm3hr,))
+    """, (nb,))
 
     row = cursor.fetchone()
     conn.close()
 
     if not row:
         raise ValueError(
-            f"No Rotary Joint found for {air_flow_nm3hr} Nm3/hr"
+            f"No Rotary Joint found for NB {nb}"
         )
 
     return {
-        "nb": row[0],
-        "price": row[1],
+        "nb": nb,
+        "price": row[0],
     }

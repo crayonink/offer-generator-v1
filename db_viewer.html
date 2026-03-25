@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VLPH DB Viewer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    header .logo { font-weight: 700; font-size: 15px; }
+    header .sep { color: #cbd5e1; }
+    header .page { font-size: 13px; color: #64748b; }
+
+    header .refresh-btn {
+      margin-left: auto;
+      padding: 6px 14px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      color: #475569;
+      font-weight: 500;
+    }
+
+    header .refresh-btn:hover { background: #e2e8f0; }
+
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: #fff;
+      border-right: 1px solid #e2e8f0;
+      overflow-y: auto;
+      padding: 16px 0;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 0 16px 10px;
+    }
+
+    .table-item {
+      display: flex;
+      flex-direction: column;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: background 0.1s;
+      border-left: 3px solid transparent;
+      gap: 4px;
+    }
+
+    .table-item:hover { background: #f8fafc; }
+
+    .table-item.active {
+      background: #eff6ff;
+      border-left-color: #1e40af;
+    }
+
+    .table-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-item .tname {
+      font-size: 13px;
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .table-item.active .tname { color: #1e40af; }
+
+    .table-item .tcount {
+      font-size: 11px;
+      color: #94a3b8;
+      background: #f1f5f9;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+
+    .table-item .tstamp {
+      font-size: 10px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .table-item .tstamp.updated {
+      color: #16a34a;
+    }
+
+    .table-item .tstamp.never {
+      color: #cbd5e1;
+      font-style: italic;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .toolbar h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .toolbar .row-count {
+      font-size: 12px;
+      color: #94a3b8;
+      background: #f1f5f9;
+      padding: 3px 10px;
+      border-radius: 10px;
+    }
+
+    /* Timestamp badge in toolbar */
+    .ts-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    .ts-badge.updated {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+    }
+
+    .ts-badge.never {
+      background: #fef9c3;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .ts-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .search-box {
+      margin-left: auto;
+      padding: 7px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      width: 220px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+
+    .search-box:focus { border-color: #1e40af; background: #fff; }
+
+    /* Table */
+    .table-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    thead th {
+      background: #f8fafc;
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover { background: #f8fafc; }
+
+    tbody td {
+      padding: 9px 16px;
+      color: #1e293b;
+      white-space: nowrap;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    tbody td.num {
+      color: #475569;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tbody td.null-val { color: #cbd5e1; font-style: italic; }
+
+    /* Empty / loading states */
+    .state-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: #94a3b8;
+      font-size: 14px;
+      padding: 60px;
+      text-align: center;
+    }
+
+    .state-box .icon { font-size: 36px; }
+
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #1e40af;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-bar {
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 6px 24px;
+      font-size: 11px;
+      color: #94a3b8;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">VLPH</div>
+    <span class="sep">/</span>
+    <div class="page">Live DB Viewer</div>
+    <button class="refresh-btn" onclick="loadTables()">↻ Refresh</button>
+  </header>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-title">Tables</div>
+      <div id="tableList">
+        <div style="padding: 16px; font-size: 12px; color: #94a3b8;">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="toolbar" id="toolbar" style="display:none">
+        <h2 id="activeTableName">—</h2>
+        <span class="row-count" id="rowCount">0 rows</span>
+        <span class="ts-badge never" id="tsBadge" style="display:none"></span>
+        <input class="search-box" id="searchBox" placeholder="Search..." oninput="filterTable(this.value)" />
+      </div>
+
+      <div class="table-wrap" id="tableWrap">
+        <div class="state-box">
+          <div class="icon">🗄️</div>
+          <div>Select a table to view its data</div>
+        </div>
+      </div>
+
+      <div class="status-bar" id="statusBar">Ready</div>
+    </div>
+  </div>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+    let allRows = [];
+    let allCols = [];
+    let activeTable = null;
+
+    function formatDate(ts) {
+      if (!ts) return null;
+      // ts is "YYYY-MM-DD HH:MM:SS"
+      const d = new Date(ts.replace(" ", "T"));
+      return d.toLocaleString("en-IN", {
+        day: "2-digit", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit", hour12: true
+      });
+    }
+
+    function timeAgo(ts) {
+      if (!ts) return null;
+      const d = new Date(ts.replace(" ", "T"));
+      const diff = Math.floor((Date.now() - d) / 1000);
+      if (diff < 60) return "just now";
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
+    }
+
+    async function loadTables() {
+      document.getElementById("tableList").innerHTML = '<div style="padding:16px;font-size:12px;color:#94a3b8;">Loading...</div>';
+      try {
+        const res = await fetch(`${API}/db/tables`);
+        const data = await res.json();
+        renderSidebar(data.tables || []);
+        document.getElementById("statusBar").textContent = `${data.tables?.length || 0} tables loaded`;
+      } catch (e) {
+        document.getElementById("tableList").innerHTML = '<div style="padding:16px;font-size:12px;color:#dc2626;">Backend not running</div>';
+      }
+    }
+
+    function renderSidebar(tables) {
+      const list = document.getElementById("tableList");
+      list.innerHTML = tables.map(t => {
+        const ago = t.updated_at ? timeAgo(t.updated_at) : null;
+        const stampHtml = ago
+          ? `<div class="tstamp updated">✓ Updated ${ago}</div>`
+          : `<div class="tstamp never">Never uploaded</div>`;
+
+        return `
+          <div class="table-item ${activeTable === t.name ? 'active' : ''}" onclick="loadTable('${t.name}')">
+            <div class="table-item-top">
+              <span class="tname">${t.name}</span>
+              <span class="tcount">${t.rows}</span>
+            </div>
+            ${stampHtml}
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadTable(name) {
+      activeTable = name;
+      document.getElementById("toolbar").style.display = "flex";
+      document.getElementById("activeTableName").textContent = name;
+      document.getElementById("searchBox").value = "";
+      document.getElementById("tsBadge").style.display = "none";
+      document.getElementById("tableWrap").innerHTML = '<div class="state-box"><div class="spinner"></div><div>Loading...</div></div>';
+      document.getElementById("statusBar").textContent = `Loading ${name}...`;
+
+      // Update sidebar active state
+      document.querySelectorAll(".table-item").forEach(el => {
+        el.classList.toggle("active", el.querySelector(".tname").textContent === name);
+      });
+
+      try {
+        const res = await fetch(`${API}/db/table/${name}`);
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById("tableWrap").innerHTML = `<div class="state-box"><div class="icon">⚠️</div><div>${data.error}</div></div>`;
+          return;
+        }
+
+        allCols = data.columns;
+        allRows = data.rows;
+
+        renderTable(allCols, allRows);
+        document.getElementById("rowCount").textContent = `${data.total} rows`;
+
+        // Show timestamp badge in toolbar
+        const badge = document.getElementById("tsBadge");
+        if (data.updated_at) {
+          badge.className = "ts-badge updated";
+          badge.innerHTML = `<span class="dot"></span> Last updated ${formatDate(data.updated_at)}`;
+          badge.title = data.uploaded_by ? `Uploaded from ${data.uploaded_by}` : "";
+        } else {
+          badge.className = "ts-badge never";
+          badge.innerHTML = `<span class="dot"></span> Never uploaded via Excel`;
+        }
+        badge.style.display = "inline-flex";
+
+        document.getElementById("statusBar").textContent =
+          `${name} — ${data.total} rows, ${data.columns.length} columns` +
+          (data.updated_at ? ` · Last updated ${data.updated_at}` : "");
+
+      } catch (e) {
+        document.getElementById("tableWrap").innerHTML = '<div class="state-box"><div class="icon">⚠️</div><div>Failed to load table</div></div>';
+      }
+    }
+
+    function renderTable(cols, rows) {
+      if (rows.length === 0) {
+        document.getElementById("tableWrap").innerHTML = '<div class="state-box"><div class="icon">📭</div><div>No rows in this table</div></div>';
+        return;
+      }
+
+      const thead = `<thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>`;
+
+      const tbody = `<tbody>${rows.map(row => `
+        <tr>${row.map(cell => {
+          if (cell === null || cell === undefined) return `<td class="null-val">null</td>`;
+          if (typeof cell === "number") return `<td class="num">${cell.toLocaleString("en-IN")}</td>`;
+          return `<td title="${cell}">${cell}</td>`;
+        }).join("")}</tr>
+      `).join("")}</tbody>`;
+
+      document.getElementById("tableWrap").innerHTML = `<table>${thead}${tbody}</table>`;
+    }
+
+    function filterTable(query) {
+      if (!query.trim()) {
+        renderTable(allCols, allRows);
+        document.getElementById("rowCount").textContent = `${allRows.length} rows`;
+        return;
+      }
+      const q = query.toLowerCase();
+      const filtered = allRows.filter(row => row.some(cell => String(cell).toLowerCase().includes(q)));
+      renderTable(allCols, filtered);
+      document.getElementById("rowCount").textContent = `${filtered.length} of ${allRows.length} rows`;
+    }
+
+    loadTables();
+  </script>
+</body>
+</html>
