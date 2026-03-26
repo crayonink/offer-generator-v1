@@ -17,39 +17,46 @@ def calculate_blower_hp(firing_rate: float) -> float:
     return blower_hp
 
 
-def select_blower(required_hp: float, pressure: int = 40) -> dict:
+def select_blower(required_hp: float, series: str = "28") -> dict:
     """
-    Select combustion air blower from database
-    based on required HP and pressure.
+    Select combustion air blower from blower_master.
+    Filters by ENCON series (28" WG or 40" WG) and picks the smallest HP >= required.
+    hp and numeric columns are stored as text in the DB — cast at query time.
     """
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT model, hp, airflow, cfm, pressure, price_basic, price_premium
+        SELECT model,
+               CAST(hp         AS REAL) AS hp_val,
+               CAST(airflow    AS REAL) AS airflow_val,
+               CAST(cfm        AS REAL) AS cfm_val,
+               pressure,
+               CAST(price_basic    AS REAL) AS price_basic_val,
+               CAST(price_premium  AS REAL) AS price_premium_val
         FROM blower_master
-        WHERE pressure = ?
-        AND hp >= ?
-        ORDER BY hp ASC
+        WHERE model LIKE ?
+          AND CAST(hp AS REAL) >= ?
+        ORDER BY CAST(hp AS REAL) ASC
         LIMIT 1
-    """, (pressure, required_hp))
+    """, (f"ENCON {series}/%", required_hp))
 
     row = cursor.fetchone()
     conn.close()
 
     if not row:
         raise ValueError(
-            f"No blower found for HP >= {required_hp} at pressure {pressure}"
+            f"No ENCON {series}\" WG blower found for HP >= {required_hp:.2f}"
         )
 
     return {
-        "model": row[0],
-        "hp": row[1],
+        "model":         row[0],
+        "hp":            row[1],
         "airflow_nm3hr": row[2],
-        "cfm": row[3],
-        "pressure": row[4],
-        "price_basic": row[5],
+        "cfm":           row[3],
+        "pressure":      row[4],
+        "price_basic":   row[5],
         "price_premium": row[6],
     }
 

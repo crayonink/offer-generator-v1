@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON – Quote Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:   #1a3a5c;
+      --navy2:  #0f2744;
+      --green:  #059669;
+      --red:    #dc2626;
+      --border: #e5e7eb;
+      --text:   #0f172a;
+      --muted:  #64748b;
+      --bg:     #f8fafc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+    /* ── Nav ── */
+    .topnav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
+      display: flex; align-items: center; padding: 0 40px;
+      position: sticky; top: 0; z-index: 100; height: 56px;
+    }
+    .topnav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 900; font-size: 0.95rem; color: var(--text);
+      margin-right: 32px; letter-spacing: -.4px; text-decoration: none;
+    }
+    .brand-mark {
+      width: 30px; height: 30px; background: var(--navy); border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 0.7rem; font-weight: 900;
+      flex-shrink: 0; box-shadow: 0 2px 6px rgba(26,58,92,.35);
+    }
+    .topnav-links { display: flex; gap: 2px; margin-left: auto; }
+    .topnav-links a {
+      font-size: 0.82rem; color: var(--muted); text-decoration: none;
+      padding: 6px 11px; border-radius: 6px; transition: background .15s; font-weight: 500;
+    }
+    .topnav-links a:hover  { background: #f1f5f9; color: var(--navy); }
+    .topnav-links a.active { background: #eff6ff; color: var(--navy); font-weight: 600; }
+
+    /* ── Page title bar ── */
+    .page-title-bar {
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+    }
+    .page-title-bar h1 { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+    .page-title-bar p  { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Layout ── */
+    .page { max-width: 1040px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff; border-radius: 14px; border: 1px solid #e2e8f0;
+      padding: 24px 28px; margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 4px 20px rgba(0,0,0,.04);
+    }
+    .card-title {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1.5px solid var(--border);
+    }
+
+    /* ── Section label ── */
+    .sec-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 16px 0 10px; }
+
+    /* ── Form grids ── */
+    .fg   { display: grid; gap: 14px; margin-bottom: 14px; }
+    .fg-1 { grid-template-columns: 1fr; }
+    .fg-2 { grid-template-columns: 1fr 1fr; }
+    .fg-3 { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: 640px) { .fg-3 { grid-template-columns: 1fr 1fr; } .fg-2 { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .field label .req { color: var(--red); }
+    .field input, .field textarea, .field select {
+      padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-size: 0.88rem; color: var(--text); background: var(--bg);
+      outline: none; font-family: inherit; transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: var(--navy); background: #fff; box-shadow: 0 0 0 3px rgba(26,58,92,.07);
+    }
+
+    /* ── Items table ── */
+    .items-wrap { overflow-x: auto; }
+    table.items { width: 100%; border-collapse: collapse; font-size: 0.83rem; min-width: 640px; }
+    table.items th {
+      background: linear-gradient(90deg, var(--navy2) 0%, var(--navy) 100%);
+      color: #fff; padding: 11px 12px;
+      text-align: left; font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    table.items td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    table.items tr:hover td { background: #fafafa; }
+    table.items select, table.items input {
+      padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 7px;
+      font-size: 0.83rem; background: var(--bg); font-family: inherit; outline: none; width: 100%;
+    }
+    table.items select:focus, table.items input:focus {
+      border-color: var(--navy); background: #fff;
+    }
+    .r { text-align: right; }
+    .cell-price { color: var(--muted); font-size: 0.8rem; text-align: right; }
+    .cell-total { font-weight: 600; text-align: right; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 20px; border: none; border-radius: 9px; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; font-family: inherit;
+      transition: all .2s;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-navy  {
+      background: linear-gradient(135deg, var(--navy) 0%, #1e4a7a 100%); color: #fff;
+      box-shadow: 0 2px 10px rgba(26,58,92,.32);
+    }
+    .btn-navy:hover  { background: linear-gradient(135deg, var(--navy2) 0%, var(--navy) 100%); box-shadow: 0 5px 16px rgba(26,58,92,.4); transform: translateY(-1px); }
+    .btn-green {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff;
+      box-shadow: 0 2px 10px rgba(5,150,105,.32);
+      padding: 12px 28px; font-size: 0.92rem;
+    }
+    .btn-green:hover { background: linear-gradient(135deg, #047857 0%, #065f46 100%); box-shadow: 0 5px 18px rgba(5,150,105,.4); transform: translateY(-1px); }
+    .btn-add   { background: #eff6ff; color: var(--navy); border: 1.5px solid #bfdbfe; padding: 8px 16px; font-size: 0.82rem; border-radius: 8px; }
+    .btn-add:hover { background: #dbeafe; border-color: #93c5fd; }
+    .btn-del   { background: #fef2f2; color: var(--red); border: 1.5px solid #fecaca; padding: 5px 11px; font-size: 0.8rem; border-radius: 7px; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .btn-del:hover { background: #fee2e2; border-color: #fca5a5; }
+
+    /* ── Spinner ── */
+    .spinner-ring {
+      display: none; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    .generating .spinner-ring { display: inline-block; }
+    .generating .btn-text      { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer: totals + action ── */
+    .footer-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 32px; flex-wrap: wrap;
+    }
+    .totals-box {
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 16px 22px; min-width: 280px;
+    }
+    .totals-box table { width: 100%; font-size: 0.88rem; }
+    .totals-box td { padding: 5px 0; }
+    .totals-box td:last-child { text-align: right; font-weight: 600; }
+    .totals-box .grand td {
+      border-top: 2px solid var(--navy); padding-top: 9px;
+      font-size: 0.95rem; color: var(--navy); font-weight: 700;
+    }
+
+    /* ── Alerts ── */
+    .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: var(--red); padding: 12px 16px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; display: none; white-space: pre-wrap; }
+    .alert-success { background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 20px 24px; margin-top: 16px; display: none; }
+    .alert-success h4 { font-size: 0.95rem; font-weight: 700; color: #15803d; margin-bottom: 12px; }
+    .dl-btn {
+      display: inline-block; margin-top: 12px; padding: 10px 20px;
+      background: #15803d; color: #fff; text-decoration: none;
+      border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+    }
+    .dl-btn:hover { background: #166534; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-brand">
+    <div class="brand-mark">EN</div>
+    ENCON
+  </div>
+  <div class="topnav-links">
+    <a href="/costing">VLPH</a>
+    <a href="/hlph">HLPH</a>
+    <a href="/regen">Regen</a>
+    <a href="/quote" class="active">Quote Builder</a>
+    <a href="/price-master">Prices</a>
+    <a href="/viewer">DB Viewer</a>
+  </div>
+</nav>
+
+<div class="page-title-bar">
+  <h1>Quote Builder</h1>
+  <p>Build a custom offer from the product catalog — any combination of equipment.</p>
+</div>
+
+<div class="page">
+
+  <!-- Customer Details -->
+  <div class="card">
+    <div class="card-title">Customer Details</div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Company Name <span class="req">*</span></label>
+        <input id="company_name" type="text" placeholder="ABC Steel Ltd"/>
+      </div>
+      <div class="field">
+        <label>Contact Person</label>
+        <input id="poc_name" type="text" placeholder="Mr. / Ms. Full Name"/>
+      </div>
+      <div class="field">
+        <label>Designation</label>
+        <input id="poc_designation" type="text" placeholder="Purchase Manager"/>
+      </div>
+    </div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Mobile No.</label>
+        <input id="mobile_no" type="text" placeholder="+91 98765 43210"/>
+      </div>
+      <div class="field">
+        <label>Address</label>
+        <input id="company_address" type="text" placeholder="Street / Area, City"/>
+      </div>
+      <div class="field">
+        <label>City</label>
+        <input id="company_city" type="text" placeholder="City"/>
+      </div>
+    </div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Project / Subject</label>
+        <input id="project_name" type="text" placeholder="Supply of…"/>
+      </div>
+      <div class="field">
+        <label>Enquiry Ref No.</label>
+        <input id="ref_no" type="text" placeholder="ENQ-2025-001"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="card">
+    <div class="card-title">Line Items</div>
+    <div class="items-wrap">
+      <table class="items">
+        <thead>
+          <tr>
+            <th style="width:28%">Product Type</th>
+            <th style="width:27%">Model</th>
+            <th style="width:7%">Qty</th>
+            <th style="width:17%">Unit Price (₹)</th>
+            <th style="width:16%">Total (₹)</th>
+            <th style="width:5%"></th>
+          </tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px">
+      <button class="btn btn-add" onclick="addRow()">+ Add Item</button>
+    </div>
+  </div>
+
+  <!-- Quote settings + totals + action -->
+  <div class="card">
+    <div class="footer-row">
+      <div style="flex:1; min-width:260px">
+        <div class="card-title">Quote Settings</div>
+        <div class="fg fg-3">
+          <div class="field">
+            <label>GST %</label>
+            <input id="gst_percent" type="number" value="18" min="0" max="28" onchange="updateTotals()"/>
+          </div>
+          <div class="field">
+            <label>Freight (₹)</label>
+            <input id="freight" type="number" value="0" min="0" onchange="updateTotals()"/>
+          </div>
+          <div class="field">
+            <label>Valid for (days)</label>
+            <input id="valid_days" type="number" value="30" min="1"/>
+          </div>
+        </div>
+      </div>
+      <div class="totals-box">
+        <table>
+          <tr><td>Subtotal</td>              <td id="t-subtotal">₹ 0</td></tr>
+          <tr><td id="t-gst-label">GST (18%)</td><td id="t-gst">₹ 0</td></tr>
+          <tr><td>Freight</td>               <td id="t-freight">₹ 0</td></tr>
+          <tr class="grand"><td><b>Grand Total</b></td><td id="t-grand"><b>₹ 0</b></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="alert-error" id="error-msg"></div>
+      <button class="btn btn-green" id="gen-btn" onclick="generateQuote()">
+        <span class="spinner-ring"></span>
+        <span class="btn-text">Generate Quote (Word)</span>
+      </button>
+    </div>
+
+    <div class="alert-success" id="result"></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+const API = "";
+let catalog = {};
+
+async function loadCatalog() {
+  const res = await fetch(`${API}/api/catalog`);
+  catalog = await res.json();
+  addRow();
+}
+
+function addRow() {
+  const tbody = document.getElementById("items-body");
+  const idx   = tbody.rows.length;
+  const tr    = document.createElement("tr");
+  tr.id       = `row-${idx}`;
+  tr.innerHTML = `
+    <td>
+      <select onchange="onTypeChange(${idx})" id="type-${idx}">
+        <option value="">— Select product —</option>
+        ${Object.keys(catalog).map(t => `<option value="${t}">${t}</option>`).join("")}
+      </select>
+    </td>
+    <td><select id="model-${idx}" onchange="fetchPrice(${idx})"><option value="">—</option></select></td>
+    <td><input type="number" id="qty-${idx}" value="1" min="1" style="width:60px" onchange="fetchPrice(${idx})"/></td>
+    <td class="cell-price" id="up-${idx}">—</td>
+    <td class="cell-total" id="rt-${idx}">—</td>
+    <td><button class="btn-del" onclick="removeRow(${idx})">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function removeRow(idx) {
+  const tr = document.getElementById(`row-${idx}`);
+  if (tr) tr.remove();
+  updateTotals();
+}
+
+function onTypeChange(idx) {
+  const type     = document.getElementById(`type-${idx}`).value;
+  const modelSel = document.getElementById(`model-${idx}`);
+  modelSel.innerHTML = `<option value="">— Select model —</option>`;
+  if (!type || !catalog[type]) return;
+  catalog[type].forEach(item => {
+    const opt   = document.createElement("option");
+    opt.value   = item.id;
+    opt.textContent = item.label || item.id;
+    modelSel.appendChild(opt);
+  });
+  document.getElementById(`up-${idx}`).textContent = "—";
+  document.getElementById(`rt-${idx}`).textContent = "—";
+  updateTotals();
+}
+
+async function fetchPrice(idx) {
+  const type  = document.getElementById(`type-${idx}`)?.value;
+  const model = document.getElementById(`model-${idx}`)?.value;
+  const qty   = parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
+  if (!type || !model) return;
+  const url  = `${API}/api/price?product_type=${encodeURIComponent(type)}&model=${encodeURIComponent(model)}&qty=${qty}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (data.unit_price !== undefined) {
+    document.getElementById(`up-${idx}`).textContent = `₹ ${fmt(data.unit_price)}`;
+    document.getElementById(`rt-${idx}`).textContent = `₹ ${fmt(data.total)}`;
+  }
+  updateTotals();
+}
+
+function updateTotals() {
+  let subtotal = 0;
+  for (const tr of document.getElementById("items-body").rows) {
+    const idx = tr.id.replace("row-","");
+    const rt  = document.getElementById(`rt-${idx}`)?.textContent || "—";
+    if (rt !== "—") subtotal += parseFloat(rt.replace(/[₹, ]/g,"")) || 0;
+  }
+  const gst     = parseFloat(document.getElementById("gst_percent").value) || 0;
+  const freight = parseFloat(document.getElementById("freight").value)     || 0;
+  const gstAmt  = subtotal * gst / 100;
+  const grand   = subtotal + gstAmt + freight;
+  document.getElementById("t-subtotal").textContent  = `₹ ${fmt(subtotal)}`;
+  document.getElementById("t-gst-label").textContent = `GST (${gst}%)`;
+  document.getElementById("t-gst").textContent       = `₹ ${fmt(gstAmt)}`;
+  document.getElementById("t-freight").textContent   = `₹ ${fmt(freight)}`;
+  document.getElementById("t-grand").innerHTML       = `<b>₹ ${fmt(grand)}</b>`;
+}
+
+async function generateQuote() {
+  const company = document.getElementById("company_name").value.trim();
+  if (!company) { showError("Company Name is required."); return; }
+
+  const items = [];
+  for (const tr of document.getElementById("items-body").rows) {
+    const idx   = tr.id.replace("row-","");
+    const type  = document.getElementById(`type-${idx}`)?.value;
+    const model = document.getElementById(`model-${idx}`)?.value;
+    const qty   = parseInt(document.getElementById(`qty-${idx}`)?.value) || 1;
+    if (type && model) items.push({ product_type: type, model, qty });
+  }
+  if (items.length === 0) { showError("Add at least one item."); return; }
+
+  const payload = {
+    company_name:    company,
+    company_address: document.getElementById("company_address").value,
+    company_city:    document.getElementById("company_city").value,
+    poc_name:        document.getElementById("poc_name").value,
+    poc_designation: document.getElementById("poc_designation").value,
+    mobile_no:       document.getElementById("mobile_no").value,
+    project_name:    document.getElementById("project_name").value,
+    ref_no:          document.getElementById("ref_no").value,
+    items,
+    gst_percent: parseFloat(document.getElementById("gst_percent").value) || 18,
+    freight:     parseFloat(document.getElementById("freight").value)     || 0,
+    valid_days:  parseInt(document.getElementById("valid_days").value)    || 30,
+  };
+
+  const btn = document.getElementById("gen-btn");
+  btn.classList.add("generating"); btn.disabled = true;
+  hideError();
+  document.getElementById("result").style.display = "none";
+
+  try {
+    const res  = await fetch(`${API}/api/generate-quote`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.error) { showError(data.error + (data.trace ? `\n${data.trace}` : "")); return; }
+
+    const resultDiv = document.getElementById("result");
+    resultDiv.style.display = "block";
+    resultDiv.innerHTML = `
+      <h4>Quote Generated Successfully</h4>
+      <table style="font-size:0.85rem;border-collapse:collapse">
+        <tr><td style="padding:3px 16px 3px 0;color:#555">Quote No.</td><td><b>${data.quote_no}</b></td></tr>
+        <tr><td style="color:#555">Subtotal</td>    <td>₹ ${fmt(data.summary.subtotal)}</td></tr>
+        <tr><td style="color:#555">GST</td>         <td>₹ ${fmt(data.summary.gst)}</td></tr>
+        <tr><td style="color:#555">Freight</td>     <td>₹ ${fmt(data.summary.freight)}</td></tr>
+        <tr><td style="color:#555"><b>Grand Total</b></td><td><b>₹ ${fmt(data.summary.total)}</b></td></tr>
+      </table>
+      <a class="dl-btn" href="${API}${data.download_url}" download>Download Word Quote</a>
+    `;
+  } catch (e) {
+    showError("Network error: " + e.message);
+  } finally {
+    btn.classList.remove("generating"); btn.disabled = false;
+  }
+}
+
+function showError(msg) { const el = document.getElementById("error-msg"); el.style.display = "block"; el.textContent = msg; }
+function hideError()    { document.getElementById("error-msg").style.display = "none"; }
+function fmt(n)         { return Number(n).toLocaleString("en-IN", {minimumFractionDigits:0, maximumFractionDigits:0}); }
+
+loadCatalog();
+</script>
+</body>
+</html>

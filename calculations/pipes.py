@@ -8,22 +8,18 @@ import math
 
 
 # -------------------------------------------------
-# AVAILABLE NB (STANDARD)
+# STANDARD PIPE NB SIZES (mm)
 # -------------------------------------------------
-AVAILABLE_AGR_NB = [15, 20, 25, 32, 40, 50, 65, 80, 100]
+STANDARD_PIPE_NB = [15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300, 350]
 
 
-def round_to_available_agr_nb(diameter_mm: float) -> int:
-    """
-    Round calculated inner diameter to next available AGR NB.
-    Raises error if required size exceeds 100 NB.
-    """
-    for nb in AVAILABLE_AGR_NB:
+def round_up_to_nb(diameter_mm: float) -> int:
+    """Round calculated inner diameter up to the next standard pipe NB."""
+    for nb in STANDARD_PIPE_NB:
         if diameter_mm <= nb:
             return nb
-
     raise ValueError(
-        "Required pipe size exceeds maximum available AGR size (100 NB)"
+        f"Required pipe size ({diameter_mm:.1f} mm) exceeds maximum available NB (350)"
     )
 
 
@@ -34,7 +30,7 @@ def round_to_available_agr_nb(diameter_mm: float) -> int:
 class PipeInputs:
     ng_flow_nm3hr: float
     air_flow_nm3hr: float
-    ng_velocity_ms: float = 17.0   # Design velocity
+    ng_velocity_ms: float = 25.0   # Design velocity (25 m/s for VLPH per calculation sheet)
     air_velocity_ms: float = 15.0
 
 
@@ -81,7 +77,7 @@ def calculate_pipe_sizes(inputs: PipeInputs) -> PipeResults:
     ng_area = ng_flow_m3s / inputs.ng_velocity_ms
     ng_dia_mm = math.sqrt((4 * ng_area) / math.pi) * 1000
 
-    ng_nb = round_to_available_agr_nb(ng_dia_mm)
+    ng_nb = round_up_to_nb(ng_dia_mm)
 
     # Recalculate actual velocity after rounding
     ng_actual_velocity = _velocity(ng_flow_m3s, ng_nb)
@@ -93,7 +89,7 @@ def calculate_pipe_sizes(inputs: PipeInputs) -> PipeResults:
     air_area = air_flow_m3s / inputs.air_velocity_ms
     air_dia_mm = math.sqrt((4 * air_area) / math.pi) * 1000
 
-    air_nb = round_to_available_agr_nb(air_dia_mm)
+    air_nb = round_up_to_nb(air_dia_mm)
 
     air_actual_velocity = _velocity(air_flow_m3s, air_nb)
 

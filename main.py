@@ -1,6 +1,8 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from pydantic import BaseModel
+from typing import List, Optional
 import pandas as pd
 import sqlite3
 import shutil
@@ -20,175 +22,730 @@ app.add_middleware(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+QUOTES_FOLDER = os.path.join(BASE_DIR, "quotes")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(QUOTES_FOLDER, exist_ok=True)
 
 VALID_TABLES = None
 
+COUNTER_FILE = os.path.join(BASE_DIR, "quote_counter.txt")
+
+def next_quote_seq():
+    if os.path.exists(COUNTER_FILE):
+        with open(COUNTER_FILE) as f:
+            n = int(f.read().strip()) + 1
+    else:
+        n = 1
+    with open(COUNTER_FILE, "w") as f:
+        f.write(str(n))
+    return str(n).zfill(3)
 
 def ensure_log_table():
     conn = sqlite3.connect(DB_PATH)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS table_update_log (
-            table_name  TEXT PRIMARY KEY,
-            updated_at  TEXT,
-            uploaded_by TEXT
-        )
-    """)
+    conn.execute("""CREATE TABLE IF NOT EXISTS table_update_log (
+        table_name TEXT PRIMARY KEY, updated_at TEXT, uploaded_by TEXT)""")
     conn.commit()
     conn.close()
 
-
 ensure_log_table()
 
+@app.get("/")
+def root():
+    return RedirectResponse(url="/costing")
 
-# =================================================
-# DB VIEWER
-# =================================================
+@app.get("/quote", response_class=HTMLResponse)
+def quote_form():
+    html_path = os.path.join(BASE_DIR, "quote_form.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 @app.get("/viewer", response_class=HTMLResponse)
 def db_viewer():
     html_path = os.path.join(BASE_DIR, "db_viewer.html")
     with open(html_path, "r", encoding="utf-8") as f:
         content = f.read()
-    # Replace localhost API with relative path so it works on any domain
-    content = content.replace(
-        'const API = "http://127.0.0.1:8000"',
-        'const API = ""'
-    )
+    content = content.replace('const API = "http://127.0.0.1:8000"', 'const API = ""')
     return HTMLResponse(content=content)
 
 
-# =================================================
-# UPLOAD EXCEL
-# =================================================
+@app.get("/api/catalog")
+def get_catalog():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        def q(sql):
+            return pd.read_sql(sql, conn).to_dict(orient="records")
+        # Price master items (if table exists)
+        pm_raw, pm_bo, pm_ep = [], [], []
+        try:
+            pm_raw = q("SELECT item as id, item as label, price as base_price, unit FROM component_price_master WHERE category='Raw Material' ORDER BY item")
+            pm_bo  = q("SELECT item as id, item as label, price as base_price, unit FROM component_price_master WHERE category='Bought Out' ORDER BY item")
+            pm_ep  = q("SELECT item as id, item as label, price as base_price, unit FROM component_price_master WHERE category='ENCON Purchase' ORDER BY item")
+        except Exception:
+            pass
+
+        catalog = {
+            "Horizontal Ladle Preheater": q("SELECT DISTINCT model as id, model as label FROM horizontal_master"),
+            "Vertical Ladle Preheater": q("SELECT DISTINCT model as id, model as label FROM vertical_master"),
+            "Blower": q("SELECT DISTINCT model as id, model as label, section, price_without_motor, price__with_motor, hp FROM blower_pricelist_master WHERE price_without_motor IS NOT NULL ORDER BY section, hp"),
+            "HPU": q("SELECT DISTINCT unit_kw as id, CAST(unit_kw AS TEXT) || ' KW - ' || variant as label, unit_kw, variant FROM hpu_master ORDER BY unit_kw"),
+            "Burner (Film)": q("SELECT DISTINCT burner_size as id, burner_size as label, price as base_price FROM burner_pricelist_master WHERE component='BURNER ALONE' AND section LIKE '%FILM%' GROUP BY burner_size"),
+            "Burner (Dual Fuel)": q("SELECT DISTINCT burner_size as id, burner_size as label, price as base_price FROM burner_pricelist_master WHERE component='BURNER ALONE' AND section LIKE '%DUAL%' GROUP BY burner_size"),
+            "Recuperator": q("SELECT DISTINCT model as id, type || ' - ' || model as label FROM recuperator_master"),
+            "Rad Heat": q("SELECT item as id, item || ' (' || output_kw || ')' as label, price_with_ss_tubing as base_price FROM rad_heat_master WHERE section='MODEL'"),
+            "GAIL Gas Burner": q("SELECT burner_size as id, burner_size as label, burner_set as base_price FROM gail_gas_burner_master WHERE burner_set IS NOT NULL"),
+            "Raw Material": pm_raw,
+            "Bought Out Item": pm_bo,
+            "ENCON Component": pm_ep,
+        }
+        conn.close()
+        return catalog
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/price")
+def get_price(product_type: str, model: str, qty: int = 1,
+              with_motor: bool = False, variant: str = "Duplex 1"):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        price = 0
+        breakdown = []
+
+        if product_type == "Horizontal Ladle Preheater":
+            cursor.execute("SELECT particular, amount FROM horizontal_master WHERE model=? AND amount IS NOT NULL", (model,))
+            for particular, amount in cursor.fetchall():
+                if particular not in ("COMBUSTION EQUIPMENT:", "S.NO.") and amount:
+                    breakdown.append({"item": particular, "amount": float(amount)})
+                    price += float(amount)
+
+        elif product_type == "Vertical Ladle Preheater":
+            cursor.execute("SELECT particular, amount FROM vertical_master WHERE model=? AND amount IS NOT NULL", (model,))
+            for particular, amount in cursor.fetchall():
+                if particular not in ("COMBUSTION EQUIPMENT:", "S.NO.") and amount:
+                    breakdown.append({"item": particular, "amount": float(amount)})
+                    price += float(amount)
+
+        elif product_type == "Blower":
+            col = "price__with_motor" if with_motor else "price_without_motor"
+            cursor.execute(f"SELECT {col} FROM blower_pricelist_master WHERE model=? AND {col} IS NOT NULL LIMIT 1", (model,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                price = float(row[0])
+                breakdown = [{"item": f"{model} ({'with' if with_motor else 'without'} motor)", "amount": price}]
+
+        elif product_type == "HPU":
+            cursor.execute("SELECT SUM(amount) FROM hpu_master WHERE unit_kw=? AND variant=? AND amount IS NOT NULL", (model, variant))
+            row = cursor.fetchone()
+            if row and row[0]:
+                price = float(row[0])
+                breakdown = [{"item": f"HPU {model} KW ({variant})", "amount": price}]
+
+        elif "Burner" in product_type:
+            section_filter = "FILM" if "Film" in product_type else "DUAL"
+            cursor.execute("SELECT price FROM burner_pricelist_master WHERE burner_size=? AND component='BURNER ALONE' AND section LIKE ? LIMIT 1", (model, f"%{section_filter}%"))
+            row = cursor.fetchone()
+            if row and row[0]:
+                price = float(row[0])
+                breakdown = [{"item": f"{model} Burner", "amount": price}]
+
+        elif product_type == "Rad Heat":
+            cursor.execute("SELECT price_with_ss_tubing FROM rad_heat_master WHERE item=? AND section='MODEL' LIMIT 1", (model,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                price = float(row[0])
+                breakdown = [{"item": f"Rad Heat {model}", "amount": price}]
+
+        elif product_type == "GAIL Gas Burner":
+            cursor.execute("SELECT burner_set FROM gail_gas_burner_master WHERE burner_size=? LIMIT 1", (model,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                price = float(row[0])
+                breakdown = [{"item": f"GAIL Gas Burner {model} Set", "amount": price}]
+
+        elif product_type in ("Raw Material", "Bought Out Item", "ENCON Component"):
+            cursor.execute("SELECT price, unit FROM component_price_master WHERE item=? LIMIT 1", (model,))
+            row = cursor.fetchone()
+            if row and row[0]:
+                price = float(row[0])
+                unit = row[1] or "nos"
+                breakdown = [{"item": f"{model} ({unit})", "amount": price}]
+
+        conn.close()
+        return {"unit_price": price, "qty": qty, "total": price * qty, "breakdown": breakdown}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+class VLPHCalcRequest(BaseModel):
+    Ti: float
+    Tf: float
+    refractory_weight: float
+    fuel_cv: float = 8500.0
+    time_taken_hr: float
+    refractory_heat_factor: float = 0.25
+    efficiency: float = 0.52
+
+
+class QuoteItem(BaseModel):
+    product_type: str
+    model: str
+    description: Optional[str] = None
+    qty: int = 1
+    with_motor: bool = False
+    variant: str = "Duplex 1"
+    unit_price: Optional[float] = None   # pre-set price (e.g. from VLPH costing)
+    total: Optional[float] = None
+
+class QuoteRequest(BaseModel):
+    # Company / customer
+    company_name: str
+    company_address: Optional[str] = ""
+    company_city: Optional[str] = ""
+    company_state: Optional[str] = ""
+    company_pin: Optional[str] = ""
+    company_gstin: Optional[str] = ""
+    # Point of contact
+    poc_name: Optional[str] = ""
+    poc_designation: Optional[str] = ""
+    mobile_no: Optional[str] = ""
+    email: Optional[str] = ""
+    # Enquiry
+    project_name: Optional[str] = ""
+    ref_no: Optional[str] = ""
+    # Items & commercial
+    items: List[QuoteItem]
+    gst_percent: float = 18
+    freight: float = 0
+    valid_days: int = 30
+
+
+@app.get("/costing", response_class=HTMLResponse)
+def costing_form():
+    html_path = os.path.join(BASE_DIR, "vlph_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+@app.get("/hlph", response_class=HTMLResponse)
+def hlph_costing_form():
+    html_path = os.path.join(BASE_DIR, "hlph_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+@app.get("/regen", response_class=HTMLResponse)
+def regen_costing_form():
+    html_path = os.path.join(BASE_DIR, "regen_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+@app.get("/price-master", response_class=HTMLResponse)
+def price_master_page():
+    html_path = os.path.join(BASE_DIR, "price_master.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.post("/api/vlph-calculate")
+def vlph_calculate(req: VLPHCalcRequest):
+    try:
+        from calculations.burner import BurnerInputs, calculate_burner
+        from calculations.pipes import PipeInputs, calculate_pipe_sizes
+        from bom.selectors.selection_engine import select_equipment
+        from bom.vlph_builder import build_vlph_120t_df
+
+        burner_inputs = BurnerInputs(
+            Ti=req.Ti,
+            Tf=req.Tf,
+            refractory_weight=req.refractory_weight,
+            fuel_cv=req.fuel_cv,
+            time_taken_hr=req.time_taken_hr,
+            refractory_heat_factor=req.refractory_heat_factor,
+            efficiency=req.efficiency,
+        )
+        br = calculate_burner(burner_inputs)
+
+        pipe_results = calculate_pipe_sizes(PipeInputs(
+            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
+            air_flow_nm3hr=br.air_qty_nm3hr,
+        ))
+
+        equipment = select_equipment(
+            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
+            air_flow_nm3hr=br.air_qty_nm3hr,
+        )
+
+        bom_df = build_vlph_120t_df(equipment)
+
+        # Split summary rows from detail rows
+        detail = bom_df[bom_df["MEDIA"] != ""].copy()
+        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS", "TOTAL"].values[0])
+        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",     "TOTAL"].values[0])
+
+        return {
+            "calculations": {
+                "Ti": req.Ti,
+                "Tf": req.Tf,
+                "refractory_weight": req.refractory_weight,
+                "fuel_cv": req.fuel_cv,
+                "time_taken_hr": req.time_taken_hr,
+                "avg_temp_rise":                  round(br.avg_temp_rise, 2),
+                "firing_rate_kcal":               round(br.firing_rate_kcal, 2),
+                "heat_load_kcal":                 round(br.heat_load_kcal, 2),
+                "fuel_consumption_nm3":           round(br.fuel_consumption_nm3, 2),
+                "calculated_firing_rate_nm3hr":   round(br.calculated_firing_rate_nm3hr, 2),
+                "extra_firing_rate_nm3hr":        round(br.extra_firing_rate_nm3hr, 2),
+                "final_firing_rate_mw":           round(br.final_firing_rate_mw, 2),
+                "air_qty_nm3hr":                  round(br.air_qty_nm3hr, 2),
+                "cfm":                            round(br.cfm, 2),
+                "blower_hp_calc":                 round(br.blower_hp, 2),
+            },
+            "pipes": {
+                "ng_flow":      round(br.extra_firing_rate_nm3hr, 2),
+                "ng_velocity":  25.0,
+                "ng_dia_mm":    round(pipe_results.ng_pipe_inner_dia_mm, 2),
+                "ng_nb":        pipe_results.ng_pipe_nb,
+                "air_flow":     round(br.air_qty_nm3hr, 2),
+                "air_velocity": 15.0,
+                "air_dia_mm":   round(pipe_results.air_pipe_inner_dia_mm, 2),
+                "air_nb":       pipe_results.air_pipe_nb,
+            },
+            "equipment": {
+                "burner_model":   equipment["burner"]["model"],
+                "blower_model":   equipment["blower"]["model"],
+                "blower_hp":      equipment["blower"]["hp"],
+                "blower_airflow": equipment["blower"]["airflow_nm3hr"],
+                "ng_gas_train":   f'{equipment["ng_gas_train"]["inlet_nb"]} x {equipment["ng_gas_train"]["outlet_nb"]} NB',
+                "agr_nb":         equipment["agr"]["nb"],
+            },
+            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
+            "cost_summary": {
+                "bought_out_total": round(bought_out_total, 2),
+                "encon_total":      round(encon_total, 2),
+                "grand_total":      round(bought_out_total + encon_total, 2),
+            },
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+class RegenCalcRequest(BaseModel):
+    material_weight_kg: float
+    Ti: float
+    Tf: float
+    Cp: float = 0.48
+    cycle_time_hr: float = 2.0
+    efficiency: float = 0.65
+    num_pairs_override: int = 0
+    markup: float = 1.80
+
+
+@app.post("/api/regen-calculate")
+def regen_calculate(req: RegenCalcRequest):
+    try:
+        from calculations.regen import RegenInputs, calculate_regen
+        from bom.regen_builder import build_regen_df
+
+        result = calculate_regen(RegenInputs(
+            material_weight_kg=req.material_weight_kg,
+            Ti=req.Ti,
+            Tf=req.Tf,
+            Cp=req.Cp,
+            cycle_time_hr=req.cycle_time_hr,
+            efficiency=req.efficiency,
+            num_pairs_override=req.num_pairs_override,
+        ))
+
+        bom_df = build_regen_df(result.num_pairs, req.markup)
+
+        total_cost    = float(bom_df["TOTAL COST"].sum())
+        total_selling = float(bom_df["TOTAL SELLING"].sum())
+
+        return {
+            "calculations": {
+                "material_weight_kg": req.material_weight_kg,
+                "Ti": req.Ti,
+                "Tf": req.Tf,
+                "Cp": req.Cp,
+                "delta_T": round(result.delta_T, 2),
+                "heat_required_kj": round(result.heat_required_kj, 2),
+                "heat_required_kcal": round(result.heat_required_kcal, 2),
+                "cycle_time_hr": req.cycle_time_hr,
+                "efficiency": req.efficiency,
+                "required_kw": round(result.required_kw, 2),
+                "num_pairs": result.num_pairs,
+                "total_kw": result.total_kw,
+            },
+            "bom": bom_df.to_dict(orient="records"),
+            "cost_summary": {
+                "total_cost": round(total_cost, 2),
+                "total_selling": round(total_selling, 2),
+                "markup": req.markup,
+            },
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+@app.post("/api/hlph-calculate")
+def hlph_calculate(req: VLPHCalcRequest):
+    try:
+        from calculations.burner import BurnerInputs, calculate_burner
+        from calculations.pipes import PipeInputs, calculate_pipe_sizes
+        from bom.selectors.selection_engine import select_equipment
+        from bom.hlph_builder import build_hlph_df
+
+        burner_inputs = BurnerInputs(
+            Ti=req.Ti,
+            Tf=req.Tf,
+            refractory_weight=req.refractory_weight,
+            fuel_cv=req.fuel_cv,
+            time_taken_hr=req.time_taken_hr,
+            refractory_heat_factor=req.refractory_heat_factor,
+            efficiency=req.efficiency,
+        )
+        br = calculate_burner(burner_inputs)
+
+        pipe_results = calculate_pipe_sizes(PipeInputs(
+            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
+            air_flow_nm3hr=br.air_qty_nm3hr,
+        ))
+
+        equipment = select_equipment(
+            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
+            air_flow_nm3hr=br.air_qty_nm3hr,
+        )
+
+        bom_df = build_hlph_df(equipment)
+
+        detail = bom_df[bom_df["MEDIA"] != ""].copy()
+        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS", "TOTAL"].values[0])
+        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",     "TOTAL"].values[0])
+
+        return {
+            "calculations": {
+                "Ti": req.Ti,
+                "Tf": req.Tf,
+                "refractory_weight": req.refractory_weight,
+                "fuel_cv": req.fuel_cv,
+                "time_taken_hr": req.time_taken_hr,
+                "avg_temp_rise":                  round(br.avg_temp_rise, 2),
+                "firing_rate_kcal":               round(br.firing_rate_kcal, 2),
+                "heat_load_kcal":                 round(br.heat_load_kcal, 2),
+                "fuel_consumption_nm3":           round(br.fuel_consumption_nm3, 2),
+                "calculated_firing_rate_nm3hr":   round(br.calculated_firing_rate_nm3hr, 2),
+                "extra_firing_rate_nm3hr":        round(br.extra_firing_rate_nm3hr, 2),
+                "final_firing_rate_mw":           round(br.final_firing_rate_mw, 2),
+                "air_qty_nm3hr":                  round(br.air_qty_nm3hr, 2),
+                "cfm":                            round(br.cfm, 2),
+                "blower_hp_calc":                 round(br.blower_hp, 2),
+            },
+            "pipes": {
+                "ng_flow":      round(br.extra_firing_rate_nm3hr, 2),
+                "ng_velocity":  25.0,
+                "ng_dia_mm":    round(pipe_results.ng_pipe_inner_dia_mm, 2),
+                "ng_nb":        pipe_results.ng_pipe_nb,
+                "air_flow":     round(br.air_qty_nm3hr, 2),
+                "air_velocity": 15.0,
+                "air_dia_mm":   round(pipe_results.air_pipe_inner_dia_mm, 2),
+                "air_nb":       pipe_results.air_pipe_nb,
+            },
+            "equipment": {
+                "burner_model":   equipment["burner"]["model"],
+                "blower_model":   equipment["blower"]["model"],
+                "blower_hp":      equipment["blower"]["hp"],
+                "blower_airflow": equipment["blower"]["airflow_nm3hr"],
+                "ng_gas_train":   f'{equipment["ng_gas_train"]["inlet_nb"]} x {equipment["ng_gas_train"]["outlet_nb"]} NB',
+                "agr_nb":         equipment["agr"]["nb"],
+            },
+            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
+            "cost_summary": {
+                "bought_out_total": round(bought_out_total, 2),
+                "encon_total":      round(encon_total, 2),
+                "grand_total":      round(bought_out_total + encon_total, 2),
+            },
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "detail": traceback.format_exc()}
+
+
+@app.post("/api/generate-quote")
+async def generate_quote(req: QuoteRequest):
+    try:
+        from engine.quote_engine import calculate_quote
+        from engine.quote_writer import generate_quote_docx
+
+        seq = next_quote_seq()
+        form_data = {
+            "quote_seq": seq,
+            "customer": {
+                "company_name":  req.company_name,
+                "address":       ", ".join(filter(None, [req.company_address, req.company_city, req.company_state, req.company_pin])),
+                "poc_name":      req.poc_name,
+                "poc_designation": req.poc_designation,
+                "mobile_no":     req.mobile_no,
+                "email":         req.email,
+                "project_name":  req.project_name,
+                "ref_no":        req.ref_no,
+                "gstin":         req.company_gstin,
+            },
+            "items": [item.dict() for item in req.items],
+            "gst_percent": req.gst_percent,
+            "freight": req.freight,
+            "valid_days": req.valid_days,
+        }
+
+        quote_data = calculate_quote(form_data)
+        filename = f"Quote_{quote_data['quote_no'].replace('/', '_')}.docx"
+        output_path = os.path.join(QUOTES_FOLDER, filename)
+        generate_quote_docx(quote_data, output_path)
+
+        return {
+            "success": True,
+            "quote_no": quote_data["quote_no"],
+            "download_url": f"/api/download-quote/{filename}",
+            "summary": {
+                "subtotal": quote_data["subtotal"],
+                "gst": quote_data["gst_amount"],
+                "freight": quote_data["freight"],
+                "total": quote_data["grand_total"],
+            }
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+@app.get("/api/price-master/items")
+def price_master_items():
+    """Return all items grouped by category for the price master page."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            "SELECT category, item, unit, price, previous_price FROM component_price_master ORDER BY category, item"
+        ).fetchall()
+        conn.close()
+        result = {}
+        for cat, item, unit, price, prev in rows:
+            result.setdefault(cat, []).append({
+                "item": item, "unit": unit or "nos",
+                "price": price, "previous_price": prev
+            })
+        return {"categories": result, "total": len(rows)}
+    except Exception as e:
+        return {"error": str(e), "categories": {}, "total": 0}
+
+
+@app.get("/api/price-master/coverage")
+def price_master_coverage():
+    """Check which BOM items have prices in the DB and which are missing."""
+    from bom.vlph_builder import LEGACY_ITEM_SEQUENCE
+    from bom.static_items import static_items
+    needed = set(LEGACY_ITEM_SEQUENCE) | {item for _, item, _, _ in static_items()}
+    needed -= {"RATIO CONTROLLER"}  # excluded from BOM
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        have = {r[0] for r in conn.execute("SELECT item FROM component_price_master").fetchall()}
+        conn.close()
+    except Exception:
+        have = set()
+    return {
+        "covered":  sorted(needed & have),
+        "missing":  sorted(needed - have),
+        "extra":    sorted(have - needed),
+    }
+
+
+@app.post("/api/upload-pricelist")
+async def upload_pricelist(file: UploadFile = File(...)):
+    """
+    Parser for the ENCON Pricelist WorkBook.
+    Reads the 'Rates' sheet which has three column-groups side-by-side:
+      Group A (Raw Material)  : col 1=item, col 2=price, col 3=prev_price
+      Group B (Bought Out)    : col 9=item, col 10=price, col 12=prev_price
+      Group C (ENCON Purchase): col 15=item, col 19=price, col 20=prev_price
+    """
+    try:
+        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        with open(file_path, "wb") as buf:
+            shutil.copyfileobj(file.file, buf)
+
+        xl = pd.ExcelFile(file_path)
+
+        # Find the Rates sheet (case-insensitive, strip spaces)
+        rates_sheet = next(
+            (s for s in xl.sheet_names if s.strip().lower() == "rates"), None
+        )
+        if rates_sheet is None:
+            return {"error": f"Could not find a 'Rates' sheet. "
+                             f"Found sheets: {xl.sheet_names}"}
+
+        df = pd.read_excel(file_path, sheet_name=rates_sheet, header=None)
+
+        SKIP_LOWER = {
+            "price", "item", "previous", "bought out items",
+            "encon purchase price", "specification", "s.no",
+            "price list data", "price june", "out items",
+        }
+
+        def is_header(v):
+            if not isinstance(v, str): return False
+            return any(kw in v.lower() for kw in SKIP_LOWER)
+
+        def clean_num(v):
+            try:
+                f = float(v)
+                return f if f > 0 else None
+            except (TypeError, ValueError):
+                return None
+
+        def clean_text(v):
+            if not isinstance(v, str): return None
+            s = v.strip()
+            return s if len(s) >= 2 and not s.replace(".", "").replace(",", "").isdigit() else None
+
+        rows = []
+
+        for _, row in df.iterrows():
+            # ── Group A: Raw Material (cols 1, 2, 3) ─────────────────────────
+            item  = clean_text(row.iloc[1] if len(row) > 1 else None)
+            price = clean_num(row.iloc[2]  if len(row) > 2 else None)
+            prev  = clean_num(row.iloc[3]  if len(row) > 3 else None)
+            if item and price and not is_header(item):
+                unit = "kg" if price <= 500 else "nos"
+                if "per mtr" in item.lower() or "(per mtr)" in item.lower():
+                    unit = "mtr"
+                rows.append((item, "Raw Material", unit, price, prev or price))
+
+            # ── Group B: Bought Out (cols 9, 10, 12) ─────────────────────────
+            item  = clean_text(row.iloc[9]  if len(row) > 9  else None)
+            price = clean_num(row.iloc[10]  if len(row) > 10 else None)
+            prev  = clean_num(row.iloc[12]  if len(row) > 12 else None)
+            if item and price and not is_header(item):
+                rows.append((item, "Bought Out", "nos", price, prev or price))
+
+            # ── Group C: ENCON Purchase (cols 15, 19, 20) ────────────────────
+            item  = clean_text(row.iloc[15] if len(row) > 15 else None)
+            price = clean_num(row.iloc[19]  if len(row) > 19 else None)
+            prev  = clean_num(row.iloc[20]  if len(row) > 20 else None)
+            if item and price and not is_header(item):
+                rows.append((item, "ENCON Purchase", "nos", price, prev or price))
+
+        if not rows:
+            return {"error": "No price data found in the Rates sheet. "
+                             "Check the column layout has not changed."}
+
+        # Deduplicate (keep last occurrence per item)
+        seen = {}
+        for r in rows:
+            seen[r[0]] = r
+        rows = list(seen.values())
+
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS component_price_master (
+                item TEXT PRIMARY KEY, category TEXT,
+                unit TEXT, price REAL, previous_price REAL
+            )""")
+        for item, category, unit, price, prev in rows:
+            conn.execute("""
+                INSERT INTO component_price_master (item, category, unit, price, previous_price)
+                VALUES (?,?,?,?,?)
+                ON CONFLICT(item) DO UPDATE SET
+                    category=excluded.category, unit=excluded.unit,
+                    price=excluded.price, previous_price=excluded.previous_price
+            """, (item, category, unit, price, prev))
+        conn.commit()
+        conn.close()
+
+        return {"success": True, "rows_loaded": len(rows),
+                "message": f"{len(rows)} items loaded from Rates sheet"}
+
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+@app.get("/api/download-quote/{filename}")
+def download_quote(filename: str):
+    file_path = os.path.join(QUOTES_FOLDER, filename)
+    if not os.path.exists(file_path):
+        return {"error": "File not found"}
+    return FileResponse(path=file_path, filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
 
 @app.post("/upload-excel/")
 async def upload_excel(request: Request, file: UploadFile = File(...)):
     try:
         filename = file.filename
         table_name = filename.replace(".xlsx", "").strip().lower()
-
         if VALID_TABLES and table_name not in VALID_TABLES:
             return {"error": f"Invalid table name: {table_name}"}
-
         file_path = os.path.join(UPLOAD_FOLDER, filename)
-
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-
         df = pd.read_excel(file_path)
-
         if df.empty:
             return {"error": "Excel file is empty"}
-
         df.columns = [col.strip().lower() for col in df.columns]
-
         client_ip = request.client.host if request.client else "unknown"
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         conn = sqlite3.connect(DB_PATH)
         df.to_sql(table_name, conn, if_exists="replace", index=False)
-
-        conn.execute("""
-            INSERT INTO table_update_log (table_name, updated_at, uploaded_by)
-            VALUES (?, ?, ?)
-            ON CONFLICT(table_name) DO UPDATE SET
-                updated_at = excluded.updated_at,
-                uploaded_by = excluded.uploaded_by
-        """, (table_name, now, client_ip))
-
+        conn.execute("""INSERT INTO table_update_log (table_name, updated_at, uploaded_by)
+            VALUES (?, ?, ?) ON CONFLICT(table_name) DO UPDATE SET
+            updated_at = excluded.updated_at, uploaded_by = excluded.uploaded_by""",
+            (table_name, now, client_ip))
         conn.commit()
         conn.close()
-
-        return {
-            "message": f"{table_name} updated successfully!",
-            "updated_at": now
-        }
-
+        return {"message": f"{table_name} updated successfully!", "updated_at": now}
     except Exception as e:
         return {"error": str(e)}
 
-
-# =================================================
-# GET TABLE LIST
-# =================================================
 
 @app.get("/db/tables")
 def get_tables():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT name FROM sqlite_master
-            WHERE type='table'
-              AND name NOT LIKE 'sqlite_%'
-              AND name != 'table_update_log'
-            ORDER BY name
-        """)
-
+        cursor.execute("""SELECT name FROM sqlite_master
+            WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'table_update_log'
+            ORDER BY name""")
         tables = [row[0] for row in cursor.fetchall()]
-
         cursor.execute("SELECT table_name, updated_at, uploaded_by FROM table_update_log")
-        log = {
-            row[0]: {"updated_at": row[1], "uploaded_by": row[2]}
-            for row in cursor.fetchall()
-        }
-
+        log = {row[0]: {"updated_at": row[1], "uploaded_by": row[2]} for row in cursor.fetchall()}
         result = []
         for table in tables:
             cursor.execute(f"SELECT COUNT(*) FROM [{table}]")
             count = cursor.fetchone()[0]
             entry = log.get(table, {})
-            result.append({
-                "name": table,
-                "rows": count,
-                "updated_at": entry.get("updated_at"),
-                "uploaded_by": entry.get("uploaded_by")
-            })
-
+            result.append({"name": table, "rows": count,
+                "updated_at": entry.get("updated_at"), "uploaded_by": entry.get("uploaded_by")})
         conn.close()
         return {"tables": result}
-
     except Exception as e:
         return {"error": str(e)}
 
 
-# =================================================
-# GET TABLE DATA
-# =================================================
-
 @app.get("/db/table/{table_name}")
 def get_table_data(table_name: str):
-
     if VALID_TABLES and table_name not in VALID_TABLES:
         return {"error": "Invalid table name"}
-
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-
         cursor.execute(f"SELECT * FROM [{table_name}]")
         rows = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
-
-        cursor.execute(
-            "SELECT updated_at, uploaded_by FROM table_update_log WHERE table_name = ?",
-            (table_name,)
-        )
+        cursor.execute("SELECT updated_at, uploaded_by FROM table_update_log WHERE table_name = ?", (table_name,))
         log_row = cursor.fetchone()
-
         conn.close()
-
-        return {
-            "table": table_name,
-            "columns": columns,
-            "rows": [list(r) for r in rows],
-            "total": len(rows),
+        return {"table": table_name, "columns": columns,
+            "rows": [list(r) for r in rows], "total": len(rows),
             "updated_at": log_row[0] if log_row else None,
-            "uploaded_by": log_row[1] if log_row else None,
-        }
-
+            "uploaded_by": log_row[1] if log_row else None}
     except Exception as e:
         return {"error": str(e)}

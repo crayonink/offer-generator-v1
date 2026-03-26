@@ -1,3 +1,12 @@
+# bom/hlph_builder.py
+"""
+BOM builder for Horizontal Ladle Pre-Heater (HLPH).
+
+Differences from VLPH:
+  - No ROTARY JOINT (horizontal — no swirling mechanism)
+  - Has TROLLEY DRIVE MECHANISM instead
+"""
+
 import pandas as pd
 
 from bom.static_items import static_items
@@ -14,7 +23,6 @@ LEGACY_ITEM_SEQUENCE = [
     "PRESSURE SWITCH LOW",
     "MOTORIZED CONTROL VALVE",
     "BUTTERFLY VALVE",
-    "ROTARY JOINT",
     "BALL VALVE (Pilot Burner)",
     "BALL VALVE (UV LINE)",
     "FLEXIBLE HOSE (Pilot Burner)",
@@ -53,15 +61,15 @@ def _row(media: str, item: str, ref: str, qty: int, unit_price_override=None):
     return (media, item, ref, qty, unit_price, unit_price * qty)
 
 
-def build_vlph_120t_df(equipment: dict) -> pd.DataFrame:
+def build_hlph_df(equipment: dict) -> pd.DataFrame:
     """
-    Builds VLPH-120T BOM DataFrame from already-selected equipment dict.
+    Builds HLPH BOM DataFrame from already-selected equipment dict.
     equipment must come from bom.selectors.selection_engine.select_equipment()
     """
 
     rows = []
 
-    # COMBUSTION AIR LINE
+    # COMBUSTION AIR LINE — same as VLPH but no rotary joint
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
         _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
@@ -79,12 +87,7 @@ def build_vlph_120t_df(equipment: dict) -> pd.DataFrame:
             1,
             unit_price_override=equipment["butterfly_valve"]["price"],
         ),
-        _row(
-            "COMB AIR", "ROTARY JOINT",
-            f'{equipment["rotary_joint"]["nb"]} NB',
-            1,
-            unit_price_override=equipment["rotary_joint"]["price"],
-        ),
+        # No ROTARY JOINT for HLPH
     ]
 
     # NG PILOT LINE

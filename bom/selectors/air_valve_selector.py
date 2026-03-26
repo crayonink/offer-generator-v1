@@ -41,9 +41,10 @@ def select_butterfly_valve(nb: int) -> dict:
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT price
+        SELECT nb, price
         FROM butterfly_valve_master
-        WHERE nb = ?
+        WHERE nb >= ?
+        ORDER BY nb ASC
         LIMIT 1
     """, (nb,))
 
@@ -51,9 +52,9 @@ def select_butterfly_valve(nb: int) -> dict:
     conn.close()
 
     if not row:
-        raise ValueError(f"No Butterfly Valve found for NB {nb}")
+        raise ValueError(f"No Butterfly Valve found for NB >= {nb}")
 
     return {
-        "nb": nb,
-        "price": row[0],
+        "nb": row[0],
+        "price": row[1],
     }

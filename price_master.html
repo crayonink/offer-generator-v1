@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON — Price Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:  #1a3a5c;
+      --navy2: #0f2744;
+      --green: #059669;
+      --red:   #dc2626;
+      --amber: #d97706;
+      --muted: #64748b;
+      --border:#e2e8f0;
+      --bg:    #f1f5f9;
+      --card:  #ffffff;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Nav ── */
+    header {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
+      padding: 0 32px; height: 56px; display: flex; align-items: center; gap: 0; flex-shrink: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: .95rem; color: #0f172a; letter-spacing: -.4px; margin-right: 20px; }
+    .brand-mark { width: 28px; height: 28px; background: var(--navy); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: .66rem; font-weight: 900; flex-shrink: 0; box-shadow: 0 2px 6px rgba(26,58,92,.35); }
+    .sep  { color: #d1d5db; margin: 0 10px; }
+    .page-label { font-size: .82rem; color: #6b7280; font-weight: 500; }
+    .nav-links { margin-left: auto; display: flex; gap: 2px; }
+    .nav-links a { font-size: .82rem; color: var(--muted); text-decoration: none; padding: 6px 11px; border-radius: 6px; transition: background .15s; font-weight: 500; }
+    .nav-links a:hover  { background: #f1f5f9; color: var(--navy); }
+    .nav-links a.active { background: #eff6ff; color: var(--navy); font-weight: 600; }
+
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 220px; min-width: 220px; background: var(--card); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px 0; display: flex; flex-direction: column; gap: 0; }
+    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; padding: 0 16px 10px; }
+    .cat-item { padding: 10px 16px; cursor: pointer; font-size: .85rem; font-weight: 500; color: #374151; border-left: 3px solid transparent; transition: background .1s; display: flex; justify-content: space-between; align-items: center; }
+    .cat-item:hover { background: #f8fafc; }
+    .cat-item.active { background: #eff6ff; border-left-color: var(--navy); color: var(--navy); font-weight: 600; }
+    .cat-badge { font-size: 11px; background: #f1f5f9; color: #94a3b8; padding: 2px 7px; border-radius: 10px; }
+
+    .sidebar-sep { height: 1px; background: var(--border); margin: 8px 0; }
+
+    .upload-area { padding: 12px 14px; }
+    .upload-btn {
+      width: 100%; padding: 9px; border: 1.5px dashed #cbd5e1; border-radius: 10px;
+      background: #f8fafc; cursor: pointer; font-size: .8rem; font-weight: 600; color: var(--muted);
+      font-family: inherit; transition: all .15s; text-align: center;
+    }
+    .upload-btn:hover { border-color: var(--navy); color: var(--navy); background: #eff6ff; }
+    #fileInput { display: none; }
+    .upload-status { font-size: .75rem; margin-top: 8px; padding: 6px 10px; border-radius: 7px; }
+    .upload-status.ok  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .upload-status.err { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+
+    .coverage-box { padding: 0 14px 14px; }
+    .cov-btn { width: 100%; padding: 7px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); font-size: .78rem; font-weight: 600; color: var(--muted); font-family: inherit; cursor: pointer; transition: background .15s; }
+    .cov-btn:hover { background: #f1f5f9; color: var(--navy); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .toolbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .toolbar h2 { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .toolbar .badge { font-size: 12px; background: #f1f5f9; color: #94a3b8; padding: 3px 10px; border-radius: 10px; }
+    .search-box { margin-left: auto; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; width: 200px; background: #f8fafc; color: #1e293b; }
+    .search-box:focus { border-color: var(--navy); background: #fff; }
+
+    /* ── Mode tabs ── */
+    .mode-tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; flex-shrink: 0; }
+    .mode-tab { padding: 10px 16px; font-size: .82rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+    .mode-tab:hover { color: var(--navy); }
+    .mode-tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+
+    /* ── Price list table ── */
+    .table-wrap { flex: 1; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { position: sticky; top: 0; z-index: 10; }
+    thead th { background: #f8fafc; padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    thead th.num { text-align: right; }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 8px 14px; color: #1e293b; }
+    tbody td.num { text-align: right; font-variant-numeric: tabular-nums; color: #475569; }
+    tbody td.price-cur { text-align: right; font-weight: 700; color: #1d4ed8; background: #eff6ff; border-radius: 5px; }
+    tbody td.changed-up   { color: var(--red); }
+    tbody td.changed-down { color: var(--green); }
+    .unit-pill { font-size: .72rem; background: #f1f5f9; color: #64748b; padding: 1px 7px; border-radius: 9px; }
+
+    /* ── Cost estimator ── */
+    .estimator-wrap { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .est-controls { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .est-field { display: flex; flex-direction: column; gap: 5px; }
+    .est-field label { font-size: .78rem; font-weight: 600; color: #374151; }
+    .est-field select, .est-field input {
+      padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: .88rem; font-family: inherit; outline: none; background: #f8fafc;
+    }
+    .est-field select:focus, .est-field input:focus { border-color: var(--navy); background: #fff; }
+    .btn-add { padding: 9px 20px; border: none; border-radius: 9px; background: var(--navy); color: #fff; font-size: .88rem; font-weight: 700; font-family: inherit; cursor: pointer; box-shadow: 0 2px 8px rgba(26,58,92,.25); transition: opacity .15s; }
+    .btn-add:hover { opacity: .88; }
+
+    .est-table-wrap { background: var(--card); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04); overflow: hidden; }
+    .est-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .est-table thead tr { background: linear-gradient(90deg, var(--navy2) 0%, var(--navy) 100%); }
+    .est-table thead th { padding: 10px 14px; text-align: left; font-size: .74rem; font-weight: 600; color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px; }
+    .est-table thead th.num { text-align: right; }
+    .est-table tbody tr { border-bottom: 1px solid #f1f5f9; }
+    .est-table tbody td { padding: 9px 14px; }
+    .est-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; color: #475569; }
+    .est-table tbody td.total-col { text-align: right; font-weight: 700; color: #1d4ed8; font-variant-numeric: tabular-nums; }
+    .est-table tfoot tr { background: #f0fdf4; }
+    .est-table tfoot td { padding: 11px 14px; font-weight: 800; color: #065f46; font-variant-numeric: tabular-nums; }
+    .est-table tfoot td.num { text-align: right; font-size: 1rem; }
+    .remove-btn { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 1rem; padding: 2px 6px; border-radius: 4px; transition: color .1s; }
+    .remove-btn:hover { color: var(--red); }
+
+    .cat-subtotal { background: #f8fafc; }
+    .cat-subtotal td { padding: 7px 14px; font-size: .8rem; font-weight: 700; color: var(--muted); }
+    .cat-subtotal td.num { text-align: right; color: var(--navy); }
+
+    /* ── Coverage panel ── */
+    .cov-wrap { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .cov-section { background: var(--card); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.05); padding: 20px 24px; }
+    .cov-section h3 { font-size: .85rem; font-weight: 700; margin-bottom: 12px; }
+    .cov-section h3.ok     { color: var(--green); }
+    .cov-section h3.miss   { color: var(--red); }
+    .cov-section h3.extra  { color: var(--amber); }
+    .cov-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { font-size: .78rem; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+    .chip.ok    { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .chip.miss  { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .chip.extra { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+    /* ── State box ── */
+    .state-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: #94a3b8; font-size: 14px; text-align: center; padding: 40px; }
+    .spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: var(--navy); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+
+    .status-bar { background: var(--card); border-top: 1px solid var(--border); padding: 6px 24px; font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="brand-mark">EN</div>ENCON</div>
+  <span class="sep">/</span>
+  <div class="page-label">Price Master</div>
+  <nav class="nav-links">
+    <a href="/costing">VLPH</a>
+    <a href="/hlph">HLPH</a>
+    <a href="/regen">Regen</a>
+    <a href="/quote">Quote Builder</a>
+    <a href="/price-master" class="active">Prices</a>
+    <a href="/viewer">DB Viewer</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-title">Categories</div>
+    <div id="catList">
+      <div style="padding:12px 16px; font-size:12px; color:#94a3b8;">Loading…</div>
+    </div>
+
+    <div class="sidebar-sep"></div>
+
+    <div class="upload-area">
+      <div class="sidebar-title" style="padding-bottom:8px;">Update Prices</div>
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        ↑ Upload Excel
+      </button>
+      <input type="file" id="fileInput" accept=".xlsx" onchange="uploadFile(this)"/>
+      <div id="uploadStatus" class="hidden upload-status"></div>
+      <div style="font-size:.72rem; color:#94a3b8; margin-top:8px; line-height:1.5;">
+        Upload your pricelist workbook directly — any format accepted.
+      </div>
+    </div>
+
+    <div class="sidebar-sep"></div>
+
+    <div class="coverage-box">
+      <div class="sidebar-title" style="padding-bottom:8px;">BOM Coverage</div>
+      <button class="cov-btn" onclick="showCoverage()">Check Coverage →</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="mode-tabs">
+      <div class="mode-tab active" id="tab-list"       onclick="setMode('list')">Price List</div>
+      <div class="mode-tab"        id="tab-estimator"  onclick="setMode('estimator')">Cost Estimator</div>
+      <div class="mode-tab hidden" id="tab-coverage"   onclick="setMode('coverage')">Coverage Report</div>
+    </div>
+
+    <!-- Toolbar (price list mode) -->
+    <div class="toolbar" id="listToolbar">
+      <h2 id="catTitle">All Items</h2>
+      <span class="badge" id="itemCount">0 items</span>
+      <input class="search-box" id="searchBox" placeholder="Search items…" oninput="filterTable(this.value)"/>
+    </div>
+
+    <!-- Price list view -->
+    <div class="table-wrap hidden" id="listView">
+      <table>
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Category</th>
+            <th>Unit</th>
+            <th class="num">Current Price ₹</th>
+            <th class="num">Previous Price ₹</th>
+            <th class="num">Change</th>
+          </tr>
+        </thead>
+        <tbody id="priceBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Cost estimator view -->
+    <div class="estimator-wrap hidden" id="estimatorView">
+      <div class="est-controls">
+        <div class="est-field">
+          <label>Category</label>
+          <select id="estCat" onchange="populateEstItems()">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div class="est-field">
+          <label>Item</label>
+          <select id="estItem" style="min-width:280px;"></select>
+        </div>
+        <div class="est-field">
+          <label>Quantity</label>
+          <input id="estQty" type="number" value="1" min="0.001" step="any" style="width:100px;"/>
+        </div>
+        <div class="est-field">
+          <label>Unit</label>
+          <input id="estUnit" readonly style="width:70px; background:#f1f5f9; color:var(--muted);"/>
+        </div>
+        <button class="btn-add" onclick="addEstRow()">+ Add</button>
+      </div>
+
+      <div class="est-table-wrap">
+        <table class="est-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Item Name</th>
+              <th>Unit</th>
+              <th class="num">Unit Price ₹</th>
+              <th class="num">Qty</th>
+              <th class="num">Total ₹</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="estBody">
+            <tr id="estEmpty">
+              <td colspan="7" style="text-align:center; color:#94a3b8; padding:32px; font-size:.9rem;">
+                Add items above to build a cost estimate
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" style="font-size:.82rem; color:#94a3b8;">GRAND TOTAL</td>
+              <td class="num" id="estGrandTotal">₹ 0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:4px;">
+        <button onclick="clearEstimate()" style="padding:7px 16px; border:1.5px solid var(--border); border-radius:8px; background:var(--card); font-size:.82rem; font-weight:600; font-family:inherit; cursor:pointer;">Clear All</button>
+        <button onclick="copyEstimate()" style="padding:7px 16px; border:1.5px solid var(--border); border-radius:8px; background:var(--card); font-size:.82rem; font-weight:600; font-family:inherit; cursor:pointer;">Copy as Text</button>
+      </div>
+    </div>
+
+    <!-- Coverage view -->
+    <div class="cov-wrap hidden" id="coverageView">
+      <div class="cov-section">
+        <h3 class="miss" id="missTitle">Missing Prices (0)</h3>
+        <div class="cov-chips" id="missChips"></div>
+      </div>
+      <div class="cov-section">
+        <h3 class="ok" id="covTitle">Covered (0)</h3>
+        <div class="cov-chips" id="covChips"></div>
+      </div>
+      <div class="cov-section">
+        <h3 class="extra" id="extraTitle">Extra (not in BOM) (0)</h3>
+        <div class="cov-chips" id="extraChips"></div>
+      </div>
+    </div>
+
+    <div class="state-box hidden" id="stateBox">
+      <div class="spinner" id="stateSpinner"></div>
+      <div id="stateMsg">Loading…</div>
+    </div>
+
+    <div class="status-bar" id="statusBar">Ready</div>
+  </div>
+</div>
+
+<script>
+  // ── State ────────────────────────────────────────────────────────────────
+  let allItems = [];   // [{item, category, unit, price, previous_price}]
+  let activeCategory = null;
+  let currentMode = 'list';
+  let estRows = [];    // [{category, item, unit, price, qty}]
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  async function init() {
+    showState('Loading prices…');
+    try {
+      const res  = await fetch('/api/price-master/items');
+      const data = await res.json();
+      if (data.error && data.total === 0) {
+        showState('No price data yet — upload component_price_master.xlsx to get started');
+        renderSidebar({});
+        return;
+      }
+      // Flatten
+      allItems = [];
+      for (const [cat, items] of Object.entries(data.categories)) {
+        items.forEach(i => allItems.push({ category: cat, ...i }));
+      }
+      renderSidebar(data.categories);
+      renderTable(allItems);
+      populateEstCats(data.categories);
+      hideState();
+      setMode('list');
+      document.getElementById('statusBar').textContent = `${data.total} items loaded`;
+    } catch (e) {
+      showState('Backend not running');
+    }
+  }
+
+  // ── Sidebar ───────────────────────────────────────────────────────────────
+  function renderSidebar(cats) {
+    const list = document.getElementById('catList');
+    const total = allItems.length;
+    let html = `<div class="cat-item active" id="cat-all" onclick="selectCat(null, this)">
+      All Items <span class="cat-badge">${total}</span></div>`;
+    for (const [cat, items] of Object.entries(cats)) {
+      html += `<div class="cat-item" id="cat-${cat}" onclick="selectCat('${cat}', this)">
+        ${cat} <span class="cat-badge">${items.length}</span></div>`;
+    }
+    list.innerHTML = html;
+  }
+
+  function selectCat(cat, el) {
+    document.querySelectorAll('.cat-item').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    activeCategory = cat;
+    const filtered = cat ? allItems.filter(i => i.category === cat) : allItems;
+    renderTable(filtered);
+    document.getElementById('catTitle').textContent = cat || 'All Items';
+    document.getElementById('searchBox').value = '';
+  }
+
+  // ── Price table ───────────────────────────────────────────────────────────
+  function renderTable(items) {
+    document.getElementById('itemCount').textContent = `${items.length} items`;
+    const body = document.getElementById('priceBody');
+    if (!items.length) {
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8;">No items</td></tr>';
+      return;
+    }
+    body.innerHTML = items.map(i => {
+      const cur  = Number(i.price);
+      const prev = Number(i.previous_price);
+      let changeTd = '<td class="num">—</td>';
+      if (prev && prev !== cur) {
+        const pct = ((cur - prev) / prev * 100).toFixed(1);
+        const cls = cur > prev ? 'changed-up' : 'changed-down';
+        const arrow = cur > prev ? '▲' : '▼';
+        changeTd = `<td class="num ${cls}">${arrow} ${Math.abs(pct)}%</td>`;
+      } else if (prev && prev === cur) {
+        changeTd = '<td class="num" style="color:#94a3b8;">—</td>';
+      }
+      return `<tr>
+        <td>${i.item}</td>
+        <td><span class="unit-pill">${i.category}</span></td>
+        <td><span class="unit-pill">${i.unit}</span></td>
+        <td class="price-cur">${fmtN(cur)}</td>
+        <td class="num">${prev ? fmtN(prev) : '—'}</td>
+        ${changeTd}
+      </tr>`;
+    }).join('');
+  }
+
+  function filterTable(q) {
+    const base = activeCategory ? allItems.filter(i => i.category === activeCategory) : allItems;
+    const filtered = q.trim()
+      ? base.filter(i => i.item.toLowerCase().includes(q.toLowerCase()))
+      : base;
+    renderTable(filtered);
+  }
+
+  // ── Mode switching ────────────────────────────────────────────────────────
+  function setMode(mode) {
+    currentMode = mode;
+    ['list','estimator','coverage'].forEach(m => {
+      document.getElementById('tab-' + m)?.classList.toggle('active', m === mode);
+    });
+    document.getElementById('listToolbar').style.display  = mode === 'list'      ? 'flex'    : 'none';
+    document.getElementById('listView').classList.toggle('hidden',      mode !== 'list');
+    document.getElementById('estimatorView').classList.toggle('hidden', mode !== 'estimator');
+    document.getElementById('coverageView').classList.toggle('hidden',  mode !== 'coverage');
+  }
+
+  // ── Cost estimator ────────────────────────────────────────────────────────
+  function populateEstCats(cats) {
+    const sel = document.getElementById('estCat');
+    sel.innerHTML = '<option value="">All</option>' +
+      Object.keys(cats).map(c => `<option value="${c}">${c}</option>`).join('');
+    populateEstItems();
+  }
+
+  function populateEstItems() {
+    const cat = document.getElementById('estCat').value;
+    const items = cat ? allItems.filter(i => i.category === cat) : allItems;
+    const sel = document.getElementById('estItem');
+    sel.innerHTML = items.map(i =>
+      `<option value="${i.item}" data-price="${i.price}" data-unit="${i.unit}" data-cat="${i.category}">${i.item}</option>`
+    ).join('');
+    updateEstUnit();
+  }
+
+  function updateEstUnit() {
+    const sel = document.getElementById('estItem');
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('estUnit').value = opt ? (opt.dataset.unit || 'nos') : '';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('estItem').addEventListener('change', updateEstUnit);
+  });
+
+  function addEstRow() {
+    const sel  = document.getElementById('estItem');
+    const opt  = sel.options[sel.selectedIndex];
+    if (!opt) return;
+    const qty  = parseFloat(document.getElementById('estQty').value) || 1;
+    estRows.push({
+      category: opt.dataset.cat,
+      item:     opt.value,
+      unit:     opt.dataset.unit || 'nos',
+      price:    parseFloat(opt.dataset.price) || 0,
+      qty,
+    });
+    renderEstTable();
+  }
+
+  function removeEstRow(idx) {
+    estRows.splice(idx, 1);
+    renderEstTable();
+  }
+
+  function renderEstTable() {
+    const body = document.getElementById('estBody');
+    if (!estRows.length) {
+      body.innerHTML = `<tr id="estEmpty"><td colspan="7" style="text-align:center;color:#94a3b8;padding:32px;font-size:.9rem;">Add items above to build a cost estimate</td></tr>`;
+      document.getElementById('estGrandTotal').textContent = '₹ 0.00';
+      return;
+    }
+
+    // Group by category for subtotals
+    const groups = {};
+    estRows.forEach((r, i) => {
+      groups[r.category] = groups[r.category] || [];
+      groups[r.category].push({ ...r, idx: i });
+    });
+
+    let html = '';
+    let grand = 0;
+    for (const [cat, rows] of Object.entries(groups)) {
+      let subTotal = 0;
+      rows.forEach(r => {
+        const total = r.price * r.qty;
+        subTotal += total;
+        grand    += total;
+        html += `<tr>
+          <td><span class="unit-pill">${r.category}</span></td>
+          <td>${r.item}</td>
+          <td><span class="unit-pill">${r.unit}</span></td>
+          <td class="num">${fmtN(r.price)}</td>
+          <td class="num">${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(3)}</td>
+          <td class="total-col">${fmtN(total)}</td>
+          <td><button class="remove-btn" onclick="removeEstRow(${r.idx})">✕</button></td>
+        </tr>`;
+      });
+      html += `<tr class="cat-subtotal">
+        <td colspan="5" style="text-align:right;">${cat} subtotal</td>
+        <td class="num">${fmtN(subTotal)}</td>
+        <td></td>
+      </tr>`;
+    }
+
+    body.innerHTML = html;
+    document.getElementById('estGrandTotal').textContent = '₹ ' + fmtN(grand);
+  }
+
+  function clearEstimate() {
+    estRows = [];
+    renderEstTable();
+  }
+
+  function copyEstimate() {
+    let text = 'ENCON Cost Estimate\n' + '='.repeat(50) + '\n\n';
+    let grand = 0;
+    estRows.forEach(r => {
+      const total = r.price * r.qty;
+      grand += total;
+      text += `${r.item.padEnd(40)} ${r.qty} ${r.unit.padEnd(6)} × ₹${fmtN(r.price).padStart(12)} = ₹${fmtN(total)}\n`;
+    });
+    text += '\n' + '-'.repeat(70) + '\nGRAND TOTAL' + ' '.repeat(53) + '₹' + fmtN(grand);
+    navigator.clipboard.writeText(text).then(() => {
+      document.getElementById('statusBar').textContent = 'Estimate copied to clipboard';
+    });
+  }
+
+  // ── Coverage ──────────────────────────────────────────────────────────────
+  async function showCoverage() {
+    document.getElementById('tab-coverage').classList.remove('hidden');
+    setMode('coverage');
+    document.getElementById('coverageView').innerHTML =
+      '<div class="state-box"><div class="spinner"></div><div>Checking coverage…</div></div>';
+    try {
+      const res  = await fetch('/api/price-master/coverage');
+      const data = await res.json();
+      const miss  = data.missing  || [];
+      const cov   = data.covered  || [];
+      const extra = data.extra    || [];
+
+      const chips = (arr, cls) => arr.length
+        ? arr.map(i => `<span class="chip ${cls}">${i}</span>`).join('')
+        : `<span style="color:#94a3b8;font-size:.82rem;">None</span>`;
+
+      document.getElementById('coverageView').innerHTML = `
+        <div class="cov-section">
+          <h3 class="miss">Missing Prices — ${miss.length} items (BOM will show ₹0)</h3>
+          <div class="cov-chips">${chips(miss, 'miss')}</div>
+        </div>
+        <div class="cov-section">
+          <h3 class="ok">Covered — ${cov.length} items</h3>
+          <div class="cov-chips">${chips(cov, 'ok')}</div>
+        </div>
+        <div class="cov-section">
+          <h3 class="extra">Extra (in DB but not required by BOM) — ${extra.length} items</h3>
+          <div class="cov-chips">${chips(extra, 'extra')}</div>
+        </div>`;
+
+      document.getElementById('statusBar').textContent =
+        `Coverage: ${cov.length} covered, ${miss.length} missing`;
+    } catch (e) {
+      document.getElementById('coverageView').innerHTML =
+        '<div class="state-box"><div>Failed to load coverage data</div></div>';
+    }
+  }
+
+  // ── Upload ────────────────────────────────────────────────────────────────
+  async function uploadFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const status = document.getElementById('uploadStatus');
+    const btn    = document.querySelector('.upload-btn');
+    status.className = 'upload-status';
+    status.textContent = 'Parsing workbook…';
+    status.classList.remove('hidden');
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    try {
+      const res  = await fetch('/api/upload-pricelist', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.error) {
+        status.className = 'upload-status err';
+        status.textContent = data.error;
+      } else {
+        status.className = 'upload-status ok';
+        status.textContent = `${data.rows_loaded} items loaded. Refreshing…`;
+        await init();
+      }
+    } catch (e) {
+      status.className = 'upload-status err';
+      status.textContent = 'Upload failed — server not running?';
+    }
+    input.value = '';
+    btn.disabled = false;
+    btn.textContent = '↑ Upload Excel';
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function fmtN(n) {
+    return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function showState(msg) {
+    document.getElementById('stateBox').classList.remove('hidden');
+    document.getElementById('stateMsg').textContent = msg;
+    document.getElementById('listView').classList.add('hidden');
+    document.getElementById('estimatorView').classList.add('hidden');
+  }
+
+  function hideState() {
+    document.getElementById('stateBox').classList.add('hidden');
+  }
+
+  init();
+</script>
+</body>
+</html>

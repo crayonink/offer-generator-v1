@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON — Regen Burner Costing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:  #1a3a5c;
+      --navy2: #0f2744;
+      --green: #059669;
+      --red:   #dc2626;
+      --muted: #64748b;
+      --border:#e2e8f0;
+      --bg:    #f1f5f9;
+      --card:  #ffffff;
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: #1e293b; min-height: 100vh; }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--card); border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
+      padding: 0 32px; height: 56px; display: flex; align-items: center; gap: 0;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: .95rem; color: #0f172a; letter-spacing: -.4px; margin-right: 20px; }
+    .brand-mark {
+      width: 28px; height: 28px; background: var(--navy); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: .66rem; font-weight: 900; flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(26,58,92,.35);
+    }
+    .step-tabs { display: flex; gap: 0; flex: 1; padding: 0 12px; }
+    .step-tab {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 16px; height: 56px; font-size: .82rem; font-weight: 500;
+      color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s; white-space: nowrap;
+    }
+    .step-tab:hover { color: var(--navy); }
+    .step-tab.active { color: var(--navy); border-bottom-color: var(--navy); font-weight: 600; }
+    .step-tab.done   { color: var(--green); border-bottom-color: var(--green); }
+    .tab-n {
+      width: 20px; height: 20px; border-radius: 50%; background: #e2e8f0; color: var(--muted);
+      font-size: .72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: background .2s, color .2s;
+    }
+    .step-tab.active .tab-n { background: var(--navy); color: #fff; }
+    .step-tab.done .tab-n   { background: var(--green); color: #fff; }
+    .topnav-links { margin-left: auto; display: flex; gap: 2px; }
+    .topnav-links a {
+      font-size: .82rem; color: var(--muted); text-decoration: none;
+      padding: 6px 11px; border-radius: 6px; transition: background .15s; font-weight: 500;
+    }
+    .topnav-links a:hover  { background: #f1f5f9; color: var(--navy); }
+    .topnav-links a.active { background: #eff6ff; color: var(--navy); font-weight: 600; }
+
+    /* ── Layout ── */
+    .page { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+    .step { display: none; }
+    .step.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--card); border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 4px 20px rgba(0,0,0,.04);
+      padding: 28px 30px; margin-bottom: 20px;
+    }
+    .card-title { font-size: .78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 20px; }
+
+    /* ── Form fields ── */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: .8rem; font-weight: 600; color: #374151; }
+    input, select {
+      padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-size: .9rem; font-family: inherit; outline: none; color: #1e293b;
+      background: #f8fafc; transition: border .15s, background .15s;
+    }
+    input:focus, select:focus { border-color: var(--navy); background: #fff; }
+
+    /* ── Material buttons ── */
+    .mat-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+    .mat-btn {
+      padding: 8px 18px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: .85rem; font-weight: 600; cursor: pointer; background: #f8fafc; color: #374151;
+      font-family: inherit; transition: all .15s;
+    }
+    .mat-btn:hover { border-color: var(--navy); color: var(--navy); background: #eff6ff; }
+    .mat-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+    /* ── Quick-set buttons ── */
+    .quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .qbtn {
+      padding: 4px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+      font-size: .78rem; font-weight: 600; cursor: pointer; background: #f8fafc; color: #475569;
+      font-family: inherit; transition: all .12s;
+    }
+    .qbtn:hover { background: #eff6ff; border-color: var(--navy); color: var(--navy); }
+
+    /* ── Primary button ── */
+    .btn-primary {
+      padding: 11px 28px; border: none; border-radius: 10px; cursor: pointer;
+      font-size: .92rem; font-weight: 700; font-family: inherit;
+      background: linear-gradient(135deg, var(--navy) 0%, #1e4a7a 100%);
+      color: #fff; box-shadow: 0 2px 10px rgba(26,58,92,.32);
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-primary:hover { opacity: .92; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── Calc result table ── */
+    .calc-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .calc-table tr { border-bottom: 1px solid #f1f5f9; }
+    .calc-table td { padding: 8px 12px; }
+    .calc-table td:first-child { color: var(--muted); font-size: .83rem; font-weight: 500; }
+    .calc-table td:last-child {
+      font-weight: 600; color: #1d4ed8; text-align: right;
+      background: #eff6ff; border-radius: 6px;
+    }
+
+    /* ── BOM table ── */
+    .bom-wrap { overflow-x: auto; margin-top: 16px; border-radius: 10px; border: 1px solid var(--border); }
+    .bom-table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 800px; }
+    .bom-table thead tr {
+      background: linear-gradient(90deg, var(--navy2) 0%, var(--navy) 100%);
+    }
+    .bom-table thead th {
+      padding: 10px 12px; text-align: left; font-size: .74rem; font-weight: 600;
+      color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px;
+      white-space: nowrap;
+    }
+    .bom-table thead th.num { text-align: right; }
+    .bom-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+    .bom-table tbody tr:hover { background: #f8fafc; }
+    .bom-table tbody td { padding: 8px 12px; color: #1e293b; }
+    .bom-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; color: #475569; }
+    .bom-table tbody td.sell-total { text-align: right; font-weight: 700; color: #1d4ed8; font-variant-numeric: tabular-nums; }
+    .bom-table tbody tr.section-header td {
+      background: #f8fafc; font-size: .72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .8px; padding: 7px 12px;
+    }
+
+    /* ── Cost banner ── */
+    .cost-banner {
+      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, var(--navy2) 0%, var(--navy) 55%, #1e4a7a 100%);
+      border-radius: 16px; padding: 28px 36px; color: #fff; display: flex;
+      align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;
+      box-shadow: 0 8px 32px rgba(15,39,68,.38); margin-bottom: 20px;
+    }
+    .cost-banner::after {
+      content: ''; position: absolute; right: -40px; top: -40px;
+      width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.06);
+    }
+    .cost-banner::before {
+      content: ''; position: absolute; right: 80px; bottom: -60px;
+      width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,.04);
+    }
+    .banner-block { display: flex; flex-direction: column; gap: 4px; }
+    .banner-label { font-size: .75rem; font-weight: 600; opacity: .7; text-transform: uppercase; letter-spacing: .7px; }
+    .banner-value { font-size: 2rem; font-weight: 900; letter-spacing: -.5px; }
+    .banner-value.sell { color: #86efac; }
+    .banner-sub { font-size: .8rem; opacity: .6; margin-top: 2px; }
+
+    /* ── Nav buttons between steps ── */
+    .step-nav { display: flex; gap: 12px; margin-top: 20px; align-items: center; }
+    .btn-back {
+      padding: 10px 22px; border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--card); color: #374151; font-size: .88rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: background .15s;
+    }
+    .btn-back:hover { background: #f1f5f9; }
+
+    /* ── Download button ── */
+    .btn-download {
+      padding: 11px 28px; border: none; border-radius: 10px; cursor: pointer;
+      font-size: .92rem; font-weight: 700; font-family: inherit;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #fff; box-shadow: 0 2px 8px rgba(5,150,105,.3);
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-download:hover { opacity: .92; transform: translateY(-1px); }
+
+    /* ── Error / spinner ── */
+    .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 14px 18px; color: var(--red); font-size: .88rem; margin-top: 12px; }
+    .spinner { width: 22px; height: 22px; border: 3px solid #e2e8f0; border-top-color: var(--navy); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
+  <div class="step-tabs">
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Customer Details</div>
+    <div class="step-tab"        id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Process Parameters</div>
+    <div class="step-tab"        id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Results &amp; BOM</div>
+    <div class="step-tab"        id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Generate Offer</div>
+  </div>
+  <div class="topnav-links">
+    <a href="/costing">VLPH</a>
+    <a href="/hlph">HLPH</a>
+    <a href="/regen" class="active">Regen</a>
+    <a href="/quote">Quote Builder</a>
+    <a href="/price-master">Prices</a>
+    <a href="/viewer">DB Viewer</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- ═══════════════════════════════════════════ STEP 1 ═══ -->
+  <div class="step active" id="step-1">
+    <div class="card">
+      <div class="card-title">Customer Details</div>
+      <div class="field-grid">
+        <div class="field full"><label>Company Name *</label><input id="company_name" placeholder="e.g. DSP Steel Ltd."/></div>
+        <div class="field full"><label>Address</label><input id="company_address" placeholder="Street / Area"/></div>
+        <div class="field"><label>City</label><input id="company_city" placeholder="City"/></div>
+        <div class="field"><label>State</label><input id="company_state" placeholder="State"/></div>
+        <div class="field"><label>PIN</label><input id="company_pin" placeholder="PIN Code"/></div>
+        <div class="field"><label>GSTIN</label><input id="company_gstin" placeholder="22XXXXX..."/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Point of Contact</div>
+      <div class="field-grid">
+        <div class="field"><label>Contact Name</label><input id="poc_name" placeholder="Mr / Ms …"/></div>
+        <div class="field"><label>Designation</label><input id="poc_designation" placeholder="Purchase Manager"/></div>
+        <div class="field"><label>Mobile</label><input id="mobile_no" placeholder="+91 …"/></div>
+        <div class="field"><label>Email</label><input id="email" placeholder="name@company.com"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Enquiry Details</div>
+      <div class="field-grid">
+        <div class="field"><label>Project Name</label><input id="project_name" placeholder="Furnace No. 3 Upgrade"/></div>
+        <div class="field"><label>Ref. No.</label><input id="ref_no" placeholder="ENQ-2026-…"/></div>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-primary" onclick="goStep(2)">Next: Process Parameters →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ STEP 2 ═══ -->
+  <div class="step" id="step-2">
+    <div class="card">
+      <div class="card-title">Material Properties</div>
+
+      <div class="field" style="margin-bottom:16px;">
+        <label>Material Type</label>
+        <div class="mat-buttons" style="margin-top:8px;">
+          <button class="mat-btn active" onclick="setMaterial(this, 0.48)">Steel (0.48)</button>
+          <button class="mat-btn"        onclick="setMaterial(this, 0.54)">Cast Iron (0.54)</button>
+          <button class="mat-btn"        onclick="setMaterial(this, 0.90)">Aluminium (0.90)</button>
+          <button class="mat-btn"        onclick="setMaterial(this, 0.12)">Graphite (0.12)</button>
+        </div>
+      </div>
+
+      <div class="field-grid">
+        <div class="field">
+          <label>Specific Heat Cp (kJ/kg·°C)</label>
+          <input id="Cp" type="number" step="0.01" value="0.48" min="0.01"/>
+        </div>
+        <div class="field">
+          <label>Material / Charge Weight (kg)</label>
+          <input id="material_weight_kg" type="number" step="100" value="30000" min="1"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Temperature &amp; Cycle</div>
+      <div class="field-grid three">
+        <div class="field">
+          <label>Initial Temp Ti (°C)</label>
+          <input id="Ti" type="number" value="30" min="0"/>
+          <div class="quick-btns" id="Ti-btns">
+            <button class="qbtn" onclick="setVal('Ti',30)">30</button>
+            <button class="qbtn" onclick="setVal('Ti',100)">100</button>
+            <button class="qbtn" onclick="setVal('Ti',200)">200</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Final Temp Tf (°C)</label>
+          <input id="Tf" type="number" value="900" min="1"/>
+          <div class="quick-btns">
+            <button class="qbtn" onclick="setVal('Tf',800)">800</button>
+            <button class="qbtn" onclick="setVal('Tf',900)">900</button>
+            <button class="qbtn" onclick="setVal('Tf',1000)">1000</button>
+            <button class="qbtn" onclick="setVal('Tf',1100)">1100</button>
+            <button class="qbtn" onclick="setVal('Tf',1200)">1200</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Cycle Time (hr)</label>
+          <input id="cycle_time_hr" type="number" step="0.5" value="2" min="0.5"/>
+          <div class="quick-btns">
+            <button class="qbtn" onclick="setVal('cycle_time_hr',1)">1 h</button>
+            <button class="qbtn" onclick="setVal('cycle_time_hr',1.5)">1.5 h</button>
+            <button class="qbtn" onclick="setVal('cycle_time_hr',2)">2 h</button>
+            <button class="qbtn" onclick="setVal('cycle_time_hr',3)">3 h</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">System Parameters</div>
+      <div class="field-grid three">
+        <div class="field">
+          <label>Thermal Efficiency</label>
+          <input id="efficiency" type="number" step="0.01" value="0.65" min="0.1" max="0.99"/>
+          <div class="quick-btns">
+            <button class="qbtn" onclick="setVal('efficiency',0.60)">0.60</button>
+            <button class="qbtn" onclick="setVal('efficiency',0.65)">0.65</button>
+            <button class="qbtn" onclick="setVal('efficiency',0.70)">0.70</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Markup Factor</label>
+          <input id="markup" type="number" step="0.05" value="1.80" min="1.0"/>
+          <div class="quick-btns">
+            <button class="qbtn" onclick="setVal('markup',1.70)">1.70×</button>
+            <button class="qbtn" onclick="setVal('markup',1.80)">1.80×</button>
+            <button class="qbtn" onclick="setVal('markup',1.90)">1.90×</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>No. of Pairs Override</label>
+          <input id="num_pairs_override" type="number" step="1" value="0" min="0"/>
+          <div style="font-size:.75rem; color:var(--muted); margin-top:4px;">0 = auto-calculate</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(1)">← Back</button>
+      <button class="btn-primary" id="calcBtn" onclick="runCalculation()">Calculate &amp; Build BOM →</button>
+    </div>
+    <div id="calcError" class="error-box hidden"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ STEP 3 ═══ -->
+  <div class="step" id="step-3">
+
+    <!-- Cost banner -->
+    <div class="cost-banner" id="costBanner">
+      <div class="banner-block">
+        <div class="banner-label">System Size</div>
+        <div class="banner-value" id="bannerPairs">— pairs</div>
+        <div class="banner-sub" id="bannerKW">— KW installed</div>
+      </div>
+      <div class="banner-block">
+        <div class="banner-label">Total Cost Price</div>
+        <div class="banner-value" id="bannerCost">₹ —</div>
+      </div>
+      <div class="banner-block">
+        <div class="banner-label">Total Selling Price</div>
+        <div class="banner-value sell" id="bannerSell">₹ —</div>
+        <div class="banner-sub" id="bannerMarkup">at —× markup</div>
+      </div>
+    </div>
+
+    <!-- Process calc results -->
+    <div class="card">
+      <div class="card-title">Process Calculations</div>
+      <table class="calc-table" id="calcResultTable"></table>
+    </div>
+
+    <!-- BOM -->
+    <div class="card">
+      <div class="card-title">Bill of Materials</div>
+      <div class="bom-wrap">
+        <table class="bom-table">
+          <thead>
+            <tr>
+              <th>Section</th>
+              <th>Item Name</th>
+              <th>Specification</th>
+              <th class="num">Qty</th>
+              <th class="num">Cost/Unit ₹</th>
+              <th class="num">Total Cost ₹</th>
+              <th class="num">Sell/Unit ₹</th>
+              <th class="num">Total Selling ₹</th>
+            </tr>
+          </thead>
+          <tbody id="bomBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(2)">← Back</button>
+      <button class="btn-primary" onclick="goStep(4)">Next: Generate Offer →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ STEP 4 ═══ -->
+  <div class="step" id="step-4">
+    <div class="card">
+      <div class="card-title">Generate Word Offer</div>
+      <p style="font-size:.9rem; color:var(--muted); margin-bottom:20px; line-height:1.6;">
+        Review the details below, then generate a formal offer document.
+      </p>
+
+      <div id="offerSummary" style="margin-bottom:24px;"></div>
+
+      <button class="btn-primary" id="genBtn" onclick="generateOffer()">Generate Offer Document</button>
+      <div id="genError" class="error-box hidden" style="margin-top:12px;"></div>
+      <div id="downloadLink" style="margin-top:16px;"></div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(3)">← Back to BOM</button>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+  let calcData = null;
+
+  // ── Step navigation ──────────────────────────────────────────────────────
+  function goStep(n) {
+    [1,2,3,4].forEach(i => {
+      document.getElementById('step-' + i).classList.toggle('active', i === n);
+      const tab = document.getElementById('tab-' + i);
+      tab.classList.remove('active', 'done');
+      if (i === n) tab.classList.add('active');
+      else if (i < n) tab.classList.add('done');
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Material buttons ─────────────────────────────────────────────────────
+  function setMaterial(btn, cp) {
+    document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('Cp').value = cp;
+  }
+
+  // ── Quick-set ────────────────────────────────────────────────────────────
+  function setVal(id, val) {
+    document.getElementById(id).value = val;
+  }
+
+  // ── Format currency ──────────────────────────────────────────────────────
+  function fmt(n) {
+    return '₹ ' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtN(n) {
+    return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ── Run calculation ──────────────────────────────────────────────────────
+  async function runCalculation() {
+    const btn = document.getElementById('calcBtn');
+    const errBox = document.getElementById('calcError');
+    errBox.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Calculating…';
+
+    const payload = {
+      material_weight_kg: parseFloat(document.getElementById('material_weight_kg').value),
+      Ti:                 parseFloat(document.getElementById('Ti').value),
+      Tf:                 parseFloat(document.getElementById('Tf').value),
+      Cp:                 parseFloat(document.getElementById('Cp').value),
+      cycle_time_hr:      parseFloat(document.getElementById('cycle_time_hr').value),
+      efficiency:         parseFloat(document.getElementById('efficiency').value),
+      num_pairs_override: parseInt(document.getElementById('num_pairs_override').value) || 0,
+      markup:             parseFloat(document.getElementById('markup').value),
+    };
+
+    try {
+      const res  = await fetch('/api/regen-calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        errBox.textContent = data.error;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      calcData = data;
+      renderResults(data);
+      goStep(3);
+    } catch (e) {
+      errBox.textContent = 'Network error — is the server running?';
+      errBox.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Calculate &amp; Build BOM →';
+    }
+  }
+
+  // ── Render step-3 results ────────────────────────────────────────────────
+  function renderResults(data) {
+    const c = data.calculations;
+    const s = data.cost_summary;
+
+    // Banner
+    document.getElementById('bannerPairs').textContent = c.num_pairs + (c.num_pairs === 1 ? ' pair' : ' pairs');
+    document.getElementById('bannerKW').textContent    = c.total_kw + ' KW installed capacity';
+    document.getElementById('bannerCost').textContent  = fmt(s.total_cost);
+    document.getElementById('bannerSell').textContent  = fmt(s.total_selling);
+    document.getElementById('bannerMarkup').textContent = 'at ' + s.markup.toFixed(2) + '× markup';
+
+    // Calc table
+    const rows = [
+      ['Material Weight',            c.material_weight_kg.toLocaleString('en-IN') + ' kg'],
+      ['Temperature Rise (ΔT)',       c.delta_T + ' °C  (' + c.Ti + ' → ' + c.Tf + ' °C)'],
+      ['Specific Heat (Cp)',          c.Cp + ' kJ/kg·°C'],
+      ['Heat Required',              fmtN(c.heat_required_kj) + ' kJ  (' + fmtN(c.heat_required_kcal) + ' kcal)'],
+      ['Cycle Time',                 c.cycle_time_hr + ' hr'],
+      ['Thermal Efficiency',         (c.efficiency * 100).toFixed(0) + '%'],
+      ['Required Power',             fmtN(c.required_kw) + ' kW'],
+      ['No. of Pairs Selected',      c.num_pairs + ' × 1000 KW  =  ' + c.total_kw + ' KW'],
+    ];
+    document.getElementById('calcResultTable').innerHTML =
+      rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+    // BOM
+    const tbody = document.getElementById('bomBody');
+    let lastSection = null;
+    tbody.innerHTML = data.bom.map(row => {
+      let out = '';
+      if (row['SECTION'] !== lastSection) {
+        lastSection = row['SECTION'];
+        out += `<tr class="section-header"><td colspan="8">${row['SECTION']}</td></tr>`;
+      }
+      out += `<tr>
+        <td></td>
+        <td>${row['ITEM NAME']}</td>
+        <td style="color:#64748b;font-size:.8rem;">${row['SPECIFICATION']}</td>
+        <td class="num">${row['QTY']}</td>
+        <td class="num">${fmtN(row['COST/UNIT'])}</td>
+        <td class="num">${fmtN(row['TOTAL COST'])}</td>
+        <td class="num">${fmtN(row['SELL/UNIT'])}</td>
+        <td class="sell-total">${fmtN(row['TOTAL SELLING'])}</td>
+      </tr>`;
+      return out;
+    }).join('');
+
+    // Totals row
+    tbody.innerHTML += `
+      <tr style="background:#f0fdf4; font-weight:700;">
+        <td colspan="5" style="text-align:right; padding:10px 12px; font-size:.85rem; color:#065f46;">GRAND TOTAL</td>
+        <td class="num" style="color:#065f46; font-size:.95rem;">${fmtN(s.total_cost)}</td>
+        <td></td>
+        <td class="sell-total" style="color:#1d4ed8; font-size:.95rem;">${fmtN(s.total_selling)}</td>
+      </tr>`;
+
+    // Step 4 summary
+    document.getElementById('offerSummary').innerHTML = `
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+        <div style="background:#f8fafc; border-radius:10px; padding:16px;">
+          <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Customer</div>
+          <div style="font-weight:700;">${document.getElementById('company_name').value || '—'}</div>
+          <div style="font-size:.82rem; color:var(--muted);">${document.getElementById('project_name').value || ''}</div>
+        </div>
+        <div style="background:#f8fafc; border-radius:10px; padding:16px;">
+          <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">System</div>
+          <div style="font-weight:700;">${c.num_pairs} × 1000 KW Regen Pair${c.num_pairs > 1 ? 's' : ''}</div>
+          <div style="font-size:.82rem; color:var(--muted);">${c.Ti}°C → ${c.Tf}°C</div>
+        </div>
+        <div style="background:#eff6ff; border-radius:10px; padding:16px;">
+          <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Selling Price</div>
+          <div style="font-weight:800; color:#1d4ed8; font-size:1.1rem;">${fmt(s.total_selling)}</div>
+          <div style="font-size:.82rem; color:var(--muted);">excl. GST</div>
+        </div>
+      </div>`;
+  }
+
+  // ── Generate offer document ──────────────────────────────────────────────
+  async function generateOffer() {
+    const btn    = document.getElementById('genBtn');
+    const errBox = document.getElementById('genError');
+    const dlDiv  = document.getElementById('downloadLink');
+    errBox.classList.add('hidden');
+    dlDiv.innerHTML = '';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Generating…';
+
+    const c = calcData.calculations;
+    const s = calcData.cost_summary;
+
+    // Build items list for quote engine
+    const items = [{
+      product_type: 'Regenerative Burner System',
+      model: `${c.num_pairs} × 1000 KW Regen Pair${c.num_pairs > 1 ? 's' : ''}`,
+      description: `${c.Ti}°C → ${c.Tf}°C | ${c.material_weight_kg.toLocaleString('en-IN')} kg charge | ${c.cycle_time_hr} hr cycle`,
+      qty: 1,
+      unit_price: s.total_selling,
+      total: s.total_selling,
+    }];
+
+    const payload = {
+      company_name:    document.getElementById('company_name').value,
+      company_address: document.getElementById('company_address').value,
+      company_city:    document.getElementById('company_city').value,
+      company_state:   document.getElementById('company_state').value,
+      company_pin:     document.getElementById('company_pin').value,
+      company_gstin:   document.getElementById('company_gstin').value,
+      poc_name:        document.getElementById('poc_name').value,
+      poc_designation: document.getElementById('poc_designation').value,
+      mobile_no:       document.getElementById('mobile_no').value,
+      email:           document.getElementById('email').value,
+      project_name:    document.getElementById('project_name').value,
+      ref_no:          document.getElementById('ref_no').value,
+      items,
+      gst_percent: 18,
+      freight: 0,
+      valid_days: 30,
+    };
+
+    try {
+      const res  = await fetch('/api/generate-quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        errBox.textContent = data.error;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      dlDiv.innerHTML = `
+        <a class="btn-download" href="${data.download_url}" target="_blank">
+          ↓ Download ${data.quote_no}
+        </a>
+        <div style="margin-top:10px; font-size:.82rem; color:var(--muted);">
+          Grand Total (incl. 18% GST):
+          <strong>₹ ${Number(data.summary.total).toLocaleString('en-IN', {minimumFractionDigits:2})}</strong>
+        </div>`;
+    } catch (e) {
+      errBox.textContent = 'Network error — is the server running?';
+      errBox.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Generate Offer Document';
+    }
+  }
+</script>
+</body>
+</html>
