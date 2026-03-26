@@ -346,9 +346,14 @@
         <div class="hint">Total refractory mass</div>
       </div>
       <div class="field">
-        <label>Fuel CV (kcal/Nm³)</label>
+        <label>Fuel Type</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button id="fuel-ng" onclick="setFuel('ng')" style="padding:8px 18px;border:1.5px solid var(--border);border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%);color:#fff;border-color:var(--navy);font-family:inherit;">Natural Gas</button>
+          <button id="fuel-lpg" onclick="setFuel('lpg')" style="padding:8px 18px;border:1.5px solid var(--border);border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;background:var(--bg);color:#475569;font-family:inherit;">LPG</button>
+        </div>
+        <label style="margin-top:4px;">Fuel CV (kcal/Nm³)</label>
         <input id="fuel_cv" type="number" value="8500" placeholder="e.g. 8500"/>
-        <div class="hint">Calorific value of NG</div>
+        <div class="hint">Natural Gas ≈ 8500 · LPG ≈ 10800</div>
       </div>
     </div>
 
@@ -519,6 +524,16 @@
     document.getElementById("panel-" + n).classList.add("active");
     document.getElementById("tab-" + n).classList.add("active");
     window.scrollTo(0, 0);
+  }
+
+  /* ── Fuel selector ── */
+  function setFuel(type) {
+    const cvs = { ng: 8500, lpg: 10800 };
+    document.getElementById('fuel_cv').value = cvs[type];
+    const active = 'background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%);color:#fff;border-color:var(--navy);';
+    const inactive = 'background:var(--bg);color:#475569;border-color:var(--border);';
+    document.getElementById('fuel-ng').style.cssText  += type === 'ng'  ? active : inactive;
+    document.getElementById('fuel-lpg').style.cssText += type === 'lpg' ? active : inactive;
   }
 
   /* ── Button grid selection ── */
