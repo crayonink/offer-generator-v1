@@ -414,6 +414,7 @@
 
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(2)">← Back</button>
+      <button id="xl-btn" onclick="downloadExcel()" style="padding:11px 22px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">⬇ Download Excel</button>
       <button class="btn-primary" onclick="goStep(4)">Next: Generate Offer →</button>
     </div>
   </div>
@@ -604,6 +605,40 @@
           <div style="font-size:.82rem; color:var(--muted);">excl. GST</div>
         </div>
       </div>`;
+  }
+
+  // ── Export Excel ────────────────────────────────────────────────────────
+  async function downloadExcel() {
+    if (!calcData) return;
+    const btn = document.getElementById('xl-btn');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    try {
+      const res = await fetch('/api/export-excel', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          equipment_type: 'Regen',
+          customer: {
+            company_name:    document.getElementById('company_name').value,
+            poc_name:        document.getElementById('poc_name').value,
+            poc_designation: document.getElementById('poc_designation').value,
+            mobile_no:       document.getElementById('mobile_no').value,
+            email:           document.getElementById('email').value,
+            project_name:    document.getElementById('project_name').value,
+            ref_no:          document.getElementById('ref_no').value,
+          },
+          calculations: calcData.calculations,
+          bom:          calcData.bom,
+          cost_summary: calcData.cost_summary,
+        }),
+      });
+      const blob = await res.blob();
+      const cd   = res.headers.get('Content-Disposition') || '';
+      const name = cd.match(/filename="([^"]+)"/)?.[1] || 'Regen_Costing.xlsx';
+      const url  = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) { alert('Excel export failed: ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = '⬇ Download Excel'; }
   }
 
   // ── Generate offer document ──────────────────────────────────────────────

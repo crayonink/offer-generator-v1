@@ -606,6 +606,7 @@
 
     <div class="action-row">
       <button class="btn-outline" onclick="goStep(2)">Back</button>
+      <button class="btn-outline" id="xl-btn" onclick="downloadExcel()" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">⬇ Download Excel</button>
       <button class="btn-primary" onclick="goStep(4)">
         <span class="btn-txt">Generate Offer</span>
         <span>&rarr;</span>
@@ -812,6 +813,42 @@ function renderResults(d) {
   set("banner-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("banner-encon",  "₹ " + fmt(s.encon_total, 0));
   document.getElementById("cost-banner").classList.add("visible");
+}
+
+/* ── Export Excel ── */
+async function downloadExcel() {
+  if (!lastCalc) return;
+  const btn = document.getElementById("xl-btn");
+  btn.disabled = true; btn.textContent = "Generating…";
+  try {
+    const res = await fetch(`${API}/api/export-excel`, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        equipment_type: "VLPH",
+        customer: {
+          company_name:    str("c-company"),
+          poc_name:        str("c-name"),
+          poc_designation: str("c-designation"),
+          mobile_no:       str("c-phone"),
+          email:           str("c-email"),
+          project_name:    str("c-subject"),
+          ref_no:          str("c-ref"),
+        },
+        calculations: lastCalc.calculations,
+        bom:          lastCalc.bom,
+        cost_summary: lastCalc.cost_summary,
+        pipes:        lastCalc.pipes    || {},
+        equipment:    lastCalc.equipment || {},
+      }),
+    });
+    const blob = await res.blob();
+    const cd   = res.headers.get("Content-Disposition") || "";
+    const name = cd.match(/filename="([^"]+)"/)?.[1] || "VLPH_Costing.xlsx";
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { alert("Excel export failed: " + e.message); }
+  finally { btn.disabled = false; btn.textContent = "⬇ Download Excel"; }
 }
 
 /* ── Generate Quote ── */

@@ -668,6 +668,225 @@ async def upload_pricelist(file: UploadFile = File(...)):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+class ExcelExportRequest(BaseModel):
+    equipment_type: str          # "VLPH" | "HLPH" | "Regen"
+    customer: dict = {}
+    calculations: dict = {}
+    bom: list = []
+    cost_summary: dict = {}
+    pipes: dict = {}
+    equipment: dict = {}
+
+
+@app.post("/api/export-excel")
+def export_excel(req: ExcelExportRequest):
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from fastapi.responses import StreamingResponse
+
+    NAVY   = "1A3A5C"
+    LIGHT  = "EFF6FF"
+    WHITE  = "FFFFFF"
+    GREY   = "F8FAFC"
+    GREEN  = "065F46"
+    GREEN_BG = "F0FDF4"
+
+    def thin():
+        s = Side(style="thin", color="E2E8F0")
+        return Border(left=s, right=s, top=s, bottom=s)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = req.equipment_type
+    ws.column_dimensions["A"].width = 32
+    ws.column_dimensions["B"].width = 22
+    ws.column_dimensions["C"].width = 22
+    ws.column_dimensions["D"].width = 14
+    ws.column_dimensions["E"].width = 18
+    ws.column_dimensions["F"].width = 18
+    ws.column_dimensions["G"].width = 18
+    ws.column_dimensions["H"].width = 18
+
+    def hdr(ws, row, col, val, bg=NAVY, fg=WHITE, bold=True, size=11):
+        c = ws.cell(row=row, column=col, value=val)
+        c.font = Font(bold=bold, color=fg, size=size, name="Calibri")
+        c.fill = PatternFill("solid", fgColor=bg)
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        c.border = thin()
+        return c
+
+    def cell(ws, row, col, val, bold=False, align="left", bg=WHITE, fg="1E293B", num_fmt=None):
+        c = ws.cell(row=row, column=col, value=val)
+        c.font = Font(bold=bold, color=fg, size=10, name="Calibri")
+        c.fill = PatternFill("solid", fgColor=bg)
+        c.alignment = Alignment(horizontal=align, vertical="center")
+        c.border = thin()
+        if num_fmt:
+            c.number_format = num_fmt
+        return c
+
+    r = 1
+    # ── Title ──────────────────────────────────────────────────────────────
+    ws.merge_cells(f"A{r}:H{r}")
+    t = ws.cell(row=r, column=1, value=f"ENCON — {req.equipment_type} Costing Sheet")
+    t.font = Font(bold=True, color=WHITE, size=14, name="Calibri")
+    t.fill = PatternFill("solid", fgColor=NAVY)
+    t.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[r].height = 30
+    r += 1
+
+    # Date
+    ws.merge_cells(f"A{r}:H{r}")
+    d = ws.cell(row=r, column=1, value=f"Generated: {datetime.now().strftime('%d %b %Y, %H:%M')}")
+    d.font = Font(color="64748B", size=9, name="Calibri")
+    d.fill = PatternFill("solid", fgColor=LIGHT)
+    d.alignment = Alignment(horizontal="right", vertical="center")
+    r += 2
+
+    # ── Customer ──────────────────────────────────────────────────────────
+    if req.customer:
+        ws.merge_cells(f"A{r}:H{r}")
+        hdr(ws, r, 1, "CUSTOMER DETAILS", size=10)
+        ws.row_dimensions[r].height = 20
+        r += 1
+        cust_fields = [
+            ("Company",     req.customer.get("company_name","")),
+            ("Contact",     req.customer.get("poc_name","")),
+            ("Designation", req.customer.get("poc_designation","")),
+            ("Mobile",      req.customer.get("mobile_no","")),
+            ("Email",       req.customer.get("email","")),
+            ("Project",     req.customer.get("project_name","")),
+            ("Ref No.",     req.customer.get("ref_no","")),
+        ]
+        for label, val in cust_fields:
+            if val:
+                cell(ws, r, 1, label, bold=True, bg=GREY)
+                ws.merge_cells(f"B{r}:H{r}")
+                cell(ws, r, 2, val, bg=WHITE)
+                r += 1
+        r += 1
+
+    # ── Process Parameters ────────────────────────────────────────────────
+    ws.merge_cells(f"A{r}:H{r}")
+    hdr(ws, r, 1, "PROCESS PARAMETERS", size=10)
+    ws.row_dimensions[r].height = 20
+    r += 1
+
+    calc = req.calculations
+    if req.equipment_type == "Regen":
+        params = [
+            ("Material Weight",   f"{calc.get('material_weight_kg','')} kg"),
+            ("Initial Temp (Ti)", f"{calc.get('Ti','')} °C"),
+            ("Final Temp (Tf)",   f"{calc.get('Tf','')} °C"),
+            ("Temp Rise (ΔT)",    f"{calc.get('delta_T','')} °C"),
+            ("Specific Heat Cp",  f"{calc.get('Cp','')} kJ/kg·°C"),
+            ("Cycle Time",        f"{calc.get('cycle_time_hr','')} hr"),
+            ("Efficiency",        f"{round(calc.get('efficiency',0)*100)}%"),
+            ("Heat Required",     f"{calc.get('heat_required_kj','')} kJ"),
+            ("Required Power",    f"{calc.get('required_kw','')} kW"),
+            ("No. of Pairs",      f"{calc.get('num_pairs','')} × 1000 KW"),
+        ]
+    else:
+        params = [
+            ("Initial Temp (Ti)",       f"{calc.get('Ti','')} °C"),
+            ("Final Temp (Tf)",         f"{calc.get('Tf','')} °C"),
+            ("Refractory Weight",       f"{calc.get('refractory_weight','')} kg"),
+            ("Fuel CV",                 f"{calc.get('fuel_cv','')} kcal/Nm³"),
+            ("Time Taken",              f"{calc.get('time_taken_hr','')} hr"),
+            ("Heat Load",               f"{calc.get('heat_load_kcal','')} kcal"),
+            ("Firing Rate",             f"{calc.get('firing_rate_kcal','')} kcal/hr"),
+            ("Fuel Consumption",        f"{calc.get('fuel_consumption_nm3','')} Nm³"),
+            ("Calc. Firing Rate",       f"{calc.get('calculated_firing_rate_nm3hr','')} Nm³/hr"),
+            ("Design Firing Rate",      f"{calc.get('extra_firing_rate_nm3hr','')} Nm³/hr"),
+        ]
+    for i, (label, val) in enumerate(params):
+        bg = GREY if i % 2 == 0 else WHITE
+        cell(ws, r, 1, label, bold=True, bg=bg)
+        ws.merge_cells(f"B{r}:H{r}")
+        cell(ws, r, 2, val, bg=bg)
+        r += 1
+    r += 1
+
+    # ── BOM Table ─────────────────────────────────────────────────────────
+    ws.merge_cells(f"A{r}:H{r}")
+    hdr(ws, r, 1, "BILL OF MATERIALS", size=10)
+    ws.row_dimensions[r].height = 20
+    r += 1
+
+    if req.equipment_type == "Regen":
+        bom_cols = ["SECTION", "ITEM NAME", "SPECIFICATION", "QTY", "COST/UNIT", "TOTAL COST", "SELL/UNIT", "TOTAL SELLING"]
+    else:
+        bom_cols = ["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "UNIT PRICE", "TOTAL", "", ""]
+
+    for ci, col in enumerate(bom_cols, 1):
+        hdr(ws, r, ci, col, size=9)
+    ws.row_dimensions[r].height = 22
+    r += 1
+
+    for i, row_d in enumerate(req.bom):
+        bg = GREY if i % 2 == 0 else WHITE
+        vals = list(row_d.values())
+        for ci, v in enumerate(vals[:8], 1):
+            num = ci >= 4
+            cell(ws, r, ci, v, bg=bg, align="right" if num else "left",
+                 num_fmt='#,##0.00' if isinstance(v, (int, float)) and num else None)
+        ws.row_dimensions[r].height = 18
+        r += 1
+    r += 1
+
+    # ── Cost Summary ──────────────────────────────────────────────────────
+    cs = req.cost_summary
+    ws.merge_cells(f"A{r}:H{r}")
+    hdr(ws, r, 1, "COST SUMMARY", size=10)
+    ws.row_dimensions[r].height = 20
+    r += 1
+
+    if req.equipment_type == "Regen":
+        summary_rows = [
+            ("Total Cost",    cs.get("total_cost", 0)),
+            ("Total Selling", cs.get("total_selling", 0)),
+            ("Markup",        cs.get("markup", 0)),
+        ]
+    else:
+        summary_rows = [
+            ("Bought Out Total", cs.get("bought_out_total", 0)),
+            ("ENCON Total",      cs.get("encon_total", 0)),
+            ("Grand Total",      cs.get("grand_total", 0)),
+        ]
+
+    for label, val in summary_rows:
+        is_total = "Total" in label and label not in ("Bought Out Total", "ENCON Total")
+        bg = GREEN_BG if is_total else GREY
+        fg = GREEN if is_total else "1E293B"
+        cell(ws, r, 1, label, bold=is_total, bg=bg, fg=fg)
+        ws.merge_cells(f"B{r}:G{r}")
+        cell(ws, r, 2, "", bg=bg)
+        c = ws.cell(row=r, column=8, value=val)
+        c.font = Font(bold=is_total, color=fg, size=11 if is_total else 10, name="Calibri")
+        c.fill = PatternFill("solid", fgColor=bg)
+        c.alignment = Alignment(horizontal="right", vertical="center")
+        c.number_format = '₹#,##0.00'
+        c.border = thin()
+        ws.row_dimensions[r].height = 20
+        r += 1
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    equip = req.equipment_type
+    cname = req.customer.get("company_name", "").replace(" ", "_") or "ENCON"
+    date_str = datetime.now().strftime("%d%b%Y")
+    fname = f"{equip}_Costing_{cname}_{date_str}.xlsx"
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'}
+    )
+
+
 @app.get("/api/download-quote/{filename}")
 def download_quote(filename: str):
     file_path = os.path.join(QUOTES_FOLDER, filename)
