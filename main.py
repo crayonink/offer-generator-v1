@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 import pandas as pd
 import sqlite3
 import shutil
@@ -22,12 +23,10 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# ✅ OPTION 1: Disable table restriction
 VALID_TABLES = None
 
 
 def ensure_log_table():
-    """Create the table_update_log table if it doesn't exist."""
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS table_update_log (
@@ -44,6 +43,23 @@ ensure_log_table()
 
 
 # =================================================
+# DB VIEWER
+# =================================================
+
+@app.get("/viewer", response_class=HTMLResponse)
+def db_viewer():
+    html_path = os.path.join(BASE_DIR, "db_viewer.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    # Replace localhost API with relative path so it works on any domain
+    content = content.replace(
+        'const API = "http://127.0.0.1:8000"',
+        'const API = ""'
+    )
+    return HTMLResponse(content=content)
+
+
+# =================================================
 # UPLOAD EXCEL
 # =================================================
 
@@ -53,7 +69,6 @@ async def upload_excel(request: Request, file: UploadFile = File(...)):
         filename = file.filename
         table_name = filename.replace(".xlsx", "").strip().lower()
 
-        # ✅ updated validation
         if VALID_TABLES and table_name not in VALID_TABLES:
             return {"error": f"Invalid table name: {table_name}"}
 
@@ -117,21 +132,15 @@ def get_tables():
 
         cursor.execute("SELECT table_name, updated_at, uploaded_by FROM table_update_log")
         log = {
-            row[0]: {
-                "updated_at": row[1],
-                "uploaded_by": row[2]
-            }
+            row[0]: {"updated_at": row[1], "uploaded_by": row[2]}
             for row in cursor.fetchall()
         }
 
         result = []
-
         for table in tables:
             cursor.execute(f"SELECT COUNT(*) FROM [{table}]")
             count = cursor.fetchone()[0]
-
             entry = log.get(table, {})
-
             result.append({
                 "name": table,
                 "rows": count,
@@ -140,7 +149,6 @@ def get_tables():
             })
 
         conn.close()
-
         return {"tables": result}
 
     except Exception as e:
@@ -154,7 +162,6 @@ def get_tables():
 @app.get("/db/table/{table_name}")
 def get_table_data(table_name: str):
 
-    # ✅ updated validation
     if VALID_TABLES and table_name not in VALID_TABLES:
         return {"error": "Invalid table name"}
 
