@@ -35,19 +35,26 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float) -> dict:
     model = row[0]
 
     # -------------------------------------------------
-    # 2️⃣ Fetch price from commercial table
+    # 2️⃣ Fetch price from burner_pricelist_master
+    #    burner_selection_master stores "ENCON G-4A" but
+    #    pricelist stores "ENCON 4A" — strip the "G-" prefix
     # -------------------------------------------------
+    pricelist_name = model.replace("G-", "")  # "ENCON G-4A" → "ENCON 4A"
+
     cursor.execute("""
-        SELECT burner_price_inr
-        FROM burner_master
-        WHERE model = ?
-    """, (model,))
+        SELECT price
+        FROM burner_pricelist_master
+        WHERE burner_size = ?
+          AND component = 'BURNER ALONE'
+          AND section LIKE '%GAS%'
+        LIMIT 1
+    """, (pricelist_name,))
 
     price_row = cursor.fetchone()
     conn.close()
 
     if not price_row:
-        raise ValueError(f"Price not found for burner model {model}")
+        raise ValueError(f"Price not found for burner model {model} (looked up as '{pricelist_name}')")
 
     return {
         "model": model,

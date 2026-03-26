@@ -14,9 +14,10 @@ def select_rotary_joint(nb: int) -> dict:
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT price
+        SELECT nb, price
         FROM rotary_joint_master
-        WHERE nb = ?
+        WHERE nb >= ?
+        ORDER BY nb ASC
         LIMIT 1
     """, (nb,))
 
@@ -25,10 +26,10 @@ def select_rotary_joint(nb: int) -> dict:
 
     if not row:
         raise ValueError(
-            f"No Rotary Joint found for NB {nb}"
+            f"No Rotary Joint found for NB >= {nb}"
         )
 
     return {
-        "nb": nb,
-        "price": row[0],
+        "nb": row[0],
+        "price": row[1],
     }
