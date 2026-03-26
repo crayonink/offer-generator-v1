@@ -147,6 +147,34 @@
     .hidden { display: none !important; }
 
     .status-bar { background: var(--card); border-top: 1px solid var(--border); padding: 6px 24px; font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      header { padding: 0 14px; }
+      .nav-links { display: none; }
+      .sep, .page-label { display: none; }
+      .layout { flex-direction: column; overflow: visible; }
+      .sidebar {
+        width: 100%; min-width: unset; border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 0 0; display: flex; flex-direction: column; gap: 0;
+      }
+      .sidebar-title { padding: 0 14px 6px; }
+      .cat-item { padding: 8px 14px; }
+      .upload-area { padding: 8px 12px; }
+      .coverage-box { padding: 0 12px 8px; }
+      .main { overflow: visible; }
+      .toolbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+      .search-box { margin-left: 0; width: 100%; }
+      .mode-tabs { padding: 0 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .mode-tabs::-webkit-scrollbar { display: none; }
+      .table-wrap { overflow: auto; }
+      .estimator-wrap { padding: 14px; }
+      .est-controls { flex-direction: column; align-items: stretch; }
+      .est-field select, .est-field input { width: 100%; }
+      .btn-add { width: 100%; }
+      .cov-wrap { padding: 14px; }
+    }
   </style>
 </head>
 <body>

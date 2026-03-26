@@ -194,6 +194,27 @@
     .spinner { width: 22px; height: 22px; border: 3px solid #e2e8f0; border-top-color: var(--navy); border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .hidden { display: none !important; }
+
+    /* ── Mobile ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 12px; height: auto; min-height: 56px; flex-wrap: wrap; }
+      .brand { margin-right: 12px; }
+      .step-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; width: 100%; border-top: 1px solid var(--border); flex: none; padding: 0; }
+      .step-tabs::-webkit-scrollbar { display: none; }
+      .step-tab { padding: 0 12px; font-size: .74rem; }
+      .topnav-links { display: none; }
+      .page { padding: 20px 12px 60px; }
+      .card { padding: 18px 16px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .field-grid.three { grid-template-columns: 1fr; }
+      .mat-buttons { gap: 6px; }
+      .mat-btn { font-size: .78rem; padding: 7px 12px; }
+      .btn-primary { width: 100%; }
+      .cost-banner { padding: 20px 20px; }
+      .banner-value { font-size: 1.4rem; }
+      .bom-wrap { overflow-x: auto; }
+      .btn-back, .btn-download { width: 100%; text-align: center; justify-content: center; }
+    }
   </style>
 </head>
 <body>
