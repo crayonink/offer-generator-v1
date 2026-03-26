@@ -348,33 +348,16 @@
     </div>
     <div class="step-heading">Step 2 — Burner Size Calculation Inputs</div>
 
-    <div class="param-label">Initial Temperature — Ti (°C)</div>
-    <div class="btn-grid" id="grid-Ti">
-      <button onclick="selectBtn('grid-Ti',this,'Ti')">550</button>
-      <button onclick="selectBtn('grid-Ti',this,'Ti')">600</button>
-      <button onclick="selectBtn('grid-Ti',this,'Ti')">650</button>
-      <button onclick="selectBtn('grid-Ti',this,'Ti')">700</button>
-      <button onclick="selectBtn('grid-Ti',this,'Ti')">750</button>
-    </div>
-    <div class="fg fg-1" style="margin-bottom:24px">
+    <div class="fg fg-2" style="margin-bottom:24px">
       <div class="field">
-        <input id="Ti" type="number" value="650" placeholder="Or enter custom value"/>
-        <div class="hint">Initial ladle temperature in °C</div>
+        <label>Initial Temperature — Ti (°C) <span class="req">*</span></label>
+        <input id="Ti" type="number" value="650" placeholder="e.g. 650"/>
+        <div class="hint">Initial ladle temperature</div>
       </div>
-    </div>
-
-    <div class="param-label">Final Temperature — Tf (°C)</div>
-    <div class="btn-grid" id="grid-Tf">
-      <button onclick="selectBtn('grid-Tf',this,'Tf')">1000</button>
-      <button onclick="selectBtn('grid-Tf',this,'Tf')">1100</button>
-      <button onclick="selectBtn('grid-Tf',this,'Tf')">1200</button>
-      <button onclick="selectBtn('grid-Tf',this,'Tf')">1300</button>
-      <button onclick="selectBtn('grid-Tf',this,'Tf')">1400</button>
-    </div>
-    <div class="fg fg-1" style="margin-bottom:24px">
       <div class="field">
-        <input id="Tf" type="number" value="1200" placeholder="Or enter custom value"/>
-        <div class="hint">Target ladle temperature in °C</div>
+        <label>Final Temperature — Tf (°C) <span class="req">*</span></label>
+        <input id="Tf" type="number" value="1200" placeholder="e.g. 1200"/>
+        <div class="hint">Target ladle temperature — must be greater than Ti</div>
       </div>
     </div>
 
@@ -633,12 +616,15 @@ async function calculate() {
   const btn = document.getElementById("calc-btn");
   btn.classList.add("loading"); btn.disabled = true;
 
+  const ti = val("Ti"), tf = val("Tf");
+  if (tf <= ti) { showError("error-box", "Final temperature (Tf) must be greater than initial temperature (Ti)."); btn.classList.remove("loading"); btn.disabled = false; return; }
+
   try {
     const res = await fetch(`${API}/api/vlph-calculate`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
-        Ti: val("Ti"), Tf: val("Tf"),
+        Ti: ti, Tf: tf,
         refractory_weight:      val("refractory_weight"),
         fuel_cv:                val("fuel_cv"),
         time_taken_hr:          val("time_taken_hr"),

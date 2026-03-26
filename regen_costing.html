@@ -287,23 +287,11 @@
       <div class="field-grid three">
         <div class="field">
           <label>Initial Temp Ti (°C)</label>
-          <input id="Ti" type="number" value="30" min="0"/>
-          <div class="quick-btns" id="Ti-btns">
-            <button class="qbtn" onclick="setVal('Ti',30)">30</button>
-            <button class="qbtn" onclick="setVal('Ti',100)">100</button>
-            <button class="qbtn" onclick="setVal('Ti',200)">200</button>
-          </div>
+          <input id="Ti" type="number" value="30" placeholder="e.g. 30"/>
         </div>
         <div class="field">
           <label>Final Temp Tf (°C)</label>
-          <input id="Tf" type="number" value="900" min="1"/>
-          <div class="quick-btns">
-            <button class="qbtn" onclick="setVal('Tf',800)">800</button>
-            <button class="qbtn" onclick="setVal('Tf',900)">900</button>
-            <button class="qbtn" onclick="setVal('Tf',1000)">1000</button>
-            <button class="qbtn" onclick="setVal('Tf',1100)">1100</button>
-            <button class="qbtn" onclick="setVal('Tf',1200)">1200</button>
-          </div>
+          <input id="Tf" type="number" value="900" placeholder="e.g. 900"/>
         </div>
         <div class="field">
           <label>Cycle Time (hr)</label>
@@ -473,10 +461,19 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Calculating…';
 
+    const Ti = parseFloat(document.getElementById('Ti').value);
+    const Tf = parseFloat(document.getElementById('Tf').value);
+    if (Tf <= Ti) {
+      errBox.textContent = 'Final temperature (Tf) must be greater than initial temperature (Ti).';
+      errBox.classList.remove('hidden');
+      btn.disabled = false; btn.innerHTML = 'Calculate &amp; Size System';
+      return;
+    }
+
     const payload = {
       material_weight_kg: parseFloat(document.getElementById('material_weight_kg').value),
-      Ti:                 parseFloat(document.getElementById('Ti').value),
-      Tf:                 parseFloat(document.getElementById('Tf').value),
+      Ti,
+      Tf,
       Cp:                 parseFloat(document.getElementById('Cp').value),
       cycle_time_hr:      parseFloat(document.getElementById('cycle_time_hr').value),
       efficiency:         parseFloat(document.getElementById('efficiency').value),

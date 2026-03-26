@@ -326,33 +326,16 @@
     </div>
     <div class="step-heading">Step 2: System Configuration</div>
 
-    <div class="param-label">Initial Temperature — Ti (°C)</div>
-    <div class="btn-grid" id="grid-Ti">
-      <button onclick="selectBtn('grid-Ti', this, 'Ti')">20</button>
-      <button onclick="selectBtn('grid-Ti', this, 'Ti')">30</button>
-      <button onclick="selectBtn('grid-Ti', this, 'Ti')">50</button>
-      <button onclick="selectBtn('grid-Ti', this, 'Ti')">100</button>
-      <button onclick="selectBtn('grid-Ti', this, 'Ti')">150</button>
-    </div>
-    <div class="field-group single" style="margin-bottom:24px">
+    <div class="field-group" style="margin-bottom:24px">
       <div class="field">
-        <input id="Ti" type="number" value="30" placeholder="Or enter custom value"/>
-        <div class="hint">Initial ladle temperature in °C</div>
+        <label>Initial Temperature — Ti (°C) <span class="req">*</span></label>
+        <input id="Ti" type="number" value="30" placeholder="e.g. 30"/>
+        <div class="hint">Initial ladle temperature</div>
       </div>
-    </div>
-
-    <div class="param-label">Final Temperature — Tf (°C)</div>
-    <div class="btn-grid" id="grid-Tf">
-      <button onclick="selectBtn('grid-Tf', this, 'Tf')">800</button>
-      <button onclick="selectBtn('grid-Tf', this, 'Tf')">850</button>
-      <button onclick="selectBtn('grid-Tf', this, 'Tf')">900</button>
-      <button onclick="selectBtn('grid-Tf', this, 'Tf')">950</button>
-      <button onclick="selectBtn('grid-Tf', this, 'Tf')">1000</button>
-    </div>
-    <div class="field-group single" style="margin-bottom:24px">
       <div class="field">
-        <input id="Tf" type="number" value="900" placeholder="Or enter custom value"/>
-        <div class="hint">Target ladle temperature in °C</div>
+        <label>Final Temperature — Tf (°C) <span class="req">*</span></label>
+        <input id="Tf" type="number" value="900" placeholder="e.g. 900"/>
+        <div class="hint">Target ladle temperature — must be greater than Ti</div>
       </div>
     </div>
 
@@ -566,8 +549,11 @@
     const btn = document.getElementById("calc-btn");
     btn.classList.add("loading"); btn.disabled = true;
 
+    const ti = val("Ti"), tf = val("Tf");
+    if (tf <= ti) { showError("error-box", "Final temperature (Tf) must be greater than initial temperature (Ti)."); btn.classList.remove("loading"); btn.disabled = false; return; }
+
     const payload = {
-      Ti: val("Ti"), Tf: val("Tf"),
+      Ti: ti, Tf: tf,
       refractory_weight: val("refractory_weight"),
       fuel_cv: val("fuel_cv"),
       time_taken_hr: val("time_taken_hr"),
