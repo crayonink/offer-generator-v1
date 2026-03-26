@@ -339,22 +339,56 @@
       </div>
     </div>
 
-    <div class="field-group">
+    <div class="field-group single" style="margin-bottom:16px">
       <div class="field">
         <label>Refractory Weight (kg)</label>
         <input id="refractory_weight" type="number" value="8000" placeholder="e.g. 8000"/>
         <div class="hint">Total refractory mass</div>
       </div>
-      <div class="field">
-        <label>Fuel Type</label>
-        <div style="display:flex;gap:8px;margin-bottom:8px;">
-          <button id="fuel-ng" onclick="setFuel('ng')" style="padding:8px 18px;border:1.5px solid var(--border);border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%);color:#fff;border-color:var(--navy);font-family:inherit;">Natural Gas</button>
-          <button id="fuel-lpg" onclick="setFuel('lpg')" style="padding:8px 18px;border:1.5px solid var(--border);border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;background:var(--bg);color:#475569;font-family:inherit;">LPG</button>
+    </div>
+
+    <div style="margin-bottom:24px;">
+      <div class="field-group" style="margin-bottom:0">
+        <div class="field">
+          <label>Fuel 1</label>
+          <select id="fuel1_type" onchange="onFuelChange()">
+            <option value="ng">Natural Gas</option>
+            <option value="lpg">LPG</option>
+            <option value="cog">Coke Oven Gas</option>
+            <option value="bg">BG (Blast Furnace Gas)</option>
+          </select>
+          <label style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
+          <input id="fuel1_cv" type="number" value="8500"/>
         </div>
-        <label style="margin-top:4px;">Fuel CV (kcal/Nm³)</label>
-        <input id="fuel_cv" type="number" value="8500" placeholder="e.g. 8500"/>
-        <div class="hint">Natural Gas ≈ 8500 · LPG ≈ 10800</div>
+        <div class="field">
+          <label>Fuel 2 <span style="font-weight:400;color:#94a3b8;font-size:.8rem;">(optional)</span></label>
+          <select id="fuel2_type" onchange="onFuelChange()">
+            <option value="none">— None (single fuel) —</option>
+            <option value="ng">Natural Gas</option>
+            <option value="lpg">LPG</option>
+            <option value="cog">Coke Oven Gas</option>
+            <option value="bg">BG (Blast Furnace Gas)</option>
+          </select>
+          <div id="fuel2-cv-wrap" style="display:none;">
+            <label style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
+            <input id="fuel2_cv" type="number" value="0"/>
+          </div>
+        </div>
       </div>
+      <div id="fuel-ratio-row" style="display:none;margin-top:12px;background:#f0f4ff;border-radius:10px;padding:14px 16px;border:1px solid #c7d2fe;">
+        <div style="font-size:.72rem;font-weight:700;color:#4338ca;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Fuel Mix Ratio</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span id="f1-ratio-name" style="font-size:.82rem;font-weight:600;color:#374151;min-width:120px;"></span>
+          <input id="fuel1_ratio" type="number" value="50" min="1" max="99" style="width:64px;padding:6px 10px;border:1.5px solid #c7d2fe;border-radius:8px;font-size:.88rem;" oninput="updateRatio(1)"/>
+          <span style="color:#94a3b8;font-weight:700;">%</span>
+          <span style="color:#cbd5e1;font-weight:700;font-size:1.1rem;">+</span>
+          <span id="f2-ratio-name" style="font-size:.82rem;font-weight:600;color:#374151;min-width:120px;"></span>
+          <input id="fuel2_ratio" type="number" value="50" min="1" max="99" style="width:64px;padding:6px 10px;border:1.5px solid #c7d2fe;border-radius:8px;font-size:.88rem;" oninput="updateRatio(2)"/>
+          <span style="color:#94a3b8;font-weight:700;">%</span>
+          <span style="margin-left:16px;font-size:.82rem;color:#4338ca;font-weight:700;">Blended CV: <span id="blended-cv-display">—</span> kcal/Nm³</span>
+        </div>
+      </div>
+      <input type="hidden" id="fuel_cv" value="8500"/>
     </div>
 
     <div class="field-group single" style="margin-bottom:24px">
@@ -550,13 +584,43 @@
   }
 
   /* ── Fuel selector ── */
-  function setFuel(type) {
-    const cvs = { ng: 8500, lpg: 10800 };
-    document.getElementById('fuel_cv').value = cvs[type];
-    const active = 'background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%);color:#fff;border-color:var(--navy);';
-    const inactive = 'background:var(--bg);color:#475569;border-color:var(--border);';
-    document.getElementById('fuel-ng').style.cssText  += type === 'ng'  ? active : inactive;
-    document.getElementById('fuel-lpg').style.cssText += type === 'lpg' ? active : inactive;
+  const FUEL_CVS   = { ng: 8500, lpg: 10800, cog: 4300, bg: 850 };
+  const FUEL_NAMES = { ng: 'Natural Gas', lpg: 'LPG', cog: 'Coke Oven Gas', bg: 'BG (Blast Furnace Gas)' };
+  function onFuelChange() {
+    const f1 = document.getElementById('fuel1_type').value;
+    const f2 = document.getElementById('fuel2_type').value;
+    document.getElementById('fuel1_cv').value = FUEL_CVS[f1] || 0;
+    const isDual = f2 !== 'none';
+    document.getElementById('fuel2-cv-wrap').style.display  = isDual ? 'block' : 'none';
+    document.getElementById('fuel-ratio-row').style.display = isDual ? 'block' : 'none';
+    if (isDual) {
+      document.getElementById('fuel2_cv').value = FUEL_CVS[f2] || 0;
+      document.getElementById('f1-ratio-name').textContent = FUEL_NAMES[f1];
+      document.getElementById('f2-ratio-name').textContent = FUEL_NAMES[f2];
+      document.getElementById('fuel1_ratio').value = 50;
+      document.getElementById('fuel2_ratio').value = 50;
+    }
+    updateBlendedCV();
+  }
+  function updateRatio(changed) {
+    const r1el = document.getElementById('fuel1_ratio');
+    const r2el = document.getElementById('fuel2_ratio');
+    if (changed === 1) r2el.value = Math.max(1, 100 - (parseInt(r1el.value) || 50));
+    else               r1el.value = Math.max(1, 100 - (parseInt(r2el.value) || 50));
+    updateBlendedCV();
+  }
+  function updateBlendedCV() {
+    const f2 = document.getElementById('fuel2_type').value;
+    const cv1 = parseFloat(document.getElementById('fuel1_cv').value) || 0;
+    let blended = cv1;
+    if (f2 !== 'none') {
+      const cv2 = parseFloat(document.getElementById('fuel2_cv').value) || 0;
+      const r1  = parseFloat(document.getElementById('fuel1_ratio').value) || 50;
+      const r2  = parseFloat(document.getElementById('fuel2_ratio').value) || 50;
+      blended = (r1 * cv1 + r2 * cv2) / 100;
+      document.getElementById('blended-cv-display').textContent = Math.round(blended).toLocaleString('en-IN');
+    }
+    document.getElementById('fuel_cv').value = blended;
   }
 
   /* ── Button grid selection ── */
