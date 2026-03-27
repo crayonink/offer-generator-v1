@@ -286,7 +286,77 @@ def parse_blower(xl, conn):
 
     df_out = pd.DataFrame(records)
     df_out.to_sql("blower_pricelist_master", conn, if_exists="replace", index=False)
+
+    # Also sync to blower_master (used by blower_selector.py)
+    _sync_blower_master(df_out, conn)
+
     return {"rows": len(df_out)}
+
+
+def _sync_blower_master(df_pricelist: pd.DataFrame, conn):
+    """
+    Normalise blower_pricelist_master into the fixed-column schema that
+    blower_selector.py expects:
+        model, hp, airflow, cfm, pressure, price_basic, price_premium
+    Column names in blower_pricelist_master vary by Excel layout, so we
+    search by keyword rather than exact name.
+    """
+    if df_pricelist.empty:
+        return
+
+    cols = df_pricelist.columns.tolist()
+
+    def _find_col(*keywords):
+        """Return first column whose name contains ALL keywords (case-insensitive)."""
+        for c in cols:
+            cl = c.lower()
+            if all(kw in cl for kw in keywords):
+                return c
+        return None
+
+    # airflow in Nm3/hr
+    airflow_col = (
+        _find_col("nm3") or
+        _find_col("airflow") or
+        _find_col("flow")
+    )
+    cfm_col          = _find_col("cfm")
+    price_basic_col  = _find_col("without") or _find_col("basic")
+    # "price with motor" — column that has both "with" and "motor" in the name,
+    # but NOT "without"
+    price_prem_col   = None
+    for c in cols:
+        cl = c.lower()
+        if "motor" in cl and "with" in cl and "without" not in cl:
+            price_prem_col = c
+            break
+    pressure_col = _find_col("pressure")
+
+    if not price_basic_col:
+        return  # can't sync without a price column
+
+    rows = []
+    for _, r in df_pricelist.iterrows():
+        model = r.get("model")
+        if not model or str(model).lower() in ("nan", ""):
+            continue
+        rows.append((
+            str(model),
+            str(r.get("hp",       "")) if "hp"       in cols else None,
+            str(r[airflow_col])         if airflow_col  else None,
+            str(r[cfm_col])             if cfm_col      else None,
+            str(r[pressure_col])        if pressure_col else None,
+            str(r[price_basic_col])     if price_basic_col else None,
+            str(r[price_prem_col])      if price_prem_col  else None,
+        ))
+
+    conn.execute("DELETE FROM blower_master")
+    conn.executemany(
+        "INSERT INTO blower_master "
+        "(model, hp, airflow, cfm, pressure, price_basic, price_premium) "
+        "VALUES (?,?,?,?,?,?,?)",
+        rows,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────

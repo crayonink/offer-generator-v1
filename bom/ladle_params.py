@@ -1,23 +1,30 @@
 """
-Ladle preheater sizing lookup tables.
-Source: Pricelist WorkBook 28-08-2025.xlsx — Vertical & Horizontal sheets.
+bom/ladle_params.py
 
-MS Structure fabricated rate = Rs.151.2/kg (derived: amount/weight is
-consistent at 151.2 across all VLPH and HLPH sizes in the pricebook).
+Reads ladle sizing parameters directly from vertical_master / horizontal_master
+DB tables (populated when the pricebook is uploaded).
+
+When the pricebook is uploaded:
+  - MS STRUCTURE cost  = ms_kg × fabricated_rate  (reads exact amount from DB)
+  - CERAMIC FIBER cost = rolls × price_per_roll    (reads exact amount from DB)
+  - CONTROL PANEL cost = reads exact amount from DB
+  - SWIRLING / PIPELINE / TROLLEY = reads exact amount from DB
+  - HPU kW = parsed from "H & P UNIT 3KW..." description in DB
+
+Falls back to hardcoded tables if DB has no data.
 """
 
-# Fabricated structure rate (material + machining + labour + paint)
-# Verified: 1096 kg × 151.2 = 165,715 (10T VLPH) ✓
-#           1300 kg × 151.2 = 196,560 (20T VLPH) ✓
-#           1683 kg × 151.2 = 254,500 (60T HLPH) ✓
-MS_STRUCTURE_RATE = 151.2  # Rs/kg
+import re
+import sqlite3
+import os
 
-# --------------------------------------------------------------------------
-# VLPH (Vertical Ladle Pre-Heater)
-# Columns: ladle_tons_max, ms_kg, ceramic_rolls, hpu_kw,
-#          pipeline_swirling_cost, control_panel_cost
-# --------------------------------------------------------------------------
-VLPH_SIZE_TABLE = [
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "vlph.db")
+
+
+# ─── fallback tables (used only when DB has no data) ──────────────────────────
+_VLPH_FALLBACK = [
+    # (max_tons, ms_kg, cf_rolls, hpu_kw, pipeline_swirling, panel)
     (10,  1096, 9,  3,  124929, 105000),
     (14,  1130, 8,  6,  139047, 105000),
     (15,  1215, 9,  6,  147000, 115500),
@@ -27,76 +34,295 @@ VLPH_SIZE_TABLE = [
     (60,  1800, 19, 20, 189000, 147000),
 ]
 
-# --------------------------------------------------------------------------
-# HLPH (Horizontal Ladle Pre-Heater)
-# Columns: ladle_tons_max, ms_kg, ceramic_rolls, hpu_kw,
-#          pipeline_cost, trolley_drive_cost, control_panel_cost
-# --------------------------------------------------------------------------
-HLPH_SIZE_TABLE = [
-    (10,  1096, 9,  3,  46200,  124200, 126000),
-    (15,  1236, 11, 6,  50400,  126900, 126000),
-    (20,  1416, 13, 6,  115500, 129600, 126000),
-    (30,  1450, 14, 12, 136500, 139500, 157500),
-    (40,  1500, 15, 12, 163800, 144000, 157500),
-    (60,  1683, 19, 20, 168000, 222600, 135000),
+_HLPH_FALLBACK = [
+    # (max_tons, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel)
+    (10,  1416, 13, 3,  115500, 129600, 126000),
+    (30,  1683, 19, 12, 135000, 168000, 222600),
 ]
 
+MS_STRUCTURE_RATE = 151.2  # Rs/kg fabricated — fallback constant
+
+
+# ─── helpers ──────────────────────────────────────────────────────────────────
+
+def _parse_tons(model: str):
+    """
+    Parse upper-bound ladle capacity from model name.
+    "DESCRIPTION( VERTICAL 16-20 TON LPS)" → 20
+    "DESCRIPTION( VERTICAL 10 TON LPS)"    → 10
+    "10 TON HORIZONTAL LADLE PREHEATER"    → 10
+    """
+    # Range: "16-20 TON" or "50 TO 60 TON"
+    m = re.search(r'(\d+)\s*(?:TO|-)\s*(\d+)\s+TON', model, re.I)
+    if m:
+        return int(m.group(2))
+    # Single: "10 TON"
+    m = re.search(r'(\d+)\s+TON', model, re.I)
+    if m:
+        return int(m.group(1))
+    return None
+
+
+def _parse_qty_num(qty_str):
+    if not qty_str:
+        return None
+    m = re.search(r'(\d+(?:\.\d+)?)', str(qty_str))
+    return float(m.group(1)) if m else None
+
+
+def _parse_hpu_kw(text: str):
+    """
+    "C. H & P UNIT 3KW-1NO,(HPD-3)"       → 3
+    "C. H & P UNIT 6 KW  1NO .(HPD-6)"    → 6
+    "C. H & P UNIT 20 KW  1NO .(HPD-20)"  → 20
+    """
+    m = re.search(r'(\d+)\s*KW', text, re.I)
+    return int(m.group(1)) if m else None
+
+
+def _get_ladle_rows(ladle_tons: float, master_table: str):
+    """
+    Query vertical_master or horizontal_master for the best-matching model.
+    Returns (max_tons, model_name, rows_dict) or (None, None, None).
+    rows_dict = {particular: {"qty_str": ..., "amount": ...}}
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(f"SELECT DISTINCT model FROM {master_table}")
+        models = [r[0] for r in c.fetchall()]
+    except Exception:
+        return None, None, None
+
+    if not models:
+        conn.close()
+        return None, None, None
+
+    candidates = []
+    for model in models:
+        t = _parse_tons(model)
+        if t is not None:
+            candidates.append((t, model))
+
+    if not candidates:
+        conn.close()
+        return None, None, None
+
+    candidates.sort()
+
+    selected = None
+    for t, model in candidates:
+        if ladle_tons <= t:
+            selected = (t, model)
+            break
+    if not selected:
+        selected = candidates[-1]
+
+    max_t, model_name = selected
+    c.execute(
+        f"SELECT particular, qty, amount FROM {master_table} WHERE model = ?",
+        (model_name,),
+    )
+    rows = {}
+    for particular, qty, amount in c.fetchall():
+        rows[particular] = {"qty_str": qty, "amount": amount or 0.0}
+
+    conn.close()
+    return max_t, model_name, rows
+
+
+# ─── VLPH ─────────────────────────────────────────────────────────────────────
 
 def get_vlph_params(ladle_tons: float) -> dict:
     """
     Return sizing parameters for a VLPH of given ladle capacity.
-    Selects the first row where ladle_tons <= ladle_tons_max.
-    Falls back to the largest size if capacity exceeds table range.
+    Reads from vertical_master DB; falls back to hardcoded table if empty.
     """
-    for max_t, ms_kg, cf_rolls, hpu_kw, pipeline, panel in VLPH_SIZE_TABLE:
-        if ladle_tons <= max_t:
-            return _vlph_dict(ladle_tons, ms_kg, cf_rolls, hpu_kw, pipeline, panel)
-    # Beyond largest size — use last row
-    max_t, ms_kg, cf_rolls, hpu_kw, pipeline, panel = VLPH_SIZE_TABLE[-1]
-    return _vlph_dict(ladle_tons, ms_kg, cf_rolls, hpu_kw, pipeline, panel)
+    max_t, model_name, rows = _get_ladle_rows(ladle_tons, "vertical_master")
 
+    if rows is None:
+        return _vlph_fallback(ladle_tons)
 
-def _vlph_dict(ladle_tons, ms_kg, cf_rolls, hpu_kw, pipeline, panel):
+    # MS STRUCTURE
+    ms = rows.get("MS STRUCTURE", {})
+    ms_kg   = int(_parse_qty_num(ms.get("qty_str")) or 0)
+    ms_cost = ms.get("amount", 0.0)
+    ms_rate = round(ms_cost / ms_kg, 2) if ms_kg else MS_STRUCTURE_RATE
+
+    # CERAMIC FIBER
+    cf = rows.get("CERAMIC FIBER", {})
+    cf_rolls = int(_parse_qty_num(cf.get("qty_str")) or 0)
+
+    # CONTROL PANEL
+    panel_cost = rows.get("CONTROL PANEL", {}).get("amount", 0.0)
+
+    # SWIRLING MECH + PIPELINE
+    pipeline_cost = 0.0
+    for key, val in rows.items():
+        if "SWIRLING" in key.upper() or (
+            "PIPELINE" in key.upper() and "TROLLEY" not in key.upper()
+        ):
+            pipeline_cost = val["amount"]
+            break
+
+    # HPU kW — parse from "H & P UNIT {kw}KW..." particular
+    hpu_kw = None
+    for key in rows:
+        if "H & P UNIT" in key.upper() or "H&P UNIT" in key.upper() or "H &P UNIT" in key.upper():
+            hpu_kw = _parse_hpu_kw(key)
+            break
+    if not hpu_kw:
+        hpu_kw = _hpu_kw_fallback(max_t, is_hlph=False)
+
     return {
-        "ladle_tons":            ladle_tons,
-        "ms_structure_kg":       ms_kg,
-        "ms_structure_rate":     MS_STRUCTURE_RATE,
-        "ms_structure_cost":     round(ms_kg * MS_STRUCTURE_RATE, 2),
-        "ceramic_rolls":         cf_rolls,
-        "hpu_kw":                hpu_kw,
-        "pipeline_swirling_cost": pipeline,
-        "control_panel_cost":    panel,
+        "ladle_tons":             ladle_tons,
+        "ms_structure_kg":        ms_kg,
+        "ms_structure_rate":      ms_rate,
+        "ms_structure_cost":      round(ms_cost, 2),
+        "ceramic_rolls":          cf_rolls,
+        "hpu_kw":                 hpu_kw,
+        "pipeline_swirling_cost": round(pipeline_cost, 2),
+        "control_panel_cost":     round(panel_cost, 2),
     }
 
+
+# ─── HLPH ─────────────────────────────────────────────────────────────────────
 
 def get_hlph_params(ladle_tons: float) -> dict:
     """
     Return sizing parameters for an HLPH of given ladle capacity.
+    Reads from horizontal_master DB; falls back to hardcoded table if empty.
     """
-    for max_t, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel in HLPH_SIZE_TABLE:
-        if ladle_tons <= max_t:
-            return _hlph_dict(ladle_tons, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel)
-    max_t, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel = HLPH_SIZE_TABLE[-1]
-    return _hlph_dict(ladle_tons, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel)
+    max_t, model_name, rows = _get_ladle_rows(ladle_tons, "horizontal_master")
 
+    if rows is None:
+        return _hlph_fallback(ladle_tons)
 
-def _hlph_dict(ladle_tons, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel):
+    # MS STRUCTURE
+    ms = rows.get("MS STRUCTURE", {})
+    ms_kg   = int(_parse_qty_num(ms.get("qty_str")) or 0)
+    ms_cost = ms.get("amount", 0.0)
+    ms_rate = round(ms_cost / ms_kg, 2) if ms_kg else MS_STRUCTURE_RATE
+
+    # CERAMIC FIBER
+    cf = rows.get("CERAMIC FIBER", {})
+    cf_rolls = int(_parse_qty_num(cf.get("qty_str")) or 0)
+
+    # CONTROL PANEL
+    panel_cost = rows.get("CONTROL PANEL", {}).get("amount", 0.0)
+
+    # PIPELINE (no trolley)
+    pipeline_cost = 0.0
+    for key, val in rows.items():
+        if "PIPELINE" in key.upper() and "TROLLEY" not in key.upper():
+            pipeline_cost = val["amount"]
+            break
+
+    # TROLLEY DRIVE
+    trolley_cost = 0.0
+    for key, val in rows.items():
+        if "TROLLEY" in key.upper():
+            trolley_cost = val["amount"]
+            break
+
+    # HPU kW
+    hpu_kw = None
+    for key in rows:
+        if "H & P UNIT" in key.upper() or "H&P UNIT" in key.upper() or "H &P UNIT" in key.upper():
+            hpu_kw = _parse_hpu_kw(key)
+            break
+    if not hpu_kw:
+        hpu_kw = _hpu_kw_fallback(max_t, is_hlph=True)
+
     return {
-        "ladle_tons":          ladle_tons,
-        "ms_structure_kg":     ms_kg,
-        "ms_structure_rate":   MS_STRUCTURE_RATE,
-        "ms_structure_cost":   round(ms_kg * MS_STRUCTURE_RATE, 2),
-        "ceramic_rolls":       cf_rolls,
-        "hpu_kw":              hpu_kw,
-        "pipeline_cost":       pipeline,
-        "trolley_drive_cost":  trolley,
-        "control_panel_cost":  panel,
+        "ladle_tons":         ladle_tons,
+        "ms_structure_kg":    ms_kg,
+        "ms_structure_rate":  ms_rate,
+        "ms_structure_cost":  round(ms_cost, 2),
+        "ceramic_rolls":      cf_rolls,
+        "hpu_kw":             hpu_kw,
+        "pipeline_cost":      round(pipeline_cost, 2),
+        "trolley_drive_cost": round(trolley_cost, 2),
+        "control_panel_cost": round(panel_cost, 2),
     }
 
 
+# ─── fallback helpers ─────────────────────────────────────────────────────────
+
+def _hpu_kw_fallback(max_t: int, is_hlph: bool) -> int:
+    table = {10: 3, 14: 6, 15: 6, 20: 6, 30: 12, 40: 12, 60: 20}
+    return table.get(max_t, 6)
+
+
+def _vlph_fallback(ladle_tons: float) -> dict:
+    for max_t, ms_kg, cf_rolls, hpu_kw, pipeline, panel in _VLPH_FALLBACK:
+        if ladle_tons <= max_t:
+            return {
+                "ladle_tons": ladle_tons,
+                "ms_structure_kg": ms_kg,
+                "ms_structure_rate": MS_STRUCTURE_RATE,
+                "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+                "ceramic_rolls": cf_rolls,
+                "hpu_kw": hpu_kw,
+                "pipeline_swirling_cost": pipeline,
+                "control_panel_cost": panel,
+            }
+    max_t, ms_kg, cf_rolls, hpu_kw, pipeline, panel = _VLPH_FALLBACK[-1]
+    return {
+        "ladle_tons": ladle_tons,
+        "ms_structure_kg": ms_kg,
+        "ms_structure_rate": MS_STRUCTURE_RATE,
+        "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+        "ceramic_rolls": cf_rolls,
+        "hpu_kw": hpu_kw,
+        "pipeline_swirling_cost": pipeline,
+        "control_panel_cost": panel,
+    }
+
+
+def _hlph_fallback(ladle_tons: float) -> dict:
+    for max_t, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel in _HLPH_FALLBACK:
+        if ladle_tons <= max_t:
+            return {
+                "ladle_tons": ladle_tons,
+                "ms_structure_kg": ms_kg,
+                "ms_structure_rate": MS_STRUCTURE_RATE,
+                "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+                "ceramic_rolls": cf_rolls,
+                "hpu_kw": hpu_kw,
+                "pipeline_cost": pipeline,
+                "trolley_drive_cost": trolley,
+                "control_panel_cost": panel,
+            }
+    max_t, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel = _HLPH_FALLBACK[-1]
+    return {
+        "ladle_tons": ladle_tons,
+        "ms_structure_kg": ms_kg,
+        "ms_structure_rate": MS_STRUCTURE_RATE,
+        "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+        "ceramic_rolls": cf_rolls,
+        "hpu_kw": hpu_kw,
+        "pipeline_cost": pipeline,
+        "trolley_drive_cost": trolley,
+        "control_panel_cost": panel,
+    }
+
+
+# ─── smoke test ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    for t in [10, 15, 20, 30, 40, 60]:
+    print("=== VLPH ===")
+    for t in [10, 14, 15, 20, 30, 40, 60]:
         p = get_vlph_params(t)
-        print(f"VLPH {t}T → MS={p['ms_structure_cost']:,.0f}  "
+        print(f"  {t}T  MS={p['ms_structure_cost']:>10,.0f}  "
               f"CF={p['ceramic_rolls']}rolls  HPU={p['hpu_kw']}kW  "
-              f"Pipeline={p['pipeline_swirling_cost']:,.0f}  Panel={p['control_panel_cost']:,.0f}")
+              f"Pipeline={p['pipeline_swirling_cost']:>9,.0f}  "
+              f"Panel={p['control_panel_cost']:>8,.0f}")
+    print()
+    print("=== HLPH ===")
+    for t in [10, 30]:
+        p = get_hlph_params(t)
+        print(f"  {t}T  MS={p['ms_structure_cost']:>10,.0f}  "
+              f"CF={p['ceramic_rolls']}rolls  HPU={p['hpu_kw']}kW  "
+              f"Pipeline={p['pipeline_cost']:>9,.0f}  "
+              f"Trolley={p['trolley_drive_cost']:>9,.0f}  "
+              f"Panel={p['control_panel_cost']:>8,.0f}")
