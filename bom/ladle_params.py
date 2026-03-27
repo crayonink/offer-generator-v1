@@ -5,7 +5,7 @@ Reads ladle sizing parameters directly from vertical_master / horizontal_master
 DB tables (populated when the pricebook is uploaded).
 
 When the pricebook is uploaded:
-  - MS STRUCTURE cost  = ms_kg × fabricated_rate  (reads exact amount from DB)
+  - MS STRUCTURE cost  = ms_kg × M.S.Plate_rate × 2.1  (live from component_price_master)
   - CERAMIC FIBER cost = rolls × price_per_roll    (reads exact amount from DB)
   - CONTROL PANEL cost = reads exact amount from DB
   - SWIRLING / PIPELINE / TROLLEY = reads exact amount from DB
@@ -20,6 +20,31 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "vlph.db")
+
+MS_PLATE_MARKUP = 2.1   # Excel formula: ms_kg × plate_rate × 2.1
+
+
+def _live_ms_plate_rate() -> float:
+    """
+    Fetch M.S. Plate rate from component_price_master.
+    Looks for an item whose name contains 'M.S. Plate' and '16mm'.
+    Falls back to MS_STRUCTURE_RATE / MS_PLATE_MARKUP if not found.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute(
+            """SELECT rate FROM component_price_master
+               WHERE LOWER(item_name) LIKE '%m.s. plate%16mm%'
+               LIMIT 1"""
+        )
+        row = c.fetchone()
+        conn.close()
+        if row and row[0]:
+            return float(row[0])
+    except Exception:
+        pass
+    return MS_STRUCTURE_RATE / MS_PLATE_MARKUP  # fallback ≈ 72
 
 
 # ─── fallback tables (used only when DB has no data) ──────────────────────────
@@ -143,11 +168,12 @@ def get_vlph_params(ladle_tons: float) -> dict:
     if rows is None:
         return _vlph_fallback(ladle_tons)
 
-    # MS STRUCTURE
+    # MS STRUCTURE — compute live: ms_kg × plate_rate × 2.1
     ms = rows.get("MS STRUCTURE", {})
-    ms_kg   = int(_parse_qty_num(ms.get("qty_str")) or 0)
-    ms_cost = ms.get("amount", 0.0)
-    ms_rate = round(ms_cost / ms_kg, 2) if ms_kg else MS_STRUCTURE_RATE
+    ms_kg       = int(_parse_qty_num(ms.get("qty_str")) or 0)
+    plate_rate  = _live_ms_plate_rate()
+    ms_rate     = round(plate_rate * MS_PLATE_MARKUP, 2)
+    ms_cost     = round(ms_kg * ms_rate, 2) if ms_kg else ms.get("amount", 0.0)
 
     # CERAMIC FIBER
     cf = rows.get("CERAMIC FIBER", {})
@@ -198,11 +224,12 @@ def get_hlph_params(ladle_tons: float) -> dict:
     if rows is None:
         return _hlph_fallback(ladle_tons)
 
-    # MS STRUCTURE
+    # MS STRUCTURE — compute live: ms_kg × plate_rate × 2.1
     ms = rows.get("MS STRUCTURE", {})
-    ms_kg   = int(_parse_qty_num(ms.get("qty_str")) or 0)
-    ms_cost = ms.get("amount", 0.0)
-    ms_rate = round(ms_cost / ms_kg, 2) if ms_kg else MS_STRUCTURE_RATE
+    ms_kg       = int(_parse_qty_num(ms.get("qty_str")) or 0)
+    plate_rate  = _live_ms_plate_rate()
+    ms_rate     = round(plate_rate * MS_PLATE_MARKUP, 2)
+    ms_cost     = round(ms_kg * ms_rate, 2) if ms_kg else ms.get("amount", 0.0)
 
     # CERAMIC FIBER
     cf = rows.get("CERAMIC FIBER", {})
@@ -255,13 +282,15 @@ def _hpu_kw_fallback(max_t: int, is_hlph: bool) -> int:
 
 
 def _vlph_fallback(ladle_tons: float) -> dict:
+    plate_rate = _live_ms_plate_rate()
+    ms_rate = round(plate_rate * MS_PLATE_MARKUP, 2)
     for max_t, ms_kg, cf_rolls, hpu_kw, pipeline, panel in _VLPH_FALLBACK:
         if ladle_tons <= max_t:
             return {
                 "ladle_tons": ladle_tons,
                 "ms_structure_kg": ms_kg,
-                "ms_structure_rate": MS_STRUCTURE_RATE,
-                "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+                "ms_structure_rate": ms_rate,
+                "ms_structure_cost": round(ms_kg * ms_rate, 2),
                 "ceramic_rolls": cf_rolls,
                 "hpu_kw": hpu_kw,
                 "pipeline_swirling_cost": pipeline,
@@ -271,8 +300,8 @@ def _vlph_fallback(ladle_tons: float) -> dict:
     return {
         "ladle_tons": ladle_tons,
         "ms_structure_kg": ms_kg,
-        "ms_structure_rate": MS_STRUCTURE_RATE,
-        "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+        "ms_structure_rate": ms_rate,
+        "ms_structure_cost": round(ms_kg * ms_rate, 2),
         "ceramic_rolls": cf_rolls,
         "hpu_kw": hpu_kw,
         "pipeline_swirling_cost": pipeline,
@@ -281,13 +310,15 @@ def _vlph_fallback(ladle_tons: float) -> dict:
 
 
 def _hlph_fallback(ladle_tons: float) -> dict:
+    plate_rate = _live_ms_plate_rate()
+    ms_rate = round(plate_rate * MS_PLATE_MARKUP, 2)
     for max_t, ms_kg, cf_rolls, hpu_kw, pipeline, trolley, panel in _HLPH_FALLBACK:
         if ladle_tons <= max_t:
             return {
                 "ladle_tons": ladle_tons,
                 "ms_structure_kg": ms_kg,
-                "ms_structure_rate": MS_STRUCTURE_RATE,
-                "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+                "ms_structure_rate": ms_rate,
+                "ms_structure_cost": round(ms_kg * ms_rate, 2),
                 "ceramic_rolls": cf_rolls,
                 "hpu_kw": hpu_kw,
                 "pipeline_cost": pipeline,
@@ -298,8 +329,8 @@ def _hlph_fallback(ladle_tons: float) -> dict:
     return {
         "ladle_tons": ladle_tons,
         "ms_structure_kg": ms_kg,
-        "ms_structure_rate": MS_STRUCTURE_RATE,
-        "ms_structure_cost": round(ms_kg * MS_STRUCTURE_RATE, 2),
+        "ms_structure_rate": ms_rate,
+        "ms_structure_cost": round(ms_kg * ms_rate, 2),
         "ceramic_rolls": cf_rolls,
         "hpu_kw": hpu_kw,
         "pipeline_cost": pipeline,
