@@ -645,9 +645,15 @@ def price_master_coverage():
         conn.close()
     except Exception:
         have = set()
+    covered = needed & have
+    missing = needed - have
     return {
-        "covered":  sorted(needed & have),
-        "missing":  sorted(needed - have),
+        "total_in_db":  len(have),
+        "total_bom":    len(needed),
+        "covered_count": len(covered),
+        "missing_count": len(missing),
+        "covered":  sorted(covered),
+        "missing":  sorted(missing),
         "extra":    sorted(have - needed),
     }
 

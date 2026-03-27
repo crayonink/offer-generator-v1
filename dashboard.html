@@ -347,7 +347,7 @@ async function load() {
     const r = await fetch('/api/price-master/coverage');
     const d = await r.json();
     set('stat-prices',  d.total_in_db ?? '—');
-    set('stat-covered', (d.covered ?? '—') + (d.total_bom ? '/' + d.total_bom : ''));
+    set('stat-covered', d.total_bom ? (d.covered_count ?? '—') + '/' + d.total_bom : (d.covered_count ?? '—'));
   } catch(e) {}
 
   try {
