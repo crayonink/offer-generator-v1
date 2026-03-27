@@ -9,344 +9,358 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --navy:  #1a3a5c;
-      --navy2: #0f2744;
-      --green: #059669;
-      --red:   #dc2626;
-      --amber: #d97706;
-      --muted: #64748b;
-      --border:#e2e8f0;
-      --bg:    #f1f5f9;
-      --card:  #ffffff;
+      --navy:  #1a3a5c; --navy2: #0f2744; --navy3: #0a1e36;
+      --green: #059669; --green2: #047857;
+      --red:   #dc2626; --amber: #d97706;
+      --muted: #64748b; --border: #e5e7eb;
+      --bg:    #f1f5f9; --card:   #ffffff;
+      --text:  #0f172a;
     }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; font-size: 14px; -webkit-font-smoothing: antialiased; }
 
-    /* ── Nav ── */
-    header {
-      background: var(--card); border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
-      padding: 0 32px; height: 56px; display: flex; align-items: center; gap: 0; flex-shrink: 0;
+    /* ── HEADER ── */
+    .header {
+      background: var(--navy3);
+      background-image: radial-gradient(ellipse at 70% 50%, rgba(5,150,105,.15) 0%, transparent 60%);
+      padding: 0 40px; flex-shrink: 0;
     }
-    .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: .95rem; color: #0f172a; letter-spacing: -.4px; margin-right: 20px; }
-    .brand-mark { width: 28px; height: 28px; background: var(--navy); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: .66rem; font-weight: 900; flex-shrink: 0; box-shadow: 0 2px 6px rgba(26,58,92,.35); }
-    .sep  { color: #d1d5db; margin: 0 10px; }
-    .page-label { font-size: .82rem; color: #6b7280; font-weight: 500; }
-    .nav-links { margin-left: auto; display: flex; gap: 2px; }
-    .nav-links a { font-size: .82rem; color: var(--muted); text-decoration: none; padding: 6px 11px; border-radius: 6px; transition: background .15s; font-weight: 500; }
-    .nav-links a:hover  { background: #f1f5f9; color: var(--navy); }
-    .nav-links a.active { background: #eff6ff; color: var(--navy); font-weight: 600; }
+    .header-top { display: flex; align-items: center; height: 56px; border-bottom: 1px solid rgba(255,255,255,.08); gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-logo { width: 30px; height: 30px; background: var(--green); border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(5,150,105,.4); }
+    .brand-logo svg { width: 15px; height: 15px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; }
+    .brand-name { font-size: .88rem; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+    .header-sep { color: rgba(255,255,255,.2); margin: 0 4px; }
+    .header-page { font-size: .82rem; color: rgba(255,255,255,.5); font-weight: 500; }
+    .header-nav { margin-left: auto; display: flex; gap: 2px; }
+    .header-nav a { font-size: .78rem; color: rgba(255,255,255,.45); text-decoration: none; padding: 5px 10px; border-radius: 6px; font-weight: 500; transition: all .15s; }
+    .header-nav a:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .header-nav a.active { color: #fff; background: rgba(255,255,255,.12); font-weight: 600; }
 
-    /* ── Layout ── */
-    .layout { display: flex; flex: 1; overflow: hidden; }
-
-    /* ── Sidebar ── */
-    .sidebar { width: 220px; min-width: 220px; background: var(--card); border-right: 1px solid var(--border); overflow-y: auto; padding: 16px 0; display: flex; flex-direction: column; gap: 0; }
-    .sidebar-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; padding: 0 16px 10px; }
-    .cat-item { padding: 10px 16px; cursor: pointer; font-size: .85rem; font-weight: 500; color: #374151; border-left: 3px solid transparent; transition: background .1s; display: flex; justify-content: space-between; align-items: center; }
-    .cat-item:hover { background: #f8fafc; }
-    .cat-item.active { background: #eff6ff; border-left-color: var(--navy); color: var(--navy); font-weight: 600; }
-    .cat-badge { font-size: 11px; background: #f1f5f9; color: #94a3b8; padding: 2px 7px; border-radius: 10px; }
-
-    .sidebar-sep { height: 1px; background: var(--border); margin: 8px 0; }
-
-    .upload-area { padding: 12px 14px; }
-    .upload-btn {
-      width: 100%; padding: 9px; border: 1.5px dashed #cbd5e1; border-radius: 10px;
-      background: #f8fafc; cursor: pointer; font-size: .8rem; font-weight: 600; color: var(--muted);
-      font-family: inherit; transition: all .15s; text-align: center;
+    .header-body { padding: 20px 0 0; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+    .header-title-row { display: flex; align-items: baseline; gap: 14px; }
+    .header-title { font-size: 1.5rem; font-weight: 900; color: #fff; letter-spacing: -.04em; }
+    .header-title span { color: #34d399; }
+    .header-stats-row { display: flex; gap: 24px; margin-top: 6px; padding-bottom: 20px; }
+    .hstat-mini { display: flex; flex-direction: column; }
+    .hstat-mini-val { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: -.03em; line-height: 1; }
+    .hstat-mini-label { font-size: .65rem; font-weight: 600; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .07em; margin-top: 3px; }
+    .header-actions { display: flex; gap: 10px; align-items: center; padding-bottom: 20px; }
+    .btn-upload {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 9px;
+      background: var(--green); color: #fff; border: none;
+      font-size: .82rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; box-shadow: 0 2px 8px rgba(5,150,105,.4);
+      transition: opacity .15s; white-space: nowrap;
     }
-    .upload-btn:hover { border-color: var(--navy); color: var(--navy); background: #eff6ff; }
+    .btn-upload:hover { opacity: .88; }
+    .btn-upload svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+    .btn-coverage {
+      padding: 9px 16px; border-radius: 9px;
+      background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.15);
+      font-size: .82rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .btn-coverage:hover { background: rgba(255,255,255,.15); color: #fff; }
     #fileInput { display: none; }
-    .upload-status { font-size: .75rem; margin-top: 8px; padding: 6px 10px; border-radius: 7px; }
-    .upload-status.ok  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-    .upload-status.err { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
 
-    .coverage-box { padding: 0 14px 14px; }
-    .cov-btn { width: 100%; padding: 7px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); font-size: .78rem; font-weight: 600; color: var(--muted); font-family: inherit; cursor: pointer; transition: background .15s; }
-    .cov-btn:hover { background: #f1f5f9; color: var(--navy); }
+    /* ── CATEGORY STRIP ── */
+    .cat-strip-wrap { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 40px; flex-shrink: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .cat-strip-wrap::-webkit-scrollbar { display: none; }
+    .cat-strip { display: flex; gap: 4px; padding: 10px 0; min-width: max-content; }
+    .cat-pill {
+      padding: 6px 14px; border-radius: 20px; font-size: .8rem; font-weight: 600;
+      color: var(--muted); background: transparent; border: 1.5px solid transparent;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+    }
+    .cat-pill:hover { background: #f1f5f9; color: var(--navy); }
+    .cat-pill.active { background: #eff6ff; border-color: #bfdbfe; color: var(--navy); }
+    .cat-pill-count { font-size: .7rem; background: rgba(26,58,92,.1); color: var(--navy); padding: 1px 6px; border-radius: 10px; font-weight: 700; }
+    .cat-pill.active .cat-pill-count { background: var(--navy); color: #fff; }
 
-    /* ── Main ── */
-    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
-    .toolbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-    .toolbar h2 { font-size: 15px; font-weight: 700; color: #0f172a; }
-    .toolbar .badge { font-size: 12px; background: #f1f5f9; color: #94a3b8; padding: 3px 10px; border-radius: 10px; }
-    .search-box { margin-left: auto; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; width: 200px; background: #f8fafc; color: #1e293b; }
-    .search-box:focus { border-color: var(--navy); background: #fff; }
-
-    /* ── Mode tabs ── */
-    .mode-tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; flex-shrink: 0; }
+    /* ── MODE TABS ── */
+    .mode-tabs { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 0; flex-shrink: 0; }
     .mode-tab { padding: 10px 16px; font-size: .82rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
     .mode-tab:hover { color: var(--navy); }
     .mode-tab.active { color: var(--navy); border-bottom-color: var(--navy); }
 
-    /* ── Price list table ── */
+    /* ── TOOLBAR ── */
+    .toolbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 10px 40px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .toolbar-title { font-size: .9rem; font-weight: 700; color: var(--text); }
+    .toolbar-badge { font-size: .72rem; background: #f1f5f9; color: #94a3b8; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
+    .search-box { margin-left: auto; padding: 7px 12px 7px 32px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .82rem; font-family: inherit; outline: none; width: 220px; background: #f8fafc; color: var(--text); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 10px center; }
+    .search-box:focus { border-color: var(--navy); background-color: #fff; }
+
+    /* ── PRICE TABLE ── */
     .table-wrap { flex: 1; overflow: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
     thead { position: sticky; top: 0; z-index: 10; }
-    thead th { background: #f8fafc; padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    thead th { background: #f8fafc; padding: 9px 16px; text-align: left; font-size: .65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; border-bottom: 1px solid var(--border); white-space: nowrap; }
     thead th.num { text-align: right; }
-    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+    tbody tr { border-bottom: 1px solid #f8fafc; transition: background .1s; }
     tbody tr:hover { background: #f8fafc; }
-    tbody td { padding: 8px 14px; color: #1e293b; }
-    tbody td.num { text-align: right; font-variant-numeric: tabular-nums; color: #475569; }
-    tbody td.price-cur { text-align: right; font-weight: 700; color: #1d4ed8; background: #eff6ff; border-radius: 5px; }
-    tbody td.changed-up   { color: var(--red); }
-    tbody td.changed-down { color: var(--green); }
-    .unit-pill { font-size: .72rem; background: #f1f5f9; color: #64748b; padding: 1px 7px; border-radius: 9px; }
+    tbody td { padding: 9px 16px; color: var(--text); }
+    .item-name { font-weight: 500; }
+    .pill { font-size: .68rem; background: #f1f5f9; color: var(--muted); padding: 2px 8px; border-radius: 9px; font-weight: 500; }
+    .pill.bo  { background: #eff6ff; color: #1d4ed8; }
+    .pill.rm  { background: #f0fdf4; color: var(--green); }
+    .pill.ep  { background: #fdf4ff; color: #7e22ce; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; color: #475569; }
+    td.price-cur { text-align: right; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+    td.changed-up   { color: var(--red); font-size: .75rem; font-weight: 700; text-align: right; }
+    td.changed-down { color: var(--green); font-size: .75rem; font-weight: 700; text-align: right; }
+    td.no-change { text-align: right; color: #cbd5e1; }
 
-    /* ── Cost estimator ── */
-    .estimator-wrap { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-    .est-controls { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    /* ── COST ESTIMATOR ── */
+    .estimator-wrap { flex: 1; overflow-y: auto; padding: 24px 40px; display: flex; flex-direction: column; gap: 16px; }
+    .est-controls { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; background: var(--card); padding: 16px; border-radius: 12px; border: 1.5px solid var(--border); }
     .est-field { display: flex; flex-direction: column; gap: 5px; }
-    .est-field label { font-size: .78rem; font-weight: 600; color: #374151; }
-    .est-field select, .est-field input {
-      padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: .88rem; font-family: inherit; outline: none; background: #f8fafc;
-    }
+    .est-field label { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .est-field select, .est-field input { padding: 8px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .85rem; font-family: inherit; outline: none; background: #f8fafc; color: var(--text); }
     .est-field select:focus, .est-field input:focus { border-color: var(--navy); background: #fff; }
-    .btn-add { padding: 9px 20px; border: none; border-radius: 9px; background: var(--navy); color: #fff; font-size: .88rem; font-weight: 700; font-family: inherit; cursor: pointer; box-shadow: 0 2px 8px rgba(26,58,92,.25); transition: opacity .15s; }
+    .btn-add { padding: 9px 20px; border: none; border-radius: 9px; background: var(--navy); color: #fff; font-size: .85rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity .15s; margin-top: 20px; }
     .btn-add:hover { opacity: .88; }
-
-    .est-table-wrap { background: var(--card); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04); overflow: hidden; }
-    .est-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-    .est-table thead tr { background: linear-gradient(90deg, var(--navy2) 0%, var(--navy) 100%); }
-    .est-table thead th { padding: 10px 14px; text-align: left; font-size: .74rem; font-weight: 600; color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px; }
+    .est-table-wrap { background: var(--card); border-radius: 12px; border: 1.5px solid var(--border); overflow: hidden; }
+    .est-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .est-table thead tr { background: var(--navy3); }
+    .est-table thead th { padding: 10px 16px; text-align: left; font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: .07em; }
     .est-table thead th.num { text-align: right; }
     .est-table tbody tr { border-bottom: 1px solid #f1f5f9; }
-    .est-table tbody td { padding: 9px 14px; }
+    .est-table tbody td { padding: 9px 16px; }
     .est-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; color: #475569; }
-    .est-table tbody td.total-col { text-align: right; font-weight: 700; color: #1d4ed8; font-variant-numeric: tabular-nums; }
-    .est-table tfoot tr { background: #f0fdf4; }
-    .est-table tfoot td { padding: 11px 14px; font-weight: 800; color: #065f46; font-variant-numeric: tabular-nums; }
+    .est-table tbody td.total-col { text-align: right; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+    .est-table tfoot tr { background: #f0fdf4; border-top: 2px solid #bbf7d0; }
+    .est-table tfoot td { padding: 12px 16px; font-weight: 800; color: #065f46; font-variant-numeric: tabular-nums; }
     .est-table tfoot td.num { text-align: right; font-size: 1rem; }
-    .remove-btn { background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 1rem; padding: 2px 6px; border-radius: 4px; transition: color .1s; }
-    .remove-btn:hover { color: var(--red); }
-
-    .cat-subtotal { background: #f8fafc; }
-    .cat-subtotal td { padding: 7px 14px; font-size: .8rem; font-weight: 700; color: var(--muted); }
+    .remove-btn { background: none; border: none; cursor: pointer; color: #cbd5e1; font-size: .82rem; padding: 3px 7px; border-radius: 4px; transition: color .1s; }
+    .remove-btn:hover { color: var(--red); background: #fef2f2; }
+    .cat-subtotal { background: #fafafa; }
+    .cat-subtotal td { padding: 6px 16px; font-size: .75rem; font-weight: 700; color: var(--muted); }
     .cat-subtotal td.num { text-align: right; color: var(--navy); }
+    .est-actions { display: flex; gap: 10px; }
+    .btn-secondary { padding: 7px 16px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--card); font-size: .78rem; font-weight: 600; color: var(--muted); font-family: inherit; cursor: pointer; transition: all .15s; }
+    .btn-secondary:hover { border-color: var(--navy); color: var(--navy); background: #f8fafc; }
 
-    /* ── Coverage panel ── */
-    .cov-wrap { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-    .cov-section { background: var(--card); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.05); padding: 20px 24px; }
+    /* ── COVERAGE ── */
+    .cov-wrap { flex: 1; overflow-y: auto; padding: 24px 40px; display: flex; flex-direction: column; gap: 16px; }
+    .cov-section { background: var(--card); border-radius: 12px; border: 1.5px solid var(--border); padding: 20px 24px; }
     .cov-section h3 { font-size: .85rem; font-weight: 700; margin-bottom: 12px; }
-    .cov-section h3.ok     { color: var(--green); }
-    .cov-section h3.miss   { color: var(--red); }
-    .cov-section h3.extra  { color: var(--amber); }
+    .cov-section h3.ok   { color: var(--green); }
+    .cov-section h3.miss { color: var(--red); }
+    .cov-section h3.extra{ color: var(--amber); }
     .cov-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip { font-size: .78rem; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+    .chip { font-size: .75rem; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
     .chip.ok    { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
     .chip.miss  { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
     .chip.extra { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
 
-    /* ── State box ── */
-    .state-box { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: #94a3b8; font-size: 14px; text-align: center; padding: 40px; }
+    /* ── UPLOAD STATUS ── */
+    .upload-status-bar { padding: 10px 40px; font-size: .78rem; font-weight: 600; flex-shrink: 0; }
+    .upload-status-bar.ok  { background: #f0fdf4; color: #166534; border-bottom: 1px solid #bbf7d0; }
+    .upload-status-bar.err { background: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca; }
+
+    /* ── STATE / SPINNER ── */
+    .state-box { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 12px; color: #94a3b8; font-size: .88rem; text-align: center; padding: 40px; }
     .spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: var(--navy); border-radius: 50%; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .hidden { display: none !important; }
 
-    .status-bar { background: var(--card); border-top: 1px solid var(--border); padding: 6px 24px; font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+    /* ── STATUS BAR ── */
+    .status-bar { background: var(--card); border-top: 1px solid var(--border); padding: 5px 40px; font-size: .7rem; color: #94a3b8; flex-shrink: 0; }
 
-    /* ── Mobile ── */
+    /* ── MOBILE ── */
     @media (max-width: 768px) {
-      header { padding: 0 14px; }
-      .nav-links { display: none; }
-      .sep, .page-label { display: none; }
-      .layout { flex-direction: column; overflow: visible; }
-      .sidebar {
-        width: 100%; min-width: unset; border-right: none;
-        border-bottom: 1px solid var(--border);
-        padding: 8px 0 0; display: flex; flex-direction: column; gap: 0;
-      }
-      .sidebar-title { padding: 0 14px 6px; }
-      .cat-item { padding: 8px 14px; }
-      .upload-area { padding: 8px 12px; }
-      .coverage-box { padding: 0 12px 8px; }
-      .main { overflow: visible; }
-      .toolbar { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+      .header { padding: 0 16px; }
+      .header-nav { display: none; }
+      .header-body { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .header-stats-row { padding-bottom: 0; }
+      .header-actions { padding-bottom: 16px; }
+      .cat-strip-wrap { padding: 0 16px; }
+      .mode-tabs { padding: 0 16px; }
+      .toolbar { padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
       .search-box { margin-left: 0; width: 100%; }
-      .mode-tabs { padding: 0 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-      .mode-tabs::-webkit-scrollbar { display: none; }
-      .table-wrap { overflow: auto; }
-      .estimator-wrap { padding: 14px; }
+      .estimator-wrap { padding: 16px; }
       .est-controls { flex-direction: column; align-items: stretch; }
-      .est-field select, .est-field input { width: 100%; }
-      .btn-add { width: 100%; }
-      .cov-wrap { padding: 14px; }
+      .btn-add { width: 100%; margin-top: 0; }
+      .cov-wrap { padding: 16px; }
+      .upload-status-bar { padding: 10px 16px; }
+      .status-bar { padding: 5px 16px; }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo"><div class="brand-mark">EN</div>ENCON</div>
-  <span class="sep">/</span>
-  <div class="page-label">Price Master</div>
-  <nav class="nav-links">
-    <a href="/costing">VLPH</a>
-    <a href="/hlph">HLPH</a>
-    <a href="/regen">Regen</a>
-    <a href="/quote">Quote Builder</a>
-    <a href="/price-master" class="active">Prices</a>
-    <a href="/viewer">DB Viewer</a>
-  </nav>
-</header>
-
-<div class="layout">
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-title">Categories</div>
-    <div id="catList">
-      <div style="padding:12px 16px; font-size:12px; color:#94a3b8;">Loading…</div>
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <a href="/" class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2c0 6-6 8-6 14a6 6 0 0012 0c0-6-6-8-6-14z"/></svg>
+      </div>
+      <span class="brand-name">ENCON</span>
+    </a>
+    <span class="header-sep">/</span>
+    <span class="header-page">Price Master</span>
+    <nav class="header-nav">
+      <a href="/costing">VLPH</a>
+      <a href="/hlph">HLPH</a>
+      <a href="/regen">Regen</a>
+      <a href="/quote">Quote Builder</a>
+      <a href="/price-master" class="active">Prices</a>
+      <a href="/viewer">DB Viewer</a>
+    </nav>
+  </div>
+  <div class="header-body">
+    <div>
+      <div class="header-title">Price <span>Master</span></div>
+      <div class="header-stats-row">
+        <div class="hstat-mini">
+          <div class="hstat-mini-val" id="stat-total">—</div>
+          <div class="hstat-mini-label">Total Items</div>
+        </div>
+        <div class="hstat-mini">
+          <div class="hstat-mini-val" id="stat-cats">—</div>
+          <div class="hstat-mini-label">Categories</div>
+        </div>
+        <div class="hstat-mini">
+          <div class="hstat-mini-val" id="stat-changes">—</div>
+          <div class="hstat-mini-label">Price Changes</div>
+        </div>
+      </div>
     </div>
-
-    <div class="sidebar-sep"></div>
-
-    <div class="upload-area">
-      <div class="sidebar-title" style="padding-bottom:8px;">Update Prices</div>
-      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-        ↑ Upload Excel
+    <div class="header-actions">
+      <button class="btn-coverage" onclick="showCoverage()">BOM Coverage</button>
+      <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload Pricebook
       </button>
       <input type="file" id="fileInput" accept=".xlsx" onchange="uploadFile(this)"/>
-      <div id="uploadStatus" class="hidden upload-status"></div>
-      <div style="font-size:.72rem; color:#94a3b8; margin-top:8px; line-height:1.5;">
-        Upload your pricelist workbook directly — any format accepted.
-      </div>
     </div>
-
-    <div class="sidebar-sep"></div>
-
-    <div class="coverage-box">
-      <div class="sidebar-title" style="padding-bottom:8px;">BOM Coverage</div>
-      <button class="cov-btn" onclick="showCoverage()">Check Coverage →</button>
-    </div>
-  </div>
-
-  <!-- Main -->
-  <div class="main">
-    <div class="mode-tabs">
-      <div class="mode-tab active" id="tab-list"       onclick="setMode('list')">Price List</div>
-      <div class="mode-tab"        id="tab-estimator"  onclick="setMode('estimator')">Cost Estimator</div>
-      <div class="mode-tab hidden" id="tab-coverage"   onclick="setMode('coverage')">Coverage Report</div>
-    </div>
-
-    <!-- Toolbar (price list mode) -->
-    <div class="toolbar" id="listToolbar">
-      <h2 id="catTitle">All Items</h2>
-      <span class="badge" id="itemCount">0 items</span>
-      <input class="search-box" id="searchBox" placeholder="Search items…" oninput="filterTable(this.value)"/>
-    </div>
-
-    <!-- Price list view -->
-    <div class="table-wrap hidden" id="listView">
-      <table>
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>Category</th>
-            <th>Unit</th>
-            <th class="num">Current Price ₹</th>
-            <th class="num">Previous Price ₹</th>
-            <th class="num">Change</th>
-          </tr>
-        </thead>
-        <tbody id="priceBody"></tbody>
-      </table>
-    </div>
-
-    <!-- Cost estimator view -->
-    <div class="estimator-wrap hidden" id="estimatorView">
-      <div class="est-controls">
-        <div class="est-field">
-          <label>Category</label>
-          <select id="estCat" onchange="populateEstItems()">
-            <option value="">All</option>
-          </select>
-        </div>
-        <div class="est-field">
-          <label>Item</label>
-          <select id="estItem" style="min-width:280px;"></select>
-        </div>
-        <div class="est-field">
-          <label>Quantity</label>
-          <input id="estQty" type="number" value="1" min="0.001" step="any" style="width:100px;"/>
-        </div>
-        <div class="est-field">
-          <label>Unit</label>
-          <input id="estUnit" readonly style="width:70px; background:#f1f5f9; color:var(--muted);"/>
-        </div>
-        <button class="btn-add" onclick="addEstRow()">+ Add</button>
-      </div>
-
-      <div class="est-table-wrap">
-        <table class="est-table">
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>Item Name</th>
-              <th>Unit</th>
-              <th class="num">Unit Price ₹</th>
-              <th class="num">Qty</th>
-              <th class="num">Total ₹</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="estBody">
-            <tr id="estEmpty">
-              <td colspan="7" style="text-align:center; color:#94a3b8; padding:32px; font-size:.9rem;">
-                Add items above to build a cost estimate
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="5" style="font-size:.82rem; color:#94a3b8;">GRAND TOTAL</td>
-              <td class="num" id="estGrandTotal">₹ 0.00</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <div style="display:flex; gap:10px; margin-top:4px;">
-        <button onclick="clearEstimate()" style="padding:7px 16px; border:1.5px solid var(--border); border-radius:8px; background:var(--card); font-size:.82rem; font-weight:600; font-family:inherit; cursor:pointer;">Clear All</button>
-        <button onclick="copyEstimate()" style="padding:7px 16px; border:1.5px solid var(--border); border-radius:8px; background:var(--card); font-size:.82rem; font-weight:600; font-family:inherit; cursor:pointer;">Copy as Text</button>
-      </div>
-    </div>
-
-    <!-- Coverage view -->
-    <div class="cov-wrap hidden" id="coverageView">
-      <div class="cov-section">
-        <h3 class="miss" id="missTitle">Missing Prices (0)</h3>
-        <div class="cov-chips" id="missChips"></div>
-      </div>
-      <div class="cov-section">
-        <h3 class="ok" id="covTitle">Covered (0)</h3>
-        <div class="cov-chips" id="covChips"></div>
-      </div>
-      <div class="cov-section">
-        <h3 class="extra" id="extraTitle">Extra (not in BOM) (0)</h3>
-        <div class="cov-chips" id="extraChips"></div>
-      </div>
-    </div>
-
-    <div class="state-box hidden" id="stateBox">
-      <div class="spinner" id="stateSpinner"></div>
-      <div id="stateMsg">Loading…</div>
-    </div>
-
-    <div class="status-bar" id="statusBar">Ready</div>
   </div>
 </div>
 
+<!-- UPLOAD STATUS -->
+<div id="uploadStatus" class="upload-status-bar hidden"></div>
+
+<!-- CATEGORY STRIP -->
+<div class="cat-strip-wrap">
+  <div class="cat-strip" id="catStrip">
+    <div style="font-size:.78rem;color:#94a3b8;padding:6px 0;">Loading…</div>
+  </div>
+</div>
+
+<!-- MODE TABS -->
+<div class="mode-tabs">
+  <div class="mode-tab active" id="tab-list"      onclick="setMode('list')">Price List</div>
+  <div class="mode-tab"       id="tab-estimator"  onclick="setMode('estimator')">Cost Estimator</div>
+  <div class="mode-tab hidden" id="tab-coverage"  onclick="setMode('coverage')">Coverage Report</div>
+</div>
+
+<!-- TOOLBAR (price list only) -->
+<div class="toolbar" id="listToolbar">
+  <span class="toolbar-title" id="catTitle">All Items</span>
+  <span class="toolbar-badge" id="itemCount">0 items</span>
+  <input class="search-box" id="searchBox" placeholder="Search items…" oninput="filterTable(this.value)"/>
+</div>
+
+<!-- PRICE LIST VIEW -->
+<div class="table-wrap hidden" id="listView">
+  <table>
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Category</th>
+        <th>Unit</th>
+        <th class="num">Current Price ₹</th>
+        <th class="num">Previous ₹</th>
+        <th class="num">Change</th>
+      </tr>
+    </thead>
+    <tbody id="priceBody"></tbody>
+  </table>
+</div>
+
+<!-- COST ESTIMATOR VIEW -->
+<div class="estimator-wrap hidden" id="estimatorView">
+  <div class="est-controls">
+    <div class="est-field">
+      <label>Category</label>
+      <select id="estCat" onchange="populateEstItems()">
+        <option value="">All</option>
+      </select>
+    </div>
+    <div class="est-field">
+      <label>Item</label>
+      <select id="estItem" style="min-width:280px;"></select>
+    </div>
+    <div class="est-field">
+      <label>Quantity</label>
+      <input id="estQty" type="number" value="1" min="0.001" step="any" style="width:100px;"/>
+    </div>
+    <div class="est-field">
+      <label>Unit</label>
+      <input id="estUnit" readonly style="width:70px;background:#f1f5f9;color:var(--muted);"/>
+    </div>
+    <button class="btn-add" onclick="addEstRow()">+ Add</button>
+  </div>
+
+  <div class="est-table-wrap">
+    <table class="est-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Item Name</th>
+          <th>Unit</th>
+          <th class="num">Unit Price ₹</th>
+          <th class="num">Qty</th>
+          <th class="num">Total ₹</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="estBody">
+        <tr id="estEmpty">
+          <td colspan="7" style="text-align:center;color:#94a3b8;padding:40px;font-size:.88rem;">
+            Add items above to build a cost estimate
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5" style="font-size:.8rem;color:#94a3b8;">GRAND TOTAL</td>
+          <td class="num" id="estGrandTotal">₹ 0.00</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="est-actions">
+    <button class="btn-secondary" onclick="clearEstimate()">Clear All</button>
+    <button class="btn-secondary" onclick="copyEstimate()">Copy as Text</button>
+  </div>
+</div>
+
+<!-- COVERAGE VIEW -->
+<div class="cov-wrap hidden" id="coverageView"></div>
+
+<!-- STATE BOX -->
+<div class="state-box hidden" id="stateBox">
+  <div class="spinner" id="stateSpinner"></div>
+  <div id="stateMsg">Loading…</div>
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar" id="statusBar">Ready</div>
+
 <script>
   // ── State ────────────────────────────────────────────────────────────────
-  let allItems = [];   // [{item, category, unit, price, previous_price}]
+  let allItems = [];
   let activeCategory = null;
   let currentMode = 'list';
-  let estRows = [];    // [{category, item, unit, price, qty}]
+  let estRows = [];
+
+  const CAT_CLASS = { 'Bought Out': 'bo', 'Raw Material': 'rm', 'ENCON Purchase': 'ep' };
 
   // ── Init ─────────────────────────────────────────────────────────────────
   async function init() {
@@ -355,16 +369,19 @@
       const res  = await fetch('/api/price-master/items');
       const data = await res.json();
       if (data.error && data.total === 0) {
-        showState('No price data yet — upload component_price_master.xlsx to get started');
-        renderSidebar({});
+        showState('No price data yet — upload a pricebook to get started');
+        renderCatStrip({});
         return;
       }
-      // Flatten
       allItems = [];
       for (const [cat, items] of Object.entries(data.categories)) {
         items.forEach(i => allItems.push({ category: cat, ...i }));
       }
-      renderSidebar(data.categories);
+      const changes = allItems.filter(i => i.previous_price && Number(i.previous_price) !== Number(i.price)).length;
+      document.getElementById('stat-total').textContent   = data.total;
+      document.getElementById('stat-cats').textContent    = Object.keys(data.categories).length;
+      document.getElementById('stat-changes').textContent = changes || '—';
+      renderCatStrip(data.categories);
       renderTable(allItems);
       populateEstCats(data.categories);
       hideState();
@@ -375,21 +392,21 @@
     }
   }
 
-  // ── Sidebar ───────────────────────────────────────────────────────────────
-  function renderSidebar(cats) {
-    const list = document.getElementById('catList');
+  // ── Category Strip ────────────────────────────────────────────────────────
+  function renderCatStrip(cats) {
+    const strip = document.getElementById('catStrip');
     const total = allItems.length;
-    let html = `<div class="cat-item active" id="cat-all" onclick="selectCat(null, this)">
-      All Items <span class="cat-badge">${total}</span></div>`;
+    let html = `<div class="cat-pill active" id="cat-all" onclick="selectCat(null, this)">
+      All Items <span class="cat-pill-count">${total}</span></div>`;
     for (const [cat, items] of Object.entries(cats)) {
-      html += `<div class="cat-item" id="cat-${cat}" onclick="selectCat('${cat}', this)">
-        ${cat} <span class="cat-badge">${items.length}</span></div>`;
+      html += `<div class="cat-pill" id="cat-${cat}" onclick="selectCat('${cat}', this)">
+        ${cat} <span class="cat-pill-count">${items.length}</span></div>`;
     }
-    list.innerHTML = html;
+    strip.innerHTML = html;
   }
 
   function selectCat(cat, el) {
-    document.querySelectorAll('.cat-item').forEach(e => e.classList.remove('active'));
+    document.querySelectorAll('.cat-pill').forEach(e => e.classList.remove('active'));
     el.classList.add('active');
     activeCategory = cat;
     const filtered = cat ? allItems.filter(i => i.category === cat) : allItems;
@@ -398,32 +415,31 @@
     document.getElementById('searchBox').value = '';
   }
 
-  // ── Price table ───────────────────────────────────────────────────────────
+  // ── Price Table ───────────────────────────────────────────────────────────
   function renderTable(items) {
     document.getElementById('itemCount').textContent = `${items.length} items`;
     const body = document.getElementById('priceBody');
     if (!items.length) {
-      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:#94a3b8;">No items</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">No items found</td></tr>';
       return;
     }
     body.innerHTML = items.map(i => {
       const cur  = Number(i.price);
       const prev = Number(i.previous_price);
-      let changeTd = '<td class="num">—</td>';
+      const cls  = CAT_CLASS[i.category] || '';
+      let changeTd = '<td class="no-change">—</td>';
       if (prev && prev !== cur) {
-        const pct = ((cur - prev) / prev * 100).toFixed(1);
-        const cls = cur > prev ? 'changed-up' : 'changed-down';
+        const pct   = ((cur - prev) / prev * 100).toFixed(1);
         const arrow = cur > prev ? '▲' : '▼';
-        changeTd = `<td class="num ${cls}">${arrow} ${Math.abs(pct)}%</td>`;
-      } else if (prev && prev === cur) {
-        changeTd = '<td class="num" style="color:#94a3b8;">—</td>';
+        const tdCls = cur > prev ? 'changed-up' : 'changed-down';
+        changeTd = `<td class="${tdCls}">${arrow} ${Math.abs(pct)}%</td>`;
       }
       return `<tr>
-        <td>${i.item}</td>
-        <td><span class="unit-pill">${i.category}</span></td>
-        <td><span class="unit-pill">${i.unit}</span></td>
+        <td class="item-name">${i.item}</td>
+        <td><span class="pill ${cls}">${i.category}</span></td>
+        <td><span class="pill">${i.unit}</span></td>
         <td class="price-cur">${fmtN(cur)}</td>
-        <td class="num">${prev ? fmtN(prev) : '—'}</td>
+        <td class="num">${prev ? fmtN(prev) : '<span style="color:#cbd5e1">—</span>'}</td>
         ${changeTd}
       </tr>`;
     }).join('');
@@ -443,13 +459,13 @@
     ['list','estimator','coverage'].forEach(m => {
       document.getElementById('tab-' + m)?.classList.toggle('active', m === mode);
     });
-    document.getElementById('listToolbar').style.display  = mode === 'list'      ? 'flex'    : 'none';
+    document.getElementById('listToolbar').style.display  = mode === 'list' ? 'flex' : 'none';
     document.getElementById('listView').classList.toggle('hidden',      mode !== 'list');
     document.getElementById('estimatorView').classList.toggle('hidden', mode !== 'estimator');
     document.getElementById('coverageView').classList.toggle('hidden',  mode !== 'coverage');
   }
 
-  // ── Cost estimator ────────────────────────────────────────────────────────
+  // ── Cost Estimator ────────────────────────────────────────────────────────
   function populateEstCats(cats) {
     const sel = document.getElementById('estCat');
     sel.innerHTML = '<option value="">All</option>' +
@@ -478,80 +494,54 @@
   });
 
   function addEstRow() {
-    const sel  = document.getElementById('estItem');
-    const opt  = sel.options[sel.selectedIndex];
+    const sel = document.getElementById('estItem');
+    const opt = sel.options[sel.selectedIndex];
     if (!opt) return;
-    const qty  = parseFloat(document.getElementById('estQty').value) || 1;
-    estRows.push({
-      category: opt.dataset.cat,
-      item:     opt.value,
-      unit:     opt.dataset.unit || 'nos',
-      price:    parseFloat(opt.dataset.price) || 0,
-      qty,
-    });
+    const qty = parseFloat(document.getElementById('estQty').value) || 1;
+    estRows.push({ category: opt.dataset.cat, item: opt.value, unit: opt.dataset.unit || 'nos', price: parseFloat(opt.dataset.price) || 0, qty });
     renderEstTable();
   }
 
-  function removeEstRow(idx) {
-    estRows.splice(idx, 1);
-    renderEstTable();
-  }
+  function removeEstRow(idx) { estRows.splice(idx, 1); renderEstTable(); }
 
   function renderEstTable() {
     const body = document.getElementById('estBody');
     if (!estRows.length) {
-      body.innerHTML = `<tr id="estEmpty"><td colspan="7" style="text-align:center;color:#94a3b8;padding:32px;font-size:.9rem;">Add items above to build a cost estimate</td></tr>`;
+      body.innerHTML = `<tr id="estEmpty"><td colspan="7" style="text-align:center;color:#94a3b8;padding:40px;font-size:.88rem;">Add items above to build a cost estimate</td></tr>`;
       document.getElementById('estGrandTotal').textContent = '₹ 0.00';
       return;
     }
-
-    // Group by category for subtotals
     const groups = {};
-    estRows.forEach((r, i) => {
-      groups[r.category] = groups[r.category] || [];
-      groups[r.category].push({ ...r, idx: i });
-    });
-
-    let html = '';
-    let grand = 0;
+    estRows.forEach((r, i) => { groups[r.category] = groups[r.category] || []; groups[r.category].push({ ...r, idx: i }); });
+    let html = '', grand = 0;
     for (const [cat, rows] of Object.entries(groups)) {
-      let subTotal = 0;
+      let sub = 0;
       rows.forEach(r => {
         const total = r.price * r.qty;
-        subTotal += total;
-        grand    += total;
+        sub += total; grand += total;
         html += `<tr>
-          <td><span class="unit-pill">${r.category}</span></td>
+          <td><span class="pill ${CAT_CLASS[r.category]||''}">${r.category}</span></td>
           <td>${r.item}</td>
-          <td><span class="unit-pill">${r.unit}</span></td>
+          <td><span class="pill">${r.unit}</span></td>
           <td class="num">${fmtN(r.price)}</td>
           <td class="num">${r.qty % 1 === 0 ? r.qty : r.qty.toFixed(3)}</td>
           <td class="total-col">${fmtN(total)}</td>
           <td><button class="remove-btn" onclick="removeEstRow(${r.idx})">✕</button></td>
         </tr>`;
       });
-      html += `<tr class="cat-subtotal">
-        <td colspan="5" style="text-align:right;">${cat} subtotal</td>
-        <td class="num">${fmtN(subTotal)}</td>
-        <td></td>
-      </tr>`;
+      html += `<tr class="cat-subtotal"><td colspan="5" style="text-align:right;">${cat} subtotal</td><td class="num">${fmtN(sub)}</td><td></td></tr>`;
     }
-
     body.innerHTML = html;
     document.getElementById('estGrandTotal').textContent = '₹ ' + fmtN(grand);
   }
 
-  function clearEstimate() {
-    estRows = [];
-    renderEstTable();
-  }
+  function clearEstimate() { estRows = []; renderEstTable(); }
 
   function copyEstimate() {
     let text = 'ENCON Cost Estimate\n' + '='.repeat(50) + '\n\n';
     let grand = 0;
     estRows.forEach(r => {
-      const total = r.price * r.qty;
-      grand += total;
+      const total = r.price * r.qty; grand += total;
       text += `${r.item.padEnd(40)} ${r.qty} ${r.unit.padEnd(6)} × ₹${fmtN(r.price).padStart(12)} = ₹${fmtN(total)}\n`;
     });
     text += '\n' + '-'.repeat(70) + '\nGRAND TOTAL' + ' '.repeat(53) + '₹' + fmtN(grand);
@@ -572,11 +562,9 @@
       const miss  = data.missing  || [];
       const cov   = data.covered  || [];
       const extra = data.extra    || [];
-
       const chips = (arr, cls) => arr.length
         ? arr.map(i => `<span class="chip ${cls}">${i}</span>`).join('')
         : `<span style="color:#94a3b8;font-size:.82rem;">None</span>`;
-
       document.getElementById('coverageView').innerHTML = `
         <div class="cov-section">
           <h3 class="miss">Missing Prices — ${miss.length} items (BOM will show ₹0)</h3>
@@ -587,12 +575,10 @@
           <div class="cov-chips">${chips(cov, 'ok')}</div>
         </div>
         <div class="cov-section">
-          <h3 class="extra">Extra (in DB but not required by BOM) — ${extra.length} items</h3>
+          <h3 class="extra">Extra (in DB, not in BOM) — ${extra.length} items</h3>
           <div class="cov-chips">${chips(extra, 'extra')}</div>
         </div>`;
-
-      document.getElementById('statusBar').textContent =
-        `Coverage: ${cov.length} covered, ${miss.length} missing`;
+      document.getElementById('statusBar').textContent = `Coverage: ${cov.length} covered, ${miss.length} missing`;
     } catch (e) {
       document.getElementById('coverageView').innerHTML =
         '<div class="state-box"><div>Failed to load coverage data</div></div>';
@@ -604,48 +590,43 @@
     const file = input.files[0];
     if (!file) return;
     const status = document.getElementById('uploadStatus');
-    const btn    = document.querySelector('.upload-btn');
-    status.className = 'upload-status';
+    const btn    = document.querySelector('.btn-upload');
+    status.className = 'upload-status-bar';
     status.textContent = 'Parsing workbook…';
     status.classList.remove('hidden');
     btn.disabled = true;
-    btn.textContent = '…';
 
     const fd = new FormData();
     fd.append('file', file);
-
     try {
       const res  = await fetch('/api/upload-pricelist', { method: 'POST', body: fd });
       const data = await res.json();
       if (data.error) {
-        status.className = 'upload-status err';
+        status.className = 'upload-status-bar err';
         status.textContent = data.error;
       } else {
-        status.className = 'upload-status ok';
-        status.textContent = `${data.total_rows_loaded ?? data.rows_loaded} items loaded. Uploaded successfully.`;
+        status.className = 'upload-status-bar ok';
+        status.textContent = `${data.total_rows_loaded ?? data.rows_loaded} items loaded — pricebook updated successfully.`;
         await init();
       }
     } catch (e) {
-      status.className = 'upload-status err';
+      status.className = 'upload-status-bar err';
       status.textContent = 'Upload failed — server not running?';
     }
     input.value = '';
     btn.disabled = false;
-    btn.textContent = '↑ Upload Excel';
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function fmtN(n) {
     return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
   function showState(msg) {
     document.getElementById('stateBox').classList.remove('hidden');
     document.getElementById('stateMsg').textContent = msg;
     document.getElementById('listView').classList.add('hidden');
     document.getElementById('estimatorView').classList.add('hidden');
   }
-
   function hideState() {
     document.getElementById('stateBox').classList.add('hidden');
   }
