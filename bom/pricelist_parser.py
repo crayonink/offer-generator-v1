@@ -5,8 +5,31 @@ Parses all sheets of the ENCON Pricelist WorkBook into SQLite tables.
 Used by both init_db.py and the /api/upload-pricelist endpoint.
 """
 import re
+import math
 import sqlite3
 import pandas as pd
+
+
+# ─────────────────────────────────────────────────────────────────
+# SS Pipe price calculation
+# Formula matches Excel:  E = C * G
+#   G (kg/mtr) = π/4 × (OD² - ID²) × 7850 / 1,000,000
+#   E (Rs/mtr) = price_per_kg × kg_per_mtr
+# ─────────────────────────────────────────────────────────────────
+
+def _ss_pipe_price_per_mtr(item_name: str, price_per_kg: float):
+    """
+    Parse OD and wall from name like 'SS Pipe 304 60 X 3mm'
+    and return price per metre.  Returns None if name doesn't match.
+    """
+    m = re.search(r'(\d+)\s*[Xx]\s*(\d+(?:\.\d+)?)\s*mm', item_name, re.I)
+    if not m:
+        return None
+    od_mm   = float(m.group(1))
+    wall_mm = float(m.group(2))
+    id_mm   = od_mm - 2 * wall_mm
+    kg_per_mtr = math.pi * (od_mm**2 - id_mm**2) * 7850 / (4 * 1_000_000)
+    return round(price_per_kg * kg_per_mtr, 4)
 
 
 def safe_float(v):
@@ -66,6 +89,13 @@ def parse_rates(xl, conn):
         price = clean_num(row.iloc[2]  if len(row) > 2 else None)
         prev  = clean_num(row.iloc[3]  if len(row) > 3 else None)
         if item and price and not is_header(item):
+            # SS Pipe: compute price per metre from geometry formula
+            if re.search(r'ss\s*pipe', item, re.I) and re.search(r'\d+\s*[Xx]\s*\d+\s*mm', item, re.I):
+                price_mtr = _ss_pipe_price_per_mtr(item, price)
+                if price_mtr is not None:
+                    prev_mtr = _ss_pipe_price_per_mtr(item, prev) if prev else price_mtr
+                    rows.append((item, "Raw Material", "mtr", price_mtr, prev_mtr))
+                    continue
             unit = "kg" if price <= 500 else "nos"
             if "per mtr" in item.lower() or "(per mtr)" in item.lower():
                 unit = "mtr"
