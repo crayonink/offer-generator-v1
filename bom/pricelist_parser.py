@@ -328,8 +328,14 @@ def _sync_blower_master(df_pricelist: pd.DataFrame, conn):
     Normalise blower_pricelist_master into the fixed-column schema that
     blower_selector.py expects:
         model, hp, airflow, cfm, pressure, price_basic, price_premium
-    Column names in blower_pricelist_master vary by Excel layout, so we
-    search by keyword rather than exact name.
+
+    ENCON prices (cols F/G): read directly — manually set selling prices.
+    PERKIN prices (cols L/M): computed from input amounts (col J, K):
+        price_without_motor = J × 1.8
+        price_with_motor    = K × 1.5 + J × 1.8
+    This replicates the Excel formulas =J*1.8 and =K*1.5+L so that if
+    J or K changes in the sheet, Python recalculates without needing
+    Excel to recalculate first.
     """
     if df_pricelist.empty:
         return
@@ -337,47 +343,56 @@ def _sync_blower_master(df_pricelist: pd.DataFrame, conn):
     cols = df_pricelist.columns.tolist()
 
     def _find_col(*keywords):
-        """Return first column whose name contains ALL keywords (case-insensitive)."""
         for c in cols:
             cl = c.lower()
             if all(kw in cl for kw in keywords):
                 return c
         return None
 
-    # airflow in Nm3/hr
-    airflow_col = (
-        _find_col("nm3") or
-        _find_col("airflow") or
-        _find_col("flow")
-    )
-    cfm_col          = _find_col("cfm")
-    price_basic_col  = _find_col("without") or _find_col("basic")
-    # "price with motor" — column that has both "with" and "motor" in the name,
-    # but NOT "without"
-    price_prem_col   = None
-    for c in cols:
-        cl = c.lower()
-        if "motor" in cl and "with" in cl and "without" not in cl:
-            price_prem_col = c
-            break
+    airflow_col  = _find_col("nm3") or _find_col("airflow") or _find_col("flow")
+    cfm_col      = _find_col("cfm")
     pressure_col = _find_col("pressure")
 
-    if not price_basic_col:
-        return  # can't sync without a price column
+    # ENCON price columns (manually set, read directly)
+    encon_basic_col = _find_col("price_without") or _find_col("price without")
+    # "price with motor" but NOT "without"
+    encon_prem_col = None
+    for c in cols:
+        cl = c.lower()
+        if "price" in cl and "with" in cl and "motor" in cl and "without" not in cl:
+            encon_prem_col = c
+            break
+
+    # PERKIN input columns: Amount (J) and Motor Price (K)
+    amount_col      = _find_col("amount")
+    motor_price_col = _find_col("motor_price") or _find_col("motor price")
 
     rows = []
     for _, r in df_pricelist.iterrows():
         model = r.get("model")
         if not model or str(model).lower() in ("nan", ""):
             continue
+
+        # Try ENCON price first; fall back to computing from PERKIN amounts
+        price_basic = safe_float(r[encon_basic_col]) if encon_basic_col else None
+        price_prem  = safe_float(r[encon_prem_col])  if encon_prem_col  else None
+
+        # If ENCON prices are missing/zero, compute from PERKIN amounts
+        if not price_basic and amount_col:
+            j = safe_float(r[amount_col]) or 0
+            k = safe_float(r[motor_price_col]) if motor_price_col else 0
+            if j:
+                price_basic = round(j * 1.8, 2)
+                price_prem  = round(k * 1.5 + price_basic, 2) if k else None
+
         rows.append((
             str(model),
-            str(r.get("hp",       "")) if "hp"       in cols else None,
-            str(r[airflow_col])         if airflow_col  else None,
-            str(r[cfm_col])             if cfm_col      else None,
-            str(r[pressure_col])        if pressure_col else None,
-            str(r[price_basic_col])     if price_basic_col else None,
-            str(r[price_prem_col])      if price_prem_col  else None,
+            str(r.get("hp", "")) if "hp" in cols else None,
+            str(r[airflow_col])  if airflow_col  else None,
+            str(r[cfm_col])      if cfm_col      else None,
+            str(r[pressure_col]) if pressure_col else None,
+            str(price_basic)     if price_basic is not None else None,
+            str(price_prem)      if price_prem  is not None else None,
         ))
 
     conn.execute("DELETE FROM blower_master")
@@ -574,6 +589,21 @@ def _parse_parts_sheet(xl, sheet_name, table_name, conn):
 
 # ─────────────────────────────────────────────────────────────────
 # 8. RECUPERATOR → recuperator_master
+#
+# Replicates the Excel formulas exactly:
+#
+#   Type F  : col_cost = (qty / 0.3) × rate  for tube_c
+#                        qty × rate           for all others
+#             selling  = SUM(cols B–G) × 1.3 × 1.8
+#
+#   Type HT : selling  = SUM(cols N–Q) × 1.3 × 1.8
+#
+#   Type FS : col_cost = qty × 4.27 × rate   for tube_c and tube_b
+#                        qty × rate           for all others
+#             selling  = SUM(cols B–I) × 1.3 × 1.8
+#
+# Material prices come from component_price_master (already populated
+# by parse_rates which runs first in parse_all).
 # ─────────────────────────────────────────────────────────────────
 
 def parse_recuperator(xl, conn):
@@ -581,37 +611,118 @@ def parse_recuperator(xl, conn):
     if sheet is None:
         return {"skipped": "Recuperator sheet not found"}
 
-    df = xl.parse(sheet, header=None)
+    # ── fetch live rates from component_price_master ──────────────
+    def _rate(item_prefix):
+        try:
+            row = conn.execute(
+                "SELECT price FROM component_price_master WHERE item LIKE ?",
+                (item_prefix.strip() + '%',)
+            ).fetchone()
+            return float(row[0]) if row else 0.0
+        except Exception:
+            return 0.0
+
+    R = {
+        'tube_c':    _rate('M.S. Tube "C" Class'),
+        'tube_b':    _rate('M.S. Tube "B" Class'),
+        'ci_gills':  _rate('C.I. Gills'),
+        'ang_6550':  _rate('M.S. Angle 65,50'),
+        'ang_100':   _rate('M.S. Angle 100,100'),
+        'plate_5mm': _rate('M.S. Plate 16mm* 5mm'),
+        'bolt':      _rate('Hardware Bolt'),
+        'channel':   _rate('M.S. Chanel'),
+        'plate_10mm':_rate('M.S. Plate 16mm*10mm'),
+        'plate_5mm2':_rate('M.S. Plate 5mm'),
+        'ang_50':    _rate('M.S. Angle 50*6'),
+        'ss_sheet':  _rate('S.S. Sheet 3mm'),
+    }
+
+    # ── read the raw quantity table (data_only to get values not formulas) ──
+    import openpyxl
+    wb_vals = openpyxl.load_workbook(xl.io, read_only=True, data_only=True)
+    ws = wb_vals[sheet]
+    rows_vals = list(ws.iter_rows(values_only=True))
+    wb_vals.close()
+
+    def _v(row_idx, col_idx):
+        """0-based row and col. Returns float or 0."""
+        try:
+            v = rows_vals[row_idx][col_idx]
+            return float(v) if v is not None else 0.0
+        except Exception:
+            return 0.0
+
+    MARKUP = 1.3 * 1.8  # = 2.34
+
     records = []
-    current_type = None
-    headers = None
 
-    for _, row in df.iterrows():
-        vals_raw = [str(x).strip() if pd.notna(x) else None for x in row]
-        non_null = [v for v in vals_raw if v and v != "nan"]
-        if not non_null:
+    # ── Type F (rows 3–8, 0-indexed 2–7) ─────────────────────────
+    # cols: A=0,B=1,C=2,D=3,E=4,F=5,G=6,H=7
+    F_MODELS_ROWS = range(2, 8)   # rows 3–8
+    for ri in F_MODELS_ROWS:
+        model = rows_vals[ri][0]
+        if model is None or not str(model).strip():
             continue
-        first = non_null[0]
+        b = _v(ri, 1)   # MS Tube C qty
+        c = _v(ri, 2)   # CI Gills qty
+        d = _v(ri, 3)   # Angle 65,50
+        e = _v(ri, 4)   # Angle 100,100
+        f = _v(ri, 5)   # Plate 16mm*5mm
+        g = _v(ri, 6)   # Hardware Bolt
+        # (col H / MS Channel is calculated but excluded from the Excel SUM)
+        tube_cost   = (b / 0.3) * R['tube_c'] if b else 0
+        ci_cost     = c * R['ci_gills']
+        ang65_cost  = d * R['ang_6550']
+        ang100_cost = e * R['ang_100']
+        plate_cost  = f * R['plate_5mm']
+        bolt_cost   = g * R['bolt']
+        fab_cost    = tube_cost + ci_cost + ang65_cost + ang100_cost + plate_cost + bolt_cost
+        selling     = round(fab_cost * MARKUP, 2)
+        records.append({"type": "F", "model": str(model).strip(),
+                        "fabrication_cost": round(fab_cost, 2), "selling_price": selling})
 
-        if "RECUPERATOR" in first.upper() and len(non_null) == 1:
-            current_type = first.upper()
-            headers = None
+    # ── Type HT (same input rows, cols M–Q: M=12,N=13,O=14,P=15,Q=16) ──
+    HT_MODELS_ROWS = range(2, 6)   # rows 3–6 only (4 HT models)
+    for ri in HT_MODELS_ROWS:
+        model = rows_vals[ri][12]
+        if model is None or not str(model).strip():
             continue
+        n = _v(ri, 13)   # Plate 16mm*10mm
+        o = _v(ri, 14)   # Plate 5mm
+        p = _v(ri, 15)   # Angle 50*6
+        q = _v(ri, 16)   # SS Sheet 3mm
+        fab_cost = (n * R['plate_10mm'] + o * R['plate_5mm2'] +
+                    p * R['ang_50']    + q * R['ss_sheet'])
+        selling  = round(fab_cost * MARKUP, 2)
+        records.append({"type": "HT", "model": str(model).strip(),
+                        "fabrication_cost": round(fab_cost, 2), "selling_price": selling})
 
-        if first.upper() == "MODEL":
-            headers = [v for v in non_null if v]
+    # ── Type FS (rows 21–27, 0-indexed 20–26) ────────────────────
+    # cols: A=0,B=1(tube_c),C=2(tube_b),D=3(ci_gills),E=4,F=5,G=6,H=7(bolt),I=8(channel)
+    FS_MODELS_ROWS = range(20, 27)
+    for ri in FS_MODELS_ROWS:
+        model = rows_vals[ri][0]
+        if model is None or not str(model).strip():
             continue
-
-        if headers and current_type and re.match(r'^\d+', first):
-            data_vals = [v for v in non_null if v]
-            if len(data_vals) < 2:
-                continue
-            rec = {"type": current_type, "model": data_vals[0]}
-            for i, h in enumerate(headers[1:], 1):
-                if i < len(data_vals):
-                    col = h.lower().replace('"', 'in').replace(' ', '_').replace('(', '').replace(')', '').replace('.', '').replace(',', '_')[:40]
-                    rec[col] = safe_float(data_vals[i])
-            records.append(rec)
+        b = _v(ri, 1)   # tube C qty
+        c = _v(ri, 2)   # tube B qty
+        e = _v(ri, 4)   # Angle 65,50
+        f = _v(ri, 5)   # Angle 100,100
+        g = _v(ri, 6)   # Plate 16mm*5mm
+        h = _v(ri, 7)   # Hardware Bolt
+        i = _v(ri, 8)   # MS Channel (included in FS sum)
+        tube_c_cost = b * 4.27 * R['tube_c']
+        tube_b_cost = c * 4.27 * R['tube_b']
+        ang65_cost  = e * R['ang_6550']
+        ang100_cost = f * R['ang_100']
+        plate_cost  = g * R['plate_5mm']
+        bolt_cost   = h * R['bolt']
+        chan_cost    = i * R['channel']
+        fab_cost    = (tube_c_cost + tube_b_cost + ang65_cost + ang100_cost +
+                       plate_cost + bolt_cost + chan_cost)
+        selling     = round(fab_cost * MARKUP, 2)
+        records.append({"type": "FS", "model": str(model).strip(),
+                        "fabrication_cost": round(fab_cost, 2), "selling_price": selling})
 
     pd.DataFrame(records).to_sql("recuperator_master", conn, if_exists="replace", index=False)
     return {"rows": len(records)}
