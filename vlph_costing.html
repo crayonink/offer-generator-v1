@@ -379,7 +379,19 @@
       </div>
     </div>
 
-    <div class="fg fg-1" style="margin-bottom:16px">
+    <div class="fg fg-2" style="margin-bottom:16px">
+      <div class="field">
+        <label>Ladle Capacity (tons) <span class="req">*</span></label>
+        <select id="ladle_tons">
+          <option value="10">10 T</option>
+          <option value="15">15 T</option>
+          <option value="20">20 T</option>
+          <option value="30">30 T</option>
+          <option value="40">40 T</option>
+          <option value="60">60 T</option>
+        </select>
+        <div class="hint">Drives MS structure, HPU, ceramic fiber sizing</div>
+      </div>
       <div class="field">
         <label>Refractory Weight (kg) <span class="req">*</span></label>
         <input id="refractory_weight" type="number" value="21500"/>
@@ -499,10 +511,14 @@
 
     <div class="cost-banner" id="cost-banner">
       <div>
-        <div class="banner-label">VLPH System — Equipment Cost</div>
+        <div class="banner-label">VLPH System — Grand Total</div>
         <div class="banner-big" id="banner-total">—</div>
       </div>
       <div class="banner-row">
+        <div>
+          <div class="banner-sub">System Items</div>
+          <div class="banner-val" id="banner-system">—</div>
+        </div>
         <div>
           <div class="banner-sub">Bought Out</div>
           <div class="banner-val" id="banner-bought">—</div>
@@ -596,9 +612,10 @@
         </table>
         <div class="bom-footer">
           <table>
-            <tr><td>Bought Out Items</td><td id="s-bought">—</td></tr>
-            <tr><td>ENCON Items</td>     <td id="s-encon">—</td></tr>
-            <tr class="tot"><td><b>Grand Total</b></td><td id="s-grand">—</td></tr>
+            <tr><td>System Items (Structure, HPU, Fiber…)</td><td id="s-system">—</td></tr>
+            <tr><td>Bought Out Items</td>                     <td id="s-bought">—</td></tr>
+            <tr><td>ENCON Items</td>                          <td id="s-encon">—</td></tr>
+            <tr class="tot"><td><b>Grand Total</b></td>       <td id="s-grand">—</td></tr>
           </table>
         </div>
       </div>
@@ -751,6 +768,7 @@ async function calculate() {
         time_taken_hr:          val("time_taken_hr"),
         refractory_heat_factor: val("refractory_heat_factor"),
         efficiency:             val("efficiency"),
+        ladle_tons:             val("ladle_tons"),
       }),
     });
     const d = await res.json();
@@ -806,10 +824,12 @@ function renderResults(d) {
   </tr>`).join("");
 
   const s = d.cost_summary;
+  set("s-system", "₹ " + fmt(s.system_total, 0));
   set("s-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("s-encon",  "₹ " + fmt(s.encon_total, 0));
   set("s-grand",  "₹ " + fmt(s.grand_total, 0));
   set("banner-total",  "₹ " + fmt(s.grand_total, 0));
+  set("banner-system", "₹ " + fmt(s.system_total, 0));
   set("banner-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("banner-encon",  "₹ " + fmt(s.encon_total, 0));
   document.getElementById("cost-banner").classList.add("visible");

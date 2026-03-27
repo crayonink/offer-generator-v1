@@ -185,6 +185,7 @@ class VLPHCalcRequest(BaseModel):
     time_taken_hr: float
     refractory_heat_factor: float = 0.25
     efficiency: float = 0.52
+    ladle_tons: float = 10.0
 
 
 class QuoteItem(BaseModel):
@@ -274,12 +275,14 @@ def vlph_calculate(req: VLPHCalcRequest):
             air_flow_nm3hr=br.air_qty_nm3hr,
         )
 
-        bom_df = build_vlph_120t_df(equipment)
+        bom_df = build_vlph_120t_df(equipment, ladle_tons=req.ladle_tons)
 
         # Split summary rows from detail rows
         detail = bom_df[bom_df["MEDIA"] != ""].copy()
-        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS", "TOTAL"].values[0])
-        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",     "TOTAL"].values[0])
+        system_total     = float(bom_df.loc[bom_df["ITEM NAME"] == "SYSTEM ITEMS TOTAL", "TOTAL"].values[0])
+        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS",   "TOTAL"].values[0])
+        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0])
+        grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0])
 
         return {
             "calculations": {
@@ -319,9 +322,10 @@ def vlph_calculate(req: VLPHCalcRequest):
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {
+                "system_total":     round(system_total, 2),
                 "bought_out_total": round(bought_out_total, 2),
                 "encon_total":      round(encon_total, 2),
-                "grand_total":      round(bought_out_total + encon_total, 2),
+                "grand_total":      round(grand_total, 2),
             },
         }
     except Exception as e:
@@ -417,11 +421,13 @@ def hlph_calculate(req: VLPHCalcRequest):
             air_flow_nm3hr=br.air_qty_nm3hr,
         )
 
-        bom_df = build_hlph_df(equipment)
+        bom_df = build_hlph_df(equipment, ladle_tons=req.ladle_tons)
 
         detail = bom_df[bom_df["MEDIA"] != ""].copy()
-        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS", "TOTAL"].values[0])
-        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",     "TOTAL"].values[0])
+        system_total     = float(bom_df.loc[bom_df["ITEM NAME"] == "SYSTEM ITEMS TOTAL", "TOTAL"].values[0])
+        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS",   "TOTAL"].values[0])
+        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0])
+        grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0])
 
         return {
             "calculations": {
@@ -461,9 +467,10 @@ def hlph_calculate(req: VLPHCalcRequest):
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {
+                "system_total":     round(system_total, 2),
                 "bought_out_total": round(bought_out_total, 2),
                 "encon_total":      round(encon_total, 2),
-                "grand_total":      round(bought_out_total + encon_total, 2),
+                "grand_total":      round(grand_total, 2),
             },
         }
     except Exception as e:
