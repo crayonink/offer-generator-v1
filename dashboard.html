@@ -10,282 +10,436 @@
     :root {
       --navy:   #1a3a5c;
       --navy2:  #0f2744;
+      --navy3:  #0a1e36;
       --green:  #059669;
-      --red:    #dc2626;
+      --green2: #047857;
       --border: #e5e7eb;
       --text:   #0f172a;
       --muted:  #64748b;
-      --bg:     #f8fafc;
+      --bg:     #f1f5f9;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
 
-    /* ── Nav ── */
-    .topnav {
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       HEADER
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .header {
+      background: var(--navy3);
+      background-image:
+        radial-gradient(ellipse at 70% 50%, rgba(5,150,105,.18) 0%, transparent 60%),
+        radial-gradient(ellipse at 10% 80%, rgba(26,58,92,.6) 0%, transparent 50%);
+      padding: 0 48px;
+      position: relative;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none;
+    }
+    .brand-logo {
+      width: 34px; height: 34px;
+      background: var(--green);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(5,150,105,.4);
+    }
+    .brand-logo svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; }
+    .brand-name {
+      font-size: 0.9rem; font-weight: 800;
+      color: #fff; letter-spacing: -.3px;
+    }
+    .brand-sub {
+      font-size: 0.72rem; font-weight: 400;
+      color: rgba(255,255,255,.45); letter-spacing: .01em;
+    }
+    .header-tag {
+      font-size: 0.72rem; font-weight: 600;
+      color: rgba(255,255,255,.35);
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      padding: 4px 12px; border-radius: 20px;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+
+    .header-body {
+      padding: 44px 0 40px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+    }
+    .header-title {
+      font-size: 2.4rem; font-weight: 900;
+      color: #fff; line-height: 1.1;
+      letter-spacing: -.05em;
+    }
+    .header-title span { color: #34d399; }
+    .header-sub {
+      margin-top: 10px;
+      font-size: 0.88rem;
+      color: rgba(255,255,255,.5);
+      line-height: 1.6;
+      max-width: 420px;
+    }
+
+    /* Stats inline in header */
+    .header-stats {
+      display: flex; gap: 0;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .hstat {
+      padding: 16px 24px;
+      border-right: 1px solid rgba(255,255,255,.08);
+      min-width: 110px;
+    }
+    .hstat:last-child { border-right: none; }
+    .hstat-val {
+      font-size: 1.5rem; font-weight: 900;
+      color: #fff; letter-spacing: -.04em;
+      line-height: 1;
+    }
+    .hstat-val.loading { color: rgba(255,255,255,.2); }
+    .hstat-label {
+      font-size: 0.68rem; font-weight: 600;
+      color: rgba(255,255,255,.4);
+      text-transform: uppercase; letter-spacing: .07em;
+      margin-top: 5px;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       MAIN CONTENT
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 48px 80px;
+    }
+
+    .section-label {
+      font-size: 0.68rem; font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase; letter-spacing: .1em;
+      margin-bottom: 14px;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       PRIMARY CARDS (costing tools)
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .primary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .pcard {
       background: #fff;
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
-      display: flex; align-items: center; padding: 0 40px;
-      position: sticky; top: 0; z-index: 100; height: 56px;
-    }
-    .topnav-brand {
-      display: flex; align-items: center; gap: 10px;
-      font-weight: 900; font-size: 0.95rem; color: var(--text);
-      margin-right: 32px; letter-spacing: -.4px; text-decoration: none;
-    }
-    .brand-mark {
-      width: 30px; height: 30px; background: var(--navy); border-radius: 7px;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 0.7rem; font-weight: 900; letter-spacing: -.2px;
-      flex-shrink: 0; box-shadow: 0 2px 6px rgba(26,58,92,.35);
-    }
-    .topnav-links { margin-left: auto; display: flex; gap: 2px; }
-    .topnav-links a {
-      font-size: 0.82rem; color: var(--muted); text-decoration: none;
-      padding: 6px 11px; border-radius: 6px; transition: background .15s; font-weight: 500;
-    }
-    .topnav-links a:hover  { background: #f1f5f9; color: var(--navy); }
-    .topnav-links a.active { background: #eff6ff; color: var(--navy); font-weight: 600; }
-
-    /* ── Page ── */
-    .page { max-width: 1000px; margin: 0 auto; padding: 56px 24px 80px; }
-
-    /* ── Hero ── */
-    .hero { margin-bottom: 48px; }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: #eff6ff; color: var(--navy); border-radius: 20px;
-      padding: 4px 12px; font-size: 0.72rem; font-weight: 700;
-      letter-spacing: .04em; text-transform: uppercase; margin-bottom: 16px;
-    }
-    .hero h1 {
-      font-size: 2.6rem; font-weight: 900; color: var(--text);
-      line-height: 1.12; letter-spacing: -.05em; margin-bottom: 12px;
-    }
-    .hero h1 span { color: var(--navy); }
-    .hero p { font-size: 1rem; color: var(--muted); max-width: 520px; line-height: 1.6; }
-
-    /* ── Stats bar ── */
-    .stats-bar {
-      display: flex; gap: 0; background: #fff;
-      border: 1.5px solid var(--border); border-radius: 14px;
-      overflow: hidden; margin-bottom: 48px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.04);
-    }
-    .stat {
-      flex: 1; padding: 20px 24px; border-right: 1.5px solid var(--border);
-    }
-    .stat:last-child { border-right: none; }
-    .stat-value { font-size: 1.6rem; font-weight: 900; color: var(--navy); letter-spacing: -.04em; }
-    .stat-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
-
-    /* ── Section heading ── */
-    .section-heading {
-      font-size: 0.72rem; font-weight: 700; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .08em;
-      margin-bottom: 16px; padding-bottom: 10px;
-      border-bottom: 1.5px solid var(--border);
-    }
-
-    /* ── Card grid ── */
-    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
-    @media (max-width: 720px) { .card-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 480px) { .card-grid { grid-template-columns: 1fr; } .hero h1 { font-size: 1.8rem; } }
-
-    .card {
-      background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
-      padding: 24px; text-decoration: none; color: inherit;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px 22px;
+      text-decoration: none; color: inherit;
+      display: flex; flex-direction: column;
       transition: border-color .15s, box-shadow .15s, transform .12s;
-      display: flex; flex-direction: column; gap: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+      position: relative; overflow: hidden;
     }
-    .card:hover {
-      border-color: var(--navy); box-shadow: 0 4px 20px rgba(26,58,92,.12);
-      transform: translateY(-2px);
+    .pcard::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--navy);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform .2s ease;
     }
-    .card-icon {
-      width: 44px; height: 44px; border-radius: 11px;
+    .pcard:hover { border-color: #93c5fd; box-shadow: 0 6px 24px rgba(26,58,92,.1); transform: translateY(-2px); }
+    .pcard:hover::before { transform: scaleX(1); }
+
+    .pcard-icon {
+      width: 48px; height: 48px;
+      background: #eff6ff;
+      border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; flex-shrink: 0;
+      margin-bottom: 18px;
     }
-    .card-icon.navy  { background: #eff6ff; }
-    .card-icon.green { background: #ecfdf5; }
-    .card-icon.amber { background: #fffbeb; }
-    .card-icon.purple{ background: #f5f3ff; }
-    .card-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
-    .card-desc  { font-size: 0.8rem; color: var(--muted); line-height: 1.5; flex: 1; }
-    .card-arrow {
-      align-self: flex-end; font-size: 0.75rem; font-weight: 600;
-      color: var(--navy); display: flex; align-items: center; gap: 4px;
+    .pcard-icon svg { width: 24px; height: 24px; stroke: var(--navy); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .pcard-icon.g { background: #ecfdf5; }
+    .pcard-icon.g svg { stroke: var(--green); }
+
+    .pcard-title {
+      font-size: 1rem; font-weight: 800;
+      color: var(--text); letter-spacing: -.02em;
+      margin-bottom: 6px;
+    }
+    .pcard-sub {
+      font-size: 0.72rem; font-weight: 600;
+      color: var(--green); text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: 10px;
+    }
+    .pcard-desc {
+      font-size: 0.8rem; color: var(--muted);
+      line-height: 1.55; flex: 1;
+    }
+    .pcard-footer {
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center;
+      justify-content: space-between;
+    }
+    .pcard-action {
+      font-size: 0.78rem; font-weight: 700;
+      color: var(--navy);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .pcard-action svg { width: 14px; height: 14px; stroke: var(--navy); fill: none; stroke-width: 2.5; stroke-linecap: round; }
+    .pcard-tag {
+      font-size: 0.65rem; font-weight: 700;
+      background: #f1f5f9; color: var(--muted);
+      padding: 3px 8px; border-radius: 6px;
+      text-transform: uppercase; letter-spacing: .05em;
     }
 
-    /* ── Tools grid (2-col) ── */
-    .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 640px) { .tools-grid { grid-template-columns: 1fr; } }
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SECONDARY ROWS (management)
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .secondary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
 
-    .tool-row {
-      background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
-      padding: 18px 20px; text-decoration: none; color: inherit;
-      display: flex; align-items: center; gap: 14px;
+    .srow {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      text-decoration: none; color: inherit;
+      display: flex; align-items: center; gap: 16px;
       transition: border-color .15s, box-shadow .15s;
-      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
     }
-    .tool-row:hover { border-color: var(--navy); box-shadow: 0 2px 10px rgba(26,58,92,.1); }
-    .tool-row-icon {
-      width: 38px; height: 38px; border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; flex-shrink: 0; background: #f1f5f9;
-    }
-    .tool-row-text { flex: 1; }
-    .tool-row-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
-    .tool-row-desc  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .srow:hover { border-color: var(--navy); box-shadow: 0 3px 12px rgba(26,58,92,.09); }
 
-    /* ── Loading state ── */
-    .stat-value.loading { color: #cbd5e1; }
+    .srow-icon {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .srow-icon svg { width: 18px; height: 18px; stroke: var(--navy); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    .srow-body { flex: 1; min-width: 0; }
+    .srow-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .srow-desc  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+    .srow-arrow { flex-shrink: 0; color: #cbd5e1; }
+    .srow-arrow svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+    .srow:hover .srow-arrow { color: var(--navy); }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       RESPONSIVE
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    @media (max-width: 860px) {
+      .header { padding: 0 24px; }
+      .header-body { flex-direction: column; align-items: flex-start; }
+      .header-stats { width: 100%; }
+      .main { padding: 28px 24px 60px; }
+      .primary-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .primary-grid { grid-template-columns: 1fr; }
+      .secondary-grid { grid-template-columns: 1fr; }
+      .header-title { font-size: 1.8rem; }
+      .header-stats { flex-direction: column; }
+      .hstat { border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); }
+      .hstat:last-child { border-bottom: none; }
+    }
   </style>
 </head>
 <body>
 
-<nav class="topnav">
-  <a class="topnav-brand" href="/">
-    <div class="brand-mark">EC</div>
-    ENCON Combustion
-  </a>
-  <div class="topnav-links">
-    <a href="/" class="active">Home</a>
-    <a href="/costing">VLPH</a>
-    <a href="/hlph">HLPH</a>
-    <a href="/regen">Regen</a>
-    <a href="/quote">Quote Builder</a>
-    <a href="/price-master">Prices</a>
-  </div>
-</nav>
-
-<div class="page">
-
-  <!-- Hero -->
-  <div class="hero">
-    <div class="hero-badge">Internal Tool</div>
-    <h1>ENCON <span>Offer Generator</span></h1>
-    <p>Generate accurate costing BOMs and customer offers for Ladle Preheaters, Regenerative Burners, and more — all driven by live pricebook data.</p>
+<!-- ── HEADER ── -->
+<header class="header">
+  <div class="header-top">
+    <a class="brand" href="/">
+      <div class="brand-logo">
+        <!-- flame icon -->
+        <svg viewBox="0 0 24 24"><path d="M12 2c0 0-5 4.5-5 9a5 5 0 0010 0c0-4.5-5-9-5-9z"/><path d="M12 12c0 0-2 2-2 3.5a2 2 0 004 0C14 14 12 12 12 12z"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">ENCON Combustion</div>
+        <div class="brand-sub">Offer Generator System</div>
+      </div>
+    </a>
+    <div class="header-tag">Internal Tool</div>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat">
-      <div class="stat-value loading" id="stat-prices">—</div>
-      <div class="stat-label">Price Master Items</div>
+  <div class="header-body">
+    <div>
+      <div class="header-title">Generate offers<br><span>in minutes.</span></div>
+      <div class="header-sub">Full BOM costing for Ladle Pre-Heaters and Regenerative Burners — driven live from your uploaded pricebook.</div>
     </div>
-    <div class="stat">
-      <div class="stat-value loading" id="stat-covered">—</div>
-      <div class="stat-label">BOM Items Priced</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value loading" id="stat-missing">—</div>
-      <div class="stat-label">Missing Prices</div>
-    </div>
-    <div class="stat">
-      <div class="stat-value loading" id="stat-updated">—</div>
-      <div class="stat-label">Last Pricebook Update</div>
+
+    <div class="header-stats">
+      <div class="hstat">
+        <div class="hstat-val loading" id="stat-prices">—</div>
+        <div class="hstat-label">Priced Items</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val loading" id="stat-covered">—</div>
+        <div class="hstat-label">BOM Covered</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-val loading" id="stat-updated">—</div>
+        <div class="hstat-label">Last Upload</div>
+      </div>
     </div>
   </div>
+</header>
+
+<!-- ── MAIN ── -->
+<div class="main">
 
   <!-- Costing Tools -->
-  <div class="section-heading">Costing Tools</div>
-  <div class="card-grid">
+  <div class="section-label" style="margin-top:0">Costing Tools</div>
+  <div class="primary-grid" style="margin-bottom:32px">
 
-    <a class="card" href="/costing">
-      <div class="card-icon navy">🔥</div>
-      <div class="card-title">VLPH Costing</div>
-      <div class="card-desc">Vertical Ladle Pre-Heater — full BOM with MS structure, HPU, burner, blower, gas train and instrumentation.</div>
-      <div class="card-arrow">Open &rarr;</div>
-    </a>
-
-    <a class="card" href="/hlph">
-      <div class="card-icon navy">🏗️</div>
-      <div class="card-title">HLPH Costing</div>
-      <div class="card-desc">Horizontal Ladle Pre-Heater — same full BOM with trolley drive mechanism instead of swirling.</div>
-      <div class="card-arrow">Open &rarr;</div>
-    </a>
-
-    <a class="card" href="/regen">
-      <div class="card-icon green">♻️</div>
-      <div class="card-title">Regen Costing</div>
-      <div class="card-desc">Regenerative burner system costing with heat recovery calculations.</div>
-      <div class="card-arrow">Open &rarr;</div>
-    </a>
-
-  </div>
-
-  <!-- Management Tools -->
-  <div class="section-heading">Management &amp; Data</div>
-  <div class="tools-grid">
-
-    <a class="tool-row" href="/price-master">
-      <div class="tool-row-icon">💰</div>
-      <div class="tool-row-text">
-        <div class="tool-row-title">Price Master</div>
-        <div class="tool-row-desc">View and upload pricebook — updates all 13 DB tables automatically.</div>
+    <a class="pcard" href="/costing">
+      <div class="pcard-icon">
+        <!-- vertical structure icon -->
+        <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="4" rx="1"/><rect x="7" y="9" width="10" height="3" rx="1"/><path d="M12 6v3M8 12v8M16 12v8M6 20h12"/></svg>
+      </div>
+      <div class="pcard-sub">Vertical</div>
+      <div class="pcard-title">VLPH Costing</div>
+      <div class="pcard-desc">Vertical Ladle Pre-Heater — MS structure, HPU, burner, blower, gas train, rotary joint and full instrumentation BOM.</div>
+      <div class="pcard-footer">
+        <div class="pcard-action">Open tool <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pcard-tag">Natural Gas</div>
       </div>
     </a>
 
-    <a class="tool-row" href="/quote">
-      <div class="tool-row-icon">📄</div>
-      <div class="tool-row-text">
-        <div class="tool-row-title">Quote Builder</div>
-        <div class="tool-row-desc">Generate customer offer documents from costing results.</div>
+    <a class="pcard" href="/hlph">
+      <div class="pcard-icon">
+        <!-- horizontal structure icon -->
+        <svg viewBox="0 0 24 24"><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="9" y="7" width="3" height="10" rx="1"/><path d="M6 12h3M12 12h8M18 8v8"/></svg>
+      </div>
+      <div class="pcard-sub">Horizontal</div>
+      <div class="pcard-title">HLPH Costing</div>
+      <div class="pcard-desc">Horizontal Ladle Pre-Heater — same full BOM with trolley drive mechanism replacing the swirling assembly.</div>
+      <div class="pcard-footer">
+        <div class="pcard-action">Open tool <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pcard-tag">Natural Gas</div>
       </div>
     </a>
 
-    <a class="tool-row" href="/viewer">
-      <div class="tool-row-icon">🗄️</div>
-      <div class="tool-row-text">
-        <div class="tool-row-title">Database Viewer</div>
-        <div class="tool-row-desc">Browse all master tables — burners, blowers, HPU, gas trains, AGR.</div>
+    <a class="pcard" href="/regen">
+      <div class="pcard-icon g">
+        <!-- regen/recycle icon -->
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
       </div>
-    </a>
-
-    <a class="tool-row" href="/price-master#upload">
-      <div class="tool-row-icon">📤</div>
-      <div class="tool-row-text">
-        <div class="tool-row-title">Upload Pricebook</div>
-        <div class="tool-row-desc">Drop the latest Pricelist WorkBook.xlsx to refresh all prices.</div>
+      <div class="pcard-sub">Regenerative</div>
+      <div class="pcard-title">Regen Costing</div>
+      <div class="pcard-desc">Regenerative burner system costing with heat recovery calculations and recuperator sizing.</div>
+      <div class="pcard-footer">
+        <div class="pcard-action">Open tool <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pcard-tag">High Efficiency</div>
       </div>
     </a>
 
   </div>
 
+  <!-- Management -->
+  <div class="section-label">Data &amp; Management</div>
+  <div class="secondary-grid">
+
+    <a class="srow" href="/price-master">
+      <div class="srow-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <div class="srow-body">
+        <div class="srow-title">Price Master</div>
+        <div class="srow-desc">View all component prices by category — Raw Material, Bought Out, ENCON Purchase.</div>
+      </div>
+      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    </a>
+
+    <a class="srow" href="/price-master">
+      <div class="srow-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="srow-body">
+        <div class="srow-title">Upload Pricebook</div>
+        <div class="srow-desc">Upload Pricelist WorkBook.xlsx — refreshes all 13 master tables in one shot.</div>
+      </div>
+      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    </a>
+
+    <a class="srow" href="/quote">
+      <div class="srow-icon">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+      </div>
+      <div class="srow-body">
+        <div class="srow-title">Quote Builder</div>
+        <div class="srow-desc">Assemble customer offer documents from saved costing results.</div>
+      </div>
+      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    </a>
+
+    <a class="srow" href="/viewer">
+      <div class="srow-icon">
+        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      </div>
+      <div class="srow-body">
+        <div class="srow-title">Database Viewer</div>
+        <div class="srow-desc">Browse all master tables — burners, blowers, HPU, gas trains, AGR, rotary joints.</div>
+      </div>
+      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    </a>
+
+  </div>
 </div>
 
 <script>
 async function loadStats() {
   try {
-    const res = await fetch('/api/price-master/coverage');
-    const data = await res.json();
-
-    document.getElementById('stat-prices').textContent  = data.total_in_db ?? '—';
-    document.getElementById('stat-covered').textContent = data.covered ?? '—';
-    document.getElementById('stat-missing').textContent = data.missing_count ?? '—';
-
-    document.getElementById('stat-prices').classList.remove('loading');
-    document.getElementById('stat-covered').classList.remove('loading');
-    document.getElementById('stat-missing').classList.remove('loading');
+    const r = await fetch('/api/price-master/coverage');
+    const d = await r.json();
+    set('stat-prices',  d.total_in_db  ?? '—');
+    set('stat-covered', (d.covered ?? '—') + (d.total_bom ? '/' + d.total_bom : ''));
   } catch(e) {}
 
   try {
-    const res = await fetch('/api/last-pricebook-update');
-    const data = await res.json();
-    const el = document.getElementById('stat-updated');
-    el.textContent = data.date ?? '—';
-    el.classList.remove('loading');
-  } catch(e) {
-    document.getElementById('stat-updated').textContent = '—';
-    document.getElementById('stat-updated').classList.remove('loading');
-  }
+    const r = await fetch('/api/last-pricebook-update');
+    const d = await r.json();
+    set('stat-updated', d.date ?? '—');
+  } catch(e) { set('stat-updated', '—'); }
+}
+
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = val; el.classList.remove('loading'); }
 }
 
 loadStats();
 </script>
-
 </body>
 </html>
