@@ -9,6 +9,8 @@ import shutil
 import os
 from datetime import datetime
 
+from bom.pricelist_parser import parse_all as _parse_pricelist_all
+
 app = FastAPI()
 
 app.add_middleware(
@@ -568,107 +570,34 @@ def price_master_coverage():
 @app.post("/api/upload-pricelist")
 async def upload_pricelist(file: UploadFile = File(...)):
     """
-    Parser for the ENCON Pricelist WorkBook.
-    Reads the 'Rates' sheet which has three column-groups side-by-side:
-      Group A (Raw Material)  : col 1=item, col 2=price, col 3=prev_price
-      Group B (Bought Out)    : col 9=item, col 10=price, col 12=prev_price
-      Group C (ENCON Purchase): col 15=item, col 19=price, col 20=prev_price
+    Parses the full ENCON Pricelist WorkBook.
+    Updates all master tables: component_price_master, hpu_master,
+    burner_pricelist_master, blower_pricelist_master, horizontal_master,
+    vertical_master, recuperator_master, gail_gas_burner_master,
+    rad_heat_master, rad_heat_tata_master, and burner parts tables.
     """
     try:
         file_path = os.path.join(UPLOAD_FOLDER, file.filename)
         with open(file_path, "wb") as buf:
             shutil.copyfileobj(file.file, buf)
 
-        xl = pd.ExcelFile(file_path)
-
-        # Find the Rates sheet (case-insensitive, strip spaces)
-        rates_sheet = next(
-            (s for s in xl.sheet_names if s.strip().lower() == "rates"), None
-        )
-        if rates_sheet is None:
-            return {"error": f"Could not find a 'Rates' sheet. "
-                             f"Found sheets: {xl.sheet_names}"}
-
-        df = pd.read_excel(file_path, sheet_name=rates_sheet, header=None)
-
-        SKIP_LOWER = {
-            "price", "item", "previous", "bought out items",
-            "encon purchase price", "specification", "s.no",
-            "price list data", "price june", "out items",
-        }
-
-        def is_header(v):
-            if not isinstance(v, str): return False
-            return any(kw in v.lower() for kw in SKIP_LOWER)
-
-        def clean_num(v):
-            try:
-                f = float(v)
-                return f if f > 0 else None
-            except (TypeError, ValueError):
-                return None
-
-        def clean_text(v):
-            if not isinstance(v, str): return None
-            s = v.strip()
-            return s if len(s) >= 2 and not s.replace(".", "").replace(",", "").isdigit() else None
-
-        rows = []
-
-        for _, row in df.iterrows():
-            # ── Group A: Raw Material (cols 1, 2, 3) ─────────────────────────
-            item  = clean_text(row.iloc[1] if len(row) > 1 else None)
-            price = clean_num(row.iloc[2]  if len(row) > 2 else None)
-            prev  = clean_num(row.iloc[3]  if len(row) > 3 else None)
-            if item and price and not is_header(item):
-                unit = "kg" if price <= 500 else "nos"
-                if "per mtr" in item.lower() or "(per mtr)" in item.lower():
-                    unit = "mtr"
-                rows.append((item, "Raw Material", unit, price, prev or price))
-
-            # ── Group B: Bought Out (cols 9, 10, 12) ─────────────────────────
-            item  = clean_text(row.iloc[9]  if len(row) > 9  else None)
-            price = clean_num(row.iloc[10]  if len(row) > 10 else None)
-            prev  = clean_num(row.iloc[12]  if len(row) > 12 else None)
-            if item and price and not is_header(item):
-                rows.append((item, "Bought Out", "nos", price, prev or price))
-
-            # ── Group C: ENCON Purchase (cols 15, 19, 20) ────────────────────
-            item  = clean_text(row.iloc[15] if len(row) > 15 else None)
-            price = clean_num(row.iloc[19]  if len(row) > 19 else None)
-            prev  = clean_num(row.iloc[20]  if len(row) > 20 else None)
-            if item and price and not is_header(item):
-                rows.append((item, "ENCON Purchase", "nos", price, prev or price))
-
-        if not rows:
-            return {"error": "No price data found in the Rates sheet. "
-                             "Check the column layout has not changed."}
-
-        # Deduplicate (keep last occurrence per item)
-        seen = {}
-        for r in rows:
-            seen[r[0]] = r
-        rows = list(seen.values())
-
         conn = sqlite3.connect(DB_PATH)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS component_price_master (
-                item TEXT PRIMARY KEY, category TEXT,
-                unit TEXT, price REAL, previous_price REAL
-            )""")
-        for item, category, unit, price, prev in rows:
-            conn.execute("""
-                INSERT INTO component_price_master (item, category, unit, price, previous_price)
-                VALUES (?,?,?,?,?)
-                ON CONFLICT(item) DO UPDATE SET
-                    category=excluded.category, unit=excluded.unit,
-                    price=excluded.price, previous_price=excluded.previous_price
-            """, (item, category, unit, price, prev))
-        conn.commit()
+        results = _parse_pricelist_all(file_path, conn)
         conn.close()
 
-        return {"success": True, "rows_loaded": len(rows),
-                "message": f"{len(rows)} items loaded from Rates sheet"}
+        updated = {t: r for t, r in results.items() if "rows" in r}
+        skipped = {t: r["skipped"] for t, r in results.items() if "skipped" in r}
+        errors  = {t: r["error"]   for t, r in results.items() if "error"   in r}
+
+        total_rows = sum(r["rows"] for r in updated.values())
+
+        return {
+            "success": True,
+            "total_rows_loaded": total_rows,
+            "tables_updated": {t: r["rows"] for t, r in updated.items()},
+            "tables_skipped": skipped,
+            "errors": errors,
+        }
 
     except Exception as e:
         import traceback

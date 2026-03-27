@@ -622,7 +622,7 @@
         status.textContent = data.error;
       } else {
         status.className = 'upload-status ok';
-        status.textContent = `${data.rows_loaded} items loaded. Refreshing…`;
+        status.textContent = `${data.total_rows_loaded ?? data.rows_loaded} items loaded. Uploaded successfully.`;
         await init();
       }
     } catch (e) {
