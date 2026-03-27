@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import pandas as pd
@@ -52,9 +52,31 @@ def ensure_log_table():
 
 ensure_log_table()
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return RedirectResponse(url="/costing")
+    html_path = os.path.join(BASE_DIR, "dashboard.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/api/last-pricebook-update")
+def last_pricebook_update():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("""
+            SELECT updated_at FROM table_update_log
+            ORDER BY updated_at DESC LIMIT 1
+        """)
+        row = c.fetchone()
+        conn.close()
+        if row:
+            from datetime import datetime
+            dt = datetime.fromisoformat(row[0])
+            return {"date": dt.strftime("%d %b %Y")}
+        return {"date": None}
+    except Exception:
+        return {"date": None}
 
 @app.get("/quote", response_class=HTMLResponse)
 def quote_form():

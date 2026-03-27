@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON – Offer Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:   #1a3a5c;
+      --navy2:  #0f2744;
+      --green:  #059669;
+      --red:    #dc2626;
+      --border: #e5e7eb;
+      --text:   #0f172a;
+      --muted:  #64748b;
+      --bg:     #f8fafc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+
+    /* ── Nav ── */
+    .topnav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
+      display: flex; align-items: center; padding: 0 40px;
+      position: sticky; top: 0; z-index: 100; height: 56px;
+    }
+    .topnav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 900; font-size: 0.95rem; color: var(--text);
+      margin-right: 32px; letter-spacing: -.4px; text-decoration: none;
+    }
+    .brand-mark {
+      width: 30px; height: 30px; background: var(--navy); border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 0.7rem; font-weight: 900; letter-spacing: -.2px;
+      flex-shrink: 0; box-shadow: 0 2px 6px rgba(26,58,92,.35);
+    }
+    .topnav-links { margin-left: auto; display: flex; gap: 2px; }
+    .topnav-links a {
+      font-size: 0.82rem; color: var(--muted); text-decoration: none;
+      padding: 6px 11px; border-radius: 6px; transition: background .15s; font-weight: 500;
+    }
+    .topnav-links a:hover  { background: #f1f5f9; color: var(--navy); }
+    .topnav-links a.active { background: #eff6ff; color: var(--navy); font-weight: 600; }
+
+    /* ── Page ── */
+    .page { max-width: 1000px; margin: 0 auto; padding: 56px 24px 80px; }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 48px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #eff6ff; color: var(--navy); border-radius: 20px;
+      padding: 4px 12px; font-size: 0.72rem; font-weight: 700;
+      letter-spacing: .04em; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 2.6rem; font-weight: 900; color: var(--text);
+      line-height: 1.12; letter-spacing: -.05em; margin-bottom: 12px;
+    }
+    .hero h1 span { color: var(--navy); }
+    .hero p { font-size: 1rem; color: var(--muted); max-width: 520px; line-height: 1.6; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex; gap: 0; background: #fff;
+      border: 1.5px solid var(--border); border-radius: 14px;
+      overflow: hidden; margin-bottom: 48px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .stat {
+      flex: 1; padding: 20px 24px; border-right: 1.5px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-value { font-size: 1.6rem; font-weight: 900; color: var(--navy); letter-spacing: -.04em; }
+    .stat-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+
+    /* ── Section heading ── */
+    .section-heading {
+      font-size: 0.72rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 16px; padding-bottom: 10px;
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    /* ── Card grid ── */
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+    @media (max-width: 720px) { .card-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .card-grid { grid-template-columns: 1fr; } .hero h1 { font-size: 1.8rem; } }
+
+    .card {
+      background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
+      padding: 24px; text-decoration: none; color: inherit;
+      transition: border-color .15s, box-shadow .15s, transform .12s;
+      display: flex; flex-direction: column; gap: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .card:hover {
+      border-color: var(--navy); box-shadow: 0 4px 20px rgba(26,58,92,.12);
+      transform: translateY(-2px);
+    }
+    .card-icon {
+      width: 44px; height: 44px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+    }
+    .card-icon.navy  { background: #eff6ff; }
+    .card-icon.green { background: #ecfdf5; }
+    .card-icon.amber { background: #fffbeb; }
+    .card-icon.purple{ background: #f5f3ff; }
+    .card-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+    .card-desc  { font-size: 0.8rem; color: var(--muted); line-height: 1.5; flex: 1; }
+    .card-arrow {
+      align-self: flex-end; font-size: 0.75rem; font-weight: 600;
+      color: var(--navy); display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── Tools grid (2-col) ── */
+    .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .tools-grid { grid-template-columns: 1fr; } }
+
+    .tool-row {
+      background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 18px 20px; text-decoration: none; color: inherit;
+      display: flex; align-items: center; gap: 14px;
+      transition: border-color .15s, box-shadow .15s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .tool-row:hover { border-color: var(--navy); box-shadow: 0 2px 10px rgba(26,58,92,.1); }
+    .tool-row-icon {
+      width: 38px; height: 38px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0; background: #f1f5f9;
+    }
+    .tool-row-text { flex: 1; }
+    .tool-row-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .tool-row-desc  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Loading state ── */
+    .stat-value.loading { color: #cbd5e1; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="topnav-brand" href="/">
+    <div class="brand-mark">EC</div>
+    ENCON Combustion
+  </a>
+  <div class="topnav-links">
+    <a href="/" class="active">Home</a>
+    <a href="/costing">VLPH</a>
+    <a href="/hlph">HLPH</a>
+    <a href="/regen">Regen</a>
+    <a href="/quote">Quote Builder</a>
+    <a href="/price-master">Prices</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Internal Tool</div>
+    <h1>ENCON <span>Offer Generator</span></h1>
+    <p>Generate accurate costing BOMs and customer offers for Ladle Preheaters, Regenerative Burners, and more — all driven by live pricebook data.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-value loading" id="stat-prices">—</div>
+      <div class="stat-label">Price Master Items</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value loading" id="stat-covered">—</div>
+      <div class="stat-label">BOM Items Priced</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value loading" id="stat-missing">—</div>
+      <div class="stat-label">Missing Prices</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value loading" id="stat-updated">—</div>
+      <div class="stat-label">Last Pricebook Update</div>
+    </div>
+  </div>
+
+  <!-- Costing Tools -->
+  <div class="section-heading">Costing Tools</div>
+  <div class="card-grid">
+
+    <a class="card" href="/costing">
+      <div class="card-icon navy">🔥</div>
+      <div class="card-title">VLPH Costing</div>
+      <div class="card-desc">Vertical Ladle Pre-Heater — full BOM with MS structure, HPU, burner, blower, gas train and instrumentation.</div>
+      <div class="card-arrow">Open &rarr;</div>
+    </a>
+
+    <a class="card" href="/hlph">
+      <div class="card-icon navy">🏗️</div>
+      <div class="card-title">HLPH Costing</div>
+      <div class="card-desc">Horizontal Ladle Pre-Heater — same full BOM with trolley drive mechanism instead of swirling.</div>
+      <div class="card-arrow">Open &rarr;</div>
+    </a>
+
+    <a class="card" href="/regen">
+      <div class="card-icon green">♻️</div>
+      <div class="card-title">Regen Costing</div>
+      <div class="card-desc">Regenerative burner system costing with heat recovery calculations.</div>
+      <div class="card-arrow">Open &rarr;</div>
+    </a>
+
+  </div>
+
+  <!-- Management Tools -->
+  <div class="section-heading">Management &amp; Data</div>
+  <div class="tools-grid">
+
+    <a class="tool-row" href="/price-master">
+      <div class="tool-row-icon">💰</div>
+      <div class="tool-row-text">
+        <div class="tool-row-title">Price Master</div>
+        <div class="tool-row-desc">View and upload pricebook — updates all 13 DB tables automatically.</div>
+      </div>
+    </a>
+
+    <a class="tool-row" href="/quote">
+      <div class="tool-row-icon">📄</div>
+      <div class="tool-row-text">
+        <div class="tool-row-title">Quote Builder</div>
+        <div class="tool-row-desc">Generate customer offer documents from costing results.</div>
+      </div>
+    </a>
+
+    <a class="tool-row" href="/viewer">
+      <div class="tool-row-icon">🗄️</div>
+      <div class="tool-row-text">
+        <div class="tool-row-title">Database Viewer</div>
+        <div class="tool-row-desc">Browse all master tables — burners, blowers, HPU, gas trains, AGR.</div>
+      </div>
+    </a>
+
+    <a class="tool-row" href="/price-master#upload">
+      <div class="tool-row-icon">📤</div>
+      <div class="tool-row-text">
+        <div class="tool-row-title">Upload Pricebook</div>
+        <div class="tool-row-desc">Drop the latest Pricelist WorkBook.xlsx to refresh all prices.</div>
+      </div>
+    </a>
+
+  </div>
+
+</div>
+
+<script>
+async function loadStats() {
+  try {
+    const res = await fetch('/api/price-master/coverage');
+    const data = await res.json();
+
+    document.getElementById('stat-prices').textContent  = data.total_in_db ?? '—';
+    document.getElementById('stat-covered').textContent = data.covered ?? '—';
+    document.getElementById('stat-missing').textContent = data.missing_count ?? '—';
+
+    document.getElementById('stat-prices').classList.remove('loading');
+    document.getElementById('stat-covered').classList.remove('loading');
+    document.getElementById('stat-missing').classList.remove('loading');
+  } catch(e) {}
+
+  try {
+    const res = await fetch('/api/last-pricebook-update');
+    const data = await res.json();
+    const el = document.getElementById('stat-updated');
+    el.textContent = data.date ?? '—';
+    el.classList.remove('loading');
+  } catch(e) {
+    document.getElementById('stat-updated').textContent = '—';
+    document.getElementById('stat-updated').classList.remove('loading');
+  }
+}
+
+loadStats();
+</script>
+
+</body>
+</html>
