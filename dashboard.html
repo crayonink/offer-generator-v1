@@ -8,271 +8,131 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --navy:   #1a3a5c;
-      --navy2:  #0f2744;
-      --navy3:  #0a1e36;
-      --green:  #059669;
-      --green2: #047857;
-      --border: #e5e7eb;
-      --text:   #0f172a;
-      --muted:  #64748b;
-      --bg:     #f1f5f9;
+      --navy:  #1a3a5c; --navy2: #0f2744; --navy3: #0a1e36;
+      --green: #059669; --green2: #047857;
+      --amber: #d97706;
+      --red:   #dc2626;
+      --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f1f5f9;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 14px;
-      -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
-    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;min-height:100vh;}
 
-    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-       HEADER
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-    .header {
-      background: var(--navy3);
-      background-image:
-        radial-gradient(ellipse at 70% 50%, rgba(5,150,105,.18) 0%, transparent 60%),
-        radial-gradient(ellipse at 10% 80%, rgba(26,58,92,.6) 0%, transparent 50%);
-      padding: 0 48px;
-      position: relative;
-    }
+    /* ── HEADER ── */
+    .header{background:var(--navy3);background-image:radial-gradient(ellipse at 70% 50%,rgba(5,150,105,.18) 0%,transparent 60%),radial-gradient(ellipse at 10% 80%,rgba(26,58,92,.6) 0%,transparent 50%);padding:0 48px;}
+    .header-top{display:flex;align-items:center;justify-content:space-between;height:60px;border-bottom:1px solid rgba(255,255,255,.08);}
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;}
+    .brand-logo{width:34px;height:34px;background:var(--green);border-radius:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(5,150,105,.4);}
+    .brand-logo svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
+    .brand-name{font-size:.9rem;font-weight:800;color:#fff;letter-spacing:-.3px;}
+    .brand-sub{font-size:.72rem;color:rgba(255,255,255,.4);}
+    .header-tag{font-size:.72rem;font-weight:600;color:rgba(255,255,255,.35);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);padding:4px 12px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;}
+    .header-body{padding:44px 0 40px;display:flex;align-items:flex-end;justify-content:space-between;gap:32px;}
+    .header-title{font-size:2.4rem;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.05em;}
+    .header-title span{color:#34d399;}
+    .header-sub{margin-top:10px;font-size:.88rem;color:rgba(255,255,255,.5);line-height:1.6;max-width:420px;}
+    .header-stats{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;flex-shrink:0;}
+    .hstat{padding:16px 24px;border-right:1px solid rgba(255,255,255,.08);min-width:110px;}
+    .hstat:last-child{border-right:none;}
+    .hstat-val{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:-.04em;line-height:1;}
+    .hstat-val.loading{color:rgba(255,255,255,.2);}
+    .hstat-label{font-size:.68rem;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-top:5px;}
 
-    .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 60px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .brand {
-      display: flex; align-items: center; gap: 12px;
-      text-decoration: none;
-    }
-    .brand-logo {
-      width: 34px; height: 34px;
-      background: var(--green);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 8px rgba(5,150,105,.4);
-    }
-    .brand-logo svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; }
-    .brand-name {
-      font-size: 0.9rem; font-weight: 800;
-      color: #fff; letter-spacing: -.3px;
-    }
-    .brand-sub {
-      font-size: 0.72rem; font-weight: 400;
-      color: rgba(255,255,255,.45); letter-spacing: .01em;
-    }
-    .header-tag {
-      font-size: 0.72rem; font-weight: 600;
-      color: rgba(255,255,255,.35);
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.1);
-      padding: 4px 12px; border-radius: 20px;
-      letter-spacing: .04em; text-transform: uppercase;
-    }
+    /* ── MAIN ── */
+    .main{max-width:1080px;margin:0 auto;padding:40px 48px 80px;}
+    .section-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;}
+    .section-label.mt{margin-top:40px;}
 
-    .header-body {
-      padding: 44px 0 40px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 32px;
-    }
-    .header-title {
-      font-size: 2.4rem; font-weight: 900;
-      color: #fff; line-height: 1.1;
-      letter-spacing: -.05em;
-    }
-    .header-title span { color: #34d399; }
-    .header-sub {
-      margin-top: 10px;
-      font-size: 0.88rem;
-      color: rgba(255,255,255,.5);
-      line-height: 1.6;
-      max-width: 420px;
-    }
+    /* ── HOW IT WORKS ── */
+    .pipeline{display:flex;align-items:stretch;gap:0;background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:36px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+    .pipe-step{flex:1;padding:22px 20px;border-right:1.5px solid var(--border);position:relative;}
+    .pipe-step:last-child{border-right:none;}
+    .pipe-arrow{position:absolute;right:-12px;top:50%;transform:translateY(-50%);width:22px;height:22px;background:#fff;border:1.5px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;}
+    .pipe-arrow svg{width:10px;height:10px;stroke:var(--muted);fill:none;stroke-width:2.5;stroke-linecap:round;}
+    .pipe-step:last-child .pipe-arrow{display:none;}
+    .pipe-num{width:24px;height:24px;background:var(--navy);color:#fff;border-radius:6px;font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+    .pipe-title{font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:4px;}
+    .pipe-detail{font-size:.74rem;color:var(--muted);line-height:1.5;}
+    .pipe-tag{margin-top:10px;display:inline-block;font-size:.65rem;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em;}
+    .pipe-tag.blue{background:#eff6ff;color:var(--navy);}
+    .pipe-tag.green{background:#ecfdf5;color:var(--green);}
 
-    /* Stats inline in header */
-    .header-stats {
-      display: flex; gap: 0;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 14px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .hstat {
-      padding: 16px 24px;
-      border-right: 1px solid rgba(255,255,255,.08);
-      min-width: 110px;
-    }
-    .hstat:last-child { border-right: none; }
-    .hstat-val {
-      font-size: 1.5rem; font-weight: 900;
-      color: #fff; letter-spacing: -.04em;
-      line-height: 1;
-    }
-    .hstat-val.loading { color: rgba(255,255,255,.2); }
-    .hstat-label {
-      font-size: 0.68rem; font-weight: 600;
-      color: rgba(255,255,255,.4);
-      text-transform: uppercase; letter-spacing: .07em;
-      margin-top: 5px;
-    }
+    /* ── COSTING CARDS ── */
+    .primary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+    .pcard{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:24px 22px 20px;text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:border-color .15s,box-shadow .15s,transform .12s;box-shadow:0 1px 3px rgba(0,0,0,.05);position:relative;overflow:hidden;}
+    .pcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--navy);transform:scaleX(0);transform-origin:left;transition:transform .2s ease;}
+    .pcard:hover{border-color:#93c5fd;box-shadow:0 6px 24px rgba(26,58,92,.1);transform:translateY(-2px);}
+    .pcard:hover::before{transform:scaleX(1);}
+    .pcard-icon{width:44px;height:44px;background:#eff6ff;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+    .pcard-icon svg{width:22px;height:22px;stroke:var(--navy);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+    .pcard-icon.g{background:#ecfdf5;}
+    .pcard-icon.g svg{stroke:var(--green);}
+    .pcard-sub{font-size:.68rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;}
+    .pcard-title{font-size:.95rem;font-weight:800;color:var(--text);letter-spacing:-.02em;margin-bottom:8px;}
+    .pcard-desc{font-size:.78rem;color:var(--muted);line-height:1.55;flex:1;}
+    .pcard-footer{margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .pcard-action{font-size:.78rem;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:5px;}
+    .pcard-action svg{width:13px;height:13px;stroke:var(--navy);fill:none;stroke-width:2.5;stroke-linecap:round;}
+    .pcard-tag{font-size:.65rem;font-weight:700;background:#f1f5f9;color:var(--muted);padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em;}
 
-    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-       MAIN CONTENT
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-    .main {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 40px 48px 80px;
-    }
+    /* ── MANAGEMENT ROWS ── */
+    .secondary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:0;}
+    .srow{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;text-decoration:none;color:inherit;display:flex;align-items:center;gap:14px;transition:border-color .15s,box-shadow .15s;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+    .srow:hover{border-color:var(--navy);box-shadow:0 3px 12px rgba(26,58,92,.09);}
+    .srow-icon{width:38px;height:38px;flex-shrink:0;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+    .srow-icon svg{width:17px;height:17px;stroke:var(--navy);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+    .srow-body{flex:1;min-width:0;}
+    .srow-title{font-size:.85rem;font-weight:700;color:var(--text);}
+    .srow-desc{font-size:.73rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+    .srow-arrow{flex-shrink:0;color:#cbd5e1;}
+    .srow-arrow svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+    .srow:hover .srow-arrow{color:var(--navy);}
 
-    .section-label {
-      font-size: 0.68rem; font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase; letter-spacing: .1em;
-      margin-bottom: 14px;
-    }
+    /* ── BOTTOM GRID (health + activity) ── */
+    .bottom-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-top:40px;}
 
-    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-       PRIMARY CARDS (costing tools)
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-    .primary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-bottom: 36px;
-    }
+    /* Data Health */
+    .health-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+    .health-header{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .health-header-title{font-size:.82rem;font-weight:800;color:var(--text);}
+    .health-header-sub{font-size:.72rem;color:var(--muted);}
+    .health-table{width:100%;border-collapse:collapse;}
+    .health-table th{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:10px 20px 8px;text-align:left;background:#fafafa;border-bottom:1px solid var(--border);}
+    .health-table td{padding:10px 20px;border-bottom:1px solid #f1f5f9;font-size:.78rem;vertical-align:middle;}
+    .health-table tr:last-child td{border-bottom:none;}
+    .health-table tr:hover td{background:#fafafe;}
+    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .dot.ok{background:var(--green);}
+    .dot.warn{background:var(--amber);}
+    .dot.err{background:#e5e7eb;}
+    .tname{font-weight:600;color:var(--text);}
+    .tsrc{color:var(--muted);font-size:.72rem;}
+    .trows{font-weight:700;color:var(--navy);white-space:nowrap;}
+    .trows.zero{color:#cbd5e1;}
+    .tupd{color:var(--muted);font-size:.7rem;white-space:nowrap;}
 
-    .pcard {
-      background: #fff;
-      border: 1.5px solid var(--border);
-      border-radius: 16px;
-      padding: 28px 24px 22px;
-      text-decoration: none; color: inherit;
-      display: flex; flex-direction: column;
-      transition: border-color .15s, box-shadow .15s, transform .12s;
-      box-shadow: 0 1px 3px rgba(0,0,0,.05);
-      position: relative; overflow: hidden;
-    }
-    .pcard::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--navy);
-      transform: scaleX(0); transform-origin: left;
-      transition: transform .2s ease;
-    }
-    .pcard:hover { border-color: #93c5fd; box-shadow: 0 6px 24px rgba(26,58,92,.1); transform: translateY(-2px); }
-    .pcard:hover::before { transform: scaleX(1); }
+    /* Activity feed */
+    .activity-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+    .activity-header{padding:16px 20px 14px;border-bottom:1px solid var(--border);}
+    .activity-header-title{font-size:.82rem;font-weight:800;color:var(--text);}
+    .activity-header-sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
+    .activity-list{padding:8px 0;}
+    .activity-item{display:flex;align-items:flex-start;gap:12px;padding:10px 20px;}
+    .activity-dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:4px;flex-shrink:0;}
+    .activity-text{font-size:.78rem;color:var(--text);font-weight:600;line-height:1.3;}
+    .activity-time{font-size:.7rem;color:var(--muted);margin-top:2px;}
+    .activity-empty{padding:28px 20px;text-align:center;color:var(--muted);font-size:.8rem;}
 
-    .pcard-icon {
-      width: 48px; height: 48px;
-      background: #eff6ff;
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 18px;
-    }
-    .pcard-icon svg { width: 24px; height: 24px; stroke: var(--navy); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .pcard-icon.g { background: #ecfdf5; }
-    .pcard-icon.g svg { stroke: var(--green); }
+    /* Loading skeleton */
+    .skeleton{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .sk-row td:nth-child(2),.sk-row td:nth-child(3),.sk-row td:nth-child(4){color:transparent!important;}
+    .sk-row td:nth-child(2) .tname,.sk-row .trows,.sk-row .tupd{border-radius:4px;display:inline-block;height:12px;}
+    .sk-row .tname{width:120px;}
+    .sk-row .trows{width:30px;}
+    .sk-row .tupd{width:80px;}
 
-    .pcard-title {
-      font-size: 1rem; font-weight: 800;
-      color: var(--text); letter-spacing: -.02em;
-      margin-bottom: 6px;
-    }
-    .pcard-sub {
-      font-size: 0.72rem; font-weight: 600;
-      color: var(--green); text-transform: uppercase;
-      letter-spacing: .06em; margin-bottom: 10px;
-    }
-    .pcard-desc {
-      font-size: 0.8rem; color: var(--muted);
-      line-height: 1.55; flex: 1;
-    }
-    .pcard-footer {
-      margin-top: 20px; padding-top: 16px;
-      border-top: 1px solid var(--border);
-      display: flex; align-items: center;
-      justify-content: space-between;
-    }
-    .pcard-action {
-      font-size: 0.78rem; font-weight: 700;
-      color: var(--navy);
-      display: flex; align-items: center; gap: 5px;
-    }
-    .pcard-action svg { width: 14px; height: 14px; stroke: var(--navy); fill: none; stroke-width: 2.5; stroke-linecap: round; }
-    .pcard-tag {
-      font-size: 0.65rem; font-weight: 700;
-      background: #f1f5f9; color: var(--muted);
-      padding: 3px 8px; border-radius: 6px;
-      text-transform: uppercase; letter-spacing: .05em;
-    }
-
-    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-       SECONDARY ROWS (management)
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-    .secondary-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-
-    .srow {
-      background: #fff;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 20px;
-      text-decoration: none; color: inherit;
-      display: flex; align-items: center; gap: 16px;
-      transition: border-color .15s, box-shadow .15s;
-      box-shadow: 0 1px 3px rgba(0,0,0,.04);
-    }
-    .srow:hover { border-color: var(--navy); box-shadow: 0 3px 12px rgba(26,58,92,.09); }
-
-    .srow-icon {
-      width: 40px; height: 40px; flex-shrink: 0;
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .srow-icon svg { width: 18px; height: 18px; stroke: var(--navy); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-
-    .srow-body { flex: 1; min-width: 0; }
-    .srow-title { font-size: 0.88rem; font-weight: 700; color: var(--text); }
-    .srow-desc  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; line-height: 1.4; }
-
-    .srow-arrow { flex-shrink: 0; color: #cbd5e1; }
-    .srow-arrow svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
-    .srow:hover .srow-arrow { color: var(--navy); }
-
-    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-       RESPONSIVE
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-    @media (max-width: 860px) {
-      .header { padding: 0 24px; }
-      .header-body { flex-direction: column; align-items: flex-start; }
-      .header-stats { width: 100%; }
-      .main { padding: 28px 24px 60px; }
-      .primary-grid { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 560px) {
-      .primary-grid { grid-template-columns: 1fr; }
-      .secondary-grid { grid-template-columns: 1fr; }
-      .header-title { font-size: 1.8rem; }
-      .header-stats { flex-direction: column; }
-      .hstat { border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); }
-      .hstat:last-child { border-bottom: none; }
-    }
+    @media(max-width:900px){.bottom-grid{grid-template-columns:1fr;}.header{padding:0 24px;}.header-body{flex-direction:column;align-items:flex-start;}.header-stats{width:100%;}.main{padding:28px 24px 60px;}.primary-grid{grid-template-columns:1fr 1fr;}}
+    @media(max-width:560px){.primary-grid{grid-template-columns:1fr;}.secondary-grid{grid-template-columns:1fr;}.header-title{font-size:1.8rem;}.header-stats{flex-direction:column;}.hstat{border-right:none;border-bottom:1px solid rgba(255,255,255,.08);}.hstat:last-child{border-bottom:none;}}
   </style>
 </head>
 <body>
@@ -282,7 +142,6 @@
   <div class="header-top">
     <a class="brand" href="/">
       <div class="brand-logo">
-        <!-- flame icon -->
         <svg viewBox="0 0 24 24"><path d="M12 2c0 0-5 4.5-5 9a5 5 0 0010 0c0-4.5-5-9-5-9z"/><path d="M12 12c0 0-2 2-2 3.5a2 2 0 004 0C14 14 12 12 12 12z"/></svg>
       </div>
       <div>
@@ -292,13 +151,11 @@
     </a>
     <div class="header-tag">Internal Tool</div>
   </div>
-
   <div class="header-body">
     <div>
       <div class="header-title">Generate offers<br><span>in minutes.</span></div>
       <div class="header-sub">Full BOM costing for Ladle Pre-Heaters and Regenerative Burners — driven live from your uploaded pricebook.</div>
     </div>
-
     <div class="header-stats">
       <div class="hstat">
         <div class="hstat-val loading" id="stat-prices">—</div>
@@ -319,13 +176,43 @@
 <!-- ── MAIN ── -->
 <div class="main">
 
-  <!-- Costing Tools -->
-  <div class="section-label" style="margin-top:0">Costing Tools</div>
-  <div class="primary-grid" style="margin-bottom:32px">
+  <!-- How it Works -->
+  <div class="section-label" style="margin-top:0">How it works</div>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="pipe-num">1</div>
+      <div class="pipe-title">Upload Pricebook</div>
+      <div class="pipe-detail">Upload the Pricelist WorkBook .xlsx. All 13 master tables (HPU, Burner, Blower, Rates, Vertical, Horizontal…) are refreshed in one shot.</div>
+      <span class="pipe-tag blue">Price Master page</span>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="pipe-num">2</div>
+      <div class="pipe-title">Selection Engine Runs</div>
+      <div class="pipe-detail">Python auto-selects the right Burner model, Blower size, Gas Train, AGR, Motorized Valve, Rotary Joint — all from DB master tables based on firing rate and pressure.</div>
+      <span class="pipe-tag blue">Automatic</span>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="pipe-num">3</div>
+      <div class="pipe-title">BOM is Built</div>
+      <div class="pipe-detail">MS Structure, HPU, Ceramic Fiber, Control Panel, Pipeline costs are read from the vertical/horizontal master. Every line item in the BOM gets a live price.</div>
+      <span class="pipe-tag green">Auto-calculated</span>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">4</div>
+      <div class="pipe-title">Offer is Generated</div>
+      <div class="pipe-detail">The cost summary (System Total, Bought Out, ENCON Items, Grand Total) is shown. Customer details + BOM are exported to a Word offer document.</div>
+      <span class="pipe-tag green">Word / Excel output</span>
+    </div>
+  </div>
 
+  <!-- Costing Tools -->
+  <div class="section-label">Costing Tools</div>
+  <div class="primary-grid">
     <a class="pcard" href="/costing">
       <div class="pcard-icon">
-        <!-- vertical structure icon -->
         <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="4" rx="1"/><rect x="7" y="9" width="10" height="3" rx="1"/><path d="M12 6v3M8 12v8M16 12v8M6 20h12"/></svg>
       </div>
       <div class="pcard-sub">Vertical</div>
@@ -336,10 +223,8 @@
         <div class="pcard-tag">Natural Gas</div>
       </div>
     </a>
-
     <a class="pcard" href="/hlph">
       <div class="pcard-icon">
-        <!-- horizontal structure icon -->
         <svg viewBox="0 0 24 24"><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="9" y="7" width="3" height="10" rx="1"/><path d="M6 12h3M12 12h8M18 8v8"/></svg>
       </div>
       <div class="pcard-sub">Horizontal</div>
@@ -350,10 +235,8 @@
         <div class="pcard-tag">Natural Gas</div>
       </div>
     </a>
-
     <a class="pcard" href="/regen">
       <div class="pcard-icon g">
-        <!-- regen/recycle icon -->
         <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
       </div>
       <div class="pcard-sub">Regenerative</div>
@@ -364,66 +247,86 @@
         <div class="pcard-tag">High Efficiency</div>
       </div>
     </a>
-
   </div>
 
   <!-- Management -->
-  <div class="section-label">Data &amp; Management</div>
+  <div class="section-label mt">Data &amp; Management</div>
   <div class="secondary-grid">
-
     <a class="srow" href="/price-master">
-      <div class="srow-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2"/><circle cx="12" cy="12" r="3"/></svg>
-      </div>
-      <div class="srow-body">
-        <div class="srow-title">Price Master</div>
-        <div class="srow-desc">View all component prices by category — Raw Material, Bought Out, ENCON Purchase.</div>
-      </div>
+      <div class="srow-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <div class="srow-body"><div class="srow-title">Price Master</div><div class="srow-desc">View all component prices and upload new pricebook.</div></div>
       <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
     </a>
-
-    <a class="srow" href="/price-master">
-      <div class="srow-icon">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      </div>
-      <div class="srow-body">
-        <div class="srow-title">Upload Pricebook</div>
-        <div class="srow-desc">Upload Pricelist WorkBook.xlsx — refreshes all 13 master tables in one shot.</div>
-      </div>
-      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-    </a>
-
     <a class="srow" href="/quote">
-      <div class="srow-icon">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-      </div>
-      <div class="srow-body">
-        <div class="srow-title">Quote Builder</div>
-        <div class="srow-desc">Assemble customer offer documents from saved costing results.</div>
-      </div>
+      <div class="srow-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <div class="srow-body"><div class="srow-title">Quote Builder</div><div class="srow-desc">Assemble customer offer documents from costing results.</div></div>
       <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
     </a>
-
     <a class="srow" href="/viewer">
-      <div class="srow-icon">
-        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-      </div>
-      <div class="srow-body">
-        <div class="srow-title">Database Viewer</div>
-        <div class="srow-desc">Browse all master tables — burners, blowers, HPU, gas trains, AGR, rotary joints.</div>
-      </div>
+      <div class="srow-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+      <div class="srow-body"><div class="srow-title">Database Viewer</div><div class="srow-desc">Browse all master tables — burners, blowers, HPU, gas trains, AGR.</div></div>
       <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
     </a>
+    <a class="srow" href="/price-master">
+      <div class="srow-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="srow-body"><div class="srow-title">Upload Pricebook</div><div class="srow-desc">Refresh all 13 master tables from the latest Excel file.</div></div>
+      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
+    </a>
+  </div>
+
+  <!-- Health + Activity -->
+  <div class="bottom-grid">
+
+    <!-- Data Health -->
+    <div class="health-card">
+      <div class="health-header">
+        <div>
+          <div class="health-header-title">Data Health</div>
+          <div class="health-header-sub">Master tables that power the BOM calculations</div>
+        </div>
+      </div>
+      <table class="health-table">
+        <thead>
+          <tr>
+            <th style="width:12px"></th>
+            <th>Table / Purpose</th>
+            <th>Source</th>
+            <th>Rows</th>
+            <th>Last Updated</th>
+          </tr>
+        </thead>
+        <tbody id="health-body">
+          <!-- skeleton rows -->
+          <tr class="sk-row"><td><div class="dot skeleton" style="width:8px;height:8px;border-radius:50%"></div></td><td><span class="tname skeleton">&nbsp;</span></td><td></td><td><span class="trows skeleton">&nbsp;</span></td><td><span class="tupd skeleton">&nbsp;</span></td></tr>
+          <tr class="sk-row"><td><div class="dot skeleton" style="width:8px;height:8px;border-radius:50%"></div></td><td><span class="tname skeleton">&nbsp;</span></td><td></td><td><span class="trows skeleton">&nbsp;</span></td><td><span class="tupd skeleton">&nbsp;</span></td></tr>
+          <tr class="sk-row"><td><div class="dot skeleton" style="width:8px;height:8px;border-radius:50%"></div></td><td><span class="tname skeleton">&nbsp;</span></td><td></td><td><span class="trows skeleton">&nbsp;</span></td><td><span class="tupd skeleton">&nbsp;</span></td></tr>
+          <tr class="sk-row"><td><div class="dot skeleton" style="width:8px;height:8px;border-radius:50%"></div></td><td><span class="tname skeleton">&nbsp;</span></td><td></td><td><span class="trows skeleton">&nbsp;</span></td><td><span class="tupd skeleton">&nbsp;</span></td></tr>
+          <tr class="sk-row"><td><div class="dot skeleton" style="width:8px;height:8px;border-radius:50%"></div></td><td><span class="tname skeleton">&nbsp;</span></td><td></td><td><span class="trows skeleton">&nbsp;</span></td><td><span class="tupd skeleton">&nbsp;</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Activity -->
+    <div class="activity-card">
+      <div class="activity-header">
+        <div class="activity-header-title">Recent Updates</div>
+        <div class="activity-header-sub">Last pricebook table refreshes</div>
+      </div>
+      <div class="activity-list" id="activity-list">
+        <div class="activity-empty">Loading…</div>
+      </div>
+    </div>
 
   </div>
 </div>
 
 <script>
-async function loadStats() {
+async function load() {
+  // Header stats
   try {
     const r = await fetch('/api/price-master/coverage');
     const d = await r.json();
-    set('stat-prices',  d.total_in_db  ?? '—');
+    set('stat-prices',  d.total_in_db ?? '—');
     set('stat-covered', (d.covered ?? '—') + (d.total_bom ? '/' + d.total_bom : ''));
   } catch(e) {}
 
@@ -432,6 +335,48 @@ async function loadStats() {
     const d = await r.json();
     set('stat-updated', d.date ?? '—');
   } catch(e) { set('stat-updated', '—'); }
+
+  // Health + activity
+  try {
+    const r = await fetch('/api/system-health');
+    const d = await r.json();
+    renderHealth(d.tables || []);
+    renderActivity(d.activity || []);
+  } catch(e) {
+    document.getElementById('health-body').innerHTML =
+      '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted);font-size:.78rem">Could not load health data</td></tr>';
+    document.getElementById('activity-list').innerHTML =
+      '<div class="activity-empty">Could not load activity</div>';
+  }
+}
+
+function renderHealth(tables) {
+  const tbody = document.getElementById('health-body');
+  if (!tables.length) { tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">No data</td></tr>'; return; }
+  tbody.innerHTML = tables.map(t => `
+    <tr>
+      <td><div class="dot ${t.ok ? 'ok' : 'err'}"></div></td>
+      <td>
+        <div class="tname">${t.label}</div>
+        <div class="tsrc">${t.table}</div>
+      </td>
+      <td class="tsrc">${t.source}</td>
+      <td><span class="trows ${t.rows === 0 ? 'zero' : ''}">${t.rows.toLocaleString()}</span></td>
+      <td class="tupd">${t.updated_at ?? '<span style="color:#cbd5e1">—</span>'}</td>
+    </tr>`).join('');
+}
+
+function renderActivity(items) {
+  const el = document.getElementById('activity-list');
+  if (!items.length) { el.innerHTML = '<div class="activity-empty">No upload activity yet.<br>Upload a pricebook to get started.</div>'; return; }
+  el.innerHTML = items.map(a => `
+    <div class="activity-item">
+      <div class="activity-dot"></div>
+      <div>
+        <div class="activity-text">${a.table} updated</div>
+        <div class="activity-time">${a.at}</div>
+      </div>
+    </div>`).join('');
 }
 
 function set(id, val) {
@@ -439,7 +384,7 @@ function set(id, val) {
   if (el) { el.textContent = val; el.classList.remove('loading'); }
 }
 
-loadStats();
+load();
 </script>
 </body>
 </html>

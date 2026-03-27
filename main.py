@@ -64,19 +64,82 @@ def last_pricebook_update():
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("""
-            SELECT updated_at FROM table_update_log
-            ORDER BY updated_at DESC LIMIT 1
-        """)
+        c.execute("SELECT updated_at FROM table_update_log ORDER BY updated_at DESC LIMIT 1")
         row = c.fetchone()
         conn.close()
         if row:
-            from datetime import datetime
             dt = datetime.fromisoformat(row[0])
             return {"date": dt.strftime("%d %b %Y")}
         return {"date": None}
     except Exception:
         return {"date": None}
+
+
+@app.get("/api/system-health")
+def system_health():
+    """
+    Returns health status for each key master table plus recent activity log.
+    Used by the dashboard to show a product manager what data is loaded.
+    """
+    KEY_TABLES = [
+        ("component_price_master", "Rates / Component Prices",      "Rates sheet"),
+        ("hpu_master",             "HPU Components",                 "HPU sheet"),
+        ("burner_pricelist_master","Burner Selling Prices",          "BURNER sheet"),
+        ("blower_master",          "Blower Models & Prices",         "Blower sheet"),
+        ("vertical_master",        "VLPH Structure Costs",           "Vertical sheet"),
+        ("horizontal_master",      "HLPH Structure Costs",           "Horizontal sheet"),
+        ("gas_burner_parts_master","Gas Burner Fabrication Parts",   "Gas Burner sheet"),
+        ("gail_gas_burner_master", "GAIL Burner Prices",             "GAIL GAS Burner sheet"),
+        ("ng_gas_train_master",    "Gas Train Models",               "manual / init_db"),
+        ("agr_master",             "AGR Models",                     "manual / init_db"),
+        ("rotary_joint_master",    "Rotary Joint Models",            "manual / init_db"),
+        ("blower_pricelist_master","Blower Pricelist (raw)",         "Blower sheet"),
+        ("recuperator_master",     "Recuperator Models",             "Recuperator sheet"),
+    ]
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        c.execute("SELECT table_name, updated_at FROM table_update_log")
+        log = {r[0]: r[1] for r in c.fetchall()}
+
+        tables = []
+        for table, label, source in KEY_TABLES:
+            try:
+                c.execute(f"SELECT COUNT(*) FROM [{table}]")
+                count = c.fetchone()[0]
+            except Exception:
+                count = 0
+            updated_at = log.get(table)
+            if updated_at:
+                dt = datetime.fromisoformat(updated_at)
+                updated_str = dt.strftime("%d %b %Y, %H:%M")
+            else:
+                updated_str = None
+            tables.append({
+                "table":      table,
+                "label":      label,
+                "source":     source,
+                "rows":       count,
+                "ok":         count > 0,
+                "updated_at": updated_str,
+            })
+
+        # Recent activity: last 8 table updates
+        c.execute("SELECT table_name, updated_at FROM table_update_log ORDER BY updated_at DESC LIMIT 8")
+        activity = []
+        for tname, upd in c.fetchall():
+            try:
+                dt = datetime.fromisoformat(upd)
+                activity.append({"table": tname, "at": dt.strftime("%d %b %Y, %H:%M")})
+            except Exception:
+                pass
+
+        conn.close()
+        return {"tables": tables, "activity": activity}
+    except Exception as e:
+        return {"error": str(e), "tables": [], "activity": []}
 
 @app.get("/quote", response_class=HTMLResponse)
 def quote_form():
