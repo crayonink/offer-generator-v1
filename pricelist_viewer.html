@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON — Pricelist Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --navy:#1a3a5c;--navy2:#0f2744;--navy3:#0a1e36;
+      --green:#059669;--green2:#047857;
+      --amber:#d97706;--red:#dc2626;
+      --border:#e5e7eb;--text:#0f172a;--muted:#64748b;
+      --bg:#f1f5f9;--card:#fff;
+    }
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+
+    /* ── HEADER ── */
+    .header{background:var(--navy3);background-image:radial-gradient(ellipse at 70% 50%,rgba(5,150,105,.18) 0%,transparent 60%);padding:0 40px;flex-shrink:0;}
+    .header-top{display:flex;align-items:center;height:54px;border-bottom:1px solid rgba(255,255,255,.08);gap:10px;}
+    .brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
+    .brand-logo{width:30px;height:30px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(5,150,105,.4);}
+    .brand-logo svg{width:15px;height:15px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
+    .brand-name{font-size:.88rem;font-weight:800;color:#fff;letter-spacing:-.3px;}
+    .sep{color:rgba(255,255,255,.2);margin:0 2px;}
+    .page-title{font-size:.82rem;color:rgba(255,255,255,.5);font-weight:500;}
+    .nav{margin-left:auto;display:flex;gap:2px;}
+    .nav a{font-size:.75rem;color:rgba(255,255,255,.45);text-decoration:none;padding:5px 10px;border-radius:6px;font-weight:500;transition:all .15s;}
+    .nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
+    .nav a.active{color:#fff;background:rgba(255,255,255,.12);font-weight:600;}
+    .header-body{padding:18px 0 20px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
+    .ht{font-size:1.4rem;font-weight:900;color:#fff;letter-spacing:-.04em;}
+    .ht span{color:#34d399;}
+    .hs{font-size:.8rem;color:rgba(255,255,255,.45);margin-top:4px;}
+    .btn-refresh{display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
+    .btn-refresh:hover{background:rgba(255,255,255,.18);}
+    .btn-refresh svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
+    .spin{animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* ── TABS ── */
+    .tabs-bar{background:#fff;border-bottom:1.5px solid var(--border);padding:0 40px;display:flex;gap:0;overflow-x:auto;position:sticky;top:0;z-index:10;}
+    .tab{padding:13px 18px;font-size:.78rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s;margin-bottom:-1.5px;}
+    .tab:hover{color:var(--text);}
+    .tab.active{color:var(--green);border-bottom-color:var(--green);}
+
+    /* ── MAIN ── */
+    .main{max-width:1100px;margin:0 auto;padding:32px 40px 80px;}
+    .section{display:none;}
+    .section.active{display:block;}
+
+    /* ── CARDS & TABLES ── */
+    .card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+    .card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#fafbfc;}
+    .card-head-title{font-size:.82rem;font-weight:700;color:var(--text);}
+    .card-head-badge{font-size:.7rem;font-weight:600;background:#ecfdf5;color:var(--green);border:1px solid #a7f3d0;padding:2px 9px;border-radius:20px;}
+    table{width:100%;border-collapse:collapse;}
+    th{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:9px 16px;text-align:left;background:#fafbfc;border-bottom:1px solid var(--border);}
+    td{padding:9px 16px;border-bottom:1px solid #f0f4f8;color:var(--text);vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:#f8faff;}
+    .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500;}
+    .price{font-weight:700;color:#059669;}
+    .model-name{font-weight:600;font-size:.78rem;}
+    .section-badge{display:inline-block;font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:10px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+
+    /* ── GRID for HPU ── */
+    .hpu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:16px;}
+    .hpu-card{background:#f8faff;border:1.5px solid #e0e7ff;border-radius:10px;padding:14px 16px;}
+    .hpu-model{font-size:.78rem;font-weight:800;color:#3730a3;margin-bottom:4px;}
+    .hpu-mat{font-size:.72rem;color:var(--muted);margin-bottom:2px;}
+    .hpu-price{font-size:1.05rem;font-weight:800;color:#059669;}
+
+    /* ── LPH accordion ── */
+    .lph-model{border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+    .lph-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:#fafbfc;transition:background .1s;}
+    .lph-head:hover{background:#f1f5f9;}
+    .lph-model-name{font-size:.8rem;font-weight:700;}
+    .lph-total{font-size:.9rem;font-weight:800;color:var(--green);}
+    .lph-body{display:none;border-top:1px solid var(--border);}
+    .lph-body.open{display:block;}
+    .chevron{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2.5;stroke-linecap:round;transition:transform .2s;}
+    .chevron.open{transform:rotate(180deg);}
+
+    /* ── burner sections ── */
+    .sec-header{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:10px 16px;background:#f8faff;border-bottom:1px solid var(--border);}
+
+    /* ── loading ── */
+    .loading{text-align:center;padding:60px;color:var(--muted);}
+    .loader{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+    .error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:14px 18px;border-radius:8px;font-size:.82rem;margin:20px 0;}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <a class="brand" href="/">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <span class="brand-name">ENCON</span>
+    </a>
+    <span class="sep">›</span>
+    <span class="page-title">Pricelist Viewer</span>
+    <nav class="nav">
+      <a href="/">Dashboard</a>
+      <a href="/quote">Quote</a>
+      <a href="/costing">VLPH</a>
+      <a href="/price-master">Raw Rates</a>
+      <a href="/pricelist" class="active">Pricelist</a>
+    </nav>
+  </div>
+  <div class="header-body">
+    <div>
+      <div class="ht">Live <span>Pricelist</span> Viewer</div>
+      <div class="hs">All prices computed live from the uploaded pricebook — no stale Excel values</div>
+    </div>
+    <button class="btn-refresh" onclick="load()">
+      <svg id="ricon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Refresh
+    </button>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <div class="tab active" onclick="showTab('hpu',this)">HPU</div>
+  <div class="tab" onclick="showTab('burners',this)">Oil Film Burners</div>
+  <div class="tab" onclick="showTab('gas-burners',this)">Gas Burners</div>
+  <div class="tab" onclick="showTab('hv-burners',this)">HV Oil Burners</div>
+  <div class="tab" onclick="showTab('blowers',this)">Blowers</div>
+  <div class="tab" onclick="showTab('recuperator',this)">Recuperator</div>
+  <div class="tab" onclick="showTab('rad-heat',this)">Rad Heat</div>
+  <div class="tab" onclick="showTab('gail',this)">GAIL Gas Burner</div>
+  <div class="tab" onclick="showTab('gas-parts',this)">Gas Burner Parts</div>
+  <div class="tab" onclick="showTab('hlph',this)">Horizontal LPH</div>
+  <div class="tab" onclick="showTab('vlph',this)">Vertical LPH</div>
+</div>
+
+<div class="main">
+  <div id="loading" class="loading"><div class="loader"></div>Loading prices…</div>
+  <div id="error-box" class="error" style="display:none"></div>
+
+  <div id="hpu" class="section active"></div>
+  <div id="burners" class="section"></div>
+  <div id="gas-burners" class="section"></div>
+  <div id="hv-burners" class="section"></div>
+  <div id="blowers" class="section"></div>
+  <div id="recuperator" class="section"></div>
+  <div id="rad-heat" class="section"></div>
+  <div id="gail" class="section"></div>
+  <div id="gas-parts" class="section"></div>
+  <div id="hlph" class="section"></div>
+  <div id="vlph" class="section"></div>
+</div>
+
+<script>
+const fmt = n => n == null ? '—' : '₹ ' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:0});
+const fmtN = n => n == null ? '—' : Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+function showTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+async function load() {
+  const icon = document.getElementById('ricon');
+  icon.classList.add('spin');
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('error-box').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/pricelist-summary');
+    const d = await res.json();
+    if (d.error) throw new Error(d.error);
+    renderAll(d);
+  } catch(e) {
+    document.getElementById('error-box').textContent = 'Error: ' + e.message;
+    document.getElementById('error-box').style.display = 'block';
+  }
+  document.getElementById('loading').style.display = 'none';
+  icon.classList.remove('spin');
+}
+
+// Map keyword → tab id  (checked against uppercase section key)
+const BURNER_TAB_MAP = [
+  { tab: 'burners',     match: k => k.includes('FILM') && !k.includes('HIGH VELOCITY') },
+  { tab: 'burners',     match: k => k.includes('DUAL FUEL') },
+  { tab: 'burners',     match: k => k.includes('SPARES') },
+  { tab: 'gas-burners', match: k => k.includes("'GAS'") || (k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('GAIL')) },
+  { tab: 'hv-burners',  match: k => k.includes('HIGH VELOCITY OIL') },
+  { tab: 'hv-burners',  match: k => k.includes('HIGH VELOCITY GAS') },
+];
+
+function shortSectionName(key) {
+  const u = key.toUpperCase();
+  if (u.includes('DUAL FUEL')) return 'Dual Fuel Burner';
+  if (u.includes('FILM') || u.includes("'FILM'")) return 'Oil Film Burner';
+  if (u.includes('HIGH VELOCITY OIL')) return 'High Velocity Oil Burner';
+  if (u.includes('HIGH VELOCITY GAS')) return 'High Velocity Gas Burner';
+  if (u.includes('GAS')) return 'Gas Burner';
+  if (u.includes('SPARES')) return 'Spares — Oil Film Burner';
+  return key.replace(/\(W\.E\.F.*\)/gi,'').trim();
+}
+
+function renderAll(d) {
+  renderHPU(d.hpu || []);
+  renderBurnerTab('burners', d.burners || {});
+  renderBurnerTab('gas-burners', d.burners || {});
+  renderBurnerTab('hv-burners', d.burners || {});
+  renderBlowers(d.blowers || []);
+  renderRecuperator(d.recuperator || []);
+  renderRadHeat(d.rad_heat || [], d.rad_heat_tata || []);
+  renderGail(d.gail_gas_burner || []);
+  renderGasParts(d.gas_burner_parts || []);
+  renderLPH('hlph', d.horizontal_lph || []);
+  renderLPH('vlph', d.vertical_lph || []);
+}
+
+/* ── HPU ── */
+function renderHPU(data) {
+  const el = document.getElementById('hpu');
+  if (!data.length) { el.innerHTML = '<p class="loading">No HPU data</p>'; return; }
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-head-title">Heating &amp; Pumping Unit — Selling Prices (Material × 1.8)</span>
+        <span class="card-head-badge">${data.length} models</span>
+      </div>
+      <div class="hpu-grid">
+        ${data.map(h => `
+          <div class="hpu-card">
+            <div class="hpu-model">${h.model}</div>
+            <div class="hpu-mat">Material: ${fmt(h.material_cost)}</div>
+            <div class="hpu-price">${fmt(h.selling_price)}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ── Burners ── */
+function renderBurnerTab(elId, burners) {
+  const el = document.getElementById(elId);
+  const tabEntry = BURNER_TAB_MAP.filter(e => e.tab === elId);
+  let html = '';
+  for (const [sectionKey, models] of Object.entries(burners)) {
+    const su = sectionKey.toUpperCase();
+    if (!tabEntry.some(e => e.match(su))) continue;
+    const components = [...new Set(Object.values(models).flatMap(m => Object.keys(m)))];
+    html += `<div class="card">
+      <div class="card-head">
+        <span class="card-head-title">${shortSectionName(sectionKey)}</span>
+        <span class="card-head-badge">${Object.keys(models).length} sizes</span>
+      </div>
+      <table>
+        <thead><tr><th>Burner Size</th>${components.map(c=>`<th class="num">${c}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${Object.entries(models).map(([size, comps]) => `
+            <tr>
+              <td class="model-name">${size}</td>
+              ${components.map(c => `<td class="num price">${comps[c] != null ? fmt(comps[c]) : '—'}</td>`).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+  el.innerHTML = html || '<div class="loading">No data — upload pricebook to populate</div>';
+}
+
+/* ── Blowers ── */
+function renderBlowers(data) {
+  const el = document.getElementById('blowers');
+  if (!data.length) { el.innerHTML = '<p class="loading">No blower data</p>'; return; }
+  const keys = Object.keys(data[0]).filter(k => !['section','model'].includes(k));
+  el.innerHTML = `<div class="card">
+    <div class="card-head">
+      <span class="card-head-title">Blowers</span>
+      <span class="card-head-badge">${data.length} models</span>
+    </div>
+    <table>
+      <thead><tr><th>Section</th><th>Model</th>${keys.map(k=>`<th class="num">${k.replace(/_/g,' ')}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${data.map(r => `<tr>
+          <td><span class="section-badge">${r.section||''}</span></td>
+          <td class="model-name">${r.model||''}</td>
+          ${keys.map(k => {
+            const v = r[k];
+            if (v == null) return '<td class="num">—</td>';
+            if (typeof v === 'number' && v > 1000) return `<td class="num price">${fmt(v)}</td>`;
+            return `<td class="num">${fmtN(v)}</td>`;
+          }).join('')}
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ── Recuperator ── */
+function renderRecuperator(data) {
+  const el = document.getElementById('recuperator');
+  if (!data.length) { el.innerHTML = '<p class="loading">No recuperator data</p>'; return; }
+  el.innerHTML = `<div class="card">
+    <div class="card-head">
+      <span class="card-head-title">Recuperators</span>
+      <span class="card-head-badge">${data.length} models</span>
+    </div>
+    <table>
+      <thead><tr><th>Type</th><th>Model</th><th class="num">Fabrication Cost</th><th class="num">Selling Price</th></tr></thead>
+      <tbody>
+        ${data.map(r=>`<tr>
+          <td><span class="section-badge">${r.type}</span></td>
+          <td class="model-name">${r.model}</td>
+          <td class="num">${fmt(r.fabrication_cost)}</td>
+          <td class="num price">${fmt(r.selling_price)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ── Rad Heat ── */
+function renderRadHeat(std, tata) {
+  const el = document.getElementById('rad-heat');
+  const renderTable = (title, data) => `
+    <div class="card">
+      <div class="card-head"><span class="card-head-title">${title}</span><span class="card-head-badge">${data.length} models</span></div>
+      <table>
+        <thead><tr><th>Model</th><th>Output</th><th class="num">LPG m³/hr</th><th class="num">NG m³/hr</th><th class="num">Price (with SS Tubing)</th></tr></thead>
+        <tbody>${data.map(r=>`<tr>
+          <td class="model-name">${r.item}</td><td>${r.output_kw||''}</td>
+          <td class="num">${r.gas_lpg??'—'}</td><td class="num">${r.gas_ng??'—'}</td>
+          <td class="num price">${fmt(r.price)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  el.innerHTML = renderTable('Rad Heat (Standard)', std) + renderTable('Rad Heat (TATA)', tata);
+}
+
+/* ── GAIL Gas Burner ── */
+function renderGail(data) {
+  const el = document.getElementById('gail');
+  if (!data.length) { el.innerHTML = '<p class="loading">No GAIL data</p>'; return; }
+  const keys = Object.keys(data[0]).filter(k => !['section','burner_size'].includes(k));
+  el.innerHTML = `<div class="card">
+    <div class="card-head"><span class="card-head-title">GAIL Gas Burner</span><span class="card-head-badge">${data.length} entries</span></div>
+    <table>
+      <thead><tr><th>Section</th><th>Burner Size</th>${keys.map(k=>`<th class="num">${k.replace(/_/g,' ')}</th>`).join('')}</tr></thead>
+      <tbody>${data.map(r=>`<tr>
+        <td><span class="section-badge">${r.section||''}</span></td>
+        <td class="model-name">${r.burner_size||''}</td>
+        ${keys.map(k=>r[k]!=null?`<td class="num price">${fmt(r[k])}</td>`:'<td class="num">—</td>').join('')}
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ── Gas Burner Parts ── */
+function renderGasParts(data) {
+  const el = document.getElementById('gas-parts');
+  if (!data.length) { el.innerHTML = '<p class="loading">No gas burner parts data</p>'; return; }
+  el.innerHTML = `<div class="card">
+    <div class="card-head"><span class="card-head-title">Gas Burner Fabrication Cost (GAIL Design)</span><span class="card-head-badge">Markup × 1.25</span></div>
+    <table>
+      <thead><tr><th>Section</th><th class="num">Fabrication Cost</th><th class="num">Selling Price</th></tr></thead>
+      <tbody>${data.map(r=>`<tr>
+        <td class="model-name">${r.title}</td>
+        <td class="num">${fmt(r.fabrication_cost)}</td>
+        <td class="num price">${fmt(r.selling_price)}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ── LPH (Horizontal / Vertical) ── */
+function renderLPH(elId, data) {
+  const el = document.getElementById(elId);
+  if (!data.length) { el.innerHTML = '<p class="loading">No data</p>'; return; }
+  el.innerHTML = data.map((m, idx) => `
+    <div class="lph-model">
+      <div class="lph-head" onclick="toggleLPH(${idx},'${elId}')">
+        <span class="lph-model-name">${m.model}</span>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="lph-total">${fmt(m.total)}</span>
+          <svg class="chevron" id="chev-${elId}-${idx}" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="lph-body" id="lph-${elId}-${idx}">
+        <table>
+          <thead><tr><th>Particular</th><th>Qty</th><th class="num">Amount</th></tr></thead>
+          <tbody>${m.items.map(it=>`<tr>
+            <td>${it.particular}</td>
+            <td>${it.qty||'—'}</td>
+            <td class="num price">${fmt(it.amount)}</td>
+          </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('');
+}
+
+function toggleLPH(idx, elId) {
+  const body = document.getElementById(`lph-${elId}-${idx}`);
+  const chev = document.getElementById(`chev-${elId}-${idx}`);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+load();
+</script>
+</body>
+</html>
