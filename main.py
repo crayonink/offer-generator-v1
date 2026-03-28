@@ -350,33 +350,56 @@ def pricelist_summary():
         def q(sql, *args):
             return c.execute(sql, args).fetchall()
 
+        def _parts_sections(table, markup=1.25):
+            """Convert section-header / item rows into [{title, items, fabrication_cost, selling_price}]."""
+            sections, cur_title, cur_items, cur_total = [], None, [], 0.0
+            for _, part, qty, unit, rate, amt in conn.execute(
+                f"SELECT section, particular, qty, unit, rate, amount FROM {table} ORDER BY rowid"
+            ):
+                if amt is None:
+                    if cur_title is not None:
+                        sections.append({"title": cur_title, "items": cur_items,
+                                         "fabrication_cost": round(cur_total, 2),
+                                         "selling_price": round(cur_total * markup, 2)})
+                    cur_title, cur_items, cur_total = part, [], 0.0
+                else:
+                    cur_items.append({"particular": part, "qty": qty, "unit": unit,
+                                      "rate": rate, "amount": amt})
+                    cur_total += amt or 0
+            if cur_title is not None:
+                sections.append({"title": cur_title, "items": cur_items,
+                                 "fabrication_cost": round(cur_total, 2),
+                                 "selling_price": round(cur_total * markup, 2)})
+            return sections
+
         # ── HPU ───────────────────────────────────────────────────────────
         hpu_kws = [r[0] for r in q("SELECT DISTINCT unit_kw FROM hpu_master ORDER BY unit_kw")]
         hpu = []
         for kw in hpu_kws:
-            rows = q("SELECT unit, qty, rate, amount FROM hpu_master WHERE unit_kw=? AND variant='Duplex 1'", kw)
-            mat = sum((r[3] or 0) for r in rows)
-            hpu.append({"kw": kw, "model": f"HPD-{kw}", "material_cost": round(mat, 2),
-                         "selling_price": round(mat * 1.8, 2)})
+            rows = q("SELECT item, qty, unit, rate, amount FROM hpu_master WHERE unit_kw=? AND variant='Duplex 1' ORDER BY rowid", kw)
+            items = [{"item": r[0], "qty": r[1], "unit": r[2], "rate": r[3], "amount": r[4]} for r in rows]
+            mat = sum(r[4] or 0 for r in rows)
+            hpu.append({"kw": kw, "model": f"HPD-{kw}",
+                        "material_cost": round(mat, 2),
+                        "selling_price": round(mat * 1.8, 2),
+                        "items": items})
 
         # ── Burners ───────────────────────────────────────────────────────
-        burner_rows = q("""SELECT section, burner_size, component, price
-                           FROM burner_pricelist_master ORDER BY section, burner_size""")
+        burner_rows = q("SELECT section, burner_size, component, price FROM burner_pricelist_master ORDER BY section, burner_size")
         burners = {}
         for sec, size, comp, price in burner_rows:
             burners.setdefault(sec, {}).setdefault(size, {})[comp] = price
 
         # ── Blowers ───────────────────────────────────────────────────────
         blower_cols = [d[0] for d in c.execute("SELECT * FROM blower_pricelist_master LIMIT 0").description]
-        blower_rows = q("SELECT * FROM blower_pricelist_master ORDER BY section, model")
-        blowers = [dict(zip(blower_cols, r)) for r in blower_rows]
+        blowers = [dict(zip(blower_cols, r)) for r in q("SELECT * FROM blower_pricelist_master ORDER BY section, model")]
 
         # ── Recuperator ───────────────────────────────────────────────────
         try:
             recup = [{"type": r[0], "model": r[1], "fabrication_cost": r[2], "selling_price": r[3]}
                      for r in q("SELECT type, model, fabrication_cost, selling_price FROM recuperator_master ORDER BY type, model")]
         except Exception:
-            recup = []  # old schema — re-upload pricebook to refresh
+            recup = []
 
         # ── Rad Heat ──────────────────────────────────────────────────────
         rad = [{"item": r[0], "output_kw": r[1], "gas_lpg": r[2], "gas_ng": r[3], "price": r[4]}
@@ -386,62 +409,28 @@ def pricelist_summary():
 
         # ── GAIL Gas Burner ───────────────────────────────────────────────
         gail_cols = [d[0] for d in c.execute("SELECT * FROM gail_gas_burner_master LIMIT 0").description]
-        gail_rows = q("SELECT * FROM gail_gas_burner_master ORDER BY section, burner_size")
-        gail = [dict(zip(gail_cols, r)) for r in gail_rows]
+        gail = [dict(zip(gail_cols, r)) for r in q("SELECT * FROM gail_gas_burner_master ORDER BY section, burner_size")]
 
-        # ── Gas Burner Parts (GAIL fabrication) ───────────────────────────
-        gbp = [{"title": r[0], "fabrication_cost": r[1], "selling_price": r[2]}
-               for r in q("""SELECT particular, SUM(amount), SUM(amount)*1.25
-                              FROM gas_burner_parts_master
-                              WHERE amount IS NOT NULL GROUP BY
-                              (SELECT particular FROM gas_burner_parts_master g2
-                               WHERE g2.rowid <= gas_burner_parts_master.rowid
-                               AND g2.amount IS NULL ORDER BY g2.rowid DESC LIMIT 1)""")]
+        # ── Burner Parts (Oil / HV Oil / Gas) ─────────────────────────────
+        oil_parts = _parts_sections("oil_burner_parts_master",    markup=1.25)
+        hv_parts  = _parts_sections("hv_oil_burner_parts_master", markup=1.25)
+        gas_parts = _parts_sections("gas_burner_parts_master",    markup=1.25)
 
         # ── Horizontal LPH ────────────────────────────────────────────────
-        hlph_models = [r[0] for r in q("SELECT DISTINCT model FROM horizontal_master ORDER BY model")]
         hlph = []
-        for model in hlph_models:
+        for (model,) in q("SELECT DISTINCT model FROM horizontal_master ORDER BY model"):
             rows = q("SELECT particular, qty, amount FROM horizontal_master WHERE model=?", model)
             items = [{"particular": r[0], "qty": r[1], "amount": r[2]} for r in rows if r[2]]
-            total = sum(r[2] for r in rows if r[2])
-            hlph.append({"model": model, "total": round(total, 2), "items": items})
+            hlph.append({"model": model, "total": round(sum(r[2] for r in rows if r[2]), 2), "items": items})
 
         # ── Vertical LPH ─────────────────────────────────────────────────
-        vlph_models = [r[0] for r in q("SELECT DISTINCT model FROM vertical_master ORDER BY model")]
         vlph = []
-        for model in vlph_models:
+        for (model,) in q("SELECT DISTINCT model FROM vertical_master ORDER BY model"):
             rows = q("SELECT particular, qty, amount FROM vertical_master WHERE model=?", model)
             items = [{"particular": r[0], "qty": r[1], "amount": r[2]} for r in rows if r[2]]
-            total = sum(r[2] for r in rows if r[2])
-            vlph.append({"model": model, "total": round(total, 2), "items": items})
+            vlph.append({"model": model, "total": round(sum(r[2] for r in rows if r[2]), 2), "items": items})
 
         conn.close()
-
-        # Gas burner parts — simpler query
-        conn2 = sqlite3.connect(DB_PATH)
-        gbp_sections = []
-        cur_title = None
-        cur_parts = []
-        cur_total = 0
-        for row in conn2.execute("SELECT particular, amount FROM gas_burner_parts_master ORDER BY rowid"):
-            part, amt = row
-            if amt is None:
-                if cur_title:
-                    gbp_sections.append({"title": cur_title,
-                                          "fabrication_cost": round(cur_total, 2),
-                                          "selling_price": round(cur_total * 1.25, 2)})
-                cur_title = part
-                cur_parts = []
-                cur_total = 0
-            else:
-                cur_total += amt or 0
-        if cur_title:
-            gbp_sections.append({"title": cur_title,
-                                  "fabrication_cost": round(cur_total, 2),
-                                  "selling_price": round(cur_total * 1.25, 2)})
-        conn2.close()
-
         return {
             "hpu": hpu,
             "burners": burners,
@@ -450,7 +439,9 @@ def pricelist_summary():
             "rad_heat": rad,
             "rad_heat_tata": rad_tata,
             "gail_gas_burner": gail,
-            "gas_burner_parts": gbp_sections,
+            "oil_burner_parts": oil_parts,
+            "hv_oil_burner_parts": hv_parts,
+            "gas_burner_parts": gas_parts,
             "horizontal_lph": hlph,
             "vertical_lph": vlph,
         }
