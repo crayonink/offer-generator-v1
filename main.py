@@ -52,6 +52,71 @@ def ensure_log_table():
 
 ensure_log_table()
 
+import glob
+import tempfile
+
+ALLOWED_EDIT_TABLES = {
+    'hpu_master', 'oil_burner_parts_master', 'hv_oil_burner_parts_master',
+    'gas_burner_parts_master', 'horizontal_master', 'vertical_master',
+    'recuperator_master', 'blower_pricelist_master',
+    'rad_heat_master', 'rad_heat_tata_master', 'gail_gas_burner_master',
+}
+
+def _find_latest_pricebook():
+    """Find the most recently uploaded full pricebook Excel file."""
+    candidates = []
+    for f in glob.glob(os.path.join(UPLOAD_FOLDER, "*.xlsx")):
+        try:
+            xl = pd.ExcelFile(f)
+            if len(xl.sheet_names) >= 8:
+                candidates.append((os.path.getmtime(f), f))
+        except Exception:
+            pass
+    return sorted(candidates, reverse=True)[0][1] if candidates else None
+
+def _cascade_recalculate(xl_path: str, conn):
+    """Patch the Rates sheet with current DB rates, re-run all parsers."""
+    import openpyxl
+    # Get current rates with cell positions
+    rate_cells = {}
+    for row in conn.execute(
+        "SELECT price, excel_row, excel_col FROM component_price_master WHERE excel_row IS NOT NULL AND excel_col IS NOT NULL"
+    ):
+        price, er, ec = row
+        if er and ec:
+            rate_cells[(int(er), int(ec))] = price
+
+    wb = openpyxl.load_workbook(xl_path, data_only=False)
+    rates_sn = next((s for s in wb.sheetnames if s.strip().lower() == 'rates'), None)
+    if rates_sn and rate_cells:
+        ws = wb[rates_sn]
+        for (er, ec), price in rate_cells.items():
+            ws.cell(er, ec).value = price
+
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix='.xlsx')
+    os.close(tmp_fd)
+    wb.save(tmp_path)
+    wb.close()
+
+    results = _parse_pricelist_all(tmp_path, conn)
+    try:
+        os.unlink(tmp_path)
+    except Exception:
+        pass
+    return results
+
+def ensure_rate_columns():
+    conn = sqlite3.connect(DB_PATH)
+    for col in ['excel_row', 'excel_col']:
+        try:
+            conn.execute(f"ALTER TABLE component_price_master ADD COLUMN {col} INTEGER")
+            conn.commit()
+        except Exception:
+            pass
+    conn.close()
+
+ensure_rate_columns()
+
 @app.get("/", response_class=HTMLResponse)
 def root():
     html_path = os.path.join(BASE_DIR, "dashboard.html")
@@ -264,6 +329,16 @@ def get_price(product_type: str, model: str, qty: int = 1,
         return {"error": str(e)}
 
 
+class RateUpdateRequest(BaseModel):
+    item: str
+    price: float
+
+class ItemUpdateRequest(BaseModel):
+    table: str
+    rowid: int
+    qty: Optional[float] = None
+    rate: Optional[float] = None
+
 class VLPHCalcRequest(BaseModel):
     Ti: float
     Tf: float
@@ -353,8 +428,8 @@ def pricelist_summary():
         def _parts_sections(table, markup=1.25):
             """Convert section-header / item rows into [{title, items, fabrication_cost, selling_price}]."""
             sections, cur_title, cur_items, cur_total = [], None, [], 0.0
-            for _, part, qty, unit, rate, amt in conn.execute(
-                f"SELECT section, particular, qty, unit, rate, amount FROM {table} ORDER BY rowid"
+            for rowid, _, part, qty, unit, rate, amt in conn.execute(
+                f"SELECT rowid, section, particular, qty, unit, rate, amount FROM {table} ORDER BY rowid"
             ):
                 if amt is None:
                     if cur_title is not None:
@@ -363,7 +438,7 @@ def pricelist_summary():
                                          "selling_price": round(cur_total * markup, 2)})
                     cur_title, cur_items, cur_total = part, [], 0.0
                 else:
-                    cur_items.append({"particular": part, "qty": qty, "unit": unit,
+                    cur_items.append({"rowid": rowid, "particular": part, "qty": qty, "unit": unit,
                                       "rate": rate, "amount": amt})
                     cur_total += amt or 0
             if cur_title is not None:
@@ -376,9 +451,9 @@ def pricelist_summary():
         hpu_kws = [r[0] for r in q("SELECT DISTINCT unit_kw FROM hpu_master ORDER BY unit_kw")]
         hpu = []
         for kw in hpu_kws:
-            rows = q("SELECT item, qty, unit, rate, amount FROM hpu_master WHERE unit_kw=? AND variant='Duplex 1' ORDER BY rowid", kw)
-            items = [{"item": r[0], "qty": r[1], "unit": r[2], "rate": r[3], "amount": r[4]} for r in rows]
-            mat = sum(r[4] or 0 for r in rows)
+            rows = q("SELECT rowid, item, qty, unit, rate, amount FROM hpu_master WHERE unit_kw=? AND variant='Duplex 1' ORDER BY rowid", kw)
+            items = [{"rowid": r[0], "item": r[1], "qty": r[2], "unit": r[3], "rate": r[4], "amount": r[5]} for r in rows]
+            mat = sum(r[5] or 0 for r in rows)
             hpu.append({"kw": kw, "model": f"HPD-{kw}",
                         "material_cost": round(mat, 2),
                         "selling_price": round(mat * 1.8, 2),
@@ -448,6 +523,67 @@ def pricelist_summary():
     except Exception as e:
         import traceback
         return {"error": str(e), "detail": traceback.format_exc()}
+
+
+@app.get("/api/pricelist/rates")
+def get_pricelist_rates():
+    """Return component_price_master for editing."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            "SELECT rowid, item, category, unit, price, previous_price FROM component_price_master ORDER BY category, item"
+        ).fetchall()
+        conn.close()
+        return [{"rowid": r[0], "item": r[1], "category": r[2], "unit": r[3],
+                 "price": r[4], "previous_price": r[5]} for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.put("/api/pricelist/rate")
+def update_pricelist_rate(req: RateUpdateRequest):
+    """Update a rate in component_price_master and cascade-recalculate all tables."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(
+            "UPDATE component_price_master SET previous_price=price, price=? WHERE item=?",
+            (req.price, req.item)
+        )
+        conn.commit()
+        xl_path = _find_latest_pricebook()
+        results = {}
+        if xl_path:
+            results = _cascade_recalculate(xl_path, conn)
+            conn.commit()
+        conn.close()
+        return {"success": True, "cascaded": bool(xl_path), "results": {k: v for k, v in results.items() if "rows" in v}}
+    except Exception as e:
+        import traceback
+        return {"success": False, "error": str(e), "detail": traceback.format_exc()}
+
+
+@app.put("/api/pricelist/item")
+def update_pricelist_item(req: ItemUpdateRequest):
+    """Update qty and/or rate for a row in any master table; recalculate amount."""
+    if req.table not in ALLOWED_EDIT_TABLES:
+        return {"success": False, "error": f"Table '{req.table}' not editable"}
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        if req.qty is not None:
+            conn.execute(f"UPDATE {req.table} SET qty=? WHERE rowid=?", (req.qty, req.rowid))
+        if req.rate is not None:
+            conn.execute(f"UPDATE {req.table} SET rate=? WHERE rowid=?", (req.rate, req.rowid))
+        # Recalculate amount
+        row = conn.execute(f"SELECT qty, rate FROM {req.table} WHERE rowid=?", (req.rowid,)).fetchone()
+        if row and row[0] is not None and row[1] is not None:
+            amount = round(float(row[0]) * float(row[1]), 2)
+            conn.execute(f"UPDATE {req.table} SET amount=? WHERE rowid=?", (amount, req.rowid))
+        conn.commit()
+        row2 = conn.execute(f"SELECT qty, rate, amount FROM {req.table} WHERE rowid=?", (req.rowid,)).fetchone()
+        conn.close()
+        return {"success": True, "qty": row2[0], "rate": row2[1], "amount": row2[2]}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.post("/api/vlph-calculate")

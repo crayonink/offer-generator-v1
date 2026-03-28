@@ -4,446 +4,642 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ENCON — Pricelist Viewer</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    :root{
-      --navy:#1a3a5c;--navy2:#0f2744;--navy3:#0a1e36;
-      --green:#059669;--green2:#047857;
-      --amber:#d97706;--red:#dc2626;
-      --border:#e5e7eb;--text:#0f172a;--muted:#64748b;
-      --bg:#f1f5f9;--card:#fff;
-    }
-    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+    body{font-family:'Calibri',Calibri,sans-serif;font-size:12px;background:#f0f0f0;color:#000;-webkit-font-smoothing:antialiased;min-height:100vh;}
 
     /* ── HEADER ── */
-    .header{background:var(--navy3);background-image:radial-gradient(ellipse at 70% 50%,rgba(5,150,105,.18) 0%,transparent 60%);padding:0 40px;flex-shrink:0;}
-    .header-top{display:flex;align-items:center;height:54px;border-bottom:1px solid rgba(255,255,255,.08);gap:10px;}
-    .brand{display:flex;align-items:center;gap:10px;text-decoration:none;}
-    .brand-logo{width:30px;height:30px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(5,150,105,.4);}
-    .brand-logo svg{width:15px;height:15px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
-    .brand-name{font-size:.88rem;font-weight:800;color:#fff;letter-spacing:-.3px;}
-    .sep{color:rgba(255,255,255,.2);margin:0 2px;}
-    .page-title{font-size:.82rem;color:rgba(255,255,255,.5);font-weight:500;}
+    .header{background:#1a3a5c;padding:0 24px;}
+    .header-top{display:flex;align-items:center;height:48px;gap:10px;}
+    .brand{display:flex;align-items:center;gap:8px;text-decoration:none;}
+    .brand-logo{width:26px;height:26px;background:#059669;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+    .brand-logo svg{width:13px;height:13px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
+    .brand-name{font-size:.85rem;font-weight:700;color:#fff;letter-spacing:-.3px;}
+    .sep{color:rgba(255,255,255,.25);margin:0 4px;}
+    .page-title{font-size:.78rem;color:rgba(255,255,255,.5);font-weight:500;}
     .nav{margin-left:auto;display:flex;gap:2px;}
-    .nav a{font-size:.75rem;color:rgba(255,255,255,.45);text-decoration:none;padding:5px 10px;border-radius:6px;font-weight:500;transition:all .15s;}
+    .nav a{font-size:.72rem;color:rgba(255,255,255,.45);text-decoration:none;padding:5px 9px;border-radius:5px;font-weight:500;transition:all .15s;}
     .nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
-    .nav a.active{color:#fff;background:rgba(255,255,255,.12);font-weight:600;}
-    .header-body{padding:18px 0 20px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
-    .ht{font-size:1.4rem;font-weight:900;color:#fff;letter-spacing:-.04em;}
+    .nav a.active{color:#fff;background:rgba(255,255,255,.12);}
+    .header-body{padding:12px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+    .ht{font-size:1.25rem;font-weight:800;color:#fff;letter-spacing:-.03em;}
     .ht span{color:#34d399;}
-    .hs{font-size:.8rem;color:rgba(255,255,255,.45);margin-top:4px;}
-    .btn-refresh{display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);font-size:.78rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
+    .hs{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:2px;}
+    .btn-refresh{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
     .btn-refresh:hover{background:rgba(255,255,255,.18);}
-    .btn-refresh svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
+    .btn-refresh svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
     .spin{animation:spin .8s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
-    /* ── TABS ── */
-    .tabs-bar{background:#fff;border-bottom:1.5px solid var(--border);padding:0 40px;display:flex;gap:0;overflow-x:auto;position:sticky;top:0;z-index:10;}
-    .tab{padding:13px 18px;font-size:.78rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s;margin-bottom:-1.5px;}
-    .tab:hover{color:var(--text);}
-    .tab.active{color:var(--green);border-bottom-color:var(--green);}
+    /* ── SHEET TABS ── */
+    .tabs-bar{background:#fff;border-bottom:2px solid #d0d0d0;padding:0 24px;display:flex;gap:0;overflow-x:auto;position:sticky;top:0;z-index:20;scrollbar-width:thin;}
+    .tab{padding:10px 14px;font-size:.75rem;font-weight:600;color:#666;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:all .12s;margin-bottom:-2px;font-family:Calibri,sans-serif;}
+    .tab:hover{color:#000;background:#f5f5f5;}
+    .tab.active{color:#1565C0;border-bottom-color:#1565C0;background:#e8f0fe;}
 
-    /* ── MAIN ── */
-    .main{max-width:1100px;margin:0 auto;padding:32px 40px 80px;}
-    .section{display:none;}
-    .section.active{display:block;}
+    /* ── SHEET PANELS ── */
+    .main{padding:16px 24px 80px;}
+    .sheet-panel{display:none;}
+    .sheet-panel.active{display:block;}
 
-    /* ── CARDS & TABLES ── */
-    .card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-    .card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#fafbfc;}
-    .card-head-title{font-size:.82rem;font-weight:700;color:var(--text);}
-    .card-head-badge{font-size:.7rem;font-weight:600;background:#ecfdf5;color:var(--green);border:1px solid #a7f3d0;padding:2px 9px;border-radius:20px;}
-    table{width:100%;border-collapse:collapse;}
-    th{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:9px 16px;text-align:left;background:#fafbfc;border-bottom:1px solid var(--border);}
-    td{padding:9px 16px;border-bottom:1px solid #f0f4f8;color:var(--text);vertical-align:middle;}
-    tr:last-child td{border-bottom:none;}
-    tr:hover td{background:#f8faff;}
-    .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500;}
-    .price{font-weight:700;color:#059669;}
-    .model-name{font-weight:600;font-size:.78rem;}
-    .section-badge{display:inline-block;font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:10px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+    /* ── EXCEL GRID ── */
+    .xl-wrap{max-height:70vh;overflow:auto;border:1px solid #d0d0d0;border-radius:0;background:#fff;}
+    .xl-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;min-width:100%;white-space:nowrap;}
+    .xl-table th{background:#d8d8d8;border:1px solid #b0b0b0;padding:3px 8px;font-weight:600;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
+    .xl-table td{border:1px solid #d0d0d0;padding:2px 8px;color:#000;height:20px;}
+    .xl-table tbody tr:hover td{background:#EFF6FF;}
+    .xl-table .rn{background:#d8d8d8;border:1px solid #b0b0b0;text-align:center;color:#555;min-width:32px;width:32px;position:sticky;left:0;z-index:4;font-size:11px;}
+    .xl-table th.rn{z-index:6;}
+    .xl-table .item-cell{min-width:240px;max-width:360px;white-space:normal;}
+    .xl-table .num-cell{text-align:right;min-width:90px;}
+    .editable{background:#FFFDE7;cursor:pointer;text-align:right;min-width:90px;}
+    .editable:hover{background:#FFF9C4;outline:1px dashed #aaa;}
+    .editable.editing{background:#fff;outline:2px solid #1565C0;padding:0;}
+    .editable.saved{background:#E8F5E9 !important;transition:background .6s;}
+    .amount-cell{text-align:right;background:#F5F5F5;min-width:110px;color:#1a1a1a;}
+    .section-header td{background:#E3E3E3;font-weight:700;font-style:italic;color:#333;}
 
-    /* ── GRID for HPU ── */
-    .hpu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;padding:16px;}
-    .hpu-card{background:#f8faff;border:1.5px solid #e0e7ff;border-radius:10px;padding:14px 16px;}
-    .hpu-model{font-size:.78rem;font-weight:800;color:#3730a3;margin-bottom:4px;}
-    .hpu-mat{font-size:.72rem;color:var(--muted);margin-bottom:2px;}
-    .hpu-price{font-size:1.05rem;font-weight:800;color:#059669;}
+    /* ── SECTION LABELS ── */
+    .section-label{font-size:.8rem;font-weight:700;color:#333;background:#f5f5f5;border:1px solid #d0d0d0;padding:6px 12px;margin-bottom:0;letter-spacing:.01em;}
+    .model-block{margin-bottom:24px;}
+    .category-header{background:#BDBDBD;border:1px solid #9E9E9E;padding:3px 8px;font-weight:700;font-size:11px;color:#000;letter-spacing:.04em;text-transform:uppercase;}
 
-    /* ── LPH accordion ── */
-    .lph-model{border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
-    .lph-head{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:#fafbfc;transition:background .1s;}
-    .lph-head:hover{background:#f1f5f9;}
-    .lph-model-name{font-size:.8rem;font-weight:700;}
-    .lph-total{font-size:.9rem;font-weight:800;color:var(--green);}
-    .lph-body{display:none;border-top:1px solid var(--border);}
-    .lph-body.open{display:block;}
-    .chevron{width:14px;height:14px;stroke:var(--muted);fill:none;stroke-width:2.5;stroke-linecap:round;transition:transform .2s;}
-    .chevron.open{transform:rotate(180deg);}
+    /* ── READONLY TABLES ── */
+    .ro-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;min-width:100%;white-space:nowrap;}
+    .ro-table th{background:#d8d8d8;border:1px solid #b0b0b0;padding:3px 10px;font-weight:600;text-align:center;position:sticky;top:0;z-index:5;}
+    .ro-table td{border:1px solid #d0d0d0;padding:2px 10px;}
+    .ro-table tr:nth-child(even) td{background:#f9f9f9;}
+    .ro-table .rn{background:#d8d8d8;border:1px solid #b0b0b0;text-align:center;color:#555;min-width:32px;position:sticky;left:0;z-index:4;}
 
-    /* ── burner sections ── */
-    .sec-header{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:10px 16px;background:#f8faff;border-bottom:1px solid var(--border);}
+    /* ── EMPTY STATE ── */
+    .empty-msg{padding:40px;text-align:center;color:#999;font-size:.85rem;}
 
-    /* ── loading ── */
-    .loading{text-align:center;padding:60px;color:var(--muted);}
-    .loader{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
-    .error{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:14px 18px;border-radius:8px;font-size:.82rem;margin:20px 0;}
+    /* ── CASCADE OVERLAY ── */
+    #cascade-overlay{display:none;position:fixed;inset:0;background:rgba(10,30,60,.75);z-index:9999;flex-direction:column;align-items:center;justify-content:center;color:white;}
+    #cascade-overlay.show{display:flex;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .cascade-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-top:4px solid #34d399;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px;}
+
+    /* ── TOOLTIP ── */
+    [data-tip]{position:relative;}
+    [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);right:0;background:#333;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;pointer-events:none;}
+
+    /* ── STATUS BAR ── */
+    .status-bar{position:fixed;bottom:0;left:0;right:0;background:#217346;color:#fff;font-size:.72rem;padding:4px 24px;display:flex;align-items:center;gap:16px;z-index:50;}
+    .status-bar span{opacity:.8;}
+    #status-msg{opacity:1;font-weight:600;}
   </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
   <div class="header-top">
     <a class="brand" href="/">
       <div class="brand-logo">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       </div>
       <span class="brand-name">ENCON</span>
     </a>
-    <span class="sep">›</span>
+    <span class="sep">/</span>
     <span class="page-title">Pricelist Viewer</span>
     <nav class="nav">
       <a href="/">Dashboard</a>
-      <a href="/quote">Quote</a>
-      <a href="/costing">VLPH</a>
-      <a href="/price-master">Raw Rates</a>
+      <a href="/viewer">DB Viewer</a>
       <a href="/pricelist" class="active">Pricelist</a>
+      <a href="/costing">VLPH Costing</a>
     </nav>
   </div>
   <div class="header-body">
     <div>
-      <div class="ht">Live <span>Pricelist</span> Viewer</div>
-      <div class="hs">All prices computed live from the uploaded pricebook — no stale Excel values</div>
+      <div class="ht">Pricelist <span>WorkBook</span></div>
+      <div class="hs">Live view of all master tables — click editable cells (yellow) to update</div>
     </div>
-    <button class="btn-refresh" onclick="load()">
-      <svg id="ricon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Refresh
+    <button class="btn-refresh" id="btn-refresh" onclick="loadAll()">
+      <svg id="refresh-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Refresh All
     </button>
   </div>
 </div>
 
-<div class="tabs-bar">
-  <div class="tab active" onclick="showTab('hpu',this)">HPU</div>
-  <div class="tab" onclick="showTab('burners',this)">Oil Film Burners</div>
-  <div class="tab" onclick="showTab('gas-burners',this)">Gas Burners</div>
-  <div class="tab" onclick="showTab('hv-burners',this)">HV Oil Burners</div>
-  <div class="tab" onclick="showTab('blowers',this)">Blowers</div>
-  <div class="tab" onclick="showTab('recuperator',this)">Recuperator</div>
-  <div class="tab" onclick="showTab('rad-heat',this)">Rad Heat</div>
-  <div class="tab" onclick="showTab('gail',this)">GAIL Gas Burner</div>
-  <div class="tab" onclick="showTab('oil-parts',this)">Oil Burner Parts</div>
-  <div class="tab" onclick="showTab('hv-parts',this)">HV Burner Parts</div>
-  <div class="tab" onclick="showTab('gas-parts',this)">Gas Burner Parts</div>
-  <div class="tab" onclick="showTab('hlph',this)">Horizontal LPH</div>
-  <div class="tab" onclick="showTab('vlph',this)">Vertical LPH</div>
+<!-- Sheet Tabs -->
+<div class="tabs-bar" id="tabs-bar">
+  <div class="tab active" data-sheet="rates" onclick="switchTab('rates')">Rates</div>
+  <div class="tab" data-sheet="hpu" onclick="switchTab('hpu')">HPU</div>
+  <div class="tab" data-sheet="oil-parts" onclick="switchTab('oil-parts')">Oil Burner Parts</div>
+  <div class="tab" data-sheet="hv-parts" onclick="switchTab('hv-parts')">HV Burner Parts</div>
+  <div class="tab" data-sheet="gas-parts" onclick="switchTab('gas-parts')">Gas Burner Parts</div>
+  <div class="tab" data-sheet="blowers" onclick="switchTab('blowers')">Blowers</div>
+  <div class="tab" data-sheet="recuperator" onclick="switchTab('recuperator')">Recuperator</div>
+  <div class="tab" data-sheet="rad-heat" onclick="switchTab('rad-heat')">Rad Heat</div>
+  <div class="tab" data-sheet="gail" onclick="switchTab('gail')">GAIL Gas Burner</div>
+  <div class="tab" data-sheet="hlph" onclick="switchTab('hlph')">Horizontal LPH</div>
+  <div class="tab" data-sheet="vlph" onclick="switchTab('vlph')">Vertical LPH</div>
+  <div class="tab" data-sheet="oil-burners" onclick="switchTab('oil-burners')">Oil Film Burners</div>
+  <div class="tab" data-sheet="gas-burners" onclick="switchTab('gas-burners')">Gas Burners</div>
+  <div class="tab" data-sheet="hv-burners" onclick="switchTab('hv-burners')">HV Burners</div>
 </div>
 
+<!-- Main Content -->
 <div class="main">
-  <div id="loading" class="loading"><div class="loader"></div>Loading prices…</div>
-  <div id="error-box" class="error" style="display:none"></div>
 
-  <div id="hpu" class="section active"></div>
-  <div id="burners" class="section"></div>
-  <div id="gas-burners" class="section"></div>
-  <div id="hv-burners" class="section"></div>
-  <div id="blowers" class="section"></div>
-  <div id="recuperator" class="section"></div>
-  <div id="rad-heat" class="section"></div>
-  <div id="gail" class="section"></div>
-  <div id="oil-parts" class="section"></div>
-  <div id="hv-parts" class="section"></div>
-  <div id="gas-parts" class="section"></div>
-  <div id="hlph" class="section"></div>
-  <div id="vlph" class="section"></div>
+  <!-- RATES -->
+  <div class="sheet-panel active" id="sheet-rates">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- HPU -->
+  <div class="sheet-panel" id="sheet-hpu">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- OIL BURNER PARTS -->
+  <div class="sheet-panel" id="sheet-oil-parts">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- HV BURNER PARTS -->
+  <div class="sheet-panel" id="sheet-hv-parts">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- GAS BURNER PARTS -->
+  <div class="sheet-panel" id="sheet-gas-parts">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- BLOWERS -->
+  <div class="sheet-panel" id="sheet-blowers">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- RECUPERATOR -->
+  <div class="sheet-panel" id="sheet-recuperator">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- RAD HEAT -->
+  <div class="sheet-panel" id="sheet-rad-heat">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- GAIL GAS BURNER -->
+  <div class="sheet-panel" id="sheet-gail">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- HORIZONTAL LPH -->
+  <div class="sheet-panel" id="sheet-hlph">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- VERTICAL LPH -->
+  <div class="sheet-panel" id="sheet-vlph">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- OIL FILM BURNERS -->
+  <div class="sheet-panel" id="sheet-oil-burners">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- GAS BURNERS -->
+  <div class="sheet-panel" id="sheet-gas-burners">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+  <!-- HV BURNERS -->
+  <div class="sheet-panel" id="sheet-hv-burners">
+    <div class="empty-msg">Loading...</div>
+  </div>
+
+</div>
+
+<!-- Cascade Overlay -->
+<div id="cascade-overlay">
+  <div class="cascade-spinner"></div>
+  <div style="font-size:1.1rem;font-weight:600;">Recalculating all prices...</div>
+  <div style="font-size:.82rem;opacity:.6;margin-top:8px;">Cascading rate changes across all product tables</div>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span id="status-msg">Ready</span>
+  <span id="status-rows"></span>
 </div>
 
 <script>
-const fmt = n => n == null ? '—' : '₹ ' + Number(n).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:0});
-const fmtN = n => n == null ? '—' : Number(n).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+'use strict';
 
-function showTab(id, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById(id).classList.add('active');
+let DATA = {};
+let currentTab = 'rates';
+
+// ── Formatting helpers ──────────────────────────────────────────────────────
+function fmt(v) {
+  if (v == null || v === '') return '';
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function emptyMsg(msg) {
+  return `<div class="empty-msg">${msg || 'No data available'}</div>`;
 }
 
-async function load() {
-  const icon = document.getElementById('ricon');
-  icon.classList.add('spin');
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('error-box').style.display = 'none';
+// ── Tab switching ──────────────────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sheet-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab[data-sheet="${id}"]`).classList.add('active');
+  document.getElementById(`sheet-${id}`).classList.add('active');
+  currentTab = id;
+}
 
+// ── Load all data ──────────────────────────────────────────────────────────
+async function loadAll() {
+  const icon = document.getElementById('refresh-icon');
+  icon.classList.add('spin');
+  setStatus('Fetching data...');
   try {
-    const res = await fetch('/api/pricelist-summary');
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-    renderAll(d);
-  } catch(e) {
-    document.getElementById('error-box').textContent = 'Error: ' + e.message;
-    document.getElementById('error-box').style.display = 'block';
+    const [summary, rates] = await Promise.all([
+      fetch('/api/pricelist-summary').then(r => r.json()),
+      fetch('/api/pricelist/rates').then(r => r.json()),
+    ]);
+    DATA.summary = summary;
+    DATA.rates = rates;
+    renderAll();
+    setStatus('Loaded', `${Array.isArray(rates) ? rates.length : 0} rate entries`);
+  } catch (e) {
+    setStatus('Error: ' + e.message);
   }
-  document.getElementById('loading').style.display = 'none';
   icon.classList.remove('spin');
 }
 
-// Map keyword → tab id  (checked against uppercase section key)
-const BURNER_TAB_MAP = [
-  { tab: 'burners',     match: k => k.includes('FILM') && !k.includes('HIGH VELOCITY') },
-  { tab: 'burners',     match: k => k.includes('DUAL FUEL') },
-  { tab: 'burners',     match: k => k.includes('SPARES') },
-  { tab: 'gas-burners', match: k => k.includes("'GAS'") || (k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('GAIL')) },
-  { tab: 'hv-burners',  match: k => k.includes('HIGH VELOCITY OIL') },
-  { tab: 'hv-burners',  match: k => k.includes('HIGH VELOCITY GAS') },
-];
-
-function shortSectionName(key) {
-  const u = key.toUpperCase();
-  if (u.includes('DUAL FUEL')) return 'Dual Fuel Burner';
-  if (u.includes('FILM') || u.includes("'FILM'")) return 'Oil Film Burner';
-  if (u.includes('HIGH VELOCITY OIL')) return 'High Velocity Oil Burner';
-  if (u.includes('HIGH VELOCITY GAS')) return 'High Velocity Gas Burner';
-  if (u.includes('GAS')) return 'Gas Burner';
-  if (u.includes('SPARES')) return 'Spares — Oil Film Burner';
-  return key.replace(/\(W\.E\.F.*\)/gi,'').trim();
+function renderAll() {
+  const s = DATA.summary || {};
+  renderRates(DATA.rates || []);
+  renderHPU(s.hpu || []);
+  renderPartsSections('oil-parts', s.oil_burner_parts || [], 'oil_burner_parts_master');
+  renderPartsSections('hv-parts', s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
+  renderPartsSections('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
+  renderBlowers(s.blowers || []);
+  renderRecuperator(s.recuperator || []);
+  renderRadHeat(s.rad_heat || [], s.rad_heat_tata || []);
+  renderGail(s.gail_gas_burner || []);
+  renderLPH('hlph', s.horizontal_lph || []);
+  renderLPH('vlph', s.vertical_lph || []);
+  renderBurnerPivot('oil-burners', s.burners || {}, 'FILM');
+  renderBurnerPivot('gas-burners', s.burners || {}, 'GAS');
+  renderBurnerPivot('hv-burners', s.burners || {}, 'HV');
 }
 
-function renderAll(d) {
-  renderHPU(d.hpu || []);
-  renderBurnerTab('burners', d.burners || {});
-  renderBurnerTab('gas-burners', d.burners || {});
-  renderBurnerTab('hv-burners', d.burners || {});
-  renderBlowers(d.blowers || []);
-  renderRecuperator(d.recuperator || []);
-  renderRadHeat(d.rad_heat || [], d.rad_heat_tata || []);
-  renderGail(d.gail_gas_burner || []);
-  renderPartsTab('oil-parts', d.oil_burner_parts || []);
-  renderPartsTab('hv-parts',  d.hv_oil_burner_parts || []);
-  renderGasParts(d.gas_burner_parts || []);
-  renderLPH('hlph', d.horizontal_lph || []);
-  renderLPH('vlph', d.vertical_lph || []);
+// ── Status bar ─────────────────────────────────────────────────────────────
+function setStatus(msg, rows) {
+  document.getElementById('status-msg').textContent = msg;
+  document.getElementById('status-rows').textContent = rows || '';
 }
 
-/* ── HPU ── */
+// ── Cell editing ───────────────────────────────────────────────────────────
+function makeEditable(td, onSave) {
+  const original = td.textContent.trim();
+  const num = parseFloat(original.replace(/[^0-9.-]/g, '')) || 0;
+  td.classList.add('editing');
+  td.innerHTML = `<input type="number" step="any" value="${num}" style="width:100%;border:none;outline:none;font-family:inherit;font-size:inherit;padding:2px 4px;background:transparent;"/>`;
+  const inp = td.querySelector('input');
+  inp.focus(); inp.select();
+  let committed = false;
+  const commit = () => {
+    if (committed) return;
+    committed = true;
+    const val = parseFloat(inp.value);
+    if (!isNaN(val) && val !== num) onSave(val, td, original);
+    else { td.innerHTML = original; td.classList.remove('editing'); }
+  };
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { committed = true; td.innerHTML = original; td.classList.remove('editing'); }
+  });
+  inp.addEventListener('blur', commit);
+}
+
+function flashSaved(td, displayVal) {
+  td.innerHTML = displayVal;
+  td.classList.remove('editing');
+  td.classList.add('saved');
+  setTimeout(() => td.classList.remove('saved'), 1200);
+}
+
+function attachEditHandlers(container, table) {
+  container.querySelectorAll('.editable').forEach(td => {
+    td.addEventListener('click', () => {
+      if (td.classList.contains('editing')) return;
+      const rowid = parseInt(td.dataset.rowid);
+      const field = td.dataset.field;
+      makeEditable(td, async (val, tdEl, orig) => {
+        tdEl.textContent = '...';
+        try {
+          const body = { table, rowid };
+          body[field] = val;
+          const res = await fetch('/api/pricelist/item', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (data.success) {
+            flashSaved(tdEl, fmt(val));
+            // Update amount cell in same row
+            const row = tdEl.closest('tr');
+            if (row) {
+              const amtCell = row.querySelector('.amount-cell');
+              if (amtCell && data.amount != null) {
+                const qty = data.qty, rate = data.rate;
+                amtCell.dataset.qty = qty;
+                amtCell.dataset.rate = rate;
+                amtCell.setAttribute('data-tip', `= ${qty} × ${rate}`);
+                amtCell.textContent = fmt(data.amount);
+              }
+            }
+            setStatus(`Saved ${field} = ${val}`, `rowid ${rowid}`);
+          } else {
+            tdEl.innerHTML = orig;
+            setStatus('Error: ' + (data.error || 'Unknown'));
+          }
+        } catch (e) {
+          tdEl.innerHTML = orig;
+          setStatus('Error: ' + e.message);
+        }
+      });
+    });
+  });
+}
+
+// ── RATES sheet ─────────────────────────────────────────────────────────────
+function renderRates(data) {
+  const el = document.getElementById('sheet-rates');
+  if (!Array.isArray(data) || !data.length) { el.innerHTML = emptyMsg('No rates data'); return; }
+
+  const cats = {};
+  data.forEach(r => { cats[r.category] = cats[r.category] || []; cats[r.category].push(r); });
+
+  let rowNum = 0;
+  let html = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr>
+      <th class="rn"></th>
+      <th style="min-width:300px;text-align:left;">Item</th>
+      <th>Category</th><th>Unit</th>
+      <th style="min-width:110px;">Price (₹)</th>
+      <th style="min-width:110px;">Prev. Price (₹)</th>
+      <th style="min-width:110px;">Change</th>
+    </tr></thead><tbody>`;
+
+  Object.keys(cats).sort().forEach(cat => {
+    html += `<tr class="section-header"><td class="rn"></td><td colspan="6" class="category-header">${cat}</td></tr>`;
+    cats[cat].forEach(r => {
+      rowNum++;
+      const change = r.previous_price && r.previous_price !== r.price
+        ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%'
+        : '—';
+      const changeStyle = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
+      html += `<tr>
+        <td class="rn">${rowNum}</td>
+        <td class="item-cell">${r.item}</td>
+        <td style="text-align:center;">${r.category}</td>
+        <td style="text-align:center;">${r.unit || 'nos'}</td>
+        <td class="editable rates-price" data-item="${escAttr(r.item)}" data-field="price">${fmt(r.price)}</td>
+        <td class="num-cell">${fmt(r.previous_price)}</td>
+        <td class="num-cell" style="${changeStyle}">${change}</td>
+      </tr>`;
+    });
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+
+  // Attach rate edit handlers
+  el.querySelectorAll('.rates-price').forEach(td => {
+    td.addEventListener('click', () => {
+      if (td.classList.contains('editing')) return;
+      const item = td.dataset.item;
+      makeEditable(td, async (val, tdEl, orig) => {
+        tdEl.textContent = '...';
+        // Show cascade overlay
+        const overlay = document.getElementById('cascade-overlay');
+        overlay.classList.add('show');
+        setStatus('Recalculating all prices...');
+        try {
+          const res = await fetch('/api/pricelist/rate', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ item, price: val }),
+          });
+          const data = await res.json();
+          overlay.classList.remove('show');
+          if (data.success) {
+            flashSaved(tdEl, fmt(val));
+            setStatus('Cascade complete', data.cascaded ? 'All tables recalculated' : 'Rate saved (no pricebook found for cascade)');
+            // Reload everything to reflect cascade
+            await loadAll();
+          } else {
+            tdEl.innerHTML = orig;
+            setStatus('Error: ' + (data.error || 'Unknown'));
+          }
+        } catch (e) {
+          overlay.classList.remove('show');
+          tdEl.innerHTML = orig;
+          setStatus('Error: ' + e.message);
+        }
+      });
+    });
+  });
+}
+
+function escAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── HPU sheet ───────────────────────────────────────────────────────────────
 function renderHPU(data) {
-  const el = document.getElementById('hpu');
-  if (!data.length) { el.innerHTML = '<p class="loading">No HPU data</p>'; return; }
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-head">
-        <span class="card-head-title">Heating &amp; Pumping Unit — Selling Prices (Material × 1.8)</span>
-        <span class="card-head-badge">${data.length} models</span>
+  const el = document.getElementById('sheet-hpu');
+  if (!data.length) { el.innerHTML = emptyMsg(); return; }
+  el.innerHTML = data.map(model => `
+    <div class="model-block">
+      <div class="section-label">${model.model} &nbsp;|&nbsp; Material: ₹${fmt(model.material_cost)} &nbsp;|&nbsp; Selling: ₹${fmt(model.selling_price)}</div>
+      <div class="xl-wrap">
+        <table class="xl-table">
+          <thead><tr>
+            <th class="rn"></th>
+            <th style="min-width:280px;text-align:left;">Item</th>
+            <th style="min-width:80px;">Qty</th>
+            <th style="min-width:60px;">Unit</th>
+            <th style="min-width:110px;">Rate (₹)</th>
+            <th style="min-width:120px;">Amount (₹)</th>
+          </tr></thead>
+          <tbody>${(model.items||[]).map((it, i) => `<tr>
+            <td class="rn">${i+1}</td>
+            <td class="item-cell">${it.item||''}</td>
+            <td class="editable" data-rowid="${it.rowid}" data-field="qty" data-table="hpu_master">${it.qty??''}</td>
+            <td style="text-align:center;">${it.unit||''}</td>
+            <td class="editable" data-rowid="${it.rowid}" data-field="rate" data-table="hpu_master">${it.rate??''}</td>
+            <td class="amount-cell" data-qty="${it.qty}" data-rate="${it.rate}" data-tip="= ${it.qty} × ${it.rate}">${fmt(it.amount)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
       </div>
-      <div class="hpu-grid">
-        ${data.map(h => `
-          <div class="hpu-card">
-            <div class="hpu-model">${h.model}</div>
-            <div class="hpu-mat">Material: ${fmt(h.material_cost)}</div>
-            <div class="hpu-price">${fmt(h.selling_price)}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
+    </div>`).join('');
+  data.forEach(model => {
+    const block = el.querySelectorAll('.model-block')[data.indexOf(model)];
+    if (block) attachEditHandlers(block, 'hpu_master');
+  });
 }
 
-/* ── Burners ── */
-function renderBurnerTab(elId, burners) {
-  const el = document.getElementById(elId);
-  const tabEntry = BURNER_TAB_MAP.filter(e => e.tab === elId);
-  let html = '';
-  for (const [sectionKey, models] of Object.entries(burners)) {
-    const su = sectionKey.toUpperCase();
-    if (!tabEntry.some(e => e.match(su))) continue;
-    const components = [...new Set(Object.values(models).flatMap(m => Object.keys(m)))];
-    html += `<div class="card">
-      <div class="card-head">
-        <span class="card-head-title">${shortSectionName(sectionKey)}</span>
-        <span class="card-head-badge">${Object.keys(models).length} sizes</span>
+// ── Parts sections (Oil / HV / Gas burner parts) ────────────────────────────
+function renderPartsSections(sheetId, sections, table) {
+  const el = document.getElementById(`sheet-${sheetId}`);
+  if (!sections.length) { el.innerHTML = emptyMsg(); return; }
+  el.innerHTML = sections.map((sec, si) => `
+    <div class="model-block">
+      <div class="section-label">${sec.title} &nbsp;|&nbsp; Fabrication: ₹${fmt(sec.fabrication_cost)} &nbsp;|&nbsp; Selling: ₹${fmt(sec.selling_price)}</div>
+      <div class="xl-wrap">
+        <table class="xl-table">
+          <thead><tr>
+            <th class="rn"></th>
+            <th style="min-width:280px;text-align:left;">Particular</th>
+            <th style="min-width:80px;">Qty</th>
+            <th style="min-width:60px;">Unit</th>
+            <th style="min-width:110px;">Rate (₹)</th>
+            <th style="min-width:120px;">Amount (₹)</th>
+          </tr></thead>
+          <tbody>${(sec.items||[]).map((it, i) => `<tr>
+            <td class="rn">${i+1}</td>
+            <td class="item-cell">${it.particular||''}</td>
+            <td class="editable" data-rowid="${it.rowid}" data-field="qty" data-table="${table}">${it.qty??''}</td>
+            <td style="text-align:center;">${it.unit||''}</td>
+            <td class="editable" data-rowid="${it.rowid}" data-field="rate" data-table="${table}">${it.rate??''}</td>
+            <td class="amount-cell" data-qty="${it.qty}" data-rate="${it.rate}" data-tip="= ${it.qty} × ${it.rate}">${fmt(it.amount)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
       </div>
-      <table>
-        <thead><tr><th>Burner Size</th>${components.map(c=>`<th class="num">${c}</th>`).join('')}</tr></thead>
-        <tbody>
-          ${Object.entries(models).map(([size, comps]) => `
-            <tr>
-              <td class="model-name">${size}</td>
-              ${components.map(c => `<td class="num price">${comps[c] != null ? fmt(comps[c]) : '—'}</td>`).join('')}
-            </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-  }
-  el.innerHTML = html || '<div class="loading">No data — upload pricebook to populate</div>';
+    </div>`).join('');
+  sections.forEach((sec, si) => {
+    const block = el.querySelectorAll('.model-block')[si];
+    if (block) attachEditHandlers(block, table);
+  });
 }
 
-/* ── Blowers ── */
+// ── Blowers (read-only) ─────────────────────────────────────────────────────
 function renderBlowers(data) {
-  const el = document.getElementById('blowers');
-  if (!data.length) { el.innerHTML = '<p class="loading">No blower data</p>'; return; }
-  const keys = Object.keys(data[0]).filter(k => !['section','model'].includes(k));
-  el.innerHTML = `<div class="card">
-    <div class="card-head">
-      <span class="card-head-title">Blowers</span>
-      <span class="card-head-badge">${data.length} models</span>
-    </div>
-    <table>
-      <thead><tr><th>Section</th><th>Model</th>${keys.map(k=>`<th class="num">${k.replace(/_/g,' ')}</th>`).join('')}</tr></thead>
-      <tbody>
-        ${data.map(r => `<tr>
-          <td><span class="section-badge">${r.section||''}</span></td>
-          <td class="model-name">${r.model||''}</td>
-          ${keys.map(k => {
-            const v = r[k];
-            if (v == null) return '<td class="num">—</td>';
-            if (typeof v === 'number' && v > 1000) return `<td class="num price">${fmt(v)}</td>`;
-            return `<td class="num">${fmtN(v)}</td>`;
-          }).join('')}
-        </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+  const el = document.getElementById('sheet-blowers');
+  if (!data.length) { el.innerHTML = emptyMsg(); return; }
+  const keys = Object.keys(data[0] || {}).filter(k => k !== 'rowid');
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr><th class="rn"></th>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+    <tbody>${data.map((r, i) => `<tr><td class="rn">${i+1}</td>${keys.map(k => `<td class="num-cell">${r[k]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
 }
 
-/* ── Recuperator ── */
+// ── Recuperator (read-only) ─────────────────────────────────────────────────
 function renderRecuperator(data) {
-  const el = document.getElementById('recuperator');
-  if (!data.length) { el.innerHTML = '<p class="loading">No recuperator data</p>'; return; }
-  el.innerHTML = `<div class="card">
-    <div class="card-head">
-      <span class="card-head-title">Recuperators</span>
-      <span class="card-head-badge">${data.length} models</span>
-    </div>
-    <table>
-      <thead><tr><th>Type</th><th>Model</th><th class="num">Fabrication Cost</th><th class="num">Selling Price</th></tr></thead>
-      <tbody>
-        ${data.map(r=>`<tr>
-          <td><span class="section-badge">${r.type}</span></td>
-          <td class="model-name">${r.model}</td>
-          <td class="num">${fmt(r.fabrication_cost)}</td>
-          <td class="num price">${fmt(r.selling_price)}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+  const el = document.getElementById('sheet-recuperator');
+  if (!data.length) { el.innerHTML = emptyMsg(); return; }
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr>
+      <th class="rn"></th>
+      <th style="min-width:100px;text-align:left;">Type</th>
+      <th style="min-width:140px;text-align:left;">Model</th>
+      <th style="min-width:130px;">Fabrication Cost (₹)</th>
+      <th style="min-width:130px;">Selling Price (₹)</th>
+    </tr></thead>
+    <tbody>${data.map((r, i) => `<tr>
+      <td class="rn">${i+1}</td>
+      <td>${r.type||''}</td>
+      <td>${r.model||''}</td>
+      <td class="num-cell">${fmt(r.fabrication_cost)}</td>
+      <td class="num-cell">${fmt(r.selling_price)}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
 }
 
-/* ── Rad Heat ── */
-function renderRadHeat(std, tata) {
-  const el = document.getElementById('rad-heat');
-  const renderTable = (title, data) => `
-    <div class="card">
-      <div class="card-head"><span class="card-head-title">${title}</span><span class="card-head-badge">${data.length} models</span></div>
-      <table>
-        <thead><tr><th>Model</th><th>Output</th><th class="num">LPG m³/hr</th><th class="num">NG m³/hr</th><th class="num">Price (with SS Tubing)</th></tr></thead>
-        <tbody>${data.map(r=>`<tr>
-          <td class="model-name">${r.item}</td><td>${r.output_kw||''}</td>
-          <td class="num">${r.gas_lpg??'—'}</td><td class="num">${r.gas_ng??'—'}</td>
-          <td class="num price">${fmt(r.price)}</td></tr>`).join('')}
-        </tbody>
-      </table>
+// ── Rad Heat (read-only) ────────────────────────────────────────────────────
+function renderRadHeat(rad, radTata) {
+  const el = document.getElementById('sheet-rad-heat');
+  const cols = ['item','output_kw','gas_lpg','gas_ng','price'];
+  const colLabels = ['Item','Output KW','Gas LPG (m³/hr)','Gas NG (m³/hr)','Price (₹)'];
+  const renderTable = (rows, title) => `
+    <div class="model-block">
+      <div class="section-label">${title}</div>
+      <div class="xl-wrap"><table class="xl-table">
+        <thead><tr><th class="rn"></th>${colLabels.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map((r,i)=>`<tr><td class="rn">${i+1}</td>${cols.map(c=>`<td class="num-cell">${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>
     </div>`;
-  el.innerHTML = renderTable('Rad Heat (Standard)', std) + renderTable('Rad Heat (TATA)', tata);
+  el.innerHTML = renderTable(rad, 'Rad Heat — Standard') + (radTata.length ? renderTable(radTata, 'Rad Heat — TATA') : '');
 }
 
-/* ── GAIL Gas Burner ── */
+// ── GAIL Gas Burner (read-only) ─────────────────────────────────────────────
 function renderGail(data) {
-  const el = document.getElementById('gail');
-  if (!data.length) { el.innerHTML = '<p class="loading">No GAIL data</p>'; return; }
-  const keys = Object.keys(data[0]).filter(k => !['section','burner_size'].includes(k));
-  el.innerHTML = `<div class="card">
-    <div class="card-head"><span class="card-head-title">GAIL Gas Burner</span><span class="card-head-badge">${data.length} entries</span></div>
-    <table>
-      <thead><tr><th>Section</th><th>Burner Size</th>${keys.map(k=>`<th class="num">${k.replace(/_/g,' ')}</th>`).join('')}</tr></thead>
-      <tbody>${data.map(r=>`<tr>
-        <td><span class="section-badge">${r.section||''}</span></td>
-        <td class="model-name">${r.burner_size||''}</td>
-        ${keys.map(k=>r[k]!=null?`<td class="num price">${fmt(r[k])}</td>`:'<td class="num">—</td>').join('')}
-      </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
+  const el = document.getElementById('sheet-gail');
+  if (!data.length) { el.innerHTML = emptyMsg(); return; }
+  const keys = Object.keys(data[0] || {}).filter(k => k !== 'rowid');
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr><th class="rn"></th>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+    <tbody>${data.map((r,i) => `<tr><td class="rn">${i+1}</td>${keys.map(k=>`<td class="num-cell">${r[k]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
 }
 
-/* ── Oil / HV Burner Parts ── */
-function renderPartsTab(elId, sections) {
-  const el = document.getElementById(elId);
-  if (!sections.length) { el.innerHTML = '<p class="loading">No data — upload pricebook</p>'; return; }
-  el.innerHTML = sections.map(sec => `<div class="card">
-    <div class="card-head">
-      <span class="card-head-title">${sec.title}</span>
-      <span class="card-head-badge">Selling: ${fmt(sec.selling_price)}</span>
-    </div>
-    <table>
-      <thead><tr><th>Particular</th><th class="num">Qty</th><th>Unit</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
-      <tbody>${(sec.items||[]).map(it=>`<tr>
-        <td class="model-name">${it.particular||''}</td>
-        <td class="num">${it.qty??'—'}</td>
-        <td>${it.unit||''}</td>
-        <td class="num">${it.rate!=null?fmt(it.rate):'—'}</td>
-        <td class="num price">${fmt(it.amount)}</td>
-      </tr>`).join('')}</tbody>
-      <tfoot><tr>
-        <td colspan="4" style="padding:8px 16px;font-weight:700;">Fabrication Total</td>
-        <td class="num price" style="padding:8px 16px;">${fmt(sec.fabrication_cost)}</td>
-      </tr></tfoot>
-    </table>
-  </div>`).join('');
-}
-
-/* ── Gas Burner Parts ── */
-function renderGasParts(data) {
-  const el = document.getElementById('gas-parts');
-  if (!data.length) { el.innerHTML = '<p class="loading">No gas burner parts data</p>'; return; }
-  el.innerHTML = `<div class="card">
-    <div class="card-head"><span class="card-head-title">Gas Burner Fabrication Cost (GAIL Design)</span><span class="card-head-badge">Markup × 1.25</span></div>
-    <table>
-      <thead><tr><th>Section</th><th class="num">Fabrication Cost</th><th class="num">Selling Price</th></tr></thead>
-      <tbody>${data.map(r=>`<tr>
-        <td class="model-name">${r.title}</td>
-        <td class="num">${fmt(r.fabrication_cost)}</td>
-        <td class="num price">${fmt(r.selling_price)}</td>
-      </tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
-}
-
-/* ── LPH (Horizontal / Vertical) ── */
-function renderLPH(elId, data) {
-  const el = document.getElementById(elId);
-  if (!data.length) { el.innerHTML = '<p class="loading">No data</p>'; return; }
-  el.innerHTML = data.map((m, idx) => `
-    <div class="lph-model">
-      <div class="lph-head" onclick="toggleLPH(${idx},'${elId}')">
-        <span class="lph-model-name">${m.model}</span>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <span class="lph-total">${fmt(m.total)}</span>
-          <svg class="chevron" id="chev-${elId}-${idx}" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-      </div>
-      <div class="lph-body" id="lph-${elId}-${idx}">
-        <table>
-          <thead><tr><th>Particular</th><th>Qty</th><th class="num">Amount</th></tr></thead>
-          <tbody>${m.items.map(it=>`<tr>
-            <td>${it.particular}</td>
-            <td>${it.qty||'—'}</td>
-            <td class="num price">${fmt(it.amount)}</td>
-          </tr>`).join('')}
-          </tbody>
+// ── HLPH / VLPH (read-only) ─────────────────────────────────────────────────
+function renderLPH(sheetId, data) {
+  const el = document.getElementById(`sheet-${sheetId}`);
+  if (!data.length) { el.innerHTML = emptyMsg(); return; }
+  el.innerHTML = data.map(model => `
+    <div class="model-block">
+      <div class="section-label">${model.model} &nbsp;|&nbsp; Total: ₹${fmt(model.total)}</div>
+      <div class="xl-wrap">
+        <table class="xl-table">
+          <thead><tr>
+            <th class="rn"></th>
+            <th style="min-width:280px;text-align:left;">Particular</th>
+            <th style="min-width:80px;">Qty</th>
+            <th style="min-width:120px;">Amount (₹)</th>
+          </tr></thead>
+          <tbody>${(model.items||[]).map((it, i) => `<tr>
+            <td class="rn">${i+1}</td>
+            <td class="item-cell">${it.particular||''}</td>
+            <td class="num-cell">${it.qty??''}</td>
+            <td class="num-cell">${fmt(it.amount)}</td>
+          </tr>`).join('')}</tbody>
         </table>
       </div>
     </div>`).join('');
 }
 
-function toggleLPH(idx, elId) {
-  const body = document.getElementById(`lph-${elId}-${idx}`);
-  const chev = document.getElementById(`chev-${elId}-${idx}`);
-  body.classList.toggle('open');
-  chev.classList.toggle('open');
+// ── Burner Pivot (read-only) ────────────────────────────────────────────────
+function renderBurnerPivot(sheetId, burners, keyword) {
+  const el = document.getElementById(`sheet-${sheetId}`);
+  const sectionKeys = Object.keys(burners).filter(k => k.toUpperCase().includes(keyword));
+  if (!sectionKeys.length) { el.innerHTML = emptyMsg(); return; }
+  el.innerHTML = sectionKeys.map(sec => {
+    const sizeMap = burners[sec];
+    const sizes = Object.keys(sizeMap).sort();
+    const comps = [...new Set(sizes.flatMap(s => Object.keys(sizeMap[s])))].sort();
+    return `<div class="model-block">
+      <div class="section-label">${sec}</div>
+      <div class="xl-wrap"><table class="xl-table">
+        <thead><tr>
+          <th class="rn"></th>
+          <th style="min-width:140px;text-align:left;">Burner Size</th>
+          ${comps.map(c=>`<th style="min-width:130px;">${c} (₹)</th>`).join('')}
+        </tr></thead>
+        <tbody>${sizes.map((sz, i) => `<tr>
+          <td class="rn">${i+1}</td>
+          <td>${sz}</td>
+          ${comps.map(c=>`<td class="num-cell">${fmt(sizeMap[sz][c])}</td>`).join('')}
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
 }
 
-load();
+// ── Init ────────────────────────────────────────────────────────────────────
+loadAll();
 </script>
 </body>
 </html>

@@ -88,9 +88,11 @@ def parse_rates(xl, conn):
         s = v.strip()
         return s if len(s) >= 2 and not s.replace(".", "").replace(",", "").isdigit() else None
 
-    rows = []
-    for _, row in df.iterrows():
-        # Group A: Raw Material (cols 1, 2, 3)
+    rows = []  # tuples of (item, category, unit, price, prev, excel_row, excel_col)
+    for pandas_idx, row in df.iterrows():
+        excel_row = int(pandas_idx) + 1  # 1-based Excel row
+
+        # Group A: Raw Material — item col 1, price col 2 → Excel col C = 3
         item  = clean_text(row.iloc[1] if len(row) > 1 else None)
         price = clean_num(row.iloc[2]  if len(row) > 2 else None)
         prev  = clean_num(row.iloc[3]  if len(row) > 3 else None)
@@ -100,26 +102,26 @@ def parse_rates(xl, conn):
                 price_mtr = _ss_pipe_price_per_mtr(item, price)
                 if price_mtr is not None:
                     prev_mtr = _ss_pipe_price_per_mtr(item, prev) if prev else price_mtr
-                    rows.append((item, "Raw Material", "mtr", price_mtr, prev_mtr))
+                    rows.append((item, "Raw Material", "mtr", price_mtr, prev_mtr, excel_row, 3))
                     continue
             unit = "kg" if price <= 500 else "nos"
             if "per mtr" in item.lower() or "(per mtr)" in item.lower():
                 unit = "mtr"
-            rows.append((item, "Raw Material", unit, price, prev or price))
+            rows.append((item, "Raw Material", unit, price, prev or price, excel_row, 3))
 
-        # Group B: Bought Out (cols 9, 10, 12)
+        # Group B: Bought Out — item col 9, price col 10 → Excel col K = 11
         item  = clean_text(row.iloc[9]  if len(row) > 9  else None)
         price = clean_num(row.iloc[10]  if len(row) > 10 else None)
         prev  = clean_num(row.iloc[12]  if len(row) > 12 else None)
         if item and price and not is_header(item):
-            rows.append((item, "Bought Out", "nos", price, prev or price))
+            rows.append((item, "Bought Out", "nos", price, prev or price, excel_row, 11))
 
-        # Group C: ENCON Purchase (cols 15, 19, 20)
+        # Group C: ENCON Purchase — item col 15, price col 19 → Excel col T = 20
         item  = clean_text(row.iloc[15] if len(row) > 15 else None)
         price = clean_num(row.iloc[19]  if len(row) > 19 else None)
         prev  = clean_num(row.iloc[20]  if len(row) > 20 else None)
         if item and price and not is_header(item):
-            rows.append((item, "ENCON Purchase", "nos", price, prev or price))
+            rows.append((item, "ENCON Purchase", "nos", price, prev or price, excel_row, 20))
 
     if not rows:
         return {"error": "No price data found in Rates sheet"}
@@ -133,16 +135,25 @@ def parse_rates(xl, conn):
     conn.execute("""
         CREATE TABLE IF NOT EXISTS component_price_master (
             item TEXT PRIMARY KEY, category TEXT,
-            unit TEXT, price REAL, previous_price REAL
+            unit TEXT, price REAL, previous_price REAL,
+            excel_row INTEGER, excel_col INTEGER
         )""")
-    for item, category, unit, price, prev in rows:
+    # Add columns if they don't exist (migration)
+    for col in ['excel_row', 'excel_col']:
+        try:
+            conn.execute(f"ALTER TABLE component_price_master ADD COLUMN {col} INTEGER")
+        except Exception:
+            pass
+
+    for item, category, unit, price, prev, excel_row, excel_col in rows:
         conn.execute("""
-            INSERT INTO component_price_master (item, category, unit, price, previous_price)
-            VALUES (?,?,?,?,?)
+            INSERT INTO component_price_master (item, category, unit, price, previous_price, excel_row, excel_col)
+            VALUES (?,?,?,?,?,?,?)
             ON CONFLICT(item) DO UPDATE SET
                 category=excluded.category, unit=excluded.unit,
-                price=excluded.price, previous_price=excluded.previous_price
-        """, (item, category, unit, price, prev))
+                price=excluded.price, previous_price=excluded.previous_price,
+                excel_row=excluded.excel_row, excel_col=excluded.excel_col
+        """, (item, category, unit, price, prev, excel_row, excel_col))
 
     return {"rows": len(rows)}
 
