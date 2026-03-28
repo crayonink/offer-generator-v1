@@ -43,33 +43,40 @@
     .sheet-panel.active{display:block;}
 
     /* ── EXCEL GRID ── */
-    .xl-wrap{max-height:70vh;overflow:auto;border:1px solid #d0d0d0;border-radius:0;background:#fff;}
-    .xl-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;min-width:100%;white-space:nowrap;}
-    .xl-table th{background:#d8d8d8;border:1px solid #b0b0b0;padding:3px 8px;font-weight:600;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
+    .xl-wrap{max-height:72vh;overflow:auto;border:1px solid #d0d0d0;background:#fff;}
+    .xl-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;white-space:nowrap;}
+    .xl-table th{background:#d8d8d8;border:1px solid #b0b0b0;padding:3px 8px;font-weight:700;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
+    .xl-table th.top-header{background:#1a3a5c;color:#fff;border-color:#0d2240;font-size:11px;letter-spacing:.04em;}
+    .xl-table th.gap-th{background:#fff;border:none;min-width:10px;width:10px;padding:0;}
     .xl-table td{border:1px solid #d0d0d0;padding:2px 8px;color:#000;height:20px;}
     .xl-table tbody tr:hover td{background:#EFF6FF;}
     .xl-table .rn{background:#d8d8d8;border:1px solid #b0b0b0;text-align:center;color:#555;min-width:32px;width:32px;position:sticky;left:0;z-index:4;font-size:11px;}
     .xl-table th.rn{z-index:6;}
-    .xl-table .item-cell{min-width:240px;max-width:360px;white-space:normal;}
+    .xl-table .item-cell{min-width:240px;max-width:380px;white-space:normal;position:sticky;left:32px;background:#fff;z-index:3;}
+    .xl-table th.item-th{position:sticky;left:32px;z-index:6;text-align:left;}
     .xl-table .num-cell{text-align:right;min-width:90px;}
-    .editable{background:#FFFDE7;cursor:pointer;text-align:right;min-width:90px;}
+    .xl-table .gap-td{background:#e8e8e8;border:none;min-width:10px;width:10px;padding:0;}
+    .editable{background:#FFFDE7;cursor:pointer;text-align:right;min-width:80px;}
     .editable:hover{background:#FFF9C4;outline:1px dashed #aaa;}
     .editable.editing{background:#fff;outline:2px solid #1565C0;padding:0;}
     .editable.saved{background:#E8F5E9 !important;transition:background .6s;}
-    .amount-cell{text-align:right;background:#F5F5F5;min-width:110px;color:#1a1a1a;}
-    .section-header td{background:#E3E3E3;font-weight:700;font-style:italic;color:#333;}
+    .amount-cell{text-align:right;background:#F5F5F5;min-width:100px;color:#1a1a1a;}
+    .total-row td{background:#EEEEEE;font-weight:700;border-top:2px solid #9E9E9E;}
+    .selling-row td{background:#E8F5E9;font-weight:700;color:#1a5c2a;}
+    .section-hdr td{background:#BFC9D6;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-top:2px solid #789;}
+    .xl-table tr.hdr2 th{background:#CFD8DC;top:22px;}
 
-    /* ── SECTION LABELS ── */
-    .section-label{font-size:.8rem;font-weight:700;color:#333;background:#f5f5f5;border:1px solid #d0d0d0;padding:6px 12px;margin-bottom:0;letter-spacing:.01em;}
-    .model-block{margin-bottom:24px;}
-    .category-header{background:#BDBDBD;border:1px solid #9E9E9E;padding:3px 8px;font-weight:700;font-size:11px;color:#000;letter-spacing:.04em;text-transform:uppercase;}
+    /* ── section label strip ── */
+    .section-label{font-size:.8rem;font-weight:700;color:#333;background:#f5f5f5;border:1px solid #d0d0d0;padding:6px 12px;letter-spacing:.01em;}
+    .model-block{margin-bottom:20px;}
 
     /* ── READONLY TABLES ── */
-    .ro-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;min-width:100%;white-space:nowrap;}
+    .ro-wrap{max-height:72vh;overflow:auto;border:1px solid #d0d0d0;background:#fff;}
+    .ro-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;width:100%;white-space:nowrap;}
     .ro-table th{background:#d8d8d8;border:1px solid #b0b0b0;padding:3px 10px;font-weight:600;text-align:center;position:sticky;top:0;z-index:5;}
     .ro-table td{border:1px solid #d0d0d0;padding:2px 10px;}
-    .ro-table tr:nth-child(even) td{background:#f9f9f9;}
-    .ro-table .rn{background:#d8d8d8;border:1px solid #b0b0b0;text-align:center;color:#555;min-width:32px;position:sticky;left:0;z-index:4;}
+    .ro-table .sec-hdr td{background:#BFC9D6;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;}
+    .ro-table tr:hover td{background:#EFF6FF;}
 
     /* ── EMPTY STATE ── */
     .empty-msg{padding:40px;text-align:center;color:#999;font-size:.85rem;}
@@ -77,17 +84,15 @@
     /* ── CASCADE OVERLAY ── */
     #cascade-overlay{display:none;position:fixed;inset:0;background:rgba(10,30,60,.75);z-index:9999;flex-direction:column;align-items:center;justify-content:center;color:white;}
     #cascade-overlay.show{display:flex;}
-    @keyframes spin{to{transform:rotate(360deg);}}
     .cascade-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-top:4px solid #34d399;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px;}
 
     /* ── TOOLTIP ── */
     [data-tip]{position:relative;}
-    [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);right:0;background:#333;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;pointer-events:none;}
+    [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100%+4px);right:0;background:#333;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;pointer-events:none;}
 
     /* ── STATUS BAR ── */
     .status-bar{position:fixed;bottom:0;left:0;right:0;background:#217346;color:#fff;font-size:.72rem;padding:4px 24px;display:flex;align-items:center;gap:16px;z-index:50;}
-    .status-bar span{opacity:.8;}
-    #status-msg{opacity:1;font-weight:600;}
+    #status-msg{font-weight:600;}
   </style>
 </head>
 <body>
@@ -113,7 +118,7 @@
   <div class="header-body">
     <div>
       <div class="ht">Pricelist <span>WorkBook</span></div>
-      <div class="hs">Live view of all master tables — click editable cells (yellow) to update</div>
+      <div class="hs">Live view of all master tables — click yellow cells to edit rates &amp; quantities</div>
     </div>
     <button class="btn-refresh" id="btn-refresh" onclick="loadAll()">
       <svg id="refresh-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -124,95 +129,38 @@
 
 <!-- Sheet Tabs -->
 <div class="tabs-bar" id="tabs-bar">
-  <div class="tab active" data-sheet="rates" onclick="switchTab('rates')">Rates</div>
-  <div class="tab" data-sheet="hpu" onclick="switchTab('hpu')">HPU</div>
-  <div class="tab" data-sheet="oil-parts" onclick="switchTab('oil-parts')">Oil Burner Parts</div>
-  <div class="tab" data-sheet="hv-parts" onclick="switchTab('hv-parts')">HV Burner Parts</div>
-  <div class="tab" data-sheet="gas-parts" onclick="switchTab('gas-parts')">Gas Burner Parts</div>
-  <div class="tab" data-sheet="blowers" onclick="switchTab('blowers')">Blowers</div>
-  <div class="tab" data-sheet="recuperator" onclick="switchTab('recuperator')">Recuperator</div>
-  <div class="tab" data-sheet="rad-heat" onclick="switchTab('rad-heat')">Rad Heat</div>
-  <div class="tab" data-sheet="gail" onclick="switchTab('gail')">GAIL Gas Burner</div>
-  <div class="tab" data-sheet="hlph" onclick="switchTab('hlph')">Horizontal LPH</div>
-  <div class="tab" data-sheet="vlph" onclick="switchTab('vlph')">Vertical LPH</div>
-  <div class="tab" data-sheet="oil-burners" onclick="switchTab('oil-burners')">Oil Film Burners</div>
-  <div class="tab" data-sheet="gas-burners" onclick="switchTab('gas-burners')">Gas Burners</div>
-  <div class="tab" data-sheet="hv-burners" onclick="switchTab('hv-burners')">HV Burners</div>
+  <div class="tab active" data-sheet="rates"      onclick="switchTab('rates')">Rates</div>
+  <div class="tab"        data-sheet="hpu"         onclick="switchTab('hpu')">HPU</div>
+  <div class="tab"        data-sheet="oil-parts"   onclick="switchTab('oil-parts')">Oil Burner</div>
+  <div class="tab"        data-sheet="hv-parts"    onclick="switchTab('hv-parts')">HV Oil Burner</div>
+  <div class="tab"        data-sheet="gas-parts"   onclick="switchTab('gas-parts')">Gas Burner</div>
+  <div class="tab"        data-sheet="blowers"     onclick="switchTab('blowers')">Blower</div>
+  <div class="tab"        data-sheet="recuperator" onclick="switchTab('recuperator')">Recuperator</div>
+  <div class="tab"        data-sheet="rad-heat"    onclick="switchTab('rad-heat')">Rad Heat</div>
+  <div class="tab"        data-sheet="gail"        onclick="switchTab('gail')">GAIL Gas Burner</div>
+  <div class="tab"        data-sheet="hlph"        onclick="switchTab('hlph')">Horizontal</div>
+  <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
+  <div class="tab"        data-sheet="oil-burners" onclick="switchTab('oil-burners')">Oil Film Prices</div>
+  <div class="tab"        data-sheet="gas-burners" onclick="switchTab('gas-burners')">Gas Burner Prices</div>
+  <div class="tab"        data-sheet="hv-burners"  onclick="switchTab('hv-burners')">HV Burner Prices</div>
 </div>
 
 <!-- Main Content -->
 <div class="main">
-
-  <!-- RATES -->
-  <div class="sheet-panel active" id="sheet-rates">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- HPU -->
-  <div class="sheet-panel" id="sheet-hpu">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- OIL BURNER PARTS -->
-  <div class="sheet-panel" id="sheet-oil-parts">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- HV BURNER PARTS -->
-  <div class="sheet-panel" id="sheet-hv-parts">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- GAS BURNER PARTS -->
-  <div class="sheet-panel" id="sheet-gas-parts">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- BLOWERS -->
-  <div class="sheet-panel" id="sheet-blowers">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- RECUPERATOR -->
-  <div class="sheet-panel" id="sheet-recuperator">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- RAD HEAT -->
-  <div class="sheet-panel" id="sheet-rad-heat">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- GAIL GAS BURNER -->
-  <div class="sheet-panel" id="sheet-gail">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- HORIZONTAL LPH -->
-  <div class="sheet-panel" id="sheet-hlph">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- VERTICAL LPH -->
-  <div class="sheet-panel" id="sheet-vlph">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- OIL FILM BURNERS -->
-  <div class="sheet-panel" id="sheet-oil-burners">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- GAS BURNERS -->
-  <div class="sheet-panel" id="sheet-gas-burners">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
-  <!-- HV BURNERS -->
-  <div class="sheet-panel" id="sheet-hv-burners">
-    <div class="empty-msg">Loading...</div>
-  </div>
-
+  <div class="sheet-panel active" id="sheet-rates">      <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-hpu">         <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-oil-parts">   <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-hv-parts">    <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-gas-parts">   <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-blowers">     <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-recuperator"> <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-rad-heat">    <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-oil-burners"> <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-gas-burners"> <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-hv-burners">  <div class="empty-msg">Loading...</div></div>
 </div>
 
 <!-- Cascade Overlay -->
@@ -240,6 +188,9 @@ function fmt(v) {
   const n = parseFloat(v);
   if (isNaN(n)) return v;
   return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function emptyMsg(msg) {
   return `<div class="empty-msg">${msg || 'No data available'}</div>`;
@@ -278,18 +229,18 @@ function renderAll() {
   const s = DATA.summary || {};
   renderRates(DATA.rates || []);
   renderHPU(s.hpu || []);
-  renderPartsSections('oil-parts', s.oil_burner_parts || [], 'oil_burner_parts_master');
-  renderPartsSections('hv-parts', s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
-  renderPartsSections('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
+  renderSideBySide('oil-parts', s.oil_burner_parts || [], 'oil_burner_parts_master');
+  renderSideBySide('hv-parts',  s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
+  renderSideBySide('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
   renderRecuperator(s.recuperator || []);
   renderRadHeat(s.rad_heat || [], s.rad_heat_tata || []);
   renderGail(s.gail_gas_burner || []);
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
-  renderBurnerPivot('oil-burners', s.burners || {}, 'FILM');
-  renderBurnerPivot('gas-burners', s.burners || {}, 'GAS');
-  renderBurnerPivot('hv-burners', s.burners || {}, 'HV');
+  renderBurnerPivot('oil-burners', s.burners || {});
+  renderBurnerPivot('gas-burners', s.burners || {});
+  renderBurnerPivot('hv-burners',  s.burners || {});
 }
 
 // ── Status bar ─────────────────────────────────────────────────────────────
@@ -347,17 +298,10 @@ function attachEditHandlers(container, table) {
           const data = await res.json();
           if (data.success) {
             flashSaved(tdEl, fmt(val));
-            // Update amount cell in same row
             const row = tdEl.closest('tr');
             if (row) {
-              const amtCell = row.querySelector('.amount-cell');
-              if (amtCell && data.amount != null) {
-                const qty = data.qty, rate = data.rate;
-                amtCell.dataset.qty = qty;
-                amtCell.dataset.rate = rate;
-                amtCell.setAttribute('data-tip', `= ${qty} × ${rate}`);
-                amtCell.textContent = fmt(data.amount);
-              }
+              const amtCell = row.querySelector(`.amount-cell[data-rowid="${rowid}"]`);
+              if (amtCell && data.amount != null) amtCell.textContent = fmt(data.amount);
             }
             setStatus(`Saved ${field} = ${val}`, `rowid ${rowid}`);
           } else {
@@ -382,32 +326,32 @@ function renderRates(data) {
   data.forEach(r => { cats[r.category] = cats[r.category] || []; cats[r.category].push(r); });
 
   let rowNum = 0;
-  let html = `<div class="xl-wrap"><table class="xl-table">
+  let html = `<div class="xl-wrap"><table class="xl-table" style="min-width:700px;">
     <thead><tr>
       <th class="rn"></th>
-      <th style="min-width:300px;text-align:left;">Item</th>
-      <th>Category</th><th>Unit</th>
-      <th style="min-width:110px;">Price (₹)</th>
-      <th style="min-width:110px;">Prev. Price (₹)</th>
-      <th style="min-width:110px;">Change</th>
+      <th class="item-th" style="min-width:300px;">Item</th>
+      <th style="min-width:120px;">Category</th>
+      <th style="min-width:70px;">Unit</th>
+      <th style="min-width:120px;">Price (₹)</th>
+      <th style="min-width:120px;">Prev. Price (₹)</th>
+      <th style="min-width:90px;">Change</th>
     </tr></thead><tbody>`;
 
   Object.keys(cats).sort().forEach(cat => {
-    html += `<tr class="section-header"><td class="rn"></td><td colspan="6" class="category-header">${cat}</td></tr>`;
+    html += `<tr class="section-hdr"><td class="rn"></td><td colspan="6">${esc(cat)}</td></tr>`;
     cats[cat].forEach(r => {
       rowNum++;
       const change = r.previous_price && r.previous_price !== r.price
-        ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%'
-        : '—';
-      const changeStyle = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
+        ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%' : '—';
+      const cs = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
       html += `<tr>
         <td class="rn">${rowNum}</td>
-        <td class="item-cell">${r.item}</td>
-        <td style="text-align:center;">${r.category}</td>
-        <td style="text-align:center;">${r.unit || 'nos'}</td>
-        <td class="editable rates-price" data-item="${escAttr(r.item)}" data-field="price">${fmt(r.price)}</td>
+        <td class="item-cell">${esc(r.item)}</td>
+        <td style="text-align:center;">${esc(r.category)}</td>
+        <td style="text-align:center;">${esc(r.unit||'nos')}</td>
+        <td class="editable rates-price" data-item="${esc(r.item)}" data-field="price">${fmt(r.price)}</td>
         <td class="num-cell">${fmt(r.previous_price)}</td>
-        <td class="num-cell" style="${changeStyle}">${change}</td>
+        <td class="num-cell" style="${cs}">${change}</td>
       </tr>`;
     });
   });
@@ -415,36 +359,31 @@ function renderRates(data) {
   html += '</tbody></table></div>';
   el.innerHTML = html;
 
-  // Attach rate edit handlers
   el.querySelectorAll('.rates-price').forEach(td => {
     td.addEventListener('click', () => {
       if (td.classList.contains('editing')) return;
       const item = td.dataset.item;
       makeEditable(td, async (val, tdEl, orig) => {
         tdEl.textContent = '...';
-        // Show cascade overlay
-        const overlay = document.getElementById('cascade-overlay');
-        overlay.classList.add('show');
+        document.getElementById('cascade-overlay').classList.add('show');
         setStatus('Recalculating all prices...');
         try {
           const res = await fetch('/api/pricelist/rate', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'PUT', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({ item, price: val }),
           });
           const data = await res.json();
-          overlay.classList.remove('show');
+          document.getElementById('cascade-overlay').classList.remove('show');
           if (data.success) {
             flashSaved(tdEl, fmt(val));
-            setStatus('Cascade complete', data.cascaded ? 'All tables recalculated' : 'Rate saved (no pricebook found for cascade)');
-            // Reload everything to reflect cascade
+            setStatus('Cascade complete', data.cascaded ? 'All tables recalculated' : 'Rate saved (no pricebook for cascade)');
             await loadAll();
           } else {
             tdEl.innerHTML = orig;
             setStatus('Error: ' + (data.error || 'Unknown'));
           }
         } catch (e) {
-          overlay.classList.remove('show');
+          document.getElementById('cascade-overlay').classList.remove('show');
           tdEl.innerHTML = orig;
           setStatus('Error: ' + e.message);
         }
@@ -453,190 +392,284 @@ function renderRates(data) {
   });
 }
 
-function escAttr(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── HPU sheet ───────────────────────────────────────────────────────────────
+// ── HPU — all KW variants side by side ──────────────────────────────────────
 function renderHPU(data) {
   const el = document.getElementById('sheet-hpu');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
-  el.innerHTML = data.map(model => `
-    <div class="model-block">
-      <div class="section-label">${model.model} &nbsp;|&nbsp; Material: ₹${fmt(model.material_cost)} &nbsp;|&nbsp; Selling: ₹${fmt(model.selling_price)}</div>
-      <div class="xl-wrap">
-        <table class="xl-table">
-          <thead><tr>
-            <th class="rn"></th>
-            <th style="min-width:280px;text-align:left;">Item</th>
-            <th style="min-width:80px;">Qty</th>
-            <th style="min-width:60px;">Unit</th>
-            <th style="min-width:110px;">Rate (₹)</th>
-            <th style="min-width:120px;">Amount (₹)</th>
-          </tr></thead>
-          <tbody>${(model.items||[]).map((it, i) => `<tr>
-            <td class="rn">${i+1}</td>
-            <td class="item-cell">${it.item||''}</td>
-            <td class="editable" data-rowid="${it.rowid}" data-field="qty" data-table="hpu_master">${it.qty??''}</td>
-            <td style="text-align:center;">${it.unit||''}</td>
-            <td class="editable" data-rowid="${it.rowid}" data-field="rate" data-table="hpu_master">${it.rate??''}</td>
-            <td class="amount-cell" data-qty="${it.qty}" data-rate="${it.rate}" data-tip="= ${it.qty} × ${it.rate}">${fmt(it.amount)}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-    </div>`).join('');
-  data.forEach(model => {
-    const block = el.querySelectorAll('.model-block')[data.indexOf(model)];
-    if (block) attachEditHandlers(block, 'hpu_master');
+
+  const maxItems = Math.max(...data.map(m => (m.items||[]).length));
+
+  // header row 1: model titles spanning 4 cols each, separated by gap
+  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:240px;">ITEM</th>`;
+  let hr2 = '';
+  data.forEach(m => {
+    hr1 += `<th class="top-header" colspan="4">${esc(m.model)} KW&nbsp;(Duplex 1)</th><th class="gap-th" rowspan="2"></th>`;
+    hr2 += `<th>QTY</th><th style="min-width:60px;">UNIT</th><th class="editable" style="cursor:default;min-width:90px;">RATE</th><th style="min-width:110px;">AMOUNT</th><th class="gap-th"></th>`;
   });
+
+  let rows = '';
+  for (let i = 0; i < maxItems; i++) {
+    const label = data[0]?.items[i]?.item || '';
+    rows += `<tr><td class="rn">${i+1}</td><td class="item-cell">${esc(label)}</td>`;
+    data.forEach(m => {
+      const it = m.items[i];
+      if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
+      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>`;
+      rows += `<td style="text-align:center;">${esc(it.unit||'')}</td>`;
+      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>`;
+      rows += `<td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>`;
+      rows += `<td class="gap-td"></td>`;
+    });
+    rows += '</tr>';
+  }
+
+  // total row
+  rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">MATERIAL COST</td>`;
+  data.forEach(m => {
+    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.material_cost)}</td><td class="gap-td"></td>`;
+  });
+  rows += '</tr>';
+  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE (×1.8)</td>`;
+  data.forEach(m => {
+    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.selling_price)}</td><td class="gap-td"></td>`;
+  });
+  rows += '</tr>';
+
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr>${hr1}</tr><tr class="hdr2">${hr2}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+
+  attachEditHandlers(el, 'hpu_master');
 }
 
-// ── Parts sections (Oil / HV / Gas burner parts) ────────────────────────────
-function renderPartsSections(sheetId, sections, table) {
+// ── Side-by-side sections (Oil Burner / HV Oil Burner / Gas Burner) ──────────
+function renderSideBySide(sheetId, sections, table) {
   const el = document.getElementById(`sheet-${sheetId}`);
   if (!sections.length) { el.innerHTML = emptyMsg(); return; }
-  el.innerHTML = sections.map((sec, si) => `
-    <div class="model-block">
-      <div class="section-label">${sec.title} &nbsp;|&nbsp; Fabrication: ₹${fmt(sec.fabrication_cost)} &nbsp;|&nbsp; Selling: ₹${fmt(sec.selling_price)}</div>
-      <div class="xl-wrap">
-        <table class="xl-table">
-          <thead><tr>
-            <th class="rn"></th>
-            <th style="min-width:280px;text-align:left;">Particular</th>
-            <th style="min-width:80px;">Qty</th>
-            <th style="min-width:60px;">Unit</th>
-            <th style="min-width:110px;">Rate (₹)</th>
-            <th style="min-width:120px;">Amount (₹)</th>
-          </tr></thead>
-          <tbody>${(sec.items||[]).map((it, i) => `<tr>
-            <td class="rn">${i+1}</td>
-            <td class="item-cell">${it.particular||''}</td>
-            <td class="editable" data-rowid="${it.rowid}" data-field="qty" data-table="${table}">${it.qty??''}</td>
-            <td style="text-align:center;">${it.unit||''}</td>
-            <td class="editable" data-rowid="${it.rowid}" data-field="rate" data-table="${table}">${it.rate??''}</td>
-            <td class="amount-cell" data-qty="${it.qty}" data-rate="${it.rate}" data-tip="= ${it.qty} × ${it.rate}">${fmt(it.amount)}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-    </div>`).join('');
-  sections.forEach((sec, si) => {
-    const block = el.querySelectorAll('.model-block')[si];
-    if (block) attachEditHandlers(block, table);
+
+  const maxItems = Math.max(...sections.map(s => (s.items||[]).length));
+
+  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:240px;">PARTICULARS</th>`;
+  let hr2 = '';
+  sections.forEach(sec => {
+    hr1 += `<th class="top-header" colspan="4">${esc(sec.title)}</th><th class="gap-th" rowspan="2"></th>`;
+    hr2 += `<th style="min-width:70px;">QTY</th><th style="min-width:55px;">UNIT</th><th style="min-width:90px;">RATE</th><th style="min-width:110px;">AMOUNT</th><th class="gap-th"></th>`;
   });
+
+  let rows = '';
+  for (let i = 0; i < maxItems; i++) {
+    const label = sections[0]?.items[i]?.particular || '';
+    rows += `<tr><td class="rn">${i+1}</td><td class="item-cell">${esc(label)}</td>`;
+    sections.forEach(sec => {
+      const it = sec.items[i];
+      if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
+      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>`;
+      rows += `<td style="text-align:center;">${esc(it.unit||'')}</td>`;
+      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>`;
+      rows += `<td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>`;
+      rows += `<td class="gap-td"></td>`;
+    });
+    rows += '</tr>';
+  }
+
+  rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">FABRICATION COST</td>`;
+  sections.forEach(sec => {
+    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.fabrication_cost)}</td><td class="gap-td"></td>`;
+  });
+  rows += '</tr>';
+  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE (×1.25)</td>`;
+  sections.forEach(sec => {
+    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.selling_price)}</td><td class="gap-td"></td>`;
+  });
+  rows += '</tr>';
+
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr>${hr1}</tr><tr class="hdr2">${hr2}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+
+  attachEditHandlers(el, table);
 }
 
-// ── Blowers (read-only) ─────────────────────────────────────────────────────
+// ── Blowers ─────────────────────────────────────────────────────────────────
 function renderBlowers(data) {
   const el = document.getElementById('sheet-blowers');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
-  const keys = Object.keys(data[0] || {}).filter(k => k !== 'rowid');
-  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
-    <thead><tr><th class="rn"></th>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
-    <tbody>${data.map((r, i) => `<tr><td class="rn">${i+1}</td>${keys.map(k => `<td class="num-cell">${r[k]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+
+  const keys = ['section','model','hp','cfm','nm3_per_hr','pressure_mbar','price_without_motor','price__with_motor'];
+  const labels = ['Section','Model','HP','CFM','NM³/hr','Pressure (mbar)','Price w/o Motor (₹)','Price w/ Motor (₹)'];
+
+  let rows = '';
+  let lastSec = null;
+  data.forEach((r, i) => {
+    if (r.section !== lastSec) {
+      rows += `<tr class="sec-hdr"><td colspan="${keys.length+1}">${esc(r.section||'')}</td></tr>`;
+      lastSec = r.section;
+    }
+    rows += `<tr><td class="rn">${i+1}</td>${keys.map(k => {
+      const v = r[k];
+      if (k === 'price_without_motor' || k === 'price__with_motor')
+        return `<td style="text-align:right;">${fmt(v)}</td>`;
+      return `<td>${esc(v??'')}</td>`;
+    }).join('')}</tr>`;
+  });
+
+  el.innerHTML = `<div class="ro-wrap"><table class="ro-table">
+    <thead><tr><th class="rn"></th>${labels.map(l=>`<th>${l}</th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody>
   </table></div>`;
 }
 
-// ── Recuperator (read-only) ─────────────────────────────────────────────────
+// ── Recuperator — grouped by type ───────────────────────────────────────────
 function renderRecuperator(data) {
   const el = document.getElementById('sheet-recuperator');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
-  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+
+  let rows = '';
+  let lastType = null;
+  data.forEach((r, i) => {
+    if (r.type !== lastType) {
+      rows += `<tr class="sec-hdr"><td colspan="4">TYPE: ${esc(r.type||'')}</td></tr>`;
+      lastType = r.type;
+    }
+    rows += `<tr>
+      <td class="rn">${i+1}</td>
+      <td>${esc(r.model||'')}</td>
+      <td style="text-align:right;">${fmt(r.fabrication_cost)}</td>
+      <td style="text-align:right;">${fmt(r.selling_price)}</td>
+    </tr>`;
+  });
+
+  el.innerHTML = `<div class="ro-wrap"><table class="ro-table">
     <thead><tr>
       <th class="rn"></th>
-      <th style="min-width:100px;text-align:left;">Type</th>
-      <th style="min-width:140px;text-align:left;">Model</th>
-      <th style="min-width:130px;">Fabrication Cost (₹)</th>
-      <th style="min-width:130px;">Selling Price (₹)</th>
+      <th style="min-width:180px;text-align:left;">Model</th>
+      <th style="min-width:150px;">Fabrication Cost (₹)</th>
+      <th style="min-width:150px;">Selling Price (₹)</th>
     </tr></thead>
-    <tbody>${data.map((r, i) => `<tr>
-      <td class="rn">${i+1}</td>
-      <td>${r.type||''}</td>
-      <td>${r.model||''}</td>
-      <td class="num-cell">${fmt(r.fabrication_cost)}</td>
-      <td class="num-cell">${fmt(r.selling_price)}</td>
-    </tr>`).join('')}</tbody>
+    <tbody>${rows}</tbody>
   </table></div>`;
 }
 
-// ── Rad Heat (read-only) ────────────────────────────────────────────────────
+// ── Rad Heat ────────────────────────────────────────────────────────────────
 function renderRadHeat(rad, radTata) {
   const el = document.getElementById('sheet-rad-heat');
   const cols = ['item','output_kw','gas_lpg','gas_ng','price'];
-  const colLabels = ['Item','Output KW','Gas LPG (m³/hr)','Gas NG (m³/hr)','Price (₹)'];
-  const renderTable = (rows, title) => `
-    <div class="model-block">
+  const labels = ['MODEL','OUTPUT (kW)','LPG (m³/hr)','NG (m³/hr)','Price with SS Tubing (₹)'];
+
+  const renderBlock = (rows, title) => {
+    if (!rows.length) return '';
+    return `<div class="model-block">
       <div class="section-label">${title}</div>
-      <div class="xl-wrap"><table class="xl-table">
-        <thead><tr><th class="rn"></th>${colLabels.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
-        <tbody>${rows.map((r,i)=>`<tr><td class="rn">${i+1}</td>${cols.map(c=>`<td class="num-cell">${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+      <div class="ro-wrap"><table class="ro-table">
+        <thead><tr><th class="rn"></th>${labels.map(l=>`<th>${l}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map((r,i) => `<tr><td class="rn">${i+1}</td>${cols.map(c =>
+          c==='price' ? `<td style="text-align:right;">${fmt(r[c])}</td>` : `<td>${esc(r[c]??'')}</td>`
+        ).join('')}</tr>`).join('')}</tbody>
       </table></div>
     </div>`;
-  el.innerHTML = renderTable(rad, 'Rad Heat — Standard') + (radTata.length ? renderTable(radTata, 'Rad Heat — TATA') : '');
+  };
+
+  el.innerHTML = renderBlock(rad, 'Rad Heat — Standard') + renderBlock(radTata, 'Rad Heat — TATA');
+  if (!el.innerHTML) el.innerHTML = emptyMsg();
 }
 
-// ── GAIL Gas Burner (read-only) ─────────────────────────────────────────────
+// ── GAIL Gas Burner ─────────────────────────────────────────────────────────
 function renderGail(data) {
   const el = document.getElementById('sheet-gail');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
-  const keys = Object.keys(data[0] || {}).filter(k => k !== 'rowid');
-  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
-    <thead><tr><th class="rn"></th>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
-    <tbody>${data.map((r,i) => `<tr><td class="rn">${i+1}</td>${keys.map(k=>`<td class="num-cell">${r[k]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+
+  const keys = ['burner_size','burner','ci_burner_plate','burner_block','hose','butterfly_valve','ball_valve','burner_set'];
+  const labels = ['Burner Size','Burner (₹)','CI Burner Plate (₹)','Burner Block (₹)','Hose (₹)','Butterfly Valve (₹)','Ball Valve (₹)','Burner SET (₹)'];
+  const numKeys = new Set(['burner','ci_burner_plate','burner_block','hose','butterfly_valve','ball_valve','burner_set']);
+
+  let rows = '';
+  let lastSec = null;
+  data.forEach((r, i) => {
+    if (r.section && r.section !== lastSec) {
+      rows += `<tr class="sec-hdr"><td colspan="${keys.length+1}">${esc(r.section)}</td></tr>`;
+      lastSec = r.section;
+    }
+    rows += `<tr><td class="rn">${i+1}</td>${keys.map(k =>
+      numKeys.has(k) ? `<td style="text-align:right;">${fmt(r[k])}</td>` : `<td>${esc(r[k]??'')}</td>`
+    ).join('')}</tr>`;
+  });
+
+  el.innerHTML = `<div class="ro-wrap"><table class="ro-table">
+    <thead><tr><th class="rn"></th>${labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody>
   </table></div>`;
 }
 
-// ── HLPH / VLPH (read-only) ─────────────────────────────────────────────────
+// ── Horizontal / Vertical LPH — models side by side ─────────────────────────
 function renderLPH(sheetId, data) {
   const el = document.getElementById(`sheet-${sheetId}`);
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
-  el.innerHTML = data.map(model => `
-    <div class="model-block">
-      <div class="section-label">${model.model} &nbsp;|&nbsp; Total: ₹${fmt(model.total)}</div>
-      <div class="xl-wrap">
-        <table class="xl-table">
-          <thead><tr>
-            <th class="rn"></th>
-            <th style="min-width:280px;text-align:left;">Particular</th>
-            <th style="min-width:80px;">Qty</th>
-            <th style="min-width:120px;">Amount (₹)</th>
-          </tr></thead>
-          <tbody>${(model.items||[]).map((it, i) => `<tr>
-            <td class="rn">${i+1}</td>
-            <td class="item-cell">${it.particular||''}</td>
-            <td class="num-cell">${it.qty??''}</td>
-            <td class="num-cell">${fmt(it.amount)}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-    </div>`).join('');
+
+  const maxItems = Math.max(...data.map(m => (m.items||[]).length));
+
+  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:240px;">DESCRIPTION</th>`;
+  let hr2 = '';
+  data.forEach(m => {
+    hr1 += `<th class="top-header" colspan="2">${esc(m.model)}</th><th class="gap-th" rowspan="2"></th>`;
+    hr2 += `<th style="min-width:50px;">QTY</th><th style="min-width:110px;">AMOUNT (₹)</th><th class="gap-th"></th>`;
+  });
+
+  let rows = '';
+  for (let i = 0; i < maxItems; i++) {
+    const label = data[0]?.items[i]?.particular || '';
+    rows += `<tr><td class="rn">${i+1}</td><td class="item-cell">${esc(label)}</td>`;
+    data.forEach(m => {
+      const it = m.items[i];
+      if (!it) { rows += `<td></td><td></td><td class="gap-td"></td>`; return; }
+      rows += `<td style="text-align:center;">${it.qty??''}</td>`;
+      rows += `<td class="num-cell">${fmt(it.amount)}</td>`;
+      rows += `<td class="gap-td"></td>`;
+    });
+    rows += '</tr>';
+  }
+
+  rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">TOTAL</td>`;
+  data.forEach(m => {
+    rows += `<td></td><td class="num-cell">${fmt(m.total)}</td><td class="gap-td"></td>`;
+  });
+  rows += '</tr>';
+
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr>${hr1}</tr><tr class="hdr2">${hr2}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
 }
 
-// ── Burner Pivot (read-only) ────────────────────────────────────────────────
+// ── Burner Pivot tables ──────────────────────────────────────────────────────
 const BURNER_FILTERS = {
-  'oil-burners': k => k.includes('FILM') || k.includes('DUAL FUEL') || (k.includes('SPARES') && !k.includes('HIGH VELOCITY')),
+  'oil-burners': k => k.includes('FILM') || (k.includes('DUAL') && k.includes('FUEL')) || (k.includes('SPARES') && !k.includes('HIGH VELOCITY')),
   'gas-burners': k => k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('PILOT'),
   'hv-burners':  k => k.includes('HIGH VELOCITY'),
 };
-function renderBurnerPivot(sheetId, burners, keyword) {
+
+function renderBurnerPivot(sheetId, burners) {
   const el = document.getElementById(`sheet-${sheetId}`);
-  const filterFn = BURNER_FILTERS[sheetId] || (k => k.includes(keyword));
+  const filterFn = BURNER_FILTERS[sheetId];
   const sectionKeys = Object.keys(burners).filter(k => filterFn(k.toUpperCase()));
   if (!sectionKeys.length) { el.innerHTML = emptyMsg(); return; }
+
   el.innerHTML = sectionKeys.map(sec => {
     const sizeMap = burners[sec];
     const sizes = Object.keys(sizeMap).sort();
     const comps = [...new Set(sizes.flatMap(s => Object.keys(sizeMap[s])))].sort();
     return `<div class="model-block">
-      <div class="section-label">${sec}</div>
-      <div class="xl-wrap"><table class="xl-table">
+      <div class="section-label">${esc(sec)}</div>
+      <div class="xl-wrap"><table class="xl-table" style="min-width:auto;">
         <thead><tr>
           <th class="rn"></th>
-          <th style="min-width:140px;text-align:left;">Burner Size</th>
-          ${comps.map(c=>`<th style="min-width:130px;">${c} (₹)</th>`).join('')}
+          <th style="min-width:160px;text-align:left;">Burner Size</th>
+          ${comps.map(c=>`<th style="min-width:140px;">${esc(c)} (₹)</th>`).join('')}
         </tr></thead>
         <tbody>${sizes.map((sz, i) => `<tr>
           <td class="rn">${i+1}</td>
-          <td>${sz}</td>
+          <td>${esc(sz)}</td>
           ${comps.map(c=>`<td class="num-cell">${fmt(sizeMap[sz][c])}</td>`).join('')}
         </tr>`).join('')}</tbody>
       </table></div>
