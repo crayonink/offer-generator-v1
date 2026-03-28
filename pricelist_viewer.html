@@ -386,6 +386,7 @@ function renderRates(data) {
   Object.keys(cats).sort().forEach(cat => {
     html += `<tr class="section-hdr"><td class="rn"></td><td colspan="6">${esc(cat)}</td></tr>`;
     cats[cat].forEach(r => {
+      if (!r.item) return;
       rowNum++;
       const change = r.previous_price && r.previous_price !== r.price
         ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%' : '—';
@@ -445,18 +446,21 @@ function renderHPU(data) {
 
   const maxItems = Math.max(...data.map(m => (m.items||[]).length));
 
-  // header row 1: model titles spanning 4 cols each, separated by gap
   let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:240px;">ITEM</th>`;
   let hr2 = '';
   data.forEach(m => {
-    hr1 += `<th class="top-header" colspan="4">${esc(m.model)} KW&nbsp;(Duplex 1)</th><th class="gap-th" rowspan="2"></th>`;
-    hr2 += `<th>QTY</th><th style="min-width:60px;">UNIT</th><th class="editable" style="cursor:default;min-width:90px;">RATE</th><th style="min-width:110px;">AMOUNT</th><th class="gap-th"></th>`;
+    hr1 += `<th class="top-header" colspan="4">${esc(m.model)}</th><th class="gap-th" rowspan="2"></th>`;
+    hr2 += `<th>QTY</th><th style="min-width:60px;">UNIT</th><th style="min-width:90px;">RATE</th><th style="min-width:110px;">AMOUNT</th><th class="gap-th"></th>`;
   });
 
   let rows = '';
+  let rowNum = 0;
   for (let i = 0; i < maxItems; i++) {
     const label = data[0]?.items[i]?.item || '';
-    rows += `<tr><td class="rn">${i+1}</td><td class="item-cell">${esc(label)}</td>`;
+    // skip rows where label is blank and every model has no item at this index
+    if (!label && data.every(m => !m.items[i])) continue;
+    rowNum++;
+    rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
     data.forEach(m => {
       const it = m.items[i];
       if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
@@ -504,9 +508,12 @@ function renderSideBySide(sheetId, sections, table) {
   });
 
   let rows = '';
+  let rowNum = 0;
   for (let i = 0; i < maxItems; i++) {
     const label = sections[0]?.items[i]?.particular || '';
-    rows += `<tr><td class="rn">${i+1}</td><td class="item-cell">${esc(label)}</td>`;
+    if (!label && sections.every(s => !s.items[i])) continue;
+    rowNum++;
+    rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
     sections.forEach(sec => {
       const it = sec.items[i];
       if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
@@ -543,26 +550,35 @@ function renderBlowers(data) {
   const el = document.getElementById('sheet-blowers');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const keys = ['section','model','hp','cfm','nm3_per_hr','pressure_mbar','price_without_motor','price__with_motor'];
-  const labels = ['Section','Model','HP','CFM','NM³/hr','Pressure (mbar)','Price w/o Motor (₹)','Price w/ Motor (₹)'];
+  // Only show rows that have a model name
+  const allKeys = ['model','hp','cfm','nm3_per_hr','pressure_mbar','price_without_motor','price__with_motor'];
+  const allLabels = ['Model','HP','CFM','NM³/hr','Pressure (mbar)','Price w/o Motor (₹)','Price w/ Motor (₹)'];
+  const priceKeys = new Set(['price_without_motor','price__with_motor']);
+
+  // Drop columns where every row has null/empty value
+  const active = allKeys.map((k, idx) => ({ k, l: allLabels[idx] }))
+    .filter(({ k }) => data.some(r => r[k] != null && r[k] !== ''));
 
   let rows = '';
   let lastSec = null;
-  data.forEach((r, i) => {
+  let rowNum = 0;
+  data.forEach(r => {
+    if (!r.model) return; // skip blank rows
     if (r.section !== lastSec) {
-      rows += `<tr class="sec-hdr"><td colspan="${keys.length+1}">${esc(r.section||'')}</td></tr>`;
+      rows += `<tr class="sec-hdr"><td colspan="${active.length+1}">${esc(r.section||'')}</td></tr>`;
       lastSec = r.section;
     }
-    rows += `<tr><td class="rn">${i+1}</td>${keys.map(k => {
+    rowNum++;
+    rows += `<tr><td class="rn">${rowNum}</td>${active.map(({ k }) => {
       const v = r[k];
-      if (k === 'price_without_motor' || k === 'price__with_motor')
-        return `<td style="text-align:right;">${fmt(v)}</td>`;
-      return `<td>${esc(v??'')}</td>`;
+      return priceKeys.has(k)
+        ? `<td style="text-align:right;">${fmt(v)}</td>`
+        : `<td>${esc(v??'')}</td>`;
     }).join('')}</tr>`;
   });
 
   el.innerHTML = `<div class="ro-wrap"><table class="ro-table">
-    <thead><tr><th class="rn"></th>${labels.map(l=>`<th>${l}</th>`).join('')}</tr></thead>
+    <thead><tr><th class="rn"></th>${active.map(({ l }) => `<th>${l}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 }
@@ -574,14 +590,17 @@ function renderRecuperator(data) {
 
   let rows = '';
   let lastType = null;
-  data.forEach((r, i) => {
+  let rowNum = 0;
+  data.forEach(r => {
+    if (!r.model) return;
     if (r.type !== lastType) {
       rows += `<tr class="sec-hdr"><td colspan="4">TYPE: ${esc(r.type||'')}</td></tr>`;
       lastType = r.type;
     }
+    rowNum++;
     rows += `<tr>
-      <td class="rn">${i+1}</td>
-      <td>${esc(r.model||'')}</td>
+      <td class="rn">${rowNum}</td>
+      <td>${esc(r.model)}</td>
       <td style="text-align:right;">${fmt(r.fabrication_cost)}</td>
       <td style="text-align:right;">${fmt(r.selling_price)}</td>
     </tr>`;
@@ -632,12 +651,15 @@ function renderGail(data) {
 
   let rows = '';
   let lastSec = null;
-  data.forEach((r, i) => {
+  let rowNum = 0;
+  data.forEach(r => {
+    if (!r.burner_size) return;
     if (r.section && r.section !== lastSec) {
       rows += `<tr class="sec-hdr"><td colspan="${keys.length+1}">${esc(r.section)}</td></tr>`;
       lastSec = r.section;
     }
-    rows += `<tr><td class="rn">${i+1}</td>${keys.map(k =>
+    rowNum++;
+    rows += `<tr><td class="rn">${rowNum}</td>${keys.map(k =>
       numKeys.has(k) ? `<td style="text-align:right;">${fmt(r[k])}</td>` : `<td>${esc(r[k]??'')}</td>`
     ).join('')}</tr>`;
   });
@@ -663,9 +685,12 @@ function renderLPH(sheetId, data) {
   });
 
   let rows = '';
+  let rowNum = 0;
   for (let i = 0; i < maxItems; i++) {
     const label = data[0]?.items[i]?.particular || '';
-    rows += `<tr><td class="rn">${i+1}</td><td class="item-cell">${esc(label)}</td>`;
+    if (!label && data.every(m => !m.items[i])) continue;
+    rowNum++;
+    rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
     data.forEach(m => {
       const it = m.items[i];
       if (!it) { rows += `<td></td><td></td><td class="gap-td"></td>`; return; }
