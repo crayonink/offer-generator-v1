@@ -3,139 +3,155 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ENCON — Pricelist Viewer</title>
+  <title>ENCON — Pricelist WorkBook</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Calibri',Calibri,sans-serif;font-size:12px;background:#f0f0f0;color:#000;-webkit-font-smoothing:antialiased;min-height:100vh;}
+    html,body{height:100%;overflow:hidden;}
+    body{font-family:'Calibri',Calibri,sans-serif;font-size:12px;background:#f0f0f0;color:#000;display:flex;flex-direction:column;}
 
-    /* ── HEADER ── */
-    .header{background:#1a3a5c;padding:0 24px;}
-    .header-top{display:flex;align-items:center;height:48px;gap:10px;}
-    .brand{display:flex;align-items:center;gap:8px;text-decoration:none;}
-    .brand-logo{width:26px;height:26px;background:#059669;border-radius:6px;display:flex;align-items:center;justify-content:center;}
-    .brand-logo svg{width:13px;height:13px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
-    .brand-name{font-size:.85rem;font-weight:700;color:#fff;letter-spacing:-.3px;}
-    .sep{color:rgba(255,255,255,.25);margin:0 4px;}
-    .page-title{font-size:.78rem;color:rgba(255,255,255,.5);font-weight:500;}
-    .nav{margin-left:auto;display:flex;gap:2px;}
-    .nav a{font-size:.72rem;color:rgba(255,255,255,.45);text-decoration:none;padding:5px 9px;border-radius:5px;font-weight:500;transition:all .15s;}
-    .nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
-    .nav a.active{color:#fff;background:rgba(255,255,255,.12);}
-    .header-body{padding:12px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;}
-    .ht{font-size:1.25rem;font-weight:800;color:#fff;letter-spacing:-.03em;}
-    .ht span{color:#34d399;}
-    .hs{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:2px;}
-    .btn-refresh{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.15);font-size:.75rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;}
+    /* ── APP HEADER ── */
+    .app-header{background:#1a3a5c;padding:0 20px;flex-shrink:0;display:flex;align-items:center;height:44px;gap:10px;}
+    .brand{display:flex;align-items:center;gap:7px;text-decoration:none;}
+    .brand-logo{width:24px;height:24px;background:#059669;border-radius:5px;display:flex;align-items:center;justify-content:center;}
+    .brand-logo svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
+    .brand-name{font-size:.82rem;font-weight:700;color:#fff;letter-spacing:-.3px;}
+    .sep{color:rgba(255,255,255,.25);margin:0 3px;}
+    .page-title{font-size:.75rem;color:rgba(255,255,255,.5);font-weight:500;}
+    .app-nav{margin-left:auto;display:flex;gap:1px;}
+    .app-nav a{font-size:.7rem;color:rgba(255,255,255,.45);text-decoration:none;padding:4px 8px;border-radius:4px;font-weight:500;transition:all .15s;}
+    .app-nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
+    .app-nav a.active{color:#fff;background:rgba(255,255,255,.12);}
+    .btn-refresh{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:5px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.18);font-size:.7rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;margin-left:8px;}
     .btn-refresh:hover{background:rgba(255,255,255,.18);}
-    .btn-refresh svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
+    .btn-refresh svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
     .spin{animation:spin .8s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg);}}
 
-    /* ── SHEET TABS ── */
-    .tabs-bar{background:#fff;border-bottom:2px solid #d0d0d0;padding:0 24px;display:flex;gap:0;overflow-x:auto;position:sticky;top:0;z-index:20;scrollbar-width:thin;}
-    .tab{padding:10px 14px;font-size:.75rem;font-weight:600;color:#666;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:all .12s;margin-bottom:-2px;font-family:Calibri,sans-serif;}
-    .tab:hover{color:#000;background:#f5f5f5;}
-    .tab.active{color:#1565C0;border-bottom-color:#1565C0;background:#e8f0fe;}
+    /* ── EXCEL RIBBON (title bar) ── */
+    .xl-ribbon{background:#217346;padding:0 20px;height:36px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
+    .xl-ribbon-title{font-size:.82rem;font-weight:700;color:#fff;letter-spacing:.01em;}
+    .xl-ribbon-sub{font-size:.68rem;color:rgba(255,255,255,.55);}
 
-    /* ── SHEET PANELS ── */
-    .main{padding:16px 24px 80px;}
+    /* ── FORMULA BAR ── */
+    .formula-bar{background:#fff;border-bottom:1px solid #C8C8C8;height:26px;display:flex;align-items:center;flex-shrink:0;padding:0;}
+    .name-box{width:80px;min-width:80px;border-right:1px solid #C8C8C8;padding:0 8px;font-size:11px;color:#333;font-family:Calibri,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:100%;display:flex;align-items:center;}
+    .fx-sep{width:1px;background:#C8C8C8;height:100%;}
+    .fx-label{padding:0 8px;font-size:11px;color:#888;font-style:italic;border-right:1px solid #C8C8C8;height:100%;display:flex;align-items:center;}
+    .formula-val{padding:0 10px;font-size:11px;color:#1a1a1a;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:100%;display:flex;align-items:center;}
+
+    /* ── SHEET AREA (middle, scrollable) ── */
+    .sheet-area{flex:1;overflow-y:auto;overflow-x:hidden;background:#F2F2F2;padding:12px 16px 4px;}
     .sheet-panel{display:none;}
     .sheet-panel.active{display:block;}
+    .model-block{margin-bottom:18px;}
 
     /* ── EXCEL GRID ── */
-    .xl-wrap{overflow:auto;border:1px solid #d0d0d0;background:#fff;}
+    .xl-wrap{overflow:auto;border:1px solid #C8C8C8;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);}
     .xl-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;white-space:nowrap;}
-    .xl-table th{background:#d8d8d8;border:1px solid #b0b0b0;padding:3px 8px;font-weight:700;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
-    .xl-table th.top-header{background:#1a3a5c;color:#fff;border-color:#0d2240;font-size:11px;letter-spacing:.04em;}
-    .xl-table th.gap-th{background:#fff;border:none;min-width:10px;width:10px;padding:0;}
-    .xl-table td{border:1px solid #d0d0d0;padding:2px 8px;color:#000;height:20px;}
-    .xl-table tbody tr:hover td{background:#EFF6FF;}
-    .xl-table .rn{background:#d8d8d8;border:1px solid #b0b0b0;text-align:center;color:#555;min-width:32px;width:32px;position:sticky;left:0;z-index:4;font-size:11px;}
-    .xl-table th.rn{z-index:6;}
-    .xl-table .item-cell{min-width:240px;max-width:380px;white-space:normal;position:sticky;left:32px;background:#fff;z-index:3;}
-    .xl-table th.item-th{position:sticky;left:32px;z-index:6;text-align:left;}
-    .xl-table .num-cell{text-align:right;min-width:90px;}
-    .xl-table .gap-td{background:#e8e8e8;border:none;min-width:10px;width:10px;padding:0;}
-    .editable{background:#FFFDE7;cursor:pointer;text-align:right;min-width:80px;}
-    .editable:hover{background:#FFF9C4;outline:1px dashed #aaa;}
-    .editable.editing{background:#fff;outline:2px solid #1565C0;padding:0;}
-    .editable.saved{background:#E8F5E9 !important;transition:background .6s;}
-    .amount-cell{text-align:right;background:#F5F5F5;min-width:100px;color:#1a1a1a;}
-    .total-row td{background:#EEEEEE;font-weight:700;border-top:2px solid #9E9E9E;}
-    .selling-row td{background:#E8F5E9;font-weight:700;color:#1a5c2a;}
-    .section-hdr td{background:#BFC9D6;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-top:2px solid #789;}
-    .xl-table tr.hdr2 th{background:#CFD8DC;top:22px;}
 
-    /* ── section label strip ── */
-    .section-label{font-size:.8rem;font-weight:700;color:#333;background:#f5f5f5;border:1px solid #d0d0d0;padding:6px 12px;letter-spacing:.01em;}
-    .model-block{margin-bottom:20px;}
+    /* column headers */
+    .xl-table th{background:#F2F2F2;border:1px solid #D4D4D4;padding:3px 8px;font-weight:700;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
+    .xl-table th.top-header{background:#1F4E79;color:#fff;border-color:#163859;font-size:11px;letter-spacing:.03em;}
+    .xl-table th.gap-th{background:#fff;border:none;min-width:12px;width:12px;padding:0;}
+    .xl-table tr.hdr2 th{background:#D6E4F7;top:24px;color:#1F4E79;font-size:11px;}
+
+    /* row number column */
+    .xl-table .rn{background:#F2F2F2;border:1px solid #D4D4D4;text-align:center;color:#666;min-width:30px;width:30px;position:sticky;left:0;z-index:4;font-size:10px;}
+    .xl-table th.rn{z-index:7;top:0;}
+    .xl-table tr.hdr2 th.rn{top:24px;}
+
+    /* sticky item column with freeze-pane shadow */
+    .xl-table .item-cell{min-width:220px;max-width:360px;white-space:normal;position:sticky;left:30px;background:#fff;z-index:3;border-right:2px solid #AEAEAE !important;box-shadow:3px 0 5px rgba(0,0,0,.08);}
+    .xl-table th.item-th{position:sticky;left:30px;z-index:6;text-align:left;border-right:2px solid #AEAEAE !important;box-shadow:3px 0 5px rgba(0,0,0,.08);}
+
+    /* data cells */
+    .xl-table td{border:1px solid #D4D4D4;padding:2px 8px;color:#000;height:20px;}
+    .xl-table tbody tr:nth-child(even) td:not(.gap-td){background:#F9FBFF;}
+    .xl-table tbody tr:hover td:not(.gap-td){background:#DDEEFF;}
+
+    .xl-table .gap-td{background:#E0E0E0;border:none;min-width:12px;width:12px;padding:0;}
+    .xl-table .num-cell{text-align:right;min-width:90px;}
+
+    /* editable = yellow like Excel */
+    .editable{background:#FFFF99;cursor:cell;text-align:right;min-width:80px;}
+    .editable:hover{background:#FFEE44;outline:1px dashed #AAAA00;}
+    .editable.editing{background:#fff;outline:2px solid #1565C0;padding:0;z-index:10;position:relative;}
+    .editable.saved{background:#C6EFCE !important;transition:background .8s;}
+
+    /* amount = light gray computed */
+    .amount-cell{text-align:right;background:#F2F2F2;min-width:100px;color:#1a1a1a;}
+
+    /* total / selling rows */
+    .total-row td:not(.gap-td){background:#FCE4D6;font-weight:700;border-top:2px solid #C55A11;}
+    .selling-row td:not(.gap-td){background:#E2EFDA;font-weight:700;color:#375623;border-top:1px solid #70AD47;}
+
+    /* section header rows */
+    .xl-table .section-hdr td{background:#BDD7EE;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-top:2px solid #2E75B6;color:#1F3864;}
 
     /* ── READONLY TABLES ── */
-    .ro-wrap{overflow:auto;border:1px solid #d0d0d0;background:#fff;}
+    .ro-wrap{overflow:auto;border:1px solid #C8C8C8;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);}
     .ro-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;width:100%;white-space:nowrap;}
-    .ro-table th{background:#d8d8d8;border:1px solid #b0b0b0;padding:3px 10px;font-weight:600;text-align:center;position:sticky;top:0;z-index:5;}
-    .ro-table td{border:1px solid #d0d0d0;padding:2px 10px;}
-    .ro-table .sec-hdr td{background:#BFC9D6;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;}
-    .ro-table tr:hover td{background:#EFF6FF;}
+    .ro-table th{background:#F2F2F2;border:1px solid #D4D4D4;padding:3px 10px;font-weight:700;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
+    .ro-table td{border:1px solid #D4D4D4;padding:2px 10px;}
+    .ro-table tbody tr:nth-child(even) td{background:#F9FBFF;}
+    .ro-table tbody tr:hover td{background:#DDEEFF;}
+    .ro-table .rn{background:#F2F2F2;border:1px solid #D4D4D4;text-align:center;color:#666;min-width:30px;position:sticky;left:0;z-index:4;font-size:10px;}
+    .ro-table .sec-hdr td{background:#BDD7EE;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-top:2px solid #2E75B6;color:#1F3864;}
+
+    /* section label strip (Rad Heat / Burners) */
+    .section-label{font-size:.75rem;font-weight:700;color:#1F3864;background:#D6E4F7;border:1px solid #9DC3E6;border-bottom:none;padding:5px 10px;letter-spacing:.02em;}
 
     /* ── EMPTY STATE ── */
     .empty-msg{padding:40px;text-align:center;color:#999;font-size:.85rem;}
 
-    /* ── CASCADE OVERLAY ── */
-    #cascade-overlay{display:none;position:fixed;inset:0;background:rgba(10,30,60,.75);z-index:9999;flex-direction:column;align-items:center;justify-content:center;color:white;}
-    #cascade-overlay.show{display:flex;}
-    .cascade-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-top:4px solid #34d399;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px;}
-
-    /* ── TOOLTIP ── */
-    [data-tip]{position:relative;}
-    [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100%+4px);right:0;background:#333;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;white-space:nowrap;z-index:100;pointer-events:none;}
+    /* ── BOTTOM EXCEL TABS ── */
+    .xl-tabs-outer{background:#D9D9D9;border-top:1px solid #AEAEAE;height:30px;display:flex;align-items:flex-end;flex-shrink:0;padding:0 4px 0 8px;overflow:hidden;}
+    .xl-tabs-scroll{display:flex;align-items:flex-end;overflow-x:auto;flex:1;scrollbar-width:none;gap:2px;}
+    .xl-tabs-scroll::-webkit-scrollbar{display:none;}
+    .tab{height:24px;padding:0 13px;font-size:11px;font-weight:500;color:#333;background:#C0C0C0;border:1px solid #AEAEAE;border-bottom:none;border-radius:3px 3px 0 0;cursor:pointer;display:flex;align-items:center;white-space:nowrap;transition:background .1s;font-family:Calibri,sans-serif;}
+    .tab:hover{background:#D4D4D4;}
+    .tab.active{background:#fff;color:#217346;font-weight:700;height:27px;border-color:#AEAEAE;}
 
     /* ── STATUS BAR ── */
-    .status-bar{position:fixed;bottom:0;left:0;right:0;background:#217346;color:#fff;font-size:.72rem;padding:4px 24px;display:flex;align-items:center;gap:16px;z-index:50;}
+    .status-bar{background:#217346;color:#fff;font-size:.68rem;padding:3px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
     #status-msg{font-weight:600;}
+
+    /* ── CASCADE OVERLAY ── */
+    #cascade-overlay{display:none;position:fixed;inset:0;background:rgba(10,30,60,.78);z-index:9999;flex-direction:column;align-items:center;justify-content:center;color:white;}
+    #cascade-overlay.show{display:flex;}
+    .cascade-spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.25);border-top:4px solid #34d399;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px;}
 
     /* ── MOBILE ── */
     @media(max-width:640px){
-      .header{padding:0 12px;}
-      .header-top{height:42px;}
-      .sep,.page-title,.nav{display:none;}
-      .header-body{padding:8px 0 10px;gap:8px;}
-      .ht{font-size:1rem;}
-      .hs{display:none;}
-      .btn-refresh span{display:none;}
-      .btn-refresh{padding:6px 10px;}
-
-      .tabs-bar{padding:0 8px;scrollbar-width:none;}
-      .tabs-bar::-webkit-scrollbar{display:none;}
-      .tab{padding:8px 10px;font-size:.68rem;}
-
-      .main{padding:10px 8px 64px;}
-      .model-block{margin-bottom:14px;}
-      .section-label{font-size:.72rem;padding:4px 8px;}
-
+      .app-header{padding:0 10px;height:40px;}
+      .sep,.page-title,.app-nav{display:none;}
+      .xl-ribbon{height:30px;padding:0 10px;}
+      .xl-ribbon-sub{display:none;}
+      .formula-bar{height:22px;}
+      .name-box{width:60px;font-size:10px;}
+      .formula-val{font-size:10px;}
+      .sheet-area{padding:8px 6px 4px;}
+      .model-block{margin-bottom:12px;}
+      .section-label{font-size:.68rem;padding:3px 7px;}
       .xl-table{font-size:11px;}
-      .xl-table th{padding:2px 5px;font-size:10px;}
-      .xl-table td{padding:2px 5px;height:18px;}
-      .xl-table .rn{min-width:22px;width:22px;font-size:10px;}
-      .xl-table .item-cell{min-width:140px;max-width:200px;left:22px;}
+      .xl-table th{padding:2px 4px;font-size:10px;}
+      .xl-table td{padding:1px 4px;height:17px;}
+      .xl-table .rn{min-width:22px;width:22px;}
+      .xl-table .item-cell{min-width:120px;left:22px;}
       .xl-table th.item-th{left:22px;}
-      .xl-table .num-cell{min-width:72px;}
-      .editable{min-width:60px;}
-      .amount-cell{min-width:72px;}
-
+      .editable{min-width:58px;}
+      .amount-cell{min-width:70px;}
       .ro-table{font-size:11px;}
-      .ro-table th{padding:2px 6px;font-size:10px;}
-      .ro-table td{padding:2px 6px;}
-
-      .status-bar{padding:4px 12px;font-size:.68rem;}
+      .ro-table th,.ro-table td{padding:2px 5px;}
+      .xl-tabs-outer{height:26px;}
+      .tab{height:20px;font-size:10px;padding:0 8px;}
+      .tab.active{height:23px;}
+      .status-bar{padding:2px 10px;}
       #status-rows{display:none;}
     }
-
-    /* ── TABLET ── */
     @media(min-width:641px) and (max-width:1024px){
-      .header{padding:0 16px;}
-      .nav a{padding:4px 7px;font-size:.68rem;}
-      .main{padding:12px 16px 72px;}
+      .app-header{padding:0 14px;}
+      .sheet-area{padding:10px 12px 4px;}
       .xl-table{font-size:11.5px;}
       .xl-table .item-cell{min-width:180px;}
     }
@@ -143,56 +159,41 @@
 </head>
 <body>
 
-<!-- Header -->
-<div class="header">
-  <div class="header-top">
-    <a class="brand" href="/">
-      <div class="brand-logo">
-        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      </div>
-      <span class="brand-name">ENCON</span>
-    </a>
-    <span class="sep">/</span>
-    <span class="page-title">Pricelist Viewer</span>
-    <nav class="nav">
-      <a href="/">Dashboard</a>
-      <a href="/viewer">DB Viewer</a>
-      <a href="/pricelist" class="active">Pricelist</a>
-      <a href="/costing">VLPH Costing</a>
-    </nav>
-  </div>
-  <div class="header-body">
-    <div>
-      <div class="ht">Pricelist <span>WorkBook</span></div>
-      <div class="hs">Live view of all master tables — click yellow cells to edit rates &amp; quantities</div>
-    </div>
-    <button class="btn-refresh" id="btn-refresh" onclick="loadAll()">
-      <svg id="refresh-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Refresh All
-    </button>
-  </div>
+<!-- App Header -->
+<div class="app-header">
+  <a class="brand" href="/">
+    <div class="brand-logo"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <span class="brand-name">ENCON</span>
+  </a>
+  <span class="sep">/</span>
+  <span class="page-title">Pricelist WorkBook</span>
+  <nav class="app-nav">
+    <a href="/">Dashboard</a>
+    <a href="/viewer">DB Viewer</a>
+    <a href="/pricelist" class="active">Pricelist</a>
+    <a href="/costing">VLPH Costing</a>
+  </nav>
+  <button class="btn-refresh" onclick="loadAll()">
+    <svg id="refresh-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    Refresh
+  </button>
 </div>
 
-<!-- Sheet Tabs -->
-<div class="tabs-bar" id="tabs-bar">
-  <div class="tab active" data-sheet="rates"      onclick="switchTab('rates')">Rates</div>
-  <div class="tab"        data-sheet="hpu"         onclick="switchTab('hpu')">HPU</div>
-  <div class="tab"        data-sheet="oil-parts"   onclick="switchTab('oil-parts')">Oil Burner</div>
-  <div class="tab"        data-sheet="hv-parts"    onclick="switchTab('hv-parts')">HV Oil Burner</div>
-  <div class="tab"        data-sheet="gas-parts"   onclick="switchTab('gas-parts')">Gas Burner</div>
-  <div class="tab"        data-sheet="blowers"     onclick="switchTab('blowers')">Blower</div>
-  <div class="tab"        data-sheet="recuperator" onclick="switchTab('recuperator')">Recuperator</div>
-  <div class="tab"        data-sheet="rad-heat"    onclick="switchTab('rad-heat')">Rad Heat</div>
-  <div class="tab"        data-sheet="gail"        onclick="switchTab('gail')">GAIL Gas Burner</div>
-  <div class="tab"        data-sheet="hlph"        onclick="switchTab('hlph')">Horizontal</div>
-  <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
-  <div class="tab"        data-sheet="oil-burners" onclick="switchTab('oil-burners')">Oil Film Prices</div>
-  <div class="tab"        data-sheet="gas-burners" onclick="switchTab('gas-burners')">Gas Burner Prices</div>
-  <div class="tab"        data-sheet="hv-burners"  onclick="switchTab('hv-burners')">HV Burner Prices</div>
+<!-- Excel Ribbon strip -->
+<div class="xl-ribbon">
+  <span class="xl-ribbon-title">Pricelist WorkBook</span>
+  <span class="xl-ribbon-sub">Yellow cells are editable — click to change rate or qty</span>
 </div>
 
-<!-- Main Content -->
-<div class="main">
+<!-- Formula Bar -->
+<div class="formula-bar">
+  <div class="name-box" id="name-box">—</div>
+  <div class="fx-label">fx</div>
+  <div class="formula-val" id="formula-val">Select a cell</div>
+</div>
+
+<!-- Sheet Content Area -->
+<div class="sheet-area" id="sheet-area">
   <div class="sheet-panel active" id="sheet-rates">      <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-hpu">         <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-oil-parts">   <div class="empty-msg">Loading...</div></div>
@@ -209,17 +210,37 @@
   <div class="sheet-panel"        id="sheet-hv-burners">  <div class="empty-msg">Loading...</div></div>
 </div>
 
-<!-- Cascade Overlay -->
-<div id="cascade-overlay">
-  <div class="cascade-spinner"></div>
-  <div style="font-size:1.1rem;font-weight:600;">Recalculating all prices...</div>
-  <div style="font-size:.82rem;opacity:.6;margin-top:8px;">Cascading rate changes across all product tables</div>
+<!-- Bottom Excel-style Sheet Tabs -->
+<div class="xl-tabs-outer">
+  <div class="xl-tabs-scroll" id="tabs-bar">
+    <div class="tab active" data-sheet="rates"      onclick="switchTab('rates')">Rates</div>
+    <div class="tab"        data-sheet="hpu"         onclick="switchTab('hpu')">HPU</div>
+    <div class="tab"        data-sheet="oil-parts"   onclick="switchTab('oil-parts')">Oil Burner</div>
+    <div class="tab"        data-sheet="hv-parts"    onclick="switchTab('hv-parts')">HV Oil Burner</div>
+    <div class="tab"        data-sheet="gas-parts"   onclick="switchTab('gas-parts')">Gas Burner</div>
+    <div class="tab"        data-sheet="blowers"     onclick="switchTab('blowers')">Blower</div>
+    <div class="tab"        data-sheet="recuperator" onclick="switchTab('recuperator')">Recuperator</div>
+    <div class="tab"        data-sheet="rad-heat"    onclick="switchTab('rad-heat')">Rad Heat</div>
+    <div class="tab"        data-sheet="gail"        onclick="switchTab('gail')">GAIL Gas Burner</div>
+    <div class="tab"        data-sheet="hlph"        onclick="switchTab('hlph')">Horizontal</div>
+    <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
+    <div class="tab"        data-sheet="oil-burners" onclick="switchTab('oil-burners')">Oil Film Prices</div>
+    <div class="tab"        data-sheet="gas-burners" onclick="switchTab('gas-burners')">Gas Burner Prices</div>
+    <div class="tab"        data-sheet="hv-burners"  onclick="switchTab('hv-burners')">HV Burner Prices</div>
+  </div>
 </div>
 
 <!-- Status Bar -->
 <div class="status-bar">
   <span id="status-msg">Ready</span>
   <span id="status-rows"></span>
+</div>
+
+<!-- Cascade Overlay -->
+<div id="cascade-overlay">
+  <div class="cascade-spinner"></div>
+  <div style="font-size:1rem;font-weight:600;">Recalculating all prices...</div>
+  <div style="font-size:.78rem;opacity:.6;margin-top:8px;">Cascading rate changes across all product tables</div>
 </div>
 
 <script>
@@ -242,13 +263,23 @@ function emptyMsg(msg) {
   return `<div class="empty-msg">${msg || 'No data available'}</div>`;
 }
 
+// ── Formula bar update ──────────────────────────────────────────────────────
+function updateFormulaBar(cellName, val) {
+  document.getElementById('name-box').textContent = cellName || '—';
+  document.getElementById('formula-val').textContent = val != null ? val : '';
+}
+
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(id) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.sheet-panel').forEach(p => p.classList.remove('active'));
   document.querySelector(`.tab[data-sheet="${id}"]`).classList.add('active');
   document.getElementById(`sheet-${id}`).classList.add('active');
+  // scroll active tab into view
+  document.querySelector(`.tab[data-sheet="${id}"]`).scrollIntoView({block:'nearest',inline:'center'});
+  document.getElementById('sheet-area').scrollTop = 0;
   currentTab = id;
+  updateFormulaBar('—', 'Select a cell');
 }
 
 // ── Load all data ──────────────────────────────────────────────────────────
@@ -322,15 +353,21 @@ function flashSaved(td, displayVal) {
   td.innerHTML = displayVal;
   td.classList.remove('editing');
   td.classList.add('saved');
-  setTimeout(() => td.classList.remove('saved'), 1200);
+  setTimeout(() => td.classList.remove('saved'), 1400);
 }
 
 function attachEditHandlers(container, table) {
   container.querySelectorAll('.editable').forEach(td => {
+    td.addEventListener('mouseenter', () => {
+      if (td.classList.contains('editing')) return;
+      const field = td.dataset.field || '';
+      updateFormulaBar(field.toUpperCase(), td.textContent.trim());
+    });
     td.addEventListener('click', () => {
       if (td.classList.contains('editing')) return;
       const rowid = parseInt(td.dataset.rowid);
       const field = td.dataset.field;
+      updateFormulaBar(field.toUpperCase() + ' (rowid ' + rowid + ')', td.textContent.trim());
       makeEditable(td, async (val, tdEl, orig) => {
         tdEl.textContent = '...';
         try {
@@ -350,6 +387,7 @@ function attachEditHandlers(container, table) {
               if (amtCell && data.amount != null) amtCell.textContent = fmt(data.amount);
             }
             setStatus(`Saved ${field} = ${val}`, `rowid ${rowid}`);
+            updateFormulaBar(field.toUpperCase(), String(val));
           } else {
             tdEl.innerHTML = orig;
             setStatus('Error: ' + (data.error || 'Unknown'));
@@ -407,9 +445,11 @@ function renderRates(data) {
   el.innerHTML = html;
 
   el.querySelectorAll('.rates-price').forEach(td => {
+    td.addEventListener('mouseenter', () => updateFormulaBar('PRICE', td.textContent.trim()));
     td.addEventListener('click', () => {
       if (td.classList.contains('editing')) return;
       const item = td.dataset.item;
+      updateFormulaBar('PRICE — ' + item, td.textContent.trim());
       makeEditable(td, async (val, tdEl, orig) => {
         tdEl.textContent = '...';
         document.getElementById('cascade-overlay').classList.add('show');
@@ -423,7 +463,7 @@ function renderRates(data) {
           document.getElementById('cascade-overlay').classList.remove('show');
           if (data.success) {
             flashSaved(tdEl, fmt(val));
-            setStatus('Cascade complete', data.cascaded ? 'All tables recalculated' : 'Rate saved (no pricebook for cascade)');
+            setStatus('Cascade complete', data.cascaded ? 'All tables recalculated' : 'Rate saved');
             await loadAll();
           } else {
             tdEl.innerHTML = orig;
@@ -446,18 +486,17 @@ function renderHPU(data) {
 
   const maxItems = Math.max(...data.map(m => (m.items||[]).length));
 
-  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:240px;">ITEM</th>`;
+  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:220px;">ITEM</th>`;
   let hr2 = '';
   data.forEach(m => {
     hr1 += `<th class="top-header" colspan="4">${esc(m.model)}</th><th class="gap-th" rowspan="2"></th>`;
-    hr2 += `<th>QTY</th><th style="min-width:60px;">UNIT</th><th style="min-width:90px;">RATE</th><th style="min-width:110px;">AMOUNT</th><th class="gap-th"></th>`;
+    hr2 += `<th>QTY</th><th style="min-width:55px;">UNIT</th><th style="min-width:90px;">RATE</th><th style="min-width:105px;">AMOUNT</th><th class="gap-th"></th>`;
   });
 
   let rows = '';
   let rowNum = 0;
   for (let i = 0; i < maxItems; i++) {
     const label = data[0]?.items[i]?.item || '';
-    // skip rows where label is blank and every model has no item at this index
     if (!label && data.every(m => !m.items[i])) continue;
     rowNum++;
     rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
@@ -473,16 +512,11 @@ function renderHPU(data) {
     rows += '</tr>';
   }
 
-  // total row
   rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">MATERIAL COST</td>`;
-  data.forEach(m => {
-    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.material_cost)}</td><td class="gap-td"></td>`;
-  });
+  data.forEach(m => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.material_cost)}</td><td class="gap-td"></td>`; });
   rows += '</tr>';
-  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE (×1.8)</td>`;
-  data.forEach(m => {
-    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.selling_price)}</td><td class="gap-td"></td>`;
-  });
+  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE ×1.8</td>`;
+  data.forEach(m => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.selling_price)}</td><td class="gap-td"></td>`; });
   rows += '</tr>';
 
   el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
@@ -500,11 +534,11 @@ function renderSideBySide(sheetId, sections, table) {
 
   const maxItems = Math.max(...sections.map(s => (s.items||[]).length));
 
-  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:240px;">PARTICULARS</th>`;
+  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:220px;">PARTICULARS</th>`;
   let hr2 = '';
   sections.forEach(sec => {
     hr1 += `<th class="top-header" colspan="4">${esc(sec.title)}</th><th class="gap-th" rowspan="2"></th>`;
-    hr2 += `<th style="min-width:70px;">QTY</th><th style="min-width:55px;">UNIT</th><th style="min-width:90px;">RATE</th><th style="min-width:110px;">AMOUNT</th><th class="gap-th"></th>`;
+    hr2 += `<th style="min-width:65px;">QTY</th><th style="min-width:50px;">UNIT</th><th style="min-width:88px;">RATE</th><th style="min-width:105px;">AMOUNT</th><th class="gap-th"></th>`;
   });
 
   let rows = '';
@@ -527,14 +561,10 @@ function renderSideBySide(sheetId, sections, table) {
   }
 
   rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">FABRICATION COST</td>`;
-  sections.forEach(sec => {
-    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.fabrication_cost)}</td><td class="gap-td"></td>`;
-  });
+  sections.forEach(sec => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.fabrication_cost)}</td><td class="gap-td"></td>`; });
   rows += '</tr>';
-  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE (×1.25)</td>`;
-  sections.forEach(sec => {
-    rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.selling_price)}</td><td class="gap-td"></td>`;
-  });
+  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE ×1.25</td>`;
+  sections.forEach(sec => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.selling_price)}</td><td class="gap-td"></td>`; });
   rows += '</tr>';
 
   el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
@@ -550,20 +580,15 @@ function renderBlowers(data) {
   const el = document.getElementById('sheet-blowers');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  // Only show rows that have a model name
-  const allKeys = ['model','hp','cfm','nm3_per_hr','pressure_mbar','price_without_motor','price__with_motor'];
+  const allKeys   = ['model','hp','cfm','nm3_per_hr','pressure_mbar','price_without_motor','price__with_motor'];
   const allLabels = ['Model','HP','CFM','NM³/hr','Pressure (mbar)','Price w/o Motor (₹)','Price w/ Motor (₹)'];
   const priceKeys = new Set(['price_without_motor','price__with_motor']);
-
-  // Drop columns where every row has null/empty value
   const active = allKeys.map((k, idx) => ({ k, l: allLabels[idx] }))
     .filter(({ k }) => data.some(r => r[k] != null && r[k] !== ''));
 
-  let rows = '';
-  let lastSec = null;
-  let rowNum = 0;
+  let rows = '', lastSec = null, rowNum = 0;
   data.forEach(r => {
-    if (!r.model) return; // skip blank rows
+    if (!r.model) return;
     if (r.section !== lastSec) {
       rows += `<tr class="sec-hdr"><td colspan="${active.length+1}">${esc(r.section||'')}</td></tr>`;
       lastSec = r.section;
@@ -571,9 +596,7 @@ function renderBlowers(data) {
     rowNum++;
     rows += `<tr><td class="rn">${rowNum}</td>${active.map(({ k }) => {
       const v = r[k];
-      return priceKeys.has(k)
-        ? `<td style="text-align:right;">${fmt(v)}</td>`
-        : `<td>${esc(v??'')}</td>`;
+      return priceKeys.has(k) ? `<td style="text-align:right;">${fmt(v)}</td>` : `<td>${esc(v??'')}</td>`;
     }).join('')}</tr>`;
   });
 
@@ -583,14 +606,12 @@ function renderBlowers(data) {
   </table></div>`;
 }
 
-// ── Recuperator — grouped by type ───────────────────────────────────────────
+// ── Recuperator ──────────────────────────────────────────────────────────────
 function renderRecuperator(data) {
   const el = document.getElementById('sheet-recuperator');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  let rows = '';
-  let lastType = null;
-  let rowNum = 0;
+  let rows = '', lastType = null, rowNum = 0;
   data.forEach(r => {
     if (!r.model) return;
     if (r.type !== lastType) {
@@ -598,12 +619,7 @@ function renderRecuperator(data) {
       lastType = r.type;
     }
     rowNum++;
-    rows += `<tr>
-      <td class="rn">${rowNum}</td>
-      <td>${esc(r.model)}</td>
-      <td style="text-align:right;">${fmt(r.fabrication_cost)}</td>
-      <td style="text-align:right;">${fmt(r.selling_price)}</td>
-    </tr>`;
+    rows += `<tr><td class="rn">${rowNum}</td><td>${esc(r.model)}</td><td style="text-align:right;">${fmt(r.fabrication_cost)}</td><td style="text-align:right;">${fmt(r.selling_price)}</td></tr>`;
   });
 
   el.innerHTML = `<div class="ro-wrap"><table class="ro-table">
@@ -620,10 +636,10 @@ function renderRecuperator(data) {
 // ── Rad Heat ────────────────────────────────────────────────────────────────
 function renderRadHeat(rad, radTata) {
   const el = document.getElementById('sheet-rad-heat');
-  const cols = ['item','output_kw','gas_lpg','gas_ng','price'];
-  const labels = ['MODEL','OUTPUT (kW)','LPG (m³/hr)','NG (m³/hr)','Price with SS Tubing (₹)'];
+  const cols   = ['item','output_kw','gas_lpg','gas_ng','price'];
+  const labels = ['MODEL','OUTPUT (kW)','LPG (m³/hr)','NG (m³/hr)','Price w/ SS Tubing (₹)'];
 
-  const renderBlock = (rows, title) => {
+  const block = (rows, title) => {
     if (!rows.length) return '';
     return `<div class="model-block">
       <div class="section-label">${title}</div>
@@ -636,7 +652,7 @@ function renderRadHeat(rad, radTata) {
     </div>`;
   };
 
-  el.innerHTML = renderBlock(rad, 'Rad Heat — Standard') + renderBlock(radTata, 'Rad Heat — TATA');
+  el.innerHTML = block(rad,'Rad Heat — Standard') + block(radTata,'Rad Heat — TATA');
   if (!el.innerHTML) el.innerHTML = emptyMsg();
 }
 
@@ -645,13 +661,11 @@ function renderGail(data) {
   const el = document.getElementById('sheet-gail');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const keys = ['burner_size','burner','ci_burner_plate','burner_block','hose','butterfly_valve','ball_valve','burner_set'];
-  const labels = ['Burner Size','Burner (₹)','CI Burner Plate (₹)','Burner Block (₹)','Hose (₹)','Butterfly Valve (₹)','Ball Valve (₹)','Burner SET (₹)'];
+  const keys    = ['burner_size','burner','ci_burner_plate','burner_block','hose','butterfly_valve','ball_valve','burner_set'];
+  const labels  = ['Burner Size','Burner (₹)','CI Burner Plate (₹)','Burner Block (₹)','Hose (₹)','Butterfly Valve (₹)','Ball Valve (₹)','Burner SET (₹)'];
   const numKeys = new Set(['burner','ci_burner_plate','burner_block','hose','butterfly_valve','ball_valve','burner_set']);
 
-  let rows = '';
-  let lastSec = null;
-  let rowNum = 0;
+  let rows = '', lastSec = null, rowNum = 0;
   data.forEach(r => {
     if (!r.burner_size) return;
     if (r.section && r.section !== lastSec) {
@@ -677,15 +691,14 @@ function renderLPH(sheetId, data) {
 
   const maxItems = Math.max(...data.map(m => (m.items||[]).length));
 
-  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:240px;">DESCRIPTION</th>`;
+  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:220px;">DESCRIPTION</th>`;
   let hr2 = '';
   data.forEach(m => {
     hr1 += `<th class="top-header" colspan="2">${esc(m.model)}</th><th class="gap-th" rowspan="2"></th>`;
     hr2 += `<th style="min-width:50px;">QTY</th><th style="min-width:110px;">AMOUNT (₹)</th><th class="gap-th"></th>`;
   });
 
-  let rows = '';
-  let rowNum = 0;
+  let rows = '', rowNum = 0;
   for (let i = 0; i < maxItems; i++) {
     const label = data[0]?.items[i]?.particular || '';
     if (!label && data.every(m => !m.items[i])) continue;
@@ -702,9 +715,7 @@ function renderLPH(sheetId, data) {
   }
 
   rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">TOTAL</td>`;
-  data.forEach(m => {
-    rows += `<td></td><td class="num-cell">${fmt(m.total)}</td><td class="gap-td"></td>`;
-  });
+  data.forEach(m => { rows += `<td></td><td class="num-cell">${fmt(m.total)}</td><td class="gap-td"></td>`; });
   rows += '</tr>';
 
   el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
@@ -732,16 +743,16 @@ function renderBurnerPivot(sheetId, burners) {
     const comps = [...new Set(sizes.flatMap(s => Object.keys(sizeMap[s])))].sort();
     return `<div class="model-block">
       <div class="section-label">${esc(sec)}</div>
-      <div class="xl-wrap"><table class="xl-table" style="min-width:auto;">
+      <div class="ro-wrap"><table class="ro-table" style="min-width:auto;">
         <thead><tr>
           <th class="rn"></th>
           <th style="min-width:160px;text-align:left;">Burner Size</th>
           ${comps.map(c=>`<th style="min-width:140px;">${esc(c)} (₹)</th>`).join('')}
         </tr></thead>
-        <tbody>${sizes.map((sz, i) => `<tr>
+        <tbody>${sizes.map((sz,i) => `<tr>
           <td class="rn">${i+1}</td>
           <td>${esc(sz)}</td>
-          ${comps.map(c=>`<td class="num-cell">${fmt(sizeMap[sz][c])}</td>`).join('')}
+          ${comps.map(c=>`<td style="text-align:right;">${fmt(sizeMap[sz][c])}</td>`).join('')}
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`;
