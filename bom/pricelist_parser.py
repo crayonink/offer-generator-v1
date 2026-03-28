@@ -965,22 +965,27 @@ def _parse_multicolumn_parts(xl, sheet_name, table_name, groups, conn):
         qty_col    = base_col + 2
         rate_col   = base_col + 4
         mc_col     = base_col + 6
-        # Hardcoded total cell (direct number in formula workbook)
-        tf = ws_f.cell(row, total_col).value
-        if isinstance(tf, (int, float)):
-            return float(tf)
-        # Hardcoded amount cell (e.g. labour charge, paint)
-        af = ws_f.cell(row, amount_col).value
-        if isinstance(af, (int, float)):
-            mc_v = ws_v.cell(row, mc_col).value
-            return float(af) + (float(mc_v) if mc_v else 0.0)
-        # Compute qty × live_rate + mc
         qty_v = ws_v.cell(row, qty_col).value
         mc_v  = ws_v.cell(row, mc_col).value
         qty   = float(qty_v) if qty_v is not None else 0.0
         mc    = float(mc_v)  if mc_v  is not None else 0.0
-        rate  = _resolve(ws_f, row, rate_col)
-        return qty * rate + mc
+        # Always try live computation first: qty × resolved_rate + mc
+        rate = _resolve(ws_f, row, rate_col)
+        if rate and qty:
+            return qty * rate + mc
+        # Fallback: items with no rate (labour, paint, etc.) — use cached total or amount
+        tf = ws_f.cell(row, total_col).value
+        if isinstance(tf, (int, float)):
+            return float(tf)
+        tv = ws_v.cell(row, total_col).value
+        if tv is not None:
+            try: return float(tv)
+            except: pass
+        af = ws_v.cell(row, amount_col).value
+        if af is not None:
+            try: return float(af) + mc
+            except: pass
+        return mc
 
     records = []
     for header_row, data_rows, base_col in groups:
