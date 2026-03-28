@@ -496,14 +496,16 @@ def pricelist_summary():
         for (model,) in q("SELECT DISTINCT model FROM horizontal_master ORDER BY model"):
             rows = q("SELECT particular, qty, amount FROM horizontal_master WHERE model=?", model)
             items = [{"particular": r[0], "qty": r[1], "amount": r[2]} for r in rows if r[2]]
-            hlph.append({"model": model, "total": round(sum(r[2] for r in rows if r[2]), 2), "items": items})
+            if items:
+                hlph.append({"model": model, "total": round(sum(i["amount"] for i in items), 2), "items": items})
 
         # ── Vertical LPH ─────────────────────────────────────────────────
         vlph = []
         for (model,) in q("SELECT DISTINCT model FROM vertical_master ORDER BY model"):
             rows = q("SELECT particular, qty, amount FROM vertical_master WHERE model=?", model)
             items = [{"particular": r[0], "qty": r[1], "amount": r[2]} for r in rows if r[2]]
-            vlph.append({"model": model, "total": round(sum(r[2] for r in rows if r[2]), 2), "items": items})
+            if items:
+                vlph.append({"model": model, "total": round(sum(i["amount"] for i in items), 2), "items": items})
 
         conn.close()
         return {
