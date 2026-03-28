@@ -201,14 +201,18 @@ def parse_hpu(xl, conn):
             item = fields.get("item_col", "").strip()
             if not item or item.lower() in ("nan", "", "items", "total amount"):
                 continue
+            qty    = safe_float(fields.get("qty_col"))
+            rate   = safe_float(fields.get("rate_col"))
+            # Compute live; fall back to cached amount only when qty or rate missing
+            amount = round(qty * rate, 2) if (qty and rate) else safe_float(fields.get("amount_col"))
             records.append({
                 "unit_kw": kw,
                 "variant": variant,
                 "item": item.upper(),
-                "qty": safe_float(fields.get("qty_col")),
-                "unit": fields.get("unit_col", "").strip() or None,
-                "rate": safe_float(fields.get("rate_col")),
-                "amount": safe_float(fields.get("amount_col")),
+                "qty":    qty,
+                "unit":   fields.get("unit_col", "").strip() or None,
+                "rate":   rate,
+                "amount": amount,
             })
 
     df_out = pd.DataFrame(records).dropna(subset=["item"])
