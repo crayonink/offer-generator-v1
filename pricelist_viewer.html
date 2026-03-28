@@ -612,9 +612,15 @@ function renderLPH(sheetId, data) {
 }
 
 // ── Burner Pivot (read-only) ────────────────────────────────────────────────
+const BURNER_FILTERS = {
+  'oil-burners': k => k.includes('FILM') || k.includes('DUAL FUEL') || (k.includes('SPARES') && !k.includes('HIGH VELOCITY')),
+  'gas-burners': k => k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('PILOT'),
+  'hv-burners':  k => k.includes('HIGH VELOCITY'),
+};
 function renderBurnerPivot(sheetId, burners, keyword) {
   const el = document.getElementById(`sheet-${sheetId}`);
-  const sectionKeys = Object.keys(burners).filter(k => k.toUpperCase().includes(keyword));
+  const filterFn = BURNER_FILTERS[sheetId] || (k => k.includes(keyword));
+  const sectionKeys = Object.keys(burners).filter(k => filterFn(k.toUpperCase()));
   if (!sectionKeys.length) { el.innerHTML = emptyMsg(); return; }
   el.innerHTML = sectionKeys.map(sec => {
     const sizeMap = burners[sec];
