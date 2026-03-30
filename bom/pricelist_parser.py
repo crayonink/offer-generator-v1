@@ -777,6 +777,11 @@ def _parse_ladle_master(xl, conn, sheet_keyword, table_name, blocks):
             model_v = (ws_v.cell(header_row, name_col).value or
                        ws_f.cell(header_row, name_col).value)
             model_name = str(model_v or '').strip().upper()
+            # Strip "DESCRIPTION" column-header prefix that Excel sometimes
+            # embeds in the same cell as the model subtitle e.g.
+            # "DESCRIPTION( VERTICAL 10 TON LPS)" → "VERTICAL 10 TON LPS"
+            if model_name.upper().startswith('DESCRIPTION'):
+                model_name = model_name[len('DESCRIPTION'):].strip('( )\t')
             if not model_name:
                 continue
 
