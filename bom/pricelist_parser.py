@@ -168,7 +168,10 @@ def parse_hpu(xl, conn):
         return {"skipped": "HPU sheet not found"}
 
     df = xl.parse(sheet, header=None)
-    row0, row1, row2 = df.iloc[0], df.iloc[1], df.iloc[2]
+    row0 = df.iloc[0]  # "Costing of H..." titles (one per KW group)
+    row1 = df.iloc[1]  # variant names: Duplex 1, Duplex 2, Simplex
+    row2 = df.iloc[2]  # Duplex 1 col headers: S No., Items, Qty., Unit, Rate, Amount
+    row3 = df.iloc[3]  # Duplex 2/Simplex col headers: Qty., Unit, Rate, Amount (row below Duplex 1 headers)
 
     col_map = {}
     title_cols = [(i, str(v)) for i, v in enumerate(row0) if pd.notna(v) and "Costing" in str(v)]
@@ -185,8 +188,11 @@ def parse_hpu(xl, conn):
         for var_col, var_name in variant_cols:
             if title_col <= var_col < end:
                 for dc in range(var_col, min(var_col + 8, df.shape[1])):
-                    cell = str(row2.iloc[dc]).strip().lower() if pd.notna(row2.iloc[dc]) else ""
-                    if "items" in cell or "item" in cell:
+                    # Duplex 1 headers are in row2; Duplex 2/Simplex headers are in row3
+                    cell2 = str(row2.iloc[dc]).strip().lower() if pd.notna(row2.iloc[dc]) else ""
+                    cell3 = str(row3.iloc[dc]).strip().lower() if pd.notna(row3.iloc[dc]) else ""
+                    cell = cell2 or cell3
+                    if "items" in cell or ("item" in cell and "s no" not in cell):
                         col_map[dc] = (kw, var_name, "item_col")
                     elif "qty" in cell:
                         col_map[dc] = (kw, var_name, "qty_col")
@@ -197,8 +203,17 @@ def parse_hpu(xl, conn):
                     elif "amount" in cell:
                         col_map[dc] = (kw, var_name, "amount_col")
 
+    # Duplex 2 and Simplex share the Items column with Duplex 1 for the same KW.
+    # Build a map: kw -> item column index (from Duplex 1's item_col)
+    item_col_by_kw = {kw: col_idx
+                      for col_idx, (kw, _variant, field) in col_map.items()
+                      if field == "item_col"}
+
+    _skip_items = {"nan", "", "items", "total amount", "s no", "s no.", "s.no", "s.no."}
+
     records = []
-    for _, row in df.iloc[3:].iterrows():
+    # Data starts at row index 4 (rows 0-3 are title + variant + two header rows)
+    for _, row in df.iloc[4:].iterrows():
         block_data = {}
         for col_idx, (kw, variant, field) in col_map.items():
             key = (kw, variant)
@@ -210,11 +225,17 @@ def parse_hpu(xl, conn):
 
         for (kw, variant), fields in block_data.items():
             item = fields.get("item_col", "").strip()
-            if not item or item.lower() in ("nan", "", "items", "total amount"):
+            # Duplex 2 / Simplex have no item_col — borrow from Duplex 1's column
+            if not item:
+                ic = item_col_by_kw.get(kw)
+                if ic is not None and ic < len(row):
+                    raw = row.iloc[ic]
+                    item = str(raw).strip() if pd.notna(raw) else ""
+            if not item or item.lower() in _skip_items:
                 continue
             qty    = safe_float(fields.get("qty_col"))
             rate   = safe_float(fields.get("rate_col"))
-            # Compute live; fall back to cached amount only when qty or rate missing
+            # Compute live; fall back to cached amount (e.g. LABOUR CHARGES has amount but no qty/rate)
             amount = round(qty * rate, 2) if (qty and rate) else safe_float(fields.get("amount_col"))
             records.append({
                 "unit_kw": kw,
