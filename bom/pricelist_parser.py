@@ -817,11 +817,12 @@ def _parse_ladle_master(xl, conn, sheet_keyword, table_name, blocks):
 
 
 def parse_horizontal(xl, conn):
-    # Block 1: header row 1, data rows 2-10, groups at cols 1 and 6
-    # Block 2: header row 13, data rows 14-22, groups at cols 1 and 6
+    # 3 groups per block at cols 1, 6, 11
+    # Block 1: header row 1, data rows 2-10  (10T, 15T, 20T)
+    # Block 2: header row 13, data rows 14-22 (30T, 35-40T, 60T)
     return _parse_ladle_master(xl, conn, "horizontal", "horizontal_master", [
-        (1,  range(2, 11),  [1, 6]),
-        (13, range(14, 23), [1, 6]),
+        (1,  range(2, 11),  [1, 6, 11]),
+        (13, range(14, 23), [1, 6, 11]),
     ])
 
 
