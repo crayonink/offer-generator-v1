@@ -448,16 +448,18 @@ def pricelist_summary():
             return sections
 
         # ── HPU ───────────────────────────────────────────────────────────
+        _variant_order = "CASE variant WHEN 'Duplex 1' THEN 1 WHEN 'Duplex 2' THEN 2 WHEN 'Simplex' THEN 3 ELSE 4 END"
         hpu_kws = [r[0] for r in q("SELECT DISTINCT unit_kw FROM hpu_master ORDER BY unit_kw")]
         hpu = []
         for kw in hpu_kws:
-            rows = q("SELECT rowid, item, qty, unit, rate, amount FROM hpu_master WHERE unit_kw=? AND variant='Duplex 1' ORDER BY rowid", kw)
-            items = [{"rowid": r[0], "item": r[1], "qty": r[2], "unit": r[3], "rate": r[4], "amount": r[5]} for r in rows]
-            mat = sum(r[5] or 0 for r in rows)
-            hpu.append({"kw": kw, "model": f"HPD-{kw}",
-                        "material_cost": round(mat, 2),
-                        "selling_price": round(mat * 1.8, 2),
-                        "items": items})
+            variants_data = []
+            for (variant,) in q(f"SELECT DISTINCT variant FROM hpu_master WHERE unit_kw=? ORDER BY {_variant_order}", kw):
+                rows = q("SELECT rowid, item, qty, unit, rate, amount FROM hpu_master WHERE unit_kw=? AND variant=? ORDER BY rowid", kw, variant)
+                items = [{"rowid": r[0], "item": r[1], "qty": r[2], "unit": r[3], "rate": r[4], "amount": r[5]} for r in rows]
+                mat = sum((r[5] or 0) for r in rows)
+                variants_data.append({"name": variant, "material_cost": round(mat, 2),
+                                      "selling_price": round(mat * 1.8, 2), "items": items})
+            hpu.append({"kw": kw, "variants": variants_data})
 
         # ── Burners ───────────────────────────────────────────────────────
         burner_rows = q("SELECT section, burner_size, component, price FROM burner_pricelist_master ORDER BY section, burner_size")

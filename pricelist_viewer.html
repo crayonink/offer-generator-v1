@@ -101,6 +101,12 @@
     /* section label strip (Rad Heat / Burners) */
     .section-label{font-size:.75rem;font-weight:700;color:#1F3864;background:#D6E4F7;border:1px solid #9DC3E6;border-bottom:none;padding:5px 10px;letter-spacing:.02em;}
 
+    /* ── HPU KW selector ── */
+    .kw-selector{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;background:#F2F2F2;border-bottom:1px solid #D0D7DE;}
+    .kw-tab{padding:3px 10px;font-size:12px;font-family:Calibri,sans-serif;border:1px solid #BFBFBF;background:#fff;cursor:pointer;border-radius:3px;color:#333;}
+    .kw-tab:hover{background:#E8F0FB;}
+    .kw-tab-active{background:#217346 !important;color:#fff !important;border-color:#217346 !important;font-weight:700;}
+
     /* ── EMPTY STATE ── */
     .empty-msg{padding:40px;text-align:center;color:#999;font-size:.85rem;}
 
@@ -479,52 +485,68 @@ function renderRates(data) {
   });
 }
 
-// ── HPU — all KW variants side by side ──────────────────────────────────────
+// ── HPU — KW selector + Duplex 1 / Duplex 2 / Simplex side by side ──────────
 function renderHPU(data) {
   const el = document.getElementById('sheet-hpu');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const maxItems = Math.max(...data.map(m => (m.items||[]).length));
+  let activeKw = data[0].kw;
 
-  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:220px;">ITEM</th>`;
-  let hr2 = '';
-  data.forEach(m => {
-    hr1 += `<th class="top-header" colspan="4">${esc(m.model)}</th><th class="gap-th" rowspan="2"></th>`;
-    hr2 += `<th>QTY</th><th style="min-width:55px;">UNIT</th><th style="min-width:90px;">RATE</th><th style="min-width:105px;">AMOUNT</th><th class="gap-th"></th>`;
-  });
+  function buildTable(kwData) {
+    const variants = kwData.variants || [];
+    if (!variants.length) return '<p style="padding:16px;">No data</p>';
+    const maxItems = Math.max(...variants.map(v => (v.items||[]).length));
 
-  let rows = '';
-  let rowNum = 0;
-  for (let i = 0; i < maxItems; i++) {
-    const label = data[0]?.items[i]?.item || '';
-    if (!label && data.every(m => !m.items[i])) continue;
-    rowNum++;
-    rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
-    data.forEach(m => {
-      const it = m.items[i];
-      if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
-      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>`;
-      rows += `<td style="text-align:center;">${esc(it.unit||'')}</td>`;
-      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>`;
-      rows += `<td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>`;
-      rows += `<td class="gap-td"></td>`;
+    let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:220px;">ITEM</th>`;
+    let hr2 = '';
+    variants.forEach(v => {
+      hr1 += `<th class="top-header" colspan="4">${esc(v.name)}</th><th class="gap-th" rowspan="2"></th>`;
+      hr2 += `<th>QTY</th><th style="min-width:55px;">UNIT</th><th style="min-width:90px;">RATE</th><th style="min-width:105px;">AMOUNT</th><th class="gap-th"></th>`;
     });
+
+    let rows = '';
+    let rowNum = 0;
+    for (let i = 0; i < maxItems; i++) {
+      const label = variants[0]?.items[i]?.item || '';
+      if (!label && variants.every(v => !v.items[i])) continue;
+      rowNum++;
+      rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
+      variants.forEach(v => {
+        const it = v.items[i];
+        if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
+        rows += `<td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>`;
+        rows += `<td style="text-align:center;">${esc(it.unit||'')}</td>`;
+        rows += `<td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>`;
+        rows += `<td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>`;
+        rows += `<td class="gap-td"></td>`;
+      });
+      rows += '</tr>';
+    }
+
+    rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">MATERIAL COST</td>`;
+    variants.forEach(v => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(v.material_cost)}</td><td class="gap-td"></td>`; });
     rows += '</tr>';
+    rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE ×1.8</td>`;
+    variants.forEach(v => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(v.selling_price)}</td><td class="gap-td"></td>`; });
+    rows += '</tr>';
+
+    return `<div class="xl-wrap"><table class="xl-table">
+      <thead><tr>${hr1}</tr><tr class="hdr2">${hr2}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
   }
 
-  rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">MATERIAL COST</td>`;
-  data.forEach(m => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.material_cost)}</td><td class="gap-td"></td>`; });
-  rows += '</tr>';
-  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE ×1.8</td>`;
-  data.forEach(m => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(m.selling_price)}</td><td class="gap-td"></td>`; });
-  rows += '</tr>';
+  function render() {
+    const kwData = data.find(d => d.kw === activeKw) || data[0];
+    const tabs = data.map(d =>
+      `<button class="kw-tab${d.kw === activeKw ? ' kw-tab-active' : ''}" onclick="hpuSelectKw(${d.kw})">${d.kw} KW</button>`
+    ).join('');
+    el.innerHTML = `<div class="kw-selector">${tabs}</div>${buildTable(kwData)}`;
+    attachEditHandlers(el, 'hpu_master');
+  }
 
-  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
-    <thead><tr>${hr1}</tr><tr class="hdr2">${hr2}</tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
-
-  attachEditHandlers(el, 'hpu_master');
+  window.hpuSelectKw = function(kw) { activeKw = kw; render(); };
+  render();
 }
 
 // ── Side-by-side sections (Oil Burner / HV Oil Burner / Gas Burner) ──────────
