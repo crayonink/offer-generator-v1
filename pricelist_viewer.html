@@ -312,8 +312,8 @@ function renderAll() {
   const s = DATA.summary || {};
   renderRates(DATA.rates || []);
   renderHPU(s.hpu || []);
-  renderSideBySide('oil-parts', s.oil_burner_parts || [], 'oil_burner_parts_master');
-  renderSideBySide('hv-parts',  s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
+  renderPartsTabbed('oil-parts', s.oil_burner_parts || [], 'oil_burner_parts_master');
+  renderPartsTabbed('hv-parts',  s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
   renderSideBySide('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
   renderRecuperator(s.recuperator || []);
@@ -550,6 +550,62 @@ function renderHPU(data) {
 }
 
 // ── Side-by-side sections (Oil Burner / HV Oil Burner / Gas Burner) ──────────
+// ── Parts — tabbed by size (Oil Burner / HV Oil Burner) ──────────────────────
+// Each section has different items (7A differs from 2A-6A), so tabs are better
+// than side-by-side which would misalign rows.
+function renderPartsTabbed(sheetId, sections, table) {
+  const el = document.getElementById(`sheet-${sheetId}`);
+  if (!sections.length) { el.innerHTML = emptyMsg(); return; }
+
+  let activeIdx = 0;
+
+  function buildSectionTable(sec) {
+    let rows = '';
+    let rowNum = 0;
+    (sec.items || []).forEach(it => {
+      rowNum++;
+      rows += `<tr>
+        <td class="rn">${rowNum}</td>
+        <td class="item-cell">${esc(it.particular||'')}</td>
+        <td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>
+        <td style="text-align:center;">${esc(it.unit||'')}</td>
+        <td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>
+        <td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>
+      </tr>`;
+    });
+    rows += `<tr class="total-row">
+      <td class="rn"></td><td class="item-cell">FABRICATION COST</td>
+      <td></td><td></td><td></td><td class="num-cell">${fmt(sec.fabrication_cost)}</td>
+    </tr>`;
+    rows += `<tr class="selling-row">
+      <td class="rn"></td><td class="item-cell">SELLING PRICE ×1.25</td>
+      <td></td><td></td><td></td><td class="num-cell">${fmt(sec.selling_price)}</td>
+    </tr>`;
+    return `<div class="xl-wrap"><table class="xl-table">
+      <thead><tr>
+        <th class="rn"></th>
+        <th class="item-th" style="min-width:260px;">PARTICULARS</th>
+        <th style="min-width:65px;">QTY</th>
+        <th style="min-width:50px;">UNIT</th>
+        <th style="min-width:88px;">RATE</th>
+        <th style="min-width:110px;">AMOUNT</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  }
+
+  function render() {
+    const tabs = sections.map((sec, i) =>
+      `<button class="kw-tab${i === activeIdx ? ' kw-tab-active' : ''}" onclick="${sheetId.replace(/-/g,'_')}SelectTab(${i})">${esc(sec.title)}</button>`
+    ).join('');
+    el.innerHTML = `<div class="kw-selector">${tabs}</div>${buildSectionTable(sections[activeIdx])}`;
+    attachEditHandlers(el, table);
+  }
+
+  window[`${sheetId.replace(/-/g,'_')}SelectTab`] = function(i) { activeIdx = i; render(); };
+  render();
+}
+
 function renderSideBySide(sheetId, sections, table) {
   const el = document.getElementById(`sheet-${sheetId}`);
   if (!sections.length) { el.innerHTML = emptyMsg(); return; }
