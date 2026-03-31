@@ -1177,25 +1177,29 @@ def parse_gas_burner_parts(xl, conn):
         """Return computed or hardcoded total for a data row."""
         total_col  = base_col + 7
         amount_col = base_col + 5
-        qty_col    = base_col + 2
-        rate_col   = base_col + 4
         mc_col     = base_col + 6
-        # If total cell is a hardcoded number in the formula workbook, use it
+
+        # 1. Prefer cached total — reflects the Excel's last-saved state and is
+        #    correct even when Rates formulas reference stale cross-sheet values
+        tv = ws_gb_v.cell(row, total_col).value
+        if tv is not None:
+            try: return float(tv)
+            except (ValueError, TypeError): pass
+
+        # 2. Total cell is a hardcoded literal in the formula workbook (Labour, Paint)
         tf = ws_gb_f.cell(row, total_col).value
         if isinstance(tf, (int, float)):
             return float(tf)
-        # If amount cell is hardcoded (e.g. DRILL=1800, labour=5000), add mc
-        af = ws_gb_f.cell(row, amount_col).value
-        if isinstance(af, (int, float)):
-            mc_v = ws_gb_v.cell(row, mc_col).value
-            return float(af) + (float(mc_v) if mc_v else 0.0)
-        # Compute qty × live_rate + mc
-        qty_v = ws_gb_v.cell(row, qty_col).value
-        mc_v  = ws_gb_v.cell(row, mc_col).value
-        qty   = float(qty_v) if qty_v is not None else 0.0
-        mc    = float(mc_v)  if mc_v  is not None else 0.0
-        rate  = _resolve_gb(row, rate_col)
-        return qty * rate + mc
+
+        # 3. Fall back to cached amount + cached mc
+        av   = ws_gb_v.cell(row, amount_col).value
+        mc_v = ws_gb_v.cell(row, mc_col).value
+        mc   = float(mc_v) if mc_v is not None else 0.0
+        if av is not None:
+            try: return float(av) + mc
+            except (ValueError, TypeError): pass
+
+        return mc
 
     records = []
     # (header_row, data_rows, base_col)
@@ -1228,14 +1232,16 @@ def parse_gas_burner_parts(xl, conn):
                 continue
             qty_v  = ws_gb_v.cell(row, base_col + 2).value
             unit_v = ws_gb_v.cell(row, base_col + 3).value
-            rate   = _resolve_gb(row, base_col + 4)
+            # Use cached rate (Excel's saved value); avoids wrong Rates-formula resolution
+            rate_v = ws_gb_v.cell(row, base_col + 4).value
+            rate   = float(rate_v) if rate_v is not None else None
             total  = _row_total(row, base_col)
             records.append({
                 "section":    None,
                 "particular": particular,
                 "qty":        float(qty_v) if qty_v is not None else None,
                 "unit":       str(unit_v).strip() if unit_v else None,
-                "rate":       rate if rate else None,
+                "rate":       rate,
                 "amount":     round(total, 2) if total else None,
             })
 

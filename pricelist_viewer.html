@@ -314,7 +314,7 @@ function renderAll() {
   renderHPU(s.hpu || []);
   renderPartsTabbed('oil-parts', s.oil_burner_parts || [], 'oil_burner_parts_master');
   renderPartsTabbed('hv-parts',  s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
-  renderSideBySide('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
+  renderPartsTabbed('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
   renderRecuperator(s.recuperator || []);
   renderRadHeat(s.rad_heat || [], s.rad_heat_tata || []);
