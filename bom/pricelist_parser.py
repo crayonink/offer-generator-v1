@@ -1004,29 +1004,28 @@ def _parse_multicolumn_parts(xl, sheet_name, table_name, groups, conn):
     def _row_total(row, base_col):
         total_col  = base_col + 7
         amount_col = base_col + 5
-        qty_col    = base_col + 2
-        rate_col   = base_col + 4
         mc_col     = base_col + 6
-        qty_v = ws_v.cell(row, qty_col).value
-        mc_v  = ws_v.cell(row, mc_col).value
-        qty   = float(qty_v) if qty_v is not None else 0.0
-        mc    = float(mc_v)  if mc_v  is not None else 0.0
-        # Always try live computation first: qty × resolved_rate + mc
-        rate = _resolve(ws_f, row, rate_col)
-        if rate and qty:
-            return qty * rate + mc
-        # Fallback: items with no rate (labour, paint, etc.) — use cached total or amount
-        tf = ws_f.cell(row, total_col).value
-        if isinstance(tf, (int, float)):
-            return float(tf)
+
+        # 1. Prefer cached total — reflects Excel's last-saved state, correct even
+        #    when items include assembly/MC costs not derivable from qty×rate alone
         tv = ws_v.cell(row, total_col).value
         if tv is not None:
             try: return float(tv)
-            except: pass
-        af = ws_v.cell(row, amount_col).value
-        if af is not None:
-            try: return float(af) + mc
-            except: pass
+            except (ValueError, TypeError): pass
+
+        # 2. Hardcoded literal in formula workbook (labour, paint, etc.)
+        tf = ws_f.cell(row, total_col).value
+        if isinstance(tf, (int, float)):
+            return float(tf)
+
+        # 3. Fall back to cached amount + cached mc
+        av   = ws_v.cell(row, amount_col).value
+        mc_v = ws_v.cell(row, mc_col).value
+        mc   = float(mc_v) if mc_v is not None else 0.0
+        if av is not None:
+            try: return float(av) + mc
+            except (ValueError, TypeError): pass
+
         return mc
 
     records = []
@@ -1052,14 +1051,15 @@ def _parse_multicolumn_parts(xl, sheet_name, table_name, groups, conn):
                 continue
             qty_v  = ws_v.cell(row, base_col + 2).value
             unit_v = ws_v.cell(row, base_col + 3).value
-            rate   = _resolve(ws_f, row, base_col + 4)
+            rate_v = ws_v.cell(row, base_col + 4).value   # cached rate
+            rate   = float(rate_v) if rate_v is not None else None
             total  = _row_total(row, base_col)
             records.append({
                 "section":    None,
                 "particular": particular,
                 "qty":        float(qty_v) if qty_v is not None else None,
                 "unit":       str(unit_v).strip() if unit_v else None,
-                "rate":       rate if rate else None,
+                "rate":       rate,
                 "amount":     round(total, 2) if total else None,
             })
 
