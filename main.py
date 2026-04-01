@@ -692,7 +692,7 @@ class RegenCalcRequest(BaseModel):
 def regen_calculate(req: RegenCalcRequest):
     try:
         from calculations.regen import RegenInputs, calculate_regen
-        from bom.regen_builder import build_regen_df
+        from bom.regen_builder import build_regen_df, select_model
 
         result = calculate_regen(RegenInputs(
             material_weight_kg=req.material_weight_kg,
@@ -704,7 +704,12 @@ def regen_calculate(req: RegenCalcRequest):
             num_pairs_override=req.num_pairs_override,
         ))
 
-        bom_df = build_regen_df(result.num_pairs, req.markup)
+        # Select the appropriate KW model (smallest >= required_kw per pair)
+        kw_per_pair = result.required_kw / max(1, result.num_pairs)
+        model_kw    = select_model(kw_per_pair)
+        model_markup = req.markup if req.markup != 1.80 else None  # None → use model default
+
+        bom_df = build_regen_df(model_kw, model_markup, num_pairs=result.num_pairs)
 
         total_cost    = float(bom_df["TOTAL COST"].sum())
         total_selling = float(bom_df["TOTAL SELLING"].sum())
@@ -722,7 +727,8 @@ def regen_calculate(req: RegenCalcRequest):
                 "efficiency": req.efficiency,
                 "required_kw": round(result.required_kw, 2),
                 "num_pairs": result.num_pairs,
-                "total_kw": result.total_kw,
+                "model_kw": model_kw,
+                "total_kw": model_kw * result.num_pairs,
             },
             "bom": bom_df.to_dict(orient="records"),
             "cost_summary": {
