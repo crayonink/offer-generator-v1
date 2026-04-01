@@ -658,30 +658,53 @@ function renderBlowers(data) {
   const el = document.getElementById('sheet-blowers');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const allKeys   = ['model','hp','cfm','nm3_per_hr','pressure','price_without_motor','price_with_motor'];
-  const allLabels = ['Model','HP','CFM','NM³/hr','Pressure','Price w/o Motor (₹)','Price w/ Motor (₹)'];
-  const priceKeys = new Set(['price_without_motor','price_with_motor']);
-  const active = allKeys.map((k, idx) => ({ k, l: allLabels[idx] }))
-    .filter(({ k }) => data.some(r => r[k] != null && r[k] !== ''));
+  // Split into ENCON (price table) and DM/IDM (cost table) sections
+  const enconSections = new Set(['MEDIUM PRESSURE','HIGH PRESSURE']);
+  const dmIdmSections = new Set(['BLOWER DM 40','BLOWER DM 28','BLOWER IDM']);
+
+  const enconData = data.filter(r => enconSections.has(r.section));
+  const dmData    = data.filter(r => dmIdmSections.has(r.section));
+
+  // ENCON table
+  const enconKeys   = ['model','hp','cfm','nm3_per_hr','pressure','price_without_motor','price_with_motor'];
+  const enconLabels = ['Model','HP','CFM','NM³/hr','Pressure','Price w/o Motor (₹)','Price w/ Motor (₹)'];
+  const priceKeys   = new Set(['price_without_motor','price_with_motor']);
 
   let rows = '', lastSec = null, rowNum = 0;
-  data.forEach(r => {
+  enconData.forEach(r => {
     if (!r.model) return;
     if (r.section !== lastSec) {
-      rows += `<tr class="sec-hdr"><td colspan="${active.length+1}">${esc(r.section||'')}</td></tr>`;
+      rows += `<tr class="sec-hdr"><td colspan="${enconKeys.length+1}">${esc(r.section||'')}</td></tr>`;
       lastSec = r.section;
     }
     rowNum++;
-    rows += `<tr><td class="rn">${rowNum}</td>${active.map(({ k }) => {
+    rows += `<tr><td class="rn">${rowNum}</td>${enconKeys.map(k => {
       const v = r[k];
       return priceKeys.has(k) ? `<td style="text-align:right;">${fmt(v)}</td>` : `<td>${esc(v??'')}</td>`;
     }).join('')}</tr>`;
   });
 
-  el.innerHTML = `<div class="ro-wrap"><table class="ro-table">
-    <thead><tr><th class="rn"></th>${active.map(({ l }) => `<th>${l}</th>`).join('')}</tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
+  // DM / IDM table
+  let dmRows = '', lastDmSec = null, dmNum = 0;
+  dmData.forEach(r => {
+    if (!r.model) return;
+    if (r.section !== lastDmSec) {
+      dmRows += `<tr class="sec-hdr"><td colspan="3">${esc(r.section||'')}</td></tr>`;
+      lastDmSec = r.section;
+    }
+    dmNum++;
+    dmRows += `<tr><td class="rn">${dmNum}</td><td>${esc(r.model)}</td><td style="text-align:right;">${fmt(r.total_cost)}</td></tr>`;
+  });
+
+  el.innerHTML = `
+    <div class="ro-wrap" style="margin-bottom:16px;"><table class="ro-table">
+      <thead><tr><th class="rn"></th>${enconKeys.map((k,i) => `<th>${enconLabels[i]}</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    ${dmData.length ? `<div class="ro-wrap"><table class="ro-table">
+      <thead><tr><th class="rn"></th><th style="min-width:120px;text-align:left;">Model</th><th style="min-width:140px;">Total Cost (₹)</th></tr></thead>
+      <tbody>${dmRows}</tbody>
+    </table></div>` : ''}`;
 }
 
 // ── Recuperator ──────────────────────────────────────────────────────────────

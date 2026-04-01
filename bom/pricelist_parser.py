@@ -632,6 +632,72 @@ def parse_blower(xl, conn):
             "perkin_price_w_motor":  fval(r, 12),
         })
 
+    # ── BLOWER DM 40 (direct-mount, 40" WG) — rows 38-44, model col 0, total col 8 ──
+    for r in range(38, 45):
+        model = sval(r, 0)
+        if not model or not re.match(r'^\d', model):
+            continue
+        records.append({
+            "section":             "BLOWER DM 40",
+            "model":               model,
+            "hp":                  None,
+            "cfm":                 None,
+            "nm3_per_hr":          None,
+            "pressure":            None,
+            "price_without_motor": None,
+            "price_with_motor":    None,
+            "blower_weight":       None,
+            "per_kg_amount":       None,
+            "motor_price_abb":     None,
+            "perkin_price_wo_motor": None,
+            "perkin_price_w_motor":  None,
+            "total_cost":          fval(r, 8),
+        })
+
+    # ── BLOWER DM 28 (direct-mount, 28" WG) — rows 38-44, model col 11, total col 19 ──
+    for r in range(38, 45):
+        model = sval(r, 11)
+        if not model or not re.match(r'^\d', model):
+            continue
+        records.append({
+            "section":             "BLOWER DM 28",
+            "model":               model,
+            "hp":                  None,
+            "cfm":                 None,
+            "nm3_per_hr":          None,
+            "pressure":            None,
+            "price_without_motor": None,
+            "price_with_motor":    None,
+            "blower_weight":       None,
+            "per_kg_amount":       None,
+            "motor_price_abb":     None,
+            "perkin_price_wo_motor": None,
+            "perkin_price_w_motor":  None,
+            "total_cost":          fval(r, 19),
+        })
+
+    # ── BLOWER IDM — rows 58-62, model col 0, total col 12 ──
+    for r in range(58, 63):
+        model = sval(r, 0)
+        if not model or not re.match(r'^\d', model):
+            continue
+        records.append({
+            "section":             "BLOWER IDM",
+            "model":               model,
+            "hp":                  None,
+            "cfm":                 None,
+            "nm3_per_hr":          None,
+            "pressure":            None,
+            "price_without_motor": None,
+            "price_with_motor":    None,
+            "blower_weight":       None,
+            "per_kg_amount":       None,
+            "motor_price_abb":     None,
+            "perkin_price_wo_motor": None,
+            "perkin_price_w_motor":  None,
+            "total_cost":          fval(r, 12),
+        })
+
     df_out = pd.DataFrame(records)
     df_out.to_sql("blower_pricelist_master", conn, if_exists="replace", index=False)
 
