@@ -239,7 +239,7 @@ def get_catalog():
         catalog = {
             "Horizontal Ladle Preheater": q("SELECT DISTINCT model as id, model as label FROM horizontal_master"),
             "Vertical Ladle Preheater": q("SELECT DISTINCT model as id, model as label FROM vertical_master"),
-            "Blower": q("SELECT DISTINCT model as id, model as label, section, price_without_motor, price__with_motor, hp FROM blower_pricelist_master WHERE price_without_motor IS NOT NULL ORDER BY section, hp"),
+            "Blower": q("SELECT DISTINCT model as id, model as label, section, price_without_motor, price_with_motor, hp FROM blower_pricelist_master WHERE price_without_motor IS NOT NULL ORDER BY section, hp"),
             "HPU": q("SELECT DISTINCT unit_kw as id, CAST(unit_kw AS TEXT) || ' KW - ' || variant as label, unit_kw, variant FROM hpu_master ORDER BY unit_kw"),
             "Burner (Film)": q("SELECT DISTINCT burner_size as id, burner_size as label, price as base_price FROM burner_pricelist_master WHERE component='BURNER ALONE' AND section LIKE '%FILM%' GROUP BY burner_size"),
             "Burner (Dual Fuel)": q("SELECT DISTINCT burner_size as id, burner_size as label, price as base_price FROM burner_pricelist_master WHERE component='BURNER ALONE' AND section LIKE '%DUAL%' GROUP BY burner_size"),
@@ -279,7 +279,7 @@ def get_price(product_type: str, model: str, qty: int = 1,
                     price += float(amount)
 
         elif product_type == "Blower":
-            col = "price__with_motor" if with_motor else "price_without_motor"
+            col = "price_with_motor" if with_motor else "price_without_motor"
             cursor.execute(f"SELECT {col} FROM blower_pricelist_master WHERE model=? AND {col} IS NOT NULL LIMIT 1", (model,))
             row = cursor.fetchone()
             if row and row[0]:

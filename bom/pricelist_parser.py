@@ -553,46 +553,84 @@ def parse_burner(xl, conn):
 # ─────────────────────────────────────────────────────────────────
 
 def parse_blower(xl, conn):
+    """
+    Blower sheet layout (0-indexed cols):
+      MEDIUM PRESSURE: section header row 1, data rows 3-13
+      HIGH PRESSURE:   section header row 14, data rows 16-25
+
+    Fixed column mapping for ENCON price rows:
+      0=model, 1=hp, 2=cfm, 3=nm3_per_hr, 4=pressure,
+      5=price_without_motor (ENCON selling price w/o motor),
+      6=price_with_motor    (ENCON selling price w/ motor),
+      7=blower_weight, 9=per_kg_amount, 10=motor_price_abb,
+      11=perkin_price_without_motor, 12=perkin_price_with_motor
+
+    Using fixed column indices avoids the misalignment caused by the
+    old non-null stripping approach (which merged sparse columns).
+    """
     sheet = _find_sheet(xl, "blower")
     if sheet is None:
         return {"skipped": "Blower sheet not found"}
 
     df = xl.parse(sheet, header=None)
+
+    def cell(row_idx, col_idx):
+        try:
+            v = df.iloc[row_idx, col_idx]
+            return None if pd.isna(v) else v
+        except IndexError:
+            return None
+
+    def sval(row_idx, col_idx):
+        v = cell(row_idx, col_idx)
+        return str(v).strip() if v is not None else None
+
+    def fval(row_idx, col_idx):
+        return safe_float(cell(row_idx, col_idx))
+
     records = []
-    current_section = None
-    headers = None
 
-    for _, row in df.iterrows():
-        vals_raw = [str(x).strip() if pd.notna(x) else None for x in row]
-        non_null = [v for v in vals_raw if v and v != "nan"]
-        if not non_null:
+    # ── MEDIUM PRESSURE (28" W.G.) — rows 3-13 (0-indexed) ──
+    for r in range(3, 14):
+        model = sval(r, 0)
+        if not model or not model.upper().startswith("ENCON"):
             continue
-        first = non_null[0]
+        records.append({
+            "section":               "MEDIUM PRESSURE",
+            "model":                 model,
+            "hp":                    fval(r, 1),
+            "cfm":                   fval(r, 2),
+            "nm3_per_hr":            fval(r, 3),
+            "pressure":              sval(r, 4),
+            "price_without_motor":   fval(r, 5),
+            "price_with_motor":      fval(r, 6),
+            "blower_weight":         fval(r, 7),
+            "per_kg_amount":         fval(r, 9),
+            "motor_price_abb":       fval(r, 10),
+            "perkin_price_wo_motor": fval(r, 11),
+            "perkin_price_w_motor":  fval(r, 12),
+        })
 
-        if first.upper() in ("MEDIUM PRESSURE", "HIGH PRESSURE", "BLOWER IDM") or \
-           ("BLOWER" in first.upper() and "ENCON" not in first.upper() and len(non_null) == 1):
-            current_section = first.upper()
-            headers = None
+    # ── HIGH PRESSURE (40" W.G.) — rows 16-25 (0-indexed) ──
+    for r in range(16, 26):
+        model = sval(r, 0)
+        if not model or not model.upper().startswith("ENCON"):
             continue
-
-        if first.upper().startswith("NOTE") or first.startswith("("):
-            continue
-
-        if first.upper() == "MODEL" or "MODEL" in first.upper():
-            headers = [v for v in non_null if v]
-            continue
-
-        if headers and current_section and (first.upper().startswith("ENCON") or re.match(r'^\d+', first)):
-            data_vals = [v for v in non_null if v]
-            if len(data_vals) < 2:
-                continue
-            rec = {"section": current_section, "model": data_vals[0]}
-            for i, h in enumerate(headers[1:], 1):
-                if i < len(data_vals):
-                    f = safe_float(data_vals[i])
-                    col = h.lower().replace(" ", "_").replace("/", "_per_").replace(".", "")[:40]
-                    rec[col] = f if f is not None else data_vals[i]
-            records.append(rec)
+        records.append({
+            "section":               "HIGH PRESSURE",
+            "model":                 model,
+            "hp":                    fval(r, 1),
+            "cfm":                   fval(r, 2),
+            "nm3_per_hr":            fval(r, 3),
+            "pressure":              sval(r, 4),
+            "price_without_motor":   fval(r, 5),
+            "price_with_motor":      fval(r, 6),
+            "blower_weight":         fval(r, 7),
+            "per_kg_amount":         fval(r, 9),
+            "motor_price_abb":       fval(r, 10),
+            "perkin_price_wo_motor": fval(r, 11),
+            "perkin_price_w_motor":  fval(r, 12),
+        })
 
     df_out = pd.DataFrame(records)
     df_out.to_sql("blower_pricelist_master", conn, if_exists="replace", index=False)

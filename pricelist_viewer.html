@@ -658,9 +658,9 @@ function renderBlowers(data) {
   const el = document.getElementById('sheet-blowers');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const allKeys   = ['model','hp','cfm','nm3_per_hr','pressure_mbar','price_without_motor','price__with_motor'];
-  const allLabels = ['Model','HP','CFM','NM³/hr','Pressure (mbar)','Price w/o Motor (₹)','Price w/ Motor (₹)'];
-  const priceKeys = new Set(['price_without_motor','price__with_motor']);
+  const allKeys   = ['model','hp','cfm','nm3_per_hr','pressure','price_without_motor','price_with_motor'];
+  const allLabels = ['Model','HP','CFM','NM³/hr','Pressure','Price w/o Motor (₹)','Price w/ Motor (₹)'];
+  const priceKeys = new Set(['price_without_motor','price_with_motor']);
   const active = allKeys.map((k, idx) => ({ k, l: allLabels[idx] }))
     .filter(({ k }) => data.some(r => r[k] != null && r[k] !== ''));
 
