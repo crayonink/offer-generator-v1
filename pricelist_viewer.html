@@ -882,29 +882,25 @@ function renderStockRates(data) {
     const bg = sectionColors[si % sectionColors.length];
     const hdrBorder = '2px solid #2E75B6';
     const hdrRows = [`<tr class="section-hdr" style="background:${bg};border-top:${hdrBorder};">
-      <td></td><td colspan="4" style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1a3a5c;">${esc(sec.section)}</td>
+      <td></td><td colspan="2" style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1a3a5c;">${esc(sec.section)}</td>
     </tr>`];
     const itemRows = (sec.items || []).map(item => {
       rowNum++;
       return `<tr>
         <td class="rn">${rowNum}</td>
         <td class="item-cell">${esc(item.name)}</td>
-        <td class="num-cell">${item.qty != null ? fmt(item.qty) : ''}</td>
         <td class="num-cell" style="font-weight:600;color:#1a5276;">₹&nbsp;${item.rate != null ? fmt(item.rate) : '—'}</td>
-        <td class="num-cell">₹&nbsp;${item.value != null ? fmt(item.value) : ''}</td>
       </tr>`;
     });
     return [...hdrRows, ...itemRows];
   });
 
-  el.innerHTML = `<div class="xl-wrap"><table class="xl-table" style="min-width:640px;">
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table" style="min-width:400px;">
     <thead>
       <tr>
         <th class="rn top-header">#</th>
         <th class="item-th top-header" style="text-align:left;">Item Name</th>
-        <th class="top-header" style="min-width:90px;">Qty</th>
-        <th class="top-header" style="min-width:110px;">Rate (₹)</th>
-        <th class="top-header" style="min-width:120px;">Value (₹)</th>
+        <th class="top-header" style="min-width:120px;">Rate (₹)</th>
       </tr>
     </thead>
     <tbody>${rows.join('')}</tbody>
