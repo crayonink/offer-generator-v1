@@ -125,24 +125,95 @@
       background: #eff6ff; border-radius: 6px;
     }
 
-    /* ── Supplementary tabs ── */
-    .supp-tab {
-      padding: 12px 20px; font-size: .82rem; font-weight: 600; font-family: inherit;
-      background: none; border: none; border-bottom: 2px solid transparent;
-      color: var(--muted); cursor: pointer; transition: all .15s;
+    /* ── Excel workbook UI ── */
+    .xl-workbook {
+      border: 1px solid #bfbfbf; border-radius: 0; background: #fff;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12); font-family: 'Calibri', 'Inter', sans-serif;
+      margin-bottom: 20px; overflow: hidden;
     }
-    .supp-tab:hover { color: var(--navy); }
-    .supp-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: #fff; }
+    /* Title bar */
+    .xl-titlebar {
+      background: #217346; color: #fff;
+      padding: 6px 14px; font-size: .8rem; font-weight: 600; letter-spacing: .2px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .xl-titlebar .xl-logo {
+      background: #fff; color: #217346; font-weight: 900; font-size: .65rem;
+      padding: 2px 5px; border-radius: 2px;
+    }
+    /* Formula bar */
+    .xl-formulabar {
+      background: #f2f2f2; border-bottom: 1px solid #d0d0d0;
+      display: flex; align-items: center; gap: 0; height: 26px;
+    }
+    .xl-namebox {
+      width: 72px; min-width: 72px; background: #fff; border-right: 1px solid #d0d0d0;
+      font-size: .75rem; color: #333; text-align: center; padding: 0 6px;
+      height: 100%; display: flex; align-items: center; justify-content: center;
+      font-family: 'Calibri', sans-serif;
+    }
+    .xl-fx {
+      color: #217346; font-size: .78rem; font-style: italic; font-weight: 700;
+      padding: 0 8px; border-right: 1px solid #d0d0d0; height: 100%;
+      display: flex; align-items: center;
+    }
+    .xl-formulainput {
+      flex: 1; font-size: .78rem; color: #333; padding: 0 10px;
+      font-family: 'Calibri', sans-serif; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* Sheet content */
+    .xl-content { overflow-x: auto; background: #fff; }
+    /* Grid table */
+    .xl-grid {
+      border-collapse: collapse; font-size: .8rem; font-family: 'Calibri', sans-serif;
+      width: 100%; min-width: 700px;
+    }
+    .xl-grid .xl-col-header {
+      background: #f2f2f2; color: #666; font-weight: 600; font-size: .72rem;
+      text-align: center; border: 1px solid #d0d0d0; padding: 2px 8px;
+      min-width: 40px; white-space: nowrap;
+    }
+    .xl-grid .xl-row-num {
+      background: #f2f2f2; color: #666; font-size: .72rem; text-align: right;
+      border: 1px solid #d0d0d0; padding: 2px 6px; min-width: 32px; user-select: none;
+    }
+    .xl-grid td {
+      border: 1px solid #d0d0d0; padding: 2px 8px; white-space: nowrap;
+      height: 20px; vertical-align: middle;
+    }
+    .xl-grid td.xl-r { text-align: right; font-variant-numeric: tabular-nums; }
+    .xl-grid tr.xl-section td {
+      background: #d9e1f2; font-weight: 700; font-size: .78rem; color: #1a3a5c;
+    }
+    .xl-grid tr.xl-label td { background: #e2efda; font-weight: 600; }
+    .xl-grid tr.xl-total td { background: #e2efda; font-weight: 700; color: #375623; }
+    .xl-grid tr.xl-highlight td { background: #fff2cc; font-weight: 700; }
+    .xl-grid tr:hover td { background: #e8f4ff; }
+    .xl-grid tr.xl-section:hover td { background: #c6d0e8; }
+    .xl-grid tr.xl-total:hover td { background: #c8e0b5; }
+    .xl-grid tr.xl-highlight:hover td { background: #ffe699; }
+    /* Sheet tabs */
+    .xl-tabs {
+      background: #d0d0d0; border-top: 1px solid #bfbfbf;
+      display: flex; align-items: flex-end; gap: 0; padding: 0 4px; overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .xl-tabs::-webkit-scrollbar { display: none; }
+    .xl-tab {
+      padding: 5px 16px 4px; font-size: .76rem; font-weight: 600; cursor: pointer;
+      background: #bdbdbd; color: #444; border: 1px solid #aeaeae;
+      border-bottom: none; border-radius: 3px 3px 0 0; margin-right: 2px;
+      font-family: 'Calibri', 'Inter', sans-serif; white-space: nowrap;
+      transition: background .12s; user-select: none; margin-top: 4px;
+    }
+    .xl-tab:hover { background: #d4d4d4; color: #222; }
+    .xl-tab.active { background: #fff; color: #217346; border-color: #bfbfbf; margin-top: 0; padding-top: 7px; }
+    .xl-sheet { display: none; }
+    .xl-sheet.active { display: block; }
+    /* supp-panel hidden class kept for compat */
     .supp-panel { display: none; }
     .supp-panel.active { display: block; }
-    .supp-table { width: 100%; border-collapse: collapse; font-size: .83rem; margin-top: 12px; }
-    .supp-table th { background: var(--navy); color: #fff; padding: 8px 12px; text-align: left; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-    .supp-table th.r { text-align: right; }
-    .supp-table td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; }
-    .supp-table td.r { text-align: right; font-variant-numeric: tabular-nums; }
-    .supp-table tr:hover td { background: #f8fafc; }
-    .supp-table tr.total-row td { background: #f0fdf4; font-weight: 700; color: #065f46; }
-    .supp-table tr.highlight td { background: #eff6ff; font-weight: 700; color: #1d4ed8; }
 
     /* ── BOM table ── */
     .bom-wrap { overflow-x: auto; margin-top: 16px; border-radius: 10px; border: 1px solid var(--border); }
@@ -403,45 +474,34 @@
       </div>
     </div>
 
-    <!-- Process calc results -->
-    <div class="card">
-      <div class="card-title">Process Calculations</div>
-      <table class="calc-table" id="calcResultTable"></table>
-    </div>
-
-    <!-- Supplementary tabs -->
-    <div class="card" style="padding:0; overflow:hidden;">
-      <div style="display:flex; border-bottom:1.5px solid var(--border); background:#f8fafc;">
-        <button class="supp-tab active" onclick="suppTab('burner-sizing', this)">Burner Sizing &amp; Costing</button>
-        <button class="supp-tab"        onclick="suppTab('pipe-sizes',     this)">Pipe Sizes</button>
-        <button class="supp-tab"        onclick="suppTab('blower',         this)">Blower Selection</button>
+    <!-- Excel Workbook UI -->
+    <div class="xl-workbook">
+      <!-- Title bar -->
+      <div class="xl-titlebar">
+        <span class="xl-logo">X</span>
+        <span id="xlTitle">Regen Costing — ENCON</span>
       </div>
-      <div style="padding:24px 28px;">
-        <div class="supp-panel active" id="supp-burner-sizing"></div>
-        <div class="supp-panel"        id="supp-pipe-sizes"></div>
-        <div class="supp-panel"        id="supp-blower"></div>
+      <!-- Formula bar -->
+      <div class="xl-formulabar">
+        <div class="xl-namebox" id="xlNameBox">A1</div>
+        <div class="xl-fx">fx</div>
+        <div class="xl-formulainput" id="xlFormula">&nbsp;</div>
       </div>
-    </div>
-
-    <!-- BOM -->
-    <div class="card">
-      <div class="card-title">Bill of Materials</div>
-      <div class="bom-wrap">
-        <table class="bom-table">
-          <thead>
-            <tr>
-              <th>Section</th>
-              <th>Item Name</th>
-              <th>Specification</th>
-              <th class="num">Qty</th>
-              <th class="num">Cost/Unit ₹</th>
-              <th class="num">Total Cost ₹</th>
-              <th class="num">Sell/Unit ₹</th>
-              <th class="num">Total Selling ₹</th>
-            </tr>
-          </thead>
-          <tbody id="bomBody"></tbody>
-        </table>
+      <!-- Sheet panels -->
+      <div class="xl-content" style="min-height:320px;">
+        <div class="xl-sheet active" id="xl-calc"><div style="padding:16px;color:#888;font-size:.82rem;">Loading…</div></div>
+        <div class="xl-sheet"        id="xl-burner-sizing"></div>
+        <div class="xl-sheet"        id="xl-pipe-sizes"></div>
+        <div class="xl-sheet"        id="xl-blower"></div>
+        <div class="xl-sheet"        id="xl-bom"></div>
+      </div>
+      <!-- Sheet tabs -->
+      <div class="xl-tabs">
+        <div class="xl-tab active" onclick="xlTab('calc',         this)" id="xtab-calc">Process Calc</div>
+        <div class="xl-tab"        onclick="xlTab('burner-sizing',this)" id="xtab-burner-sizing">Burner Sizing</div>
+        <div class="xl-tab"        onclick="xlTab('pipe-sizes',   this)" id="xtab-pipe-sizes">Pipe Sizes</div>
+        <div class="xl-tab"        onclick="xlTab('blower',       this)" id="xtab-blower">Blower</div>
+        <div class="xl-tab"        onclick="xlTab('bom',          this)" id="xtab-bom">Costing (BOM)</div>
       </div>
     </div>
 
@@ -562,91 +622,40 @@
     }
   }
 
-  // ── Supplementary tab switcher ───────────────────────────────────────────
-  function suppTab(id, btn) {
-    document.querySelectorAll('.supp-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.supp-panel').forEach(p => p.classList.remove('active'));
+  // ── Excel workbook tab switcher ──────────────────────────────────────────
+  function xlTab(id, btn) {
+    document.querySelectorAll('.xl-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.xl-sheet').forEach(s => s.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('supp-' + id).classList.add('active');
+    document.getElementById('xl-' + id).classList.add('active');
+    // Update name box
+    const names = {'calc':'A1','burner-sizing':'C3','pipe-sizes':'B9','blower':'B2','bom':'A3'};
+    document.getElementById('xlNameBox').textContent = names[id] || 'A1';
   }
 
-  // ── Render supplementary panels ──────────────────────────────────────────
-  function renderSupplementary(supp) {
-    const bs = supp.burner_sizing;
-    const ps = supp.pipe_sizes;
-    const bl = supp.blower_selection;
-    const cat = supp.blower_catalogue;
-
-    // ── Burner Sizing & Costing ──
-    const rates = bs.material_rates;
-    document.getElementById('supp-burner-sizing').innerHTML = `
-      <div style="margin-bottom:18px;">
-        <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">Material Rates (with 10% wastage)</div>
-        <table class="supp-table" style="max-width:500px;">
-          <thead><tr><th>Material</th><th class="r">Material ₹/kg</th><th class="r">Labour ₹/kg</th><th class="r">Total ₹/kg</th></tr></thead>
-          <tbody>
-            <tr><td>MS</td><td class="r">50</td><td class="r">25</td><td class="r">${rates.ms}</td></tr>
-            <tr><td>SS</td><td class="r">50</td><td class="r">25</td><td class="r">${rates.ss}</td></tr>
-            <tr><td>Refractory</td><td class="r">56</td><td class="r">25</td><td class="r">${rates.refractory}</td></tr>
-            <tr><td>Ceramic Balls</td><td class="r">125</td><td class="r">—</td><td class="r">${rates.ceramic_balls}</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div>
-        <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">Burner + Regenerator Cost Breakdown — ${bs.kw} KW (per unit)</div>
-        <table class="supp-table">
-          <thead><tr><th>Component</th><th>Material</th><th class="r">Weight (kg)</th><th class="r">Rate ₹/kg</th><th class="r">Cost ₹</th></tr></thead>
-          <tbody>
-            ${bs.cost_detail.map(d => `<tr><td>${d.component}</td><td>${d.material}</td><td class="r">${fmtN(d.weight_kg)}</td><td class="r">${d.rate}</td><td class="r">${fmtN(d.cost)}</td></tr>`).join('')}
-            <tr class="total-row"><td colspan="4" style="text-align:right;">Total per unit</td><td class="r">${fmtN(bs.total_unit_cost)}</td></tr>
-            <tr class="total-row"><td colspan="4" style="text-align:right;">Total per pair (×2)</td><td class="r">${fmtN(bs.total_pair_cost)}</td></tr>
-          </tbody>
-        </table>
-      </div>`;
-
-    // ── Pipe Sizes ──
-    document.getElementById('supp-pipe-sizes').innerHTML = `
-      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">
-        Line Sizes — ${ps.fuel} @ ${ps.pressure}
-      </div>
-      <table class="supp-table" style="max-width:700px;">
-        <thead><tr><th>Parameter</th><th class="r">Value</th></tr></thead>
-        <tbody>
-          <tr><td>NG Flow Rate</td><td class="r">${ps.ng_flow_nm3hr} Nm³/hr</td></tr>
-          <tr><td>Air Flow Rate</td><td class="r">${ps.air_flow_nm3hr} Nm³/hr</td></tr>
-          <tr><td>Total Flue Gas</td><td class="r">${ps.flue_flow_nm3hr} Nm³/hr</td></tr>
-          <tr class="highlight"><td>Air Line DN</td><td class="r">DN ${ps.air_line_dn}</td></tr>
-          <tr class="highlight"><td>Gas Line DN</td><td class="r">DN ${ps.gas_line_dn}</td></tr>
-          <tr class="highlight"><td>Flue Gas Line DN</td><td class="r">DN ${ps.flue_line_dn}</td></tr>
-        </tbody>
-      </table>`;
-
-    // ── Blower Selection ──
-    const selModel = bl.selected_model;
-    document.getElementById('supp-blower').innerHTML = `
-      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">
-        Selected Blower for ${bl.kw} KW — ${bl.hp} × ${bl.qty_per_pair} units per pair
-      </div>
-      <table class="supp-table" style="max-width:500px;margin-bottom:24px;">
-        <thead><tr><th>Parameter</th><th class="r">Value</th></tr></thead>
-        <tbody>
-          <tr><td>Model</td><td class="r">${bl.selected_model}</td></tr>
-          <tr><td>HP</td><td class="r">${bl.hp}</td></tr>
-          <tr><td>CFM</td><td class="r">${bl.cfm}</td></tr>
-          <tr><td>Flow Rate</td><td class="r">${fmtN(bl.nm3hr)} Nm³/hr</td></tr>
-          <tr><td>Price without motor</td><td class="r">${fmtN(bl.price_without_motor)}</td></tr>
-          <tr><td>Price with motor</td><td class="r">${fmtN(bl.price_with_motor)}</td></tr>
-          <tr class="highlight"><td>Costing price used</td><td class="r">${fmtN(bl.costing_price)}</td></tr>
-        </tbody>
-      </table>
-      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">ENCON 40" WG Blower Catalogue</div>
-      <table class="supp-table">
-        <thead><tr><th>Model</th><th class="r">HP</th><th class="r">CFM</th><th class="r">Nm³/hr</th><th class="r">Price w/o Motor ₹</th><th class="r">Price with Motor ₹</th></tr></thead>
-        <tbody>${cat.map(b => `<tr${b.model===selModel?' class="highlight"':''}><td>${b.model}</td><td class="r">${b.hp}</td><td class="r">${b.cfm}</td><td class="r">${fmtN(b.nm3hr)}</td><td class="r">${fmtN(b.price_without_motor)}</td><td class="r">${fmtN(b.price_with_motor)}</td></tr>`).join('')}</tbody>
-      </table>`;
+  // ── Build Excel-style grid HTML ──────────────────────────────────────────
+  function xlGrid(colHeaders, rows) {
+    const cols = colHeaders.length;
+    const colLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let h = `<table class="xl-grid"><thead><tr><th class="xl-col-header" style="width:32px;"></th>`;
+    for (let i = 0; i < cols; i++) h += `<th class="xl-col-header">${colLetters[i]}</th>`;
+    h += '</tr></thead><tbody>';
+    rows.forEach((row, ri) => {
+      const cls = row._class ? ` class="${row._class}"` : '';
+      h += `<tr${cls}><td class="xl-row-num">${ri + 1}</td>`;
+      row.cells.forEach(c => {
+        const align = c.r ? ' class="xl-r"' : '';
+        const span  = c.span ? ` colspan="${c.span}"` : '';
+        h += `<td${align}${span}>${c.v === null || c.v === undefined ? '' : c.v}</td>`;
+      });
+      h += '</tr>';
+    });
+    return h + '</tbody></table>';
   }
+  function xc(v, r=false) { return {v, r}; }
+  function xs(v, span, r=false) { return {v, span, r}; }
 
-  // ── Render step-3 results ────────────────────────────────────────────────
+  // ── Render all Excel sheets ──────────────────────────────────────────────
   function renderResults(data) {
     const c = data.calculations;
     const s = data.cost_summary;
@@ -658,54 +667,119 @@
     document.getElementById('bannerSell').textContent  = fmt(s.total_selling);
     document.getElementById('bannerMarkup').textContent = 'at ' + s.markup.toFixed(2) + '× markup';
 
-    // Calc table
-    const rows = [
-      ['Material Weight',            c.material_weight_kg.toLocaleString('en-IN') + ' kg'],
-      ['Temperature Rise (ΔT)',       c.delta_T + ' °C  (' + c.Ti + ' → ' + c.Tf + ' °C)'],
-      ['Specific Heat (Cp)',          c.Cp + ' kJ/kg·°C'],
-      ['Heat Required',              fmtN(c.heat_required_kj) + ' kJ  (' + fmtN(c.heat_required_kcal) + ' kcal)'],
-      ['Cycle Time',                 c.cycle_time_hr + ' hr'],
-      ['Thermal Efficiency',         (c.efficiency * 100).toFixed(0) + '%'],
-      ['Required Power',             fmtN(c.required_kw) + ' kW'],
-      ['Model Selected',              c.model_kw + ' KW per pair'],
-      ['No. of Pairs Selected',      c.num_pairs + ' × ' + c.model_kw + ' KW  =  ' + c.total_kw + ' KW'],
+    // Update workbook title
+    document.getElementById('xlTitle').textContent = `Regen Costing — ${c.num_pairs} × ${c.model_kw} KW`;
+
+    // ── Sheet 1: Process Calc ─────────────────────────────────────────────
+    const calcRows = [
+      {_class:'xl-section', cells:[xs('PROCESS CALCULATIONS', 2)]},
+      {cells:[xc('Parameter'), xc('Value')]},
+      {_class:'xl-label', cells:[xc('Material Weight'), xc(c.material_weight_kg.toLocaleString('en-IN') + ' kg', true)]},
+      {cells:[xc('Temperature Rise (ΔT)'), xc(c.delta_T + ' °C  (' + c.Ti + ' → ' + c.Tf + ' °C)', true)]},
+      {_class:'xl-label', cells:[xc('Specific Heat (Cp)'), xc(c.Cp + ' kJ/kg·°C', true)]},
+      {cells:[xc('Heat Required'), xc(fmtN(c.heat_required_kj) + ' kJ  (' + fmtN(c.heat_required_kcal) + ' kcal)', true)]},
+      {_class:'xl-label', cells:[xc('Cycle Time'), xc(c.cycle_time_hr + ' hr', true)]},
+      {cells:[xc('Thermal Efficiency'), xc((c.efficiency*100).toFixed(0) + '%', true)]},
+      {_class:'xl-label', cells:[xc('Required Power'), xc(fmtN(c.required_kw) + ' kW', true)]},
+      {cells:[xc('Model Selected'), xc(c.model_kw + ' KW per pair', true)]},
+      {_class:'xl-total', cells:[xc('No. of Pairs Selected'), xc(c.num_pairs + ' × ' + c.model_kw + ' KW = ' + c.total_kw + ' KW total', true)]},
+      {cells:[xc(''), xc('')]},
+      {_class:'xl-section', cells:[xs('COST SUMMARY', 2)]},
+      {cells:[xc('Total Cost Price'), xc('₹ ' + fmtN(s.total_cost), true)]},
+      {_class:'xl-label', cells:[xc('Markup'), xc(s.markup.toFixed(2) + '×', true)]},
+      {_class:'xl-total', cells:[xc('Total Selling Price'), xc('₹ ' + fmtN(s.total_selling), true)]},
     ];
-    document.getElementById('calcResultTable').innerHTML =
-      rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+    document.getElementById('xl-calc').innerHTML = xlGrid(['A','B'], calcRows);
 
-    // BOM
-    const tbody = document.getElementById('bomBody');
-    let lastSection = null;
-    tbody.innerHTML = data.bom.map(row => {
-      let out = '';
-      if (row['SECTION'] !== lastSection) {
-        lastSection = row['SECTION'];
-        out += `<tr class="section-header"><td colspan="8">${row['SECTION']}</td></tr>`;
-      }
-      out += `<tr>
-        <td></td>
-        <td>${row['ITEM NAME']}</td>
-        <td style="color:#64748b;font-size:.8rem;">${row['SPECIFICATION']}</td>
-        <td class="num">${row['QTY']}</td>
-        <td class="num">${fmtN(row['COST/UNIT'])}</td>
-        <td class="num">${fmtN(row['TOTAL COST'])}</td>
-        <td class="num">${fmtN(row['SELL/UNIT'])}</td>
-        <td class="sell-total">${fmtN(row['TOTAL SELLING'])}</td>
-      </tr>`;
-      return out;
-    }).join('');
+    // ── Sheet 2: Burner Sizing ────────────────────────────────────────────
+    if (data.supplementary) {
+      const bs = data.supplementary.burner_sizing;
+      const rates = bs.material_rates;
+      const bsRows = [
+        {_class:'xl-section', cells:[xs('BURNER + REGENERATOR SIZING & COSTING — ' + bs.kw + ' KW (per unit)', 5)]},
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('MATERIAL RATES (with 10% wastage)', 5)]},
+        {_class:'xl-label', cells:[xc('Material'), xc('Mat. ₹/kg',true), xc('Labour ₹/kg',true), xc('Total ₹/kg',true), xc('')]},
+        {cells:[xc('MS'), xc('50',true), xc('25',true), xc(rates.ms,true), xc('')]},
+        {cells:[xc('SS'), xc('50',true), xc('25',true), xc(rates.ss,true), xc('')]},
+        {cells:[xc('Refractory'), xc('56',true), xc('25',true), xc(rates.refractory,true), xc('')]},
+        {cells:[xc('Ceramic Balls'), xc('125',true), xc('—',true), xc(rates.ceramic_balls,true), xc('')]},
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('COST BREAKDOWN (per unit)', 5)]},
+        {_class:'xl-label', cells:[xc('Component'), xc('Material'), xc('Weight (kg)',true), xc('Rate ₹/kg',true), xc('Cost ₹',true)]},
+        ...bs.cost_detail.map((d,i) => ({
+          _class: i%2===0 ? '' : 'xl-label',
+          cells:[xc(d.component), xc(d.material), xc(fmtN(d.weight_kg),true), xc(d.rate,true), xc(fmtN(d.cost),true)]
+        })),
+        {_class:'xl-total', cells:[xs('Total per unit',4,true), xc(fmtN(bs.total_unit_cost),true)]},
+        {_class:'xl-total', cells:[xs('Total per pair (×2)',4,true), xc(fmtN(bs.total_pair_cost),true)]},
+      ];
+      document.getElementById('xl-burner-sizing').innerHTML = xlGrid(['A','B','C','D','E'], bsRows);
 
-    // Totals row
-    tbody.innerHTML += `
-      <tr style="background:#f0fdf4; font-weight:700;">
-        <td colspan="5" style="text-align:right; padding:10px 12px; font-size:.85rem; color:#065f46;">GRAND TOTAL</td>
-        <td class="num" style="color:#065f46; font-size:.95rem;">${fmtN(s.total_cost)}</td>
-        <td></td>
-        <td class="sell-total" style="color:#1d4ed8; font-size:.95rem;">${fmtN(s.total_selling)}</td>
-      </tr>`;
+      // ── Sheet 3: Pipe Sizes ─────────────────────────────────────────────
+      const ps = data.supplementary.pipe_sizes;
+      const psRows = [
+        {_class:'xl-section', cells:[xs('LINE SIZES — ' + ps.fuel + ' @ ' + ps.pressure, 2)]},
+        {cells:[xc(''), xc('')]},
+        {_class:'xl-label', cells:[xc('Parameter'), xc('Value',true)]},
+        {cells:[xc('Burner KW'), xc(ps.kw + ' KW',true)]},
+        {cells:[xc('NG Flow Rate'), xc(ps.ng_flow_nm3hr + ' Nm³/hr',true)]},
+        {cells:[xc('Air Flow Rate'), xc(ps.air_flow_nm3hr + ' Nm³/hr',true)]},
+        {cells:[xc('Total Flue Gas'), xc(ps.flue_flow_nm3hr + ' Nm³/hr',true)]},
+        {cells:[xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('SELECTED LINE SIZES', 2)]},
+        {_class:'xl-highlight', cells:[xc('Air Line DN'), xc('DN ' + ps.air_line_dn,true)]},
+        {_class:'xl-highlight', cells:[xc('Gas Line DN'), xc('DN ' + ps.gas_line_dn,true)]},
+        {_class:'xl-highlight', cells:[xc('Flue Gas Line DN'), xc('DN ' + ps.flue_line_dn,true)]},
+      ];
+      document.getElementById('xl-pipe-sizes').innerHTML = xlGrid(['A','B'], psRows);
 
-    // Supplementary panels
-    if (data.supplementary) renderSupplementary(data.supplementary);
+      // ── Sheet 4: Blower ─────────────────────────────────────────────────
+      const bl = data.supplementary.blower_selection;
+      const cat = data.supplementary.blower_catalogue;
+      const selModel = bl.selected_model;
+      const blRows = [
+        {_class:'xl-section', cells:[xs('BLOWER SELECTION — ' + bl.kw + ' KW  (' + bl.hp + ' × ' + bl.qty_per_pair + ' per pair)', 6)]},
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('SELECTED BLOWER', 6)]},
+        {_class:'xl-highlight', cells:[xc('Model'), xs(bl.selected_model,5)]},
+        {cells:[xc('HP'), xs(bl.hp,5)]},
+        {cells:[xc('CFM'), xs(bl.cfm,5,true)]},
+        {cells:[xc('Flow Rate'), xs(fmtN(bl.nm3hr) + ' Nm³/hr',5,true)]},
+        {cells:[xc('Price w/o Motor'), xs('₹ '+fmtN(bl.price_without_motor),5,true)]},
+        {cells:[xc('Price with Motor'), xs('₹ '+fmtN(bl.price_with_motor),5,true)]},
+        {_class:'xl-total', cells:[xc('Costing Price Used'), xs('₹ '+fmtN(bl.costing_price),5,true)]},
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('ENCON 40" WG BLOWER CATALOGUE', 6)]},
+        {_class:'xl-label', cells:[xc('Model'), xc('HP',true), xc('CFM',true), xc('Nm³/hr',true), xc('Price w/o Motor ₹',true), xc('Price with Motor ₹',true)]},
+        ...cat.map(b => ({
+          _class: b.model===selModel ? 'xl-highlight' : '',
+          cells:[xc(b.model), xc(b.hp,true), xc(b.cfm,true), xc(fmtN(b.nm3hr),true), xc(fmtN(b.price_without_motor),true), xc(fmtN(b.price_with_motor),true)]
+        })),
+      ];
+      document.getElementById('xl-blower').innerHTML = xlGrid(['A','B','C','D','E','F'], blRows);
+    }
+
+    // ── Sheet 5: Costing (BOM) ────────────────────────────────────────────
+    const bomHdr = {_class:'xl-label', cells:[xc('S.No.'), xc('Section'), xc('Item Name'), xc('Specification'), xc('Qty',true), xc('Cost/Unit ₹',true), xc('Total Cost ₹',true), xc('Sell/Unit ₹',true), xc('Total Selling ₹',true)]};
+    let sno = 0;
+    const bomRows = [
+      {_class:'xl-section', cells:[xs('BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM',9)]},
+      bomHdr,
+      ...data.bom.map(row => {
+        sno++;
+        return {cells:[xc(sno,true), xc(row['SECTION']), xc(row['ITEM NAME']), xc(row['SPECIFICATION']), xc(row['QTY'],true), xc(fmtN(row['COST/UNIT']),true), xc(fmtN(row['TOTAL COST']),true), xc(fmtN(row['SELL/UNIT']),true), xc(fmtN(row['TOTAL SELLING']),true)]};
+      }),
+      {_class:'xl-total', cells:[xs('GRAND TOTAL',6,true), xc(fmtN(s.total_cost),true), xc('',true), xc(fmtN(s.total_selling),true)]},
+    ];
+    document.getElementById('xl-bom').innerHTML = xlGrid(['A','B','C','D','E','F','G','H','I'], bomRows);
+    // Update formula bar when BOM tab focused
+    document.getElementById('xlFormula').textContent = '=SUM(G3:G' + (data.bom.length+2) + ')';
+
+    // Supplementary panels (kept for compat)
+    if (data.supplementary) {
+      // panels already rendered above into xl- elements
+    }
 
     // Step 4 summary
     document.getElementById('offerSummary').innerHTML = `
