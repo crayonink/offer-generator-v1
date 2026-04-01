@@ -212,6 +212,7 @@
   <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-stock-rates">   <div class="empty-msg">Loading...</div></div>
 </div>
 
 <!-- Bottom Excel-style Sheet Tabs -->
@@ -229,6 +230,7 @@
     <div class="tab"        data-sheet="hlph"        onclick="switchTab('hlph')">Horizontal</div>
     <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
     <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
+    <div class="tab"        data-sheet="stock-rates"   onclick="switchTab('stock-rates')">Stock Rates</div>
   </div>
 </div>
 
@@ -290,12 +292,14 @@ async function loadAll() {
   icon.classList.add('spin');
   setStatus('Fetching data...');
   try {
-    const [summary, rates] = await Promise.all([
+    const [summary, rates, stock] = await Promise.all([
       fetch('/api/pricelist-summary').then(r => r.json()),
       fetch('/api/pricelist/rates').then(r => r.json()),
+      fetch('/api/stock-rates').then(r => r.json()),
     ]);
     DATA.summary = summary;
     DATA.rates = rates;
+    DATA.stock = stock;
     renderAll();
     setStatus('Loaded', `${Array.isArray(rates) ? rates.length : 0} rate entries`);
   } catch (e) {
@@ -318,6 +322,7 @@ function renderAll() {
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
   renderBurnerPivot('burner-prices', s.burners || {});
+  renderStockRates(DATA.stock || {});
 }
 
 // ── Status bar ─────────────────────────────────────────────────────────────
@@ -860,6 +865,56 @@ function renderBurnerPivot(sheetId, burners) {
       ${tables}
     </div>`;
   }).join('');
+}
+
+// ── Stock Rates ─────────────────────────────────────────────────────────────
+function renderStockRates(data) {
+  const el = document.getElementById('sheet-stock-rates');
+  if (data.error) { el.innerHTML = emptyMsg('Stock file not found — upload Stock*.xlsx'); return; }
+  const sections = data.sections || [];
+  if (!sections.length) { el.innerHTML = emptyMsg('No stock data'); return; }
+
+  // Section colour palette (cycles)
+  const sectionColors = ['#D6EAF8','#D5F5E3','#FDEBD0','#EBD5F8','#F9EBEA','#D1F2EB','#FEF9E7','#EBF5FB'];
+
+  let rowNum = 0;
+  const rows = sections.flatMap((sec, si) => {
+    const bg = sectionColors[si % sectionColors.length];
+    const hdrBorder = '2px solid #2E75B6';
+    const hdrRows = [`<tr class="section-hdr" style="background:${bg};border-top:${hdrBorder};">
+      <td></td><td colspan="4" style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#1a3a5c;">${esc(sec.section)}</td>
+    </tr>`];
+    const itemRows = (sec.items || []).map(item => {
+      rowNum++;
+      return `<tr>
+        <td class="rn">${rowNum}</td>
+        <td class="item-cell">${esc(item.name)}</td>
+        <td class="num-cell">${item.qty != null ? fmt(item.qty) : ''}</td>
+        <td class="num-cell" style="font-weight:600;color:#1a5276;">₹&nbsp;${item.rate != null ? fmt(item.rate) : '—'}</td>
+        <td class="num-cell">₹&nbsp;${item.value != null ? fmt(item.value) : ''}</td>
+      </tr>`;
+    });
+    return [...hdrRows, ...itemRows];
+  });
+
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table" style="min-width:640px;">
+    <thead>
+      <tr>
+        <th class="rn top-header">#</th>
+        <th class="item-th top-header" style="text-align:left;">Item Name</th>
+        <th class="top-header" style="min-width:90px;">Qty</th>
+        <th class="top-header" style="min-width:110px;">Rate (₹)</th>
+        <th class="top-header" style="min-width:120px;">Value (₹)</th>
+      </tr>
+    </thead>
+    <tbody>${rows.join('')}</tbody>
+  </table></div>`;
+
+  // Formula bar on click
+  el.querySelectorAll('td.num-cell').forEach(td => {
+    td.style.cursor = 'pointer';
+    td.onclick = () => updateFormulaBar('Rate', td.textContent.trim());
+  });
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────

@@ -960,6 +960,68 @@ async def upload_pricelist(file: UploadFile = File(...)):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+@app.get("/api/stock-rates")
+def get_stock_rates():
+    """
+    Parse ENCON Stock Summary Excel and return all sections/items with purchase rates.
+    Searches for the stock file in the uploads folder or base directory.
+    """
+    import glob as glob_mod
+    import openpyxl
+
+    # Find stock file
+    candidates = (
+        glob_mod.glob(os.path.join(UPLOAD_FOLDER, "Stock*.xlsx")) +
+        glob_mod.glob(os.path.join(BASE_DIR, "Stock*.xlsx"))
+    )
+    if not candidates:
+        return {"error": "Stock file not found. Upload a file named Stock*.xlsx"}
+
+    stock_path = candidates[0]
+    try:
+        wb = openpyxl.load_workbook(stock_path, read_only=True, data_only=True)
+        ws = wb["Stock Summary"]
+    except Exception as e:
+        return {"error": f"Cannot open stock file: {e}"}
+
+    sections = []
+    cur_section = "Raw Material"
+    cur_items = []
+
+    for r in range(9, 5000):
+        v = [ws.cell(r, c).value for c in range(1, 6)]
+        if all(x is None for x in v):
+            break
+        # New section header: col A = None, col B = text, col D ≠ 'TOTAL'
+        if v[0] is None and v[1] and str(v[3] or "").strip() != "TOTAL":
+            if cur_items:
+                sections.append({"section": cur_section, "items": cur_items})
+            cur_section = str(v[1]).strip()
+            cur_items = []
+        elif v[0] is not None and isinstance(v[0], (int, float)):
+            name = str(v[1]).strip() if v[1] else ""
+            qty  = v[2]
+            rate = v[3]
+            val  = v[4]
+            cur_items.append({
+                "sl":   int(v[0]),
+                "name": name,
+                "qty":  round(float(qty), 4) if isinstance(qty, (int, float)) else None,
+                "rate": round(float(rate), 4) if isinstance(rate, (int, float)) else None,
+                "value": round(float(val), 2) if isinstance(val, (int, float)) else None,
+            })
+
+    if cur_items:
+        sections.append({"section": cur_section, "items": cur_items})
+
+    total_items = sum(len(s["items"]) for s in sections)
+    return {
+        "file": os.path.basename(stock_path),
+        "sections": sections,
+        "total_items": total_items,
+    }
+
+
 class ExcelExportRequest(BaseModel):
     equipment_type: str          # "VLPH" | "HLPH" | "Regen"
     customer: dict = {}

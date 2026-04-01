@@ -172,11 +172,13 @@ _BURNER_WEIGHTS = {
 }
 
 # Material cost rates (with 10% wastage applied)
+# Updated from Stock 28.02.26 Final.xlsx — actual ENCON purchase rates
+# Formula: (material_purchase_rate + 25 labour) × 1.10 wastage
 _RATES = dict(
-    ms_total=82.50,        # (50 material + 25 labour) × 1.10
-    ss_total=82.50,
-    refrac_total=89.10,    # (56 material + 25 labour) × 1.10
-    ceramic_total=137.50,  # 125 × 1.10
+    ms_total=90.20,        # MS ~57/kg (stock avg) + 25 labour × 1.10
+    ss_total=243.10,       # SS ~196/kg (stock: plates 195, rounds 192-200) + 25 labour × 1.10
+    refrac_total=1928.78,  # Ceramic Fiber 128 Kg/m3 = 1728.89/kg (stock) + 25 labour × 1.10
+    ceramic_total=137.50,  # Ceramic balls — not in stock file, retained from legacy Excel
 )
 
 # ── Pipe sizes per KW model (Natural Gas, 0.05 barg) ─────────────────────────
