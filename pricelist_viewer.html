@@ -211,9 +211,7 @@
   <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-oil-burners"> <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-gas-burners"> <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-hv-burners">  <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading...</div></div>
 </div>
 
 <!-- Bottom Excel-style Sheet Tabs -->
@@ -230,9 +228,7 @@
     <div class="tab"        data-sheet="gail"        onclick="switchTab('gail')">GAIL Gas Burner</div>
     <div class="tab"        data-sheet="hlph"        onclick="switchTab('hlph')">Horizontal</div>
     <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
-    <div class="tab"        data-sheet="oil-burners" onclick="switchTab('oil-burners')">Oil Film Prices</div>
-    <div class="tab"        data-sheet="gas-burners" onclick="switchTab('gas-burners')">Gas Burner Prices</div>
-    <div class="tab"        data-sheet="hv-burners"  onclick="switchTab('hv-burners')">HV Burner Prices</div>
+    <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
   </div>
 </div>
 
@@ -321,9 +317,7 @@ function renderAll() {
   renderGail(s.gail_gas_burner || []);
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
-  renderBurnerPivot('oil-burners', s.burners || {});
-  renderBurnerPivot('gas-burners', s.burners || {});
-  renderBurnerPivot('hv-burners',  s.burners || {});
+  renderBurnerPivot('burner-prices', s.burners || {});
 }
 
 // ── Status bar ─────────────────────────────────────────────────────────────
@@ -825,37 +819,45 @@ function renderLPH(sheetId, data) {
   </table></div>`;
 }
 
-// ── Burner Pivot tables ──────────────────────────────────────────────────────
-const BURNER_FILTERS = {
-  'oil-burners': k => k.includes('FILM') || (k.includes('DUAL') && k.includes('FUEL')) || (k.includes('SPARES') && !k.includes('HIGH VELOCITY')),
-  'gas-burners': k => k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('PILOT'),
-  'hv-burners':  k => k.includes('HIGH VELOCITY'),
-};
+// ── Burner Pivot table ───────────────────────────────────────────────────────
+const BURNER_GROUPS = [
+  { label: 'Oil Film Burners',     filter: k => k.includes('FILM') || (k.includes('DUAL') && k.includes('FUEL')) || (k.includes('SPARES') && !k.includes('HIGH VELOCITY')) },
+  { label: 'Gas Burners',          filter: k => k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('PILOT') },
+  { label: 'High Velocity Burners',filter: k => k.includes('HIGH VELOCITY') },
+];
 
 function renderBurnerPivot(sheetId, burners) {
   const el = document.getElementById(`sheet-${sheetId}`);
-  const filterFn = BURNER_FILTERS[sheetId];
-  const sectionKeys = Object.keys(burners).filter(k => filterFn(k.toUpperCase()));
-  if (!sectionKeys.length) { el.innerHTML = emptyMsg(); return; }
+  if (!Object.keys(burners).length) { el.innerHTML = emptyMsg(); return; }
 
-  el.innerHTML = sectionKeys.map(sec => {
-    const sizeMap = burners[sec];
-    const sizes = Object.keys(sizeMap).sort();
-    const comps = [...new Set(sizes.flatMap(s => Object.keys(sizeMap[s])))].sort();
-    return `<div class="model-block">
-      <div class="section-label">${esc(sec)}</div>
-      <div class="ro-wrap"><table class="ro-table" style="min-width:auto;">
-        <thead><tr>
-          <th class="rn"></th>
-          <th style="min-width:160px;text-align:left;">Burner Size</th>
-          ${comps.map(c=>`<th style="min-width:140px;">${esc(c)} (₹)</th>`).join('')}
-        </tr></thead>
-        <tbody>${sizes.map((sz,i) => `<tr>
-          <td class="rn">${i+1}</td>
-          <td>${esc(sz)}</td>
-          ${comps.map(c=>`<td style="text-align:right;">${fmt(sizeMap[sz][c])}</td>`).join('')}
-        </tr>`).join('')}</tbody>
-      </table></div>
+  el.innerHTML = BURNER_GROUPS.map(group => {
+    const sectionKeys = Object.keys(burners).filter(k => group.filter(k.toUpperCase()));
+    if (!sectionKeys.length) return '';
+
+    const tables = sectionKeys.map(sec => {
+      const sizeMap = burners[sec];
+      const sizes = Object.keys(sizeMap).sort();
+      const comps = [...new Set(sizes.flatMap(s => Object.keys(sizeMap[s])))].sort();
+      return `<div class="model-block">
+        <div class="section-label">${esc(sec)}</div>
+        <div class="ro-wrap"><table class="ro-table" style="min-width:auto;">
+          <thead><tr>
+            <th class="rn"></th>
+            <th style="min-width:160px;text-align:left;">Burner Size</th>
+            ${comps.map(c=>`<th style="min-width:140px;">${esc(c)} (₹)</th>`).join('')}
+          </tr></thead>
+          <tbody>${sizes.map((sz,i) => `<tr>
+            <td class="rn">${i+1}</td>
+            <td>${esc(sz)}</td>
+            ${comps.map(c=>`<td style="text-align:right;">${fmt(sizeMap[sz][c])}</td>`).join('')}
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:24px;">
+      <div style="font-size:15px;font-weight:700;color:#1a5276;padding:8px 12px;background:#d6eaf8;border-left:4px solid #2980b9;margin-bottom:8px;">${esc(group.label)}</div>
+      ${tables}
     </div>`;
   }).join('');
 }
