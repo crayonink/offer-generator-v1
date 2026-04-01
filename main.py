@@ -692,7 +692,7 @@ class RegenCalcRequest(BaseModel):
 def regen_calculate(req: RegenCalcRequest):
     try:
         from calculations.regen import RegenInputs, calculate_regen
-        from bom.regen_builder import build_regen_df, select_model
+        from bom.regen_builder import build_regen_df, select_model, get_supplementary_data
 
         result = calculate_regen(RegenInputs(
             material_weight_kg=req.material_weight_kg,
@@ -710,6 +710,7 @@ def regen_calculate(req: RegenCalcRequest):
         model_markup = req.markup if req.markup != 1.80 else None  # None → use model default
 
         bom_df = build_regen_df(model_kw, model_markup, num_pairs=result.num_pairs)
+        supplementary = get_supplementary_data(model_kw)
 
         total_cost    = float(bom_df["TOTAL COST"].sum())
         total_selling = float(bom_df["TOTAL SELLING"].sum())
@@ -736,6 +737,7 @@ def regen_calculate(req: RegenCalcRequest):
                 "total_selling": round(total_selling, 2),
                 "markup": req.markup,
             },
+            "supplementary": supplementary,
         }
     except Exception as e:
         import traceback
@@ -1160,6 +1162,138 @@ def export_excel(req: ExcelExportRequest):
         c.border = thin()
         ws.row_dimensions[r].height = 20
         r += 1
+
+    # ── Regen supplementary sheets ───────────────────────────────────────────
+    if req.equipment_type == "Regen" and req.equipment:
+        supp = req.equipment.get("supplementary", {})
+        if supp:
+            # ── Sheet: Burner Sizing & Costing ────────────────────────────
+            ws2 = wb.create_sheet("Burner Sizing")
+            ws2.column_dimensions["A"].width = 22
+            ws2.column_dimensions["B"].width = 20
+            ws2.column_dimensions["C"].width = 18
+            ws2.column_dimensions["D"].width = 18
+            ws2.column_dimensions["E"].width = 18
+            r2 = 1
+            ws2.merge_cells(f"A{r2}:E{r2}")
+            t2 = ws2.cell(row=r2, column=1, value=f"Burner + Regenerator Sizing & Costing — {supp.get('burner_sizing',{}).get('kw','')} KW")
+            t2.font = Font(bold=True, color=WHITE, size=13, name="Calibri")
+            t2.fill = PatternFill("solid", fgColor=NAVY)
+            t2.alignment = Alignment(horizontal="center", vertical="center")
+            ws2.row_dimensions[r2].height = 28
+            r2 += 2
+
+            bs = supp.get("burner_sizing", {})
+            rates = bs.get("material_rates", {})
+            ws2.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws2, r2, 1, "MATERIAL RATES (with 10% wastage)", size=9)
+            r2 += 1
+            for col, label in [(1,"Material"),(2,"Mat. ₹/kg"),(3,"Labour ₹/kg"),(4,"Total ₹/kg")]:
+                hdr(ws2, r2, col, label, size=9)
+            r2 += 1
+            for mat, mat_r, lab_r, tot in [("MS",50,25,rates.get("ms",82.5)),("SS",50,25,rates.get("ss",82.5)),("Refractory",56,25,rates.get("refractory",89.1)),("Ceramic Balls",125,0,rates.get("ceramic_balls",137.5))]:
+                for ci, v in enumerate([mat, mat_r, lab_r, tot], 1):
+                    cell(ws2, r2, ci, v, bg=GREY if r2%2==0 else WHITE, align="right" if ci>1 else "left")
+                r2 += 1
+            r2 += 1
+
+            ws2.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws2, r2, 1, "COST BREAKDOWN (per unit)", size=9)
+            r2 += 1
+            for col, label in [(1,"Component"),(2,"Material"),(3,"Weight (kg)"),(4,"Rate ₹/kg"),(5,"Cost ₹")]:
+                hdr(ws2, r2, col, label, size=9)
+            r2 += 1
+            for d in bs.get("cost_detail", []):
+                for ci, v in enumerate([d["component"], d["material"], d["weight_kg"], d["rate"], d["cost"]], 1):
+                    cell(ws2, r2, ci, v, bg=GREY if r2%2==0 else WHITE, align="right" if ci>2 else "left",
+                         num_fmt='#,##0.00' if ci>2 else None)
+                r2 += 1
+            cell(ws2, r2, 4, "Total per unit", bold=True, bg=GREEN_BG, fg=GREEN, align="right")
+            cell(ws2, r2, 5, bs.get("total_unit_cost",0), bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
+            r2 += 1
+            cell(ws2, r2, 4, "Total per pair (×2)", bold=True, bg=GREEN_BG, fg=GREEN, align="right")
+            cell(ws2, r2, 5, bs.get("total_pair_cost",0), bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
+
+            # ── Sheet: Pipe Sizes ─────────────────────────────────────────
+            ws3 = wb.create_sheet("Pipe Sizes")
+            ws3.column_dimensions["A"].width = 28
+            ws3.column_dimensions["B"].width = 22
+            r3 = 1
+            ws3.merge_cells(f"A{r3}:B{r3}")
+            t3 = ws3.cell(row=r3, column=1, value="Line Sizes — Natural Gas (NG) @ 0.05 barg")
+            t3.font = Font(bold=True, color=WHITE, size=13, name="Calibri")
+            t3.fill = PatternFill("solid", fgColor=NAVY)
+            t3.alignment = Alignment(horizontal="center", vertical="center")
+            ws3.row_dimensions[r3].height = 28
+            r3 += 2
+            ps = supp.get("pipe_sizes", {})
+            pipe_rows = [
+                ("Burner KW", f"{ps.get('kw','')} KW"),
+                ("NG Flow Rate", f"{ps.get('ng_flow_nm3hr','')} Nm³/hr"),
+                ("Air Flow Rate", f"{ps.get('air_flow_nm3hr','')} Nm³/hr"),
+                ("Total Flue Gas", f"{ps.get('flue_flow_nm3hr','')} Nm³/hr"),
+                ("Air Line DN", f"DN {ps.get('air_line_dn','')}"),
+                ("Gas Line DN", f"DN {ps.get('gas_line_dn','')}"),
+                ("Flue Gas Line DN", f"DN {ps.get('flue_line_dn','')}"),
+            ]
+            hdr(ws3, r3, 1, "Parameter", size=9)
+            hdr(ws3, r3, 2, "Value", size=9)
+            r3 += 1
+            for i, (lbl, val) in enumerate(pipe_rows):
+                bg = LIGHT if lbl.endswith("DN") else (GREY if i%2==0 else WHITE)
+                cell(ws3, r3, 1, lbl, bold=lbl.endswith("DN"), bg=bg)
+                cell(ws3, r3, 2, val, bold=lbl.endswith("DN"), bg=bg)
+                r3 += 1
+
+            # ── Sheet: Blower Selection ───────────────────────────────────
+            ws4 = wb.create_sheet("Blower Selection")
+            ws4.column_dimensions["A"].width = 20
+            for col in ["B","C","D","E","F"]:
+                ws4.column_dimensions[col].width = 18
+            r4 = 1
+            ws4.merge_cells(f"A{r4}:F{r4}")
+            t4 = ws4.cell(row=r4, column=1, value="ENCON 40\" WG Blower Selection")
+            t4.font = Font(bold=True, color=WHITE, size=13, name="Calibri")
+            t4.fill = PatternFill("solid", fgColor=NAVY)
+            t4.alignment = Alignment(horizontal="center", vertical="center")
+            ws4.row_dimensions[r4].height = 28
+            r4 += 2
+            bl = supp.get("blower_selection", {})
+            cat = supp.get("blower_catalogue", [])
+            # Selected summary
+            sel_rows = [
+                ("Burner KW", f"{bl.get('kw','')} KW"),
+                ("Selected Model", bl.get("selected_model","")),
+                ("HP", bl.get("hp","")),
+                ("Flow Rate", f"{bl.get('nm3hr','')} Nm³/hr"),
+                ("Qty per pair", str(bl.get("qty_per_pair",""))),
+                ("Costing price used", bl.get("costing_price",0)),
+            ]
+            ws4.merge_cells(f"A{r4}:F{r4}")
+            hdr(ws4, r4, 1, "SELECTED BLOWER", size=9)
+            r4 += 1
+            for i, (lbl, val) in enumerate(sel_rows):
+                bg = LIGHT if lbl == "Costing price used" else (GREY if i%2==0 else WHITE)
+                cell(ws4, r4, 1, lbl, bold=lbl=="Costing price used", bg=bg)
+                ws4.merge_cells(f"B{r4}:F{r4}")
+                cell(ws4, r4, 2, val, bold=lbl=="Costing price used", bg=bg,
+                     num_fmt='#,##0.00' if isinstance(val, (int,float)) else None)
+                r4 += 1
+            r4 += 1
+            # Full catalogue
+            ws4.merge_cells(f"A{r4}:F{r4}")
+            hdr(ws4, r4, 1, "FULL CATALOGUE", size=9)
+            r4 += 1
+            for ci, lbl in enumerate(["Model","HP","CFM","Nm³/hr","Price w/o Motor ₹","Price with Motor ₹"], 1):
+                hdr(ws4, r4, ci, lbl, size=9)
+            r4 += 1
+            for row_b in cat:
+                is_sel = row_b["model"] == bl.get("selected_model","")
+                bg = LIGHT if is_sel else (GREY if r4%2==0 else WHITE)
+                for ci, v in enumerate([row_b["model"], row_b["hp"], row_b["cfm"], row_b["nm3hr"], row_b["price_without_motor"], row_b["price_with_motor"]], 1):
+                    cell(ws4, r4, ci, v, bold=is_sel, bg=bg, align="right" if ci>2 else "left",
+                         num_fmt='#,##0.00' if ci>4 else None)
+                r4 += 1
 
     buf = io.BytesIO()
     wb.save(buf)

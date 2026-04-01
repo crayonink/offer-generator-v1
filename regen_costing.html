@@ -125,6 +125,25 @@
       background: #eff6ff; border-radius: 6px;
     }
 
+    /* ── Supplementary tabs ── */
+    .supp-tab {
+      padding: 12px 20px; font-size: .82rem; font-weight: 600; font-family: inherit;
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--muted); cursor: pointer; transition: all .15s;
+    }
+    .supp-tab:hover { color: var(--navy); }
+    .supp-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: #fff; }
+    .supp-panel { display: none; }
+    .supp-panel.active { display: block; }
+    .supp-table { width: 100%; border-collapse: collapse; font-size: .83rem; margin-top: 12px; }
+    .supp-table th { background: var(--navy); color: #fff; padding: 8px 12px; text-align: left; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .supp-table th.r { text-align: right; }
+    .supp-table td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; }
+    .supp-table td.r { text-align: right; font-variant-numeric: tabular-nums; }
+    .supp-table tr:hover td { background: #f8fafc; }
+    .supp-table tr.total-row td { background: #f0fdf4; font-weight: 700; color: #065f46; }
+    .supp-table tr.highlight td { background: #eff6ff; font-weight: 700; color: #1d4ed8; }
+
     /* ── BOM table ── */
     .bom-wrap { overflow-x: auto; margin-top: 16px; border-radius: 10px; border: 1px solid var(--border); }
     .bom-table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 800px; }
@@ -390,6 +409,20 @@
       <table class="calc-table" id="calcResultTable"></table>
     </div>
 
+    <!-- Supplementary tabs -->
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="display:flex; border-bottom:1.5px solid var(--border); background:#f8fafc;">
+        <button class="supp-tab active" onclick="suppTab('burner-sizing', this)">Burner Sizing &amp; Costing</button>
+        <button class="supp-tab"        onclick="suppTab('pipe-sizes',     this)">Pipe Sizes</button>
+        <button class="supp-tab"        onclick="suppTab('blower',         this)">Blower Selection</button>
+      </div>
+      <div style="padding:24px 28px;">
+        <div class="supp-panel active" id="supp-burner-sizing"></div>
+        <div class="supp-panel"        id="supp-pipe-sizes"></div>
+        <div class="supp-panel"        id="supp-blower"></div>
+      </div>
+    </div>
+
     <!-- BOM -->
     <div class="card">
       <div class="card-title">Bill of Materials</div>
@@ -414,7 +447,7 @@
 
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(2)">← Back</button>
-      <button id="xl-btn" onclick="downloadExcel()" style="padding:11px 22px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">⬇ Download Excel</button>
+      <button id="xl-btn" onclick="downloadExcel()" style="padding:11px 22px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">&#8659; Download Excel</button>
       <button class="btn-primary" onclick="goStep(4)">Next: Generate Offer →</button>
     </div>
   </div>
@@ -529,6 +562,90 @@
     }
   }
 
+  // ── Supplementary tab switcher ───────────────────────────────────────────
+  function suppTab(id, btn) {
+    document.querySelectorAll('.supp-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.supp-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('supp-' + id).classList.add('active');
+  }
+
+  // ── Render supplementary panels ──────────────────────────────────────────
+  function renderSupplementary(supp) {
+    const bs = supp.burner_sizing;
+    const ps = supp.pipe_sizes;
+    const bl = supp.blower_selection;
+    const cat = supp.blower_catalogue;
+
+    // ── Burner Sizing & Costing ──
+    const rates = bs.material_rates;
+    document.getElementById('supp-burner-sizing').innerHTML = `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">Material Rates (with 10% wastage)</div>
+        <table class="supp-table" style="max-width:500px;">
+          <thead><tr><th>Material</th><th class="r">Material ₹/kg</th><th class="r">Labour ₹/kg</th><th class="r">Total ₹/kg</th></tr></thead>
+          <tbody>
+            <tr><td>MS</td><td class="r">50</td><td class="r">25</td><td class="r">${rates.ms}</td></tr>
+            <tr><td>SS</td><td class="r">50</td><td class="r">25</td><td class="r">${rates.ss}</td></tr>
+            <tr><td>Refractory</td><td class="r">56</td><td class="r">25</td><td class="r">${rates.refractory}</td></tr>
+            <tr><td>Ceramic Balls</td><td class="r">125</td><td class="r">—</td><td class="r">${rates.ceramic_balls}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">Burner + Regenerator Cost Breakdown — ${bs.kw} KW (per unit)</div>
+        <table class="supp-table">
+          <thead><tr><th>Component</th><th>Material</th><th class="r">Weight (kg)</th><th class="r">Rate ₹/kg</th><th class="r">Cost ₹</th></tr></thead>
+          <tbody>
+            ${bs.cost_detail.map(d => `<tr><td>${d.component}</td><td>${d.material}</td><td class="r">${fmtN(d.weight_kg)}</td><td class="r">${d.rate}</td><td class="r">${fmtN(d.cost)}</td></tr>`).join('')}
+            <tr class="total-row"><td colspan="4" style="text-align:right;">Total per unit</td><td class="r">${fmtN(bs.total_unit_cost)}</td></tr>
+            <tr class="total-row"><td colspan="4" style="text-align:right;">Total per pair (×2)</td><td class="r">${fmtN(bs.total_pair_cost)}</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+
+    // ── Pipe Sizes ──
+    document.getElementById('supp-pipe-sizes').innerHTML = `
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">
+        Line Sizes — ${ps.fuel} @ ${ps.pressure}
+      </div>
+      <table class="supp-table" style="max-width:700px;">
+        <thead><tr><th>Parameter</th><th class="r">Value</th></tr></thead>
+        <tbody>
+          <tr><td>NG Flow Rate</td><td class="r">${ps.ng_flow_nm3hr} Nm³/hr</td></tr>
+          <tr><td>Air Flow Rate</td><td class="r">${ps.air_flow_nm3hr} Nm³/hr</td></tr>
+          <tr><td>Total Flue Gas</td><td class="r">${ps.flue_flow_nm3hr} Nm³/hr</td></tr>
+          <tr class="highlight"><td>Air Line DN</td><td class="r">DN ${ps.air_line_dn}</td></tr>
+          <tr class="highlight"><td>Gas Line DN</td><td class="r">DN ${ps.gas_line_dn}</td></tr>
+          <tr class="highlight"><td>Flue Gas Line DN</td><td class="r">DN ${ps.flue_line_dn}</td></tr>
+        </tbody>
+      </table>`;
+
+    // ── Blower Selection ──
+    const selModel = bl.selected_model;
+    document.getElementById('supp-blower').innerHTML = `
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">
+        Selected Blower for ${bl.kw} KW — ${bl.hp} × ${bl.qty_per_pair} units per pair
+      </div>
+      <table class="supp-table" style="max-width:500px;margin-bottom:24px;">
+        <thead><tr><th>Parameter</th><th class="r">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Model</td><td class="r">${bl.selected_model}</td></tr>
+          <tr><td>HP</td><td class="r">${bl.hp}</td></tr>
+          <tr><td>CFM</td><td class="r">${bl.cfm}</td></tr>
+          <tr><td>Flow Rate</td><td class="r">${fmtN(bl.nm3hr)} Nm³/hr</td></tr>
+          <tr><td>Price without motor</td><td class="r">${fmtN(bl.price_without_motor)}</td></tr>
+          <tr><td>Price with motor</td><td class="r">${fmtN(bl.price_with_motor)}</td></tr>
+          <tr class="highlight"><td>Costing price used</td><td class="r">${fmtN(bl.costing_price)}</td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;">ENCON 40" WG Blower Catalogue</div>
+      <table class="supp-table">
+        <thead><tr><th>Model</th><th class="r">HP</th><th class="r">CFM</th><th class="r">Nm³/hr</th><th class="r">Price w/o Motor ₹</th><th class="r">Price with Motor ₹</th></tr></thead>
+        <tbody>${cat.map(b => `<tr${b.model===selModel?' class="highlight"':''}><td>${b.model}</td><td class="r">${b.hp}</td><td class="r">${b.cfm}</td><td class="r">${fmtN(b.nm3hr)}</td><td class="r">${fmtN(b.price_without_motor)}</td><td class="r">${fmtN(b.price_with_motor)}</td></tr>`).join('')}</tbody>
+      </table>`;
+  }
+
   // ── Render step-3 results ────────────────────────────────────────────────
   function renderResults(data) {
     const c = data.calculations;
@@ -587,6 +704,9 @@
         <td class="sell-total" style="color:#1d4ed8; font-size:.95rem;">${fmtN(s.total_selling)}</td>
       </tr>`;
 
+    // Supplementary panels
+    if (data.supplementary) renderSupplementary(data.supplementary);
+
     // Step 4 summary
     document.getElementById('offerSummary').innerHTML = `
       <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
@@ -630,6 +750,7 @@
           calculations: calcData.calculations,
           bom:          calcData.bom,
           cost_summary: calcData.cost_summary,
+          equipment:    { supplementary: calcData.supplementary },
         }),
       });
       const blob = await res.blob();

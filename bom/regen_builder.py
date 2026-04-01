@@ -157,6 +157,113 @@ MODEL_KWS = sorted(REGEN_MODELS.keys())  # [500, 1000, 1500, 2000, 2500, 3000, 4
 # PLC cost by num_pairs (Siemens S7-1200 for 1-2 pairs, S7-1500 for 3+)
 _PLC_COST = {1: 300000, 2: 300000, 3: 600000, 4: 750000, 5: 800000, 6: 900000}
 
+# ── Burner + Regenerator material weights (kg) per KW model ──────────────────
+# Source: "Burner Sizing and costing" sheet, rows 35-42
+# Columns: burner_ms, burner_refrac, regen_ms, regen_ss, regen_refrac, regen_ceramic, block_refrac
+_BURNER_WEIGHTS = {
+    500:  dict(burner_ms=167.53, burner_refrac=200.39, regen_ms=139.07, regen_ss=11.06,  regen_refrac=422.45, regen_ceramic=227.30, block_refrac=128.76),
+    1000: dict(burner_ms=198.55, burner_refrac=237.50, regen_ms=139.08, regen_ss=23.70,  regen_refrac=559.67, regen_ceramic=349.07, block_refrac=158.96),
+    1500: dict(burner_ms=232.05, burner_refrac=277.58, regen_ms=156.47, regen_ss=26.07,  regen_refrac=662.48, regen_ceramic=448.70, block_refrac=192.34),
+    2000: dict(burner_ms=314.50, burner_refrac=376.21, regen_ms=284.47, regen_ss=28.44,  regen_refrac=1065.43, regen_ceramic=1028.09, block_refrac=276.98),
+    2500: dict(burner_ms=347.46, burner_refrac=415.63, regen_ms=284.47, regen_ss=37.92,  regen_refrac=1065.43, regen_ceramic=1028.09, block_refrac=311.57),
+    3000: dict(burner_ms=390.89, burner_refrac=467.59, regen_ms=349.28, regen_ss=44.24,  regen_refrac=1375.01, regen_ceramic=1556.60, block_refrac=357.67),
+    4500: dict(burner_ms=485.20, burner_refrac=580.40, regen_ms=505.71, regen_ss=55.30,  regen_refrac=1776.45, regen_ceramic=2373.08, block_refrac=459.40),
+    6000: dict(burner_ms=645.28, burner_refrac=771.89, regen_ms=660.56, regen_ss=55.30,  regen_refrac=2152.18, regen_ceramic=3193.34, block_refrac=635.85),
+}
+
+# Material cost rates (with 10% wastage applied)
+_RATES = dict(
+    ms_total=82.50,        # (50 material + 25 labour) × 1.10
+    ss_total=82.50,
+    refrac_total=89.10,    # (56 material + 25 labour) × 1.10
+    ceramic_total=137.50,  # 125 × 1.10
+)
+
+# ── Pipe sizes per KW model (Natural Gas, 0.05 barg) ─────────────────────────
+# Source: "Burner Pipe Size" sheet, rows 9-16
+_PIPE_SIZES = {
+    500:  dict(ng_flow=50,  air_flow=500,  flue_flow=550,  air_dn=125, gas_dn=30,  flue_dn=200),
+    1000: dict(ng_flow=100, air_flow=1000, flue_flow=1100, air_dn=200, gas_dn=40,  flue_dn=250),
+    1500: dict(ng_flow=150, air_flow=1500, flue_flow=1650, air_dn=200, gas_dn=50,  flue_dn=300),
+    2000: dict(ng_flow=200, air_flow=2000, flue_flow=2200, air_dn=250, gas_dn=65,  flue_dn=350),
+    2500: dict(ng_flow=250, air_flow=2500, flue_flow=2750, air_dn=250, gas_dn=65,  flue_dn=400),
+    3000: dict(ng_flow=300, air_flow=3000, flue_flow=3300, air_dn=300, gas_dn=80,  flue_dn=450),
+    4500: dict(ng_flow=450, air_flow=4500, flue_flow=4950, air_dn=350, gas_dn=80,  flue_dn=500),
+    6000: dict(ng_flow=600, air_flow=6000, flue_flow=6600, air_dn=400, gas_dn=100, flue_dn=600),
+}
+
+# ── ENCON 40" WG Blower catalogue ────────────────────────────────────────────
+# Source: "Blower" sheet
+BLOWER_CATALOGUE = [
+    dict(model="ENCON 40/5",   hp="5HP",   cfm=400,  nm3hr=680,  price_without_motor=56500,  price_with_motor=81000),
+    dict(model="ENCON 40/7.5", hp="7.5HP", cfm=600,  nm3hr=1020, price_without_motor=60500,  price_with_motor=99500),
+    dict(model="ENCON 40/10",  hp="10HP",  cfm=800,  nm3hr=1360, price_without_motor=76000,  price_with_motor=111000),
+    dict(model="ENCON 40/15",  hp="15HP",  cfm=1200, nm3hr=2040, price_without_motor=87000,  price_with_motor=158000),
+    dict(model="ENCON 40/20",  hp="20HP",  cfm=1600, nm3hr=2730, price_without_motor=91000,  price_with_motor=178000),
+    dict(model="ENCON 40/25",  hp="25HP",  cfm=2000, nm3hr=3400, price_without_motor=111000, price_with_motor=215000),
+    dict(model="ENCON 40/30",  hp="30HP",  cfm=2400, nm3hr=4000, price_without_motor=131000, price_with_motor=250000),
+    dict(model="ENCON 40/40",  hp="40HP",  cfm=3200, nm3hr=5200, price_without_motor=151500, price_with_motor=316500),
+    dict(model="ENCON 40/50",  hp="50HP",  cfm=4000, nm3hr=6500, price_without_motor=175000, price_with_motor=361000),
+    dict(model="ENCON 40/60",  hp="60HP",  cfm=4800, nm3hr=7800, price_without_motor=198000, price_with_motor=441000),
+]
+
+# KW → blower HP mapping (from costing sheets)
+_BLOWER_HP = {500:"10HP", 1000:"10HP", 1500:"15HP", 2000:"20HP", 2500:"25HP", 3000:"25HP", 4500:"40HP", 6000:"60HP"}
+
+
+def get_supplementary_data(kw: int) -> dict:
+    """Return burner sizing, pipe sizes, and blower selection for the given KW model."""
+    w  = _BURNER_WEIGHTS[kw]
+    r  = _RATES
+    p  = _PIPE_SIZES[kw]
+    hp = _BLOWER_HP[kw]
+    blower = next(b for b in BLOWER_CATALOGUE if b['hp'] == hp)
+
+    # Per-unit material cost breakdown (1 burner)
+    burner_cost_detail = [
+        dict(component="Burner Body", material="MS",         weight_kg=w['burner_ms'],    rate=r['ms_total'],     cost=round(w['burner_ms']    * r['ms_total'],    2)),
+        dict(component="Burner Body", material="Refractory", weight_kg=w['burner_refrac'],rate=r['refrac_total'], cost=round(w['burner_refrac'] * r['refrac_total'],2)),
+        dict(component="Regenerator", material="MS",         weight_kg=w['regen_ms'],     rate=r['ms_total'],     cost=round(w['regen_ms']     * r['ms_total'],    2)),
+        dict(component="Regenerator", material="SS",         weight_kg=w['regen_ss'],     rate=r['ss_total'],     cost=round(w['regen_ss']     * r['ss_total'],    2)),
+        dict(component="Regenerator", material="Refractory", weight_kg=w['regen_refrac'], rate=r['refrac_total'], cost=round(w['regen_refrac'] * r['refrac_total'],2)),
+        dict(component="Regenerator", material="Ceramic Balls", weight_kg=w['regen_ceramic'], rate=r['ceramic_total'], cost=round(w['regen_ceramic'] * r['ceramic_total'],2)),
+        dict(component="Burner Block", material="Refractory", weight_kg=w['block_refrac'], rate=r['refrac_total'], cost=round(w['block_refrac'] * r['refrac_total'],2)),
+    ]
+    total_unit_cost = sum(d['cost'] for d in burner_cost_detail)
+
+    return dict(
+        burner_sizing=dict(
+            kw=kw,
+            material_rates=dict(ms=r['ms_total'], ss=r['ss_total'], refractory=r['refrac_total'], ceramic_balls=r['ceramic_total']),
+            cost_detail=burner_cost_detail,
+            total_unit_cost=round(total_unit_cost, 2),
+            total_pair_cost=round(total_unit_cost * 2, 2),
+        ),
+        pipe_sizes=dict(
+            fuel="Natural Gas (NG)",
+            pressure="0.05 barg",
+            kw=kw,
+            ng_flow_nm3hr=p['ng_flow'],
+            air_flow_nm3hr=p['air_flow'],
+            flue_flow_nm3hr=p['flue_flow'],
+            air_line_dn=p['air_dn'],
+            gas_line_dn=p['gas_dn'],
+            flue_line_dn=p['flue_dn'],
+        ),
+        blower_selection=dict(
+            kw=kw,
+            selected_model=blower['model'],
+            hp=blower['hp'],
+            cfm=blower['cfm'],
+            nm3hr=blower['nm3hr'],
+            price_without_motor=blower['price_without_motor'],
+            price_with_motor=blower['price_with_motor'],
+            qty_per_pair=2,
+            costing_price=REGEN_MODELS[kw]['blower_cost'],
+        ),
+        blower_catalogue=BLOWER_CATALOGUE,
+    )
+
 
 def select_model(required_kw: float) -> int:
     """Return the smallest model KW >= required_kw (caps at 6000 KW)."""
