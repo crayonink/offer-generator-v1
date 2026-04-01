@@ -1682,12 +1682,10 @@ def _parse_rad_heat(xl, sheet_name, table_name, conn):
             output_kw = str(ws_v.cell(r, 2).value or '').strip() or None
             lpg = ws_v.cell(r, 3).value
             ng  = ws_v.cell(r, 4).value
-            # E col (5) = price_with_ss_tubing — compute live
-            price = _eval_cell(r, 5)
-            if price is None:
-                cached = ws_v.cell(r, 5).value
-                try: price = float(cached) if cached is not None else None
-                except (TypeError, ValueError): price = None
+            # E col (5) = price_with_ss_tubing — use cached Excel value
+            cached = ws_v.cell(r, 5).value
+            try: price = float(cached) if cached is not None else None
+            except (TypeError, ValueError): price = None
             records.append({
                 "section": "MODEL",
                 "item": first.upper(),
