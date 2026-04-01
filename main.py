@@ -960,11 +960,13 @@ async def upload_pricelist(file: UploadFile = File(...)):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+_STOCK_CACHE: dict = {}   # keyed by (file_path, mtime)
+
 @app.get("/api/stock-rates")
 def get_stock_rates():
     """
     Parse ENCON Stock Summary Excel and return all sections/items with purchase rates.
-    Searches for the stock file in the uploads folder or base directory.
+    Result is cached in memory; re-parsed only if the file changes.
     """
     import glob as glob_mod
     import openpyxl
@@ -978,6 +980,11 @@ def get_stock_rates():
         return {"error": "Stock file not found. Upload a file named Stock*.xlsx"}
 
     stock_path = candidates[0]
+    mtime = os.path.getmtime(stock_path)
+    cache_key = (stock_path, mtime)
+    if cache_key in _STOCK_CACHE:
+        return _STOCK_CACHE[cache_key]
+
     try:
         wb = openpyxl.load_workbook(stock_path, read_only=True, data_only=True)
         ws = wb["Stock Summary"]
@@ -1000,26 +1007,24 @@ def get_stock_rates():
             cur_items = []
         elif v[0] is not None and isinstance(v[0], (int, float)):
             name = str(v[1]).strip() if v[1] else ""
-            qty  = v[2]
             rate = v[3]
-            val  = v[4]
             cur_items.append({
                 "sl":   int(v[0]),
                 "name": name,
-                "qty":  round(float(qty), 4) if isinstance(qty, (int, float)) else None,
                 "rate": round(float(rate), 4) if isinstance(rate, (int, float)) else None,
-                "value": round(float(val), 2) if isinstance(val, (int, float)) else None,
             })
 
     if cur_items:
         sections.append({"section": cur_section, "items": cur_items})
 
     total_items = sum(len(s["items"]) for s in sections)
-    return {
+    result = {
         "file": os.path.basename(stock_path),
         "sections": sections,
         "total_items": total_items,
     }
+    _STOCK_CACHE[cache_key] = result
+    return result
 
 
 class ExcelExportRequest(BaseModel):
