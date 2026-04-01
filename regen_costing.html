@@ -550,7 +550,8 @@
       ['Cycle Time',                 c.cycle_time_hr + ' hr'],
       ['Thermal Efficiency',         (c.efficiency * 100).toFixed(0) + '%'],
       ['Required Power',             fmtN(c.required_kw) + ' kW'],
-      ['No. of Pairs Selected',      c.num_pairs + ' × 1000 KW  =  ' + c.total_kw + ' KW'],
+      ['Model Selected',              c.model_kw + ' KW per pair'],
+      ['No. of Pairs Selected',      c.num_pairs + ' × ' + c.model_kw + ' KW  =  ' + c.total_kw + ' KW'],
     ];
     document.getElementById('calcResultTable').innerHTML =
       rows.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
@@ -596,7 +597,7 @@
         </div>
         <div style="background:#f8fafc; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">System</div>
-          <div style="font-weight:700;">${c.num_pairs} × 1000 KW Regen Pair${c.num_pairs > 1 ? 's' : ''}</div>
+          <div style="font-weight:700;">${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}</div>
           <div style="font-size:.82rem; color:var(--muted);">${c.Ti}°C → ${c.Tf}°C</div>
         </div>
         <div style="background:#eff6ff; border-radius:10px; padding:16px;">
@@ -657,7 +658,7 @@
     // Build items list for quote engine
     const items = [{
       product_type: 'Regenerative Burner System',
-      model: `${c.num_pairs} × 1000 KW Regen Pair${c.num_pairs > 1 ? 's' : ''}`,
+      model: `${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}`,
       description: `${c.Ti}°C → ${c.Tf}°C | ${c.material_weight_kg.toLocaleString('en-IN')} kg charge | ${c.cycle_time_hr} hr cycle`,
       qty: 1,
       unit_price: s.total_selling,
