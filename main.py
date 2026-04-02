@@ -52,6 +52,17 @@ def ensure_log_table():
 
 ensure_log_table()
 
+def ensure_updated_at_column():
+    """Add updated_at column to component_price_master if not already present."""
+    conn = sqlite3.connect(DB_PATH)
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(component_price_master)").fetchall()]
+    if "updated_at" not in cols:
+        conn.execute("ALTER TABLE component_price_master ADD COLUMN updated_at TEXT")
+        conn.commit()
+    conn.close()
+
+ensure_updated_at_column()
+
 import glob
 import tempfile
 
@@ -535,11 +546,11 @@ def get_pricelist_rates():
     try:
         conn = sqlite3.connect(DB_PATH)
         rows = conn.execute(
-            "SELECT rowid, item, category, unit, price, previous_price FROM component_price_master ORDER BY category, item"
+            "SELECT rowid, item, category, unit, price, previous_price, updated_at FROM component_price_master ORDER BY category, item"
         ).fetchall()
         conn.close()
         return [{"rowid": r[0], "item": r[1], "category": r[2], "unit": r[3],
-                 "price": r[4], "previous_price": r[5]} for r in rows]
+                 "price": r[4], "previous_price": r[5], "updated_at": r[6]} for r in rows]
     except Exception as e:
         return {"error": str(e)}
 
@@ -550,8 +561,8 @@ def update_pricelist_rate(req: RateUpdateRequest):
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.execute(
-            "UPDATE component_price_master SET previous_price=price, price=? WHERE item=?",
-            (req.price, req.item)
+            "UPDATE component_price_master SET previous_price=price, price=?, updated_at=? WHERE item=?",
+            (req.price, datetime.now().strftime("%Y-%m-%d %H:%M"), req.item)
         )
         conn.commit()
         xl_path = _find_latest_pricebook()

@@ -415,7 +415,7 @@ function renderRates(data) {
   data.forEach(r => { cats[r.category] = cats[r.category] || []; cats[r.category].push(r); });
 
   let rowNum = 0;
-  let html = `<div class="xl-wrap"><table class="xl-table" style="min-width:700px;">
+  let html = `<div class="xl-wrap"><table class="xl-table" style="min-width:800px;">
     <thead><tr>
       <th class="rn"></th>
       <th class="item-th" style="min-width:300px;">Item</th>
@@ -424,16 +424,18 @@ function renderRates(data) {
       <th style="min-width:120px;">Price (₹)</th>
       <th style="min-width:120px;">Prev. Price (₹)</th>
       <th style="min-width:90px;">Change</th>
+      <th style="min-width:130px;">Last Updated</th>
     </tr></thead><tbody>`;
 
   Object.keys(cats).sort().forEach(cat => {
-    html += `<tr class="section-hdr"><td class="rn"></td><td colspan="6">${esc(cat)}</td></tr>`;
+    html += `<tr class="section-hdr"><td class="rn"></td><td colspan="7">${esc(cat)}</td></tr>`;
     cats[cat].forEach(r => {
       if (!r.item) return;
       rowNum++;
       const change = r.previous_price && r.previous_price !== r.price
         ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%' : '—';
       const cs = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
+      const updatedAt = r.updated_at || '—';
       html += `<tr>
         <td class="rn">${rowNum}</td>
         <td class="item-cell">${esc(r.item)}</td>
@@ -442,6 +444,7 @@ function renderRates(data) {
         <td class="editable rates-price" data-item="${esc(r.item)}" data-field="price">${fmt(r.price)}</td>
         <td class="num-cell">${fmt(r.previous_price)}</td>
         <td class="num-cell" style="${cs}">${change}</td>
+        <td style="text-align:center;color:#555;font-size:11px;">${esc(updatedAt)}</td>
       </tr>`;
     });
   });
