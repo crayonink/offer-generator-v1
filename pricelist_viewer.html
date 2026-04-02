@@ -316,7 +316,7 @@ function renderAll() {
   renderPartsTabbed('hv-parts',  s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
   renderPartsTabbed('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
-  renderRecuperator(s.recuperator || []);
+  renderRecuperator(s.recuperator || {rows:[], rates:{}});
   renderRadHeat(s.rad_heat || [], s.rad_heat_tata || []);
   renderGail(s.gail_gas_burner || []);
   renderLPH('hlph', s.horizontal_lph || []);
@@ -738,123 +738,133 @@ function renderBlowers(data) {
 }
 
 // ── Recuperator ──────────────────────────────────────────────────────────────
-function renderRecuperator(data) {
+function renderRecuperator(payload) {
   const el = document.getElementById('sheet-recuperator');
+  const data  = (payload.rows  || payload || []);
+  const rates = (payload.rates || {});
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const n = v => (v == null || v === 0) ? '—' : fmt(v);
-  const q = v => (v == null || v === 0) ? '' : String(Math.round(v * 100) / 100);
+  const fmtR  = v => (v == null) ? '—' : '₹' + fmt(v);
+  const fmtV  = v => (v == null || v === 0) ? '—' : fmt(v);
+  const fmtQ  = v => (v == null || v === 0) ? '—' : (Math.round(v * 100) / 100);
 
-  // ── Recuperator F ────────────────────────────────────────────
-  const fRows = data.filter(r => r.type === 'F');
+  // Build one section table.
+  // cols: [{key, label, unit, rateKey, note}]
+  // For tubes: cost = qty / 0.3 × rate (F) or qty × 4.27 × rate (FS)
+  function buildSection(title, rows, cols, note) {
+    if (!rows.length) return '';
+
+    const thRate = cols.map(c => {
+      const r = rates[c.rateKey];
+      return `<th class="recup-rate-hdr" title="Rate from Rates sheet">
+        ${r != null ? '₹'+fmt(r)+'/'+c.unit : '—'}
+      </th>`;
+    }).join('');
+
+    const bodyRows = rows.map((r, i) => {
+      const fab   = r.fabrication_cost || 0;
+      const step1 = Math.round(fab * 1.3 * 100) / 100;   // ×1.3
+      const sell  = r.selling_price || 0;                 // ×1.3×1.8
+
+      const qCells = cols.map(c =>
+        `<td class="num-cell rc-qty">${fmtQ(r[c.key+'_qty'])}${c.unit ? '<span class="rc-unit"> '+c.unit+'</span>' : ''}${c.note||''}</td>`
+      ).join('');
+      const cCells = cols.map(c =>
+        `<td class="num-cell rc-cost">${fmtV(r[c.key+'_cost'])}</td>`
+      ).join('');
+
+      return `
+        <tr class="rc-row-qty">
+          <td class="rn" rowspan="2">${i+1}</td>
+          <td class="rc-model" rowspan="2">${esc(r.model)}</td>
+          ${qCells}
+          <td class="num-cell rc-fab"  rowspan="2">${fmtV(fab)}</td>
+          <td class="num-cell rc-step" rowspan="2">${fmtV(step1)}</td>
+          <td class="num-cell rc-sell" rowspan="2">${fmtV(sell)}</td>
+        </tr>
+        <tr class="rc-row-cost">${cCells}</tr>`;
+    }).join('');
+
+    return `<div class="model-block">
+      <div class="section-label">${title}</div>
+      ${note ? `<div class="rc-note">${note}</div>` : ''}
+      <div class="ro-wrap"><table class="ro-table recup-detail">
+        <thead>
+          <tr class="rc-hdr-label">
+            <th class="rn"></th>
+            <th style="text-align:left;">Model</th>
+            ${cols.map(c=>`<th title="${c.label} (${c.unit})">${c.label}<br><span class="rc-unit-hdr">${c.unit}${c.note||''}</span></th>`).join('')}
+            <th>Fabrication Cost</th>
+            <th>× 1.3 &nbsp;<span class="rc-factor">(÷0.8)</span></th>
+            <th>Selling Price<br><span class="rc-factor">× 1.3 × 1.8</span></th>
+          </tr>
+          <tr class="rc-hdr-rate">
+            <th></th>
+            <th style="text-align:left;font-size:10px;color:#888;">Rate ↓ / Qty →</th>
+            ${thRate}
+            <th></th><th></th><th></th>
+          </tr>
+        </thead>
+        <tbody>${bodyRows}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  // ── F Models ─────────────────────────────────────────────────
   const fCols = [
-    { key:'ms_tube_c', label:'MS Tube "C" Class', unit:'mtr', tube:true },
-    { key:'ci_gills',  label:'CI Gills',           unit:'Nos' },
-    { key:'ang_6550',  label:'M.S. Angle 65,50',   unit:'Kg'  },
-    { key:'ang_100100',label:'M.S. Angle 100,100',  unit:'Kg'  },
-    { key:'plate_16_5',label:'M.S. Plate 16mm×5mm', unit:'Kg'  },
-    { key:'bolt',      label:'Hardware Bolt',        unit:'Kg'  },
-    { key:'channel',   label:'M.S. Channel',         unit:'Kg', note:'*' },
+    { key:'ms_tube_c',  label:'MS Tube "C"',       unit:'mtr', rateKey:'tube_c'    },
+    { key:'ci_gills',   label:'CI Gills',           unit:'Nos', rateKey:'ci_gills'  },
+    { key:'ang_6550',   label:'Angle 65,50',        unit:'Kg',  rateKey:'ang_6550'  },
+    { key:'ang_100100', label:'Angle 100,100',      unit:'Kg',  rateKey:'ang_100100'},
+    { key:'plate_16_5', label:'Plate 16mm×5mm',     unit:'Kg',  rateKey:'plate_16_5'},
+    { key:'bolt',       label:'HW Bolt',            unit:'Kg',  rateKey:'bolt'      },
+    { key:'channel',    label:'Channel',            unit:'Kg',  rateKey:'channel', note:'*'},
   ];
-  const fTable = fRows.length ? `
-    <div class="model-block">
-      <div class="section-label">Recuperator — F Models</div>
-      <div style="font-size:11px;color:#666;margin-bottom:6px;">* Channel qty shown for reference; excluded from fabrication sum per Excel formula.</div>
-      <div class="ro-wrap"><table class="ro-table recup-detail">
-        <thead>
-          <tr>
-            <th class="rn"></th>
-            <th style="text-align:left;min-width:80px;">Model</th>
-            ${fCols.map(c=>`<th title="${c.label} (${c.unit})">${c.label.replace('M.S. ','')}<br><span style="font-weight:normal;font-size:10px;">${c.unit}${c.note||''}</span></th>`).join('')}
-            <th>Fab Cost (₹)</th>
-            <th>Selling Price (₹)</th>
-          </tr>
-          <tr class="qty-hdr">
-            <th></th><th style="font-size:10px;color:#888;text-align:left;">Qty →</th>
-            ${fCols.map(c=>`<th></th>`).join('')}<th></th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${fRows.map((r,i) => {
-            const qRow = fCols.map(c => `<td class="num-cell" style="font-size:10px;color:#555;">${q(r[c.key+'_qty'])}</td>`).join('');
-            const cRow = fCols.map(c => `<td class="num-cell">${n(r[c.key+'_cost'])}</td>`).join('');
-            return `<tr class="recup-qty-row"><td class="rn" rowspan="2">${i+1}</td><td rowspan="2" style="font-weight:600;">${esc(r.model)}</td>${qRow}<td class="num-cell" rowspan="2" style="font-weight:600;">${n(r.fabrication_cost)}</td><td class="num-cell" rowspan="2" style="font-weight:700;color:#1a5276;">${n(r.selling_price)}</td></tr><tr class="recup-cost-row">${cRow}</tr>`;
-          }).join('')}
-        </tbody>
-      </table></div>
-    </div>` : '';
 
-  // ── Recuperator HT ───────────────────────────────────────────
-  const htRows = data.filter(r => r.type === 'HT');
+  // ── HT Models ────────────────────────────────────────────────
   const htCols = [
-    { key:'plate_16_10', label:'M.S. Plate 16mm×10mm', unit:'Kg' },
-    { key:'plate_5',     label:'M.S. Plate 5mm',        unit:'Kg' },
-    { key:'ang_50',      label:'M.S. Angle 50×6',        unit:'Kg' },
-    { key:'ss_sheet',    label:'S.S. Sheet 3mm',         unit:'Kg' },
+    { key:'plate_16_10',label:'Plate 16mm×10mm',    unit:'Kg',  rateKey:'plate_16_10'},
+    { key:'plate_5',    label:'Plate 5mm',          unit:'Kg',  rateKey:'plate_5'    },
+    { key:'ang_50',     label:'Angle 50×6',         unit:'Kg',  rateKey:'ang_50'     },
+    { key:'ss_sheet',   label:'SS Sheet 3mm',       unit:'Kg',  rateKey:'ss_sheet'   },
   ];
-  const htTable = htRows.length ? `
-    <div class="model-block">
-      <div class="section-label">Recuperator — HT Models</div>
-      <div class="ro-wrap"><table class="ro-table recup-detail">
-        <thead>
-          <tr>
-            <th class="rn"></th>
-            <th style="text-align:left;min-width:80px;">Model</th>
-            ${htCols.map(c=>`<th title="${c.label} (${c.unit})">${c.label.replace('M.S. ','').replace('S.S. ','')}<br><span style="font-weight:normal;font-size:10px;">${c.unit}</span></th>`).join('')}
-            <th>Fab Cost (₹)</th>
-            <th>Selling Price (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${htRows.map((r,i) => {
-            const cRow = htCols.map(c => `<td class="num-cell">${n(r[c.key+'_cost'])}</td>`).join('');
-            const qRow = htCols.map(c => `<td class="num-cell" style="font-size:10px;color:#555;">${q(r[c.key+'_qty'])}</td>`).join('');
-            return `<tr class="recup-qty-row"><td class="rn" rowspan="2">${i+1}</td><td rowspan="2" style="font-weight:600;">${esc(r.model)}</td>${qRow}<td class="num-cell" rowspan="2" style="font-weight:600;">${n(r.fabrication_cost)}</td><td class="num-cell" rowspan="2" style="font-weight:700;color:#1a5276;">${n(r.selling_price)}</td></tr><tr class="recup-cost-row">${cRow}</tr>`;
-          }).join('')}
-        </tbody>
-      </table></div>
-    </div>` : '';
 
-  // ── Recuperator FS ───────────────────────────────────────────
-  const fsRows = data.filter(r => r.type === 'FS');
+  // ── FS Models ────────────────────────────────────────────────
   const fsCols = [
-    { key:'ms_tube_c', label:'MS Tube "C" Class', unit:'mtr' },
-    { key:'ms_tube_b', label:'MS Tube "B" Class', unit:'mtr' },
-    { key:'ang_6550',  label:'M.S. Angle 65,50',  unit:'Kg'  },
-    { key:'ang_100100',label:'M.S. Angle 100,100', unit:'Kg'  },
-    { key:'plate_16_5',label:'M.S. Plate 16mm×5mm',unit:'Kg'  },
-    { key:'bolt',      label:'Hardware Bolt',       unit:'Kg'  },
-    { key:'channel',   label:'M.S. Channel',        unit:'Kg'  },
+    { key:'ms_tube_c',  label:'MS Tube "C"',        unit:'mtr', rateKey:'tube_c'    },
+    { key:'ms_tube_b',  label:'MS Tube "B"',        unit:'mtr', rateKey:'tube_b'    },
+    { key:'ang_6550',   label:'Angle 65,50',        unit:'Kg',  rateKey:'ang_6550'  },
+    { key:'ang_100100', label:'Angle 100,100',      unit:'Kg',  rateKey:'ang_100100'},
+    { key:'plate_16_5', label:'Plate 16mm×5mm',     unit:'Kg',  rateKey:'plate_16_5'},
+    { key:'bolt',       label:'HW Bolt',            unit:'Kg',  rateKey:'bolt'      },
+    { key:'channel',    label:'Channel',            unit:'Kg',  rateKey:'channel'   },
   ];
-  const fsTable = fsRows.length ? `
-    <div class="model-block">
-      <div class="section-label">Recuperator — FS Models</div>
-      <div class="ro-wrap"><table class="ro-table recup-detail">
-        <thead>
-          <tr>
-            <th class="rn"></th>
-            <th style="text-align:left;min-width:80px;">Model</th>
-            ${fsCols.map(c=>`<th title="${c.label} (${c.unit})">${c.label.replace('M.S. ','')}<br><span style="font-weight:normal;font-size:10px;">${c.unit}</span></th>`).join('')}
-            <th>Fab Cost (₹)</th>
-            <th>Selling Price (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${fsRows.map((r,i) => {
-            const qRow = fsCols.map(c => `<td class="num-cell" style="font-size:10px;color:#555;">${q(r[c.key+'_qty'])}</td>`).join('');
-            const cRow = fsCols.map(c => `<td class="num-cell">${n(r[c.key+'_cost'])}</td>`).join('');
-            return `<tr class="recup-qty-row"><td class="rn" rowspan="2">${i+1}</td><td rowspan="2" style="font-weight:600;">${esc(r.model)}</td>${qRow}<td class="num-cell" rowspan="2" style="font-weight:600;">${n(r.fabrication_cost)}</td><td class="num-cell" rowspan="2" style="font-weight:700;color:#1a5276;">${n(r.selling_price)}</td></tr><tr class="recup-cost-row">${cRow}</tr>`;
-          }).join('')}
-        </tbody>
-      </table></div>
-    </div>` : '';
+
+  const fTable  = buildSection('Recuperator — F Models',  data.filter(r=>r.type==='F'),  fCols,
+    '* Channel qty shown for reference — excluded from fabrication sum (matches Excel formula). Tube cost = qty ÷ 0.3 × rate.');
+  const htTable = buildSection('Recuperator — HT Models', data.filter(r=>r.type==='HT'), htCols, null);
+  const fsTable = buildSection('Recuperator — FS Models', data.filter(r=>r.type==='FS'), fsCols,
+    'Tube cost = qty × 4.27 × rate.');
 
   el.innerHTML = `<style>
-    .recup-detail th { text-align:right; font-size:11px; padding:4px 8px; white-space:nowrap; }
-    .recup-detail td { font-size:12px; padding:3px 8px; }
-    .recup-qty-row td  { border-bottom:none !important; background:#fafbfc; }
-    .recup-cost-row td { border-top:1px dashed #d5d8dc !important; background:#fff; }
-    .recup-detail .rn  { font-size:11px; color:#aaa; }
+    .recup-detail              { border-collapse:collapse; }
+    .recup-detail th           { text-align:right; font-size:11px; padding:5px 8px; white-space:nowrap; background:#f0f3f7; }
+    .recup-detail td           { font-size:12px; padding:3px 8px; }
+    .rc-hdr-label th           { border-bottom:1px solid #ccc; }
+    .rc-hdr-rate  th           { border-bottom:2px solid #aaa; background:#e8ecf1; font-size:10px; color:#555; }
+    .recup-rate-hdr            { color:#1a5276; font-weight:600; }
+    .rc-row-qty  td            { border-bottom:none !important; background:#fafbfc; }
+    .rc-row-cost td            { border-top:1px dashed #d5d8dc !important; background:#fff; }
+    .rc-qty                    { color:#444; font-size:11px; }
+    .rc-unit                   { font-size:10px; color:#888; }
+    .rc-unit-hdr               { font-weight:normal; font-size:10px; color:#666; }
+    .rc-cost                   { color:#222; }
+    .rc-fab                    { font-weight:600; background:#fffde7 !important; border-left:2px solid #f9ca24 !important; }
+    .rc-step                   { font-weight:600; background:#e8f5e9 !important; border-left:1px solid #a5d6a7 !important; color:#1b5e20; }
+    .rc-sell                   { font-weight:700; background:#e3f2fd !important; border-left:2px solid #1565c0 !important; color:#0d47a1; font-size:13px; }
+    .rc-model                  { font-weight:600; padding:6px 8px; min-width:70px; }
+    .rc-factor                 { font-size:9px; font-weight:normal; color:#888; }
+    .rc-note                   { font-size:11px; color:#666; margin-bottom:6px; font-style:italic; }
   </style>${fTable}${htTable}${fsTable}`;
 }
 

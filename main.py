@@ -532,10 +532,33 @@ def pricelist_summary():
         # ── Recuperator ───────────────────────────────────────────────────
         try:
             rcols = [c[1] for c in conn.execute("PRAGMA table_info(recuperator_master)").fetchall()]
-            recup = [dict(zip(rcols, r)) for r in q(
+            recup_rows = [dict(zip(rcols, r)) for r in q(
                 f"SELECT {', '.join(rcols)} FROM recuperator_master ORDER BY type, model")]
+            # Fetch component rates used in recuperator calculations
+            recup_rate_items = {
+                'tube_c':     "M.S. Tube \"C\" Class",
+                'tube_b':     "M.S. Tube \"B\" Class",
+                'ci_gills':   "C.I. Gills",
+                'ang_6550':   "M.S. Angle 65,50",
+                'ang_100100': "M.S. Angle 100,100",
+                'plate_16_5': "M.S. Plate 16mm*",
+                'bolt':       "Hardware Bolt",
+                'channel':    "M.S. Chanel",
+                'plate_16_10':"M.S. Plate 16mm*10mm",
+                'plate_5':    "M.S. Plate 5mm",
+                'ang_50':     "M.S. Angle 50*6",
+                'ss_sheet':   "S.S. Sheet 3mm",
+            }
+            recup_rates = {}
+            for key, prefix in recup_rate_items.items():
+                row = conn.execute(
+                    "SELECT price FROM component_price_master WHERE item LIKE ? LIMIT 1",
+                    (prefix + '%',)
+                ).fetchone()
+                recup_rates[key] = float(row[0]) if row else None
+            recup = {"rows": recup_rows, "rates": recup_rates}
         except Exception:
-            recup = []
+            recup = {"rows": [], "rates": {}}
 
         # ── Rad Heat ──────────────────────────────────────────────────────
         rad = [{"item": r[0], "output_kw": r[1], "gas_lpg": r[2], "gas_ng": r[3], "price": r[4]}
