@@ -744,49 +744,55 @@ function renderRecuperator(payload) {
   const rates = Array.isArray(payload) ? {} : (payload.rates || {});
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  // Show blank for zero/null qty; show 0 explicitly for cost cells
-  const qv = v => (v == null || v === 0) ? '' : (Math.round(v * 100) / 100);
-  const cv = v => (v == null) ? '' : fmt(v);
-  const fmtRate = (key, unit) => {
-    const r = rates[key];
-    return r != null ? `₹${fmt(r)}/${unit}` : '';
-  };
+  // Show blank for zero/null qty; show value for cost cells
+  function qv(v) { return (v == null || v === 0) ? '' : (Math.round(v * 100) / 100); }
+  function cv(v) { return (v == null) ? '' : fmt(v); }
+  function rateHdr(key, unit) {
+    var rv = rates[key];
+    return (rv != null) ? '&#8377;' + fmt(rv) + '/' + unit : '';
+  }
 
   // ── builds qty table for one section ──────────────────────────
   function qtyTable(rows, cols) {
-    const thead = `<tr class="rl-hdr">
-      <td class="rl-model-hdr">Model</td>
-      ${cols.map(c=>`<td class="rl-col-hdr">${c.hdr}</td>`).join('')}
-      <td class="rl-total-hdr">Total Cost</td>
-    </tr>`;
-    const tbody = rows.map(r => `<tr>
-      <td class="rl-model">${esc(r.model)}</td>
-      ${cols.map(c=>`<td class="rl-qty">${qv(r[c.qkey])}</td>`).join('')}
-      <td class="rl-selling">${cv(r.selling_price)}</td>
-    </tr>`).join('');
-    return `<table class="rl-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+    var h = '<tr class="rl-hdr"><td class="rl-model-hdr">Model</td>';
+    for (var i = 0; i < cols.length; i++) h += '<td class="rl-col-hdr">' + cols[i].hdr + '</td>';
+    h += '<td class="rl-total-hdr">Total Cost</td></tr>';
+
+    var b = '';
+    for (var ri = 0; ri < rows.length; ri++) {
+      var row = rows[ri];
+      b += '<tr><td class="rl-model">' + esc(row.model) + '</td>';
+      for (var ci = 0; ci < cols.length; ci++) {
+        b += '<td class="rl-qty">' + qv(row[cols[ci].qkey]) + '</td>';
+      }
+      b += '<td class="rl-selling">' + cv(row.selling_price) + '</td></tr>';
+    }
+    return '<table class="rl-tbl"><thead>' + h + '</thead><tbody>' + b + '</tbody></table>';
   }
 
   // ── builds cost table for one section ─────────────────────────
-  function costTable(rows, cols, hasFactorCols) {
-    const thead = `<tr class="rl-hdr">
-      <td class="rl-model-hdr">Model</td>
-      ${cols.map(c=>`<td class="rl-col-hdr">${c.hdr}<br><span class="rl-rate">${fmtRate(c.rk, c.unit)}</span></td>`).join('')}
-      <td class="rl-total-hdr">${hasFactorCols ? 'Total Cost' : 'cost'}</td>
-      ${hasFactorCols ? `<td class="rl-factor-hdr">0.3</td><td class="rl-factor-hdr">0.8</td>` : ''}
-    </tr>`;
-    const tbody = rows.map(r => {
-      const fab   = r.fabrication_cost || 0;
-      const s13   = Math.round(fab * 1.3 * 100) / 100;
-      const sell  = r.selling_price || 0;
-      return `<tr>
-        <td class="rl-model">${esc(r.model)}</td>
-        ${cols.map(c=>`<td class="rl-cost">${cv(r[c.ck])}</td>`).join('')}
-        <td class="rl-fab">${cv(fab)}</td>
-        ${hasFactorCols ? `<td class="rl-s13">${cv(s13)}</td><td class="rl-sell">${cv(sell)}</td>` : ''}
-      </tr>`;
-    }).join('');
-    return `<table class="rl-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  function costTable(rows, cols) {
+    var h = '<tr class="rl-hdr"><td class="rl-model-hdr">Model</td>';
+    for (var i = 0; i < cols.length; i++) {
+      h += '<td class="rl-col-hdr">' + cols[i].hdr + '<br><span class="rl-rate">' + rateHdr(cols[i].rk, cols[i].unit) + '</span></td>';
+    }
+    h += '<td class="rl-total-hdr">Total Cost</td><td class="rl-factor-hdr">0.3</td><td class="rl-factor-hdr">0.8</td></tr>';
+
+    var b = '';
+    for (var ri = 0; ri < rows.length; ri++) {
+      var row = rows[ri];
+      var fab  = row.fabrication_cost || 0;
+      var s13  = Math.round(fab * 1.3 * 100) / 100;
+      var sell = row.selling_price || 0;
+      b += '<tr><td class="rl-model">' + esc(row.model) + '</td>';
+      for (var ci = 0; ci < cols.length; ci++) {
+        b += '<td class="rl-cost">' + cv(row[cols[ci].ck]) + '</td>';
+      }
+      b += '<td class="rl-fab">' + cv(fab) + '</td>';
+      b += '<td class="rl-s13">' + cv(s13) + '</td>';
+      b += '<td class="rl-sell">' + cv(sell) + '</td></tr>';
+    }
+    return '<table class="rl-tbl"><thead>' + h + '</thead><tbody>' + b + '</tbody></table>';
   }
 
   // ── F section columns ──────────────────────────────────────────
