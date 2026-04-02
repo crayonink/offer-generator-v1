@@ -312,9 +312,9 @@ function renderAll() {
   const s = DATA.summary || {};
   renderRates(DATA.rates || []);
   renderHPU(s.hpu || []);
-  renderPartsTabbed('oil-parts', s.oil_burner_parts || [], 'oil_burner_parts_master');
-  renderPartsTabbed('hv-parts',  s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
-  renderPartsTabbed('gas-parts', s.gas_burner_parts || [], 'gas_burner_parts_master');
+  renderPartsColumns('oil-parts',  s.oil_burner_parts || [], 'oil_burner_parts_master');
+  renderPartsColumns('hv-parts',   s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
+  renderPartsColumns('gas-parts',  s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
   renderRecuperator(s.recuperator || {rows:[], rates:{}});
   renderRadHeat(s.rad_heat || [], s.rad_heat_tata || []);
@@ -636,50 +636,56 @@ function renderPartsTabbed(sheetId, sections, table) {
   render();
 }
 
-function renderSideBySide(sheetId, sections, table) {
-  const el = document.getElementById(`sheet-${sheetId}`);
+// ── All sections as independent side-by-side tables (Oil/HV/Gas Burner) ────────
+function renderPartsColumns(sheetId, sections, table) {
+  var el = document.getElementById('sheet-' + sheetId);
   if (!sections.length) { el.innerHTML = emptyMsg(); return; }
 
-  const maxItems = Math.max(...sections.map(s => (s.items||[]).length));
+  var cards = '';
+  for (var si = 0; si < sections.length; si++) {
+    var sec = sections[si];
+    var items = sec.items || [];
+    var rows = '';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      rows += '<tr>'
+        + '<td class="rn">' + (i + 1) + '</td>'
+        + '<td class="item-cell">' + esc(it.particular || '') + '</td>'
+        + '<td class="num-cell">' + (it.qty != null ? it.qty : '') + '</td>'
+        + '<td style="text-align:center;">' + esc(it.unit || '') + '</td>'
+        + '<td class="editable" data-rowid="' + it.rowid + '" data-field="rate">' + fmt(it.rate) + '</td>'
+        + '<td class="amount-cell" data-rowid="' + it.rowid + '">' + fmt(it.amount) + '</td>'
+        + '</tr>';
+    }
+    rows += '<tr class="total-row">'
+      + '<td class="rn"></td><td class="item-cell">FABRICATION COST</td>'
+      + '<td></td><td></td><td></td>'
+      + '<td class="num-cell">' + fmt(sec.fabrication_cost) + '</td>'
+      + '</tr>';
+    rows += '<tr class="selling-row">'
+      + '<td class="rn"></td><td class="item-cell">SELLING PRICE \u00d71.25</td>'
+      + '<td></td><td></td><td></td>'
+      + '<td class="num-cell">' + fmt(sec.selling_price) + '</td>'
+      + '</tr>';
 
-  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:220px;">PARTICULARS</th>`;
-  let hr2 = '';
-  sections.forEach(sec => {
-    hr1 += `<th class="top-header" colspan="4">${esc(sec.title)}</th><th class="gap-th" rowspan="2"></th>`;
-    hr2 += `<th style="min-width:65px;">QTY</th><th style="min-width:50px;">UNIT</th><th style="min-width:88px;">RATE</th><th style="min-width:105px;">AMOUNT</th><th class="gap-th"></th>`;
-  });
-
-  let rows = '';
-  let rowNum = 0;
-  for (let i = 0; i < maxItems; i++) {
-    const label = sections[0]?.items[i]?.particular || '';
-    if (!label && sections.every(s => !s.items[i])) continue;
-    rowNum++;
-    rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
-    sections.forEach(sec => {
-      const it = sec.items[i];
-      if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
-      rows += `<td class="num-cell">${it.qty??''}</td>`;
-      rows += `<td style="text-align:center;">${esc(it.unit||'')}</td>`;
-      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>`;
-      rows += `<td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>`;
-      rows += `<td class="gap-td"></td>`;
-    });
-    rows += '</tr>';
+    cards += '<div style="flex:0 0 auto;">'
+      + '<div class="section-label" style="text-align:center;padding:5px 10px;margin-bottom:4px;">' + esc(sec.title) + '</div>'
+      + '<div class="xl-wrap"><table class="xl-table">'
+      + '<thead><tr>'
+      + '<th class="rn"></th>'
+      + '<th class="item-th" style="min-width:195px;">PARTICULARS</th>'
+      + '<th style="min-width:52px;">QTY</th>'
+      + '<th style="min-width:42px;">UNIT</th>'
+      + '<th style="min-width:78px;">RATE</th>'
+      + '<th style="min-width:98px;">AMOUNT</th>'
+      + '</tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '</table></div>'
+      + '</div>';
   }
 
-  rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">FABRICATION COST</td>`;
-  sections.forEach(sec => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.fabrication_cost)}</td><td class="gap-td"></td>`; });
-  rows += '</tr>';
-  rows += `<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE ×1.25</td>`;
-  sections.forEach(sec => { rows += `<td></td><td></td><td></td><td class="num-cell">${fmt(sec.selling_price)}</td><td class="gap-td"></td>`; });
-  rows += '</tr>';
-
-  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
-    <thead><tr>${hr1}</tr><tr class="hdr2">${hr2}</tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
-
+  el.innerHTML = '<div style="display:flex;gap:14px;overflow-x:auto;padding:8px 4px;align-items:flex-start;">'
+    + cards + '</div>';
   attachEditHandlers(el, table);
 }
 
@@ -950,44 +956,71 @@ function renderGail(data) {
   </table></div>`;
 }
 
-// ── Horizontal / Vertical LPH — models side by side ─────────────────────────
+// ── Horizontal / Vertical LPH — models side by side, grouped in tabs of 3 ────
 function renderLPH(sheetId, data) {
-  const el = document.getElementById(`sheet-${sheetId}`);
+  var el = document.getElementById('sheet-' + sheetId);
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const maxItems = Math.max(...data.map(m => (m.items||[]).length));
+  var GROUP = 3;   // models per tab
+  var groups = [];
+  for (var g = 0; g < data.length; g += GROUP) {
+    groups.push(data.slice(g, g + GROUP));
+  }
+  var activeGroup = 0;
 
-  let hr1 = `<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:220px;">DESCRIPTION</th>`;
-  let hr2 = '';
-  data.forEach(m => {
-    hr1 += `<th class="top-header" colspan="2">${esc(m.model)}</th><th class="gap-th" rowspan="2"></th>`;
-    hr2 += `<th style="min-width:50px;">QTY</th><th style="min-width:110px;">AMOUNT (₹)</th><th class="gap-th"></th>`;
-  });
-
-  let rows = '', rowNum = 0;
-  for (let i = 0; i < maxItems; i++) {
-    const label = data[0]?.items[i]?.particular || '';
-    if (!label && data.every(m => !m.items[i])) continue;
-    rowNum++;
-    rows += `<tr><td class="rn">${rowNum}</td><td class="item-cell">${esc(label)}</td>`;
-    data.forEach(m => {
-      const it = m.items[i];
-      if (!it) { rows += `<td></td><td></td><td class="gap-td"></td>`; return; }
-      rows += `<td style="text-align:center;">${it.qty??''}</td>`;
-      rows += `<td class="num-cell">${fmt(it.amount)}</td>`;
-      rows += `<td class="gap-td"></td>`;
-    });
+  function buildTable(models) {
+    var maxItems = 0;
+    for (var mi = 0; mi < models.length; mi++) {
+      var len = (models[mi].items || []).length;
+      if (len > maxItems) maxItems = len;
+    }
+    var hr1 = '<th class="rn" rowspan="2"></th><th class="item-th" rowspan="2" style="min-width:230px;">DESCRIPTION</th>';
+    var hr2 = '';
+    for (var mi = 0; mi < models.length; mi++) {
+      hr1 += '<th class="top-header" colspan="2">' + esc(models[mi].model) + '</th><th class="gap-th" rowspan="2"></th>';
+      hr2 += '<th style="min-width:52px;">QTY</th><th style="min-width:115px;">AMOUNT (&#8377;)</th><th class="gap-th"></th>';
+    }
+    var rows = '';
+    var rowNum = 0;
+    for (var i = 0; i < maxItems; i++) {
+      var label = (models[0].items[i] || {}).particular || '';
+      if (!label) continue;
+      rowNum++;
+      rows += '<tr><td class="rn">' + rowNum + '</td><td class="item-cell">' + esc(label) + '</td>';
+      for (var mi = 0; mi < models.length; mi++) {
+        var it = models[mi].items[i];
+        if (!it) { rows += '<td></td><td></td><td class="gap-td"></td>'; continue; }
+        rows += '<td style="text-align:center;">' + (it.qty != null ? it.qty : '') + '</td>';
+        rows += '<td class="num-cell">' + fmt(it.amount) + '</td>';
+        rows += '<td class="gap-td"></td>';
+      }
+      rows += '</tr>';
+    }
+    rows += '<tr class="selling-row"><td class="rn"></td><td class="item-cell">SELLING PRICE</td>';
+    for (var mi = 0; mi < models.length; mi++) {
+      rows += '<td></td><td class="num-cell">' + fmt(models[mi].total) + '</td><td class="gap-td"></td>';
+    }
     rows += '</tr>';
+    return '<div class="xl-wrap"><table class="xl-table">'
+      + '<thead><tr>' + hr1 + '</tr><tr class="hdr2">' + hr2 + '</tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '</table></div>';
   }
 
-  rows += `<tr class="total-row"><td class="rn"></td><td class="item-cell">TOTAL</td>`;
-  data.forEach(m => { rows += `<td></td><td class="num-cell">${fmt(m.total)}</td><td class="gap-td"></td>`; });
-  rows += '</tr>';
+  function render() {
+    var tabs = '';
+    for (var gi = 0; gi < groups.length; gi++) {
+      var g = groups[gi];
+      var label = g[0].model.replace(/\s*(HORIZONTAL|VERTICAL)\s*/i, '').replace(/LADLE PREHEATER/i, '').replace(/LPS/i, '').trim();
+      var endLabel = g[g.length - 1].model.replace(/\s*(HORIZONTAL|VERTICAL)\s*/i, '').replace(/LADLE PREHEATER/i, '').replace(/LPS/i, '').trim();
+      var tabText = label === endLabel ? label : label + ' \u2013 ' + endLabel;
+      tabs += '<button class="kw-tab' + (gi === activeGroup ? ' kw-tab-active' : '') + '" onclick="lphSelectGroup_' + sheetId.replace(/-/g,'_') + '(' + gi + ')">' + tabText + '</button>';
+    }
+    el.innerHTML = '<div class="kw-selector">' + tabs + '</div>' + buildTable(groups[activeGroup]);
+  }
 
-  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
-    <thead><tr>${hr1}</tr><tr class="hdr2">${hr2}</tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
+  window['lphSelectGroup_' + sheetId.replace(/-/g,'_')] = function(gi) { activeGroup = gi; render(); };
+  render();
 }
 
 // ── Burner Pivot table ───────────────────────────────────────────────────────
