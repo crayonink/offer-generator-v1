@@ -704,6 +704,73 @@ def parse_blower(xl, conn):
     # Also sync to blower_master (used by blower_selector.py)
     _sync_blower_master(df_out, conn)
 
+    # ── DM / IDM component breakdown tables ─────────────────────────
+    # Structure: one row per model with qty + cost columns for each material
+    # DM 40 qty:  rows 38-44, cols 0(model),1-7(qty),8(total)
+    # DM 40 cost: rows 47-54, cols 0(model),1-7(cost),8(subtotal),9(×1.3),10(×1.8=selling)
+    # DM 28 qty:  rows 38-44, cols 11(model),12-18(qty),19(total)
+    # DM 28 cost: rows 47-54, cols 11(model),12-18(cost),19(subtotal)  [no factor cols shown]
+    # IDM qty:    rows 57-62, cols 0(model),1-11(qty),12(total)
+    # IDM cost:   rows 65-70, cols 0(model),1-11(cost),12(subtotal),13(×1.3),14(×1.8=selling)
+
+    DM_COMPS  = ["angle65_50","sheet8mm","sheet4mm","sheet2mm","flat","ci_hub","hardware"]
+    IDM_COMPS = ["angle65_50","sheet8mm","sheet4mm","sheet2mm","flat","ci_hub","hardware","ms_round","plumber_block","coupling","channel"]
+
+    dm_records = []
+
+    # DM 40: qty rows 38-44 (0-idx), cost rows 47-54 (0-idx)
+    dm40_qty  = {sval(r,0): [fval(r,c) for c in range(1,8)] for r in range(38,45) if sval(r,0) and re.match(r'^\d', sval(r,0))}
+    dm40_cost = {sval(r,0): [fval(r,c) for c in range(1,8)] + [fval(r,8), fval(r,9), fval(r,10)] for r in range(47,55) if sval(r,0) and re.match(r'^\d', sval(r,0))}
+    for model in sorted(dm40_qty):
+        qtys  = dm40_qty.get(model, [None]*7)
+        costs = dm40_cost.get(model, [None]*10)
+        row = {"section":"BLOWER DM 40","model":model}
+        for i,k in enumerate(DM_COMPS):
+            row[k+"_qty"]  = qtys[i]  if i < len(qtys)  else None
+            row[k+"_cost"] = costs[i] if i < len(costs) else None
+        row["subtotal"]    = costs[7]  if len(costs)>7  else None
+        row["factor_03"]   = costs[8]  if len(costs)>8  else None
+        row["selling_price"]= costs[9] if len(costs)>9  else fval(list(dm40_qty.keys()).index(model)+38, 8)
+        for k in IDM_COMPS[len(DM_COMPS):]:
+            row[k+"_qty"] = None; row[k+"_cost"] = None
+        dm_records.append(row)
+
+    # DM 28: qty rows 38-44 (0-idx) cols 11-19, cost rows 47-54 (0-idx) cols 11-19
+    dm28_qty  = {sval(r,11): [fval(r,c) for c in range(12,19)] for r in range(38,45) if sval(r,11) and re.match(r'^\d', sval(r,11))}
+    dm28_cost = {sval(r,11): [fval(r,c) for c in range(12,19)] + [fval(r,19)] for r in range(47,55) if sval(r,11) and re.match(r'^\d', sval(r,11))}
+    for model in sorted(dm28_qty):
+        qtys  = dm28_qty.get(model, [None]*7)
+        costs = dm28_cost.get(model, [None]*8)
+        row = {"section":"BLOWER DM 28","model":model}
+        for i,k in enumerate(DM_COMPS):
+            row[k+"_qty"]  = qtys[i]  if i < len(qtys)  else None
+            row[k+"_cost"] = costs[i] if i < len(costs) else None
+        row["subtotal"]     = costs[7] if len(costs)>7 else None
+        sub = costs[7] if len(costs)>7 else 0
+        row["factor_03"]    = round(sub * 1.3, 2) if sub else None
+        row["selling_price"]= round(sub * 1.3 * 1.8, 2) if sub else None
+        for k in IDM_COMPS[len(DM_COMPS):]:
+            row[k+"_qty"] = None; row[k+"_cost"] = None
+        dm_records.append(row)
+
+    # IDM: qty rows 57-62, cost rows 65-70
+    idm_qty  = {sval(r,0): [fval(r,c) for c in range(1,12)] for r in range(57,63) if sval(r,0) and re.match(r'^\d', sval(r,0))}
+    idm_cost = {sval(r,0): [fval(r,c) for c in range(1,12)] + [fval(r,12), fval(r,13), fval(r,14)] for r in range(65,71) if sval(r,0) and re.match(r'^\d', sval(r,0))}
+    for model in sorted(idm_qty):
+        qtys  = idm_qty.get(model, [None]*11)
+        costs = idm_cost.get(model, [None]*14)
+        row = {"section":"BLOWER IDM","model":model}
+        for i,k in enumerate(IDM_COMPS):
+            row[k+"_qty"]  = qtys[i]  if i < len(qtys)  else None
+            row[k+"_cost"] = costs[i] if i < len(costs) else None
+        row["subtotal"]     = costs[11] if len(costs)>11 else None
+        row["factor_03"]    = costs[12] if len(costs)>12 else None
+        row["selling_price"]= costs[13] if len(costs)>13 else None
+        dm_records.append(row)
+
+    if dm_records:
+        pd.DataFrame(dm_records).to_sql("blower_dm_idm_master", conn, if_exists="replace", index=False)
+
     return {"rows": len(df_out)}
 
 

@@ -528,6 +528,11 @@ def pricelist_summary():
         # ── Blowers ───────────────────────────────────────────────────────
         blower_cols = [d[0] for d in c.execute("SELECT * FROM blower_pricelist_master LIMIT 0").description]
         blowers = [dict(zip(blower_cols, r)) for r in q("SELECT * FROM blower_pricelist_master ORDER BY section, model")]
+        try:
+            dm_cols = [d[0] for d in c.execute("SELECT * FROM blower_dm_idm_master LIMIT 0").description]
+            blower_dm_idm = [dict(zip(dm_cols, r)) for r in q("SELECT * FROM blower_dm_idm_master ORDER BY section, model")]
+        except Exception:
+            blower_dm_idm = []
 
         # ── Recuperator ───────────────────────────────────────────────────
         try:
@@ -604,6 +609,7 @@ def pricelist_summary():
             "hpu": hpu,
             "burners": burners,
             "blowers": blowers,
+            "blower_dm_idm": blower_dm_idm,
             "recuperator": recup,
             "rad_heat": rad,
             "rad_heat_tata": rad_tata,

@@ -316,6 +316,7 @@ function renderAll() {
   renderPartsColumns('hv-parts',   s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
   renderPartsColumns('gas-parts',  s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
+  renderBlowerDmIdm(s.blower_dm_idm || []);
   renderRecuperator(s.recuperator || {rows:[], rates:{}});
   renderRadHeat(s.rad_heat || {models:[],spares:[]}, s.rad_heat_tata || {models:[],spares:[]});
   renderGail(s.gail_gas_burner || []);
@@ -741,28 +742,96 @@ function renderBlowers(data) {
     rows += '</tr>';
   }
 
-  // ── DM / IDM table ───────────────────────────────────────────────
-  var dmRows = '', lastDmSec = null, dmNum = 0;
-  for (var ri = 0; ri < dmData.length; ri++) {
-    var r = dmData[ri];
-    if (!r.model) continue;
-    if (r.section !== lastDmSec) {
-      dmRows += '<tr class="sec-hdr"><td colspan="3">' + esc(r.section || '') + '</td></tr>';
-      lastDmSec = r.section;
-    }
-    dmNum++;
-    dmRows += '<tr><td class="rn">' + dmNum + '</td><td>' + esc(r.model) + '</td><td style="text-align:right;font-weight:700;background:#e3f2fd;">' + fmt(r.total_cost) + '</td></tr>';
+  el.innerHTML = '<div class="section-label" style="margin-bottom:6px;">ENCON Blowers \u2014 Cost Breakdown</div>'
+    + '<div class="xl-wrap" style="margin-bottom:20px;"><table class="xl-table">'
+    + '<thead><tr>' + hdr + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+// ── DM / IDM Blower component breakdown (qty table + cost table) ─────────────
+function renderBlowerDmIdm(dmIdmData) {
+  if (!dmIdmData || !dmIdmData.length) return;
+  var el = document.getElementById('sheet-blowers');
+
+  var DM_COMPS = [
+    { key:'angle65_50',    lbl:'M.S Angle 65,50', unit:'Kg'  },
+    { key:'sheet8mm',      lbl:'M.S Sheet 8mm',   unit:'Kg'  },
+    { key:'sheet4mm',      lbl:'M.S Sheet 4mm',   unit:'Kg'  },
+    { key:'sheet2mm',      lbl:'M.S Sheet 2mm',   unit:'Kg'  },
+    { key:'flat',          lbl:'MS Flat',          unit:'Kg'  },
+    { key:'ci_hub',        lbl:'CI Hub',           unit:'Nos' },
+    { key:'hardware',      lbl:'Hardware',         unit:'Kg'  },
+  ];
+  var IDM_EXTRA = [
+    { key:'ms_round',      lbl:'M.S Round',        unit:'Kg'  },
+    { key:'plumber_block', lbl:'Plumber Block',    unit:'Nos' },
+    { key:'coupling',      lbl:'Coupling',         unit:'Nos' },
+    { key:'channel',       lbl:'M.S Chanel',       unit:'Kg'  },
+  ];
+
+  // group by section, preserve order
+  var sectionOrder = [], sectionMap = {};
+  for (var ri = 0; ri < dmIdmData.length; ri++) {
+    var sec = dmIdmData[ri].section;
+    if (!sectionMap[sec]) { sectionMap[sec] = []; sectionOrder.push(sec); }
+    sectionMap[sec].push(dmIdmData[ri]);
   }
 
-  el.innerHTML = '<div class="section-label" style="margin-bottom:6px;">ENCON Blowers — Cost Breakdown</div>'
-    + '<div class="xl-wrap" style="margin-bottom:20px;"><table class="xl-table">'
-    + '<thead><tr>' + hdr + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
-    + (dmData.length
-      ? '<div class="section-label" style="margin-bottom:6px;">DM / IDM Blowers — Total Cost</div>'
-        + '<div class="xl-wrap"><table class="xl-table" style="min-width:280px;">'
-        + '<thead><tr><th class="rn"></th><th style="min-width:100px;text-align:left;">Model</th><th style="min-width:140px;">Total Cost (\u20b9)</th></tr></thead>'
-        + '<tbody>' + dmRows + '</tbody></table></div>'
-      : '');
+  function buildSection(sec, rows) {
+    var isIDM = sec === 'BLOWER IDM';
+    var comps = isIDM ? DM_COMPS.concat(IDM_EXTRA) : DM_COMPS;
+
+    // ── Qty table ──────────────────────────────────────────
+    var qhdr = '<th class="rn"></th><th class="item-th" style="min-width:70px;">Model</th>';
+    for (var ci = 0; ci < comps.length; ci++) {
+      qhdr += '<th style="min-width:78px;">' + comps[ci].lbl + '<br><span style="font-size:10px;font-weight:normal;">(' + comps[ci].unit + ')</span></th>';
+    }
+    qhdr += '<th style="min-width:105px;background:#e3f2fd;">Selling Price</th>';
+    var qtbody = '';
+    for (var ri = 0; ri < rows.length; ri++) {
+      var r = rows[ri];
+      qtbody += '<tr><td class="rn">' + (ri+1) + '</td><td class="item-cell" style="font-weight:700;">' + esc(r.model) + '</td>';
+      for (var ci = 0; ci < comps.length; ci++) {
+        var v = r[comps[ci].key + '_qty'];
+        qtbody += '<td class="num-cell">' + (v != null ? v : '') + '</td>';
+      }
+      qtbody += '<td class="num-cell" style="font-weight:700;background:#e3f2fd;">' + fmt(r.selling_price) + '</td></tr>';
+    }
+
+    // ── Cost table ─────────────────────────────────────────
+    var chdr = '<th class="rn"></th><th class="item-th" style="min-width:70px;">Model</th>';
+    for (var ci = 0; ci < comps.length; ci++) {
+      chdr += '<th style="min-width:78px;">' + comps[ci].lbl + '</th>';
+    }
+    chdr += '<th style="min-width:95px;background:#fffde7;">\u00d71.3 (subtotal)</th>'
+          + '<th style="min-width:95px;background:#e8f5e9;">\u00d71.3</th>'
+          + '<th style="min-width:105px;background:#e3f2fd;">Selling Price</th>';
+    var ctbody = '';
+    for (var ri = 0; ri < rows.length; ri++) {
+      var r = rows[ri];
+      ctbody += '<tr><td class="rn">' + (ri+1) + '</td><td class="item-cell" style="font-weight:700;">' + esc(r.model) + '</td>';
+      for (var ci = 0; ci < comps.length; ci++) {
+        var v = r[comps[ci].key + '_cost'];
+        ctbody += '<td class="num-cell">' + (v != null ? fmt(v) : '') + '</td>';
+      }
+      ctbody += '<td class="num-cell" style="background:#fffde7;font-weight:600;">' + fmt(r.subtotal) + '</td>'
+             + '<td class="num-cell" style="background:#e8f5e9;font-weight:600;">' + fmt(r.factor_03) + '</td>'
+             + '<td class="num-cell" style="background:#e3f2fd;font-weight:700;">' + fmt(r.selling_price) + '</td></tr>';
+    }
+
+    return '<div class="section-label" style="margin:14px 0 4px;">' + esc(sec) + '</div>'
+      + '<div style="font-size:11px;color:#555;margin-bottom:3px;">Qty (kg / nos)</div>'
+      + '<div class="xl-wrap" style="margin-bottom:6px;"><table class="xl-table">'
+      + '<thead><tr>' + qhdr + '</tr></thead><tbody>' + qtbody + '</tbody></table></div>'
+      + '<div style="font-size:11px;color:#555;margin-bottom:3px;">Material Cost (\u20b9)</div>'
+      + '<div class="xl-wrap" style="margin-bottom:16px;"><table class="xl-table">'
+      + '<thead><tr>' + chdr + '</tr></thead><tbody>' + ctbody + '</tbody></table></div>';
+  }
+
+  var html = '<div class="section-label" style="margin-bottom:6px;">DM / IDM Blowers \u2014 Component Breakdown</div>';
+  for (var si = 0; si < sectionOrder.length; si++) {
+    html += buildSection(sectionOrder[si], sectionMap[sectionOrder[si]]);
+  }
+  el.innerHTML += html;
 }
 
 // ── Recuperator ──────────────────────────────────────────────────────────────
