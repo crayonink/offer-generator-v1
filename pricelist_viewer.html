@@ -742,26 +742,120 @@ function renderRecuperator(data) {
   const el = document.getElementById('sheet-recuperator');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  let rows = '', lastType = null, rowNum = 0;
-  data.forEach(r => {
-    if (!r.model) return;
-    if (r.type !== lastType) {
-      rows += `<tr class="sec-hdr"><td colspan="4">TYPE: ${esc(r.type||'')}</td></tr>`;
-      lastType = r.type;
-    }
-    rowNum++;
-    rows += `<tr><td class="rn">${rowNum}</td><td>${esc(r.model)}</td><td style="text-align:right;">${fmt(r.fabrication_cost)}</td><td style="text-align:right;">${fmt(r.selling_price)}</td></tr>`;
-  });
+  const n = v => (v == null || v === 0) ? '—' : fmt(v);
+  const q = v => (v == null || v === 0) ? '' : String(Math.round(v * 100) / 100);
 
-  el.innerHTML = `<div class="ro-wrap"><table class="ro-table">
-    <thead><tr>
-      <th class="rn"></th>
-      <th style="min-width:180px;text-align:left;">Model</th>
-      <th style="min-width:150px;">Fabrication Cost (₹)</th>
-      <th style="min-width:150px;">Selling Price (₹)</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
+  // ── Recuperator F ────────────────────────────────────────────
+  const fRows = data.filter(r => r.type === 'F');
+  const fCols = [
+    { key:'ms_tube_c', label:'MS Tube "C" Class', unit:'mtr', tube:true },
+    { key:'ci_gills',  label:'CI Gills',           unit:'Nos' },
+    { key:'ang_6550',  label:'M.S. Angle 65,50',   unit:'Kg'  },
+    { key:'ang_100100',label:'M.S. Angle 100,100',  unit:'Kg'  },
+    { key:'plate_16_5',label:'M.S. Plate 16mm×5mm', unit:'Kg'  },
+    { key:'bolt',      label:'Hardware Bolt',        unit:'Kg'  },
+    { key:'channel',   label:'M.S. Channel',         unit:'Kg', note:'*' },
+  ];
+  const fTable = fRows.length ? `
+    <div class="model-block">
+      <div class="section-label">Recuperator — F Models</div>
+      <div style="font-size:11px;color:#666;margin-bottom:6px;">* Channel qty shown for reference; excluded from fabrication sum per Excel formula.</div>
+      <div class="ro-wrap"><table class="ro-table recup-detail">
+        <thead>
+          <tr>
+            <th class="rn"></th>
+            <th style="text-align:left;min-width:80px;">Model</th>
+            ${fCols.map(c=>`<th title="${c.label} (${c.unit})">${c.label.replace('M.S. ','')}<br><span style="font-weight:normal;font-size:10px;">${c.unit}${c.note||''}</span></th>`).join('')}
+            <th>Fab Cost (₹)</th>
+            <th>Selling Price (₹)</th>
+          </tr>
+          <tr class="qty-hdr">
+            <th></th><th style="font-size:10px;color:#888;text-align:left;">Qty →</th>
+            ${fCols.map(c=>`<th></th>`).join('')}<th></th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${fRows.map((r,i) => {
+            const qRow = fCols.map(c => `<td class="num-cell" style="font-size:10px;color:#555;">${q(r[c.key+'_qty'])}</td>`).join('');
+            const cRow = fCols.map(c => `<td class="num-cell">${n(r[c.key+'_cost'])}</td>`).join('');
+            return `<tr class="recup-qty-row"><td class="rn" rowspan="2">${i+1}</td><td rowspan="2" style="font-weight:600;">${esc(r.model)}</td>${qRow}<td class="num-cell" rowspan="2" style="font-weight:600;">${n(r.fabrication_cost)}</td><td class="num-cell" rowspan="2" style="font-weight:700;color:#1a5276;">${n(r.selling_price)}</td></tr><tr class="recup-cost-row">${cRow}</tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>` : '';
+
+  // ── Recuperator HT ───────────────────────────────────────────
+  const htRows = data.filter(r => r.type === 'HT');
+  const htCols = [
+    { key:'plate_16_10', label:'M.S. Plate 16mm×10mm', unit:'Kg' },
+    { key:'plate_5',     label:'M.S. Plate 5mm',        unit:'Kg' },
+    { key:'ang_50',      label:'M.S. Angle 50×6',        unit:'Kg' },
+    { key:'ss_sheet',    label:'S.S. Sheet 3mm',         unit:'Kg' },
+  ];
+  const htTable = htRows.length ? `
+    <div class="model-block">
+      <div class="section-label">Recuperator — HT Models</div>
+      <div class="ro-wrap"><table class="ro-table recup-detail">
+        <thead>
+          <tr>
+            <th class="rn"></th>
+            <th style="text-align:left;min-width:80px;">Model</th>
+            ${htCols.map(c=>`<th title="${c.label} (${c.unit})">${c.label.replace('M.S. ','').replace('S.S. ','')}<br><span style="font-weight:normal;font-size:10px;">${c.unit}</span></th>`).join('')}
+            <th>Fab Cost (₹)</th>
+            <th>Selling Price (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${htRows.map((r,i) => {
+            const cRow = htCols.map(c => `<td class="num-cell">${n(r[c.key+'_cost'])}</td>`).join('');
+            const qRow = htCols.map(c => `<td class="num-cell" style="font-size:10px;color:#555;">${q(r[c.key+'_qty'])}</td>`).join('');
+            return `<tr class="recup-qty-row"><td class="rn" rowspan="2">${i+1}</td><td rowspan="2" style="font-weight:600;">${esc(r.model)}</td>${qRow}<td class="num-cell" rowspan="2" style="font-weight:600;">${n(r.fabrication_cost)}</td><td class="num-cell" rowspan="2" style="font-weight:700;color:#1a5276;">${n(r.selling_price)}</td></tr><tr class="recup-cost-row">${cRow}</tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>` : '';
+
+  // ── Recuperator FS ───────────────────────────────────────────
+  const fsRows = data.filter(r => r.type === 'FS');
+  const fsCols = [
+    { key:'ms_tube_c', label:'MS Tube "C" Class', unit:'mtr' },
+    { key:'ms_tube_b', label:'MS Tube "B" Class', unit:'mtr' },
+    { key:'ang_6550',  label:'M.S. Angle 65,50',  unit:'Kg'  },
+    { key:'ang_100100',label:'M.S. Angle 100,100', unit:'Kg'  },
+    { key:'plate_16_5',label:'M.S. Plate 16mm×5mm',unit:'Kg'  },
+    { key:'bolt',      label:'Hardware Bolt',       unit:'Kg'  },
+    { key:'channel',   label:'M.S. Channel',        unit:'Kg'  },
+  ];
+  const fsTable = fsRows.length ? `
+    <div class="model-block">
+      <div class="section-label">Recuperator — FS Models</div>
+      <div class="ro-wrap"><table class="ro-table recup-detail">
+        <thead>
+          <tr>
+            <th class="rn"></th>
+            <th style="text-align:left;min-width:80px;">Model</th>
+            ${fsCols.map(c=>`<th title="${c.label} (${c.unit})">${c.label.replace('M.S. ','')}<br><span style="font-weight:normal;font-size:10px;">${c.unit}</span></th>`).join('')}
+            <th>Fab Cost (₹)</th>
+            <th>Selling Price (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${fsRows.map((r,i) => {
+            const qRow = fsCols.map(c => `<td class="num-cell" style="font-size:10px;color:#555;">${q(r[c.key+'_qty'])}</td>`).join('');
+            const cRow = fsCols.map(c => `<td class="num-cell">${n(r[c.key+'_cost'])}</td>`).join('');
+            return `<tr class="recup-qty-row"><td class="rn" rowspan="2">${i+1}</td><td rowspan="2" style="font-weight:600;">${esc(r.model)}</td>${qRow}<td class="num-cell" rowspan="2" style="font-weight:600;">${n(r.fabrication_cost)}</td><td class="num-cell" rowspan="2" style="font-weight:700;color:#1a5276;">${n(r.selling_price)}</td></tr><tr class="recup-cost-row">${cRow}</tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>
+    </div>` : '';
+
+  el.innerHTML = `<style>
+    .recup-detail th { text-align:right; font-size:11px; padding:4px 8px; white-space:nowrap; }
+    .recup-detail td { font-size:12px; padding:3px 8px; }
+    .recup-qty-row td  { border-bottom:none !important; background:#fafbfc; }
+    .recup-cost-row td { border-top:1px dashed #d5d8dc !important; background:#fff; }
+    .recup-detail .rn  { font-size:11px; color:#aaa; }
+  </style>${fTable}${htTable}${fsTable}`;
 }
 
 // ── Rad Heat ────────────────────────────────────────────────────────────────

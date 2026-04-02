@@ -531,8 +531,9 @@ def pricelist_summary():
 
         # ── Recuperator ───────────────────────────────────────────────────
         try:
-            recup = [{"type": r[0], "model": r[1], "fabrication_cost": r[2], "selling_price": r[3]}
-                     for r in q("SELECT type, model, fabrication_cost, selling_price FROM recuperator_master ORDER BY type, model")]
+            rcols = [c[1] for c in conn.execute("PRAGMA table_info(recuperator_master)").fetchall()]
+            recup = [dict(zip(rcols, r)) for r in q(
+                f"SELECT {', '.join(rcols)} FROM recuperator_master ORDER BY type, model")]
         except Exception:
             recup = []
 

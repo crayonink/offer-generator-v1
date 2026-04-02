@@ -1432,23 +1432,33 @@ def parse_recuperator(xl, conn):
         model = rows_vals[ri][0]
         if model is None or not str(model).strip():
             continue
-        b = _v(ri, 1)   # MS Tube C qty
-        c = _v(ri, 2)   # CI Gills qty
-        d = _v(ri, 3)   # Angle 65,50
-        e = _v(ri, 4)   # Angle 100,100
-        f = _v(ri, 5)   # Plate 16mm*5mm
-        g = _v(ri, 6)   # Hardware Bolt
-        # (col H / MS Channel is calculated but excluded from the Excel SUM)
-        tube_cost   = (b / 0.3) * R['tube_c'] if b else 0
-        ci_cost     = c * R['ci_gills']
-        ang65_cost  = d * R['ang_6550']
-        ang100_cost = e * R['ang_100']
-        plate_cost  = f * R['plate_5mm']
-        bolt_cost   = g * R['bolt']
+        qtc = _v(ri, 1)   # MS Tube C qty (mtr)
+        qcg = _v(ri, 2)   # CI Gills qty
+        qa6 = _v(ri, 3)   # Angle 65,50 (kg)
+        qa1 = _v(ri, 4)   # Angle 100,100 (kg)
+        qpl = _v(ri, 5)   # Plate 16mm*5mm (kg)
+        qbl = _v(ri, 6)   # Hardware Bolt (kg)
+        qch = _v(ri, 7)   # MS Channel (kg) — stored but excluded from Excel SUM
+        tube_cost   = (qtc / 0.3) * R['tube_c'] if qtc else 0
+        ci_cost     = qcg * R['ci_gills']
+        ang65_cost  = qa6 * R['ang_6550']
+        ang100_cost = qa1 * R['ang_100']
+        plate_cost  = qpl * R['plate_5mm']
+        bolt_cost   = qbl * R['bolt']
+        chan_cost   = qch * R['channel']
         fab_cost    = tube_cost + ci_cost + ang65_cost + ang100_cost + plate_cost + bolt_cost
         selling     = round(fab_cost * MARKUP, 2)
-        records.append({"type": "F", "model": str(model).strip(),
-                        "fabrication_cost": round(fab_cost, 2), "selling_price": selling})
+        records.append({
+            "type": "F", "model": str(model).strip(),
+            "ms_tube_c_qty": qtc, "ms_tube_c_cost": round(tube_cost, 2),
+            "ci_gills_qty":  qcg, "ci_gills_cost":  round(ci_cost, 2),
+            "ang_6550_qty":  qa6, "ang_6550_cost":  round(ang65_cost, 2),
+            "ang_100100_qty":qa1, "ang_100100_cost": round(ang100_cost, 2),
+            "plate_16_5_qty":qpl, "plate_16_5_cost": round(plate_cost, 2),
+            "bolt_qty":      qbl, "bolt_cost":       round(bolt_cost, 2),
+            "channel_qty":   qch, "channel_cost":    round(chan_cost, 2),
+            "fabrication_cost": round(fab_cost, 2), "selling_price": selling,
+        })
 
     # ── Type HT (same input rows, cols M–Q: M=12,N=13,O=14,P=15,Q=16) ──
     HT_MODELS_ROWS = range(2, 6)   # rows 3–6 only (4 HT models)
@@ -1456,15 +1466,24 @@ def parse_recuperator(xl, conn):
         model = rows_vals[ri][12]
         if model is None or not str(model).strip():
             continue
-        n = _v(ri, 13)   # Plate 16mm*10mm
-        o = _v(ri, 14)   # Plate 5mm
-        p = _v(ri, 15)   # Angle 50*6
-        q = _v(ri, 16)   # SS Sheet 3mm
-        fab_cost = (n * R['plate_10mm'] + o * R['plate_5mm2'] +
-                    p * R['ang_50']    + q * R['ss_sheet'])
+        qp10 = _v(ri, 13)   # Plate 16mm*10mm
+        qp5  = _v(ri, 14)   # Plate 5mm
+        qa50 = _v(ri, 15)   # Angle 50*6
+        qss  = _v(ri, 16)   # SS Sheet 3mm
+        p10_cost = qp10 * R['plate_10mm']
+        p5_cost  = qp5  * R['plate_5mm2']
+        a50_cost = qa50 * R['ang_50']
+        ss_cost  = qss  * R['ss_sheet']
+        fab_cost = p10_cost + p5_cost + a50_cost + ss_cost
         selling  = round(fab_cost * MARKUP, 2)
-        records.append({"type": "HT", "model": str(model).strip(),
-                        "fabrication_cost": round(fab_cost, 2), "selling_price": selling})
+        records.append({
+            "type": "HT", "model": str(model).strip(),
+            "plate_16_10_qty": qp10, "plate_16_10_cost": round(p10_cost, 2),
+            "plate_5_qty":     qp5,  "plate_5_cost":     round(p5_cost, 2),
+            "ang_50_qty":      qa50, "ang_50_cost":      round(a50_cost, 2),
+            "ss_sheet_qty":    qss,  "ss_sheet_cost":    round(ss_cost, 2),
+            "fabrication_cost": round(fab_cost, 2), "selling_price": selling,
+        })
 
     # ── Type FS (rows 21–27, 0-indexed 20–26) ────────────────────
     # cols: A=0,B=1(tube_c),C=2(tube_b),D=3(ci_gills),E=4,F=5,G=6,H=7(bolt),I=8(channel)
@@ -1473,25 +1492,34 @@ def parse_recuperator(xl, conn):
         model = rows_vals[ri][0]
         if model is None or not str(model).strip():
             continue
-        b = _v(ri, 1)   # tube C qty
-        c = _v(ri, 2)   # tube B qty
-        e = _v(ri, 4)   # Angle 65,50
-        f = _v(ri, 5)   # Angle 100,100
-        g = _v(ri, 6)   # Plate 16mm*5mm
-        h = _v(ri, 7)   # Hardware Bolt
-        i = _v(ri, 8)   # MS Channel (included in FS sum)
-        tube_c_cost = b * 4.27 * R['tube_c']
-        tube_b_cost = c * 4.27 * R['tube_b']
-        ang65_cost  = e * R['ang_6550']
-        ang100_cost = f * R['ang_100']
-        plate_cost  = g * R['plate_5mm']
-        bolt_cost   = h * R['bolt']
-        chan_cost    = i * R['channel']
+        qtc = _v(ri, 1)   # tube C qty (mtr)
+        qtb = _v(ri, 2)   # tube B qty (mtr)
+        qa6 = _v(ri, 4)   # Angle 65,50 (kg)
+        qa1 = _v(ri, 5)   # Angle 100,100 (kg)
+        qpl = _v(ri, 6)   # Plate 16mm*5mm (kg)
+        qbl = _v(ri, 7)   # Hardware Bolt (kg)
+        qch = _v(ri, 8)   # MS Channel (kg) — included in FS sum
+        tube_c_cost = qtc * 4.27 * R['tube_c']
+        tube_b_cost = qtb * 4.27 * R['tube_b']
+        ang65_cost  = qa6 * R['ang_6550']
+        ang100_cost = qa1 * R['ang_100']
+        plate_cost  = qpl * R['plate_5mm']
+        bolt_cost   = qbl * R['bolt']
+        chan_cost   = qch * R['channel']
         fab_cost    = (tube_c_cost + tube_b_cost + ang65_cost + ang100_cost +
                        plate_cost + bolt_cost + chan_cost)
         selling     = round(fab_cost * MARKUP, 2)
-        records.append({"type": "FS", "model": str(model).strip(),
-                        "fabrication_cost": round(fab_cost, 2), "selling_price": selling})
+        records.append({
+            "type": "FS", "model": str(model).strip(),
+            "ms_tube_c_qty": qtc, "ms_tube_c_cost": round(tube_c_cost, 2),
+            "ms_tube_b_qty": qtb, "ms_tube_b_cost": round(tube_b_cost, 2),
+            "ang_6550_qty":  qa6, "ang_6550_cost":  round(ang65_cost, 2),
+            "ang_100100_qty":qa1, "ang_100100_cost": round(ang100_cost, 2),
+            "plate_16_5_qty":qpl, "plate_16_5_cost": round(plate_cost, 2),
+            "bolt_qty":      qbl, "bolt_cost":       round(bolt_cost, 2),
+            "channel_qty":   qch, "channel_cost":    round(chan_cost, 2),
+            "fabrication_cost": round(fab_cost, 2), "selling_price": selling,
+        })
 
     pd.DataFrame(records).to_sql("recuperator_master", conn, if_exists="replace", index=False)
     return {"rows": len(records)}
