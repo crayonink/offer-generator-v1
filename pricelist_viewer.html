@@ -744,6 +744,12 @@ function renderRecuperator(payload) {
   const rates = Array.isArray(payload) ? {} : (payload.rates || {});
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
+  // ── DEBUG: show first row raw JSON so we can see what arrives ──
+  var _dbg = data[0] || {};
+  var _dbgHtml = '<details style="font-size:11px;font-family:monospace;background:#fffde7;border:1px solid #f9ca24;padding:6px;margin-bottom:8px;">'
+    + '<summary style="cursor:pointer;font-weight:600;">DEBUG — first row keys (remove after fix)</summary>'
+    + '<pre>' + JSON.stringify(_dbg, null, 2) + '</pre></details>';
+
   // Show blank for zero/null qty; show value for cost cells
   function qv(v) { return (v == null || v === 0) ? '' : (Math.round(v * 100) / 100); }
   function cv(v) { return (v == null) ? '' : fmt(v); }
@@ -855,57 +861,49 @@ function renderRecuperator(payload) {
   const htRows = data.filter(r => r.type === 'HT');
   const fsRows = data.filter(r => r.type === 'FS');
 
-  el.innerHTML = `<style>
-    .rl-wrap          { overflow-x:auto; padding-bottom:4px; }
-    .rl-tbl           { border-collapse:collapse; font-size:12px; white-space:nowrap; margin-bottom:10px; }
-    .rl-tbl td        { border:1px solid #d0d3d8; padding:4px 9px; }
-    .rl-hdr td        { background:#dce4f0; font-weight:600; font-size:11px; text-align:center; border:1px solid #aab; }
-    .rl-model-hdr     { text-align:left !important; min-width:70px; }
-    .rl-col-hdr       { min-width:80px; }
-    .rl-total-hdr     { background:#c8d8f0 !important; min-width:100px; }
-    .rl-factor-hdr    { background:#b8d4c0 !important; min-width:90px; }
-    .rl-model         { font-weight:700; background:#f5f7fa; }
-    .rl-qty           { text-align:right; color:#333; }
-    .rl-cost          { text-align:right; color:#222; }
-    .rl-selling       { text-align:right; font-weight:700; color:#0d47a1; background:#e8f0fe; }
-    .rl-fab           { text-align:right; font-weight:600; background:#fffde7; }
-    .rl-s13           { text-align:right; font-weight:600; background:#e8f5e9; color:#1b5e20; }
-    .rl-sell          { text-align:right; font-weight:700; background:#e3f2fd; color:#0d47a1; }
-    .rl-rate          { font-size:10px; font-weight:normal; color:#1a5276; }
-    .rl-sec           { font-size:13px; font-weight:700; color:#1a3a5c; margin:14px 0 4px; letter-spacing:0.3px; }
-    .rl-spacer        { height:10px; }
-    .rl-side          { display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap; }
-    .rl-side > div    { flex:0 0 auto; }
-  </style>
-
-  <div class="rl-wrap">
-
-    <!-- ══ Row 1: Recuperator F (left) + Recuperator HT (right) ══ -->
-    <div class="rl-side">
-
-      <div>
-        <div class="rl-sec">Recuperator F</div>
-        ${qtyTable(fRows, fQCols)}
-        <div class="rl-spacer"></div>
-        ${costTable(fRows, fCCols, true)}
-      </div>
-
-      <div>
-        <div class="rl-sec">Recuperator HT</div>
-        ${qtyTable(htRows, htQCols)}
-        <div class="rl-spacer"></div>
-        ${costTable(htRows, htCCols, true)}
-      </div>
-
-    </div>
-
-    <!-- ══ Row 2: Recuperator FS (full width) ══ -->
-    <div class="rl-sec">Recuperator FS</div>
-    ${qtyTable(fsRows, fsQCols)}
-    <div class="rl-spacer"></div>
-    ${costTable(fsRows, fsCCols, true)}
-
-  </div>`;
+  el.innerHTML = '<style>'
+    + '.rl-wrap{overflow-x:auto;padding-bottom:4px;}'
+    + '.rl-tbl{border-collapse:collapse;font-size:12px;white-space:nowrap;margin-bottom:10px;}'
+    + '.rl-tbl td{border:1px solid #d0d3d8;padding:4px 9px;}'
+    + '.rl-hdr td{background:#dce4f0;font-weight:600;font-size:11px;text-align:center;border:1px solid #aab;}'
+    + '.rl-model-hdr{text-align:left!important;min-width:70px;}'
+    + '.rl-col-hdr{min-width:80px;}'
+    + '.rl-total-hdr{background:#c8d8f0!important;min-width:100px;}'
+    + '.rl-factor-hdr{background:#b8d4c0!important;min-width:90px;}'
+    + '.rl-model{font-weight:700;background:#f5f7fa;}'
+    + '.rl-qty{text-align:right;color:#333;}'
+    + '.rl-cost{text-align:right;color:#222;}'
+    + '.rl-selling{text-align:right;font-weight:700;color:#0d47a1;background:#e8f0fe;}'
+    + '.rl-fab{text-align:right;font-weight:600;background:#fffde7;}'
+    + '.rl-s13{text-align:right;font-weight:600;background:#e8f5e9;color:#1b5e20;}'
+    + '.rl-sell{text-align:right;font-weight:700;background:#e3f2fd;color:#0d47a1;}'
+    + '.rl-rate{font-size:10px;font-weight:normal;color:#1a5276;}'
+    + '.rl-sec{font-size:13px;font-weight:700;color:#1a3a5c;margin:14px 0 4px;letter-spacing:0.3px;}'
+    + '.rl-spacer{height:10px;}'
+    + '.rl-side{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;}'
+    + '.rl-side>div{flex:0 0 auto;}'
+    + '</style>'
+    + _dbgHtml
+    + '<div class="rl-wrap">'
+    + '<div class="rl-side">'
+    + '<div>'
+    + '<div class="rl-sec">Recuperator F</div>'
+    + qtyTable(fRows, fQCols)
+    + '<div class="rl-spacer"></div>'
+    + costTable(fRows, fCCols)
+    + '</div>'
+    + '<div>'
+    + '<div class="rl-sec">Recuperator HT</div>'
+    + qtyTable(htRows, htQCols)
+    + '<div class="rl-spacer"></div>'
+    + costTable(htRows, htCCols)
+    + '</div>'
+    + '</div>'
+    + '<div class="rl-sec">Recuperator FS</div>'
+    + qtyTable(fsRows, fsQCols)
+    + '<div class="rl-spacer"></div>'
+    + costTable(fsRows, fsCCols)
+    + '</div>';
 }
 
 // ── Rad Heat ────────────────────────────────────────────────────────────────
