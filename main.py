@@ -605,20 +605,76 @@ def get_pricelist_rates():
 @app.put("/api/pricelist/rate")
 def update_pricelist_rate(req: RateUpdateRequest):
     """Update a rate in component_price_master and cascade-recalculate all tables."""
+    import re as _re
+
+    def _norm(s):
+        s = str(s or "").upper()
+        s = _re.sub(r"[\s\-_\(\)\*\.\,\"\']+", " ", s).strip()
+        return s
+
     try:
         conn = sqlite3.connect(DB_PATH)
+
+        # Get old price before update
+        old_row = conn.execute(
+            "SELECT price FROM component_price_master WHERE item=?", (req.item,)
+        ).fetchone()
+        old_price = old_row[0] if old_row else None
+
+        # Update master table
         conn.execute(
             "UPDATE component_price_master SET previous_price=price, price=?, updated_at=? WHERE item=?",
             (req.price, datetime.now().strftime("%Y-%m-%d %H:%M"), req.item)
         )
         conn.commit()
+
+        # ── Direct cascade to all parts tables ──────────────────────────────
+        # Update rows where name fuzzy-matches AND rate = old_price
+        PARTS_TABLES = [
+            ("oil_burner_parts_master",    "particular"),
+            ("hv_oil_burner_parts_master", "particular"),
+            ("gas_burner_parts_master",    "particular"),
+            ("hpu_master",                 "item"),
+        ]
+        norm_item = _norm(req.item)
+        cascade_counts = {}
+
+        for table, name_col in PARTS_TABLES:
+            rows = conn.execute(
+                f"SELECT rowid, {name_col}, qty, rate FROM {table} WHERE rate IS NOT NULL"
+            ).fetchall()
+            updated = 0
+            for rowid, part_name, qty, rate in rows:
+                # Match: old rate must match AND name must fuzzy-match
+                if old_price is not None and abs(float(rate) - float(old_price)) > 0.01:
+                    continue
+                if _norm(part_name or "") != norm_item:
+                    continue
+                new_amount = round(float(qty or 0) * req.price, 2) if qty is not None else None
+                conn.execute(
+                    f"UPDATE {table} SET rate=?, amount=? WHERE rowid=?",
+                    (req.price, new_amount, rowid)
+                )
+                updated += 1
+            if updated:
+                cascade_counts[table] = updated
+
+        conn.commit()
+
+        # ── Excel formula cascade (for tables not covered above) ────────────
         xl_path = _find_latest_pricebook()
-        results = {}
+        xl_results = {}
         if xl_path:
-            results = _cascade_recalculate(xl_path, conn)
+            xl_results = _cascade_recalculate(xl_path, conn)
             conn.commit()
+
         conn.close()
-        return {"success": True, "cascaded": bool(xl_path), "results": {k: v for k, v in results.items() if "rows" in v}}
+        return {
+            "success": True,
+            "cascaded": bool(xl_path),
+            "direct_cascade": cascade_counts,
+            "results": {k: v for k, v in xl_results.items() if "rows" in v},
+        }
     except Exception as e:
         import traceback
         return {"success": False, "error": str(e), "detail": traceback.format_exc()}
