@@ -740,132 +740,166 @@ function renderBlowers(data) {
 // ── Recuperator ──────────────────────────────────────────────────────────────
 function renderRecuperator(payload) {
   const el = document.getElementById('sheet-recuperator');
-  const data  = (payload.rows  || payload || []);
-  const rates = (payload.rates || {});
+  const data  = Array.isArray(payload) ? payload : (payload.rows  || []);
+  const rates = Array.isArray(payload) ? {} : (payload.rates || {});
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  const fmtR  = v => (v == null) ? '—' : '₹' + fmt(v);
-  const fmtV  = v => (v == null || v === 0) ? '—' : fmt(v);
-  const fmtQ  = v => (v == null || v === 0) ? '—' : (Math.round(v * 100) / 100);
+  // Show blank for zero/null qty; show 0 explicitly for cost cells
+  const qv = v => (v == null || v === 0) ? '' : (Math.round(v * 100) / 100);
+  const cv = v => (v == null) ? '' : fmt(v);
+  const fmtRate = (key, unit) => {
+    const r = rates[key];
+    return r != null ? `₹${fmt(r)}/${unit}` : '';
+  };
 
-  // Build one section table.
-  // cols: [{key, label, unit, rateKey, note}]
-  // For tubes: cost = qty / 0.3 × rate (F) or qty × 4.27 × rate (FS)
-  function buildSection(title, rows, cols, note) {
-    if (!rows.length) return '';
-
-    const thRate = cols.map(c => {
-      const r = rates[c.rateKey];
-      return `<th class="recup-rate-hdr" title="Rate from Rates sheet">
-        ${r != null ? '₹'+fmt(r)+'/'+c.unit : '—'}
-      </th>`;
-    }).join('');
-
-    const bodyRows = rows.map((r, i) => {
-      const fab   = r.fabrication_cost || 0;
-      const step1 = Math.round(fab * 1.3 * 100) / 100;   // ×1.3
-      const sell  = r.selling_price || 0;                 // ×1.3×1.8
-
-      const qCells = cols.map(c =>
-        `<td class="num-cell rc-qty">${fmtQ(r[c.key+'_qty'])}${c.unit ? '<span class="rc-unit"> '+c.unit+'</span>' : ''}${c.note||''}</td>`
-      ).join('');
-      const cCells = cols.map(c =>
-        `<td class="num-cell rc-cost">${fmtV(r[c.key+'_cost'])}</td>`
-      ).join('');
-
-      return `
-        <tr class="rc-row-qty">
-          <td class="rn" rowspan="2">${i+1}</td>
-          <td class="rc-model" rowspan="2">${esc(r.model)}</td>
-          ${qCells}
-          <td class="num-cell rc-fab"  rowspan="2">${fmtV(fab)}</td>
-          <td class="num-cell rc-step" rowspan="2">${fmtV(step1)}</td>
-          <td class="num-cell rc-sell" rowspan="2">${fmtV(sell)}</td>
-        </tr>
-        <tr class="rc-row-cost">${cCells}</tr>`;
-    }).join('');
-
-    return `<div class="model-block">
-      <div class="section-label">${title}</div>
-      ${note ? `<div class="rc-note">${note}</div>` : ''}
-      <div class="ro-wrap"><table class="ro-table recup-detail">
-        <thead>
-          <tr class="rc-hdr-label">
-            <th class="rn"></th>
-            <th style="text-align:left;">Model</th>
-            ${cols.map(c=>`<th title="${c.label} (${c.unit})">${c.label}<br><span class="rc-unit-hdr">${c.unit}${c.note||''}</span></th>`).join('')}
-            <th>Fabrication Cost</th>
-            <th>× 1.3 &nbsp;<span class="rc-factor">(÷0.8)</span></th>
-            <th>Selling Price<br><span class="rc-factor">× 1.3 × 1.8</span></th>
-          </tr>
-          <tr class="rc-hdr-rate">
-            <th></th>
-            <th style="text-align:left;font-size:10px;color:#888;">Rate ↓ / Qty →</th>
-            ${thRate}
-            <th></th><th></th><th></th>
-          </tr>
-        </thead>
-        <tbody>${bodyRows}</tbody>
-      </table></div>
-    </div>`;
+  // ── builds qty table for one section ──────────────────────────
+  function qtyTable(rows, cols) {
+    const thead = `<tr class="rl-hdr">
+      <td class="rl-model-hdr">Model</td>
+      ${cols.map(c=>`<td class="rl-col-hdr">${c.hdr}</td>`).join('')}
+      <td class="rl-total-hdr">Total Cost</td>
+    </tr>`;
+    const tbody = rows.map(r => `<tr>
+      <td class="rl-model">${esc(r.model)}</td>
+      ${cols.map(c=>`<td class="rl-qty">${qv(r[c.qkey])}</td>`).join('')}
+      <td class="rl-selling">${cv(r.selling_price)}</td>
+    </tr>`).join('');
+    return `<table class="rl-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
   }
 
-  // ── F Models ─────────────────────────────────────────────────
-  const fCols = [
-    { key:'ms_tube_c',  label:'MS Tube "C"',       unit:'mtr', rateKey:'tube_c'    },
-    { key:'ci_gills',   label:'CI Gills',           unit:'Nos', rateKey:'ci_gills'  },
-    { key:'ang_6550',   label:'Angle 65,50',        unit:'Kg',  rateKey:'ang_6550'  },
-    { key:'ang_100100', label:'Angle 100,100',      unit:'Kg',  rateKey:'ang_100100'},
-    { key:'plate_16_5', label:'Plate 16mm×5mm',     unit:'Kg',  rateKey:'plate_16_5'},
-    { key:'bolt',       label:'HW Bolt',            unit:'Kg',  rateKey:'bolt'      },
-    { key:'channel',    label:'Channel',            unit:'Kg',  rateKey:'channel', note:'*'},
+  // ── builds cost table for one section ─────────────────────────
+  function costTable(rows, cols, hasFactorCols) {
+    const thead = `<tr class="rl-hdr">
+      <td class="rl-model-hdr">Model</td>
+      ${cols.map(c=>`<td class="rl-col-hdr">${c.hdr}<br><span class="rl-rate">${fmtRate(c.rk, c.unit)}</span></td>`).join('')}
+      <td class="rl-total-hdr">${hasFactorCols ? 'Total Cost' : 'cost'}</td>
+      ${hasFactorCols ? `<td class="rl-factor-hdr">0.3</td><td class="rl-factor-hdr">0.8</td>` : ''}
+    </tr>`;
+    const tbody = rows.map(r => {
+      const fab   = r.fabrication_cost || 0;
+      const s13   = Math.round(fab * 1.3 * 100) / 100;
+      const sell  = r.selling_price || 0;
+      return `<tr>
+        <td class="rl-model">${esc(r.model)}</td>
+        ${cols.map(c=>`<td class="rl-cost">${cv(r[c.ck])}</td>`).join('')}
+        <td class="rl-fab">${cv(fab)}</td>
+        ${hasFactorCols ? `<td class="rl-s13">${cv(s13)}</td><td class="rl-sell">${cv(sell)}</td>` : ''}
+      </tr>`;
+    }).join('');
+    return `<table class="rl-tbl"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  }
+
+  // ── F section columns ──────────────────────────────────────────
+  const fQCols = [
+    { hdr:'MS Tube "C" Class (mtr)', qkey:'ms_tube_c_qty' },
+    { hdr:'CI Gills (Nos)',           qkey:'ci_gills_qty'  },
+    { hdr:'M.S. Angle 65,50 (Kg)',   qkey:'ang_6550_qty'  },
+    { hdr:'M.S. Angle 100,100 (Kg)', qkey:'ang_100100_qty'},
+    { hdr:'M.S. Plate 16mm* 5mm',    qkey:'plate_16_5_qty'},
+    { hdr:'Hardware Bolt (KG)',       qkey:'bolt_qty'      },
+    { hdr:'M.S. Chanel (Kg)',        qkey:'channel_qty'   },
+  ];
+  const fCCols = [
+    { hdr:'MS Tube "C" Class (mtr)', ck:'ms_tube_c_cost',  rk:'tube_c',     unit:'mtr' },
+    { hdr:'CI Gills (Nos)',           ck:'ci_gills_cost',   rk:'ci_gills',   unit:'Nos' },
+    { hdr:'M.S. Angle 65,50 (Kg)',   ck:'ang_6550_cost',   rk:'ang_6550',   unit:'Kg'  },
+    { hdr:'M.S. Angle 100,100 (Kg)', ck:'ang_100100_cost', rk:'ang_100100', unit:'Kg'  },
+    { hdr:'M.S. Plate 16mm* 5mm',    ck:'plate_16_5_cost', rk:'plate_16_5', unit:'Kg'  },
+    { hdr:'Hardware Bolt (KG)',       ck:'bolt_cost',       rk:'bolt',       unit:'Kg'  },
+    { hdr:'M.S. Chanel (Kg)',        ck:'channel_cost',    rk:'channel',    unit:'Kg'  },
   ];
 
-  // ── HT Models ────────────────────────────────────────────────
-  const htCols = [
-    { key:'plate_16_10',label:'Plate 16mm×10mm',    unit:'Kg',  rateKey:'plate_16_10'},
-    { key:'plate_5',    label:'Plate 5mm',          unit:'Kg',  rateKey:'plate_5'    },
-    { key:'ang_50',     label:'Angle 50×6',         unit:'Kg',  rateKey:'ang_50'     },
-    { key:'ss_sheet',   label:'SS Sheet 3mm',       unit:'Kg',  rateKey:'ss_sheet'   },
+  // ── HT section columns ─────────────────────────────────────────
+  const htQCols = [
+    { hdr:'M.S. Plate 16mm*10mm',  qkey:'plate_16_10_qty' },
+    { hdr:'M.S. Plate 5mm',        qkey:'plate_5_qty'     },
+    { hdr:'M.S. Angle 50*6',       qkey:'ang_50_qty'      },
+    { hdr:'S.S Sheet',             qkey:'ss_sheet_qty'    },
+  ];
+  const htCCols = [
+    { hdr:'M.S. Plate 16mm*10mm',  ck:'plate_16_10_cost', rk:'plate_16_10', unit:'Kg' },
+    { hdr:'M.S. Plate 5mm',        ck:'plate_5_cost',     rk:'plate_5',     unit:'Kg' },
+    { hdr:'M.S. Angle 50*6',       ck:'ang_50_cost',      rk:'ang_50',      unit:'Kg' },
+    { hdr:'S.S Sheet',             ck:'ss_sheet_cost',    rk:'ss_sheet',    unit:'Kg' },
   ];
 
-  // ── FS Models ────────────────────────────────────────────────
-  const fsCols = [
-    { key:'ms_tube_c',  label:'MS Tube "C"',        unit:'mtr', rateKey:'tube_c'    },
-    { key:'ms_tube_b',  label:'MS Tube "B"',        unit:'mtr', rateKey:'tube_b'    },
-    { key:'ang_6550',   label:'Angle 65,50',        unit:'Kg',  rateKey:'ang_6550'  },
-    { key:'ang_100100', label:'Angle 100,100',      unit:'Kg',  rateKey:'ang_100100'},
-    { key:'plate_16_5', label:'Plate 16mm×5mm',     unit:'Kg',  rateKey:'plate_16_5'},
-    { key:'bolt',       label:'HW Bolt',            unit:'Kg',  rateKey:'bolt'      },
-    { key:'channel',    label:'Channel',            unit:'Kg',  rateKey:'channel'   },
+  // ── FS section columns ─────────────────────────────────────────
+  const fsQCols = [
+    { hdr:'MS Tube "C" Class (mtr)', qkey:'ms_tube_c_qty'  },
+    { hdr:'MS Tube "B" Class (mtr)', qkey:'ms_tube_b_qty'  },
+    { hdr:'CI Gills (Nos)',           qkey:'ci_gills_qty'   },
+    { hdr:'M.S. Angle 65,50 (Kg)',   qkey:'ang_6550_qty'   },
+    { hdr:'M.S. Angle 100,100 (Kg)', qkey:'ang_100100_qty' },
+    { hdr:'M.S. Plate 16mm* 5mm',    qkey:'plate_16_5_qty' },
+    { hdr:'Hardware Bolt (kg)',       qkey:'bolt_qty'       },
+    { hdr:'M.S. Chanel (kg)',        qkey:'channel_qty'    },
+  ];
+  const fsCCols = [
+    { hdr:'MS Tube "C" Class (mtr)', ck:'ms_tube_c_cost',  rk:'tube_c',     unit:'mtr' },
+    { hdr:'MS Tube "B" Class (mtr)', ck:'ms_tube_b_cost',  rk:'tube_b',     unit:'mtr' },
+    { hdr:'CI Gills (Nos)',           ck:'ci_gills_cost',   rk:'ci_gills',   unit:'Nos' },
+    { hdr:'M.S. Angle 65,50 (Kg)',   ck:'ang_6550_cost',   rk:'ang_6550',   unit:'Kg'  },
+    { hdr:'M.S. Angle 100,100 (Kg)', ck:'ang_100100_cost', rk:'ang_100100', unit:'Kg'  },
+    { hdr:'M.S. Plate 16mm* 5mm',    ck:'plate_16_5_cost', rk:'plate_16_5', unit:'Kg'  },
+    { hdr:'Hardware Bolt (kg)',       ck:'bolt_cost',       rk:'bolt',       unit:'Kg'  },
+    { hdr:'M.S. Chanel (kg)',        ck:'channel_cost',    rk:'channel',    unit:'Kg'  },
   ];
 
-  const fTable  = buildSection('Recuperator — F Models',  data.filter(r=>r.type==='F'),  fCols,
-    '* Channel qty shown for reference — excluded from fabrication sum (matches Excel formula). Tube cost = qty ÷ 0.3 × rate.');
-  const htTable = buildSection('Recuperator — HT Models', data.filter(r=>r.type==='HT'), htCols, null);
-  const fsTable = buildSection('Recuperator — FS Models', data.filter(r=>r.type==='FS'), fsCols,
-    'Tube cost = qty × 4.27 × rate.');
+  const fRows  = data.filter(r => r.type === 'F');
+  const htRows = data.filter(r => r.type === 'HT');
+  const fsRows = data.filter(r => r.type === 'FS');
 
   el.innerHTML = `<style>
-    .recup-detail              { border-collapse:collapse; }
-    .recup-detail th           { text-align:right; font-size:11px; padding:5px 8px; white-space:nowrap; background:#f0f3f7; }
-    .recup-detail td           { font-size:12px; padding:3px 8px; }
-    .rc-hdr-label th           { border-bottom:1px solid #ccc; }
-    .rc-hdr-rate  th           { border-bottom:2px solid #aaa; background:#e8ecf1; font-size:10px; color:#555; }
-    .recup-rate-hdr            { color:#1a5276; font-weight:600; }
-    .rc-row-qty  td            { border-bottom:none !important; background:#fafbfc; }
-    .rc-row-cost td            { border-top:1px dashed #d5d8dc !important; background:#fff; }
-    .rc-qty                    { color:#444; font-size:11px; }
-    .rc-unit                   { font-size:10px; color:#888; }
-    .rc-unit-hdr               { font-weight:normal; font-size:10px; color:#666; }
-    .rc-cost                   { color:#222; }
-    .rc-fab                    { font-weight:600; background:#fffde7 !important; border-left:2px solid #f9ca24 !important; }
-    .rc-step                   { font-weight:600; background:#e8f5e9 !important; border-left:1px solid #a5d6a7 !important; color:#1b5e20; }
-    .rc-sell                   { font-weight:700; background:#e3f2fd !important; border-left:2px solid #1565c0 !important; color:#0d47a1; font-size:13px; }
-    .rc-model                  { font-weight:600; padding:6px 8px; min-width:70px; }
-    .rc-factor                 { font-size:9px; font-weight:normal; color:#888; }
-    .rc-note                   { font-size:11px; color:#666; margin-bottom:6px; font-style:italic; }
-  </style>${fTable}${htTable}${fsTable}`;
+    .rl-wrap          { overflow-x:auto; padding-bottom:4px; }
+    .rl-tbl           { border-collapse:collapse; font-size:12px; white-space:nowrap; margin-bottom:10px; }
+    .rl-tbl td        { border:1px solid #d0d3d8; padding:4px 9px; }
+    .rl-hdr td        { background:#dce4f0; font-weight:600; font-size:11px; text-align:center; border:1px solid #aab; }
+    .rl-model-hdr     { text-align:left !important; min-width:70px; }
+    .rl-col-hdr       { min-width:80px; }
+    .rl-total-hdr     { background:#c8d8f0 !important; min-width:100px; }
+    .rl-factor-hdr    { background:#b8d4c0 !important; min-width:90px; }
+    .rl-model         { font-weight:700; background:#f5f7fa; }
+    .rl-qty           { text-align:right; color:#333; }
+    .rl-cost          { text-align:right; color:#222; }
+    .rl-selling       { text-align:right; font-weight:700; color:#0d47a1; background:#e8f0fe; }
+    .rl-fab           { text-align:right; font-weight:600; background:#fffde7; }
+    .rl-s13           { text-align:right; font-weight:600; background:#e8f5e9; color:#1b5e20; }
+    .rl-sell          { text-align:right; font-weight:700; background:#e3f2fd; color:#0d47a1; }
+    .rl-rate          { font-size:10px; font-weight:normal; color:#1a5276; }
+    .rl-sec           { font-size:13px; font-weight:700; color:#1a3a5c; margin:14px 0 4px; letter-spacing:0.3px; }
+    .rl-spacer        { height:10px; }
+    .rl-side          { display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap; }
+    .rl-side > div    { flex:0 0 auto; }
+  </style>
+
+  <div class="rl-wrap">
+
+    <!-- ══ Row 1: Recuperator F (left) + Recuperator HT (right) ══ -->
+    <div class="rl-side">
+
+      <div>
+        <div class="rl-sec">Recuperator F</div>
+        ${qtyTable(fRows, fQCols)}
+        <div class="rl-spacer"></div>
+        ${costTable(fRows, fCCols, true)}
+      </div>
+
+      <div>
+        <div class="rl-sec">Recuperator HT</div>
+        ${qtyTable(htRows, htQCols)}
+        <div class="rl-spacer"></div>
+        ${costTable(htRows, htCCols, true)}
+      </div>
+
+    </div>
+
+    <!-- ══ Row 2: Recuperator FS (full width) ══ -->
+    <div class="rl-sec">Recuperator FS</div>
+    ${qtyTable(fsRows, fsQCols)}
+    <div class="rl-spacer"></div>
+    ${costTable(fsRows, fsCCols, true)}
+
+  </div>`;
 }
 
 // ── Rad Heat ────────────────────────────────────────────────────────────────
