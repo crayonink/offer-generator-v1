@@ -317,7 +317,7 @@ function renderAll() {
   renderPartsColumns('gas-parts',  s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
   renderRecuperator(s.recuperator || {rows:[], rates:{}});
-  renderRadHeat(s.rad_heat || [], s.rad_heat_tata || []);
+  renderRadHeat(s.rad_heat || {models:[],spares:[]}, s.rad_heat_tata || {models:[],spares:[]});
   renderGail(s.gail_gas_burner || []);
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
@@ -907,25 +907,82 @@ function renderRecuperator(payload) {
 
 // ── Rad Heat ────────────────────────────────────────────────────────────────
 function renderRadHeat(rad, radTata) {
-  const el = document.getElementById('sheet-rad-heat');
-  const cols   = ['item','output_kw','gas_lpg','gas_ng','price'];
-  const labels = ['MODEL','OUTPUT (kW)','LPG (m³/hr)','NG (m³/hr)','Price w/ SS Tubing (₹)'];
+  var el = document.getElementById('sheet-rad-heat');
+  var activeTab = 'standard';
 
-  const block = (rows, title) => {
-    if (!rows.length) return '';
-    return `<div class="model-block">
-      <div class="section-label">${title}</div>
-      <div class="ro-wrap"><table class="ro-table">
-        <thead><tr><th class="rn"></th>${labels.map(l=>`<th>${l}</th>`).join('')}</tr></thead>
-        <tbody>${rows.map((r,i) => `<tr><td class="rn">${i+1}</td>${cols.map(c =>
-          c==='price' ? `<td style="text-align:right;">${fmt(r[c])}</td>` : `<td>${esc(r[c]??'')}</td>`
-        ).join('')}</tr>`).join('')}</tbody>
-      </table></div>
-    </div>`;
-  };
+  function buildModels(payload) {
+    var models = (payload && payload.models) ? payload.models : (Array.isArray(payload) ? payload : []);
+    if (!models.length) return '<p style="padding:16px;color:#888;">No model data</p>';
 
-  el.innerHTML = block(rad,'Rad Heat — Standard') + block(radTata,'Rad Heat — TATA');
-  if (!el.innerHTML) el.innerHTML = emptyMsg();
+    // ── Tubing Calculation Table ─────────────────────────────────
+    var tubeCols = [
+      { key: 'output_kw',      label: 'Output',          num: false },
+      { key: 'gas_lpg_m3hr',   label: 'LPG (m\u00b3/hr)', num: true },
+      { key: 'gas_ng_m3hr',    label: 'NG (m\u00b3/hr)',  num: true },
+      { key: 'tube_dia_mm',    label: 'Tube Dia (mm)',   num: true },
+      { key: 'tube_length_m',  label: 'Tube Len (m)',    num: true },
+      { key: 'num_elbows',     label: 'Elbows',          num: true },
+      { key: 'ms_tube_cost',   label: 'MS Tube Cost',    num: true },
+      { key: 'ss_tube_cost',   label: 'SS Tube Cost',    num: true },
+      { key: 'ss_elbow_cost',  label: 'SS Elbow Cost',   num: true },
+      { key: 'ss_total_cost',  label: 'SS Total Cost',   num: true },
+      { key: 'price_with_ss_tubing', label: 'Selling Price', num: true },
+    ];
+    var hdr = '<th class="rn"></th><th class="item-th" style="min-width:70px;">Model</th>';
+    for (var ci = 0; ci < tubeCols.length; ci++) {
+      hdr += '<th style="min-width:' + (tubeCols[ci].num ? '95px' : '70px') + ';">' + tubeCols[ci].label + '</th>';
+    }
+    var tbody = '';
+    for (var mi = 0; mi < models.length; mi++) {
+      var m = models[mi];
+      tbody += '<tr><td class="rn">' + (mi + 1) + '</td><td class="item-cell" style="font-weight:700;">' + esc(m.item || '') + '</td>';
+      for (var ci = 0; ci < tubeCols.length; ci++) {
+        var v = m[tubeCols[ci].key];
+        var isPrice = tubeCols[ci].key === 'price_with_ss_tubing';
+        var isSS    = tubeCols[ci].key === 'ss_total_cost';
+        var cell = tubeCols[ci].num
+          ? ('<td class="num-cell"' + (isPrice ? ' style="font-weight:700;background:#e3f2fd;color:#0d47a1;"' : isSS ? ' style="background:#e8f5e9;font-weight:600;"' : '') + '>'
+             + (v != null ? fmt(v) : '') + '</td>')
+          : '<td>' + esc(v != null ? String(v) : '') + '</td>';
+        tbody += cell;
+      }
+      tbody += '</tr>';
+    }
+    var modelTable = '<div class="section-label" style="margin-bottom:4px;">Models — Tubing Breakdown</div>'
+      + '<div class="xl-wrap"><table class="xl-table"><thead><tr>' + hdr + '</tr></thead><tbody>' + tbody + '</tbody></table></div>';
+
+    return modelTable;
+  }
+
+  function buildSpares(payload) {
+    var spares = (payload && payload.spares) ? payload.spares : [];
+    if (!spares.length) return '';
+    var rows = '';
+    for (var i = 0; i < spares.length; i++) {
+      var s = spares[i];
+      rows += '<tr><td class="rn">' + (i + 1) + '</td>'
+        + '<td class="item-cell">' + esc(s.item || '') + '</td>'
+        + '<td class="num-cell">' + fmt(s.price) + '</td></tr>';
+    }
+    return '<div class="section-label" style="margin:14px 0 4px;">Spares Price List</div>'
+      + '<div class="xl-wrap"><table class="xl-table" style="min-width:340px;">'
+      + '<thead><tr><th class="rn"></th><th class="item-th" style="min-width:240px;">ITEM</th><th style="min-width:110px;">PRICE (&#8377;)</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  function render() {
+    var payload = activeTab === 'standard' ? rad : radTata;
+    el.innerHTML = '<div class="kw-selector">'
+      + '<button class="kw-tab' + (activeTab === 'standard' ? ' kw-tab-active' : '') + '" onclick="radHeatTab(\'standard\')">Standard</button>'
+      + '<button class="kw-tab' + (activeTab === 'tata' ? ' kw-tab-active' : '') + '" onclick="radHeatTab(\'tata\')">TATA</button>'
+      + '</div>'
+      + buildModels(payload)
+      + buildSpares(payload);
+    if (!buildModels(payload)) el.innerHTML += emptyMsg();
+  }
+
+  window.radHeatTab = function(t) { activeTab = t; render(); };
+  render();
 }
 
 // ── GAIL Gas Burner ─────────────────────────────────────────────────────────

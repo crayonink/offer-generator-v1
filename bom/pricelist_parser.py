@@ -1714,13 +1714,25 @@ def _parse_rad_heat(xl, sheet_name, table_name, conn):
             cached = ws_v.cell(r, 5).value
             try: price = float(cached) if cached is not None else None
             except (TypeError, ValueError): price = None
+            def _sf(v):
+                try: return float(v) if v is not None else None
+                except (TypeError, ValueError): return None
             records.append({
                 "section": "MODEL",
                 "item": first.upper(),
                 "output_kw": output_kw,
-                "gas_lpg_m3hr": float(lpg) if lpg is not None else None,
-                "gas_ng_m3hr":  float(ng)  if ng  is not None else None,
+                "gas_lpg_m3hr": _sf(lpg),
+                "gas_ng_m3hr":  _sf(ng),
                 "price_with_ss_tubing": price,
+                # Tubing spec columns (G-O)
+                "tube_dia_mm":    _sf(ws_v.cell(r, 7).value),
+                "tube_length_m":  _sf(ws_v.cell(r, 8).value),
+                "num_elbows":     _sf(ws_v.cell(r, 9).value),
+                "ms_tube_cost":   _sf(ws_v.cell(r, 10).value),
+                "ss_tube_cost":   _sf(ws_v.cell(r, 11).value),
+                "ss_elbow_cost":  _sf(ws_v.cell(r, 13).value),
+                "ms_total_cost":  _sf(ws_v.cell(r, 14).value),
+                "ss_total_cost":  _sf(ws_v.cell(r, 15).value),
             })
 
         elif section == "spares":

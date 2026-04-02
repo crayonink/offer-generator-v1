@@ -562,10 +562,17 @@ def pricelist_summary():
             recup = {"rows": [], "rates": {}}
 
         # ── Rad Heat ──────────────────────────────────────────────────────
-        rad = [{"item": r[0], "output_kw": r[1], "gas_lpg": r[2], "gas_ng": r[3], "price": r[4]}
-               for r in q("SELECT item, output_kw, gas_lpg_m3hr, gas_ng_m3hr, price_with_ss_tubing FROM rad_heat_master WHERE section='MODEL'")]
-        rad_tata = [{"item": r[0], "output_kw": r[1], "gas_lpg": r[2], "gas_ng": r[3], "price": r[4]}
-                    for r in q("SELECT item, output_kw, gas_lpg_m3hr, gas_ng_m3hr, price_with_ss_tubing FROM rad_heat_tata_master WHERE section='MODEL'")]
+        def _rad_rows(table):
+            models, spares = [], []
+            for r in q(f"SELECT * FROM {table} ORDER BY section, item"):
+                d = dict(zip([x[0] for x in conn.execute(f"SELECT * FROM {table} LIMIT 0").description], r))
+                if d["section"] == "MODEL":
+                    models.append(d)
+                else:
+                    spares.append({"item": d["item"], "price": d["price_with_ss_tubing"]})
+            return {"models": models, "spares": spares}
+        rad      = _rad_rows("rad_heat_master")
+        rad_tata = _rad_rows("rad_heat_tata_master")
 
         # ── GAIL Gas Burner ───────────────────────────────────────────────
         gail_cols = [d[0] for d in c.execute("SELECT * FROM gail_gas_burner_master LIMIT 0").description]
