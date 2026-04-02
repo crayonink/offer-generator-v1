@@ -531,9 +531,10 @@ def pricelist_summary():
 
         # ── Recuperator ───────────────────────────────────────────────────
         try:
-            rcols = [c[1] for c in conn.execute("PRAGMA table_info(recuperator_master)").fetchall()]
-            recup_rows = [dict(zip(rcols, r)) for r in q(
-                f"SELECT {', '.join(rcols)} FROM recuperator_master ORDER BY type, model")]
+            # Use cursor description (avoids variable-name clash with outer cursor 'c')
+            c.execute("SELECT * FROM recuperator_master ORDER BY type, model")
+            rcols = [d[0] for d in c.description]
+            recup_rows = [dict(zip(rcols, r)) for r in c.fetchall()]
             # Fetch component rates used in recuperator calculations
             recup_rate_items = {
                 'tube_c':     "M.S. Tube \"C\" Class",

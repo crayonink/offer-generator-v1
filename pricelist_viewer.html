@@ -744,12 +744,6 @@ function renderRecuperator(payload) {
   const rates = Array.isArray(payload) ? {} : (payload.rates || {});
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  // ── DEBUG: show first row raw JSON so we can see what arrives ──
-  var _dbg = data[0] || {};
-  var _dbgHtml = '<details style="font-size:11px;font-family:monospace;background:#fffde7;border:1px solid #f9ca24;padding:6px;margin-bottom:8px;">'
-    + '<summary style="cursor:pointer;font-weight:600;">DEBUG — first row keys (remove after fix)</summary>'
-    + '<pre>' + JSON.stringify(_dbg, null, 2) + '</pre></details>';
-
   // Show blank for zero/null qty; show value for cost cells
   function qv(v) { return (v == null || v === 0) ? '' : (Math.round(v * 100) / 100); }
   function cv(v) { return (v == null) ? '' : fmt(v); }
