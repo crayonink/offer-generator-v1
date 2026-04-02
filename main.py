@@ -65,6 +65,47 @@ def ensure_extra_columns():
 
 ensure_extra_columns()
 
+# Duplicate name pairs in component_price_master — canonical -> [aliases]
+_RATE_DUPLICATES = [
+    ("FLEXIBLE HOSE-15NB*1000MM (OIL)", ["FLEXIBLE HOSE-15NB*1000MM (OIL )"]),
+    ("FLEXIBLE HOSE-15NB*750MM (OIL)",  ["FLEXIBLE HOSE-15NB*750MM (OIL )"]),
+    ("FLEXIBLE HOSE-20NB*1000MM (OIL)", ["FLEXIBLE HOSE-20NB*1000MM (OIL )"]),
+    ("FLEXIBLE HOSE-25NB*1000MM (AIR)", ["FLEXIBLE HOSE-25NB*1000MM (AIR )"]),
+    ("M.S. Sheet 2mm",       ["M.S. Sheet  2mm"]),
+    ("M.S. Sheet 3mm",       ["M.S. Sheet  3mm"]),
+    ("M.S. Plate 16mm*5mm",  ["M.S. Plate 16mm* 5mm"]),
+    ("M.S. Tube B Class 1.5 in", ['M.S. Tube "B" Class 1.5 in']),
+    ("M.S. Tube C Class 1.5 in", ['M.S. Tube "C" Class 1.5 in']),
+    ("M.S. Chanel",          ["M.S.Chanel"]),
+    ("Plumber block with Bearing", ["Plumber Block with Bearing"]),
+    ("Pulley with V belt",   ["Pulley with V Belt"]),
+    ("SS Pipe 304 60x3mm (per mtr)",  ["SS Pipe 304 60x3mm",  "SS Pipe 304 60 X 3mm"]),
+    ("SS Pipe 304 76x3mm (per mtr)",  ["SS Pipe 304 76x3mm",  "SS Pipe 304 76 X 3mm"]),
+    ("SS Pipe 304 100x3mm (per mtr)", ["SS Pipe 304 100x3mm", "SS Pipe 304 100 X 3mm"]),
+    ("ID FAN (ARE 35)",      ["ID FAN  (ARE 35)"]),
+    ("SEQUENCE CONTROLLER",  ["SEQUENCE"]),
+]
+
+def clean_duplicate_rates(conn):
+    """Remove known duplicate/alias rows from component_price_master."""
+    for canonical, aliases in _RATE_DUPLICATES:
+        for alias in aliases:
+            exists = conn.execute(
+                "SELECT 1 FROM component_price_master WHERE item=?", (alias,)
+            ).fetchone()
+            if not exists:
+                continue
+            canonical_exists = conn.execute(
+                "SELECT 1 FROM component_price_master WHERE item=?", (canonical,)
+            ).fetchone()
+            if canonical_exists:
+                conn.execute("DELETE FROM component_price_master WHERE item=?", (alias,))
+            else:
+                conn.execute(
+                    "UPDATE component_price_master SET item=? WHERE item=?", (canonical, alias)
+                )
+    conn.commit()
+
 import glob
 import tempfile
 
@@ -972,6 +1013,7 @@ async def upload_pricelist(file: UploadFile = File(...)):
 
         conn = sqlite3.connect(DB_PATH)
         results = _parse_pricelist_all(file_path, conn)
+        clean_duplicate_rates(conn)
         conn.close()
 
         updated = {t: r for t, r in results.items() if "rows" in r}
