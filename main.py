@@ -1196,6 +1196,131 @@ def get_stock_rates():
     return result
 
 
+# ── Stock → component_price_master mapping ────────────────────────────────────
+# Maps pricelist item name (or prefix) → stock item name (exact)
+_STOCK_PRICE_MAP = {
+    # MS structural
+    "M.S. Angle 65,50":       "M.S Angle 50x50x6 mm",
+    "M.S.Chanel":             "M.S Channel 100x50",
+    "M.S. Chanel":            "M.S Channel 100x50",
+    "M.S. Angle 100,100":     "M.S Angle 100X100X10",
+    "M.S. Angle 50*6":        "M.S Angle 50x50x6 mm",
+    "M.S. Flat":              None,   # no good match
+    "M.S. Round":             "M.S Round Dia 16 MM",
+    # MS plates / sheets
+    "M.S. Plate 5mm":         "M.S PLATE 1500X6300X5 MM",
+    "M.S. Plate 8mm":         "M.S Plate 1500X6300X10 MM",
+    "M.S. Plate 16mm* 5mm":   "M.S PLATE 1500X6300X5 MM",
+    "M.S. Plate 16mm*5mm":    "M.S PLATE 1500X6300X5 MM",
+    "M.S. Plate 16mm*10mm":   "M.S Plate 1500X6300X10 MM",
+    "M.S. Sheet 2mm":         None,
+    "M.S. Sheet  2mm":        None,
+    "M.S. Sheet 3mm":         None,
+    "M.S. Sheet  3mm":        None,
+    "M.S. Sheet 4mm":         None,
+    "M.S. Sheet 5mm":         "M.S Chequered Plate 1250X5000X5 MM",
+    "M.S. Sheet 8mm":         "M.S Plate 1510x6310x16mm",
+    # MS tubes
+    'M.S. Tube "B" Class 1.5 in': "M.S ERW Pipe 40 NB",
+    'M.S. Tube "C" Class 1.5 in': "M.S ERW Pipe 40 NB",
+    "M.S. Tube B Class 1.5 in":   "M.S ERW Pipe 40 NB",
+    "M.S. Tube C Class 1.5 in":   "M.S ERW Pipe 40 NB",
+    # SS
+    "S.S. Sheet 3mm":         "S.S Plate 1500X3000X3 MM",
+    "SS Pipe 304 60 X 3mm":   "S.S 304 ERW PIPE 100 MM OD",
+    "SS Pipe 304 60x3mm (per mtr)": "S.S 304 ERW PIPE 100 MM OD",
+    "SS Pipe 304 76 X 3mm":   "S.S ERW PIPE OD 65 X ID 58 / 57 MM",
+    "SS Pipe 304 76x3mm (per mtr)": "S.S ERW PIPE OD 65 X ID 58 / 57 MM",
+    "SS Pipe 304 100 X 3mm":  "S.S 304 ERW Pipe 100 NB",
+    "SS Pipe 304 100x3mm (per mtr)": "S.S 304 ERW Pipe 100 NB",
+    # Refractories
+    "Ceramic Fiber":          "Ceramic Fiber 128 Kg/m3",
+    "Whyteheat K":            "Whytheat-A",
+}
+
+@app.post("/api/stock/sync")
+def sync_stock_to_pricelist():
+    """
+    Reads the stock file, matches items to component_price_master via
+    _STOCK_PRICE_MAP, and updates matched rows.  Returns a summary.
+    """
+    import glob as glob_mod
+    import openpyxl
+
+    candidates = (
+        glob_mod.glob(os.path.join(UPLOAD_FOLDER, "Stock*.xlsx")) +
+        glob_mod.glob(os.path.join(BASE_DIR, "Stock*.xlsx"))
+    )
+    if not candidates:
+        return {"error": "Stock file not found"}
+    stock_path = candidates[0]
+
+    try:
+        wb = openpyxl.load_workbook(stock_path, read_only=True, data_only=True)
+        ws = wb["Stock Summary"]
+    except Exception as e:
+        return {"error": str(e)}
+
+    # Build {name_lower: rate} lookup from stock
+    stock_lookup = {}
+    for r in range(9, 5000):
+        sl   = ws.cell(r, 1).value
+        name = ws.cell(r, 2).value
+        rate = ws.cell(r, 4).value
+        if sl is None and name is None:
+            break
+        if isinstance(sl, (int, float)) and name and isinstance(rate, (int, float)):
+            stock_lookup[str(name).strip().lower()] = (str(name).strip(), float(rate))
+    wb.close()
+
+    conn = sqlite3.connect(DB_PATH)
+    updated, skipped = [], []
+
+    # Fetch all pricelist items
+    pl_items = conn.execute("SELECT rowid, item, price FROM component_price_master").fetchall()
+    for rowid, item, old_price in pl_items:
+        stock_name = _STOCK_PRICE_MAP.get(item)
+        if stock_name is None:
+            if item in _STOCK_PRICE_MAP:
+                skipped.append({"item": item, "reason": "manual_skip"})
+            continue
+        hit = stock_lookup.get(stock_name.lower())
+        if not hit:
+            skipped.append({"item": item, "stock_name": stock_name, "reason": "not_in_stock"})
+            continue
+        new_price = round(hit[1], 2)
+        if new_price != old_price:
+            conn.execute("UPDATE component_price_master SET price=? WHERE rowid=?", (new_price, rowid))
+            updated.append({"item": item, "stock_name": hit[0], "old": old_price, "new": new_price})
+
+    conn.commit()
+    conn.close()
+    # Clear stock cache so re-fetch picks up new data
+    _STOCK_CACHE.clear()
+    return {
+        "file": os.path.basename(stock_path),
+        "updated": updated,
+        "skipped_count": len(skipped),
+        "updated_count": len(updated),
+    }
+
+
+@app.post("/api/stock/upload")
+async def upload_stock_file(file: UploadFile = File(...)):
+    """Accept a new Stock*.xlsx upload and save to BASE_DIR, then auto-sync."""
+    import shutil
+    # Validate name
+    if not file.filename.startswith("Stock") or not file.filename.endswith(".xlsx"):
+        return {"error": "File must be named Stock*.xlsx"}
+    dest = os.path.join(BASE_DIR, file.filename)
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    _STOCK_CACHE.clear()
+    # Auto-sync after upload
+    sync_result = sync_stock_to_pricelist()
+    return {"uploaded": file.filename, "sync": sync_result}
+
+
 class ExcelExportRequest(BaseModel):
     equipment_type: str          # "VLPH" | "HLPH" | "Regen"
     customer: dict = {}

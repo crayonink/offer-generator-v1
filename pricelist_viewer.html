@@ -183,6 +183,15 @@
     <svg id="refresh-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
     Refresh
   </button>
+  <button class="btn-refresh" style="background:rgba(40,167,69,.25);border-color:rgba(40,167,69,.5);" onclick="syncStockToPricelist()">
+    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    Sync Stock Rates
+  </button>
+  <label class="btn-refresh" style="background:rgba(255,193,7,.2);border-color:rgba(255,193,7,.5);cursor:pointer;" title="Upload a new Stock*.xlsx file">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Upload Stock
+    <input type="file" accept=".xlsx" style="display:none;" onchange="uploadStockFile(this)">
+  </label>
 </div>
 
 <!-- Excel Ribbon strip -->
@@ -1258,6 +1267,58 @@ function renderStockRates(data) {
     td.style.cursor = 'pointer';
     td.onclick = () => updateFormulaBar('Rate', td.textContent.trim());
   });
+}
+
+// ── Stock Sync ───────────────────────────────────────────────────────────────
+async function syncStockToPricelist() {
+  setStatus('Syncing stock rates to pricelist…', '');
+  try {
+    const res = await fetch('/api/stock/sync', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) { setStatus('Error: ' + data.error, ''); return; }
+    const msg = data.updated_count + ' rates updated from ' + (data.file || 'stock file');
+    setStatus(msg, data.updated_count + ' items');
+    // Show detail in a quick popup
+    let detail = '\u2705 ' + msg + '\n\n';
+    if (data.updated && data.updated.length) {
+      detail += data.updated.map(u =>
+        u.item + ': \u20b9' + u.old + ' \u2192 \u20b9' + u.new + ' (stock: ' + u.stock_name + ')'
+      ).join('\n');
+    } else {
+      detail += 'All rates already up to date.';
+    }
+    if (data.skipped_count) detail += '\n\n' + data.skipped_count + ' items had no stock match.';
+    alert(detail);
+    loadAll();   // refresh all tabs with new rates
+  } catch (e) {
+    setStatus('Error: ' + e.message, '');
+  }
+}
+
+async function uploadStockFile(input) {
+  if (!input.files.length) return;
+  const file = input.files[0];
+  if (!file.name.startsWith('Stock') || !file.name.endsWith('.xlsx')) {
+    alert('File must be named Stock*.xlsx');
+    input.value = '';
+    return;
+  }
+  setStatus('Uploading ' + file.name + '…', '');
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await fetch('/api/stock/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) { setStatus('Upload error: ' + data.error, ''); return; }
+    const sync = data.sync || {};
+    const msg = 'Uploaded ' + data.uploaded + ' — ' + (sync.updated_count || 0) + ' rates updated';
+    setStatus(msg, (sync.updated_count || 0) + ' items');
+    alert('\u2705 ' + msg);
+    loadAll();
+  } catch (e) {
+    setStatus('Error: ' + e.message, '');
+  }
+  input.value = '';
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────
