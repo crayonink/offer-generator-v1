@@ -691,56 +691,78 @@ function renderPartsColumns(sheetId, sections, table) {
 
 // ── Blowers ─────────────────────────────────────────────────────────────────
 function renderBlowers(data) {
-  const el = document.getElementById('sheet-blowers');
+  var el = document.getElementById('sheet-blowers');
   if (!data.length) { el.innerHTML = emptyMsg(); return; }
 
-  // Split into ENCON (price table) and DM/IDM (cost table) sections
-  const enconSections = new Set(['MEDIUM PRESSURE','HIGH PRESSURE']);
-  const dmIdmSections = new Set(['BLOWER DM 40','BLOWER DM 28','BLOWER IDM']);
+  var enconSections = {'MEDIUM PRESSURE':1,'HIGH PRESSURE':1};
+  var dmIdmSections = {'BLOWER DM 40':1,'BLOWER DM 28':1,'BLOWER IDM':1};
 
-  const enconData = data.filter(r => enconSections.has(r.section));
-  const dmData    = data.filter(r => dmIdmSections.has(r.section));
+  var enconData = data.filter(function(r){ return enconSections[r.section]; });
+  var dmData    = data.filter(function(r){ return dmIdmSections[r.section]; });
 
-  // ENCON table
-  const enconKeys   = ['model','hp','cfm','nm3_per_hr','pressure','price_without_motor','price_with_motor'];
-  const enconLabels = ['Model','HP','CFM','NM³/hr','Pressure','Price w/o Motor (₹)','Price w/ Motor (₹)'];
-  const priceKeys   = new Set(['price_without_motor','price_with_motor']);
+  // ── ENCON breakdown table ────────────────────────────────────────
+  var eCols = [
+    { k:'model',                 lbl:'Model',                  num:false },
+    { k:'hp',                    lbl:'HP',                     num:true  },
+    { k:'cfm',                   lbl:'CFM',                    num:true  },
+    { k:'nm3_per_hr',            lbl:'NM\u00b3/hr',            num:true  },
+    { k:'pressure',              lbl:'Pressure',               num:false },
+    { k:'blower_weight',         lbl:'Weight (kg)',            num:true  },
+    { k:'per_kg_amount',         lbl:'Body Cost (\u20b9)',      num:true  },
+    { k:'motor_price_abb',       lbl:'Motor Price (\u20b9)',    num:true  },
+    { k:'perkin_price_wo_motor', lbl:'Perkin w/o Motor (\u20b9)', num:true },
+    { k:'perkin_price_w_motor',  lbl:'Perkin w/ Motor (\u20b9)',  num:true },
+    { k:'price_without_motor',   lbl:'Selling w/o Motor (\u20b9)', num:true, highlight:'#e3f2fd' },
+    { k:'price_with_motor',      lbl:'Selling w/ Motor (\u20b9)',  num:true, highlight:'#e8f5e9' },
+  ];
 
-  let rows = '', lastSec = null, rowNum = 0;
-  enconData.forEach(r => {
-    if (!r.model) return;
+  var hdr = '<th class="rn"></th>';
+  for (var ci = 0; ci < eCols.length; ci++) {
+    hdr += '<th style="min-width:' + (eCols[ci].num ? '100px' : '90px') + ';">' + eCols[ci].lbl + '</th>';
+  }
+
+  var rows = '', lastSec = null, rowNum = 0;
+  for (var ri = 0; ri < enconData.length; ri++) {
+    var r = enconData[ri];
+    if (!r.model) continue;
     if (r.section !== lastSec) {
-      rows += `<tr class="sec-hdr"><td colspan="${enconKeys.length+1}">${esc(r.section||'')}</td></tr>`;
+      rows += '<tr class="sec-hdr"><td colspan="' + (eCols.length + 1) + '">' + esc(r.section || '') + '</td></tr>';
       lastSec = r.section;
     }
     rowNum++;
-    rows += `<tr><td class="rn">${rowNum}</td>${enconKeys.map(k => {
-      const v = r[k];
-      return priceKeys.has(k) ? `<td style="text-align:right;">${fmt(v)}</td>` : `<td>${esc(v??'')}</td>`;
-    }).join('')}</tr>`;
-  });
+    rows += '<tr><td class="rn">' + rowNum + '</td>';
+    for (var ci = 0; ci < eCols.length; ci++) {
+      var v = r[eCols[ci].k];
+      var style = eCols[ci].highlight
+        ? ' style="text-align:right;font-weight:700;background:' + eCols[ci].highlight + ';"'
+        : (eCols[ci].num ? ' style="text-align:right;"' : '');
+      rows += '<td' + style + '>' + (eCols[ci].num ? (v != null ? fmt(v) : '') : esc(v != null ? String(v) : '')) + '</td>';
+    }
+    rows += '</tr>';
+  }
 
-  // DM / IDM table
-  let dmRows = '', lastDmSec = null, dmNum = 0;
-  dmData.forEach(r => {
-    if (!r.model) return;
+  // ── DM / IDM table ───────────────────────────────────────────────
+  var dmRows = '', lastDmSec = null, dmNum = 0;
+  for (var ri = 0; ri < dmData.length; ri++) {
+    var r = dmData[ri];
+    if (!r.model) continue;
     if (r.section !== lastDmSec) {
-      dmRows += `<tr class="sec-hdr"><td colspan="3">${esc(r.section||'')}</td></tr>`;
+      dmRows += '<tr class="sec-hdr"><td colspan="3">' + esc(r.section || '') + '</td></tr>';
       lastDmSec = r.section;
     }
     dmNum++;
-    dmRows += `<tr><td class="rn">${dmNum}</td><td>${esc(r.model)}</td><td style="text-align:right;">${fmt(r.total_cost)}</td></tr>`;
-  });
+    dmRows += '<tr><td class="rn">' + dmNum + '</td><td>' + esc(r.model) + '</td><td style="text-align:right;font-weight:700;background:#e3f2fd;">' + fmt(r.total_cost) + '</td></tr>';
+  }
 
-  el.innerHTML = `
-    <div class="ro-wrap" style="margin-bottom:16px;"><table class="ro-table">
-      <thead><tr><th class="rn"></th>${enconKeys.map((k,i) => `<th>${enconLabels[i]}</th>`).join('')}</tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    ${dmData.length ? `<div class="ro-wrap"><table class="ro-table">
-      <thead><tr><th class="rn"></th><th style="min-width:120px;text-align:left;">Model</th><th style="min-width:140px;">Total Cost (₹)</th></tr></thead>
-      <tbody>${dmRows}</tbody>
-    </table></div>` : ''}`;
+  el.innerHTML = '<div class="section-label" style="margin-bottom:6px;">ENCON Blowers — Cost Breakdown</div>'
+    + '<div class="xl-wrap" style="margin-bottom:20px;"><table class="xl-table">'
+    + '<thead><tr>' + hdr + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+    + (dmData.length
+      ? '<div class="section-label" style="margin-bottom:6px;">DM / IDM Blowers — Total Cost</div>'
+        + '<div class="xl-wrap"><table class="xl-table" style="min-width:280px;">'
+        + '<thead><tr><th class="rn"></th><th style="min-width:100px;text-align:left;">Model</th><th style="min-width:140px;">Total Cost (\u20b9)</th></tr></thead>'
+        + '<tbody>' + dmRows + '</tbody></table></div>'
+      : '');
 }
 
 // ── Recuperator ──────────────────────────────────────────────────────────────
