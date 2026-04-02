@@ -420,7 +420,7 @@ function renderRates(data) {
       <th class="rn"></th>
       <th class="item-th" style="min-width:300px;">Item</th>
       <th style="min-width:120px;">Category</th>
-      <th style="min-width:70px;">Unit</th>
+      <th style="min-width:140px;">Company</th>
       <th style="min-width:120px;">Price (₹)</th>
       <th style="min-width:120px;">Prev. Price (₹)</th>
       <th style="min-width:90px;">Change</th>
@@ -440,7 +440,7 @@ function renderRates(data) {
         <td class="rn">${rowNum}</td>
         <td class="item-cell">${esc(r.item)}</td>
         <td style="text-align:center;">${esc(r.category)}</td>
-        <td style="text-align:center;">${esc(r.unit||'nos')}</td>
+        <td class="editable rates-company" data-item="${esc(r.item)}" style="color:#1a5276;">${esc(r.company||'')}</td>
         <td class="editable rates-price" data-item="${esc(r.item)}" data-field="price">${fmt(r.price)}</td>
         <td class="num-cell">${fmt(r.previous_price)}</td>
         <td class="num-cell" style="${cs}">${change}</td>
@@ -451,6 +451,34 @@ function renderRates(data) {
 
   html += '</tbody></table></div>';
   el.innerHTML = html;
+
+  // Company inline edit (text field, no cascade)
+  el.querySelectorAll('.rates-company').forEach(td => {
+    td.style.cursor = 'pointer';
+    td.title = 'Click to set supplier/company';
+    td.addEventListener('click', () => {
+      if (td.classList.contains('editing')) return;
+      const item = td.dataset.item;
+      const orig = td.textContent.trim();
+      td.classList.add('editing');
+      td.innerHTML = `<input type="text" value="${esc(orig)}" placeholder="e.g. TATA Steel" style="width:100%;border:none;outline:none;font-family:inherit;font-size:inherit;padding:2px 4px;background:transparent;"/>`;
+      const inp = td.querySelector('input');
+      inp.focus(); inp.select();
+      async function save() {
+        const val = inp.value.trim();
+        td.classList.remove('editing');
+        td.textContent = val;
+        try {
+          await fetch('/api/pricelist/company', {
+            method: 'PUT', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ item, company: val }),
+          });
+        } catch(e) { td.textContent = orig; }
+      }
+      inp.addEventListener('blur', save);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { td.classList.remove('editing'); td.textContent = orig; } });
+    });
+  });
 
   el.querySelectorAll('.rates-price').forEach(td => {
     td.addEventListener('mouseenter', () => updateFormulaBar('PRICE', td.textContent.trim()));
