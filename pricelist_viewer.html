@@ -1276,9 +1276,9 @@ async function syncStockToPricelist() {
     const res = await fetch('/api/stock/sync', { method: 'POST' });
     const data = await res.json();
     if (data.error) { setStatus('Error: ' + data.error, ''); return; }
-    const msg = data.updated_count + ' rates updated from ' + (data.file || 'stock file');
+    const msg = data.updated_count + ' rates updated from ' + (data.file || 'stock file')
+      + (data.cascade ? ' — all calculations recascaded' : '');
     setStatus(msg, data.updated_count + ' items');
-    // Show detail in a quick popup
     let detail = '\u2705 ' + msg + '\n\n';
     if (data.updated && data.updated.length) {
       detail += data.updated.map(u =>
@@ -1288,6 +1288,7 @@ async function syncStockToPricelist() {
       detail += 'All rates already up to date.';
     }
     if (data.skipped_count) detail += '\n\n' + data.skipped_count + ' items had no stock match.';
+    if (data.cascade) detail += '\n\n\u2699\ufe0f All computed amounts (HPU, Blower, Recuperator, LPH…) recalculated.';
     alert(detail);
     loadAll();   // refresh all tabs with new rates
   } catch (e) {

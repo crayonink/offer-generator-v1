@@ -119,13 +119,19 @@ ALLOWED_EDIT_TABLES = {
 def _find_latest_pricebook():
     """Find the most recently uploaded full pricebook Excel file."""
     candidates = []
-    for f in glob.glob(os.path.join(UPLOAD_FOLDER, "*.xlsx")):
-        try:
-            xl = pd.ExcelFile(f)
-            if len(xl.sheet_names) >= 8:
-                candidates.append((os.path.getmtime(f), f))
-        except Exception:
-            pass
+    search_dirs = [UPLOAD_FOLDER, BASE_DIR]
+    for d in search_dirs:
+        for f in glob.glob(os.path.join(d, "*.xlsx")):
+            # Skip stock files and other non-pricebook files
+            bn = os.path.basename(f).lower()
+            if "stock" in bn or "costing" in bn or "regen" in bn or "sample" in bn:
+                continue
+            try:
+                xl = pd.ExcelFile(f)
+                if len(xl.sheet_names) >= 8:
+                    candidates.append((os.path.getmtime(f), f))
+            except Exception:
+                pass
     return sorted(candidates, reverse=True)[0][1] if candidates else None
 
 def _cascade_recalculate(xl_path: str, conn):
@@ -1294,14 +1300,29 @@ def sync_stock_to_pricelist():
             updated.append({"item": item, "stock_name": hit[0], "old": old_price, "new": new_price})
 
     conn.commit()
+
+    # ── Cascade: re-run all parsers so every computed amount/selling price
+    #    reflects the updated rates (recuperator, HPU, blower, LPH, burner…)
+    cascade_ok = False
+    cascade_tables = {}
+    xl_path = _find_latest_pricebook()
+    if xl_path and updated:
+        try:
+            cascade_tables = _cascade_recalculate(xl_path, conn)
+            conn.commit()
+            cascade_ok = True
+        except Exception as ce:
+            cascade_tables = {"error": str(ce)}
+
     conn.close()
-    # Clear stock cache so re-fetch picks up new data
     _STOCK_CACHE.clear()
     return {
         "file": os.path.basename(stock_path),
         "updated": updated,
         "skipped_count": len(skipped),
         "updated_count": len(updated),
+        "cascade": cascade_ok,
+        "cascade_tables": {k: v for k, v in cascade_tables.items() if isinstance(v, dict)},
     }
 
 
