@@ -188,7 +188,7 @@
 <!-- Excel Ribbon strip -->
 <div class="xl-ribbon">
   <span class="xl-ribbon-title">Pricelist WorkBook</span>
-  <span class="xl-ribbon-sub">Yellow cells are editable — click to change rate or qty</span>
+  <span class="xl-ribbon-sub">Yellow cells are editable — click to change rate</span>
 </div>
 
 <!-- Formula Bar -->
@@ -544,7 +544,7 @@ function renderHPU(data) {
       variants.forEach(v => {
         const it = v.items[i];
         if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
-        rows += `<td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>`;
+        rows += `<td class="num-cell">${it.qty??''}</td>`;
         rows += `<td style="text-align:center;">${esc(it.unit||'')}</td>`;
         rows += `<td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>`;
         rows += `<td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>`;
@@ -597,7 +597,7 @@ function renderPartsTabbed(sheetId, sections, table) {
       rows += `<tr>
         <td class="rn">${rowNum}</td>
         <td class="item-cell">${esc(it.particular||'')}</td>
-        <td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>
+        <td class="num-cell">${it.qty??''}</td>
         <td style="text-align:center;">${esc(it.unit||'')}</td>
         <td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>
         <td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>
@@ -659,7 +659,7 @@ function renderSideBySide(sheetId, sections, table) {
     sections.forEach(sec => {
       const it = sec.items[i];
       if (!it) { rows += `<td></td><td></td><td></td><td></td><td class="gap-td"></td>`; return; }
-      rows += `<td class="editable" data-rowid="${it.rowid}" data-field="qty">${it.qty??''}</td>`;
+      rows += `<td class="num-cell">${it.qty??''}</td>`;
       rows += `<td style="text-align:center;">${esc(it.unit||'')}</td>`;
       rows += `<td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>`;
       rows += `<td class="amount-cell" data-rowid="${it.rowid}">${fmt(it.amount)}</td>`;
