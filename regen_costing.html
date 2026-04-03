@@ -209,8 +209,8 @@
     }
     .xl-tab:hover { background: #d4d4d4; color: #222; }
     .xl-tab.active { background: #fff; color: #217346; border-color: #bfbfbf; margin-top: 0; padding-top: 7px; }
-    .xl-sheet { display: none; }
-    .xl-sheet.active { display: block; }
+    .xl-sheet { display: block; border-top: 3px solid #217346; margin-top: 0; }
+    .xl-sheet-title { background:#217346; color:#fff; font-size:12px; font-weight:700; padding:5px 14px; letter-spacing:.5px; }
     /* supp-panel hidden class kept for compat */
     .supp-panel { display: none; }
     .supp-panel.active { display: block; }
@@ -487,21 +487,35 @@
         <div class="xl-fx">fx</div>
         <div class="xl-formulainput" id="xlFormula">&nbsp;</div>
       </div>
-      <!-- Sheet panels -->
-      <div class="xl-content" style="min-height:320px;">
-        <div class="xl-sheet active" id="xl-calc"><div style="padding:16px;color:#888;font-size:.82rem;">Loading…</div></div>
-        <div class="xl-sheet"        id="xl-burner-sizing"></div>
-        <div class="xl-sheet"        id="xl-pipe-sizes"></div>
-        <div class="xl-sheet"        id="xl-blower"></div>
-        <div class="xl-sheet"        id="xl-bom"></div>
+      <!-- Sheet panels — all visible, scrollable -->
+      <div class="xl-content">
+        <div id="anchor-calc"></div>
+        <div class="xl-sheet-title">&#9654; PROCESS CALCULATIONS</div>
+        <div class="xl-sheet" id="xl-calc"><div style="padding:16px;color:#888;font-size:.82rem;">Loading…</div></div>
+
+        <div id="anchor-burner-sizing"></div>
+        <div class="xl-sheet-title">&#9654; BURNER SIZING &amp; COSTING</div>
+        <div class="xl-sheet" id="xl-burner-sizing"></div>
+
+        <div id="anchor-pipe-sizes"></div>
+        <div class="xl-sheet-title">&#9654; PIPE SIZES</div>
+        <div class="xl-sheet" id="xl-pipe-sizes"></div>
+
+        <div id="anchor-blower"></div>
+        <div class="xl-sheet-title">&#9654; BLOWER SELECTION</div>
+        <div class="xl-sheet" id="xl-blower"></div>
+
+        <div id="anchor-bom"></div>
+        <div class="xl-sheet-title">&#9654; COSTING — BILL OF MATERIALS</div>
+        <div class="xl-sheet" id="xl-bom"></div>
       </div>
-      <!-- Sheet tabs -->
+      <!-- Sheet tabs — now act as scroll-to anchors -->
       <div class="xl-tabs">
-        <div class="xl-tab active" onclick="xlTab('calc',         this)" id="xtab-calc">Process Calc</div>
-        <div class="xl-tab"        onclick="xlTab('burner-sizing',this)" id="xtab-burner-sizing">Burner Sizing</div>
-        <div class="xl-tab"        onclick="xlTab('pipe-sizes',   this)" id="xtab-pipe-sizes">Pipe Sizes</div>
-        <div class="xl-tab"        onclick="xlTab('blower',       this)" id="xtab-blower">Blower</div>
-        <div class="xl-tab"        onclick="xlTab('bom',          this)" id="xtab-bom">Costing (BOM)</div>
+        <div class="xl-tab active" onclick="xlTabScroll('anchor-calc',         this)" id="xtab-calc">Process Calc</div>
+        <div class="xl-tab"        onclick="xlTabScroll('anchor-burner-sizing',this)" id="xtab-burner-sizing">Burner Sizing</div>
+        <div class="xl-tab"        onclick="xlTabScroll('anchor-pipe-sizes',   this)" id="xtab-pipe-sizes">Pipe Sizes</div>
+        <div class="xl-tab"        onclick="xlTabScroll('anchor-blower',       this)" id="xtab-blower">Blower</div>
+        <div class="xl-tab"        onclick="xlTabScroll('anchor-bom',          this)" id="xtab-bom">Costing (BOM)</div>
       </div>
     </div>
 
@@ -624,13 +638,13 @@
 
   // ── Excel workbook tab switcher ──────────────────────────────────────────
   function xlTab(id, btn) {
+    // legacy — no longer used, kept for compat
+  }
+  function xlTabScroll(anchorId, btn) {
     document.querySelectorAll('.xl-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.xl-sheet').forEach(s => s.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('xl-' + id).classList.add('active');
-    // Update name box
-    const names = {'calc':'A1','burner-sizing':'C3','pipe-sizes':'B9','blower':'B2','bom':'A3'};
-    document.getElementById('xlNameBox').textContent = names[id] || 'A1';
+    const el = document.getElementById(anchorId);
+    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
   }
 
   // ── Build Excel-style grid HTML ──────────────────────────────────────────
