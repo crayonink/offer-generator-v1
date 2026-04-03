@@ -615,7 +615,7 @@
       renderResults(data);
       goStep(3);
     } catch (e) {
-      errBox.textContent = 'Network error — is the server running?';
+      errBox.textContent = 'Network error: ' + (e.message || e);
       errBox.classList.remove('hidden');
     } finally {
       btn.disabled = false;
