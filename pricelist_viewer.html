@@ -222,6 +222,7 @@
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-stock-rates">   <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-regen-costing"> <div class="empty-msg">Loading...</div></div>
 </div>
 
 <!-- Bottom Excel-style Sheet Tabs -->
@@ -240,6 +241,7 @@
     <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
     <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
     <div class="tab"        data-sheet="stock-rates"   onclick="switchTab('stock-rates')">Stock Rates</div>
+    <div class="tab"        data-sheet="regen-costing" onclick="switchTab('regen-costing')">Regen Costing</div>
   </div>
 </div>
 
@@ -333,6 +335,7 @@ function renderAll() {
   renderLPH('vlph', s.vertical_lph || []);
   renderBurnerPivot('burner-prices', s.burners || {});
   renderStockRates(DATA.stock || {});
+  renderRegenCosting(s.regen_costing || {items:[], sizing:[], pricelist:[], material_rates:[]});
 }
 
 // ── Status bar ─────────────────────────────────────────────────────────────
@@ -1320,6 +1323,273 @@ async function uploadStockFile(input) {
     setStatus('Error: ' + e.message, '');
   }
   input.value = '';
+}
+
+// ── Regen Costing ────────────────────────────────────────────────────────────
+function renderRegenCosting(payload) {
+  var el = document.getElementById('sheet-regen-costing');
+  var items       = payload.items        || [];
+  var sizing      = payload.sizing       || [];
+  var pricelist   = payload.pricelist    || [];
+  var matRates    = payload.material_rates || [];
+  if (!items.length) { el.innerHTML = emptyMsg(); return; }
+
+  var styles = '<style>'
+    + '.rc-wrap{overflow-x:auto;padding-bottom:8px;}'
+    + '.rc-kw-tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}'
+    + '.rc-kw-tab{padding:5px 16px;background:#e8eaf0;border:1px solid #c0c4cc;border-radius:3px 3px 0 0;cursor:pointer;font-size:12px;font-weight:600;color:#2c3e50;}'
+    + '.rc-kw-tab.active{background:#1a3a6c;color:#fff;border-color:#1a3a6c;}'
+    + '.rc-sub-tabs{display:flex;gap:2px;margin-bottom:8px;border-bottom:2px solid #1a3a6c;}'
+    + '.rc-sub-tab{padding:4px 14px;background:#f0f3f8;border:1px solid #c8d0dc;border-bottom:none;cursor:pointer;font-size:11px;font-weight:600;color:#444;border-radius:3px 3px 0 0;}'
+    + '.rc-sub-tab.active{background:#fff;color:#1a3a6c;border-color:#1a3a6c;}'
+    + '.rc-tbl{border-collapse:collapse;font-size:12px;white-space:nowrap;min-width:900px;}'
+    + '.rc-tbl td,.rc-tbl th{border:1px solid #d0d3d8;padding:4px 10px;}'
+    + '.rc-hdr-row th{background:#1a3a6c;color:#fff;font-weight:600;font-size:11px;text-align:center;padding:6px 10px;}'
+    + '.rc-sec-hdr td{background:#2e5fa3;color:#fff;font-weight:700;font-size:12px;padding:5px 10px;letter-spacing:0.3px;}'
+    + '.rc-subsec-hdr td{background:#dce6f5;color:#1a3a6c;font-weight:700;font-size:11px;padding:4px 10px 4px 20px;border-top:1px solid #aab;}'
+    + '.rc-item td{background:#fff;}'
+    + '.rc-item:hover td{background:#f5f8ff;}'
+    + '.rc-sno{text-align:center;color:#777;font-size:11px;width:40px;}'
+    + '.rc-desc{font-weight:500;min-width:260px;}'
+    + '.rc-size{text-align:center;color:#555;width:65px;}'
+    + '.rc-qty{text-align:right;width:50px;}'
+    + '.rc-cost{text-align:right;color:#333;}'
+    + '.rc-sp{text-align:right;color:#1a3a6c;font-weight:600;}'
+    + '.rc-total-row td{background:#fff3cd;font-weight:700;border-top:2px solid #e6a817;}'
+    + '.rc-total-cost{background:#ffe69c!important;color:#7c4d00;text-align:right;}'
+    + '.rc-total-sp{background:#ffd54f!important;color:#7c4d00;text-align:right;font-size:13px;}'
+    + '.rc-final-row td{background:#e8f5e9;font-weight:700;border-top:3px solid #2e7d32;}'
+    + '.rc-final-label{font-size:13px;color:#1b5e20;padding-left:10px!important;}'
+    + '.rc-final-price{background:#43a047!important;color:#fff;font-size:14px;text-align:right;font-weight:900;}'
+    + '.rc-sz-tbl{border-collapse:collapse;font-size:11px;white-space:nowrap;margin-bottom:16px;}'
+    + '.rc-sz-tbl td,.rc-sz-tbl th{border:1px solid #cdd;padding:4px 10px;}'
+    + '.rc-sz-hdr th{background:#1a5276;color:#fff;font-weight:600;font-size:11px;text-align:center;}'
+    + '.rc-sz-grp{background:#d5e8f5;font-weight:700;text-align:left;}'
+    + '.rc-sz-num{text-align:right;}'
+    + '.rc-pl-tbl{border-collapse:collapse;font-size:12px;margin-bottom:16px;}'
+    + '.rc-pl-tbl td,.rc-pl-tbl th{border:1px solid #d0d3d8;padding:5px 14px;}'
+    + '.rc-pl-hdr th{background:#1a3a6c;color:#fff;font-weight:600;text-align:center;}'
+    + '.rc-pl-price{text-align:right;font-weight:700;color:#0d47a1;}'
+    + '.rc-pl-final{background:#e3f2fd;}'
+    + '.rc-sec-title{font-size:13px;font-weight:700;color:#1a3a5c;margin:12px 0 6px;letter-spacing:0.3px;}'
+    + '</style>';
+
+  // Group items by KW
+  var byKw = {};
+  items.forEach(function(r) {
+    if (!byKw[r.kw]) byKw[r.kw] = [];
+    byKw[r.kw].push(r);
+  });
+  var kws = Object.keys(byKw).map(Number).sort(function(a,b){return a-b;});
+
+  // ── Build costing table for one KW ──────────────────────────────────────
+  function buildCostingTable(rows) {
+    var h = '<table class="rc-tbl"><thead><tr class="rc-hdr-row">'
+      + '<th>S.No</th><th style="min-width:260px;text-align:left;">Description</th>'
+      + '<th>Size</th><th>Qty</th>'
+      + '<th style="min-width:110px;">Cost/Unit (₹)</th>'
+      + '<th style="min-width:120px;">Total Cost (₹)</th>'
+      + '<th style="min-width:110px;">SP/Unit ×1.8 (₹)</th>'
+      + '<th style="min-width:120px;">Total SP (₹)</th>'
+      + '</tr></thead><tbody>';
+    var inSubSec = false;
+    rows.forEach(function(r) {
+      if (r.row_type === 'header') {
+        // Distinguish top-level sections vs sub-sections by length/style
+        var isMain = ['GAS Line','Air Line','TEMPERATURE CONTROL SYSTEM of:-'].some(function(t){ return r.description.indexOf(t) >= 0; });
+        if (isMain) {
+          h += '<tr class="rc-sec-hdr"><td colspan="8">' + esc(r.description) + '</td></tr>';
+          inSubSec = false;
+        } else {
+          h += '<tr class="rc-subsec-hdr"><td colspan="8">\u25B8 ' + esc(r.description) + '</td></tr>';
+          inSubSec = true;
+        }
+      } else if (r.row_type === 'total') {
+        h += '<tr class="rc-total-row">'
+          + '<td colspan="4" style="text-align:right;font-size:13px;padding-right:12px;">TOTAL</td>'
+          + '<td></td>'
+          + '<td class="rc-total-cost">' + fmt(r.total_cost) + '</td>'
+          + '<td></td>'
+          + '<td class="rc-total-sp">' + fmt(r.total_sp) + '</td>'
+          + '</tr>';
+      } else if (r.row_type === 'final') {
+        h += '<tr class="rc-final-row">'
+          + '<td colspan="7" class="rc-final-label">FINAL SELLING PRICE (Rounded)</td>'
+          + '<td class="rc-final-price">' + fmt(r.total_sp) + '</td>'
+          + '</tr>';
+      } else {
+        // regular item
+        var pad = inSubSec ? ' style="padding-left:18px;"' : '';
+        h += '<tr class="rc-item">'
+          + '<td class="rc-sno">' + esc(r.sno) + '</td>'
+          + '<td class="rc-desc"' + pad + '>' + esc(r.description) + '</td>'
+          + '<td class="rc-size">' + esc(r.size) + '</td>'
+          + '<td class="rc-qty">' + (r.qty != null ? r.qty : '') + '</td>'
+          + '<td class="rc-cost">' + (r.cost_per_unit != null ? fmt(r.cost_per_unit) : '') + '</td>'
+          + '<td class="rc-cost" style="background:#fafafa;">' + (r.total_cost != null ? fmt(r.total_cost) : '') + '</td>'
+          + '<td class="rc-sp">' + (r.sp_per_unit != null ? fmt(r.sp_per_unit) : '') + '</td>'
+          + '<td class="rc-sp" style="background:#f0f4ff;">' + (r.total_sp != null ? fmt(r.total_sp) : '') + '</td>'
+          + '</tr>';
+      }
+    });
+    h += '</tbody></table>';
+    return h;
+  }
+
+  // ── Build sizing + weights + costs table ─────────────────────────────────
+  function buildSizingTable() {
+    if (!sizing.length) return '<p style="color:#888;padding:16px;">No sizing data.</p>';
+
+    // Dimensions
+    var h = '<div class="rc-sec-title">Regenerator Dimensions</div>';
+    h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      + '<th>KW</th><th>Shell (mm)</th><th>Retainer (mm)</th><th>Refractory (mm)</th>'
+      + '<th>L (m)</th><th>H (m)</th><th>W (m)</th><th>Bottom H (m)</th>'
+      + '<th>Vol Total (m³)</th><th>Vol Effective (m³)</th><th>Vol Refractory (m³)</th>'
+      + '</tr></thead><tbody>';
+    sizing.forEach(function(s) {
+      h += '<tr><td class="rc-sz-grp">' + s.kw + ' KW</td>'
+        + '<td class="rc-sz-num">' + (s.shell_thick||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.retainer_thick||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.refractory_thick||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.dim_L||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.dim_H||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.dim_W||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.bottom_h||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.vol_total ? s.vol_total.toFixed(4) : '') + '</td>'
+        + '<td class="rc-sz-num">' + (s.vol_effective ? s.vol_effective.toFixed(4) : '') + '</td>'
+        + '<td class="rc-sz-num">' + (s.vol_refractory ? s.vol_refractory.toFixed(4) : '') + '</td>'
+        + '</tr>';
+    });
+    h += '</tbody></table>';
+
+    // Weights
+    h += '<div class="rc-sec-title">Weight Breakdown (kg)</div>';
+    h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      + '<th>KW</th><th>Burner MS</th><th>Burner Refrac.</th>'
+      + '<th>Regen MS</th><th>Regen SS</th><th>Regen Refrac.</th>'
+      + '<th>Ceramic Balls</th><th>Burner Block</th><th>TOTAL (kg)</th>'
+      + '</tr></thead><tbody>';
+    sizing.forEach(function(s) {
+      h += '<tr><td class="rc-sz-grp">' + s.kw + ' KW</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_ms) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_refrac) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_regen_ms) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_regen_ss) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_regen_refrac) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_ceramic_balls) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_block) + '</td>'
+        + '<td class="rc-sz-num" style="font-weight:700;background:#dce6f5;">' + fmtN(s.wt_total) + '</td>'
+        + '</tr>';
+    });
+    h += '</tbody></table>';
+
+    // Material rates
+    if (matRates.length) {
+      h += '<div class="rc-sec-title">Material Rates Used in Sizing</div>';
+      h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+        + '<th>Material</th><th>Wastage</th><th>Material Cost (₹/kg)</th><th>Labour Cost (₹/kg)</th><th>Total Rate (₹/kg)</th>'
+        + '</tr></thead><tbody>';
+      matRates.forEach(function(m) {
+        var total = (m.material_cost||0) + (m.labor_cost||0);
+        h += '<tr>'
+          + '<td style="font-weight:600;">' + esc(m.material) + '</td>'
+          + '<td class="rc-sz-num">' + ((m.wastage||0)*100).toFixed(0) + '%</td>'
+          + '<td class="rc-sz-num">' + fmt(m.material_cost) + '</td>'
+          + '<td class="rc-sz-num">' + fmt(m.labor_cost) + '</td>'
+          + '<td class="rc-sz-num" style="font-weight:700;background:#dce6f5;">' + fmt(total) + '</td>'
+          + '</tr>';
+      });
+      h += '</tbody></table>';
+    }
+
+    // Cost breakdown
+    h += '<div class="rc-sec-title">Cost Breakdown per Unit (₹) — Component-wise</div>';
+    h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      + '<th>KW</th><th>Burner MS</th><th>Burner Refrac.</th>'
+      + '<th>Regen MS</th><th>Regen SS</th><th>Regen Refrac.</th>'
+      + '<th>Ceramic Balls</th><th>Burner Block</th>'
+      + '<th>TOTAL COST (₹)</th><th>SELLING PRICE (₹)</th>'
+      + '</tr></thead><tbody>';
+    sizing.forEach(function(s) {
+      h += '<tr><td class="rc-sz-grp">' + s.kw + ' KW</td>'
+        + '<td class="rc-sz-num">' + fmt(s.cost_burner_ms) + '</td>'
+        + '<td class="rc-sz-num">' + fmt(s.cost_burner_refrac) + '</td>'
+        + '<td class="rc-sz-num">' + fmt(s.cost_regen_ms) + '</td>'
+        + '<td class="rc-sz-num">' + fmt(s.cost_regen_ss) + '</td>'
+        + '<td class="rc-sz-num">' + fmt(s.cost_regen_refrac) + '</td>'
+        + '<td class="rc-sz-num">' + fmt(s.cost_ceramic_balls) + '</td>'
+        + '<td class="rc-sz-num">' + fmt(s.cost_burner_block) + '</td>'
+        + '<td class="rc-sz-num" style="font-weight:700;background:#ffe69c;">' + fmt(s.cost_total) + '</td>'
+        + '<td class="rc-sz-num" style="font-weight:700;background:#c8e6c9;color:#1b5e20;">' + fmt(s.selling_price) + '</td>'
+        + '</tr>';
+    });
+    h += '</tbody></table>';
+    return h;
+  }
+
+  // ── Build price list summary ──────────────────────────────────────────────
+  function buildPriceList() {
+    if (!pricelist.length) return '';
+    var h = '<div class="rc-sec-title">Price List Summary</div>'
+      + '<table class="rc-pl-tbl"><thead><tr class="rc-pl-hdr">'
+      + '<th>Model</th><th>KW</th>'
+      + '<th>1 Pair — Std Complete (₹)</th>'
+      + '<th>1 Pair — w/o Gas Train (₹)</th>'
+      + '<th>₹ per KW</th>'
+      + '</tr></thead><tbody>';
+    pricelist.forEach(function(p) {
+      h += '<tr class="rc-pl-final">'
+        + '<td style="font-weight:700;">' + esc(p.model) + '</td>'
+        + '<td style="text-align:center;">' + p.kw + '</td>'
+        + '<td class="rc-pl-price">' + fmt(p.price_std_complete) + '</td>'
+        + '<td class="rc-pl-price">' + fmt(p.price_wo_gas_train) + '</td>'
+        + '<td class="rc-pl-price">' + (p.price_per_kw ? Math.round(p.price_per_kw).toLocaleString('en-IN') : '') + '</td>'
+        + '</tr>';
+    });
+    h += '</tbody></table>';
+    return h;
+  }
+
+  function fmtN(v) { return v != null ? v.toLocaleString('en-IN') : ''; }
+
+  // ── Active KW and sub-tab state ──────────────────────────────────────────
+  var activeKw  = kws[0];
+  var activeSub = 'costing';
+
+  function render() {
+    // KW tabs
+    var tabsHtml = '<div class="rc-kw-tabs">';
+    kws.forEach(function(kw) {
+      tabsHtml += '<div class="rc-kw-tab' + (kw===activeKw?' active':'') + '" onclick="rcKw(' + kw + ')">' + kw + ' KW</div>';
+    });
+    tabsHtml += '</div>';
+
+    // Sub-tabs
+    var subHtml = '<div class="rc-sub-tabs">'
+      + '<div class="rc-sub-tab' + (activeSub==='costing'?' active':'') + '" onclick="rcSub(\'costing\')">Full Costing BOM</div>'
+      + '<div class="rc-sub-tab' + (activeSub==='sizing'?' active':'') + '" onclick="rcSub(\'sizing\')">Sizing &amp; Weights</div>'
+      + '<div class="rc-sub-tab' + (activeSub==='pricelist'?' active':'') + '" onclick="rcSub(\'pricelist\')">Price List</div>'
+      + '</div>';
+
+    // Content
+    var content = '';
+    if (activeSub === 'costing') {
+      content = buildCostingTable(byKw[activeKw] || []);
+    } else if (activeSub === 'sizing') {
+      content = buildSizingTable();
+    } else {
+      content = buildPriceList();
+    }
+
+    el.innerHTML = styles + tabsHtml + subHtml + '<div class="rc-wrap">' + content + '</div>';
+
+    // Re-attach handlers after innerHTML re-render
+    window.rcKw = function(kw) { activeKw = kw; render(); };
+    window.rcSub = function(sub) { activeSub = sub; render(); };
+  }
+
+  render();
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────

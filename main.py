@@ -134,6 +134,37 @@ def _find_latest_pricebook():
                 pass
     return sorted(candidates, reverse=True)[0][1] if candidates else None
 
+def _find_regen_file():
+    """Find the Regen Standard Costing workbook in BASE_DIR."""
+    for f in glob.glob(os.path.join(BASE_DIR, "*.xlsx")):
+        bn = os.path.basename(f).lower()
+        if "regen" in bn and "costing" in bn:
+            return f
+    return None
+
+def _ensure_regen_costing():
+    """Parse the regen costing file if found and table not yet populated."""
+    try:
+        regen_file = _find_regen_file()
+        if not regen_file:
+            return
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            count = conn.execute("SELECT COUNT(*) FROM regen_costing_items").fetchone()[0]
+            if count > 0:
+                conn.close()
+                return
+        except Exception:
+            pass
+        from bom.regen_parser import parse_regen_costing
+        parse_regen_costing(regen_file, conn)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Regen costing parse error: {e}")
+
+_ensure_regen_costing()
+
 def _cascade_recalculate(xl_path: str, conn):
     """Patch the Rates sheet with current DB rates, re-run all parsers."""
     import openpyxl
@@ -610,6 +641,31 @@ def pricelist_summary():
             if items:
                 vlph.append({"model": model, "total": round(sum(i["amount"] for i in items), 2), "items": items})
 
+        # ── Regen Costing ──────────────────────────────────────────────────
+        try:
+            rci_cols = [d[0] for d in conn.execute("SELECT * FROM regen_costing_items LIMIT 0").description]
+            rci_rows = [dict(zip(rci_cols, r)) for r in conn.execute(
+                "SELECT * FROM regen_costing_items ORDER BY kw, row_order"
+            ).fetchall()]
+            rsz_cols = [d[0] for d in conn.execute("SELECT * FROM regen_sizing LIMIT 0").description]
+            rsz_rows = [dict(zip(rsz_cols, r)) for r in conn.execute(
+                "SELECT * FROM regen_sizing ORDER BY kw"
+            ).fetchall()]
+            rpl_cols = [d[0] for d in conn.execute("SELECT * FROM regen_pricelist LIMIT 0").description]
+            rpl_rows = [dict(zip(rpl_cols, r)) for r in conn.execute(
+                "SELECT * FROM regen_pricelist ORDER BY kw"
+            ).fetchall()]
+            rmr_cols = [d[0] for d in conn.execute("SELECT * FROM regen_material_rates LIMIT 0").description]
+            rmr_rows = [dict(zip(rmr_cols, r)) for r in conn.execute(
+                "SELECT * FROM regen_material_rates"
+            ).fetchall()]
+            regen_costing = {
+                "items": rci_rows, "sizing": rsz_rows,
+                "pricelist": rpl_rows, "material_rates": rmr_rows,
+            }
+        except Exception:
+            regen_costing = {"items": [], "sizing": [], "pricelist": [], "material_rates": []}
+
         conn.close()
         return {
             "hpu": hpu,
@@ -625,6 +681,7 @@ def pricelist_summary():
             "gas_burner_parts": gas_parts,
             "horizontal_lph": hlph,
             "vertical_lph": vlph,
+            "regen_costing": regen_costing,
         }
     except Exception as e:
         import traceback
