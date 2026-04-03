@@ -950,9 +950,8 @@
     }
 
     // ── Sheet 5: Costing (BOM) ────────────────────────────────────────────
-    // Update BOM tab and section title to match legacy sheet name
+    // Update BOM tab label to match legacy sheet name
     const bomKwLabel = 'Costing REGENBurner ' + c.model_kw + ' Kw';
-    document.getElementById('xl-bom-title').textContent = '\u25b6 ' + bomKwLabel;
     document.getElementById('xtab-bom').textContent = bomKwLabel;
 
     const bomHdr = {_class:'xl-label', cells:[xc('S.No.'), xc('Section'), xc('Item Name'), xc('Specification'), xc('Qty',true), xc('Cost/Unit ₹',true), xc('Total Cost ₹',true), xc('Sell/Unit ₹',true), xc('Total Selling ₹',true)]};
