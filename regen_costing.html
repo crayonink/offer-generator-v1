@@ -490,32 +490,32 @@
       <!-- Sheet panels — all visible, scrollable -->
       <div class="xl-content">
         <div id="anchor-calc"></div>
-        <div class="xl-sheet-title">&#9654; PROCESS CALCULATIONS</div>
+        <div class="xl-sheet-title">&#9654; Process Calcs</div>
         <div class="xl-sheet" id="xl-calc"><div style="padding:16px;color:#888;font-size:.82rem;">Loading…</div></div>
 
         <div id="anchor-burner-sizing"></div>
-        <div class="xl-sheet-title">&#9654; BURNER SIZING &amp; COSTING</div>
+        <div class="xl-sheet-title">&#9654; Burner Sizing and Costing</div>
         <div class="xl-sheet" id="xl-burner-sizing"></div>
 
         <div id="anchor-pipe-sizes"></div>
-        <div class="xl-sheet-title">&#9654; PIPE SIZES</div>
+        <div class="xl-sheet-title">&#9654; Burner Pipe Size</div>
         <div class="xl-sheet" id="xl-pipe-sizes"></div>
 
         <div id="anchor-blower"></div>
-        <div class="xl-sheet-title">&#9654; BLOWER SELECTION</div>
+        <div class="xl-sheet-title">&#9654; Blower</div>
         <div class="xl-sheet" id="xl-blower"></div>
 
         <div id="anchor-bom"></div>
-        <div class="xl-sheet-title">&#9654; COSTING — BILL OF MATERIALS</div>
+        <div class="xl-sheet-title" id="xl-bom-title">&#9654; BOM</div>
         <div class="xl-sheet" id="xl-bom"></div>
       </div>
       <!-- Sheet tabs — now act as scroll-to anchors -->
       <div class="xl-tabs">
-        <div class="xl-tab active" onclick="xlTabScroll('anchor-calc',         this)" id="xtab-calc">Process Calc</div>
-        <div class="xl-tab"        onclick="xlTabScroll('anchor-burner-sizing',this)" id="xtab-burner-sizing">Burner Sizing</div>
-        <div class="xl-tab"        onclick="xlTabScroll('anchor-pipe-sizes',   this)" id="xtab-pipe-sizes">Pipe Sizes</div>
+        <div class="xl-tab active" onclick="xlTabScroll('anchor-calc',         this)" id="xtab-calc">Process Calcs</div>
+        <div class="xl-tab"        onclick="xlTabScroll('anchor-burner-sizing',this)" id="xtab-burner-sizing">Burner Sizing and Costing</div>
+        <div class="xl-tab"        onclick="xlTabScroll('anchor-pipe-sizes',   this)" id="xtab-pipe-sizes">Burner Pipe Size</div>
         <div class="xl-tab"        onclick="xlTabScroll('anchor-blower',       this)" id="xtab-blower">Blower</div>
-        <div class="xl-tab"        onclick="xlTabScroll('anchor-bom',          this)" id="xtab-bom">Costing (BOM)</div>
+        <div class="xl-tab"        onclick="xlTabScroll('anchor-bom',          this)" id="xtab-bom">BOM</div>
       </div>
     </div>
 
@@ -963,6 +963,11 @@
     }
 
     // ── Sheet 5: Costing (BOM) ────────────────────────────────────────────
+    // Update BOM tab and section title to match legacy sheet name
+    const bomKwLabel = 'Costing REGENBurner ' + c.model_kw + ' Kw';
+    document.getElementById('xl-bom-title').textContent = '\u25b6 ' + bomKwLabel;
+    document.getElementById('xtab-bom').textContent = bomKwLabel;
+
     const bomHdr = {_class:'xl-label', cells:[xc('S.No.'), xc('Section'), xc('Item Name'), xc('Specification'), xc('Qty',true), xc('Cost/Unit ₹',true), xc('Total Cost ₹',true), xc('Sell/Unit ₹',true), xc('Total Selling ₹',true)]};
     let sno = 0;
     const bomRows = [
