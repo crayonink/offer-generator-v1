@@ -10,11 +10,15 @@
     * { font-family: 'Inter', system-ui, sans-serif !important; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       font-family: 'Segoe UI', system-ui, sans-serif;
       background: #f1f5f9;
       color: #1e293b;
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
     }
@@ -73,12 +77,13 @@
       display: flex;
       flex: 1;
       overflow: hidden;
+      height: calc(100vh - 56px);
     }
 
     /* Sidebar */
     .sidebar {
-      width: 240px;
-      min-width: 240px;
+      width: 220px;
+      min-width: 220px;
       background: #fff;
       border-right: 1px solid #e2e8f0;
       overflow-y: auto;
@@ -271,8 +276,7 @@
     tbody td {
       padding: 9px 16px;
       color: #1e293b;
-      white-space: nowrap;
-      max-width: 300px;
+      max-width: 400px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
