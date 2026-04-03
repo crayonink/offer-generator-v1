@@ -209,8 +209,9 @@
     }
     .xl-tab:hover { background: #d4d4d4; color: #222; }
     .xl-tab.active { background: #fff; color: #217346; border-color: #bfbfbf; margin-top: 0; padding-top: 7px; }
-    .xl-sheet { display: block; border-top: 3px solid #217346; margin-top: 0; }
-    .xl-sheet-title { background:#217346; color:#fff; font-size:12px; font-weight:700; padding:5px 14px; letter-spacing:.5px; }
+    .xl-sheet { display: none; }
+    .xl-sheet.active { display: block; }
+    .xl-sheet-title { display: none; }
     /* supp-panel hidden class kept for compat */
     .supp-panel { display: none; }
     .supp-panel.active { display: block; }
@@ -489,25 +490,11 @@
       </div>
       <!-- Sheet panels — all visible, scrollable -->
       <div class="xl-content">
-        <div id="anchor-calc"></div>
-        <div class="xl-sheet-title">&#9654; Process Calcs</div>
-        <div class="xl-sheet" id="xl-calc"><div style="padding:16px;color:#888;font-size:.82rem;">Loading…</div></div>
-
-        <div id="anchor-burner-sizing"></div>
-        <div class="xl-sheet-title">&#9654; Burner Sizing and Costing</div>
-        <div class="xl-sheet" id="xl-burner-sizing"></div>
-
-        <div id="anchor-pipe-sizes"></div>
-        <div class="xl-sheet-title">&#9654; Burner Pipe Size</div>
-        <div class="xl-sheet" id="xl-pipe-sizes"></div>
-
-        <div id="anchor-blower"></div>
-        <div class="xl-sheet-title">&#9654; Blower</div>
-        <div class="xl-sheet" id="xl-blower"></div>
-
-        <div id="anchor-bom"></div>
-        <div class="xl-sheet-title" id="xl-bom-title">&#9654; BOM</div>
-        <div class="xl-sheet" id="xl-bom"></div>
+        <div class="xl-sheet active" id="xl-calc"><div style="padding:16px;color:#888;font-size:.82rem;">Loading…</div></div>
+        <div class="xl-sheet"        id="xl-burner-sizing"></div>
+        <div class="xl-sheet"        id="xl-pipe-sizes"></div>
+        <div class="xl-sheet"        id="xl-blower"></div>
+        <div class="xl-sheet"        id="xl-bom"></div>
       </div>
       <!-- Sheet tabs — now act as scroll-to anchors -->
       <div class="xl-tabs">
@@ -638,14 +625,14 @@
 
   // ── Excel workbook tab switcher ──────────────────────────────────────────
   function xlTab(id, btn) {
-    // legacy — no longer used, kept for compat
-  }
-  function xlTabScroll(anchorId, btn) {
     document.querySelectorAll('.xl-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.xl-sheet').forEach(s => s.classList.remove('active'));
     btn.classList.add('active');
-    const el = document.getElementById(anchorId);
-    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    document.getElementById('xl-' + id).classList.add('active');
+    const names = {'calc':'A1','burner-sizing':'C3','pipe-sizes':'B9','blower':'B2','bom':'A3'};
+    document.getElementById('xlNameBox').textContent = names[id] || 'A1';
   }
+  function xlTabScroll(anchorId, btn) { xlTab(anchorId.replace('anchor-',''), btn); }
 
   // ── Build Excel-style grid HTML ──────────────────────────────────────────
   function xlGrid(colHeaders, rows) {
