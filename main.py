@@ -1737,11 +1737,11 @@ def export_excel(req: ExcelExportRequest):
         ]
         for i, mr in enumerate(rate_rows):
             bg = GREY if i % 2 == 0 else WHITE
-            wa  = mr.get("wastage", 0)
-            mc  = mr.get("mat_cost", 0)
-            lc  = mr.get("labour_cost", 0)
+            wa  = mr.get("wastage") or 0
+            mc  = mr.get("mat_cost") or 0
+            lc  = mr.get("labour_cost") or 0
             eff = round((mc + lc) * (1 + wa), 2)
-            for ci, v in enumerate([mr.get("material",""), f"{round(wa*100)}%", mc, lc or "—", eff], 1):
+            for ci, v in enumerate([mr.get("material",""), f"{round(wa*100)}%", mc or "—", lc or "—", eff], 1):
                 cell(ws2, r2, ci, v, bg=bg, align="right" if ci > 1 else "left")
             r2 += 1
         r2 += 1
