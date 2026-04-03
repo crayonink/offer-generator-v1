@@ -952,9 +952,10 @@ def regen_calculate(req: RegenCalcRequest):
         bom_df = build_regen_df(model_kw, model_markup, num_pairs=result.num_pairs)
         supplementary = get_supplementary_data(model_kw)
 
-        # Augment supplementary with full sizing + nozzle data from DB
+        # Augment supplementary with full sizing + nozzle + legacy rates from DB
         try:
             with sqlite3.connect(DB_PATH) as _c:
+                # Sizing dimensions & weights
                 sz_row = _c.execute("SELECT * FROM regen_sizing WHERE kw=?", (model_kw,)).fetchone()
                 if sz_row:
                     sz_cols = [d[0] for d in _c.execute("SELECT * FROM regen_sizing LIMIT 0").description]
@@ -977,6 +978,34 @@ def regen_calculate(req: RegenCalcRequest):
                             'wt_regen_total','wt_grand_total','bloom_approx_wt',
                         ]
                     }
+                # Legacy material rates (from Excel "Burner Sizing and costing" sheet)
+                mr_rows = _c.execute("SELECT material, wastage, material_cost, labor_cost FROM regen_material_rates").fetchall()
+                legacy_rates = {r[0]: {'material': r[0], 'wastage': r[1], 'mat_cost': r[2], 'labour_cost': r[3] or 0} for r in mr_rows}
+                if legacy_rates:
+                    supplementary['burner_sizing']['legacy_material_rates'] = list(legacy_rates.values())
+                    # Rebuild cost_detail using legacy rates so formula matches Excel exactly
+                    from bom.regen_builder import _BURNER_WEIGHTS
+                    w = _BURNER_WEIGHTS[model_kw]
+                    def _legacy_rate(mat_key):
+                        r = legacy_rates.get(mat_key, {})
+                        mc, lc, wa = r.get('mat_cost', 0) or 0, r.get('labour_cost', 0) or 0, r.get('wastage', 0) or 0
+                        return round((mc + lc) * (1 + wa), 4), mc, lc, wa
+                    ms_rate,   ms_m,  ms_l,  ms_w  = _legacy_rate('MS')
+                    ss_rate,   ss_m,  ss_l,  ss_w  = _legacy_rate('SS')
+                    rf_rate,   rf_m,  rf_l,  rf_w  = _legacy_rate('Refractory')
+                    cb_rate,   cb_m,  cb_l,  cb_w  = _legacy_rate('Ceramic Balls')
+                    supplementary['burner_sizing']['cost_detail'] = [
+                        dict(component='Burner Body',  material='MS',           weight_kg=w['burner_ms'],    mat_cost=ms_m, labour_cost=ms_l, wastage=ms_w, rate=ms_rate, cost=round(w['burner_ms']    * ms_rate, 2)),
+                        dict(component='Burner Body',  material='Refractory',   weight_kg=w['burner_refrac'],mat_cost=rf_m, labour_cost=rf_l, wastage=rf_w, rate=rf_rate, cost=round(w['burner_refrac'] * rf_rate, 2)),
+                        dict(component='Regenerator',  material='MS',           weight_kg=w['regen_ms'],     mat_cost=ms_m, labour_cost=ms_l, wastage=ms_w, rate=ms_rate, cost=round(w['regen_ms']     * ms_rate, 2)),
+                        dict(component='Regenerator',  material='SS',           weight_kg=w['regen_ss'],     mat_cost=ss_m, labour_cost=ss_l, wastage=ss_w, rate=ss_rate, cost=round(w['regen_ss']     * ss_rate, 2)),
+                        dict(component='Regenerator',  material='Refractory',   weight_kg=w['regen_refrac'], mat_cost=rf_m, labour_cost=rf_l, wastage=rf_w, rate=rf_rate, cost=round(w['regen_refrac'] * rf_rate, 2)),
+                        dict(component='Regenerator',  material='Ceramic Balls',weight_kg=w['regen_ceramic'],mat_cost=cb_m, labour_cost=cb_l, wastage=cb_w, rate=cb_rate, cost=round(w['regen_ceramic'] * cb_rate, 2)),
+                        dict(component='Burner Block', material='Refractory',   weight_kg=w['block_refrac'], mat_cost=rf_m, labour_cost=rf_l, wastage=rf_w, rate=rf_rate, cost=round(w['block_refrac'] * rf_rate, 2)),
+                    ]
+                    supplementary['burner_sizing']['total_unit_cost'] = round(sum(d['cost'] for d in supplementary['burner_sizing']['cost_detail']), 2)
+                    supplementary['burner_sizing']['total_pair_cost'] = round(supplementary['burner_sizing']['total_unit_cost'] * 2, 2)
+                # Nozzle sizing
                 nz_cols = [d[0] for d in _c.execute("SELECT * FROM regen_nozzle_sizing LIMIT 0").description]
                 nz_rows = _c.execute("SELECT * FROM regen_nozzle_sizing WHERE power_kw=?", (model_kw,)).fetchall()
                 supplementary['nozzle_sizing'] = [dict(zip(nz_cols, r)) for r in nz_rows]

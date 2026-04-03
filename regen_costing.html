@@ -785,26 +785,69 @@
         document.getElementById('xl-burner-sizing').innerHTML += xlGrid(['A','B','C','D','E','F','G','H'], nzRows);
       }
 
-      // ── Section D: Material Rates & Cost Breakdown ───────────────────────
-      const bsRows = [
-        {cells:[xc(''), xc(''), xc(''), xc(''), xc('')]},
-        {_class:'xl-section', cells:[xs('MATERIAL RATES (with 10% wastage)', 5)]},
-        {_class:'xl-label', cells:[xc('Material'), xc('Mat. ₹/kg',true), xc('Labour ₹/kg',true), xc('Total ₹/kg',true), xc('')]},
-        {cells:[xc('MS'), xc('50',true), xc('25',true), xc(rates.ms,true), xc('')]},
-        {cells:[xc('SS'), xc('50',true), xc('25',true), xc(rates.ss,true), xc('')]},
-        {cells:[xc('Refractory'), xc('56',true), xc('25',true), xc(rates.refractory,true), xc('')]},
-        {cells:[xc('Ceramic Balls'), xc('125',true), xc('—',true), xc(rates.ceramic_balls,true), xc('')]},
-        {cells:[xc(''), xc(''), xc(''), xc(''), xc('')]},
-        {_class:'xl-section', cells:[xs('COST BREAKDOWN (per unit)', 5)]},
-        {_class:'xl-label', cells:[xc('Component'), xc('Material'), xc('Weight (kg)',true), xc('Rate ₹/kg',true), xc('Cost ₹',true)]},
-        ...bs.cost_detail.map((d,i) => ({
-          _class: i%2===0 ? '' : 'xl-label',
-          cells:[xc(d.component), xc(d.material), xc(fmtN(d.weight_kg),true), xc(d.rate,true), xc(fmtN(d.cost),true)]
-        })),
-        {_class:'xl-total', cells:[xs('Total per unit',4,true), xc(fmtN(bs.total_unit_cost),true)]},
-        {_class:'xl-total', cells:[xs('Total per pair (×2)',4,true), xc(fmtN(bs.total_pair_cost),true)]},
+      // ── Section D: Material Rates & Cost Breakdown (legacy formula) ─────
+      const legacyRates = bs.legacy_material_rates || [];
+      const mrRows = [
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('COSTING CONSIDERATION — MATERIAL RATES', 6)]},
+        {_class:'xl-label', cells:[
+          xc('Material'), xc('Mat. Cost ₹/kg',true), xc('Labour ₹/kg',true),
+          xc('Wastage',true), xc('Effective Rate ₹/kg',true), xc('Formula',true),
+        ]},
       ];
-      document.getElementById('xl-burner-sizing').innerHTML += xlGrid(['A','B','C','D','E'], bsRows);
+      if (legacyRates.length) {
+        legacyRates.forEach(m => {
+          const wa = m.wastage != null ? m.wastage : 0;
+          const lc = m.labour_cost != null ? m.labour_cost : 0;
+          const mc = m.mat_cost != null ? m.mat_cost : 0;
+          const eff = ((mc + lc) * (1 + wa)).toFixed(2);
+          const formula = lc > 0
+            ? `(${mc} + ${lc}) × ${(1+wa).toFixed(1)} = ${eff}`
+            : `${mc} × ${(1+wa).toFixed(1)} = ${eff}`;
+          mrRows.push({cells:[
+            xc(m.material), xc(mc, true), xc(lc||'—', true),
+            xc((wa*100).toFixed(0)+'%', true), xc(eff, true), xc(formula, true),
+          ]});
+        });
+      } else {
+        // fallback to hardcoded legacy values
+        [[' MS','50','25','10%','82.50','(50+25)×1.1'],
+         ['SS','50','25','10%','82.50','(50+25)×1.1'],
+         ['Refractory','56','25','10%','89.10','(56+25)×1.1'],
+         ['Ceramic Balls','125','—','10%','137.50','125×1.1'],
+        ].forEach(r => mrRows.push({cells:[xc(r[0]),xc(r[1],true),xc(r[2],true),xc(r[3],true),xc(r[4],true),xc(r[5],true)]}));
+      }
+      document.getElementById('xl-burner-sizing').innerHTML += xlGrid(['A','B','C','D','E','F'], mrRows);
+
+      // Cost breakdown with full formula
+      const cdRows = [
+        {cells:[xc(''),xc(''),xc(''),xc(''),xc(''),xc(''),xc(''),xc('')]},
+        {_class:'xl-section', cells:[xs('COST BREAKDOWN — per unit (1 burner)', 8)]},
+        {_class:'xl-label', cells:[
+          xc('Component'), xc('Material'), xc('Weight (kg)',true),
+          xc('Mat ₹/kg',true), xc('Labour ₹/kg',true), xc('Wastage',true),
+          xc('Rate ₹/kg',true), xc('Cost ₹',true),
+        ]},
+        ...bs.cost_detail.map((d,i) => {
+          const wa = d.wastage != null ? d.wastage : 0;
+          const lc = d.labour_cost != null ? d.labour_cost : 0;
+          const mc = d.mat_cost != null ? d.mat_cost : 0;
+          return {
+            _class: i%2===0 ? '' : 'xl-label',
+            cells:[
+              xc(d.component), xc(d.material),
+              xc(fmtN(d.weight_kg),true),
+              xc(mc, true), xc(lc||'—', true),
+              xc((wa*100).toFixed(0)+'%', true),
+              xc(d.rate != null ? d.rate : '', true),
+              xc(fmtN(d.cost),true),
+            ]
+          };
+        }),
+        {_class:'xl-total', cells:[xs('Total Cost — 1 Burner + Regenerator',7,true), xc(fmtN(bs.total_unit_cost),true)]},
+        {_class:'xl-total', cells:[xs('Total Cost — 1 Pair (2 Burners)',7,true), xc(fmtN(bs.total_pair_cost),true)]},
+      ];
+      document.getElementById('xl-burner-sizing').innerHTML += xlGrid(['A','B','C','D','E','F','G','H'], cdRows);
 
       // ── Sheet 3: Pipe Sizes ─────────────────────────────────────────────
       const ps = data.supplementary.pipe_sizes;
