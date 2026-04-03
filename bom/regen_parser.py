@@ -123,21 +123,47 @@ def parse_regen_costing(xl_path, conn):
         srows = list(ws.iter_rows(min_row=1, max_row=65, values_only=True))
 
         # Dimensions: 0-indexed rows 19-26 (Excel rows 20-27)
+        # Cols: 0=KW, 1=shell_thick, 2=retainer_thick, 3=refrac_thick,
+        #        4=L, 5=H, 6=W, 7=bottom_h,
+        #        8=vol_total, 9=vol_effective, 10=vol_refractory, 11=density_castable,
+        #        12=wt_refractory_insulation, 13=loose_density_balls,
+        #        14=vol_available_balls, 15=balls_filling_pct,
+        #        16=wt_ceramic_balls_burner, 17=wt_shell (ribs/anchor/plate),
+        #        18=wt_ss_plate, 19=wt_regen_total,
+        #        20=bb_dia_inner, 21=bb_dia_outer, 22=bb_depth, 23=wt_burner_block,
+        #        24=burner_length, 25=burner_dia,
+        #        26=wt_burner_shell, 27=wt_burner_refrac_detail,
+        #        28=wt_burner_total, 29=wt_grand_total, 30=bloom_wt
         dim = {}
         for row in srows[19:27]:
             kw = _v(row[0])
             if kw is None:
                 continue
+            def rc(i): return _v(row[i]) if len(row) > i else None
             dim[int(kw)] = {
-                'shell_thick': _v(row[1]), 'retainer_thick': _v(row[2]),
-                'refractory_thick': _v(row[3]),
-                'dim_L': _v(row[4]), 'dim_H': _v(row[5]), 'dim_W': _v(row[6]),
-                'bottom_h': _v(row[7]),
-                'vol_total': _v(row[8]), 'vol_effective': _v(row[9]),
-                'vol_refractory': _v(row[10]), 'density_castable': _v(row[11]),
+                'shell_thick': rc(1), 'retainer_thick': rc(2),
+                'refractory_thick': rc(3),
+                'dim_L': rc(4), 'dim_H': rc(5), 'dim_W': rc(6),
+                'bottom_h': rc(7),
+                'vol_total': rc(8), 'vol_effective': rc(9),
+                'vol_refractory': rc(10), 'density_castable': rc(11),
+                'wt_refractory_insulation': rc(12),
+                'loose_density_balls': rc(13),
+                'vol_available_balls': rc(14),
+                'balls_filling_pct': rc(15),
+                'wt_ceramic_balls_burner': rc(16),
+                'wt_shell': rc(17),
+                'wt_ss_plate': rc(18),
+                'wt_regen_total': rc(19),
+                'bb_dia_inner': rc(20), 'bb_dia_outer': rc(21), 'bb_depth': rc(22),
+                'wt_burner_block': rc(23),
+                'burner_length': rc(24), 'burner_dia': rc(25),
+                'wt_burner_shell': rc(26), 'wt_burner_refrac_detail': rc(27),
+                'wt_burner_total': rc(28),
+                'wt_grand_total': rc(29),
             }
 
-        # Weights: 0-indexed rows 34-41 (Excel rows 35-42)
+        # Weights summary table: 0-indexed rows 34-41 (Excel rows 35-42)
         wt = {}
         for row in srows[34:42]:
             kw = _v(row[3])
@@ -147,7 +173,7 @@ def parse_regen_costing(xl_path, conn):
                 'wt_burner_ms':   _v(row[4]), 'wt_burner_refrac':  _v(row[5]),
                 'wt_regen_ms':    _v(row[6]), 'wt_regen_ss':       _v(row[7]),
                 'wt_regen_refrac':_v(row[8]), 'wt_ceramic_balls':  _v(row[9]),
-                'wt_burner_block':_v(row[10]),'wt_total':          _v(row[11]),
+                'wt_burner_block_summary': _v(row[10]), 'wt_total': _v(row[11]),
             }
 
         # Costs: 0-indexed rows 53-61 (Excel rows 54-62 — 500 KW starts at row 54)

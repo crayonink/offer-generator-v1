@@ -1328,13 +1328,13 @@ async function uploadStockFile(input) {
 // ── Regen Costing ────────────────────────────────────────────────────────────
 function renderRegenCosting(payload) {
   var el = document.getElementById('sheet-regen-costing');
-  var items       = payload.items        || [];
-  var sizing      = payload.sizing       || [];
-  var pricelist   = payload.pricelist    || [];
-  var matRates    = payload.material_rates || [];
+  var items     = payload.items         || [];
+  var sizing    = payload.sizing        || [];
+  var pricelist = payload.pricelist     || [];
+  var matRates  = payload.material_rates|| [];
   if (!items.length) { el.innerHTML = emptyMsg(); return; }
 
-  var styles = '<style>'
+  var CSS = '<style>'
     + '.rc-wrap{overflow-x:auto;padding-bottom:8px;}'
     + '.rc-kw-tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}'
     + '.rc-kw-tab{padding:5px 16px;background:#e8eaf0;border:1px solid #c0c4cc;border-radius:3px 3px 0 0;cursor:pointer;font-size:12px;font-weight:600;color:#2c3e50;}'
@@ -1342,11 +1342,12 @@ function renderRegenCosting(payload) {
     + '.rc-sub-tabs{display:flex;gap:2px;margin-bottom:8px;border-bottom:2px solid #1a3a6c;}'
     + '.rc-sub-tab{padding:4px 14px;background:#f0f3f8;border:1px solid #c8d0dc;border-bottom:none;cursor:pointer;font-size:11px;font-weight:600;color:#444;border-radius:3px 3px 0 0;}'
     + '.rc-sub-tab.active{background:#fff;color:#1a3a6c;border-color:#1a3a6c;}'
+    /* main BOM table */
     + '.rc-tbl{border-collapse:collapse;font-size:12px;white-space:nowrap;min-width:900px;}'
     + '.rc-tbl td,.rc-tbl th{border:1px solid #d0d3d8;padding:4px 10px;}'
     + '.rc-hdr-row th{background:#1a3a6c;color:#fff;font-weight:600;font-size:11px;text-align:center;padding:6px 10px;}'
-    + '.rc-sec-hdr td{background:#2e5fa3;color:#fff;font-weight:700;font-size:12px;padding:5px 10px;letter-spacing:0.3px;}'
-    + '.rc-subsec-hdr td{background:#dce6f5;color:#1a3a6c;font-weight:700;font-size:11px;padding:4px 10px 4px 20px;border-top:1px solid #aab;}'
+    + '.rc-sec-hdr td{background:#2e5fa3;color:#fff;font-weight:700;font-size:12px;padding:5px 10px;}'
+    + '.rc-subsec-hdr td{background:#dce6f5;color:#1a3a6c;font-weight:700;font-size:11px;padding:4px 10px 4px 20px;}'
     + '.rc-item td{background:#fff;}'
     + '.rc-item:hover td{background:#f5f8ff;}'
     + '.rc-sno{text-align:center;color:#777;font-size:11px;width:40px;}'
@@ -1361,6 +1362,17 @@ function renderRegenCosting(payload) {
     + '.rc-final-row td{background:#e8f5e9;font-weight:700;border-top:3px solid #2e7d32;}'
     + '.rc-final-label{font-size:13px;color:#1b5e20;padding-left:10px!important;}'
     + '.rc-final-price{background:#43a047!important;color:#fff;font-size:14px;text-align:right;font-weight:900;}'
+    /* inline regen breakdown inside BOM */
+    + '.rc-inline-wrap{background:#f0f6ff;border:1px solid #90b4e0;border-radius:4px;padding:10px 14px;margin:0;}'
+    + '.rc-inline-title{font-size:11px;font-weight:700;color:#1a3a6c;margin:0 0 6px;letter-spacing:0.3px;}'
+    + '.rc-inline-tbl{border-collapse:collapse;font-size:11px;white-space:nowrap;}'
+    + '.rc-inline-tbl td,.rc-inline-tbl th{border:1px solid #b0c8e8;padding:3px 9px;}'
+    + '.rc-inline-hdr th{background:#2e5fa3;color:#fff;font-weight:600;text-align:center;font-size:10px;}'
+    + '.rc-inline-grp{background:#dce6f5;font-weight:700;font-size:11px;}'
+    + '.rc-inline-num{text-align:right;}'
+    + '.rc-inline-total td{background:#ffe69c;font-weight:700;border-top:2px solid #e6a817;}'
+    + '.rc-inline-total .rc-inline-num{color:#7c4d00;}'
+    /* sizing & weights sub-tab */
     + '.rc-sz-tbl{border-collapse:collapse;font-size:11px;white-space:nowrap;margin-bottom:16px;}'
     + '.rc-sz-tbl td,.rc-sz-tbl th{border:1px solid #cdd;padding:4px 10px;}'
     + '.rc-sz-hdr th{background:#1a5276;color:#fff;font-weight:600;font-size:11px;text-align:center;}'
@@ -1371,8 +1383,14 @@ function renderRegenCosting(payload) {
     + '.rc-pl-hdr th{background:#1a3a6c;color:#fff;font-weight:600;text-align:center;}'
     + '.rc-pl-price{text-align:right;font-weight:700;color:#0d47a1;}'
     + '.rc-pl-final{background:#e3f2fd;}'
-    + '.rc-sec-title{font-size:13px;font-weight:700;color:#1a3a5c;margin:12px 0 6px;letter-spacing:0.3px;}'
+    + '.rc-sec-title{font-size:13px;font-weight:700;color:#1a3a5c;margin:12px 0 6px;}'
     + '</style>';
+
+  function fmtN(v) { return v != null ? parseFloat(v.toFixed(2)).toLocaleString('en-IN') : ''; }
+
+  // Index sizing by KW for quick lookup
+  var szByKw = {};
+  sizing.forEach(function(s){ szByKw[s.kw] = s; });
 
   // Group items by KW
   var byKw = {};
@@ -1382,21 +1400,125 @@ function renderRegenCosting(payload) {
   });
   var kws = Object.keys(byKw).map(Number).sort(function(a,b){return a-b;});
 
-  // ── Build costing table for one KW ──────────────────────────────────────
-  function buildCostingTable(rows) {
+  // ── Inline regen cost breakdown (shown under "Burner with Regenerator" row) ─
+  function inlineRegenBreakdown(kw) {
+    var s = szByKw[kw];
+    if (!s) return '';
+
+    // Dimension row
+    var dimHtml = '<div class="rc-inline-title">Regenerator Dimensions</div>'
+      + '<table class="rc-inline-tbl"><thead><tr class="rc-inline-hdr">'
+      + '<th>Shell (mm)</th><th>Retainer (mm)</th><th>Refrac. (mm)</th>'
+      + '<th>L (m)</th><th>H (m)</th><th>W (m)</th><th>Bottom H (m)</th>'
+      + '<th>Vol Total (m³)</th><th>Vol Effective (m³)</th><th>Vol Refrac. (m³)</th>'
+      + '<th>Density Castable</th><th>Wt Refrac. Insul. (kg)</th>'
+      + '<th>Ceramic Ball Density</th><th>Vol Avail. Balls (m³)</th><th>Balls Fill %</th>'
+      + '</tr></thead><tbody><tr>'
+      + '<td class="rc-inline-num">' + (s.shell_thick||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.retainer_thick||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.refractory_thick||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.dim_L||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.dim_H||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.dim_W||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.bottom_h||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.vol_total ? s.vol_total.toFixed(4) : '') + '</td>'
+      + '<td class="rc-inline-num">' + (s.vol_effective ? s.vol_effective.toFixed(4) : '') + '</td>'
+      + '<td class="rc-inline-num">' + (s.vol_refractory ? s.vol_refractory.toFixed(4) : '') + '</td>'
+      + '<td class="rc-inline-num">' + (s.density_castable||'') + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_refractory_insulation) + '</td>'
+      + '<td class="rc-inline-num">' + (s.loose_density_balls||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.vol_available_balls ? s.vol_available_balls.toFixed(4) : '') + '</td>'
+      + '<td class="rc-inline-num">' + (s.balls_filling_pct||'') + '%</td>'
+      + '</tr></tbody></table>';
+
+    // Weight detail rows
+    var wtHtml = '<div class="rc-inline-title" style="margin-top:8px;">Weight Breakdown (kg)</div>'
+      + '<table class="rc-inline-tbl"><thead><tr class="rc-inline-hdr">'
+      + '<th>Component</th>'
+      + '<th>Burner Block Dia Inner (m)</th><th>Burner Block Dia Outer (m)</th><th>Burner Block Depth (m)</th>'
+      + '<th>Wt Burner Block (kg)</th>'
+      + '<th>Burner Len (m)</th><th>Burner Dia (m)</th>'
+      + '<th>Wt Burner Shell (kg)</th><th>Wt Burner Refrac. (kg)</th><th>Wt Burner Total (kg)</th>'
+      + '<th>Wt Regen Shell (kg)</th><th>Wt SS Plate (kg)</th>'
+      + '<th>Wt Ceramic Balls (kg)</th><th>Wt Regen Total (kg)</th>'
+      + '<th style="background:#1a3a6c;">Grand Total (kg)</th>'
+      + '</tr></thead><tbody><tr>'
+      + '<td class="rc-inline-grp">' + kw + ' KW</td>'
+      + '<td class="rc-inline-num">' + (s.bb_dia_inner||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.bb_dia_outer||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.bb_depth||'') + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_burner_block) + '</td>'
+      + '<td class="rc-inline-num">' + (s.burner_length||'') + '</td>'
+      + '<td class="rc-inline-num">' + (s.burner_dia||'') + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_burner_shell) + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_burner_refrac_detail) + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_burner_total) + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_shell) + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_ss_plate) + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_ceramic_balls_burner) + '</td>'
+      + '<td class="rc-inline-num">' + fmtN(s.wt_regen_total) + '</td>'
+      + '<td class="rc-inline-num" style="font-weight:700;background:#dce6f5;">' + fmtN(s.wt_total) + '</td>'
+      + '</tr></tbody></table>';
+
+    // Material rates
+    var mrHtml = '';
+    if (matRates.length) {
+      mrHtml = '<div class="rc-inline-title" style="margin-top:8px;">Costing Consideration — Material Rates</div>'
+        + '<table class="rc-inline-tbl"><thead><tr class="rc-inline-hdr">'
+        + '<th>Material</th><th>Wastage</th><th>Material Cost (₹/kg)</th><th>Labour Cost (₹/kg)</th><th>Total Rate (₹/kg)</th>'
+        + '</tr></thead><tbody>';
+      matRates.forEach(function(m) {
+        var tot = (m.material_cost||0) + (m.labor_cost||0);
+        mrHtml += '<tr>'
+          + '<td style="font-weight:600;">' + esc(m.material) + '</td>'
+          + '<td class="rc-inline-num">' + ((m.wastage||0)*100).toFixed(0) + '%</td>'
+          + '<td class="rc-inline-num">' + fmt(m.material_cost) + '</td>'
+          + '<td class="rc-inline-num">' + fmt(m.labor_cost) + '</td>'
+          + '<td class="rc-inline-num" style="font-weight:700;background:#dce6f5;">' + fmt(tot) + '</td>'
+          + '</tr>';
+      });
+      mrHtml += '</tbody></table>';
+    }
+
+    // Cost breakdown table
+    var costHtml = '<div class="rc-inline-title" style="margin-top:8px;">Cost Breakdown — How Unit Cost is Derived</div>'
+      + '<table class="rc-inline-tbl"><thead><tr class="rc-inline-hdr">'
+      + '<th>Burner MS (₹)</th><th>Burner Refrac. (₹)</th>'
+      + '<th>Regen MS (₹)</th><th>Regen SS (₹)</th><th>Regen Refrac. (₹)</th>'
+      + '<th>Ceramic Balls (₹)</th><th>Burner Block (₹)</th>'
+      + '<th style="background:#e6a817;color:#000;">TOTAL UNIT COST (₹)</th>'
+      + '</tr></thead><tbody>'
+      + '<tr class="rc-inline-total">'
+      + '<td class="rc-inline-num">' + fmt(s.cost_burner_ms) + '</td>'
+      + '<td class="rc-inline-num">' + fmt(s.cost_burner_refrac) + '</td>'
+      + '<td class="rc-inline-num">' + fmt(s.cost_regen_ms) + '</td>'
+      + '<td class="rc-inline-num">' + fmt(s.cost_regen_ss) + '</td>'
+      + '<td class="rc-inline-num">' + fmt(s.cost_regen_refrac) + '</td>'
+      + '<td class="rc-inline-num">' + fmt(s.cost_ceramic_balls) + '</td>'
+      + '<td class="rc-inline-num">' + fmt(s.cost_burner_block) + '</td>'
+      + '<td class="rc-inline-num" style="font-weight:900;background:#ffe69c;color:#7c4d00;font-size:13px;">' + fmt(s.cost_total) + '</td>'
+      + '</tr></tbody></table>';
+
+    return '<td colspan="8" style="padding:0;border:none;">'
+      + '<div class="rc-inline-wrap">'
+      + dimHtml + wtHtml + mrHtml + costHtml
+      + '</div></td>';
+  }
+
+  // ── Full Costing BOM table for one KW ────────────────────────────────────
+  function buildCostingTable(kw, rows) {
     var h = '<table class="rc-tbl"><thead><tr class="rc-hdr-row">'
-      + '<th>S.No</th><th style="min-width:260px;text-align:left;">Description</th>'
+      + '<th>S.No</th><th style="min-width:280px;text-align:left;">Description</th>'
       + '<th>Size</th><th>Qty</th>'
-      + '<th style="min-width:110px;">Cost/Unit (₹)</th>'
-      + '<th style="min-width:120px;">Total Cost (₹)</th>'
-      + '<th style="min-width:110px;">SP/Unit ×1.8 (₹)</th>'
-      + '<th style="min-width:120px;">Total SP (₹)</th>'
+      + '<th style="min-width:120px;">Cost / Unit (₹)</th>'
+      + '<th style="min-width:130px;">Total Cost (₹)</th>'
+      + '<th style="min-width:120px;">SP / Unit ×1.8 (₹)</th>'
+      + '<th style="min-width:130px;">Total SP (₹)</th>'
       + '</tr></thead><tbody>';
     var inSubSec = false;
     rows.forEach(function(r) {
       if (r.row_type === 'header') {
-        // Distinguish top-level sections vs sub-sections by length/style
-        var isMain = ['GAS Line','Air Line','TEMPERATURE CONTROL SYSTEM of:-'].some(function(t){ return r.description.indexOf(t) >= 0; });
+        var isMain = ['GAS Line','Air Line','TEMPERATURE CONTROL SYSTEM'].some(function(t){ return r.description.indexOf(t) >= 0; });
         if (isMain) {
           h += '<tr class="rc-sec-hdr"><td colspan="8">' + esc(r.description) + '</td></tr>';
           inSubSec = false;
@@ -1418,7 +1540,7 @@ function renderRegenCosting(payload) {
           + '<td class="rc-final-price">' + fmt(r.total_sp) + '</td>'
           + '</tr>';
       } else {
-        // regular item
+        var isBurnerRegen = r.description.indexOf('Burner with Regenerator') >= 0;
         var pad = inSubSec ? ' style="padding-left:18px;"' : '';
         h += '<tr class="rc-item">'
           + '<td class="rc-sno">' + esc(r.sno) + '</td>'
@@ -1430,22 +1552,29 @@ function renderRegenCosting(payload) {
           + '<td class="rc-sp">' + (r.sp_per_unit != null ? fmt(r.sp_per_unit) : '') + '</td>'
           + '<td class="rc-sp" style="background:#f0f4ff;">' + (r.total_sp != null ? fmt(r.total_sp) : '') + '</td>'
           + '</tr>';
+        // Inline calculation breakdown immediately under "Burner with Regenerator"
+        if (isBurnerRegen) {
+          h += '<tr>' + inlineRegenBreakdown(kw) + '</tr>';
+        }
       }
     });
     h += '</tbody></table>';
     return h;
   }
 
-  // ── Build sizing + weights + costs table ─────────────────────────────────
+  // ── Sizing & Weights sub-tab (all KW in one place) ───────────────────────
   function buildSizingTable() {
     if (!sizing.length) return '<p style="color:#888;padding:16px;">No sizing data.</p>';
+    var h = '';
 
-    // Dimensions
-    var h = '<div class="rc-sec-title">Regenerator Dimensions</div>';
-    h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
-      + '<th>KW</th><th>Shell (mm)</th><th>Retainer (mm)</th><th>Refractory (mm)</th>'
+    // Dimensions + volumes + ball data
+    h += '<div class="rc-sec-title">Regenerator Dimensions &amp; Volume</div>'
+      + '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      + '<th>KW</th><th>Shell (mm)</th><th>Retainer (mm)</th><th>Refrac. (mm)</th>'
       + '<th>L (m)</th><th>H (m)</th><th>W (m)</th><th>Bottom H (m)</th>'
-      + '<th>Vol Total (m³)</th><th>Vol Effective (m³)</th><th>Vol Refractory (m³)</th>'
+      + '<th>Vol Total (m³)</th><th>Vol Effective (m³)</th><th>Vol Refrac. (m³)</th>'
+      + '<th>Density Castable (kg/m³)</th><th>Wt Refrac. Insulation (kg)</th>'
+      + '<th>Loose Density Balls (kg/m³)</th><th>Vol Avail. Balls (m³)</th><th>Balls Fill %</th>'
       + '</tr></thead><tbody>';
     sizing.forEach(function(s) {
       h += '<tr><td class="rc-sz-grp">' + s.kw + ' KW</td>'
@@ -1459,26 +1588,61 @@ function renderRegenCosting(payload) {
         + '<td class="rc-sz-num">' + (s.vol_total ? s.vol_total.toFixed(4) : '') + '</td>'
         + '<td class="rc-sz-num">' + (s.vol_effective ? s.vol_effective.toFixed(4) : '') + '</td>'
         + '<td class="rc-sz-num">' + (s.vol_refractory ? s.vol_refractory.toFixed(4) : '') + '</td>'
+        + '<td class="rc-sz-num">' + (s.density_castable||'') + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_refractory_insulation) + '</td>'
+        + '<td class="rc-sz-num">' + (s.loose_density_balls||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.vol_available_balls ? s.vol_available_balls.toFixed(4) : '') + '</td>'
+        + '<td class="rc-sz-num">' + (s.balls_filling_pct||'') + '%</td>'
         + '</tr>';
     });
     h += '</tbody></table>';
 
-    // Weights
-    h += '<div class="rc-sec-title">Weight Breakdown (kg)</div>';
-    h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
-      + '<th>KW</th><th>Burner MS</th><th>Burner Refrac.</th>'
+    // Detailed weight breakdown
+    h += '<div class="rc-sec-title">Detailed Weight Breakdown (kg)</div>'
+      + '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      + '<th>KW</th>'
+      + '<th>BB Dia Inner (m)</th><th>BB Dia Outer (m)</th><th>BB Depth (m)</th><th>Wt Burner Block</th>'
+      + '<th>Burner Len (m)</th><th>Burner Dia (m)</th>'
+      + '<th>Wt Burner Shell</th><th>Wt Burner Refrac.</th><th>Wt Burner Total</th>'
+      + '<th>Wt Regen Shell</th><th>Wt SS Plate</th><th>Wt Ceramic Balls</th><th>Wt Regen Total</th>'
+      + '<th style="background:#1a3a6c;">Grand Total (kg)</th>'
+      + '</tr></thead><tbody>';
+    sizing.forEach(function(s) {
+      h += '<tr><td class="rc-sz-grp">' + s.kw + ' KW</td>'
+        + '<td class="rc-sz-num">' + (s.bb_dia_inner||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.bb_dia_outer||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.bb_depth||'') + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_block) + '</td>'
+        + '<td class="rc-sz-num">' + (s.burner_length||'') + '</td>'
+        + '<td class="rc-sz-num">' + (s.burner_dia||'') + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_shell) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_refrac_detail) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_total) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_shell) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_ss_plate) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_ceramic_balls_burner) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_regen_total) + '</td>'
+        + '<td class="rc-sz-num" style="font-weight:700;background:#dce6f5;">' + fmtN(s.wt_total) + '</td>'
+        + '</tr>';
+    });
+    h += '</tbody></table>';
+
+    // Summary weight table (from the condensed section)
+    h += '<div class="rc-sec-title">Weight Summary — Burner + Regenerator (kg)</div>'
+      + '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      + '<th>Burner Size (KW)</th><th>Burner MS</th><th>Burner Refrac.</th>'
       + '<th>Regen MS</th><th>Regen SS</th><th>Regen Refrac.</th>'
       + '<th>Ceramic Balls</th><th>Burner Block</th><th>TOTAL (kg)</th>'
       + '</tr></thead><tbody>';
     sizing.forEach(function(s) {
-      h += '<tr><td class="rc-sz-grp">' + s.kw + ' KW</td>'
+      h += '<tr><td class="rc-sz-grp">' + s.kw + '</td>'
         + '<td class="rc-sz-num">' + fmtN(s.wt_burner_ms) + '</td>'
         + '<td class="rc-sz-num">' + fmtN(s.wt_burner_refrac) + '</td>'
         + '<td class="rc-sz-num">' + fmtN(s.wt_regen_ms) + '</td>'
         + '<td class="rc-sz-num">' + fmtN(s.wt_regen_ss) + '</td>'
         + '<td class="rc-sz-num">' + fmtN(s.wt_regen_refrac) + '</td>'
         + '<td class="rc-sz-num">' + fmtN(s.wt_ceramic_balls) + '</td>'
-        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_block) + '</td>'
+        + '<td class="rc-sz-num">' + fmtN(s.wt_burner_block_summary) + '</td>'
         + '<td class="rc-sz-num" style="font-weight:700;background:#dce6f5;">' + fmtN(s.wt_total) + '</td>'
         + '</tr>';
     });
@@ -1486,33 +1650,33 @@ function renderRegenCosting(payload) {
 
     // Material rates
     if (matRates.length) {
-      h += '<div class="rc-sec-title">Material Rates Used in Sizing</div>';
-      h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      h += '<div class="rc-sec-title">Costing Consideration — Material Rates</div>'
+        + '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
         + '<th>Material</th><th>Wastage</th><th>Material Cost (₹/kg)</th><th>Labour Cost (₹/kg)</th><th>Total Rate (₹/kg)</th>'
         + '</tr></thead><tbody>';
       matRates.forEach(function(m) {
-        var total = (m.material_cost||0) + (m.labor_cost||0);
+        var tot = (m.material_cost||0) + (m.labor_cost||0);
         h += '<tr>'
           + '<td style="font-weight:600;">' + esc(m.material) + '</td>'
           + '<td class="rc-sz-num">' + ((m.wastage||0)*100).toFixed(0) + '%</td>'
           + '<td class="rc-sz-num">' + fmt(m.material_cost) + '</td>'
           + '<td class="rc-sz-num">' + fmt(m.labor_cost) + '</td>'
-          + '<td class="rc-sz-num" style="font-weight:700;background:#dce6f5;">' + fmt(total) + '</td>'
+          + '<td class="rc-sz-num" style="font-weight:700;background:#dce6f5;">' + fmt(tot) + '</td>'
           + '</tr>';
       });
       h += '</tbody></table>';
     }
 
     // Cost breakdown
-    h += '<div class="rc-sec-title">Cost Breakdown per Unit (₹) — Component-wise</div>';
-    h += '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
-      + '<th>KW</th><th>Burner MS</th><th>Burner Refrac.</th>'
+    h += '<div class="rc-sec-title">Cost Breakdown per Unit (₹) — Burner + Regenerator</div>'
+      + '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+      + '<th>Burner Size (KW)</th><th>Burner MS</th><th>Burner Refrac.</th>'
       + '<th>Regen MS</th><th>Regen SS</th><th>Regen Refrac.</th>'
-      + '<th>Ceramic Balls</th><th>Burner Block</th>'
-      + '<th>TOTAL COST (₹)</th><th>SELLING PRICE (₹)</th>'
+      + '<th>Ceramic Balls</th><th>Burner Block (2×Refrac.)</th>'
+      + '<th style="background:#e6a817;color:#000;">TOTAL UNIT COST (₹)</th>'
       + '</tr></thead><tbody>';
     sizing.forEach(function(s) {
-      h += '<tr><td class="rc-sz-grp">' + s.kw + ' KW</td>'
+      h += '<tr><td class="rc-sz-grp">' + s.kw + '</td>'
         + '<td class="rc-sz-num">' + fmt(s.cost_burner_ms) + '</td>'
         + '<td class="rc-sz-num">' + fmt(s.cost_burner_refrac) + '</td>'
         + '<td class="rc-sz-num">' + fmt(s.cost_regen_ms) + '</td>'
@@ -1520,15 +1684,14 @@ function renderRegenCosting(payload) {
         + '<td class="rc-sz-num">' + fmt(s.cost_regen_refrac) + '</td>'
         + '<td class="rc-sz-num">' + fmt(s.cost_ceramic_balls) + '</td>'
         + '<td class="rc-sz-num">' + fmt(s.cost_burner_block) + '</td>'
-        + '<td class="rc-sz-num" style="font-weight:700;background:#ffe69c;">' + fmt(s.cost_total) + '</td>'
-        + '<td class="rc-sz-num" style="font-weight:700;background:#c8e6c9;color:#1b5e20;">' + fmt(s.selling_price) + '</td>'
+        + '<td class="rc-sz-num" style="font-weight:700;background:#ffe69c;color:#7c4d00;">' + fmt(s.cost_total) + '</td>'
         + '</tr>';
     });
     h += '</tbody></table>';
     return h;
   }
 
-  // ── Build price list summary ──────────────────────────────────────────────
+  // ── Price list summary ────────────────────────────────────────────────────
   function buildPriceList() {
     if (!pricelist.length) return '';
     var h = '<div class="rc-sec-title">Price List Summary</div>'
@@ -1551,42 +1714,35 @@ function renderRegenCosting(payload) {
     return h;
   }
 
-  function fmtN(v) { return v != null ? v.toLocaleString('en-IN') : ''; }
-
-  // ── Active KW and sub-tab state ──────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   var activeKw  = kws[0];
   var activeSub = 'costing';
 
   function render() {
-    // KW tabs
     var tabsHtml = '<div class="rc-kw-tabs">';
     kws.forEach(function(kw) {
       tabsHtml += '<div class="rc-kw-tab' + (kw===activeKw?' active':'') + '" onclick="rcKw(' + kw + ')">' + kw + ' KW</div>';
     });
     tabsHtml += '</div>';
 
-    // Sub-tabs
     var subHtml = '<div class="rc-sub-tabs">'
       + '<div class="rc-sub-tab' + (activeSub==='costing'?' active':'') + '" onclick="rcSub(\'costing\')">Full Costing BOM</div>'
       + '<div class="rc-sub-tab' + (activeSub==='sizing'?' active':'') + '" onclick="rcSub(\'sizing\')">Sizing &amp; Weights</div>'
       + '<div class="rc-sub-tab' + (activeSub==='pricelist'?' active':'') + '" onclick="rcSub(\'pricelist\')">Price List</div>'
       + '</div>';
 
-    // Content
     var content = '';
     if (activeSub === 'costing') {
-      content = buildCostingTable(byKw[activeKw] || []);
+      content = buildCostingTable(activeKw, byKw[activeKw] || []);
     } else if (activeSub === 'sizing') {
       content = buildSizingTable();
     } else {
       content = buildPriceList();
     }
 
-    el.innerHTML = styles + tabsHtml + subHtml + '<div class="rc-wrap">' + content + '</div>';
-
-    // Re-attach handlers after innerHTML re-render
-    window.rcKw = function(kw) { activeKw = kw; render(); };
-    window.rcSub = function(sub) { activeSub = sub; render(); };
+    el.innerHTML = CSS + tabsHtml + subHtml + '<div class="rc-wrap">' + content + '</div>';
+    window.rcKw  = function(kw)  { activeKw = kw;   render(); };
+    window.rcSub = function(sub) { activeSub = sub;  render(); };
   }
 
   render();
