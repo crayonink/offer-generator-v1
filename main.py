@@ -659,12 +659,21 @@ def pricelist_summary():
             rmr_rows = [dict(zip(rmr_cols, r)) for r in conn.execute(
                 "SELECT * FROM regen_material_rates"
             ).fetchall()]
+            rnz_cols = [d[0] for d in conn.execute("SELECT * FROM regen_nozzle_sizing LIMIT 0").description]
+            rnz_rows = [dict(zip(rnz_cols, r)) for r in conn.execute(
+                "SELECT * FROM regen_nozzle_sizing ORDER BY power_kw"
+            ).fetchall()]
+            rps_cols = [d[0] for d in conn.execute("SELECT * FROM regen_pipe_sizes LIMIT 0").description]
+            rps_rows = [dict(zip(rps_cols, r)) for r in conn.execute(
+                "SELECT * FROM regen_pipe_sizes ORDER BY gas_type, burner_size_kw"
+            ).fetchall()]
             regen_costing = {
                 "items": rci_rows, "sizing": rsz_rows,
                 "pricelist": rpl_rows, "material_rates": rmr_rows,
+                "nozzle_sizing": rnz_rows, "pipe_sizes": rps_rows,
             }
         except Exception:
-            regen_costing = {"items": [], "sizing": [], "pricelist": [], "material_rates": []}
+            regen_costing = {"items": [], "sizing": [], "pricelist": [], "material_rates": [], "nozzle_sizing": [], "pipe_sizes": []}
 
         conn.close()
         return {
@@ -942,6 +951,37 @@ def regen_calculate(req: RegenCalcRequest):
 
         bom_df = build_regen_df(model_kw, model_markup, num_pairs=result.num_pairs)
         supplementary = get_supplementary_data(model_kw)
+
+        # Augment supplementary with full sizing + nozzle data from DB
+        try:
+            with sqlite3.connect(DB_PATH) as _c:
+                sz_row = _c.execute("SELECT * FROM regen_sizing WHERE kw=?", (model_kw,)).fetchone()
+                if sz_row:
+                    sz_cols = [d[0] for d in _c.execute("SELECT * FROM regen_sizing LIMIT 0").description]
+                    sz = dict(zip(sz_cols, sz_row))
+                    supplementary['burner_sizing']['dimensions'] = {
+                        k: sz.get(k) for k in [
+                            'shell_thick','retainer_thick','refractory_thick',
+                            'dim_L','dim_H','dim_W','bottom_h',
+                            'vol_total','vol_effective','vol_refractory',
+                            'density_castable','wt_refractory_insulation',
+                            'loose_density_balls','vol_available_balls','balls_filling_pct',
+                        ]
+                    }
+                    supplementary['burner_sizing']['weight_detail'] = {
+                        k: sz.get(k) for k in [
+                            'bb_dia_inner','bb_dia_outer','bb_depth','wt_burner_block',
+                            'burner_length','burner_dia',
+                            'wt_burner_shell','wt_burner_refrac_detail','wt_burner_total',
+                            'wt_shell','wt_ss_plate','wt_ceramic_balls_burner',
+                            'wt_regen_total','wt_grand_total','bloom_approx_wt',
+                        ]
+                    }
+                nz_cols = [d[0] for d in _c.execute("SELECT * FROM regen_nozzle_sizing LIMIT 0").description]
+                nz_rows = _c.execute("SELECT * FROM regen_nozzle_sizing WHERE power_kw=?", (model_kw,)).fetchall()
+                supplementary['nozzle_sizing'] = [dict(zip(nz_cols, r)) for r in nz_rows]
+        except Exception:
+            pass  # DB not ready yet — supplementary still has the hardcoded data
 
         total_cost    = float(bom_df["TOTAL COST"].sum())
         total_selling = float(bom_df["TOTAL SELLING"].sum())

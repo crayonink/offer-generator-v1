@@ -693,10 +693,100 @@
 
     // ── Sheet 2: Burner Sizing ────────────────────────────────────────────
     if (data.supplementary) {
-      const bs = data.supplementary.burner_sizing;
+      const bs    = data.supplementary.burner_sizing;
       const rates = bs.material_rates;
+      const dim   = bs.dimensions   || {};
+      const wt    = bs.weight_detail || {};
+      const nz    = data.supplementary.nozzle_sizing || [];
+
+      // ── Section A: Dimensions & Volumes (7 cols) ─────────────────────────
+      const dimRows = [
+        {_class:'xl-section', cells:[xs('BURNER + REGENERATOR SIZING — ' + bs.kw + ' KW', 7)]},
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('REGENERATOR DIMENSIONS & VOLUMES', 7)]},
+        {_class:'xl-label', cells:[
+          xc('Shell Thick (mm)'), xc('Retainer Thick (mm)'), xc('Refrac. Thick (mm)'),
+          xc('L (m)',true), xc('H (m)',true), xc('W (m)',true), xc('Bottom H (m)',true),
+        ]},
+        {cells:[
+          xc(dim.shell_thick??'', true), xc(dim.retainer_thick??'', true), xc(dim.refractory_thick??'', true),
+          xc(dim.dim_L??'', true), xc(dim.dim_H??'', true), xc(dim.dim_W??'', true), xc(dim.bottom_h??'', true),
+        ]},
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-label', cells:[
+          xc('Vol Total (m³)'), xc('Vol Effective (m³)'), xc('Vol Refrac. (m³)'),
+          xc('Density Castable (kg/m³)',true), xc('Wt Refrac. Insul. (kg)',true),
+          xc('Loose Ball Density (kg/m³)',true), xc('Vol Avail. Balls (m³)',true),
+        ]},
+        {cells:[
+          xc(dim.vol_total != null ? parseFloat(dim.vol_total.toFixed(4)) : '', true),
+          xc(dim.vol_effective != null ? parseFloat(dim.vol_effective.toFixed(4)) : '', true),
+          xc(dim.vol_refractory != null ? parseFloat(dim.vol_refractory.toFixed(4)) : '', true),
+          xc(dim.density_castable??'', true),
+          xc(dim.wt_refractory_insulation != null ? fmtN(dim.wt_refractory_insulation) : '', true),
+          xc(dim.loose_density_balls??'', true),
+          xc(dim.vol_available_balls != null ? parseFloat(dim.vol_available_balls.toFixed(4)) : '', true),
+        ]},
+      ];
+      document.getElementById('xl-burner-sizing').innerHTML = xlGrid(['A','B','C','D','E','F','G'], dimRows);
+
+      // ── Section B: Weight Detail (8 cols) ────────────────────────────────
+      const wtRows = [
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('WEIGHT BREAKDOWN (kg)', 8)]},
+        {_class:'xl-label', cells:[
+          xc('BB Dia Inner (m)'), xc('BB Dia Outer (m)'), xc('BB Depth (m)'), xc('Wt Burner Block (kg)',true),
+          xc('Burner Len (m)'), xc('Burner Dia (m)'), xc('Wt Burner Shell (kg)',true), xc('Wt Burner Refrac. (kg)',true),
+        ]},
+        {cells:[
+          xc(wt.bb_dia_inner??'', true), xc(wt.bb_dia_outer??'', true), xc(wt.bb_depth??'', true),
+          xc(wt.wt_burner_block != null ? fmtN(wt.wt_burner_block) : '', true),
+          xc(wt.burner_length??'', true), xc(wt.burner_dia??'', true),
+          xc(wt.wt_burner_shell != null ? fmtN(wt.wt_burner_shell) : '', true),
+          xc(wt.wt_burner_refrac_detail != null ? fmtN(wt.wt_burner_refrac_detail) : '', true),
+        ]},
+        {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+        {_class:'xl-label', cells:[
+          xc('Wt Burner Total (kg)',true), xc('Wt Regen Shell (kg)',true), xc('Wt SS Plate (kg)',true),
+          xc('Wt Ceramic Balls (kg)',true), xc('Wt Regen Total (kg)',true),
+          xc('Grand Total (kg)',true), xc('Bloom Approx. Wt (kg)',true), xc(''),
+        ]},
+        {_class:'xl-total', cells:[
+          xc(wt.wt_burner_total != null ? fmtN(wt.wt_burner_total) : '', true),
+          xc(wt.wt_shell != null ? fmtN(wt.wt_shell) : '', true),
+          xc(wt.wt_ss_plate != null ? fmtN(wt.wt_ss_plate) : '', true),
+          xc(wt.wt_ceramic_balls_burner != null ? fmtN(wt.wt_ceramic_balls_burner) : '', true),
+          xc(wt.wt_regen_total != null ? fmtN(wt.wt_regen_total) : '', true),
+          xc(wt.wt_grand_total != null ? fmtN(wt.wt_grand_total) : '', true),
+          xc(wt.bloom_approx_wt != null ? fmtN(wt.bloom_approx_wt) : '', true),
+          xc(''),
+        ]},
+      ];
+      document.getElementById('xl-burner-sizing').innerHTML += xlGrid(['A','B','C','D','E','F','G','H'], wtRows);
+
+      // ── Section C: Nozzle Sizing ─────────────────────────────────────────
+      if (nz.length) {
+        const nzRows = [
+          {cells:[xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc(''), xc('')]},
+          {_class:'xl-section', cells:[xs('NOZZLE SIZING', 8)]},
+          {_class:'xl-label', cells:[
+            xc('Burner Name'), xc('Power (KW)',true),
+            xc('DN Air In (mm)',true), xc('Air Speed (m/s)',true),
+            xc('DN Fume Out (mm)',true), xc('Fume Speed (m/s)',true),
+            xc('DN NG In (mm)',true), xc('NG Speed (m/s)',true),
+          ]},
+          ...nz.map(n => ({cells:[
+            xc(n.burner_name), xc(n.power_kw??'', true),
+            xc(n.dn_air_in??'', true), xc(n.air_speed_ms??'', true),
+            xc(n.dn_fume_out??'', true), xc(n.fume_speed_ms??'', true),
+            xc(n.dn_ng_in??'', true), xc(n.ng_speed_ms??'', true),
+          ]})),
+        ];
+        document.getElementById('xl-burner-sizing').innerHTML += xlGrid(['A','B','C','D','E','F','G','H'], nzRows);
+      }
+
+      // ── Section D: Material Rates & Cost Breakdown ───────────────────────
       const bsRows = [
-        {_class:'xl-section', cells:[xs('BURNER + REGENERATOR SIZING & COSTING — ' + bs.kw + ' KW (per unit)', 5)]},
         {cells:[xc(''), xc(''), xc(''), xc(''), xc('')]},
         {_class:'xl-section', cells:[xs('MATERIAL RATES (with 10% wastage)', 5)]},
         {_class:'xl-label', cells:[xc('Material'), xc('Mat. ₹/kg',true), xc('Labour ₹/kg',true), xc('Total ₹/kg',true), xc('')]},
@@ -714,7 +804,7 @@
         {_class:'xl-total', cells:[xs('Total per unit',4,true), xc(fmtN(bs.total_unit_cost),true)]},
         {_class:'xl-total', cells:[xs('Total per pair (×2)',4,true), xc(fmtN(bs.total_pair_cost),true)]},
       ];
-      document.getElementById('xl-burner-sizing').innerHTML = xlGrid(['A','B','C','D','E'], bsRows);
+      document.getElementById('xl-burner-sizing').innerHTML += xlGrid(['A','B','C','D','E'], bsRows);
 
       // ── Sheet 3: Pipe Sizes ─────────────────────────────────────────────
       const ps = data.supplementary.pipe_sizes;
