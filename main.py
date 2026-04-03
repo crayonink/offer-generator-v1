@@ -543,7 +543,7 @@ def pricelist_summary():
         # ── Recuperator ───────────────────────────────────────────────────
         try:
             # Use cursor description (avoids variable-name clash with outer cursor 'c')
-            c.execute("SELECT * FROM recuperator_master ORDER BY type, model")
+            c.execute("SELECT * FROM recuperator_master ORDER BY type, CAST(model AS REAL)")
             rcols = [d[0] for d in c.description]
             recup_rows = [dict(zip(rcols, r)) for r in c.fetchall()]
             # Fetch component rates used in recuperator calculations

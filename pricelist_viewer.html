@@ -862,7 +862,7 @@ function renderRecuperator(payload) {
   function qtyTable(rows, cols) {
     var h = '<tr class="rl-hdr"><td class="rl-model-hdr">Model</td>';
     for (var i = 0; i < cols.length; i++) h += '<td class="rl-col-hdr">' + cols[i].hdr + '</td>';
-    h += '<td class="rl-total-hdr">Total Cost</td></tr>';
+    h += '<td class="rl-total-hdr">Selling Price</td></tr>';
 
     var b = '';
     for (var ri = 0; ri < rows.length; ri++) {
@@ -882,7 +882,7 @@ function renderRecuperator(payload) {
     for (var i = 0; i < cols.length; i++) {
       h += '<td class="rl-col-hdr">' + cols[i].hdr + '<br><span class="rl-rate">' + rateHdr(cols[i].rk, cols[i].unit) + '</span></td>';
     }
-    h += '<td class="rl-total-hdr">Total Cost</td><td class="rl-factor-hdr">0.3</td><td class="rl-factor-hdr">0.8</td></tr>';
+    h += '<td class="rl-total-hdr">Fab Cost</td><td class="rl-factor-hdr">+30%</td><td class="rl-factor-hdr">Selling Price</td></tr>';
 
     var b = '';
     for (var ri = 0; ri < rows.length; ri++) {
