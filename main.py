@@ -955,13 +955,15 @@ def regen_calculate(req: RegenCalcRequest):
         # Augment supplementary with full sizing + nozzle + legacy rates from DB
         try:
             with sqlite3.connect(DB_PATH) as _c:
-                # Sizing dimensions & weights
-                sz_row = _c.execute("SELECT * FROM regen_sizing WHERE kw=?", (model_kw,)).fetchone()
+                # ALL sizing rows (all KW models) — for full Excel-like tables
+                sz_cols = [d[0] for d in _c.execute("SELECT * FROM regen_sizing LIMIT 0").description]
+                sz_all  = [dict(zip(sz_cols, r)) for r in _c.execute("SELECT * FROM regen_sizing ORDER BY kw").fetchall()]
+                supplementary['burner_sizing']['all_sizing'] = sz_all
+                # Single selected-KW row (for inline detail)
+                sz_row = next((r for r in sz_all if r['kw'] == model_kw), None)
                 if sz_row:
-                    sz_cols = [d[0] for d in _c.execute("SELECT * FROM regen_sizing LIMIT 0").description]
-                    sz = dict(zip(sz_cols, sz_row))
                     supplementary['burner_sizing']['dimensions'] = {
-                        k: sz.get(k) for k in [
+                        k: sz_row.get(k) for k in [
                             'shell_thick','retainer_thick','refractory_thick',
                             'dim_L','dim_H','dim_W','bottom_h',
                             'vol_total','vol_effective','vol_refractory',
@@ -970,7 +972,7 @@ def regen_calculate(req: RegenCalcRequest):
                         ]
                     }
                     supplementary['burner_sizing']['weight_detail'] = {
-                        k: sz.get(k) for k in [
+                        k: sz_row.get(k) for k in [
                             'bb_dia_inner','bb_dia_outer','bb_depth','wt_burner_block',
                             'burner_length','burner_dia',
                             'wt_burner_shell','wt_burner_refrac_detail','wt_burner_total',
