@@ -335,7 +335,7 @@ function renderAll() {
   renderLPH('vlph', s.vertical_lph || []);
   renderBurnerPivot('burner-prices', s.burners || {});
   renderStockRates(DATA.stock || {});
-  renderRegenCosting(s.regen_costing || {items:[], sizing:[], pricelist:[], material_rates:[]});
+  renderRegenCosting(s.regen_costing || {items:[], sizing:[], pricelist:[], material_rates:[], nozzle_sizing:[], pipe_sizes:[]});
 }
 
 // ── Status bar ─────────────────────────────────────────────────────────────
@@ -1328,10 +1328,12 @@ async function uploadStockFile(input) {
 // ── Regen Costing ────────────────────────────────────────────────────────────
 function renderRegenCosting(payload) {
   var el = document.getElementById('sheet-regen-costing');
-  var items     = payload.items         || [];
-  var sizing    = payload.sizing        || [];
-  var pricelist = payload.pricelist     || [];
-  var matRates  = payload.material_rates|| [];
+  var items        = payload.items          || [];
+  var sizing       = payload.sizing         || [];
+  var pricelist    = payload.pricelist      || [];
+  var matRates     = payload.material_rates || [];
+  var nozzleSizing = payload.nozzle_sizing  || [];
+  var pipeSizes    = payload.pipe_sizes     || [];
   if (!items.length) { el.innerHTML = emptyMsg(); return; }
 
   var CSS = '<style>'
@@ -1431,6 +1433,32 @@ function renderRegenCosting(payload) {
       + '<td class="rc-inline-num">' + (s.balls_filling_pct||'') + '%</td>'
       + '</tr></tbody></table>';
 
+    // Nozzle sizing for this KW
+    var nzRow = nozzleSizing.filter(function(n){ return n.power_kw == kw; });
+    var nozzleHtml = '';
+    if (nzRow.length) {
+      nozzleHtml = '<div class="rc-inline-title" style="margin-top:8px;">Nozzle Sizing</div>'
+        + '<table class="rc-inline-tbl"><thead><tr class="rc-inline-hdr">'
+        + '<th>Burner Name</th><th>Power (KW)</th>'
+        + '<th>DN Air In (mm)</th><th>Air Speed (m/s)</th>'
+        + '<th>DN Fume Out (mm)</th><th>Fume Speed (m/s)</th>'
+        + '<th>DN NG In (mm)</th><th>NG Speed (m/s)</th>'
+        + '</tr></thead><tbody>';
+      nzRow.forEach(function(n) {
+        nozzleHtml += '<tr>'
+          + '<td style="font-weight:600;">' + esc(n.burner_name) + '</td>'
+          + '<td class="rc-inline-num">' + (n.power_kw||'') + '</td>'
+          + '<td class="rc-inline-num">' + (n.dn_air_in||'') + '</td>'
+          + '<td class="rc-inline-num">' + (n.air_speed_ms||'') + '</td>'
+          + '<td class="rc-inline-num">' + (n.dn_fume_out||'') + '</td>'
+          + '<td class="rc-inline-num">' + (n.fume_speed_ms||'') + '</td>'
+          + '<td class="rc-inline-num">' + (n.dn_ng_in||'') + '</td>'
+          + '<td class="rc-inline-num">' + (n.ng_speed_ms||'') + '</td>'
+          + '</tr>';
+      });
+      nozzleHtml += '</tbody></table>';
+    }
+
     // Weight detail rows
     var wtHtml = '<div class="rc-inline-title" style="margin-top:8px;">Weight Breakdown (kg)</div>'
       + '<table class="rc-inline-tbl"><thead><tr class="rc-inline-hdr">'
@@ -1501,7 +1529,7 @@ function renderRegenCosting(payload) {
 
     return '<td colspan="8" style="padding:0;border:none;">'
       + '<div class="rc-inline-wrap">'
-      + dimHtml + wtHtml + mrHtml + costHtml
+      + dimHtml + nozzleHtml + wtHtml + mrHtml + costHtml
       + '</div></td>';
   }
 
@@ -1688,6 +1716,65 @@ function renderRegenCosting(payload) {
         + '</tr>';
     });
     h += '</tbody></table>';
+
+    // Nozzle sizing (all burners)
+    if (nozzleSizing.length) {
+      h += '<div class="rc-sec-title">Nozzle Sizing — All Regen Burners</div>'
+        + '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+        + '<th>Burner Name</th><th>Power (KW)</th>'
+        + '<th>DN Air In (mm)</th><th>Air Speed (m/s)</th>'
+        + '<th>DN Fume Out (mm)</th><th>Fume Speed (m/s)</th>'
+        + '<th>DN NG In (mm)</th><th>NG Speed (m/s)</th>'
+        + '</tr></thead><tbody>';
+      nozzleSizing.forEach(function(n) {
+        h += '<tr>'
+          + '<td class="rc-sz-grp">' + esc(n.burner_name) + '</td>'
+          + '<td class="rc-sz-num">' + (n.power_kw||'') + '</td>'
+          + '<td class="rc-sz-num">' + (n.dn_air_in||'') + '</td>'
+          + '<td class="rc-sz-num">' + (n.air_speed_ms||'') + '</td>'
+          + '<td class="rc-sz-num">' + (n.dn_fume_out||'') + '</td>'
+          + '<td class="rc-sz-num">' + (n.fume_speed_ms||'') + '</td>'
+          + '<td class="rc-sz-num">' + (n.dn_ng_in||'') + '</td>'
+          + '<td class="rc-sz-num">' + (n.ng_speed_ms||'') + '</td>'
+          + '</tr>';
+      });
+      h += '</tbody></table>';
+    }
+
+    // Pipe sizes by gas type
+    if (pipeSizes.length) {
+      var gasTypes = [];
+      pipeSizes.forEach(function(p) { if (gasTypes.indexOf(p.gas_type) < 0) gasTypes.push(p.gas_type); });
+      gasTypes.forEach(function(gt) {
+        var rows = pipeSizes.filter(function(p){ return p.gas_type === gt; });
+        h += '<div class="rc-sec-title">Burner Pipe Sizes — ' + esc(gt) + '</div>'
+          + '<table class="rc-sz-tbl"><thead><tr class="rc-sz-hdr">'
+          + '<th>Burner Size (KW)</th>'
+          + '<th>Gas Flow (Nm³/hr)</th><th>Air Flow (Nm³/hr)</th><th>Flue Flow (Nm³/hr)</th>'
+          + '<th>DN Air (mm)</th><th>DN Gas (mm)</th><th>DN Flue (mm)</th>'
+          + '<th>Area Air (m²)</th><th>Area Gas (m²)</th><th>Area Flue (m²)</th>'
+          + '<th>Vel Gas (m/s)</th><th>Vel Air (m/s)</th><th>Vel Flue (m/s)</th>'
+          + '</tr></thead><tbody>';
+        rows.forEach(function(p) {
+          h += '<tr><td class="rc-sz-grp">' + p.burner_size_kw + '</td>'
+            + '<td class="rc-sz-num">' + fmtN(p.gas_flow_nm3hr) + '</td>'
+            + '<td class="rc-sz-num">' + fmtN(p.air_flow_nm3hr) + '</td>'
+            + '<td class="rc-sz-num">' + fmtN(p.flue_flow_nm3hr) + '</td>'
+            + '<td class="rc-sz-num">' + (p.dn_air_mm||'') + '</td>'
+            + '<td class="rc-sz-num">' + (p.dn_gas_mm||'') + '</td>'
+            + '<td class="rc-sz-num">' + (p.dn_flue_mm||'') + '</td>'
+            + '<td class="rc-sz-num">' + (p.area_air_m2 ? p.area_air_m2.toFixed(4) : '') + '</td>'
+            + '<td class="rc-sz-num">' + (p.area_gas_m2 ? p.area_gas_m2.toFixed(4) : '') + '</td>'
+            + '<td class="rc-sz-num">' + (p.area_flue_m2 ? p.area_flue_m2.toFixed(4) : '') + '</td>'
+            + '<td class="rc-sz-num">' + (p.vel_gas_ms ? p.vel_gas_ms.toFixed(1) : '') + '</td>'
+            + '<td class="rc-sz-num">' + (p.vel_air_ms ? p.vel_air_ms.toFixed(1) : '') + '</td>'
+            + '<td class="rc-sz-num">' + (p.vel_flue_ms ? p.vel_flue_ms.toFixed(1) : '') + '</td>'
+            + '</tr>';
+        });
+        h += '</tbody></table>';
+      });
+    }
+
     return h;
   }
 
