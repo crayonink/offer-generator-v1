@@ -910,23 +910,59 @@
         ['A','B','C','D','E','F','G','H','I'], cdRows
       );
 
-      // ── Sheet 3: Pipe Sizes ─────────────────────────────────────────────
-      const ps = data.supplementary.pipe_sizes;
-      const psRows = [
-        {_class:'xl-section', cells:[xs('LINE SIZES — ' + ps.fuel + ' @ ' + ps.pressure, 2)]},
-        {cells:[xc(''), xc('')]},
-        {_class:'xl-label', cells:[xc('Parameter'), xc('Value',true)]},
-        {cells:[xc('Burner KW'), xc(ps.kw + ' KW',true)]},
-        {cells:[xc('NG Flow Rate'), xc(ps.ng_flow_nm3hr + ' Nm³/hr',true)]},
-        {cells:[xc('Air Flow Rate'), xc(ps.air_flow_nm3hr + ' Nm³/hr',true)]},
-        {cells:[xc('Total Flue Gas'), xc(ps.flue_flow_nm3hr + ' Nm³/hr',true)]},
-        {cells:[xc(''), xc('')]},
-        {_class:'xl-section', cells:[xs('SELECTED LINE SIZES', 2)]},
-        {_class:'xl-highlight', cells:[xc('Air Line DN'), xc('DN ' + ps.air_line_dn,true)]},
-        {_class:'xl-highlight', cells:[xc('Gas Line DN'), xc('DN ' + ps.gas_line_dn,true)]},
-        {_class:'xl-highlight', cells:[xc('Flue Gas Line DN'), xc('DN ' + ps.flue_line_dn,true)]},
-      ];
-      document.getElementById('xl-pipe-sizes').innerHTML = xlGrid(['A','B'], psRows);
+      // ── Sheet 3: Burner Pipe Size ────────────────────────────────────────
+      const allPs   = data.supplementary.all_pipe_sizes || [];
+      const ps      = data.supplementary.pipe_sizes;
+      const selPsKw = bs.kw;
+
+      // Group by gas type (preserving order from DB)
+      const gasTypes = [];
+      allPs.forEach(r => { if (!gasTypes.includes(r.gas_type)) gasTypes.push(r.gas_type); });
+
+      const pipeHdr = {_class:'xl-label', cells:[
+        xc('Burner Size (KW)'),
+        xc('Gas Flow (Nm³/hr)',true), xc('Air Flow (Nm³/hr)',true), xc('Total Flue (Nm³/hr)',true),
+        xc('DN Air (mm)',true), xc('DN Gas (mm)',true), xc('DN Flue (mm)',true),
+        xc('Area Air (m²)',true), xc('Area Gas (m²)',true), xc('Area Flue (m²)',true),
+        xc('Vel Gas (m/s)',true), xc('Vel Air (m/s)',true), xc('Vel Flue (m/s)',true),
+      ]};
+
+      let psHtml = '';
+      if (gasTypes.length) {
+        gasTypes.forEach(gt => {
+          const gtRows = allPs.filter(r => r.gas_type === gt);
+          const gtGrid = [
+            {_class:'xl-section', cells:[xs(gt, 13)]},
+            pipeHdr,
+            ...gtRows.map(r => ({
+              _class: r.burner_size_kw === selPsKw ? 'xl-highlight' : '',
+              cells:[
+                xc(r.burner_size_kw, true),
+                xc(r.gas_flow_nm3hr!=null?fmtN(r.gas_flow_nm3hr):'', true),
+                xc(r.air_flow_nm3hr!=null?fmtN(r.air_flow_nm3hr):'', true),
+                xc(r.flue_flow_nm3hr!=null?fmtN(r.flue_flow_nm3hr):'', true),
+                xc(r.dn_air_mm??'', true), xc(r.dn_gas_mm??'', true), xc(r.dn_flue_mm??'', true),
+                xc(r.area_air_m2!=null?r.area_air_m2.toFixed(4):'', true),
+                xc(r.area_gas_m2!=null?r.area_gas_m2.toFixed(4):'', true),
+                xc(r.area_flue_m2!=null?r.area_flue_m2.toFixed(4):'', true),
+                xc(r.vel_gas_ms!=null?r.vel_gas_ms.toFixed(1):'', true),
+                xc(r.vel_air_ms!=null?r.vel_air_ms.toFixed(1):'', true),
+                xc(r.vel_flue_ms!=null?r.vel_flue_ms.toFixed(1):'', true),
+              ]
+            })),
+            {cells: Array(13).fill(xc(''))},
+          ];
+          psHtml += xlGrid(['A','B','C','D','E','F','G','H','I','J','K','L','M'], gtGrid);
+        });
+      } else {
+        // Fallback to single selected-KW row from hardcoded data
+        psHtml = xlGrid(['A','B','C','D','E','F','G'], [
+          {_class:'xl-section', cells:[xs('Natural Gas (NG) — ' + ps.fuel + ' @ ' + ps.pressure, 7)]},
+          {_class:'xl-label', cells:[xc('KW'), xc('Gas Flow',true), xc('Air Flow',true), xc('Flue Flow',true), xc('DN Air',true), xc('DN Gas',true), xc('DN Flue',true)]},
+          {_class:'xl-highlight', cells:[xc(ps.kw,true), xc(ps.ng_flow_nm3hr,true), xc(ps.air_flow_nm3hr,true), xc(ps.flue_flow_nm3hr,true), xc(ps.air_line_dn,true), xc(ps.gas_line_dn,true), xc(ps.flue_line_dn,true)]},
+        ]);
+      }
+      document.getElementById('xl-pipe-sizes').innerHTML = psHtml;
 
       // ── Sheet 4: Blower ─────────────────────────────────────────────────
       const bl = data.supplementary.blower_selection;

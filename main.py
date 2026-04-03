@@ -1007,10 +1007,14 @@ def regen_calculate(req: RegenCalcRequest):
                     ]
                     supplementary['burner_sizing']['total_unit_cost'] = round(sum(d['cost'] for d in supplementary['burner_sizing']['cost_detail']), 2)
                     supplementary['burner_sizing']['total_pair_cost'] = round(supplementary['burner_sizing']['total_unit_cost'] * 2, 2)
-                # Nozzle sizing
+                # Nozzle sizing (all burners)
                 nz_cols = [d[0] for d in _c.execute("SELECT * FROM regen_nozzle_sizing LIMIT 0").description]
-                nz_rows = _c.execute("SELECT * FROM regen_nozzle_sizing WHERE power_kw=?", (model_kw,)).fetchall()
+                nz_rows = _c.execute("SELECT * FROM regen_nozzle_sizing ORDER BY power_kw").fetchall()
                 supplementary['nozzle_sizing'] = [dict(zip(nz_cols, r)) for r in nz_rows]
+                # All pipe sizes (all KW + all gas types) for full Excel-like table
+                ps_cols = [d[0] for d in _c.execute("SELECT * FROM regen_pipe_sizes LIMIT 0").description]
+                ps_rows = _c.execute("SELECT * FROM regen_pipe_sizes ORDER BY gas_type, burner_size_kw").fetchall()
+                supplementary['all_pipe_sizes'] = [dict(zip(ps_cols, r)) for r in ps_rows]
         except Exception:
             pass  # DB not ready yet — supplementary still has the hardcoded data
 
