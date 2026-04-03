@@ -671,25 +671,80 @@
     document.getElementById('xlTitle').textContent = `Regen Costing — ${c.num_pairs} × ${c.model_kw} KW`;
 
     // ── Sheet 1: Process Calc ─────────────────────────────────────────────
+    const mw   = c.material_weight_kg;
+    const dT   = c.delta_T;
+    const Cp   = c.Cp;
+    const t    = c.cycle_time_hr;
+    const eta  = c.efficiency;
+    const Q_kj = c.heat_required_kj;
+    const Q_kc = c.heat_required_kcal;
+    const P    = c.required_kw;
+
     const calcRows = [
-      {_class:'xl-section', cells:[xs('PROCESS CALCULATIONS', 2)]},
-      {cells:[xc('Parameter'), xc('Value')]},
-      {_class:'xl-label', cells:[xc('Material Weight'), xc(c.material_weight_kg.toLocaleString('en-IN') + ' kg', true)]},
-      {cells:[xc('Temperature Rise (ΔT)'), xc(c.delta_T + ' °C  (' + c.Ti + ' → ' + c.Tf + ' °C)', true)]},
-      {_class:'xl-label', cells:[xc('Specific Heat (Cp)'), xc(c.Cp + ' kJ/kg·°C', true)]},
-      {cells:[xc('Heat Required'), xc(fmtN(c.heat_required_kj) + ' kJ  (' + fmtN(c.heat_required_kcal) + ' kcal)', true)]},
-      {_class:'xl-label', cells:[xc('Cycle Time'), xc(c.cycle_time_hr + ' hr', true)]},
-      {cells:[xc('Thermal Efficiency'), xc((c.efficiency*100).toFixed(0) + '%', true)]},
-      {_class:'xl-label', cells:[xc('Required Power'), xc(fmtN(c.required_kw) + ' kW', true)]},
-      {cells:[xc('Model Selected'), xc(c.model_kw + ' KW per pair', true)]},
-      {_class:'xl-total', cells:[xc('No. of Pairs Selected'), xc(c.num_pairs + ' × ' + c.model_kw + ' KW = ' + c.total_kw + ' KW total', true)]},
-      {cells:[xc(''), xc('')]},
-      {_class:'xl-section', cells:[xs('COST SUMMARY', 2)]},
-      {cells:[xc('Total Cost Price'), xc('₹ ' + fmtN(s.total_cost), true)]},
-      {_class:'xl-label', cells:[xc('Markup'), xc(s.markup.toFixed(2) + '×', true)]},
-      {_class:'xl-total', cells:[xc('Total Selling Price'), xc('₹ ' + fmtN(s.total_selling), true)]},
+      {_class:'xl-section', cells:[xs('PROCESS CALCULATIONS', 3)]},
+      {_class:'xl-label', cells:[xc('Parameter'), xc('Formula / Calculation'), xc('Value',true)]},
+      {cells:[
+        xc('Material Weight'),
+        xc('(Given input)'),
+        xc(mw.toLocaleString('en-IN') + ' kg', true),
+      ]},
+      {cells:[
+        xc('Temperature Rise (ΔT)'),
+        xc('Tf − Ti  =  ' + c.Tf + ' − ' + c.Ti),
+        xc(dT + ' °C', true),
+      ]},
+      {_class:'xl-label', cells:[
+        xc('Specific Heat (Cp)'),
+        xc('(Given input — steel ≈ 0.48 kJ/kg·°C)'),
+        xc(Cp + ' kJ/kg·°C', true),
+      ]},
+      {cells:[
+        xc('Heat Required (Q)'),
+        xc('m × Cp × ΔT  =  ' + mw.toLocaleString('en-IN') + ' × ' + Cp + ' × ' + dT),
+        xc(fmtN(Q_kj) + ' kJ', true),
+      ]},
+      {_class:'xl-label', cells:[
+        xc('Heat Required (Q) in kcal'),
+        xc('Q_kJ ÷ 4.1868  =  ' + fmtN(Q_kj) + ' ÷ 4.1868'),
+        xc(fmtN(Q_kc) + ' kcal', true),
+      ]},
+      {cells:[
+        xc('Cycle Time'),
+        xc('(Given input)'),
+        xc(t + ' hr', true),
+      ]},
+      {_class:'xl-label', cells:[
+        xc('Thermal Efficiency'),
+        xc('(Given input)'),
+        xc((eta*100).toFixed(0) + '%', true),
+      ]},
+      {cells:[
+        xc('Required Power'),
+        xc('Q_kJ ÷ (t × 3600 × η)  =  ' + fmtN(Q_kj) + ' ÷ (' + t + ' × 3600 × ' + eta + ')'),
+        xc(fmtN(P) + ' kW', true),
+      ]},
+      {_class:'xl-label', cells:[
+        xc('Power per Pair'),
+        xc('Required Power ÷ No. of Pairs  =  ' + fmtN(P) + ' ÷ ' + c.num_pairs),
+        xc(fmtN(Math.round(P / c.num_pairs * 100) / 100) + ' kW/pair', true),
+      ]},
+      {cells:[
+        xc('Model Selected'),
+        xc('Next standard model ≥ ' + fmtN(Math.round(P / c.num_pairs * 100) / 100) + ' kW/pair'),
+        xc(c.model_kw + ' KW per pair', true),
+      ]},
+      {_class:'xl-total', cells:[
+        xc('No. of Pairs Selected'),
+        xc('Ceiling(Required Power ÷ Model KW)  =  Ceiling(' + fmtN(P) + ' ÷ ' + c.model_kw + ')'),
+        xc(c.num_pairs + ' × ' + c.model_kw + ' KW = ' + c.total_kw + ' KW total', true),
+      ]},
+      {cells:[xc(''), xc(''), xc('')]},
+      {_class:'xl-section', cells:[xs('COST SUMMARY', 3)]},
+      {cells:[xc('Total Cost Price'), xc('Sum of all BOM item costs × qty'), xc('₹ ' + fmtN(s.total_cost), true)]},
+      {_class:'xl-label', cells:[xc('Markup'), xc('Standard selling price multiplier'), xc(s.markup.toFixed(2) + '×', true)]},
+      {_class:'xl-total', cells:[xc('Total Selling Price'), xc('Total Cost × Markup  =  ₹ ' + fmtN(s.total_cost) + ' × ' + s.markup.toFixed(2)), xc('₹ ' + fmtN(s.total_selling), true)]},
     ];
-    document.getElementById('xl-calc').innerHTML = xlGrid(['A','B'], calcRows);
+    document.getElementById('xl-calc').innerHTML = xlGrid(['A','B','C'], calcRows);
 
     // ── Sheet 2: Burner Sizing ────────────────────────────────────────────
     if (data.supplementary) {
