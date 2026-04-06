@@ -1154,9 +1154,11 @@ class BTFCalcRequest(BaseModel):
 def btf_calculate(req: BTFCalcRequest):
     try:
         from bom.btf_builder import build_btf_df
+        import json
         df, summary = build_btf_df(combustion_mode=req.combustion_mode, markup=req.markup)
+        bom = json.loads(df.to_json(orient="records"))
         return {
-            "bom": df.to_dict(orient="records"),
+            "bom": bom,
             "cost_summary": summary,
         }
     except Exception as e:
@@ -1182,12 +1184,14 @@ class SNSFBRFCalcRequest(BaseModel):
 def snsf_brf_calculate(req: SNSFBRFCalcRequest):
     try:
         from bom.snsf_brf_builder import build_snsf_brf_df
+        import json
         df, summary = build_snsf_brf_df(
             include_ng_optional=req.include_ng_optional,
             include_client_scope=req.include_client_scope,
         )
+        bom = json.loads(df.to_json(orient="records"))
         return {
-            "bom": df.to_dict(orient="records"),
+            "bom": bom,
             "cost_summary": summary,
         }
     except Exception as e:

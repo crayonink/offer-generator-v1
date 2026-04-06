@@ -109,13 +109,13 @@ def build_btf_df(combustion_mode: str = "onoff", markup: float = 1.8) -> pd.Data
     quoted = round(total_sell + designing + negotiation, -3)  # round to nearest 1000
 
     summary = {
-        "structure_cost": round(structure_cost, 0),
-        "combustion_cost": round(combustion_cost, 0),
-        "total_cost": round(total_cost, 0),
-        "sell_price": total_sell,
-        "designing_10pct": designing,
-        "negotiation_10pct": negotiation,
-        "quoted_price": quoted,
+        "structure_cost": float(structure_cost),
+        "combustion_cost": float(combustion_cost),
+        "total_cost": float(total_cost),
+        "sell_price": float(total_sell),
+        "designing_10pct": float(designing),
+        "negotiation_10pct": float(negotiation),
+        "quoted_price": float(quoted),
         "markup": markup,
         "combustion_mode": combustion_mode,
     }

@@ -127,14 +127,14 @@ def build_snsf_brf_df(
     client_sell = df.loc[df["SECTION"] == "Client Scope", "SELL PRICE"].sum() if include_client_scope else 0
 
     summary = {
-        "main_cost": round(main_cost, 0),
-        "main_sell": round(main_sell, 0),
-        "ng_optional_cost": round(ng_cost, 0),
-        "ng_optional_sell": round(ng_sell, 0),
-        "client_scope_cost": round(client_cost, 0),
-        "client_scope_sell": round(client_sell, 0),
-        "grand_cost": round(main_cost + ng_cost + client_cost, 0),
-        "grand_sell": round(main_sell + ng_sell + client_sell, 0),
+        "main_cost": float(main_cost),
+        "main_sell": float(main_sell),
+        "ng_optional_cost": float(ng_cost),
+        "ng_optional_sell": float(ng_sell),
+        "client_scope_cost": float(client_cost),
+        "client_scope_sell": float(client_sell),
+        "grand_cost": float(main_cost + ng_cost + client_cost),
+        "grand_sell": float(main_sell + ng_sell + client_sell),
     }
 
     return df, summary
