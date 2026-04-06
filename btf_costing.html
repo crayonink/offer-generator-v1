@@ -163,15 +163,25 @@
       <div class="xl-content">
         <div class="xl-sheet active" id="xl-furnace"></div>
         <div class="xl-sheet" id="xl-heatload"></div>
+        <div class="xl-sheet" id="xl-ms"></div>
+        <div class="xl-sheet" id="xl-door"></div>
+        <div class="xl-sheet" id="xl-ceramic"></div>
+        <div class="xl-sheet" id="xl-refractory"></div>
+        <div class="xl-sheet" id="xl-trolley"></div>
         <div class="xl-sheet" id="xl-pipe-air"></div>
         <div class="xl-sheet" id="xl-pipe-gas"></div>
         <div class="xl-sheet" id="xl-recup"></div>
       </div>
       <div class="xl-tabs">
-        <div class="xl-tab active" onclick="xlTab('xl-furnace',this)">Furnace Parameters</div>
+        <div class="xl-tab active" onclick="xlTab('xl-furnace',this)">Furnace</div>
         <div class="xl-tab" onclick="xlTab('xl-heatload',this)">Heat Load</div>
-        <div class="xl-tab" onclick="xlTab('xl-pipe-air',this)">Air Pipe Sizing</div>
-        <div class="xl-tab" onclick="xlTab('xl-pipe-gas',this)">Gas Pipe Sizing</div>
+        <div class="xl-tab" onclick="xlTab('xl-ms',this)">MS Structure</div>
+        <div class="xl-tab" onclick="xlTab('xl-door',this)">Door</div>
+        <div class="xl-tab" onclick="xlTab('xl-ceramic',this)">Ceramic Fibre</div>
+        <div class="xl-tab" onclick="xlTab('xl-refractory',this)">Refractory</div>
+        <div class="xl-tab" onclick="xlTab('xl-trolley',this)">Trolley/Bogie</div>
+        <div class="xl-tab" onclick="xlTab('xl-pipe-air',this)">Air Pipe</div>
+        <div class="xl-tab" onclick="xlTab('xl-pipe-gas',this)">Gas Pipe</div>
         <div class="xl-tab" onclick="xlTab('xl-recup',this)">Recuperator</div>
       </div>
     </div>
@@ -352,6 +362,71 @@ function renderAll(data){
     ${xlRow(1,[["RECUPERATOR CALCULATION",""],["",""],["",""]],"xl-section")}
     ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
     ${rcRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]],r[0]==="Surface Area"||r[0]==="Hot Bank Weight"?"xl-highlight":"")).join("")}
+  </table>`;
+
+  // MS Structure
+  let msn=0;
+  let msHtml=`<table class="xl-grid">${colHdr}${xlRow(++msn,[["MS STRUCTURE BREAKDOWN",""],["",""],["",""]],"xl-section")}`;
+  (sp.ms_structure||[]).forEach(sec=>{
+    msHtml+=xlRow(++msn,[[sec.section,""],["",""],["",""]],"xl-label");
+    sec.items.forEach(it=>{
+      msHtml+=xlRow(++msn,[[it.item,""],[it.value,true],["",true]],it.highlight?"xl-highlight":"");
+    });
+  });
+  msHtml+=`</table>`;
+  document.getElementById("xl-ms").innerHTML=msHtml;
+
+  // Door
+  let dn=0;
+  document.getElementById("xl-door").innerHTML=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td></tr>
+    ${xlRow(++dn,[["DOOR BREAKDOWN",""],["",""],["",""],["",""]],"xl-section")}
+    ${xlRow(++dn,[["Item",""],["Qty",true],["Rate",true],["Total",true]],"xl-label")}
+    ${(sp.door||[]).map(d=>{dn++;return xlRow(dn,[[d.item,""],[d.qty,true],[fmt(d.rate),true],[fmt(d.total),true]])}).join("")}
+    ${xlRow(++dn,[["TOTAL DOOR",""],["",""],["",""],[""+fmt((sp.door||[]).reduce((s,d)=>s+d.total,0)),true]],"xl-total")}
+  </table>`;
+
+  // Ceramic Fibre
+  let cn2=0;
+  const cfs=sp.ceramic_fibre_summary||{};
+  document.getElementById("xl-ceramic").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(++cn2,[["CERAMIC FIBRE CALCULATION",""],["",""],["",""]],"xl-section")}
+    ${xlRow(++cn2,[["Wall",""],["L×W×Thk (mm)",true],["Area (m²)",true]],"xl-label")}
+    ${(sp.ceramic_fibre||[]).map(c=>{cn2++;return xlRow(cn2,[[c.wall,""],[c.L+"×"+c.W+"×"+c.thk,true],[c.area||"—",true]])}).join("")}
+    ${xlRow(++cn2,[["",""],["",""],["",""]])}
+    ${xlRow(++cn2,[["Vol. of Std. Ceramic",""],[""+cfs.vol_std_ceramic_m3,true],["m³",true]])}
+    ${xlRow(++cn2,[["Total Volume",""],[""+cfs.total_vol_m3,true],["m³",true]])}
+    ${xlRow(++cn2,[["Total Rolls",""],[""+cfs.total_rolls,true],["Rolls",true]],"xl-highlight")}
+    ${xlRow(++cn2,[["Wt. per Roll",""],[""+cfs.wt_per_roll_kg,true],["kg",true]])}
+  </table>`;
+
+  // Refractory
+  const ref=sp.refractory||{};
+  let rfn=0;
+  let rfHtml=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td><td class="xl-col-header">E</td></tr>
+    ${xlRow(++rfn,[["REFRACTORY BREAKDOWN",""],["",""],["",""],["",""],["",""]],"xl-section")}`;
+  rfHtml+=xlRow(++rfn,[["WALLS",""],["Qty",true],["Cost/Brick",true],["Total",true],["Wt/Brick",true]],"xl-label");
+  (ref.walls||[]).forEach(r=>{rfn++;rfHtml+=xlRow(rfn,[[r.type,""],[r.qty,true],[r.cost_per,true],[fmt(r.total),true],[r.wt_per,true]]);});
+  rfHtml+=xlRow(++rfn,[["",""],["",""],["",""],[""+fmt((ref.walls||[]).reduce((s,r)=>s+r.total,0)),true],["",true]],"xl-total");
+  rfHtml+=xlRow(++rfn,[["BOGIE",""],["Qty",true],["Cost/Brick",true],["Total",true],["Wt/Brick",true]],"xl-label");
+  (ref.bogie||[]).forEach(r=>{rfn++;rfHtml+=xlRow(rfn,[[r.type,""],[r.qty,true],[r.cost_per,true],[fmt(r.total),true],[r.wt_per,true]]);});
+  rfHtml+=xlRow(++rfn,[["",""],["",""],["",""],[""+fmt((ref.bogie||[]).reduce((s,r)=>s+r.total,0)),true],["",true]],"xl-total");
+  rfHtml+=xlRow(++rfn,[["MISC (Mortar)",""],["Qty",true],["Rate",true],["Total",true],["",true]],"xl-label");
+  (ref.misc||[]).forEach(r=>{rfn++;rfHtml+=xlRow(rfn,[[r.type,""],[r.qty,true],[r.rate,true],[fmt(r.total),true],["",true]]);});
+  rfHtml+=xlRow(++rfn,[["ARCH BRICKS",""],["Qty",true],["Cost/Brick",true],["Total",true],["",true]],"xl-label");
+  (ref.arch||[]).forEach(r=>{rfn++;rfHtml+=xlRow(rfn,[[r.type,""],[r.qty,true],[r.cost_per,true],[fmt(r.total),true],["",true]]);});
+  rfHtml+=`</table>`;
+  document.getElementById("xl-refractory").innerHTML=rfHtml;
+
+  // Trolley / Bogie
+  let tn=0;
+  document.getElementById("xl-trolley").innerHTML=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td></tr>
+    ${xlRow(++tn,[["TROLLEY / BOGIE BREAKDOWN",""],["",""],["",""],["",""]],"xl-section")}
+    ${xlRow(++tn,[["Item",""],["Qty",true],["Rate",true],["Total",true]],"xl-label")}
+    ${(sp.trolley_bogie||[]).map(t=>{tn++;return xlRow(tn,[[t.item,""],[t.qty,true],[fmt(t.rate),true],[fmt(t.total),true]])}).join("")}
+    ${xlRow(++tn,[["TOTAL TROLLEY/BOGIE",""],["",""],["",""],[""+fmt((sp.trolley_bogie||[]).reduce((s,t)=>s+t.total,0)),true]],"xl-total")}
   </table>`;
 
   // BOM

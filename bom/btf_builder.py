@@ -151,6 +151,110 @@ RECUPERATOR_CALC = {
 }
 
 
+MS_STRUCTURE_BREAKDOWN = [
+    {"section": "MS Sheet", "items": [
+        {"item": "Std. sheet Vol. (1500×6300×8)mm", "value": "0.0756 m3"},
+        {"item": "Density of MS Sheet", "value": "7850 kg/m3"},
+        {"item": "Wt. of each sheet", "value": "593.46 kg"},
+        {"item": "No. of sheets Required", "value": "3 Nos"},
+        {"item": "Wt. of Required MS sheet", "value": "2,640 Kg", "highlight": True},
+    ]},
+    {"section": "C-Channel 150×75×7.2 mm", "items": [
+        {"item": "Wt. Per metre", "value": "17 kg"},
+        {"item": "Outer walls × 3", "value": "90 m"},
+        {"item": "Back and Front", "value": "30 m"},
+        {"item": "Wt. of C-Channel", "value": "2,500 kg", "highlight": True},
+    ]},
+    {"section": "I-Beam 500×180 mm", "items": [
+        {"item": "Wt. Per metre", "value": "87 kg"},
+        {"item": "Total I-Beam", "value": "33 m"},
+        {"item": "Wt. of I-Beam", "value": "3,500 kg", "highlight": True},
+    ]},
+    {"section": "TOTAL", "items": [
+        {"item": "Total MS Structure", "value": "8,640 kg", "highlight": True},
+    ]},
+]
+
+DOOR_BREAKDOWN = [
+    {"item": "Plate (2.6×2.7)m thk 8mm", "qty": 593.46, "rate": 60, "total": 35608},
+    {"item": "Angle (65×65×8)", "qty": 407, "rate": 60, "total": 24420},
+    {"item": "Angle (40×40×6)", "qty": 297, "rate": 60, "total": 17820},
+    {"item": "CI Casting HK for Door", "qty": 495, "rate": 650, "total": 321750},
+    {"item": "Door Guide Plate", "qty": 165, "rate": 60, "total": 9900},
+    {"item": "Counter Weight", "qty": 880, "rate": 60, "total": 52800},
+    {"item": "Door Locking Cylinder", "qty": 2, "rate": 25000, "total": 50000},
+    {"item": "Door Column (L,R,Top) 3 nos", "qty": 500, "rate": 62, "total": 31000},
+    {"item": "Shafts", "qty": 200, "rate": 110, "total": 22000},
+    {"item": "Chain 5 mtr", "qty": 5, "rate": 5000, "total": 25000},
+    {"item": "Sprocket 4 Nos (20 teeth)", "qty": 4, "rate": 3500, "total": 14000},
+    {"item": "Sprocket 6 Nos (15 teeth)", "qty": 6, "rate": 2000, "total": 12000},
+    {"item": "Rope 22 mtr", "qty": 22, "rate": 100, "total": 2200},
+    {"item": "Pulley", "qty": 50, "rate": 110, "total": 5500},
+    {"item": "Guide Roller", "qty": 4, "rate": 2000, "total": 8000},
+    {"item": "Gear Box Motor 5 HP (Nord)", "qty": 1, "rate": 200000, "total": 200000},
+]
+
+CERAMIC_FIBRE_CALC = [
+    {"wall": "Side wall (Right)", "L": 3290, "W": 1000, "thk": 350, "area": 3.29},
+    {"wall": "Side wall (Left)", "L": 3290, "W": 1000, "thk": 350, "area": 3.29},
+    {"wall": "Top", "L": 3290, "W": 3360, "thk": 350, "area": 11.05},
+    {"wall": "Back wall", "L": 2660, "W": 1000, "thk": 350, "area": 2.66},
+    {"wall": "Door", "L": 3456, "W": 2066, "thk": 300, "area": 0},
+]
+CERAMIC_FIBRE_SUMMARY = {
+    "vol_std_ceramic_m3": 0.1095,
+    "total_vol_m3": 14.045,
+    "total_rolls": 340,
+    "wt_per_roll_kg": 15,
+}
+
+TROLLEY_BOGIE_BREAKDOWN = [
+    {"item": "MS Beam 200×125 - 90 mtr", "qty": 1500, "rate": 60, "total": 90000},
+    {"item": "MS Channel 200×75 - 60 mtr", "qty": 500, "rate": 60, "total": 30000},
+    {"item": "MS Plate 10mm × 6300×1500", "qty": 450, "rate": 60, "total": 27000},
+    {"item": "MS Round 85 DIA 2.5 mtr", "qty": 70, "rate": 60, "total": 4200},
+    {"item": "Plummer Block Plate 0.3×0.3×0.09", "qty": 500, "rate": 60, "total": 30000},
+    {"item": "MS Plate 30mm for Block Fixing", "qty": 150, "rate": 60, "total": 9000},
+    {"item": "Rack", "qty": 5, "rate": 40000, "total": 200000},
+    {"item": "Sprocket", "qty": 2, "rate": 50000, "total": 100000},
+    {"item": "Shaft for Connecting Gearbox", "qty": 2, "rate": 15000, "total": 30000},
+    {"item": "Bearing Assembly (12 Nos)", "qty": 12, "rate": 10000, "total": 120000},
+    {"item": "Wheel (6 Nos)", "qty": 400, "rate": 110, "total": 44000},
+    {"item": "CI Plate for Trolley", "qty": 800, "rate": 100, "total": 80000},
+    {"item": "MS Angle 100×100×10 - 36 mtr", "qty": 200, "rate": 65, "total": 13000},
+    {"item": "MS Round 45 DIA 20 mtr", "qty": 150, "rate": 70, "total": 10500},
+    {"item": "Gear Box Motor 5 HP with Geared Motor", "qty": 1, "rate": 300000, "total": 300000},
+    {"item": "Anchor/Stud 50 Kg", "qty": 50, "rate": 260, "total": 13000},
+]
+
+REFRACTORY_BREAKDOWN = {
+    "walls": [
+        {"type": "C/F Bricks", "qty": 368, "cost_per": 26, "total": 9568, "wt_per": 1.8, "total_wt": 46.8},
+        {"type": "H/F Bricks", "qty": 368, "cost_per": 70, "total": 25760, "wt_per": 2.0, "total_wt": 140},
+        {"type": "IS-8", "qty": 368, "cost_per": 90, "total": 33120, "wt_per": 3.8, "total_wt": 342},
+        {"type": "HA 60%", "qty": 368, "cost_per": 90, "total": 33120, "wt_per": 5.0, "total_wt": 450},
+    ],
+    "bogie": [
+        {"type": "C/F Bricks", "qty": 512, "cost_per": 26, "total": 13312, "wt_per": 1.8, "total_wt": 46.8},
+        {"type": "H/F Bricks", "qty": 512, "cost_per": 70, "total": 35840, "wt_per": 2.0, "total_wt": 140},
+        {"type": "IS-8", "qty": 512, "cost_per": 90, "total": 46080, "wt_per": 3.8, "total_wt": 342},
+        {"type": "HA 60%", "qty": 512, "cost_per": 90, "total": 46080, "wt_per": 5.0, "total_wt": 450},
+        {"type": "Hysil Board", "qty": 38, "cost_per": 1260, "total": 47880, "wt_per": 6.0, "total_wt": 228},
+    ],
+    "misc": [
+        {"type": "Accoset 50", "qty": 12, "rate": 950, "total": 11400},
+        {"type": "Fireclay", "qty": 12, "rate": 240, "total": 2880},
+        {"type": "Firecreat", "qty": 10, "rate": 765, "total": 7650},
+    ],
+    "arch": [
+        {"type": "End Arch Brick", "qty": 125, "cost_per": 90, "total": 11250},
+        {"type": "Skew Block Brick", "qty": 12, "cost_per": 170, "total": 2040},
+        {"type": "Side Arch Brick 01", "qty": 125, "cost_per": 1260, "total": 157500},
+        {"type": "Side Arch Brick 02", "qty": 60, "cost_per": 90, "total": 5400},
+    ],
+}
+
+
 def get_supplementary():
     """Return all calculation data for display in UI."""
     return {
@@ -159,6 +263,12 @@ def get_supplementary():
         "furnace_params": FURNACE_PARAMS,
         "pipe_sizing": PIPE_SIZING,
         "recuperator": RECUPERATOR_CALC,
+        "ms_structure": MS_STRUCTURE_BREAKDOWN,
+        "door": DOOR_BREAKDOWN,
+        "ceramic_fibre": CERAMIC_FIBRE_CALC,
+        "ceramic_fibre_summary": CERAMIC_FIBRE_SUMMARY,
+        "trolley_bogie": TROLLEY_BOGIE_BREAKDOWN,
+        "refractory": REFRACTORY_BREAKDOWN,
     }
 
 
