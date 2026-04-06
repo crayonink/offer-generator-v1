@@ -151,17 +151,21 @@
       <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
       <div class="xl-content">
         <div class="xl-sheet active" id="xl-furnace"></div>
-        <div class="xl-sheet" id="xl-recup"></div>
-        <div class="xl-sheet" id="xl-combustion"></div>
-        <div class="xl-sheet" id="xl-massflow"></div>
         <div class="xl-sheet" id="xl-refractory"></div>
+        <div class="xl-sheet" id="xl-mildsteel"></div>
+        <div class="xl-sheet" id="xl-massflow"></div>
+        <div class="xl-sheet" id="xl-combustion"></div>
+        <div class="xl-sheet" id="xl-recup"></div>
+        <div class="xl-sheet" id="xl-breakup"></div>
       </div>
       <div class="xl-tabs">
-        <div class="xl-tab active" onclick="xlTab('xl-furnace',this)">Furnace</div>
-        <div class="xl-tab" onclick="xlTab('xl-recup',this)">Recuperator</div>
-        <div class="xl-tab" onclick="xlTab('xl-combustion',this)">Combustion</div>
-        <div class="xl-tab" onclick="xlTab('xl-massflow',this)">Mass Flow Control</div>
+        <div class="xl-tab active" onclick="xlTab('xl-furnace',this)">Furnace (2)</div>
         <div class="xl-tab" onclick="xlTab('xl-refractory',this)">Refractory</div>
+        <div class="xl-tab" onclick="xlTab('xl-mildsteel',this)">Mild Steel</div>
+        <div class="xl-tab" onclick="xlTab('xl-massflow',this)">Mass Flow Control</div>
+        <div class="xl-tab" onclick="xlTab('xl-combustion',this)">Combustion</div>
+        <div class="xl-tab" onclick="xlTab('xl-recup',this)">Recuperator1</div>
+        <div class="xl-tab" onclick="xlTab('xl-breakup',this)">Breakup</div>
       </div>
     </div>
 
@@ -181,8 +185,8 @@
     <div class="xl-workbook">
       <div class="xl-titlebar"><span class="xl-logo">X</span><span>SNSF BRF Bill of Materials — ENCON</span></div>
       <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
-      <div class="xl-content"><div class="xl-sheet active" id="xl-bom"></div></div>
-      <div class="xl-tabs"><div class="xl-tab active">BOM & Costing</div></div>
+      <div class="xl-content"><div class="xl-sheet active" id="xl-bom2"></div></div>
+      <div class="xl-tabs"><div class="xl-tab active">Breakup</div></div>
     </div>
 
     <div class="summary-card">
@@ -258,7 +262,10 @@ async function calculate(){
 }
 
 function renderAll(data,showNG,showCL){
-  const sp=data.supplementary||{},s=data.cost_summary,fc=sp.furnace_calc||{},rc=sp.recuperator||{};
+  const sp=data.supplementary||{},s=data.cost_summary,fc=sp.furnace_calc||{},rc=sp.recuperator||{},rcCost=sp.recuperator_cost||{};
+  const C3=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td></tr>`;
+  const C5=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td><td class="xl-col-header">E</td></tr>`;
+  const R=xlRow;
 
   ["b2","b3"].forEach(p=>{
     document.getElementById(p+"-sell").textContent="\u20B9 "+fmt(s.grand_sell);
@@ -266,95 +273,127 @@ function renderAll(data,showNG,showCL){
   });
   document.getElementById("b3-main").textContent="Main Sell: \u20B9 "+fmt(s.main_sell);
 
-  // Furnace
-  const fcRows=[
-    ["Furnace Capacity",`${fc.furnace_capacity_tph}`,`TPH`],
-    ["Billet Dimensions",`${fc.billet_L_mm}\u00D7${fc.billet_W_mm}\u00D7${fc.billet_H_mm}`,`mm`],
-    ["Billet Weight",`${fmt(fc.billet_weight_kg)}`,`kg`],
-    ["Inside Material",`${fmt(fc.inside_material_kg)}`,`kg`],
-    ["Effective Length",`${fc.effective_length_m}`,`m`],
-    ["Effective Width",`${fc.effective_width_m}`,`m`],
-    ["Overall Width",`${fmt(fc.overall_width_mm)}`,`mm`],
-    ["Overall Length",`${fmt(fc.overall_length_mm)}`,`mm`],
-    ["Calorific Value",`${fmt(fc.calorific_value_kcal_nm3)}`,`kcal/Nm\u00B3`],
-  ];
-  document.getElementById("xl-furnace").innerHTML=`<table class="xl-grid">${colHdr3}
-    ${xlRow(1,[["FURNACE DIMENSIONS",""],["",""],["",""]],"xl-section")}
-    ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
-    ${fcRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]])).join("")}
-  </table>`;
+  // ═══ SHEET 1: Furnace (2) ═══
+  let n=0;
+  let h=`<table class="xl-grid">${C3}`;
+  h+=R(++n,[["REHEATING FURNACE CALCULATION",""],["",""],["",""]],"xl-section");
+  [["Furnace Capacity",fc.furnace_capacity_tph,"TPH"],["Billet Dimensions",`${fc.billet_L_mm}\u00D7${fc.billet_W_mm}\u00D7${fc.billet_H_mm}`,"mm"],
+   ["Billet Weight",fmt(fc.billet_weight_kg),"kg"],["Inside Material",fmt(fc.inside_material_kg),"kg"],
+   ["Effective Length",fc.effective_length_m,"m"],["Effective Width",fc.effective_width_m,"m"],
+   ["Overall Width",fmt(fc.overall_width_mm),"mm"],["Overall Length",fmt(fc.overall_length_mm),"mm"],
+   ["Calorific Value",fmt(fc.calorific_value_kcal_nm3),"kcal/Nm\u00B3"],["Reheat Temp",fc.reheat_temp_c,"\u00B0C"],["Time",fc.time_hr,"hours"],
+  ].forEach(([l,v,u])=>{h+=R(++n,[[l,""],[v,true],[u,true]]);});
+  h+=`</table>`;
+  document.getElementById("xl-furnace").innerHTML=h;
 
-  // Recuperator
-  const rcRows=[
-    [rc.title||"Recuperator","",""],
-    ["Flue Gas Flow",`${fmt(rc.total_flue_gas_nm3hr)}`,`Nm\u00B3/hr`],
-    ["Flue Gas Mass",`${fmt(rc.total_mass_flue_gas_kghr)}`,`Kg/hr`],
-    ["Flue Gas Temp (In)",`${rc.initial_temp_flue_gas_c}`,`\u00B0C`],
-    ["Flue Gas Temp (Out)",`${rc.final_temp_flue_gas_c}`,`\u00B0C`],
-    ["Air Volume",`${fmt(rc.air_volume_nm3hr)}`,`Nm\u00B3/hr`],
-    ["Air Temp (In/Out)",`${rc.initial_air_temp_c} / ${rc.final_air_temp_c}`,`\u00B0C`],
-    ["Heat Required",`${fmt(rc.heat_required_kcal)}`,`kcal`],
-    ["LMTD",`${rc.lmtd_c}`,`\u00B0C`],
-    ["Surface Area",`${rc.surface_area_m2}`,`m\u00B2`],
-    ["Pipes",`${rc.pipes_total} (${rc.pipes_per_row}\u00D7${rc.pipes_per_column})`,``],
-    ["Material",`${rc.material}`,``],
-    ["Pipe Dia \u00D7 Length",`${rc.pipe_dia_mm} \u00D7 ${rc.pipe_length_m}`,`mm \u00D7 m`],
-    ["Hot Bank Weight",`${rc.hot_bank_weight_kg}`,`Kg`],
-  ];
-  document.getElementById("xl-recup").innerHTML=`<table class="xl-grid">${colHdr3}
-    ${xlRow(1,[["RECUPERATOR CALCULATION",""],["",""],["",""]],"xl-section")}
-    ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
-    ${rcRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]],r[0]==="Surface Area"||r[0]==="Hot Bank Weight"?"xl-highlight":"")).join("")}
-  </table>`;
+  // ═══ SHEET 2: Refractory ═══
+  n=0;
+  const ref=sp.refractory_items||[];
+  const refExtra=sp.refractory_extra||[];
+  let rf=`<table class="xl-grid">${C5}`;
+  rf+=R(++n,[["REFRACTORY WITH MAHA KOSAL/BHILWARA/TRL",""],["",""],["",""],["",""],["",""]],"xl-section");
+  rf+=R(++n,[["Item",""],["Qty",true],["Weight (Kg)",true],["Rate",true],["Cost",true]],"xl-label");
+  ref.forEach(r=>{rf+=R(++n,[[r.item,""],[fmt(r.qty),true],[fmt(r.weight_kg),true],[fmt(r.rate),true],[fmt(r.cost),true]]);});
+  rf+=R(++n,[["Subtotal",""],["",""],["",""],["",""],[fmt(ref.reduce((s,r)=>s+r.cost,0)),true]],"xl-total");
+  rf+=R(++n,[["",""],["",""],["",""],["",""],["",""]]);
+  rf+=R(++n,[["ADDITIONAL REFRACTORY",""],["",""],["",""],["",""],["",""]],"xl-section");
+  refExtra.forEach(r=>{rf+=R(++n,[[r.item,""],[r.qty,true],[fmt(r.wt),true],[r.rate,true],[fmt(r.cost),true]]);});
+  rf+=R(++n,[["Total Refractory",""],["",""],["",""],["",""],[fmt(ref.reduce((s,r)=>s+r.cost,0)+refExtra.reduce((s,r)=>s+r.cost,0)),true]],"xl-highlight");
+  rf+=`</table>`;
+  document.getElementById("xl-refractory").innerHTML=rf;
 
-  // Combustion
-  const comb=sp.combustion_items||[];
-  let cn=0;
-  document.getElementById("xl-combustion").innerHTML=`<table class="xl-grid">
-    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td></tr>
-    ${xlRow(++cn,[["COMBUSTION EQUIPMENT",""],["",""],["",""],["",""]],"xl-section")}
-    ${xlRow(++cn,[["Item",""],["Qty",true],["Unit Price",true],["Total",true]],"xl-label")}
-    ${comb.map(c=>{cn++;return xlRow(cn,[[c.item,""],[c.qty,true],[fmt(c.price),true],[fmt(c.qty*c.price),true]])}).join("")}
-    ${xlRow(++cn,[["TOTAL",""],["",""],["",""],[""+fmt(comb.reduce((s,c)=>s+c.qty*c.price,0)),true]],"xl-total")}
-  </table>`;
+  // ═══ SHEET 3: Mild Steel ═══
+  n=0;
+  const ms=sp.mild_steel||[];
+  const pc=sp.pipeline_casting||[];
+  let ml=`<table class="xl-grid">${C5}`;
+  ml+=R(++n,[["MILD STEEL",""],["",""],["",""],["",""],["",""]],"xl-section");
+  ml+=R(++n,[["Description",""],["Qty (m/kg)",true],["Wt/qty",true],["Total Wt",true],["Cost",true]],"xl-label");
+  ms.forEach(m=>{ml+=R(++n,[[m.item,""],[m.qty_m,true],[m.wt_per_m,true],[fmt(m.total_wt),true],[fmt(m.cost),true]]);});
+  ml+=R(++n,[["Structure Total",""],["",""],["",""],[fmt(sp.mild_steel_total_wt||0),true],[fmt(sp.mild_steel_total_cost||0),true]],"xl-total");
+  ml+=R(++n,[["",""],["",""],["",""],["",""],["",""]]);
+  ml+=R(++n,[["PIPELINE & CASTING",""],["",""],["",""],["",""],["",""]],"xl-section");
+  pc.forEach(p=>{ml+=R(++n,[[p.item,""],[p.qty||"",true],[p.wt,true],[p.rate,true],[fmt(p.cost),true]]);});
+  ml+=`</table>`;
+  document.getElementById("xl-mildsteel").innerHTML=ml;
 
-  // Mass Flow Control
+  // ═══ SHEET 4: Mass Flow Control ═══
+  n=0;
   const mfc=sp.mass_flow_control||[];
-  let mn=0;
-  let mfcHtml=`<table class="xl-grid">
-    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td></tr>
-    ${xlRow(++mn,[["MASS FLOW CONTROL — ZONE-WISE",""],["",""],["",""]],"xl-section")}`;
+  let mf=`<table class="xl-grid">${C3}`;
+  mf+=R(++n,[["MASS FLOW CONTROL SYSTEM",""],["",""],["",""]],"xl-section");
   mfc.forEach(z=>{
-    mfcHtml+=xlRow(++mn,[[z.zone,""],["",""],["",""]],"xl-label");
-    z.items.forEach(it=>{
-      mfcHtml+=xlRow(++mn,[[it.item,""],[it.qty,true],[fmt(it.price*it.qty),true]]);
-    });
+    mf+=R(++n,[[z.zone,""],["",""],["",""]],"xl-label");
+    z.items.forEach(it=>{mf+=R(++n,[[it.item,""],[it.qty,true],[fmt(it.price*it.qty),true]]);});
   });
   const mfcTotal=mfc.reduce((s,z)=>s+z.items.reduce((s2,it)=>s2+it.price*it.qty,0),0);
-  mfcHtml+=xlRow(++mn,[["TOTAL MASS FLOW CONTROL",""],["",""],[""+fmt(mfcTotal),true]],"xl-total");
-  mfcHtml+=`</table>`;
-  document.getElementById("xl-massflow").innerHTML=mfcHtml;
+  mf+=R(++n,[["TOTAL MASS FLOW CONTROL",""],["",""],[fmt(mfcTotal),true]],"xl-total");
+  mf+=`</table>`;
+  document.getElementById("xl-massflow").innerHTML=mf;
 
-  // Refractory
-  const ref=sp.refractory_items||[];
-  let rn=0;
-  document.getElementById("xl-refractory").innerHTML=`<table class="xl-grid">${colHdr5}
-    ${xlRow(++rn,[["REFRACTORY BREAKDOWN",""],["",""],["",""],["",""],["",""]],"xl-section")}
-    ${xlRow(++rn,[["Item",""],["Qty",true],["Weight (Kg)",true],["Rate",true],["Cost",true]],"xl-label")}
-    ${ref.map(r=>{rn++;return xlRow(rn,[[r.item,""],[fmt(r.qty),true],[fmt(r.weight_kg),true],[fmt(r.rate),true],[fmt(r.cost),true]])}).join("")}
-    ${xlRow(++rn,[["TOTAL REFRACTORY",""],["",""],["",""],["",""],[""+fmt(ref.reduce((s,r)=>s+r.cost,0)),true]],"xl-total")}
-  </table>`;
+  // ═══ SHEET 5: Combustion ═══
+  n=0;
+  const comb=sp.combustion_items||[];
+  let cb=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td></tr>`;
+  cb+=R(++n,[["COMBUSTION EQUIPMENT",""],["",""],["",""],["",""]],"xl-section");
+  cb+=R(++n,[["S.No.",""],["Description",""],["Qty",true],["Cost Price",true]],"xl-label");
+  comb.forEach((c,i)=>{n++;cb+=R(n,[[(i+1)+"",""],[c.item,""],[c.qty,true],[fmt(c.qty*c.price),true]]);});
+  cb+=R(++n,[["",""],["TOTAL",""],["",""],[fmt(comb.reduce((s,c)=>s+c.qty*c.price,0)),true]],"xl-total");
+  cb+=`</table>`;
+  document.getElementById("xl-combustion").innerHTML=cb;
 
-  // BOM
+  // ═══ SHEET 6: Recuperator1 ═══
+  n=0;
+  let rp=`<table class="xl-grid">${C3}`;
+  rp+=R(++n,[[rc.title||"Recuperator Calculation",""],["",""],["",""]],"xl-section");
+  [["Total Flue Gas",fmt(rc.total_flue_gas_nm3hr),"Nm\u00B3/Hr"],["Total Mass of Flue Gas",fmt(rc.total_mass_flue_gas_kghr),"Kg/Hr"],
+   ["Specific Heat of Flue Gas",rc.specific_heat_flue_gas,"Kcal/Kg-C"],["Initial Temp of Flue Gas",rc.initial_temp_flue_gas_c,"\u00B0C"],
+   ["Final Temp of Flue Gas",rc.final_temp_flue_gas_c,"\u00B0C"],["Heat Transfer Coefficient",rc.heat_transfer_coeff,"Kcal/m\u00B2-C"],
+   ["Air Volume",fmt(rc.air_volume_nm3hr),"Nm\u00B3/Hr"],["Initial Temp of Air",rc.initial_air_temp_c,"\u00B0C"],["Final Temp of Air",rc.final_air_temp_c,"\u00B0C"],
+   ["Specific Heat of Air",rc.specific_heat_air,"Kcal/Kg-C"],["Heat Required",fmt(rc.heat_required_kcal),"Kcal"],
+   ["LMTD",rc.lmtd_c,"\u00B0C"],["Surface Area",rc.surface_area_m2,"mtr2"],
+   ["Pipes",`${rc.pipes_per_row}\u00D7${rc.pipes_per_column} = ${rc.pipes_total}`,""],
+  ].forEach(([l,v,u])=>{rp+=R(++n,[[l,""],[v,true],[u,true]],l.includes("Surface")?"xl-highlight":"");});
+  rp+=R(++n,[["",""],["",""],["",""]]);
+  rp+=R(++n,[["HOT BANK ("+rc.material+")",""],["",""],["",""]],"xl-section");
+  [["Pipe Diameter",rc.pipe_dia_mm,"mm"],["Pipe Length",rc.pipe_length_m,"mtr"],["Pipe Thickness",rc.pipe_thickness_mm,"mm"],
+   ["Weight per Pipe",rc.pipe_weight_kg_m,"Kg/Mtr"],["Total Weight Hot Bank",rc.hot_bank_weight_kg,"Kg"],
+  ].forEach(([l,v,u])=>{rp+=R(++n,[[l,""],[v,true],[u,true]]);});
+  rp+=R(++n,[["",""],["",""],["",""]]);
+  rp+=R(++n,[["COLD BANK ("+rcCost.cold_bank_material+")",""],["",""],["",""]],"xl-section");
+  [["Pipe Diameter",rcCost.cold_bank_dia_mm,"mm"],["Pipe Length",rcCost.cold_bank_length_m,"mtr"],["Pipe Thickness",rcCost.cold_bank_thickness_mm,"mm"],
+   ["Weight per Pipe",rcCost.cold_bank_weight_kg_m,"Kg/Mtr"],["Total Weight Cold Bank",rcCost.cold_bank_total_wt_kg,"Kg"],
+  ].forEach(([l,v,u])=>{rp+=R(++n,[[l,""],[v,true],[u,true]]);});
+  rp+=R(++n,[["",""],["",""],["",""]]);
+  rp+=R(++n,[["COST OF RECUPERATOR",""],["Rs",""],["",""]],"xl-section");
+  [["Cost of All Pipes",fmt(rcCost.cost_all_pipes)],["MS Outer Shell",fmt(rcCost.cost_ms_outer_shell)],
+   ["MS Combustion Air Inlet",fmt(rcCost.cost_ms_combustion_air_inlet)],["MS Channel 150\u00D775",fmt(rcCost.cost_ms_channel_150x75)],
+   ["Angle 65\u00D725",fmt(rcCost.cost_angle_65)],["Angle 75\u00D710",fmt(rcCost.cost_angle_75)],["Angle 50\u00D715",fmt(rcCost.cost_angle_50)],
+  ].forEach(([l,v])=>{rp+=R(++n,[[l,""],[v,true],["Rs",true]]);});
+  rp+=R(++n,[["Total Material Cost",""],[""+fmt(rcCost.cost_total_material),true],["Rs",true]],"xl-total");
+  [["Bending of Pipes",fmt(rcCost.cost_pipe_bending)],["Welding Rod",fmt(rcCost.cost_welding_rod)],
+   ["Hole Fabrication",fmt(rcCost.cost_hole_fabrication)],["Thermocouple with TT",fmt(rcCost.cost_thermocouple_tt)],
+  ].forEach(([l,v])=>{rp+=R(++n,[[l,""],[v,true],["Rs",true]]);});
+  rp+=R(++n,[["Total Cost of Recuperator",""],[""+fmt(rcCost.cost_total_recuperator),true],["Rs",true]],"xl-highlight");
+  rp+=`</table>`;
+  document.getElementById("xl-recup").innerHTML=rp;
+
+  // ═══ SHEET 7: Breakup (BOM with markups) ═══
   let lastSec="",bn=0;
-  document.getElementById("xl-bom").innerHTML=`<table class="xl-grid">
+  document.getElementById("xl-breakup").innerHTML=`<table class="xl-grid">
     <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td><td class="xl-col-header">E</td><td class="xl-col-header">F</td><td class="xl-col-header">G</td></tr>
+    ${R(1,[["BREAKUP",""],["",""],["",""],["",""],["",""],["",""],["",""]],"xl-section")}
+    ${R(2,[["S.No.",""],["Description",""],["Qty",true],["UOM",""],["Unit Price",true],["Cost Price",true],["Sell Price",true]],"xl-label")}
     ${data.bom.map(row=>{
       let sh="";bn++;
       if(row.SECTION!==lastSec){lastSec=row.SECTION;bn++;sh=`<tr class="xl-section"><td class="xl-row-num">${bn-1}</td><td colspan="7">${row.SECTION}</td></tr>`;}
-      return sh+`<tr><td class="xl-row-num">${bn}</td><td>${row.ITEM}</td><td class="xl-r">${row.QTY}</td><td>${row.UNIT}</td><td class="xl-r">${fmt(row["UNIT PRICE"])}</td><td class="xl-r">${fmt(row["COST PRICE"])}</td><td class="xl-r">${row.MARKUP}x</td><td class="xl-r" style="color:#1d4ed8;font-weight:700">${fmt(row["SELL PRICE"])}</td></tr>`;
+      return sh+`<tr><td class="xl-row-num">${bn}</td><td>${row.ITEM}</td><td class="xl-r">${row.QTY}</td><td>${row.UNIT}</td><td class="xl-r">${fmt(row["UNIT PRICE"])}</td><td class="xl-r">${fmt(row["COST PRICE"])}</td><td class="xl-r" style="color:#1d4ed8;font-weight:700">${fmt(row["SELL PRICE"])}</td></tr>`;
     }).join("")}
   </table>`;
+
+  // Step 3 BOM copy
+  document.getElementById("xl-bom2").innerHTML=document.getElementById("xl-breakup").innerHTML;
 
   document.getElementById("s-main-cost").textContent="\u20B9 "+fmt(s.main_cost);
   document.getElementById("s-main-sell").textContent="\u20B9 "+fmt(s.main_sell);

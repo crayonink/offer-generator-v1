@@ -145,6 +145,69 @@ MASS_FLOW_CONTROL = [
     ]},
 ]
 
+MILD_STEEL_ITEMS = [
+    {"sno": 2, "item": "ISMB 500×180 (Roof)", "qty_m": 130, "wt_per_m": 87, "total_wt": 11310, "rate": 55, "cost": 622050},
+    {"sno": 3, "item": "ISMB 200×100 (Top & Bottom)", "qty_m": 630, "wt_per_m": 24.5, "total_wt": 15435, "rate": 55, "cost": 848925},
+    {"sno": 4, "item": "ISMC 250×80", "qty_m": 310, "wt_per_m": 30.6, "total_wt": 9486, "rate": 55, "cost": 521730},
+    {"sno": 5, "item": "MS Plate 16mm flat (Charging Door)", "qty_m": 1, "wt_per_m": 970, "total_wt": 970, "rate": 55, "cost": 53350},
+    {"sno": 6, "item": "MS Plate 8mm (Bottom Tie Rod)", "qty_m": 1, "wt_per_m": 2250, "total_wt": 2250, "rate": 55, "cost": 123750},
+    {"sno": 7, "item": "MS Plate 12mm (join I-Beam)", "qty_m": 4.7, "wt_per_m": 350, "total_wt": 1645, "rate": 55, "cost": 90475},
+    {"sno": 8, "item": "MS Plate 8mm (Side Walls)", "qty_m": 8, "wt_per_m": 4550, "total_wt": 36400, "rate": 55, "cost": 2002000},
+    {"sno": 9, "item": "MS Plate 8mm (Discharge Side)", "qty_m": 1, "wt_per_m": 1550, "total_wt": 1550, "rate": 55, "cost": 85250},
+    {"sno": 10, "item": "Duct Flue Gas 16+6=20 mtr", "qty_m": 1, "wt_per_m": 8300, "total_wt": 8300, "rate": 55, "cost": 456500},
+    {"sno": 11, "item": "Chimney per Tonne", "qty_m": 1, "wt_per_m": 16000, "total_wt": 16000, "rate": 55, "cost": 880000},
+    {"sno": 12, "item": "Supporting Structure", "qty_m": 1, "wt_per_m": 4500, "total_wt": 4500, "rate": 55, "cost": 247500},
+]
+MILD_STEEL_TOTAL_WT = 107846  # kg = 107.846 Ton
+MILD_STEEL_TOTAL_COST = 5931530
+
+PIPELINE_CASTING = [
+    {"item": "Air, Gas, Oil Pipeline", "wt": 8000, "rate": 75, "cost": 600000},
+    {"item": "Inspection Door, Discharge Door, Plate", "wt": 3000, "rate": 150, "cost": 450000},
+    {"item": "CI Skid for Preheating Zone", "qty": 16, "wt_each": 250, "wt": 4000, "rate": 150, "cost": 600000},
+    {"item": "CI Hanger 2400 PC (3 kg per piece)", "wt": 7300, "rate": 150, "cost": 1095000},
+]
+
+REFRACTORY_EXTRA = [
+    {"item": "Flue Duct Castable (LC-40) 2.2m OD×1.9m ID", "qty": 49000, "wt": 49000, "rate": 35, "cost": 1715000},
+    {"item": "Side Arch Brick IS-8 (Chimney)", "qty": 2000, "wt": 8000, "rate": 20, "cost": 40000},
+    {"item": "Cold Face (Chimney)", "qty": 5000, "wt": 4000, "rate": 20, "cost": 100000},
+    {"item": "Fireclay (bags)", "qty": 170, "wt": 250000, "rate": 765, "cost": 130050},
+    {"item": "Accosset 50 (bags)", "qty": 165, "wt": 8500, "rate": 865, "cost": 142725},
+]
+
+RECUPERATOR_COST_BREAKDOWN = {
+    "cost_ss316_pipe_rate": 470.0,
+    "cost_all_pipes": 1226057,
+    "ms_outershell_kg": 296.60,
+    "ms_air_inlet_duct_kg": 115.25,
+    "ms_hot_air_outlet_duct_kg": 127.00,
+    "ms_pipe_holding_plate_kg": 655.25,
+    "ms_bottom_box_kg": 176.25,
+    "ms_flanges_kg": 45,
+    "ms_side_hood_kg": 1600,
+    "cost_ms_outer_shell": 10000,
+    "cost_ms_combustion_air_inlet": 180921,
+    "cost_ms_channel_150x75": 10200,
+    "cost_angle_65": 13200,
+    "cost_angle_75": 5400,
+    "cost_angle_50": 4050,
+    "cost_total_material": 1449828,
+    "cost_pipe_bending": 10500,
+    "cost_welding_rod": 6912,
+    "cost_hole_fabrication": 43200,
+    "cost_thermocouple_tt": 8000,
+    "cost_total_recuperator": 1518440,
+    # Cold bank
+    "cold_bank_material": "SS-316 Seamless",
+    "cold_bank_dia_mm": 48.3,
+    "cold_bank_length_m": 2.575,
+    "cold_bank_thickness_mm": 2.7,
+    "cold_bank_weight_kg_m": 4.72,
+    "cold_bank_pipe_wt_kg": 12.0,
+    "cold_bank_total_wt_kg": 1296,
+}
+
 RECUPERATOR_CALC = {
     "title": "30 TPH NG Based Furnace",
     "total_flue_gas_nm3hr": 7700,
@@ -212,10 +275,16 @@ def get_supplementary():
     """Return all calculation data for display in UI."""
     return {
         "furnace_calc": FURNACE_CALC,
+        "mild_steel": MILD_STEEL_ITEMS,
+        "mild_steel_total_wt": MILD_STEEL_TOTAL_WT,
+        "mild_steel_total_cost": MILD_STEEL_TOTAL_COST,
+        "pipeline_casting": PIPELINE_CASTING,
         "mass_flow_control": MASS_FLOW_CONTROL,
         "recuperator": RECUPERATOR_CALC,
+        "recuperator_cost": RECUPERATOR_COST_BREAKDOWN,
         "combustion_items": COMBUSTION_ITEMS,
         "refractory_items": REFRACTORY_ITEMS,
+        "refractory_extra": REFRACTORY_EXTRA,
     }
 
 
