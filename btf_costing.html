@@ -394,11 +394,11 @@ function renderAll(data){
    ["MS Combustion Air Inlet",fmt(rc.cost_ms_combustion_air_inlet)],["MS Channel 150\u00D775\u00D710",fmt(rc.cost_ms_channel_150x75)],
    ["Angle 65\u00D725 mtr",fmt(rc.cost_angle_65)],["Angle 75\u00D710 mtr",fmt(rc.cost_angle_75)],["Angle 50\u00D715 mtr",fmt(rc.cost_angle_50)],
   ].forEach(([l,v])=>{rp+=R(++n,[[l,""],[v,true],["Rs",true]]);});
-  rp+=R(++n,[["Total Material Cost",fmt(rc.cost_total_material),"Rs"]],"xl-total");
+  rp+=R(++n,[["Total Material Cost",""],[""+fmt(rc.cost_total_material),true],["Rs",true]],"xl-total");
   [["Bending of Pipes",fmt(rc.cost_pipe_bending)],["Welding Rod",fmt(rc.cost_welding_rod)],
    ["Hole Fabrication",fmt(rc.cost_hole_fabrication)],["Thermocouple with TT",fmt(rc.cost_thermocouple_tt)],
   ].forEach(([l,v])=>{rp+=R(++n,[[l,""],[v,true],["Rs",true]]);});
-  rp+=R(++n,[["Total Cost of Recuperator",fmt(rc.cost_total_recuperator),"Rs"]],"xl-highlight");
+  rp+=R(++n,[["Total Cost of Recuperator",""],[""+fmt(rc.cost_total_recuperator),true],["Rs",true]],"xl-highlight");
   rp+=`</table>`;
   document.getElementById("xl-recup").innerHTML=rp;
 
