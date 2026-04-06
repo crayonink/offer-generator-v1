@@ -273,18 +273,30 @@ function renderAll(data,showNG,showCL){
   });
   document.getElementById("b3-main").textContent="Main Sell: \u20B9 "+fmt(s.main_sell);
 
-  // ═══ SHEET 1: Furnace (2) ═══
+  // ═══ SHEET 1: Furnace (2) — full legacy data ═══
+  const ff=sp.furnace_full||[];
+  const SECTION_KEYWORDS=['REHEATING','1.','2.','FLUE DUCT','STRUCTURAL','CASTING','PIPE CALC','PREHEATING ZONE','ROOF','CHARGING'];
   let n=0;
-  let h=`<table class="xl-grid">${C3}`;
-  h+=R(++n,[["REHEATING FURNACE CALCULATION",""],["",""],["",""]],"xl-section");
-  [["Furnace Capacity",fc.furnace_capacity_tph,"TPH"],["Billet Dimensions",`${fc.billet_L_mm}\u00D7${fc.billet_W_mm}\u00D7${fc.billet_H_mm}`,"mm"],
-   ["Billet Weight",fmt(fc.billet_weight_kg),"kg"],["Inside Material",fmt(fc.inside_material_kg),"kg"],
-   ["Effective Length",fc.effective_length_m,"m"],["Effective Width",fc.effective_width_m,"m"],
-   ["Overall Width",fmt(fc.overall_width_mm),"mm"],["Overall Length",fmt(fc.overall_length_mm),"mm"],
-   ["Calorific Value",fmt(fc.calorific_value_kcal_nm3),"kcal/Nm\u00B3"],["Reheat Temp",fc.reheat_temp_c,"\u00B0C"],["Time",fc.time_hr,"hours"],
-  ].forEach(([l,v,u])=>{h+=R(++n,[[l,""],[v,true],[u,true]]);});
-  h+=`</table>`;
-  document.getElementById("xl-furnace").innerHTML=h;
+  // Max cols needed
+  const maxC=ff.reduce((m,r)=>Math.max(m,r.length),0);
+  const colHdrF='<tr><td class="xl-col-header"></td>'+Array.from({length:maxC},(_,i)=>`<td class="xl-col-header">${String.fromCharCode(65+i)}</td>`).join('')+'</tr>';
+  let fh=`<table class="xl-grid">${colHdrF}`;
+  ff.forEach(row=>{
+    n++;
+    const first=String(row[0]||'').trim();
+    const isSec=SECTION_KEYWORDS.some(k=>first.toUpperCase().startsWith(k));
+    const isNum=typeof row[1]==='number';
+    const cls=isSec?'xl-section':(first.startsWith('Total')||first.startsWith('EFFECTIVE')||first.startsWith('Overall'))? 'xl-highlight':'';
+    const cells=[];
+    for(let i=0;i<maxC;i++){
+      const v=row[i]!==undefined?row[i]:'';
+      const isR=typeof v==='number';
+      cells.push([v,isR]);
+    }
+    fh+=R(n,cells,cls);
+  });
+  fh+=`</table>`;
+  document.getElementById("xl-furnace").innerHTML=fh;
 
   // ═══ SHEET 2: Refractory ═══
   n=0;
