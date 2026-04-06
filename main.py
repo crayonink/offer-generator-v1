@@ -2389,25 +2389,32 @@ def export_excel(req: ExcelExportRequest):
 
         # ── Additional sheets for SNSF BRF (match legacy 7-sheet workbook) ──
         if supp and req.equipment_type == "SNSF BRF":
-            # Sheet: Furnace (2)
+            # Sheet: Furnace (2) — full 110 rows from legacy
             ws2 = wb.create_sheet("Furnace (2)", 0)
-            ws2.column_dimensions["A"].width = 36; ws2.column_dimensions["B"].width = 18; ws2.column_dimensions["C"].width = 14
-            r2 = 1; fc2 = supp.get("furnace_calc", {})
-            ws2.merge_cells(f"A{r2}:C{r2}"); hdr(ws2, r2, 1, "REHEATING FURNACE CALCULATION", size=10); r2 += 1
-            for label, val, unit in [
-                ("Furnace Capacity", fc2.get("furnace_capacity_tph",""), "TPH"),
-                ("Billet Dimensions", f'{fc2.get("billet_L_mm","")}\u00D7{fc2.get("billet_W_mm","")}\u00D7{fc2.get("billet_H_mm","")}', "mm"),
-                ("Billet Weight", fc2.get("billet_weight_kg",""), "kg"),
-                ("Inside Material", fc2.get("inside_material_kg",""), "kg"),
-                ("Effective Length", fc2.get("effective_length_m",""), "m"),
-                ("Effective Width", fc2.get("effective_width_m",""), "m"),
-                ("Overall Width", fc2.get("overall_width_mm",""), "mm"),
-                ("Overall Length", fc2.get("overall_length_mm",""), "mm"),
-                ("Calorific Value", fc2.get("calorific_value_kcal_nm3",""), "kcal/Nm³"),
-            ]:
-                cell(ws2, r2, 1, label, bold=True, bg=GREY)
-                cell(ws2, r2, 2, val, bg=WHITE, align="right")
-                cell(ws2, r2, 3, unit, bg=WHITE); r2 += 1
+            for ci, w in enumerate([4, 44, 18, 14, 4, 44, 18, 14, 4, 44], 1):
+                ws2.column_dimensions[chr(64+ci)].width = w
+            SECTION_KW = ['REHEATING','1.','2.','FLUE DUCT','STRUCTURAL','CASTING','PIPE CALC','PREHEATING']
+            r2 = 0
+            for row_data in supp.get("furnace_full", []):
+                r2 += 1
+                first = str(row_data[0] if row_data else "").strip()
+                is_sec = any(first.upper().startswith(k) for k in SECTION_KW)
+                is_hl = first.startswith("Total") or first.startswith("EFFECTIVE") or first.startswith("Overall")
+                if is_sec:
+                    bg2 = LIGHT
+                elif is_hl:
+                    bg2 = GREEN_BG
+                else:
+                    bg2 = GREY if r2 % 2 == 0 else WHITE
+                for ci, v in enumerate(row_data):
+                    val = v if v != '' else None
+                    is_num = isinstance(val, (int, float))
+                    cell(ws2, r2, ci+1, val,
+                         bold=is_sec or is_hl,
+                         bg=bg2,
+                         fg=NAVY if is_sec else ("375623" if is_hl else "1E293B"),
+                         align="right" if is_num else "left",
+                         num_fmt='#,##0.##' if is_num else None)
 
             # Sheet: Refractory
             ws3 = wb.create_sheet("Refractory", 1)
