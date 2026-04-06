@@ -755,9 +755,7 @@ def update_pricelist_rate(req: RateUpdateRequest):
             ).fetchall()
             updated = 0
             for rowid, part_name, qty, rate in rows:
-                # Match: old rate must match AND name must fuzzy-match
-                if old_price is not None and abs(float(rate) - float(old_price)) > 0.01:
-                    continue
+                # Match by normalized name only (no rate check)
                 if _norm(part_name or "") != norm_item:
                     continue
                 new_amount = round(float(qty or 0) * req.price, 2) if qty is not None else None
