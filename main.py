@@ -2121,81 +2121,271 @@ def export_excel(req: ExcelExportRequest):
             ws.row_dimensions[r1].height = 20
             r1 += 1
 
-        # ── Calculation sheet (BTF only — from supplementary data) ────────
+        # ── Additional sheets for BTF (match legacy 5-sheet workbook) ─────
         supp = (req.equipment or {}).get("supplementary", {})
         if supp and req.equipment_type == "BTF":
-            wsc = wb.create_sheet("Calculation")
-            wsc.column_dimensions["A"].width = 36
-            wsc.column_dimensions["B"].width = 24
+            def _kv_sheet(ws2, r2, items, col_widths=(36, 24)):
+                """Write key-value rows to a sheet."""
+                for ci, w in enumerate(col_widths, 1):
+                    ws2.column_dimensions[chr(64+ci)].width = w
+                return r2
 
-            rc = 1
-            wsc.merge_cells(f"A{rc}:B{rc}")
-            hdr(wsc, rc, 1, "FURNACE PARAMETERS", size=10)
-            rc += 1
+            # ── Sheet: 10 T RHF ──────────────────────────────────────────
+            ws_rhf = wb.create_sheet("10 T RHF", 0)
+            ws_rhf.column_dimensions["A"].width = 36
+            ws_rhf.column_dimensions["B"].width = 18
+            ws_rhf.column_dimensions["C"].width = 14
+            ws_rhf.column_dimensions["D"].width = 16
+            ws_rhf.column_dimensions["E"].width = 14
+            r2 = 1
+            # Furnace dims
+            fd = supp.get("furnace_dimensions", {})
+            ws_rhf.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws_rhf, r2, 1, "FURNACE DIMENSIONS", size=10); r2 += 1
+            cell(ws_rhf, r2, 1, "Furnace Internal Dim.", bold=True, bg=GREY)
+            cell(ws_rhf, r2, 2, f'{fd.get("internal_L_mm","")}', bg=WHITE, align="right")
+            cell(ws_rhf, r2, 3, f'{fd.get("internal_W_mm","")}', bg=WHITE, align="right")
+            cell(ws_rhf, r2, 4, f'{fd.get("internal_H_mm","")} mm', bg=WHITE, align="right")
+            r2 += 1
+            for fv in supp.get("furnace_volumes", []):
+                cell(ws_rhf, r2, 1, fv["item"], bold=True, bg=GREY)
+                cell(ws_rhf, r2, 2, fv["value"], bg=WHITE, align="right")
+                cell(ws_rhf, r2, 3, fv["unit"], bg=WHITE); r2 += 1
+            r2 += 1
+            # MS Structure
+            ws_rhf.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws_rhf, r2, 1, "MS STRUCTURE", size=10); r2 += 1
+            for sec in supp.get("ms_structure", []):
+                cell(ws_rhf, r2, 1, sec["section"], bold=True, bg=LIGHT, fg=NAVY); r2 += 1
+                for it in sec["items"]:
+                    bg2 = GREEN_BG if it.get("highlight") else GREY
+                    cell(ws_rhf, r2, 1, it["item"], bold=it.get("highlight",False), bg=bg2)
+                    cell(ws_rhf, r2, 2, it["value"], bg=bg2, align="right"); r2 += 1
+            r2 += 1
+            # Ceramic Fibre
+            ws_rhf.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws_rhf, r2, 1, "CERAMIC FIBRE", size=10); r2 += 1
+            for cf in supp.get("ceramic_fibre", []):
+                cell(ws_rhf, r2, 1, cf["wall"], bg=GREY)
+                cell(ws_rhf, r2, 2, cf["L"], bg=WHITE, align="right")
+                cell(ws_rhf, r2, 3, cf["W"], bg=WHITE, align="right")
+                cell(ws_rhf, r2, 4, cf["thk"], bg=WHITE, align="right"); r2 += 1
+            cfs = supp.get("ceramic_fibre_summary", {})
+            cell(ws_rhf, r2, 1, "Total Rolls", bold=True, bg=GREEN_BG)
+            cell(ws_rhf, r2, 2, cfs.get("total_rolls",""), bg=GREEN_BG, align="right"); r2 += 2
+            # Door
+            ws_rhf.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws_rhf, r2, 1, "DOOR", size=10); r2 += 1
+            hdr(ws_rhf, r2, 1, "Item", size=9); hdr(ws_rhf, r2, 2, "Qty", size=9); hdr(ws_rhf, r2, 3, "Rate", size=9); hdr(ws_rhf, r2, 4, "Total", size=9); r2 += 1
+            door_total = 0
+            for d in supp.get("door", []):
+                cell(ws_rhf, r2, 1, d["item"], bg=GREY)
+                cell(ws_rhf, r2, 2, d["qty"], bg=WHITE, align="right")
+                cell(ws_rhf, r2, 3, d["rate"], bg=WHITE, align="right", num_fmt='#,##0')
+                cell(ws_rhf, r2, 4, d["total"], bg=WHITE, align="right", num_fmt='#,##0')
+                door_total += d["total"]; r2 += 1
+            cell(ws_rhf, r2, 1, "Total Door", bold=True, bg=GREEN_BG)
+            cell(ws_rhf, r2, 4, door_total, bg=GREEN_BG, align="right", num_fmt='#,##0'); r2 += 2
+            # Trolley
+            ws_rhf.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws_rhf, r2, 1, "TROLLEY / BOGIE", size=10); r2 += 1
+            hdr(ws_rhf, r2, 1, "Item", size=9); hdr(ws_rhf, r2, 2, "Qty", size=9); hdr(ws_rhf, r2, 3, "Rate", size=9); hdr(ws_rhf, r2, 4, "Total", size=9); r2 += 1
+            tr_total = 0
+            for t in supp.get("trolley_bogie", []):
+                cell(ws_rhf, r2, 1, t["item"], bg=GREY)
+                cell(ws_rhf, r2, 2, t["qty"], bg=WHITE, align="right")
+                cell(ws_rhf, r2, 3, t["rate"], bg=WHITE, align="right", num_fmt='#,##0')
+                cell(ws_rhf, r2, 4, t["total"], bg=WHITE, align="right", num_fmt='#,##0')
+                tr_total += t["total"]; r2 += 1
+            cell(ws_rhf, r2, 1, "Total Trolley/Bogie", bold=True, bg=GREEN_BG)
+            cell(ws_rhf, r2, 4, tr_total, bg=GREEN_BG, align="right", num_fmt='#,##0'); r2 += 2
+            # Refractory
+            ws_rhf.merge_cells(f"A{r2}:E{r2}")
+            hdr(ws_rhf, r2, 1, "REFRACTORY", size=10); r2 += 1
+            ref = supp.get("refractory", {})
+            for sec_name, sec_key in [("Walls","walls"),("Bogie","bogie")]:
+                cell(ws_rhf, r2, 1, sec_name, bold=True, bg=LIGHT, fg=NAVY); r2 += 1
+                sec_total = 0
+                for br in ref.get(sec_key, []):
+                    cell(ws_rhf, r2, 1, br["type"], bg=GREY)
+                    cell(ws_rhf, r2, 2, br["qty"], bg=WHITE, align="right")
+                    cell(ws_rhf, r2, 3, br.get("cost_per",""), bg=WHITE, align="right")
+                    cell(ws_rhf, r2, 4, br["total"], bg=WHITE, align="right", num_fmt='#,##0')
+                    sec_total += br["total"]; r2 += 1
+                cell(ws_rhf, r2, 1, f"Subtotal {sec_name}", bold=True, bg=GREEN_BG)
+                cell(ws_rhf, r2, 4, sec_total, bg=GREEN_BG, align="right", num_fmt='#,##0'); r2 += 1
+            for sec_name, sec_key in [("Misc (Mortar)","misc"),("Arch Bricks","arch")]:
+                cell(ws_rhf, r2, 1, sec_name, bold=True, bg=LIGHT, fg=NAVY); r2 += 1
+                for br in ref.get(sec_key, []):
+                    cell(ws_rhf, r2, 1, br["type"], bg=GREY)
+                    cell(ws_rhf, r2, 2, br["qty"], bg=WHITE, align="right")
+                    cell(ws_rhf, r2, 3, br.get("rate", br.get("cost_per","")), bg=WHITE, align="right")
+                    cell(ws_rhf, r2, 4, br["total"], bg=WHITE, align="right", num_fmt='#,##0'); r2 += 1
+
+            # ── Sheet: Calculation ────────────────────────────────────────
+            ws_calc = wb.create_sheet("Calculation", 1)
+            ws_calc.column_dimensions["A"].width = 28
+            ws_calc.column_dimensions["B"].width = 20
+            ws_calc.column_dimensions["C"].width = 14
+            r2 = 1
             fp = supp.get("furnace_params", {})
-            fp_rows = [
-                ("Furnace Capacity", f'{fp.get("furnace_capacity_tph","")} Ton/hr'),
-                ("Total Load", f'{fp.get("total_load_tonne","")} Tonne'),
-                ("Std Gas Consumption", f'{fp.get("std_gas_consumption_nm3_ton","")} Nm3/Ton'),
+            ws_calc.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_calc, r2, 1, "HEAT LOAD", size=10); r2 += 1
+            for h in supp.get("heat_load", []):
+                is_t = h["item"] in ("Total", "Gross")
+                bg2 = GREEN_BG if is_t else GREY
+                cell(ws_calc, r2, 1, h["item"], bold=is_t, bg=bg2)
+                cell(ws_calc, r2, 2, h["value"], bg=bg2, align="right", num_fmt='#,##0')
+                cell(ws_calc, r2, 3, h["unit"], bg=bg2); r2 += 1
+            r2 += 1
+            ws_calc.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_calc, r2, 1, "FURNACE PARAMETERS", size=10); r2 += 1
+            for label, val in [
+                ("Capacity", f'{fp.get("furnace_capacity_tph","")} Ton/hr'),
                 ("Fuel Consumption", f'{fp.get("fuel_consumption_nm3hr","")} Nm3/hr'),
                 ("Air Flow", f'{fp.get("air_flow_nm3hr","")} Nm3/hr'),
                 ("CFM", f'{fp.get("cfm","")}'),
-                ("Blower HP (Calc)", f'{fp.get("blower_hp_calc","")} HP'),
-                ("Blower HP (Selected)", f'{fp.get("blower_hp_selected","")} HP'),
-                ("No. of Burners", f'{fp.get("no_of_burners","")}'),
-                ("No. of Zones", f'{fp.get("no_of_zones","")}'),
-                ("Rating / Zone (kcal)", f'{fp.get("rating_per_zone_kcal","")}'),
-                ("Rating / Zone (kW)", f'{fp.get("rating_per_zone_kw","")}'),
-            ]
-            for label, val in fp_rows:
-                cell(wsc, rc, 1, label, bold=True, bg=GREY)
-                cell(wsc, rc, 2, val, bg=WHITE)
-                rc += 1
-            rc += 1
-
-            wsc.merge_cells(f"A{rc}:B{rc}")
-            hdr(wsc, rc, 1, "HEAT LOAD CALCULATION", size=10)
-            rc += 1
-            for h in supp.get("heat_load", []):
-                is_t = h["item"] in ("Total", "Gross")
-                bg = LIGHT if is_t else GREY
-                cell(wsc, rc, 1, h["item"], bold=is_t, bg=bg)
-                cell(wsc, rc, 2, f'{h["value"]:,.0f} {h["unit"]}', bg=bg, align="right")
-                rc += 1
-            rc += 1
-
-            wsc.merge_cells(f"A{rc}:B{rc}")
-            hdr(wsc, rc, 1, "PIPE SIZING", size=10)
-            rc += 1
+                ("Blower HP", f'{fp.get("blower_hp_calc","")} → {fp.get("blower_hp_selected","")} HP'),
+                ("Burners", f'{fp.get("no_of_burners","")} ({fp.get("no_of_zones","")} zones)'),
+                ("Rating/Zone", f'{fp.get("rating_per_zone_kcal","")} kcal ({fp.get("rating_per_zone_kw","")} kW)'),
+            ]:
+                cell(ws_calc, r2, 1, label, bold=True, bg=GREY)
+                cell(ws_calc, r2, 2, val, bg=WHITE); r2 += 1
+            r2 += 1
+            ws_calc.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_calc, r2, 1, "PIPE SIZING", size=10); r2 += 1
             ps = supp.get("pipe_sizing", {})
             for label, key in [("Air Zone 1","air_zone1"),("Air Zone 2","air_zone2"),("Gas Zone 1","gas_zone1"),("Gas Zone 2","gas_zone2")]:
                 p = ps.get(key, {})
-                cell(wsc, rc, 1, f'{label}: Flow', bold=True, bg=GREY)
-                cell(wsc, rc, 2, f'{p.get("flow_nm3hr","")} Nm3/hr @ {p.get("velocity_ms","")} m/s -> {p.get("inner_dia_mm","")} mm', bg=WHITE)
-                rc += 1
-            rc += 1
+                cell(ws_calc, r2, 1, label, bold=True, bg=GREY)
+                cell(ws_calc, r2, 2, f'{p.get("flow_nm3hr","")} Nm3/hr @ {p.get("velocity_ms","")} m/s', bg=WHITE)
+                cell(ws_calc, r2, 3, f'd = {p.get("inner_dia_mm","")} mm', bg=WHITE); r2 += 1
+            r2 += 1
+            ws_calc.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_calc, r2, 1, "GAS CONSUMPTION", size=10); r2 += 1
+            for g in supp.get("gas_consumption", []):
+                bg2 = GREEN_BG if "Guarantee" in g["item"] else GREY
+                cell(ws_calc, r2, 1, g["item"], bold="Guarantee" in g["item"], bg=bg2)
+                cell(ws_calc, r2, 2, g["value"], bg=bg2); r2 += 1
+            r2 += 1
+            ws_calc.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_calc, r2, 1, "GEAR BOX", size=10); r2 += 1
+            for g in supp.get("gear_box", []):
+                cell(ws_calc, r2, 1, g["item"], bold=True, bg=GREY)
+                cell(ws_calc, r2, 2, g["value"], bg=WHITE); r2 += 1
 
-            wsc.merge_cells(f"A{rc}:B{rc}")
-            hdr(wsc, rc, 1, "RECUPERATOR", size=10)
-            rc += 1
+            # ── Sheet: Recuperator ────────────────────────────────────────
+            ws_rec = wb.create_sheet("Recuperator", 2)
+            ws_rec.column_dimensions["A"].width = 36
+            ws_rec.column_dimensions["B"].width = 18
+            ws_rec.column_dimensions["C"].width = 14
+            r2 = 1
             rcp = supp.get("recuperator", {})
-            rcp_rows = [
-                ("Flue Gas Flow", f'{rcp.get("total_flue_gas_nm3hr","")} Nm3/hr'),
-                ("Flue Gas Mass", f'{rcp.get("total_mass_flue_gas_kghr","")} Kg/hr'),
-                ("Flue Gas Temp (In/Out)", f'{rcp.get("initial_temp_flue_gas_c","")} / {rcp.get("final_temp_flue_gas_c","")} C'),
-                ("Air Volume", f'{rcp.get("air_volume_nm3hr","")} Nm3/hr'),
-                ("Air Temp (In/Out)", f'{rcp.get("initial_air_temp_c","")} / {rcp.get("final_air_temp_c","")} C'),
-                ("Heat Required", f'{rcp.get("heat_required_kcal","")} kcal'),
-                ("LMTD", f'{rcp.get("lmtd_c","")} C'),
-                ("Surface Area", f'{rcp.get("surface_area_m2","")} m2'),
-                ("Pipes", f'{rcp.get("pipes_total","")} ({rcp.get("pipes_per_row","")}) x {rcp.get("pipes_per_column","")}'),
-                ("Pipe Dia x Length", f'{rcp.get("pipe_dia_mm","")} mm x {rcp.get("pipe_length_m","")} m'),
-                ("Hot Bank Weight", f'{rcp.get("hot_bank_weight_kg","")} Kg'),
+            ws_rec.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_rec, r2, 1, "RECUPERATOR CALCULATION", size=10); r2 += 1
+            rec_rows = [
+                ("Total Flue Gas", f'{rcp.get("total_flue_gas_nm3hr","")}', "Nm3/Hr"),
+                ("Total Mass of Flue Gas", f'{rcp.get("total_mass_flue_gas_kghr","")}', "Kg/Hr"),
+                ("Specific Heat of Flue Gas", f'{rcp.get("specific_heat_flue_gas","")}', "Kcal/Kg-C"),
+                ("Initial Temp of Flue Gas", f'{rcp.get("initial_temp_flue_gas_c","")}', "°C"),
+                ("Final Temp of Flue Gas", f'{rcp.get("final_temp_flue_gas_c","")}', "°C"),
+                ("Heat Transfer Coefficient", f'{rcp.get("heat_transfer_coeff","")}', "Kcal/m2-C"),
+                ("Volume of Combustion Air", f'{rcp.get("air_volume_nm3hr","")}', "Nm3/Hr"),
+                ("Initial Temp of Air", f'{rcp.get("initial_air_temp_c","")}', "°C"),
+                ("Final Temp of Air", f'{rcp.get("final_air_temp_c","")}', "°C"),
+                ("Specific Heat of Air", f'{rcp.get("specific_heat_air","")}', "Kcal/Kg-C"),
+                ("Heat Required By Combustion Air", f'{rcp.get("heat_required_kcal","")}', "Kcal"),
+                ("Logarithmic Mean Temp Diff", f'{rcp.get("lmtd_c","")}', "°C"),
+                ("Surface Area of Recuperator", f'{rcp.get("surface_area_m2","")}', "mtr2"),
+                ("Pipes in Row × Column", f'{rcp.get("pipes_per_row","")} × {rcp.get("pipes_per_column","")}', f'= {rcp.get("pipes_total","")}'),
             ]
-            for label, val in rcp_rows:
-                cell(wsc, rc, 1, label, bold=True, bg=GREY)
-                cell(wsc, rc, 2, val, bg=WHITE)
-                rc += 1
+            for label, val, unit in rec_rows:
+                cell(ws_rec, r2, 1, label, bold=True, bg=GREY)
+                cell(ws_rec, r2, 2, val, bg=WHITE, align="right")
+                cell(ws_rec, r2, 3, unit, bg=WHITE); r2 += 1
+            r2 += 1
+            ws_rec.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_rec, r2, 1, "HOT BANK (SS 304)", size=10); r2 += 1
+            for label, val, unit in [
+                ("Pipe Diameter", rcp.get("pipe_dia_mm",""), "mm"),
+                ("Pipe Length", rcp.get("pipe_length_m",""), "mtr"),
+                ("Pipe Thickness", rcp.get("pipe_thickness_mm",""), "mm"),
+                ("Weight per Pipe", rcp.get("pipe_weight_kg_m",""), "Kg/Mtr"),
+                ("Total Weight Hot Bank", rcp.get("hot_bank_weight_kg",""), "Kg"),
+            ]:
+                cell(ws_rec, r2, 1, label, bg=GREY)
+                cell(ws_rec, r2, 2, val, bg=WHITE, align="right")
+                cell(ws_rec, r2, 3, unit, bg=WHITE); r2 += 1
+            r2 += 1
+            ws_rec.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_rec, r2, 1, f'COLD BANK ({rcp.get("cold_bank_material","")})', size=10); r2 += 1
+            for label, val, unit in [
+                ("Pipe Diameter", rcp.get("cold_bank_dia_mm",""), "mm"),
+                ("Pipe Length", rcp.get("cold_bank_length_m",""), "mtr"),
+                ("Pipe Thickness", rcp.get("cold_bank_thickness_mm",""), "mm"),
+                ("Weight per Pipe", rcp.get("cold_bank_weight_kg_m",""), "Kg/Mtr"),
+                ("Total Weight Cold Bank", rcp.get("cold_bank_total_wt_kg",""), "Kg"),
+            ]:
+                cell(ws_rec, r2, 1, label, bg=GREY)
+                cell(ws_rec, r2, 2, val, bg=WHITE, align="right")
+                cell(ws_rec, r2, 3, unit, bg=WHITE); r2 += 1
+            r2 += 1
+            ws_rec.merge_cells(f"A{r2}:C{r2}")
+            hdr(ws_rec, r2, 1, "COST OF RECUPERATOR", size=10); r2 += 1
+            cost_items = [
+                ("Cost of All Pipes", rcp.get("cost_all_pipes",0)),
+                ("MS Outer Shell", rcp.get("cost_ms_outer_shell",0)),
+                ("MS Combustion Air Inlet", rcp.get("cost_ms_combustion_air_inlet",0)),
+                ("MS Channel 150×75×10", rcp.get("cost_ms_channel_150x75",0)),
+                ("Angle 65×25 mtr", rcp.get("cost_angle_65",0)),
+                ("Angle 75×10 mtr", rcp.get("cost_angle_75",0)),
+                ("Angle 50×15 mtr", rcp.get("cost_angle_50",0)),
+            ]
+            for label, val in cost_items:
+                cell(ws_rec, r2, 1, label, bg=GREY)
+                cell(ws_rec, r2, 2, val, bg=WHITE, align="right", num_fmt='#,##0')
+                cell(ws_rec, r2, 3, "Rs", bg=WHITE); r2 += 1
+            cell(ws_rec, r2, 1, "Total Material Cost", bold=True, bg=GREEN_BG)
+            cell(ws_rec, r2, 2, rcp.get("cost_total_material",0), bg=GREEN_BG, align="right", num_fmt='#,##0'); r2 += 1
+            for label, val in [
+                ("Bending of Pipes", rcp.get("cost_pipe_bending",0)),
+                ("Welding Rod", rcp.get("cost_welding_rod",0)),
+                ("Hole Fabrication", rcp.get("cost_hole_fabrication",0)),
+                ("Thermocouple with TT", rcp.get("cost_thermocouple_tt",0)),
+            ]:
+                cell(ws_rec, r2, 1, label, bg=GREY)
+                cell(ws_rec, r2, 2, val, bg=WHITE, align="right", num_fmt='#,##0')
+                cell(ws_rec, r2, 3, "Rs", bg=WHITE); r2 += 1
+            cell(ws_rec, r2, 1, "Total Cost of Recuperator", bold=True, bg=GREEN_BG, fg=GREEN)
+            cell(ws_rec, r2, 2, rcp.get("cost_total_recuperator",0), bg=GREEN_BG, align="right", num_fmt='₹#,##0')
+
+            # ── Sheet: Combustion ─────────────────────────────────────
+            comb_mode = cs.get("combustion_mode", "onoff")
+            comb_title = "Combustion-Massflow" if comb_mode == "massflow" else "Combustion-ONOFF"
+            ws_comb = wb.create_sheet(comb_title, 3)
+            ws_comb.column_dimensions["A"].width = 8
+            ws_comb.column_dimensions["B"].width = 40
+            ws_comb.column_dimensions["C"].width = 10
+            ws_comb.column_dimensions["D"].width = 18
+            r2 = 1
+            ws_comb.merge_cells(f"A{r2}:D{r2}")
+            hdr(ws_comb, r2, 1, f"COMBUSTION SYSTEM ({comb_title})", size=10); r2 += 1
+            hdr(ws_comb, r2, 1, "S.No.", size=9); hdr(ws_comb, r2, 2, "Control System", size=9)
+            hdr(ws_comb, r2, 3, "Qty", size=9); hdr(ws_comb, r2, 4, "Total Price", size=9); r2 += 1
+            comb_items = [b for b in req.bom if b.get("SECTION") == "Combustion System"]
+            comb_total = 0
+            for i, ci in enumerate(comb_items, 1):
+                cell(ws_comb, r2, 1, i, bg=GREY, align="right")
+                cell(ws_comb, r2, 2, ci.get("ITEM",""), bg=WHITE)
+                cell(ws_comb, r2, 3, ci.get("QTY",""), bg=WHITE, align="right")
+                cell(ws_comb, r2, 4, ci.get("COST PRICE",0), bg=WHITE, align="right", num_fmt='#,##0')
+                comb_total += ci.get("COST PRICE",0); r2 += 1
+            cell(ws_comb, r2, 2, "TOTAL", bold=True, bg=GREEN_BG)
+            cell(ws_comb, r2, 4, comb_total, bold=True, bg=GREEN_BG, align="right", num_fmt='#,##0')
+
+            # Rename BOM sheet to legacy costing name
+            costing_title = "Costing with Mass flow" if comb_mode == "massflow" else "Costing with Pulse Firing"
+            ws.title = costing_title
 
         buf = io.BytesIO()
         wb.save(buf)
