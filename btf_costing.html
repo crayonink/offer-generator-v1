@@ -34,9 +34,8 @@
 
     .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     .field { display:flex; flex-direction:column; gap:6px; }
-    .field.full { grid-column:1/-1; }
     label { font-size:.8rem; font-weight:600; color:#374151; }
-    input, select { padding:9px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:.9rem; font-family:inherit; outline:none; color:#1e293b; background:#f8fafc; transition:border .15s,background .15s; }
+    input, select { padding:9px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:.9rem; font-family:inherit; outline:none; color:#1e293b; background:#f8fafc; }
     input:focus, select:focus { border-color:var(--navy); background:#fff; }
     .hint { font-size:.72rem; color:#94a3b8; }
 
@@ -44,8 +43,6 @@
     .btn-primary:hover { opacity:.92; transform:translateY(-1px); }
     .btn-back { padding:10px 22px; border:1.5px solid var(--border); border-radius:10px; background:var(--card); color:#374151; font-size:.88rem; font-weight:600; font-family:inherit; cursor:pointer; }
     .btn-back:hover { background:#f1f5f9; }
-    .btn-download { padding:11px 28px; border:none; border-radius:10px; cursor:pointer; font-size:.92rem; font-weight:700; font-family:inherit; background:linear-gradient(135deg,#059669 0%,#047857 100%); color:#fff; box-shadow:0 2px 8px rgba(5,150,105,.3); display:inline-flex; align-items:center; gap:8px; transition:opacity .15s; }
-    .btn-download:hover { opacity:.92; }
     .step-nav { display:flex; gap:12px; margin-top:20px; align-items:center; }
 
     .cost-banner { position:relative; overflow:hidden; background:linear-gradient(135deg,var(--navy2) 0%,var(--navy) 55%,#1e4a7a 100%); border-radius:16px; padding:28px 36px; color:#fff; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; box-shadow:0 8px 32px rgba(15,39,68,.38); margin-bottom:20px; }
@@ -57,25 +54,34 @@
     .banner-value.sell { color:#86efac; }
     .banner-sub { font-size:.8rem; opacity:.6; margin-top:2px; }
 
-    .calc-table { width:100%; border-collapse:collapse; font-size:.88rem; }
-    .calc-table tr { border-bottom:1px solid #f1f5f9; }
-    .calc-table td { padding:8px 12px; }
-    .calc-table td:first-child { color:var(--muted); font-size:.83rem; font-weight:500; }
-    .calc-table td:last-child { font-weight:600; color:#1d4ed8; text-align:right; background:#eff6ff; border-radius:6px; }
-    .calc-table tr.total td { background:#e2efda !important; font-weight:700; color:#375623; }
-    .calc-table tr.total td:first-child { color:#375623; }
-
-    .bom-wrap { overflow-x:auto; margin-top:16px; border-radius:10px; border:1px solid var(--border); }
-    .bom-table { width:100%; border-collapse:collapse; font-size:.82rem; min-width:800px; }
-    .bom-table thead tr { background:linear-gradient(90deg,var(--navy2) 0%,var(--navy) 100%); }
-    .bom-table thead th { padding:10px 12px; text-align:left; font-size:.74rem; font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
-    .bom-table thead th.num { text-align:right; }
-    .bom-table tbody tr { border-bottom:1px solid #f1f5f9; }
-    .bom-table tbody tr:hover { background:#f8fafc; }
-    .bom-table tbody td { padding:8px 12px; color:#1e293b; }
-    .bom-table tbody td.num { text-align:right; font-variant-numeric:tabular-nums; color:#475569; }
-    .bom-table tbody td.sell-total { text-align:right; font-weight:700; color:#1d4ed8; }
-    .bom-table tbody tr.section-header td { background:#f8fafc; font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; padding:7px 12px; }
+    /* ── Excel Workbook UI ── */
+    .xl-workbook { border:1px solid #bfbfbf; border-radius:0; background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.12); font-family:'Calibri','Inter',sans-serif; margin-bottom:20px; overflow:hidden; }
+    .xl-titlebar { background:#217346; color:#fff; padding:6px 14px; font-size:.8rem; font-weight:600; letter-spacing:.2px; display:flex; align-items:center; gap:8px; }
+    .xl-titlebar .xl-logo { background:#fff; color:#217346; font-weight:900; font-size:.65rem; padding:2px 5px; border-radius:2px; }
+    .xl-formulabar { background:#f2f2f2; border-bottom:1px solid #d0d0d0; display:flex; align-items:center; height:26px; }
+    .xl-namebox { width:72px; min-width:72px; background:#fff; border-right:1px solid #d0d0d0; font-size:.75rem; color:#333; text-align:center; padding:0 6px; height:100%; display:flex; align-items:center; justify-content:center; }
+    .xl-fx { color:#217346; font-size:.78rem; font-style:italic; font-weight:700; padding:0 8px; border-right:1px solid #d0d0d0; height:100%; display:flex; align-items:center; }
+    .xl-formulainput { flex:1; font-size:.78rem; color:#333; padding:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .xl-content { overflow-x:auto; background:#fff; }
+    .xl-grid { border-collapse:collapse; font-size:.8rem; font-family:'Calibri',sans-serif; width:100%; min-width:600px; }
+    .xl-grid .xl-col-header { background:#f2f2f2; color:#666; font-weight:600; font-size:.72rem; text-align:center; border:1px solid #d0d0d0; padding:2px 8px; min-width:40px; }
+    .xl-grid .xl-row-num { background:#f2f2f2; color:#666; font-size:.72rem; text-align:right; border:1px solid #d0d0d0; padding:2px 6px; min-width:32px; user-select:none; }
+    .xl-grid td { border:1px solid #d0d0d0; padding:2px 8px; white-space:nowrap; height:20px; vertical-align:middle; }
+    .xl-grid td.xl-r { text-align:right; font-variant-numeric:tabular-nums; }
+    .xl-grid tr.xl-section td { background:#d9e1f2; font-weight:700; font-size:.78rem; color:#1a3a5c; }
+    .xl-grid tr.xl-label td { background:#e2efda; font-weight:600; }
+    .xl-grid tr.xl-total td { background:#e2efda; font-weight:700; color:#375623; }
+    .xl-grid tr.xl-highlight td { background:#fff2cc; font-weight:700; }
+    .xl-grid tr:hover td { background:#e8f4ff; }
+    .xl-grid tr.xl-section:hover td { background:#c6d0e8; }
+    .xl-grid tr.xl-total:hover td { background:#c8e0b5; }
+    .xl-tabs { background:#d0d0d0; border-top:1px solid #bfbfbf; display:flex; align-items:flex-end; padding:0 4px; overflow-x:auto; scrollbar-width:none; }
+    .xl-tabs::-webkit-scrollbar { display:none; }
+    .xl-tab { padding:5px 16px 4px; font-size:.76rem; font-weight:600; cursor:pointer; background:#bdbdbd; color:#444; border:1px solid #aeaeae; border-bottom:none; border-radius:3px 3px 0 0; margin-right:2px; font-family:'Calibri','Inter',sans-serif; white-space:nowrap; transition:background .12s; user-select:none; margin-top:4px; }
+    .xl-tab:hover { background:#d4d4d4; color:#222; }
+    .xl-tab.active { background:#fff; color:#217346; border-color:#bfbfbf; margin-top:0; padding-top:7px; }
+    .xl-sheet { display:none; }
+    .xl-sheet.active { display:block; }
 
     .summary-card { background:var(--card); border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,.05); padding:24px; margin-top:20px; max-width:450px; margin-left:auto; }
     .summary-card table { width:100%; }
@@ -104,9 +110,8 @@
   <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
   <div class="step-tabs">
     <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Configuration</div>
-    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace Calc</div>
-    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Pipe &amp; Recuperator</div>
-    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>BOM &amp; Costing</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Calculations</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>BOM &amp; Costing</div>
   </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
@@ -145,83 +150,73 @@
     </div>
   </div>
 
-  <!-- ═══ STEP 2: Furnace Calculation ═══ -->
+  <!-- ═══ STEP 2: All Calculations in Excel Workbook ═══ -->
   <div class="step" id="step-2">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Quoted Price</div><div class="banner-value" id="b2-quoted">--</div></div>
       <div class="banner-block"><div class="banner-label">Cost Price</div><div class="banner-value sell" id="b2-cost">--</div><div class="banner-sub" id="b2-sell">Sell: --</div></div>
     </div>
-    <div class="card">
-      <div class="card-title">Furnace Parameters</div>
-      <table class="calc-table" id="tbl-params"></table>
+
+    <div class="xl-workbook">
+      <div class="xl-titlebar"><span class="xl-logo">X</span><span>BTF Calculation — ENCON</span></div>
+      <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
+      <div class="xl-content">
+        <div class="xl-sheet active" id="xl-furnace"></div>
+        <div class="xl-sheet" id="xl-heatload"></div>
+        <div class="xl-sheet" id="xl-pipe-air"></div>
+        <div class="xl-sheet" id="xl-pipe-gas"></div>
+        <div class="xl-sheet" id="xl-recup"></div>
+      </div>
+      <div class="xl-tabs">
+        <div class="xl-tab active" onclick="xlTab('xl-furnace',this)">Furnace Parameters</div>
+        <div class="xl-tab" onclick="xlTab('xl-heatload',this)">Heat Load</div>
+        <div class="xl-tab" onclick="xlTab('xl-pipe-air',this)">Air Pipe Sizing</div>
+        <div class="xl-tab" onclick="xlTab('xl-pipe-gas',this)">Gas Pipe Sizing</div>
+        <div class="xl-tab" onclick="xlTab('xl-recup',this)">Recuperator</div>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-title">Heat Load Calculation</div>
-      <table class="calc-table" id="tbl-heatload"></table>
-    </div>
+
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(1)">← Back</button>
-      <button class="btn-primary" onclick="goStep(3)">Next: Pipe &amp; Recuperator →</button>
+      <button class="btn-primary" onclick="goStep(3)">Next: BOM &amp; Costing →</button>
     </div>
   </div>
 
-  <!-- ═══ STEP 3: Pipe Sizing & Recuperator ═══ -->
+  <!-- ═══ STEP 3: BOM & Costing ═══ -->
   <div class="step" id="step-3">
-    <div class="card">
-      <div class="card-title">Pipe Sizing — Air</div>
-      <table class="calc-table" id="tbl-pipe-air"></table>
-    </div>
-    <div class="card">
-      <div class="card-title">Pipe Sizing — Gas</div>
-      <table class="calc-table" id="tbl-pipe-gas"></table>
-    </div>
-    <div class="card">
-      <div class="card-title">Recuperator Calculation</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-        <table class="calc-table" id="tbl-recup-thermal"></table>
-        <table class="calc-table" id="tbl-recup-physical"></table>
-      </div>
-    </div>
-    <div class="step-nav">
-      <button class="btn-back" onclick="goStep(2)">← Back</button>
-      <button class="btn-primary" onclick="goStep(4)">Next: BOM &amp; Costing →</button>
-    </div>
-  </div>
-
-  <!-- ═══ STEP 4: BOM & Costing ═══ -->
-  <div class="step" id="step-4">
     <div class="cost-banner">
-      <div class="banner-block"><div class="banner-label">Quoted Price</div><div class="banner-value" id="b4-quoted">--</div></div>
-      <div class="banner-block"><div class="banner-label">Cost Price</div><div class="banner-value sell" id="b4-cost">--</div><div class="banner-sub" id="b4-sell">Sell: --</div></div>
+      <div class="banner-block"><div class="banner-label">Quoted Price</div><div class="banner-value" id="b3-quoted">--</div></div>
+      <div class="banner-block"><div class="banner-label">Cost Price</div><div class="banner-value sell" id="b3-cost">--</div><div class="banner-sub" id="b3-sell">Sell: --</div></div>
     </div>
-    <div class="card">
-      <div class="card-title">Bill of Materials</div>
-      <div class="bom-wrap">
-        <table class="bom-table">
-          <thead><tr>
-            <th>Section</th><th>Item</th><th class="num">Qty</th><th>Unit</th>
-            <th class="num">Unit Price</th><th class="num">Cost Price</th><th class="num">Sell Price</th>
-          </tr></thead>
-          <tbody id="bom-body"></tbody>
-        </table>
+
+    <div class="xl-workbook">
+      <div class="xl-titlebar"><span class="xl-logo">X</span><span>BTF Bill of Materials — ENCON</span></div>
+      <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
+      <div class="xl-content">
+        <div class="xl-sheet active" id="xl-bom"></div>
       </div>
-      <div class="summary-card">
-        <table>
-          <tr><td>Structure Cost</td><td id="s-structure">--</td></tr>
-          <tr><td>Combustion System</td><td id="s-combustion">--</td></tr>
-          <tr><td><b>Total Cost</b></td><td id="s-total-cost">--</td></tr>
-          <tr><td>Sell Price</td><td id="s-sell">--</td></tr>
-          <tr><td>Designing (10%)</td><td id="s-designing">--</td></tr>
-          <tr><td>Negotiation (10%)</td><td id="s-negotiation">--</td></tr>
-          <tr class="grand"><td><b>Quoted Price</b></td><td id="s-quoted">--</td></tr>
-        </table>
-        <div style="display:flex;gap:12px;margin-top:16px">
-          <button class="btn-download" style="flex:1" onclick="downloadExcel()">Download Excel</button>
-        </div>
+      <div class="xl-tabs">
+        <div class="xl-tab active">BOM & Costing</div>
       </div>
     </div>
+
+    <div class="summary-card">
+      <table>
+        <tr><td>Structure Cost</td><td id="s-structure">--</td></tr>
+        <tr><td>Combustion System</td><td id="s-combustion">--</td></tr>
+        <tr><td><b>Total Cost</b></td><td id="s-total-cost">--</td></tr>
+        <tr><td>Sell Price</td><td id="s-sell">--</td></tr>
+        <tr><td>Designing (10%)</td><td id="s-designing">--</td></tr>
+        <tr><td>Negotiation (10%)</td><td id="s-negotiation">--</td></tr>
+        <tr class="grand"><td><b>Quoted Price</b></td><td id="s-quoted">--</td></tr>
+      </table>
+      <div style="margin-top:16px">
+        <button onclick="downloadExcel()" style="width:100%;padding:11px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">&#8659; Download Excel</button>
+      </div>
+    </div>
+
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(3)">← Back to Calculations</button>
+      <button class="btn-back" onclick="goStep(2)">← Back to Calculations</button>
     </div>
   </div>
 
@@ -232,16 +227,31 @@ const API="";
 const fmt=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
 const fmt2=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:2}).format(n);
 let lastData=null;
+const STEPS=[1,2,3];
 
 function goStep(n){
-  [1,2,3,4].forEach(i=>{
+  STEPS.forEach(i=>{
     document.getElementById('step-'+i).classList.toggle('active',i===n);
     const t=document.getElementById('tab-'+i);t.classList.remove('active','done');
     if(i===n)t.classList.add('active');else if(i<n)t.classList.add('done');
   });
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function kv(rows){return rows.map(([l,v])=>`<tr><td>${l}</td><td>${v}</td></tr>`).join("");}
+
+function xlTab(sheetId,btn){
+  const wb=btn.closest('.xl-workbook');
+  wb.querySelectorAll('.xl-sheet').forEach(s=>s.classList.remove('active'));
+  wb.querySelectorAll('.xl-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(sheetId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function xlRow(n,cells,cls){
+  return `<tr${cls?' class="'+cls+'"':''}>
+    <td class="xl-row-num">${n}</td>
+    ${cells.map(([v,r])=>`<td${r?' class="xl-r"':''}>${v}</td>`).join('')}
+  </tr>`;
+}
 
 async function calculate(){
   const mode=document.getElementById("combustion-mode").value;
@@ -257,55 +267,103 @@ async function calculate(){
 
 function renderAll(data){
   const sp=data.supplementary,fp=sp.furnace_params,fd=sp.furnace_dimensions,s=data.cost_summary;
+  const colHdr=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td></tr>`;
 
-  ["b2","b4"].forEach(p=>{
+  // Banners
+  ["b2","b3"].forEach(p=>{
     document.getElementById(p+"-quoted").textContent="\u20B9 "+fmt(s.quoted_price);
     document.getElementById(p+"-cost").textContent="\u20B9 "+fmt(s.total_cost);
     document.getElementById(p+"-sell").textContent="Sell: \u20B9 "+fmt(s.sell_price);
   });
 
-  document.getElementById("tbl-params").innerHTML=`<tr><th colspan="2" style="text-align:left;padding:8px 12px;font-size:.75rem;color:var(--navy)">Specification</th></tr>${kv([
-    ["Furnace Internal (L\u00D7W\u00D7H)",`${fd.internal_L_mm} \u00D7 ${fd.internal_W_mm} \u00D7 ${fd.internal_H_mm} mm`],
-    ["Furnace Capacity",`${fp.furnace_capacity_tph} Ton/hr`],["Total Load",`${fp.total_load_tonne} Tonne`],
-    ["Std Gas Consumption",`${fp.std_gas_consumption_nm3_ton} Nm\u00B3/Ton`],["Fuel Consumption",`${fp.fuel_consumption_nm3hr} Nm\u00B3/hr`],
-    ["Air Flow",`${fmt(fp.air_flow_nm3hr)} Nm\u00B3/hr`],["CFM",`${fmt2(fp.cfm)}`],
-    ["Blower HP (Calc / Selected)",`${fmt2(fp.blower_hp_calc)} / ${fp.blower_hp_selected} HP`],
-    ["Burners",`${fp.no_of_burners} (Zone 1: ${fp.heating_zone_1_burners}, Zone 2: ${fp.heating_zone_2_burners})`],
-    ["Rating / Zone",`${fmt(fp.rating_per_zone_kcal)} kcal (${fmt2(fp.rating_per_zone_kw)} kW)`],
-  ])}`;
+  // Furnace Parameters
+  const fpRows=[
+    ["Furnace Internal Dimensions",`${fd.internal_L_mm} \u00D7 ${fd.internal_W_mm} \u00D7 ${fd.internal_H_mm}`,`mm`],
+    ["Furnace Capacity",`${fp.furnace_capacity_tph}`,`Ton/hr`],
+    ["Total Load",`${fp.total_load_tonne}`,`Tonne`],
+    ["Std Gas Consumption",`${fp.std_gas_consumption_nm3_ton}`,`Nm\u00B3/Ton`],
+    ["Fuel Consumption",`${fp.fuel_consumption_nm3hr}`,`Nm\u00B3/hr`],
+    ["Air Flow",`${fmt(fp.air_flow_nm3hr)}`,`Nm\u00B3/hr`],
+    ["CFM",`${fmt2(fp.cfm)}`,``],
+    ["Blower HP (Calculated)",`${fmt2(fp.blower_hp_calc)}`,`HP`],
+    ["Blower HP (Selected)",`${fp.blower_hp_selected}`,`HP`],
+    ["No. of Burners",`${fp.no_of_burners}`,`Nos`],
+    ["No. of Zones",`${fp.no_of_zones}`,``],
+    ["Heating Zone 1",`${fp.heating_zone_1_burners}`,`burners`],
+    ["Heating Zone 2",`${fp.heating_zone_2_burners}`,`burners`],
+    ["Rating / Zone",`${fmt(fp.rating_per_zone_kcal)}`,`kcal`],
+    ["Rating / Zone (kW)",`${fmt2(fp.rating_per_zone_kw)}`,`kW`],
+  ];
+  document.getElementById("xl-furnace").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(1,[["FURNACE PARAMETERS",""],["",""],["",""]],"xl-section")}
+    ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
+    ${fpRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]])).join("")}
+  </table>`;
 
-  document.getElementById("tbl-heatload").innerHTML=sp.heat_load.map(h=>
-    `<tr class="${h.item==='Total'||h.item==='Gross'?'total':''}"><td>${h.item}</td><td>${fmt(h.value)} kcal</td></tr>`).join("");
+  // Heat Load
+  document.getElementById("xl-heatload").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(1,[["HEAT LOAD CALCULATION",""],["",""],["",""]],"xl-section")}
+    ${xlRow(2,[["Component",""],["Value",true],["Unit",true]],"xl-label")}
+    ${sp.heat_load.map((h,i)=>xlRow(i+3,[[h.item,""],[fmt(h.value),true],[h.unit,true]],h.item==="Total"||h.item==="Gross"?"xl-total":"")).join("")}
+  </table>`;
 
+  // Air Pipe
   const pa=sp.pipe_sizing;
-  document.getElementById("tbl-pipe-air").innerHTML=`
-    <tr><td>Flow (Nm\u00B3/hr)</td><td>Zone 1: ${fmt2(pa.air_zone1.flow_nm3hr)} &nbsp;|&nbsp; Zone 2: ${fmt2(pa.air_zone2.flow_nm3hr)}</td></tr>
-    <tr><td>Velocity (m/s)</td><td>Zone 1: ${pa.air_zone1.velocity_ms} &nbsp;|&nbsp; Zone 2: ${pa.air_zone2.velocity_ms}</td></tr>
-    <tr><td>Inner Dia (mm)</td><td>Zone 1: ${fmt2(pa.air_zone1.inner_dia_mm)} &nbsp;|&nbsp; Zone 2: ${fmt2(pa.air_zone2.inner_dia_mm)}</td></tr>`;
-  document.getElementById("tbl-pipe-gas").innerHTML=`
-    <tr><td>Flow (Nm\u00B3/hr)</td><td>Zone 1: ${fmt2(pa.gas_zone1.flow_nm3hr)} &nbsp;|&nbsp; Zone 2: ${fmt2(pa.gas_zone2.flow_nm3hr)}</td></tr>
-    <tr><td>Velocity (m/s)</td><td>Zone 1: ${pa.gas_zone1.velocity_ms} &nbsp;|&nbsp; Zone 2: ${pa.gas_zone2.velocity_ms}</td></tr>
-    <tr><td>Inner Dia (mm)</td><td>Zone 1: ${fmt2(pa.gas_zone1.inner_dia_mm)} &nbsp;|&nbsp; Zone 2: ${fmt2(pa.gas_zone2.inner_dia_mm)}</td></tr>`;
+  document.getElementById("xl-pipe-air").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(1,[["AIR PIPE SIZING",""],["",""],["",""]],"xl-section")}
+    ${xlRow(2,[["Parameter",""],["Zone 1",true],["Zone 2",true]],"xl-label")}
+    ${xlRow(3,[["Flow (Nm\u00B3/hr)",""],[fmt2(pa.air_zone1.flow_nm3hr),true],[fmt2(pa.air_zone2.flow_nm3hr),true]])}
+    ${xlRow(4,[["Velocity (m/s)",""],[pa.air_zone1.velocity_ms,true],[pa.air_zone2.velocity_ms,true]])}
+    ${xlRow(5,[["Inner Dia (mm)",""],[fmt2(pa.air_zone1.inner_dia_mm),true],[fmt2(pa.air_zone2.inner_dia_mm),true]],"xl-highlight")}
+  </table>`;
 
+  // Gas Pipe
+  document.getElementById("xl-pipe-gas").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(1,[["GAS PIPE SIZING",""],["",""],["",""]],"xl-section")}
+    ${xlRow(2,[["Parameter",""],["Zone 1",true],["Zone 2",true]],"xl-label")}
+    ${xlRow(3,[["Flow (Nm\u00B3/hr)",""],[fmt2(pa.gas_zone1.flow_nm3hr),true],[fmt2(pa.gas_zone2.flow_nm3hr),true]])}
+    ${xlRow(4,[["Velocity (m/s)",""],[pa.gas_zone1.velocity_ms,true],[pa.gas_zone2.velocity_ms,true]])}
+    ${xlRow(5,[["Inner Dia (mm)",""],[fmt2(pa.gas_zone1.inner_dia_mm),true],[fmt2(pa.gas_zone2.inner_dia_mm),true]],"xl-highlight")}
+  </table>`;
+
+  // Recuperator
   const rc=sp.recuperator;
-  document.getElementById("tbl-recup-thermal").innerHTML=kv([
-    ["Flue Gas Flow",`${fmt(rc.total_flue_gas_nm3hr)} Nm\u00B3/hr`],["Flue Gas Mass",`${fmt(rc.total_mass_flue_gas_kghr)} Kg/hr`],
-    ["Flue Gas Temp (In/Out)",`${rc.initial_temp_flue_gas_c} / ${fmt2(rc.final_temp_flue_gas_c)} \u00B0C`],
-    ["Air Volume",`${fmt(rc.air_volume_nm3hr)} Nm\u00B3/hr`],["Air Temp (In/Out)",`${rc.initial_air_temp_c} / ${rc.final_air_temp_c} \u00B0C`],
-    ["Heat Required",`${fmt(rc.heat_required_kcal)} kcal`],["LMTD",`${fmt2(rc.lmtd_c)} \u00B0C`],["Surface Area",`${fmt2(rc.surface_area_m2)} m\u00B2`],
-  ]);
-  document.getElementById("tbl-recup-physical").innerHTML=kv([
-    ["Bank (L\u00D7W)",`${rc.bank_length_mm} \u00D7 ${rc.bank_width_mm} mm`],["Bank Gap",`${rc.bank_gap_mm} mm`],
-    ["Pipes",`${rc.pipes_total} (${rc.pipes_per_row}\u00D7${rc.pipes_per_column})`],
-    ["Pipe Dia\u00D7Length",`${rc.pipe_dia_mm} mm \u00D7 ${rc.pipe_length_m} m`],
-    ["Pipe Thickness",`${rc.pipe_thickness_mm} mm`],["Hot Bank Weight",`${fmt2(rc.hot_bank_weight_kg)} Kg`],
-  ]);
+  const rcRows=[
+    ["Total Flue Gas",`${fmt(rc.total_flue_gas_nm3hr)}`,`Nm\u00B3/hr`],
+    ["Mass of Flue Gas",`${fmt(rc.total_mass_flue_gas_kghr)}`,`Kg/hr`],
+    ["Sp. Heat (Flue Gas)",`${rc.specific_heat_flue_gas}`,`kcal/Kg-C`],
+    ["Flue Gas Temp (In)",`${rc.initial_temp_flue_gas_c}`,`\u00B0C`],
+    ["Flue Gas Temp (Out)",`${fmt2(rc.final_temp_flue_gas_c)}`,`\u00B0C`],
+    ["Heat Transfer Coeff",`${rc.heat_transfer_coeff}`,`kcal/m\u00B2-C`],
+    ["Air Volume",`${fmt(rc.air_volume_nm3hr)}`,`Nm\u00B3/hr`],
+    ["Air Temp (In)",`${rc.initial_air_temp_c}`,`\u00B0C`],
+    ["Air Temp (Out)",`${rc.final_air_temp_c}`,`\u00B0C`],
+    ["Heat Required",`${fmt(rc.heat_required_kcal)}`,`kcal`],
+    ["LMTD",`${fmt2(rc.lmtd_c)}`,`\u00B0C`],
+    ["Surface Area",`${fmt2(rc.surface_area_m2)}`,`m\u00B2`],
+    ["Bank L \u00D7 W",`${rc.bank_length_mm} \u00D7 ${rc.bank_width_mm}`,`mm`],
+    ["Pipes Total",`${rc.pipes_total} (${rc.pipes_per_row}\u00D7${rc.pipes_per_column})`,``],
+    ["Pipe Dia",`${rc.pipe_dia_mm}`,`mm`],
+    ["Pipe Length",`${rc.pipe_length_m}`,`m`],
+    ["Pipe Thickness",`${rc.pipe_thickness_mm}`,`mm`],
+    ["Hot Bank Weight",`${fmt2(rc.hot_bank_weight_kg)}`,`Kg`],
+  ];
+  document.getElementById("xl-recup").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(1,[["RECUPERATOR CALCULATION",""],["",""],["",""]],"xl-section")}
+    ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
+    ${rcRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]],r[0]==="Surface Area"||r[0]==="Hot Bank Weight"?"xl-highlight":"")).join("")}
+  </table>`;
 
-  let lastSec="";
-  document.getElementById("bom-body").innerHTML=data.bom.map(row=>{
-    let sh="";if(row.SECTION!==lastSec){lastSec=row.SECTION;sh=`<tr class="section-header"><td colspan="7">${row.SECTION}</td></tr>`;}
-    return sh+`<tr><td></td><td>${row.ITEM}</td><td class="num">${row.QTY}</td><td>${row.UNIT}</td><td class="num">${fmt(row["UNIT PRICE"])}</td><td class="num">${fmt(row["COST PRICE"])}</td><td class="sell-total">${fmt(row["SELL PRICE"])}</td></tr>`;
-  }).join("");
+  // BOM
+  let lastSec="",rn=0;
+  document.getElementById("xl-bom").innerHTML=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td><td class="xl-col-header">E</td><td class="xl-col-header">F</td></tr>
+    ${data.bom.map(row=>{
+      let sh="";rn++;
+      if(row.SECTION!==lastSec){lastSec=row.SECTION;rn++;sh=`<tr class="xl-section"><td class="xl-row-num">${rn-1}</td><td colspan="6">${row.SECTION}</td></tr>`;}
+      return sh+`<tr><td class="xl-row-num">${rn}</td><td>${row.ITEM}</td><td class="xl-r">${row.QTY}</td><td>${row.UNIT}</td><td class="xl-r">${fmt(row["UNIT PRICE"])}</td><td class="xl-r">${fmt(row["COST PRICE"])}</td><td class="xl-r" style="color:#1d4ed8;font-weight:700">${fmt(row["SELL PRICE"])}</td></tr>`;
+    }).join("")}
+  </table>`;
 
   document.getElementById("s-structure").textContent="\u20B9 "+fmt(s.structure_cost);
   document.getElementById("s-combustion").textContent="\u20B9 "+fmt(s.combustion_cost);

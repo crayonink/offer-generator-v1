@@ -15,7 +15,7 @@
     .brand { display:flex; align-items:center; gap:10px; font-weight:900; font-size:.95rem; color:#0f172a; letter-spacing:-.4px; margin-right:20px; }
     .brand-mark { width:28px; height:28px; background:var(--navy); border-radius:6px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.66rem; font-weight:900; flex-shrink:0; box-shadow:0 2px 6px rgba(26,58,92,.35); }
     .step-tabs { display:flex; flex:1; padding:0 8px; }
-    .step-tab { display:flex; align-items:center; gap:6px; padding:0 12px; height:56px; font-size:.8rem; font-weight:500; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; white-space:nowrap; }
+    .step-tab { display:flex; align-items:center; gap:6px; padding:0 14px; height:56px; font-size:.8rem; font-weight:500; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:color .15s,border-color .15s; white-space:nowrap; }
     .step-tab:hover { color:var(--navy); }
     .step-tab.active { color:var(--navy); border-bottom-color:var(--navy); font-weight:600; }
     .step-tab.done { color:var(--green); border-bottom-color:var(--green); }
@@ -41,8 +41,6 @@
     .btn-primary:hover { opacity:.92; transform:translateY(-1px); }
     .btn-back { padding:10px 22px; border:1.5px solid var(--border); border-radius:10px; background:var(--card); color:#374151; font-size:.88rem; font-weight:600; font-family:inherit; cursor:pointer; }
     .btn-back:hover { background:#f1f5f9; }
-    .btn-download { padding:11px 28px; border:none; border-radius:10px; cursor:pointer; font-size:.92rem; font-weight:700; font-family:inherit; background:linear-gradient(135deg,#059669 0%,#047857 100%); color:#fff; box-shadow:0 2px 8px rgba(5,150,105,.3); display:inline-flex; align-items:center; gap:8px; transition:opacity .15s; }
-    .btn-download:hover { opacity:.92; }
     .step-nav { display:flex; gap:12px; margin-top:20px; align-items:center; }
 
     .cost-banner { position:relative; overflow:hidden; background:linear-gradient(135deg,var(--navy2) 0%,var(--navy) 55%,#1e4a7a 100%); border-radius:16px; padding:28px 36px; color:#fff; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:20px; box-shadow:0 8px 32px rgba(15,39,68,.38); margin-bottom:20px; }
@@ -54,36 +52,34 @@
     .banner-value.sell { color:#86efac; }
     .banner-sub { font-size:.8rem; opacity:.6; margin-top:2px; }
 
-    .calc-table { width:100%; border-collapse:collapse; font-size:.88rem; }
-    .calc-table tr { border-bottom:1px solid #f1f5f9; }
-    .calc-table td { padding:8px 12px; }
-    .calc-table td:first-child { color:var(--muted); font-size:.83rem; font-weight:500; }
-    .calc-table td:last-child { font-weight:600; color:#1d4ed8; text-align:right; background:#eff6ff; border-radius:6px; }
-    .calc-table tr.total td { background:#e2efda !important; font-weight:700; color:#375623; }
-    .calc-table tr.total td:first-child { color:#375623; }
-    .calc-table th { text-align:left; padding:8px 12px; font-size:.75rem; color:var(--navy); background:var(--bg); border-bottom:2px solid var(--border); }
-
-    .zone-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
-    .zone-card { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
-    .zone-card h4 { font-size:.8rem; font-weight:700; color:var(--navy); margin-bottom:10px; }
-    .zone-card table { width:100%; border-collapse:collapse; font-size:.8rem; }
-    .zone-card td { padding:5px 8px; border-bottom:1px solid #e5e7eb; }
-    .zone-card td:nth-child(2) { text-align:center; color:var(--muted); }
-    .zone-card td:last-child { text-align:right; font-weight:600; color:#1d4ed8; }
-
-    .bom-wrap { overflow-x:auto; margin-top:16px; border-radius:10px; border:1px solid var(--border); }
-    .bom-table { width:100%; border-collapse:collapse; font-size:.82rem; min-width:900px; }
-    .bom-table thead tr { background:linear-gradient(90deg,var(--navy2) 0%,var(--navy) 100%); }
-    .bom-table thead th { padding:10px 12px; text-align:left; font-size:.74rem; font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
-    .bom-table thead th.num { text-align:right; }
-    .bom-table thead th.ctr { text-align:center; }
-    .bom-table tbody tr { border-bottom:1px solid #f1f5f9; }
-    .bom-table tbody tr:hover { background:#f8fafc; }
-    .bom-table tbody td { padding:8px 12px; color:#1e293b; }
-    .bom-table tbody td.num { text-align:right; font-variant-numeric:tabular-nums; color:#475569; }
-    .bom-table tbody td.ctr { text-align:center; color:var(--muted); font-weight:600; }
-    .bom-table tbody td.sell-total { text-align:right; font-weight:700; color:#1d4ed8; }
-    .bom-table tbody tr.section-header td { background:#f8fafc; font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; padding:7px 12px; }
+    /* ── Excel Workbook UI ── */
+    .xl-workbook { border:1px solid #bfbfbf; border-radius:0; background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.12); font-family:'Calibri','Inter',sans-serif; margin-bottom:20px; overflow:hidden; }
+    .xl-titlebar { background:#217346; color:#fff; padding:6px 14px; font-size:.8rem; font-weight:600; letter-spacing:.2px; display:flex; align-items:center; gap:8px; }
+    .xl-titlebar .xl-logo { background:#fff; color:#217346; font-weight:900; font-size:.65rem; padding:2px 5px; border-radius:2px; }
+    .xl-formulabar { background:#f2f2f2; border-bottom:1px solid #d0d0d0; display:flex; align-items:center; height:26px; }
+    .xl-namebox { width:72px; min-width:72px; background:#fff; border-right:1px solid #d0d0d0; font-size:.75rem; color:#333; text-align:center; padding:0 6px; height:100%; display:flex; align-items:center; justify-content:center; }
+    .xl-fx { color:#217346; font-size:.78rem; font-style:italic; font-weight:700; padding:0 8px; border-right:1px solid #d0d0d0; height:100%; display:flex; align-items:center; }
+    .xl-formulainput { flex:1; font-size:.78rem; color:#333; padding:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .xl-content { overflow-x:auto; background:#fff; }
+    .xl-grid { border-collapse:collapse; font-size:.8rem; font-family:'Calibri',sans-serif; width:100%; min-width:600px; }
+    .xl-grid .xl-col-header { background:#f2f2f2; color:#666; font-weight:600; font-size:.72rem; text-align:center; border:1px solid #d0d0d0; padding:2px 8px; min-width:40px; }
+    .xl-grid .xl-row-num { background:#f2f2f2; color:#666; font-size:.72rem; text-align:right; border:1px solid #d0d0d0; padding:2px 6px; min-width:32px; user-select:none; }
+    .xl-grid td { border:1px solid #d0d0d0; padding:2px 8px; white-space:nowrap; height:20px; vertical-align:middle; }
+    .xl-grid td.xl-r { text-align:right; font-variant-numeric:tabular-nums; }
+    .xl-grid tr.xl-section td { background:#d9e1f2; font-weight:700; font-size:.78rem; color:#1a3a5c; }
+    .xl-grid tr.xl-label td { background:#e2efda; font-weight:600; }
+    .xl-grid tr.xl-total td { background:#e2efda; font-weight:700; color:#375623; }
+    .xl-grid tr.xl-highlight td { background:#fff2cc; font-weight:700; }
+    .xl-grid tr:hover td { background:#e8f4ff; }
+    .xl-grid tr.xl-section:hover td { background:#c6d0e8; }
+    .xl-grid tr.xl-total:hover td { background:#c8e0b5; }
+    .xl-tabs { background:#d0d0d0; border-top:1px solid #bfbfbf; display:flex; align-items:flex-end; padding:0 4px; overflow-x:auto; scrollbar-width:none; }
+    .xl-tabs::-webkit-scrollbar { display:none; }
+    .xl-tab { padding:5px 16px 4px; font-size:.76rem; font-weight:600; cursor:pointer; background:#bdbdbd; color:#444; border:1px solid #aeaeae; border-bottom:none; border-radius:3px 3px 0 0; margin-right:2px; font-family:'Calibri','Inter',sans-serif; white-space:nowrap; transition:background .12s; user-select:none; margin-top:4px; }
+    .xl-tab:hover { background:#d4d4d4; color:#222; }
+    .xl-tab.active { background:#fff; color:#217346; border-color:#bfbfbf; margin-top:0; padding-top:7px; }
+    .xl-sheet { display:none; }
+    .xl-sheet.active { display:block; }
 
     .summary-card { background:var(--card); border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,.05); padding:24px; margin-top:20px; max-width:450px; margin-left:auto; }
     .summary-card table { width:100%; }
@@ -101,7 +97,6 @@
       .topnav-links { display:none; }
       .page { padding:20px 12px 60px; }
       .card { padding:18px 16px; }
-      .zone-grid { grid-template-columns:1fr; }
       .cost-banner { padding:20px; }
       .banner-value { font-size:1.4rem; }
     }
@@ -113,10 +108,8 @@
   <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
   <div class="step-tabs">
     <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Config</div>
-    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace &amp; Combustion</div>
-    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Mass Flow Control</div>
-    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Refractory</div>
-    <div class="step-tab" id="tab-5" onclick="goStep(5)"><span class="tab-n">5</span>BOM &amp; Costing</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Calculations</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>BOM &amp; Costing</div>
   </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
@@ -146,96 +139,73 @@
     </div>
   </div>
 
-  <!-- ═══ STEP 2: Furnace & Combustion ═══ -->
+  <!-- ═══ STEP 2: All Calculations in Excel Workbook ═══ -->
   <div class="step" id="step-2">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b2-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b2-cost">--</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-      <div class="card">
-        <div class="card-title">Furnace Dimensions</div>
-        <table class="calc-table" id="tbl-furnace"></table>
+
+    <div class="xl-workbook">
+      <div class="xl-titlebar"><span class="xl-logo">X</span><span>SNSF BRF 30T Calculation — ENCON</span></div>
+      <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
+      <div class="xl-content">
+        <div class="xl-sheet active" id="xl-furnace"></div>
+        <div class="xl-sheet" id="xl-recup"></div>
+        <div class="xl-sheet" id="xl-combustion"></div>
+        <div class="xl-sheet" id="xl-massflow"></div>
+        <div class="xl-sheet" id="xl-refractory"></div>
       </div>
-      <div class="card">
-        <div class="card-title">Recuperator Calculation</div>
-        <table class="calc-table" id="tbl-recup"></table>
+      <div class="xl-tabs">
+        <div class="xl-tab active" onclick="xlTab('xl-furnace',this)">Furnace</div>
+        <div class="xl-tab" onclick="xlTab('xl-recup',this)">Recuperator</div>
+        <div class="xl-tab" onclick="xlTab('xl-combustion',this)">Combustion</div>
+        <div class="xl-tab" onclick="xlTab('xl-massflow',this)">Mass Flow Control</div>
+        <div class="xl-tab" onclick="xlTab('xl-refractory',this)">Refractory</div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Combustion Equipment</div>
-      <table class="calc-table" id="tbl-combustion"></table>
-    </div>
+
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(1)">← Back</button>
-      <button class="btn-primary" onclick="goStep(3)">Next: Mass Flow Control →</button>
+      <button class="btn-primary" onclick="goStep(3)">Next: BOM &amp; Costing →</button>
     </div>
   </div>
 
-  <!-- ═══ STEP 3: Mass Flow ═══ -->
+  <!-- ═══ STEP 3: BOM ═══ -->
   <div class="step" id="step-3">
-    <div class="card">
-      <div class="card-title">Mass Flow Control — Zone-wise Breakdown</div>
-      <div class="zone-grid" id="mfc-zones"></div>
-    </div>
-    <div class="step-nav">
-      <button class="btn-back" onclick="goStep(2)">← Back</button>
-      <button class="btn-primary" onclick="goStep(4)">Next: Refractory →</button>
-    </div>
-  </div>
-
-  <!-- ═══ STEP 4: Refractory ═══ -->
-  <div class="step" id="step-4">
-    <div class="card">
-      <div class="card-title">Refractory Breakdown</div>
-      <div class="bom-wrap">
-        <table class="bom-table" id="tbl-refractory"></table>
-      </div>
-    </div>
-    <div class="step-nav">
-      <button class="btn-back" onclick="goStep(3)">← Back</button>
-      <button class="btn-primary" onclick="goStep(5)">Next: BOM &amp; Costing →</button>
-    </div>
-  </div>
-
-  <!-- ═══ STEP 5: BOM ═══ -->
-  <div class="step" id="step-5">
     <div class="cost-banner">
-      <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b5-sell">--</div></div>
-      <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b5-cost">--</div><div class="banner-sub" id="b5-main">Main Sell: --</div></div>
+      <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b3-sell">--</div></div>
+      <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b3-cost">--</div><div class="banner-sub" id="b3-main">Main Sell: --</div></div>
     </div>
-    <div class="card">
-      <div class="card-title">Bill of Materials — Cost Breakup</div>
-      <div class="bom-wrap">
-        <table class="bom-table">
-          <thead><tr>
-            <th>Section</th><th>Item</th><th class="num">Qty</th><th>Unit</th>
-            <th class="num">Unit Price</th><th class="num">Cost</th><th class="ctr">Markup</th><th class="num">Sell</th>
-          </tr></thead>
-          <tbody id="bom-body"></tbody>
-        </table>
-      </div>
-      <div class="summary-card">
-        <table>
-          <tr class="sub-head"><td colspan="2">Main Scope</td></tr>
-          <tr><td>Cost</td><td id="s-main-cost">--</td></tr>
-          <tr><td>Sell</td><td id="s-main-sell">--</td></tr>
-          <tr class="sub-head" id="ng-head" style="display:none"><td colspan="2">NG Optional</td></tr>
-          <tr id="ng-c" style="display:none"><td>Cost</td><td id="s-ng-cost">--</td></tr>
-          <tr id="ng-s" style="display:none"><td>Sell</td><td id="s-ng-sell">--</td></tr>
-          <tr class="sub-head" id="cl-head" style="display:none"><td colspan="2">Client Scope</td></tr>
-          <tr id="cl-c" style="display:none"><td>Cost</td><td id="s-cl-cost">--</td></tr>
-          <tr id="cl-s" style="display:none"><td>Sell</td><td id="s-cl-sell">--</td></tr>
-          <tr class="grand"><td><b>Grand Cost</b></td><td id="s-grand-cost">--</td></tr>
-          <tr class="grand"><td><b>Grand Sell</b></td><td id="s-grand-sell">--</td></tr>
-        </table>
-        <div style="display:flex;gap:12px;margin-top:16px">
-          <button class="btn-download" style="flex:1" onclick="downloadExcel()">Download Excel</button>
-        </div>
+
+    <div class="xl-workbook">
+      <div class="xl-titlebar"><span class="xl-logo">X</span><span>SNSF BRF Bill of Materials — ENCON</span></div>
+      <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
+      <div class="xl-content"><div class="xl-sheet active" id="xl-bom"></div></div>
+      <div class="xl-tabs"><div class="xl-tab active">BOM & Costing</div></div>
+    </div>
+
+    <div class="summary-card">
+      <table>
+        <tr class="sub-head"><td colspan="2">Main Scope</td></tr>
+        <tr><td>Cost</td><td id="s-main-cost">--</td></tr>
+        <tr><td>Sell</td><td id="s-main-sell">--</td></tr>
+        <tr class="sub-head" id="ng-head" style="display:none"><td colspan="2">NG Optional</td></tr>
+        <tr id="ng-c" style="display:none"><td>Cost</td><td id="s-ng-cost">--</td></tr>
+        <tr id="ng-s" style="display:none"><td>Sell</td><td id="s-ng-sell">--</td></tr>
+        <tr class="sub-head" id="cl-head" style="display:none"><td colspan="2">Client Scope</td></tr>
+        <tr id="cl-c" style="display:none"><td>Cost</td><td id="s-cl-cost">--</td></tr>
+        <tr id="cl-s" style="display:none"><td>Sell</td><td id="s-cl-sell">--</td></tr>
+        <tr class="grand"><td><b>Grand Cost</b></td><td id="s-grand-cost">--</td></tr>
+        <tr class="grand"><td><b>Grand Sell</b></td><td id="s-grand-sell">--</td></tr>
+      </table>
+      <div style="margin-top:16px">
+        <button onclick="downloadExcel()" style="width:100%;padding:11px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">&#8659; Download Excel</button>
       </div>
     </div>
+
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(4)">← Back</button>
+      <button class="btn-back" onclick="goStep(2)">← Back to Calculations</button>
     </div>
   </div>
 
@@ -244,8 +214,9 @@
 <script>
 const API="";
 const fmt=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
+const fmt2=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:2}).format(n);
 let lastData=null;
-const STEPS=[1,2,3,4,5];
+const STEPS=[1,2,3];
 
 function goStep(n){
   STEPS.forEach(i=>{
@@ -255,6 +226,24 @@ function goStep(n){
   });
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+function xlTab(sheetId,btn){
+  const wb=btn.closest('.xl-workbook');
+  wb.querySelectorAll('.xl-sheet').forEach(s=>s.classList.remove('active'));
+  wb.querySelectorAll('.xl-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(sheetId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function xlRow(n,cells,cls){
+  return `<tr${cls?' class="'+cls+'"':''}>
+    <td class="xl-row-num">${n}</td>
+    ${cells.map(([v,r])=>`<td${r?' class="xl-r"':''}>${v}</td>`).join('')}
+  </tr>`;
+}
+
+const colHdr3=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td></tr>`;
+const colHdr5=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td><td class="xl-col-header">E</td></tr>`;
 
 async function calculate(){
   const ng=document.getElementById("chk-ng").checked;
@@ -271,62 +260,101 @@ async function calculate(){
 function renderAll(data,showNG,showCL){
   const sp=data.supplementary||{},s=data.cost_summary,fc=sp.furnace_calc||{},rc=sp.recuperator||{};
 
-  ["b2","b5"].forEach(p=>{
+  ["b2","b3"].forEach(p=>{
     document.getElementById(p+"-sell").textContent="\u20B9 "+fmt(s.grand_sell);
     document.getElementById(p+"-cost").textContent="\u20B9 "+fmt(s.grand_cost);
   });
-  document.getElementById("b5-main").textContent="Main Sell: \u20B9 "+fmt(s.main_sell);
+  document.getElementById("b3-main").textContent="Main Sell: \u20B9 "+fmt(s.main_sell);
 
-  // Step 2
-  document.getElementById("tbl-furnace").innerHTML=[
-    ["Furnace Capacity",`${fc.furnace_capacity_tph} TPH`],
-    ["Billet Dimensions",`${fc.billet_L_mm}\u00D7${fc.billet_W_mm}\u00D7${fc.billet_H_mm} mm`],
-    ["Billet Weight",`${fmt(fc.billet_weight_kg)} kg`],
-    ["Inside Material",`${fmt(fc.inside_material_kg)} kg`],
-    ["Effective L\u00D7W",`${fc.effective_length_m} \u00D7 ${fc.effective_width_m} m`],
-    ["Overall L\u00D7W",`${fmt(fc.overall_length_mm)} \u00D7 ${fmt(fc.overall_width_mm)} mm`],
-    ["Calorific Value",`${fmt(fc.calorific_value_kcal_nm3)} kcal/Nm\u00B3`],
-  ].map(([l,v])=>`<tr><td>${l}</td><td>${v}</td></tr>`).join("");
+  // Furnace
+  const fcRows=[
+    ["Furnace Capacity",`${fc.furnace_capacity_tph}`,`TPH`],
+    ["Billet Dimensions",`${fc.billet_L_mm}\u00D7${fc.billet_W_mm}\u00D7${fc.billet_H_mm}`,`mm`],
+    ["Billet Weight",`${fmt(fc.billet_weight_kg)}`,`kg`],
+    ["Inside Material",`${fmt(fc.inside_material_kg)}`,`kg`],
+    ["Effective Length",`${fc.effective_length_m}`,`m`],
+    ["Effective Width",`${fc.effective_width_m}`,`m`],
+    ["Overall Width",`${fmt(fc.overall_width_mm)}`,`mm`],
+    ["Overall Length",`${fmt(fc.overall_length_mm)}`,`mm`],
+    ["Calorific Value",`${fmt(fc.calorific_value_kcal_nm3)}`,`kcal/Nm\u00B3`],
+  ];
+  document.getElementById("xl-furnace").innerHTML=`<table class="xl-grid">${colHdr3}
+    ${xlRow(1,[["FURNACE DIMENSIONS",""],["",""],["",""]],"xl-section")}
+    ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
+    ${fcRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]])).join("")}
+  </table>`;
 
-  document.getElementById("tbl-recup").innerHTML=[
-    [`${rc.title||''}`,``],
-    ["Flue Gas Flow",`${fmt(rc.total_flue_gas_nm3hr)} Nm\u00B3/hr`],
-    ["Flue Gas Temp (In/Out)",`${rc.initial_temp_flue_gas_c} / ${rc.final_temp_flue_gas_c} \u00B0C`],
-    ["Air Volume",`${fmt(rc.air_volume_nm3hr)} Nm\u00B3/hr`],
-    ["Air Temp (In/Out)",`${rc.initial_air_temp_c} / ${rc.final_air_temp_c} \u00B0C`],
-    ["Heat Required",`${fmt(rc.heat_required_kcal)} kcal`],
-    ["LMTD",`${rc.lmtd_c} \u00B0C`],
-    ["Surface Area",`${rc.surface_area_m2} m\u00B2`],
-    ["Pipes",`${rc.pipes_total} (${rc.pipes_per_row}\u00D7${rc.pipes_per_column}) — ${rc.material}`],
-    ["Hot Bank Weight",`${rc.hot_bank_weight_kg} Kg`],
-  ].map(([l,v])=>`<tr><td>${l}</td><td>${v}</td></tr>`).join("");
+  // Recuperator
+  const rcRows=[
+    [rc.title||"Recuperator","",""],
+    ["Flue Gas Flow",`${fmt(rc.total_flue_gas_nm3hr)}`,`Nm\u00B3/hr`],
+    ["Flue Gas Mass",`${fmt(rc.total_mass_flue_gas_kghr)}`,`Kg/hr`],
+    ["Flue Gas Temp (In)",`${rc.initial_temp_flue_gas_c}`,`\u00B0C`],
+    ["Flue Gas Temp (Out)",`${rc.final_temp_flue_gas_c}`,`\u00B0C`],
+    ["Air Volume",`${fmt(rc.air_volume_nm3hr)}`,`Nm\u00B3/hr`],
+    ["Air Temp (In/Out)",`${rc.initial_air_temp_c} / ${rc.final_air_temp_c}`,`\u00B0C`],
+    ["Heat Required",`${fmt(rc.heat_required_kcal)}`,`kcal`],
+    ["LMTD",`${rc.lmtd_c}`,`\u00B0C`],
+    ["Surface Area",`${rc.surface_area_m2}`,`m\u00B2`],
+    ["Pipes",`${rc.pipes_total} (${rc.pipes_per_row}\u00D7${rc.pipes_per_column})`,``],
+    ["Material",`${rc.material}`,``],
+    ["Pipe Dia \u00D7 Length",`${rc.pipe_dia_mm} \u00D7 ${rc.pipe_length_m}`,`mm \u00D7 m`],
+    ["Hot Bank Weight",`${rc.hot_bank_weight_kg}`,`Kg`],
+  ];
+  document.getElementById("xl-recup").innerHTML=`<table class="xl-grid">${colHdr3}
+    ${xlRow(1,[["RECUPERATOR CALCULATION",""],["",""],["",""]],"xl-section")}
+    ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
+    ${rcRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]],r[0]==="Surface Area"||r[0]==="Hot Bank Weight"?"xl-highlight":"")).join("")}
+  </table>`;
 
+  // Combustion
   const comb=sp.combustion_items||[];
-  document.getElementById("tbl-combustion").innerHTML=
-    `<tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Total</th></tr>`+
-    comb.map(c=>`<tr><td>${c.item}</td><td style="text-align:right;color:var(--muted)">${c.qty}</td><td style="text-align:right;color:var(--muted)">${fmt(c.price)}</td><td>${fmt(c.qty*c.price)}</td></tr>`).join("")+
-    `<tr class="total"><td>Total Combustion</td><td></td><td></td><td>${fmt(comb.reduce((s,c)=>s+c.qty*c.price,0))}</td></tr>`;
+  let cn=0;
+  document.getElementById("xl-combustion").innerHTML=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td></tr>
+    ${xlRow(++cn,[["COMBUSTION EQUIPMENT",""],["",""],["",""],["",""]],"xl-section")}
+    ${xlRow(++cn,[["Item",""],["Qty",true],["Unit Price",true],["Total",true]],"xl-label")}
+    ${comb.map(c=>{cn++;return xlRow(cn,[[c.item,""],[c.qty,true],[fmt(c.price),true],[fmt(c.qty*c.price),true]])}).join("")}
+    ${xlRow(++cn,[["TOTAL",""],["",""],["",""],[""+fmt(comb.reduce((s,c)=>s+c.qty*c.price,0)),true]],"xl-total")}
+  </table>`;
 
-  // Step 3
+  // Mass Flow Control
   const mfc=sp.mass_flow_control||[];
-  document.getElementById("mfc-zones").innerHTML=mfc.map(z=>`
-    <div class="zone-card"><h4>${z.zone}</h4><table>
-    ${z.items.map(it=>`<tr><td>${it.item}</td><td>${it.qty}</td><td>${fmt(it.price*it.qty)}</td></tr>`).join("")}
-    </table></div>`).join("");
+  let mn=0;
+  let mfcHtml=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td></tr>
+    ${xlRow(++mn,[["MASS FLOW CONTROL — ZONE-WISE",""],["",""],["",""]],"xl-section")}`;
+  mfc.forEach(z=>{
+    mfcHtml+=xlRow(++mn,[[z.zone,""],["",""],["",""]],"xl-label");
+    z.items.forEach(it=>{
+      mfcHtml+=xlRow(++mn,[[it.item,""],[it.qty,true],[fmt(it.price*it.qty),true]]);
+    });
+  });
+  const mfcTotal=mfc.reduce((s,z)=>s+z.items.reduce((s2,it)=>s2+it.price*it.qty,0),0);
+  mfcHtml+=xlRow(++mn,[["TOTAL MASS FLOW CONTROL",""],["",""],[""+fmt(mfcTotal),true]],"xl-total");
+  mfcHtml+=`</table>`;
+  document.getElementById("xl-massflow").innerHTML=mfcHtml;
 
-  // Step 4
+  // Refractory
   const ref=sp.refractory_items||[];
-  document.getElementById("tbl-refractory").innerHTML=`
-    <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Weight (Kg)</th><th class="num">Rate</th><th class="num">Cost</th></tr></thead>
-    <tbody>${ref.map(r=>`<tr><td>${r.item}</td><td class="num">${fmt(r.qty)}</td><td class="num">${fmt(r.weight_kg)}</td><td class="num">${fmt(r.rate)}</td><td class="sell-total">${fmt(r.cost)}</td></tr>`).join("")}
-    <tr class="section-header"><td>TOTAL REFRACTORY</td><td></td><td></td><td></td><td class="sell-total">${fmt(ref.reduce((s,r)=>s+r.cost,0))}</td></tr></tbody>`;
+  let rn=0;
+  document.getElementById("xl-refractory").innerHTML=`<table class="xl-grid">${colHdr5}
+    ${xlRow(++rn,[["REFRACTORY BREAKDOWN",""],["",""],["",""],["",""],["",""]],"xl-section")}
+    ${xlRow(++rn,[["Item",""],["Qty",true],["Weight (Kg)",true],["Rate",true],["Cost",true]],"xl-label")}
+    ${ref.map(r=>{rn++;return xlRow(rn,[[r.item,""],[fmt(r.qty),true],[fmt(r.weight_kg),true],[fmt(r.rate),true],[fmt(r.cost),true]])}).join("")}
+    ${xlRow(++rn,[["TOTAL REFRACTORY",""],["",""],["",""],["",""],[""+fmt(ref.reduce((s,r)=>s+r.cost,0)),true]],"xl-total")}
+  </table>`;
 
-  // Step 5
-  let lastSec="";
-  document.getElementById("bom-body").innerHTML=data.bom.map(row=>{
-    let sh="";if(row.SECTION!==lastSec){lastSec=row.SECTION;sh=`<tr class="section-header"><td colspan="8">${row.SECTION}</td></tr>`;}
-    return sh+`<tr><td></td><td>${row.ITEM}</td><td class="num">${row.QTY}</td><td>${row.UNIT}</td><td class="num">${fmt(row["UNIT PRICE"])}</td><td class="num">${fmt(row["COST PRICE"])}</td><td class="ctr">${row.MARKUP}x</td><td class="sell-total">${fmt(row["SELL PRICE"])}</td></tr>`;
-  }).join("");
+  // BOM
+  let lastSec="",bn=0;
+  document.getElementById("xl-bom").innerHTML=`<table class="xl-grid">
+    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td><td class="xl-col-header">E</td><td class="xl-col-header">F</td><td class="xl-col-header">G</td></tr>
+    ${data.bom.map(row=>{
+      let sh="";bn++;
+      if(row.SECTION!==lastSec){lastSec=row.SECTION;bn++;sh=`<tr class="xl-section"><td class="xl-row-num">${bn-1}</td><td colspan="7">${row.SECTION}</td></tr>`;}
+      return sh+`<tr><td class="xl-row-num">${bn}</td><td>${row.ITEM}</td><td class="xl-r">${row.QTY}</td><td>${row.UNIT}</td><td class="xl-r">${fmt(row["UNIT PRICE"])}</td><td class="xl-r">${fmt(row["COST PRICE"])}</td><td class="xl-r">${row.MARKUP}x</td><td class="xl-r" style="color:#1d4ed8;font-weight:700">${fmt(row["SELL PRICE"])}</td></tr>`;
+    }).join("")}
+  </table>`;
 
   document.getElementById("s-main-cost").textContent="\u20B9 "+fmt(s.main_cost);
   document.getElementById("s-main-sell").textContent="\u20B9 "+fmt(s.main_sell);
