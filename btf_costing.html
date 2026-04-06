@@ -163,6 +163,8 @@
       <div class="xl-content">
         <div class="xl-sheet active" id="xl-furnace"></div>
         <div class="xl-sheet" id="xl-heatload"></div>
+        <div class="xl-sheet" id="xl-gas-consumption"></div>
+        <div class="xl-sheet" id="xl-gearbox"></div>
         <div class="xl-sheet" id="xl-ms"></div>
         <div class="xl-sheet" id="xl-door"></div>
         <div class="xl-sheet" id="xl-ceramic"></div>
@@ -180,6 +182,8 @@
         <div class="xl-tab" onclick="xlTab('xl-ceramic',this)">Ceramic Fibre</div>
         <div class="xl-tab" onclick="xlTab('xl-refractory',this)">Refractory</div>
         <div class="xl-tab" onclick="xlTab('xl-trolley',this)">Trolley/Bogie</div>
+        <div class="xl-tab" onclick="xlTab('xl-gas-consumption',this)">Gas Consumption</div>
+        <div class="xl-tab" onclick="xlTab('xl-gearbox',this)">Gear Box</div>
         <div class="xl-tab" onclick="xlTab('xl-pipe-air',this)">Air Pipe</div>
         <div class="xl-tab" onclick="xlTab('xl-pipe-gas',this)">Gas Pipe</div>
         <div class="xl-tab" onclick="xlTab('xl-recup',this)">Recuperator</div>
@@ -308,6 +312,9 @@ function renderAll(data){
     ${xlRow(1,[["FURNACE PARAMETERS",""],["",""],["",""]],"xl-section")}
     ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
     ${fpRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]])).join("")}
+    ${xlRow(fpRows.length+3,[["",""],["",""],["",""]])}
+    ${xlRow(fpRows.length+4,[["FURNACE DIMENSION VOLUMES",""],["",""],["",""]],"xl-section")}
+    ${(sp.furnace_volumes||[]).map((v,i)=>xlRow(fpRows.length+5+i,[[v.item,""],[v.value,true],[v.unit,true]])).join("")}
   </table>`;
 
   // Heat Load
@@ -362,6 +369,43 @@ function renderAll(data){
     ${xlRow(1,[["RECUPERATOR CALCULATION",""],["",""],["",""]],"xl-section")}
     ${xlRow(2,[["Parameter",""],["Value",true],["Unit",true]],"xl-label")}
     ${rcRows.map((r,i)=>xlRow(i+3,[[r[0],""],[r[1],true],[r[2],true]],r[0]==="Surface Area"||r[0]==="Hot Bank Weight"?"xl-highlight":"")).join("")}
+    ${xlRow(rcRows.length+3,[["",""],["",""],["",""]])}
+    ${xlRow(rcRows.length+4,[["COLD BANK (${rc.cold_bank_material})",""],["",""],["",""]],"xl-section")}
+    ${xlRow(rcRows.length+5,[["Pipe Dia",""],[rc.cold_bank_dia_mm,true],["mm",true]])}
+    ${xlRow(rcRows.length+6,[["Pipe Length",""],[rc.cold_bank_length_m,true],["m",true]])}
+    ${xlRow(rcRows.length+7,[["Pipe Thickness",""],[rc.cold_bank_thickness_mm,true],["mm",true]])}
+    ${xlRow(rcRows.length+8,[["Cold Bank Total Wt",""],[rc.cold_bank_total_wt_kg,true],["Kg",true]])}
+    ${xlRow(rcRows.length+9,[["",""],["",""],["",""]])}
+    ${xlRow(rcRows.length+10,[["COST BREAKDOWN",""],["",""],["",""]],"xl-section")}
+    ${xlRow(rcRows.length+11,[["Cost of All Pipes",""],[""+fmt(rc.cost_all_pipes),true],["Rs",true]])}
+    ${xlRow(rcRows.length+12,[["MS Outer Shell",""],[""+fmt(rc.cost_ms_outer_shell),true],["Rs",true]])}
+    ${xlRow(rcRows.length+13,[["MS Combustion Air Inlet",""],[""+fmt(rc.cost_ms_combustion_air_inlet),true],["Rs",true]])}
+    ${xlRow(rcRows.length+14,[["MS Channel 150×75",""],[""+fmt(rc.cost_ms_channel_150x75),true],["Rs",true]])}
+    ${xlRow(rcRows.length+15,[["Angle 65",""],[""+fmt(rc.cost_angle_65),true],["Rs",true]])}
+    ${xlRow(rcRows.length+16,[["Angle 75",""],[""+fmt(rc.cost_angle_75),true],["Rs",true]])}
+    ${xlRow(rcRows.length+17,[["Angle 50",""],[""+fmt(rc.cost_angle_50),true],["Rs",true]])}
+    ${xlRow(rcRows.length+18,[["Total Material Cost",""],[""+fmt(rc.cost_total_material),true],["Rs",true]],"xl-total")}
+    ${xlRow(rcRows.length+19,[["Pipe Bending",""],[""+fmt(rc.cost_pipe_bending),true],["Rs",true]])}
+    ${xlRow(rcRows.length+20,[["Welding Rod",""],[""+fmt(rc.cost_welding_rod),true],["Rs",true]])}
+    ${xlRow(rcRows.length+21,[["Hole Fabrication",""],[""+fmt(rc.cost_hole_fabrication),true],["Rs",true]])}
+    ${xlRow(rcRows.length+22,[["Thermocouple with TT",""],[""+fmt(rc.cost_thermocouple_tt),true],["Rs",true]])}
+    ${xlRow(rcRows.length+23,[["TOTAL COST OF RECUPERATOR",""],[""+fmt(rc.cost_total_recuperator),true],["Rs",true]],"xl-highlight")}
+  </table>`;
+
+  // Gas Consumption
+  let gcn=0;
+  document.getElementById("xl-gas-consumption").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(++gcn,[["GAS CONSUMPTION ANALYSIS",""],["",""],["",""]],"xl-section")}
+    ${xlRow(++gcn,[["Parameter",""],["Value",true],["",true]],"xl-label")}
+    ${(sp.gas_consumption||[]).map(g=>{gcn++;return xlRow(gcn,[[g.item,""],[g.value,true],["",true]],g.item.includes("Guarantee")?"xl-highlight":"")}).join("")}
+  </table>`;
+
+  // Gear Box
+  let gbn=0;
+  document.getElementById("xl-gearbox").innerHTML=`<table class="xl-grid">${colHdr}
+    ${xlRow(++gbn,[["GEAR BOX CALCULATION",""],["",""],["",""]],"xl-section")}
+    ${xlRow(++gbn,[["Parameter",""],["Value",true],["",true]],"xl-label")}
+    ${(sp.gear_box||[]).map(g=>{gbn++;return xlRow(gbn,[[g.item,""],[g.value,true],["",true]],g.item.includes("Extra")?"xl-highlight":"")}).join("")}
   </table>`;
 
   // MS Structure

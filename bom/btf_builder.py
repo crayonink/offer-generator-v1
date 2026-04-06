@@ -148,7 +148,78 @@ RECUPERATOR_CALC = {
     "pipe_thickness_mm": 4.5,
     "pipe_weight_kg_m": 3.24,
     "hot_bank_weight_kg": 97.2,
+    # Cold Bank
+    "cold_bank_material": "CS Boiler Grade",
+    "cold_bank_dia_mm": 33.4,
+    "cold_bank_length_m": 0.5,
+    "cold_bank_thickness_mm": 4.5,
+    "cold_bank_weight_kg_m": 3.24,
+    "cold_bank_pipe_wt_kg": 1.62,
+    "cold_bank_total_wt_kg": 97.2,
+    # Cost breakdown
+    "cost_hot_bank_pipe_rate": 134.80,
+    "cost_cold_bank_pipe_rate": 134.80,
+    "cost_ms_rate": 60.0,
+    "cost_all_pipes": 26204,
+    "ms_outershell_kg": 49.86,
+    "ms_air_inlet_duct_kg": 102.36,
+    "ms_hot_air_outlet_duct_kg": 112.79,
+    "ms_pipe_holding_plate_kg": 356.57,
+    "ms_bottom_box_kg": 125.58,
+    "ms_machining_flanges_kg": 100,
+    "ms_side_hood_kg": 700,
+    "cost_ms_outer_shell": 20000,
+    "cost_ms_combustion_air_inlet": 92830,
+    "cost_ms_channel_150x75": 10200,
+    "cost_angle_65": 13200,
+    "cost_angle_75": 5400,
+    "cost_angle_50": 4050,
+    "cost_total_material": 171884,
+    "cost_pipe_bending": 7700,
+    "cost_welding_rod": 3840,
+    "cost_hole_fabrication": 24000,
+    "cost_thermocouple_tt": 8000,
+    "cost_total_recuperator": 215424,
 }
+
+FURNACE_VOLUMES = [
+    {"item": "Vol. of Side wall (Right)", "value": 0.047212, "unit": "m3"},
+    {"item": "Vol. of Side wall (Left)", "value": 0.047212, "unit": "m3"},
+    {"item": "Vol. of Back Side", "value": 0.048248, "unit": "m3"},
+    {"item": "Vol. of Top Side", "value": 0.083195, "unit": "m3"},
+]
+
+GAS_CONSUMPTION_CALC = [
+    {"item": "No. of Zones", "value": "2"},
+    {"item": "Rating / Zone", "value": "1,88,537 kcal (219.23 kW)"},
+    {"item": "Gross Heat Load", "value": "3,77,073 kcal"},
+    {"item": "Gross (kW)", "value": "438.46 kW"},
+    {"item": "Heating Zone Ratio", "value": "25:8"},
+    {"item": "Consumption (Heating)", "value": "2,82,805 kcal"},
+    {"item": "Consumption (Soaking)", "value": "70,701 kcal"},
+    {"item": "GROSS CON. (Regen)", "value": "70,70,125 kcal → 10,180,980 kcal"},
+    {"item": "GROSS CON. (Conv.)", "value": "5,65,610 kcal → 13,883,155 kcal"},
+    {"item": "CV of Gas", "value": "8,600 kcal/m3"},
+    {"item": "Gas Required (Regen)", "value": "1,183.83 m3"},
+    {"item": "Gas Required (Conv.)", "value": "1,614.32 m3"},
+    {"item": "Gas / MT (Regen)", "value": "118.38 m3/MT"},
+    {"item": "Gas / MT (Conv.)", "value": "161.43 m3/MT"},
+    {"item": "KG/MT (Regen)", "value": "87.60 kg/MT"},
+    {"item": "KG/MT (Conv.)", "value": "119.46 kg/MT"},
+    {"item": "Guarantee (Regen)", "value": "96.36 kg/MT (+10%)"},
+    {"item": "Guarantee (Conv.)", "value": "131.41 kg/MT (+10%)"},
+]
+
+GEAR_BOX_CALC = [
+    {"item": "Total Load", "value": "10 Tonne"},
+    {"item": "Max Required Speed", "value": "20 m/min"},
+    {"item": "Fractional Resistance", "value": "0.03"},
+    {"item": "Efficiency", "value": "0.5"},
+    {"item": "Pull Load", "value": "300 Kgs"},
+    {"item": "Required Power", "value": "2.67 kW"},
+    {"item": "Required HP", "value": "3.57 HP"},
+    {"item": "10% Extra", "value": "3.93 HP"},
+]
 
 
 MS_STRUCTURE_BREAKDOWN = [
@@ -263,6 +334,9 @@ def get_supplementary():
         "furnace_params": FURNACE_PARAMS,
         "pipe_sizing": PIPE_SIZING,
         "recuperator": RECUPERATOR_CALC,
+        "furnace_volumes": FURNACE_VOLUMES,
+        "gas_consumption": GAS_CONSUMPTION_CALC,
+        "gear_box": GEAR_BOX_CALC,
         "ms_structure": MS_STRUCTURE_BREAKDOWN,
         "door": DOOR_BREAKDOWN,
         "ceramic_fibre": CERAMIC_FIBRE_CALC,
