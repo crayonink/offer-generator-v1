@@ -163,6 +163,7 @@
           <tr class="grand"><td><b>Grand Total Cost</b></td><td id="s-grand-cost">--</td></tr>
           <tr class="grand"><td><b>Grand Total Sell</b></td><td id="s-grand-sell">--</td></tr>
         </table>
+        <button class="btn btn-navy" style="width:100%;margin-top:16px;" onclick="downloadExcel()">Download Excel</button>
       </div>
     </div>
   </div>
@@ -171,6 +172,7 @@
 <script>
 const API = "";
 const fmt = (n) => new Intl.NumberFormat("en-IN", {maximumFractionDigits: 0}).format(n);
+let lastData = null;
 
 async function calculate() {
   const includeNG     = document.getElementById("chk-ng").checked;
@@ -186,6 +188,7 @@ async function calculate() {
     });
     const data = await res.json();
     if (data.error) { errBox.textContent = data.error; errBox.style.display = "block"; return; }
+    lastData = data;
     renderResults(data, includeNG, includeClient);
   } catch (e) {
     errBox.textContent = "API error: " + e.message;
@@ -245,6 +248,27 @@ function renderResults(data, showNG, showClient) {
   document.getElementById("banner-cost").textContent      = "₹ " + fmt(s.grand_cost);
   document.getElementById("banner-main-sell").textContent  = "₹ " + fmt(s.main_sell);
   document.getElementById("cost-banner").style.display = "flex";
+}
+
+async function downloadExcel() {
+  if (!lastData) return;
+  const res = await fetch(`${API}/api/export-excel`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      equipment_type: "SNSF BRF",
+      customer: {},
+      bom: lastData.bom,
+      cost_summary: lastData.cost_summary,
+    }),
+  });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `SNSF_BRF_Costing_${new Date().toISOString().slice(0,10)}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 </script>
 </body>

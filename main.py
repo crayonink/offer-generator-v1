@@ -2010,6 +2010,127 @@ def export_excel(req: ExcelExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{fname}"'})
 
     # ════════════════════════════════════════════════════════════════════════
+    #  BTF / SNSF BRF path
+    # ════════════════════════════════════════════════════════════════════════
+    if req.equipment_type in ("BTF", "SNSF BRF"):
+        ws = wb.active
+        ws.title = req.equipment_type
+        ws.column_dimensions["A"].width = 36
+        ws.column_dimensions["B"].width = 42
+        ws.column_dimensions["C"].width = 14
+        ws.column_dimensions["D"].width = 12
+        ws.column_dimensions["E"].width = 18
+        ws.column_dimensions["F"].width = 20
+        ws.column_dimensions["G"].width = 12
+        ws.column_dimensions["H"].width = 20
+
+        r1 = 1
+        ws.merge_cells(f"A{r1}:H{r1}")
+        t = ws.cell(row=r1, column=1, value=f"ENCON — {req.equipment_type} Costing Sheet")
+        t.font = Font(bold=True, color=WHITE, size=14, name="Calibri")
+        t.fill = PatternFill("solid", fgColor=NAVY)
+        t.alignment = Alignment(horizontal="center", vertical="center")
+        ws.row_dimensions[r1].height = 30
+        r1 += 1
+
+        ws.merge_cells(f"A{r1}:H{r1}")
+        d = ws.cell(row=r1, column=1, value=f"Generated: {datetime.now().strftime('%d %b %Y, %H:%M')}")
+        d.font = Font(color="64748B", size=9, name="Calibri")
+        d.fill = PatternFill("solid", fgColor=LIGHT)
+        d.alignment = Alignment(horizontal="right", vertical="center")
+        r1 += 2
+
+        # BOM header
+        is_brf = req.equipment_type == "SNSF BRF"
+        bom_cols = ["SECTION", "ITEM", "QTY", "UNIT", "UNIT PRICE", "COST PRICE",
+                    "MARKUP" if is_brf else "", "SELL PRICE"]
+        for ci, col in enumerate(bom_cols, 1):
+            if col:
+                hdr(ws, r1, ci, col, size=9)
+        ws.row_dimensions[r1].height = 22
+        r1 += 1
+
+        last_section = ""
+        for i, row_d in enumerate(req.bom):
+            section = row_d.get("SECTION", "")
+            if section != last_section:
+                last_section = section
+                ws.merge_cells(f"A{r1}:H{r1}")
+                cell(ws, r1, 1, section, bold=True, bg=LIGHT, fg=NAVY)
+                ws.row_dimensions[r1].height = 20
+                r1 += 1
+
+            bg = GREY if i % 2 == 0 else WHITE
+            cell(ws, r1, 1, "", bg=bg)
+            cell(ws, r1, 2, row_d.get("ITEM", ""), bg=bg)
+            cell(ws, r1, 3, row_d.get("QTY", ""), bg=bg, align="right")
+            cell(ws, r1, 4, row_d.get("UNIT", ""), bg=bg)
+            cell(ws, r1, 5, row_d.get("UNIT PRICE", 0), bg=bg, align="right", num_fmt='#,##0')
+            cell(ws, r1, 6, row_d.get("COST PRICE", 0), bg=bg, align="right", num_fmt='#,##0')
+            if is_brf:
+                cell(ws, r1, 7, f'{row_d.get("MARKUP", "")}x', bg=bg, align="center")
+            cell(ws, r1, 8, row_d.get("SELL PRICE", 0), bg=bg, align="right", num_fmt='#,##0')
+            ws.row_dimensions[r1].height = 18
+            r1 += 1
+        r1 += 1
+
+        # Cost Summary
+        cs = req.cost_summary
+        ws.merge_cells(f"A{r1}:H{r1}")
+        hdr(ws, r1, 1, "COST SUMMARY", size=10)
+        ws.row_dimensions[r1].height = 20
+        r1 += 1
+
+        if req.equipment_type == "BTF":
+            summary_rows = [
+                ("Structure Cost",     cs.get("structure_cost", 0)),
+                ("Combustion Cost",    cs.get("combustion_cost", 0)),
+                ("Total Cost Price",   cs.get("total_cost", 0)),
+                ("Sell Price",         cs.get("sell_price", 0)),
+                ("Designing (10%)",    cs.get("designing_10pct", 0)),
+                ("Negotiation (10%)",  cs.get("negotiation_10pct", 0)),
+                ("Quoted Price",       cs.get("quoted_price", 0)),
+            ]
+        else:
+            summary_rows = [
+                ("Main Scope Cost",    cs.get("main_cost", 0)),
+                ("Main Scope Sell",    cs.get("main_sell", 0)),
+                ("NG Optional Cost",   cs.get("ng_optional_cost", 0)),
+                ("NG Optional Sell",   cs.get("ng_optional_sell", 0)),
+                ("Client Scope Cost",  cs.get("client_scope_cost", 0)),
+                ("Client Scope Sell",  cs.get("client_scope_sell", 0)),
+                ("Grand Total Cost",   cs.get("grand_cost", 0)),
+                ("Grand Total Sell",   cs.get("grand_sell", 0)),
+            ]
+
+        for label, val in summary_rows:
+            is_total = "Grand" in label or "Quoted" in label
+            bg = GREEN_BG if is_total else GREY
+            fg = GREEN if is_total else "1E293B"
+            cell(ws, r1, 1, label, bold=is_total, bg=bg, fg=fg)
+            ws.merge_cells(f"B{r1}:G{r1}")
+            cell(ws, r1, 2, "", bg=bg)
+            c = ws.cell(row=r1, column=8, value=val)
+            c.font = Font(bold=is_total, color=fg, size=11 if is_total else 10, name="Calibri")
+            c.fill = PatternFill("solid", fgColor=bg)
+            c.alignment = Alignment(horizontal="right", vertical="center")
+            c.number_format = '₹#,##0'
+            c.border = thin()
+            ws.row_dimensions[r1].height = 20
+            r1 += 1
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        cname = req.customer.get("company_name", "").replace(" ", "_") or "ENCON"
+        date_str = datetime.now().strftime("%d%b%Y")
+        fname = f"{req.equipment_type}_Costing_{cname}_{date_str}.xlsx"
+        return StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{fname}"'})
+
+    # ════════════════════════════════════════════════════════════════════════
     #  VLPH / HLPH path
     # ════════════════════════════════════════════════════════════════════════
     ws = wb.active
