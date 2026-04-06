@@ -769,19 +769,11 @@ def update_pricelist_rate(req: RateUpdateRequest):
 
         conn.commit()
 
-        # ── Excel formula cascade (for tables not covered above) ────────────
-        xl_path = _find_latest_pricebook()
-        xl_results = {}
-        if xl_path:
-            xl_results = _cascade_recalculate(xl_path, conn)
-            conn.commit()
-
         conn.close()
         return {
             "success": True,
-            "cascaded": bool(xl_path),
+            "cascaded": True,
             "direct_cascade": cascade_counts,
-            "results": {k: v for k, v in xl_results.items() if "rows" in v},
         }
     except Exception as e:
         import traceback
