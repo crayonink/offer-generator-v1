@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON - Box Type Furnace Costing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy:   #1a3a5c;
+      --navy2:  #0f2744;
+      --green:  #059669;
+      --red:    #dc2626;
+      --border: #e5e7eb;
+      --text:   #0f172a;
+      --muted:  #64748b;
+      --bg:     #f8fafc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #fff; color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+    .topnav {
+      background: #fff; border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
+      display: flex; align-items: center; padding: 0 40px;
+      position: sticky; top: 0; z-index: 100; height: 56px;
+    }
+    .topnav-brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 0.95rem; color: var(--text); margin-right: 32px; letter-spacing: -.4px; text-decoration: none; }
+    .brand-mark { width: 30px; height: 30px; background: var(--navy); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: 900; letter-spacing: -.2px; flex-shrink: 0; }
+    .topnav-links { margin-left: auto; display: flex; gap: 4px; }
+    .topnav-links a { text-decoration: none; font-size: 0.78rem; font-weight: 500; color: var(--muted); padding: 6px 14px; border-radius: 6px; transition: all .15s; }
+    .topnav-links a:hover { background: var(--bg); color: var(--text); }
+    .topnav-links a.active { background: var(--navy); color: #fff; }
+
+    .page { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .page-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+    .page-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
+
+    .card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+    .card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; color: var(--navy); }
+
+    .form-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
+    .field { flex: 1; min-width: 200px; }
+    .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .field select, .field input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.88rem; font-family: inherit; }
+    .field .hint { font-size: 0.72rem; color: #94a3b8; margin-top: 4px; }
+
+    .btn { padding: 10px 28px; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .btn-navy { background: var(--navy); color: #fff; }
+    .btn-navy:hover { background: var(--navy2); }
+
+    .cost-banner { display: none; background: var(--navy); color: white; border-radius: 10px; padding: 18px 28px; margin-bottom: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .cost-banner .label { font-size: 0.78rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cost-banner .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
+    .cost-banner .sub { display: flex; gap: 32px; font-size: 0.88rem; }
+    .cost-banner .sub .val { font-weight: 700; }
+    .cost-banner .sub .lbl { opacity: 0.65; }
+
+    table.bom { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    table.bom th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; }
+    table.bom td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
+    table.bom tr:hover td { background: #f8fafc; }
+    table.bom tr.section-row td { background: #f1f5f9; font-weight: 700; color: var(--navy); }
+    table.bom .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .summary-card { background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-top: 20px; max-width: 450px; margin-left: auto; }
+    .summary-card table { width: 100%; }
+    .summary-card td { padding: 6px 0; font-size: 0.88rem; }
+    .summary-card td:last-child { text-align: right; font-weight: 700; }
+    .summary-card .grand td { border-top: 2px solid var(--navy); padding-top: 10px; font-size: 1rem; color: var(--navy); }
+
+    .alert { padding: 14px 18px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
+    .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-brand"><div class="brand-mark">EN</div> ENCON</div>
+  <div class="topnav-links">
+    <a href="/costing">VLPH</a>
+    <a href="/hlph">HLPH</a>
+    <a href="/btf" class="active">BTF</a>
+    <a href="/snsf-brf">SNSF BRF</a>
+    <a href="/viewer">DB Viewer</a>
+  </div>
+</nav>
+
+<div class="page">
+  <h1 class="page-title">Box Type Furnace — 10 Ton Reheating Furnace</h1>
+  <p class="page-sub">Select combustion control mode and generate costing breakdown</p>
+
+  <div class="card">
+    <h3>Configuration</h3>
+    <div class="form-row">
+      <div class="field">
+        <label>Combustion Control Mode</label>
+        <select id="combustion-mode">
+          <option value="onoff">ON/OFF Control</option>
+          <option value="massflow">Mass Flow Control</option>
+        </select>
+        <div class="hint">Mass Flow adds zone-wise orifice plates, DPTs, and control valves</div>
+      </div>
+      <div class="field">
+        <label>Sell Price Markup</label>
+        <input id="markup" type="number" value="1.8" step="0.1" min="1"/>
+        <div class="hint">Multiplier on cost price (default 1.8x)</div>
+      </div>
+      <div class="field" style="display:flex; flex-direction:column; justify-content:flex-end;">
+        <button class="btn btn-navy" onclick="calculate()">Calculate</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-error" id="error-box"></div>
+
+  <div id="results-section" style="display:none">
+
+    <div class="cost-banner" id="cost-banner">
+      <div>
+        <div class="label">Box Type Furnace — Quoted Price</div>
+        <div class="big" id="banner-quoted">--</div>
+      </div>
+      <div class="sub">
+        <div><div class="lbl">Cost Price</div><div class="val" id="banner-cost">--</div></div>
+        <div><div class="lbl">Sell Price (1.8x)</div><div class="val" id="banner-sell">--</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Bill of Materials</h3>
+      <table class="bom">
+        <thead>
+          <tr>
+            <th>Section</th>
+            <th>Item</th>
+            <th class="num">Qty</th>
+            <th>Unit</th>
+            <th class="num">Unit Price</th>
+            <th class="num">Cost Price</th>
+            <th class="num">Sell Price</th>
+          </tr>
+        </thead>
+        <tbody id="bom-body"></tbody>
+      </table>
+
+      <div class="summary-card">
+        <table>
+          <tr><td>Structure Cost</td><td id="s-structure">--</td></tr>
+          <tr><td>Combustion System Cost</td><td id="s-combustion">--</td></tr>
+          <tr><td><b>Total Cost Price</b></td><td id="s-total-cost">--</td></tr>
+          <tr><td>Sell Price (markup)</td><td id="s-sell">--</td></tr>
+          <tr><td>Designing (10%)</td><td id="s-designing">--</td></tr>
+          <tr><td>Negotiation (10%)</td><td id="s-negotiation">--</td></tr>
+          <tr class="grand"><td><b>Quoted Price</b></td><td id="s-quoted">--</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "";
+const fmt = (n) => new Intl.NumberFormat("en-IN", {maximumFractionDigits: 0}).format(n);
+
+async function calculate() {
+  const mode   = document.getElementById("combustion-mode").value;
+  const markup = parseFloat(document.getElementById("markup").value) || 1.8;
+  const errBox = document.getElementById("error-box");
+  errBox.style.display = "none";
+
+  try {
+    const res = await fetch(`${API}/api/btf-calculate`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({combustion_mode: mode, markup: markup}),
+    });
+    const data = await res.json();
+    if (data.error) { errBox.textContent = data.error; errBox.style.display = "block"; return; }
+    renderResults(data);
+  } catch (e) {
+    errBox.textContent = "API error: " + e.message;
+    errBox.style.display = "block";
+  }
+}
+
+function renderResults(data) {
+  document.getElementById("results-section").style.display = "block";
+
+  // BOM table
+  const tbody = document.getElementById("bom-body");
+  let lastSection = "";
+  tbody.innerHTML = data.bom.map(row => {
+    let sectionRow = "";
+    if (row.SECTION !== lastSection) {
+      lastSection = row.SECTION;
+      sectionRow = `<tr class="section-row"><td colspan="7">${row.SECTION}</td></tr>`;
+    }
+    return sectionRow + `<tr>
+      <td></td>
+      <td>${row.ITEM}</td>
+      <td class="num">${row.QTY}</td>
+      <td>${row.UNIT}</td>
+      <td class="num">${fmt(row["UNIT PRICE"])}</td>
+      <td class="num">${fmt(row["COST PRICE"])}</td>
+      <td class="num">${fmt(row["SELL PRICE"])}</td>
+    </tr>`;
+  }).join("");
+
+  // Summary
+  const s = data.cost_summary;
+  document.getElementById("s-structure").textContent    = "₹ " + fmt(s.structure_cost);
+  document.getElementById("s-combustion").textContent   = "₹ " + fmt(s.combustion_cost);
+  document.getElementById("s-total-cost").textContent   = "₹ " + fmt(s.total_cost);
+  document.getElementById("s-sell").textContent         = "₹ " + fmt(s.sell_price);
+  document.getElementById("s-designing").textContent    = "₹ " + fmt(s.designing_10pct);
+  document.getElementById("s-negotiation").textContent  = "₹ " + fmt(s.negotiation_10pct);
+  document.getElementById("s-quoted").textContent       = "₹ " + fmt(s.quoted_price);
+
+  // Banner
+  document.getElementById("banner-quoted").textContent = "₹ " + fmt(s.quoted_price);
+  document.getElementById("banner-cost").textContent   = "₹ " + fmt(s.total_cost);
+  document.getElementById("banner-sell").textContent   = "₹ " + fmt(s.sell_price);
+  document.getElementById("cost-banner").style.display = "flex";
+}
+</script>
+</body>
+</html>

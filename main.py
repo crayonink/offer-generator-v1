@@ -1136,6 +1136,65 @@ def hlph_calculate(req: VLPHCalcRequest):
         return {"error": str(e), "detail": traceback.format_exc()}
 
 
+# ── Box Type Furnace ────────────────────────────────────────────────────────
+
+@app.get("/btf", response_class=HTMLResponse)
+def btf_costing_form():
+    html_path = os.path.join(BASE_DIR, "btf_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+class BTFCalcRequest(BaseModel):
+    combustion_mode: str = "onoff"
+    markup: float = 1.8
+
+
+@app.post("/api/btf-calculate")
+def btf_calculate(req: BTFCalcRequest):
+    try:
+        from bom.btf_builder import build_btf_df
+        df, summary = build_btf_df(combustion_mode=req.combustion_mode, markup=req.markup)
+        return {
+            "bom": df.to_dict(orient="records"),
+            "cost_summary": summary,
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "detail": traceback.format_exc()}
+
+
+# ── SNSF BRF (Billet Reheating Furnace) ─────────────────────────────────────
+
+@app.get("/snsf-brf", response_class=HTMLResponse)
+def snsf_brf_costing_form():
+    html_path = os.path.join(BASE_DIR, "snsf_brf_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+class SNSFBRFCalcRequest(BaseModel):
+    include_ng_optional: bool = False
+    include_client_scope: bool = False
+
+
+@app.post("/api/snsf-brf-calculate")
+def snsf_brf_calculate(req: SNSFBRFCalcRequest):
+    try:
+        from bom.snsf_brf_builder import build_snsf_brf_df
+        df, summary = build_snsf_brf_df(
+            include_ng_optional=req.include_ng_optional,
+            include_client_scope=req.include_client_scope,
+        )
+        return {
+            "bom": df.to_dict(orient="records"),
+            "cost_summary": summary,
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "detail": traceback.format_exc()}
+
+
 @app.post("/api/generate-quote")
 async def generate_quote(req: QuoteRequest):
     try:
