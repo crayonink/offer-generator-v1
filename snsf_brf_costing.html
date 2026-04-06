@@ -7,88 +7,92 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
-    :root {
-      --navy:   #1a3a5c;
-      --navy2:  #0f2744;
-      --green:  #059669;
-      --red:    #dc2626;
-      --border: #e5e7eb;
-      --text:   #0f172a;
-      --muted:  #64748b;
-      --bg:     #f8fafc;
+    :root { --navy:#1a3a5c; --navy2:#0f2744; --green:#059669; --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f8fafc; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:#fff; color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
+
+    nav { background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:100; height:56px; box-shadow:0 1px 0 var(--border); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:900; font-size:.95rem; margin-right:24px; letter-spacing:-.4px; }
+    .brand-mark { width:30px; height:30px; background:var(--navy); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.7rem; font-weight:900; }
+    .step-tabs { display:flex; flex:1; }
+    .step-tab { padding:0 14px; height:56px; font-size:.8rem; font-weight:500; color:#94a3b8; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+    .step-tab.active { color:var(--navy); border-bottom-color:var(--navy); font-weight:600; }
+    .step-tab.done { color:var(--green); }
+    .tab-n { width:20px; height:20px; border-radius:50%; background:#e2e8f0; display:inline-flex; align-items:center; justify-content:center; font-size:.68rem; font-weight:700; color:#64748b; }
+    .step-tab.active .tab-n { background:var(--navy); color:#fff; }
+    .step-tab.done .tab-n { background:var(--green); color:#fff; }
+    .topnav-links { margin-left:auto; display:flex; gap:2px; }
+    .topnav-links a { font-size:.82rem; color:var(--muted); text-decoration:none; padding:6px 11px; border-radius:6px; font-weight:500; }
+    .topnav-links a:hover { background:#f1f5f9; color:var(--navy); }
+    .topnav-links a.active { background:#eff6ff; color:var(--navy); font-weight:600; }
+
+    .page { max-width:960px; margin:0 auto; padding:32px 20px 60px; }
+    .step { display:none; } .step.active { display:block; }
+    .card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:20px; }
+    .card-title { font-size:.95rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.3px; }
+    .toggle { display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.85rem; }
+    .toggle input[type=checkbox] { width:18px; height:18px; accent-color:var(--navy); }
+
+    .btn-primary { background:var(--navy); color:#fff; border:none; padding:12px 28px; border-radius:8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-primary:hover { background:var(--navy2); }
+    .btn-back { background:none; border:1px solid var(--border); padding:10px 20px; border-radius:8px; font-size:.85rem; cursor:pointer; font-family:inherit; color:var(--muted); }
+    .step-nav { display:flex; gap:12px; margin-top:20px; align-items:center; }
+
+    .cost-banner { background:var(--navy); color:white; border-radius:10px; padding:18px 28px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .banner-label { font-size:.78rem; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
+    .banner-value { font-size:1.7rem; font-weight:800; letter-spacing:-.5px; }
+    .banner-sub { display:flex; gap:32px; font-size:.88rem; }
+    .banner-sub .val { font-weight:700; }
+    .banner-sub .lbl { opacity:.65; }
+
+    table.dt { width:100%; border-collapse:collapse; font-size:.82rem; }
+    table.dt th { background:var(--bg); padding:8px 12px; text-align:left; font-weight:600; font-size:.75rem; color:var(--navy); border-bottom:2px solid var(--border); }
+    table.dt td { padding:7px 12px; border-bottom:1px solid #f1f5f9; }
+    table.dt td:last-child { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+    table.dt tr.total td { background:#eff6ff; font-weight:700; color:var(--navy); }
+
+    .zone-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
+    .zone-card { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px 16px; }
+    .zone-card h4 { font-size:.82rem; font-weight:700; color:var(--navy); margin-bottom:8px; }
+    .zone-card table { width:100%; border-collapse:collapse; font-size:.78rem; }
+    .zone-card td { padding:4px 8px; border-bottom:1px solid #e5e7eb; }
+    .zone-card td:nth-child(2) { text-align:center; }
+    .zone-card td:last-child { text-align:right; font-weight:600; }
+
+    table.bom { width:100%; border-collapse:collapse; font-size:.82rem; }
+    table.bom th { background:var(--navy); color:#fff; padding:10px 12px; text-align:left; font-weight:600; font-size:.75rem; text-transform:uppercase; }
+    table.bom td { padding:9px 12px; border-bottom:1px solid #f1f5f9; }
+    table.bom tr:hover td { background:#f8fafc; }
+    table.bom tr.section-row td { background:#f1f5f9; font-weight:700; color:var(--navy); }
+    table.bom .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    .summary-card { background:#f8fafc; border:1.5px solid var(--border); border-radius:10px; padding:20px 24px; margin-top:20px; max-width:450px; margin-left:auto; }
+    .summary-card table { width:100%; }
+    .summary-card td { padding:6px 0; font-size:.88rem; }
+    .summary-card td:last-child { text-align:right; font-weight:700; }
+    .summary-card .grand td { border-top:2px solid var(--navy); padding-top:10px; font-size:1rem; color:var(--navy); }
+    .summary-card .sub-head td { color:var(--muted); font-size:.78rem; padding-top:12px; font-weight:600; text-transform:uppercase; }
+
+    .alert-error { padding:14px 18px; border-radius:8px; font-size:.85rem; margin-bottom:16px; display:none; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; }
+    @media(max-width:700px) {
+      .step-tabs { overflow-x:auto; width:100%; } .topnav-links { display:none; }
+      .zone-grid { grid-template-columns:1fr; }
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #fff; color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
-
-    .topnav {
-      background: #fff; border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
-      display: flex; align-items: center; padding: 0 40px;
-      position: sticky; top: 0; z-index: 100; height: 56px;
-    }
-    .topnav-brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 0.95rem; color: var(--text); margin-right: 32px; letter-spacing: -.4px; text-decoration: none; }
-    .brand-mark { width: 30px; height: 30px; background: var(--navy); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: 900; letter-spacing: -.2px; flex-shrink: 0; }
-    .topnav-links { margin-left: auto; display: flex; gap: 4px; }
-    .topnav-links a { text-decoration: none; font-size: 0.78rem; font-weight: 500; color: var(--muted); padding: 6px 14px; border-radius: 6px; transition: all .15s; }
-    .topnav-links a:hover { background: var(--bg); color: var(--text); }
-    .topnav-links a.active { background: var(--navy); color: #fff; }
-
-    .page { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
-    .page-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
-    .page-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
-
-    .card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
-    .card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; color: var(--navy); }
-
-    .form-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end; }
-    .field { min-width: 200px; }
-    .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
-    .field .hint { font-size: 0.72rem; color: #94a3b8; margin-top: 4px; }
-
-    .toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.85rem; }
-    .toggle input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); }
-
-    .btn { padding: 10px 28px; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
-    .btn-navy { background: var(--navy); color: #fff; }
-    .btn-navy:hover { background: var(--navy2); }
-
-    .cost-banner { display: none; background: var(--navy); color: white; border-radius: 10px; padding: 18px 28px; margin-bottom: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-    .cost-banner .label { font-size: 0.78rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
-    .cost-banner .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
-    .cost-banner .sub { display: flex; gap: 32px; font-size: 0.88rem; }
-    .cost-banner .sub .val { font-weight: 700; }
-    .cost-banner .sub .lbl { opacity: 0.65; }
-
-    table.bom { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    table.bom th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; }
-    table.bom td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
-    table.bom tr:hover td { background: #f8fafc; }
-    table.bom tr.section-row td { background: #f1f5f9; font-weight: 700; color: var(--navy); }
-    table.bom .num { text-align: right; font-variant-numeric: tabular-nums; }
-    table.bom .markup-col { text-align: center; font-weight: 600; color: var(--muted); }
-
-    .summary-card { background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-top: 20px; max-width: 450px; margin-left: auto; }
-    .summary-card table { width: 100%; }
-    .summary-card td { padding: 6px 0; font-size: 0.88rem; }
-    .summary-card td:last-child { text-align: right; font-weight: 700; }
-    .summary-card .grand td { border-top: 2px solid var(--navy); padding-top: 10px; font-size: 1rem; color: var(--navy); }
-    .summary-card .sub-head td { color: var(--muted); font-size: 0.78rem; padding-top: 12px; font-weight: 600; text-transform: uppercase; }
-
-    .zone-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
-    .zone-card h4 { font-size: 0.82rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
-    .zone-card table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-    .zone-card td { padding: 4px 8px; }
-    .zone-card td:last-child { text-align: right; font-weight: 600; }
-    .zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
-
-    .alert { padding: 14px 18px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
-    .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
   </style>
 </head>
 <body>
 
-<nav class="topnav">
-  <div class="topnav-brand"><div class="brand-mark">EN</div> ENCON</div>
+<nav>
+  <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
+  <div class="step-tabs">
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Config</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Mass Flow</div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Refractory</div>
+    <div class="step-tab" id="tab-5" onclick="goStep(5)"><span class="tab-n">5</span>BOM & Costing</div>
+  </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
     <a href="/hlph">HLPH</a>
@@ -99,263 +103,230 @@
 </nav>
 
 <div class="page">
-  <h1 class="page-title">SNSF BRF — 30 Ton Billet Reheating Furnace</h1>
-  <p class="page-sub">Costing breakup with per-item markup multipliers</p>
 
-  <div class="card">
-    <h3>Configuration</h3>
-    <div class="form-row">
+  <!-- ═══ STEP 1: Config ═══ -->
+  <div class="step active" id="step-1">
+    <div class="card">
+      <div class="card-title">SNSF BRF — 30 Ton Billet Reheating Furnace</div>
       <div class="field">
-        <label class="toggle">
-          <input type="checkbox" id="chk-ng"/>
-          Include NG Optional (Pilot Burner + UV Sensor)
-        </label>
+        <label class="toggle"><input type="checkbox" id="chk-ng"/> Include NG Optional (Pilot Burner + UV Sensor)</label>
       </div>
       <div class="field">
-        <label class="toggle">
-          <input type="checkbox" id="chk-client"/>
-          Include Client Scope (Mild Steel + Refractory)
-        </label>
+        <label class="toggle"><input type="checkbox" id="chk-client"/> Include Client Scope (Mild Steel + Refractory)</label>
       </div>
-      <div class="field">
-        <button class="btn btn-navy" onclick="calculate()">Calculate</button>
-      </div>
+    </div>
+    <div class="alert-error" id="error-box"></div>
+    <div class="step-nav">
+      <button class="btn-primary" onclick="calculate()">Calculate &amp; Build BOM</button>
     </div>
   </div>
 
-  <div class="alert alert-error" id="error-box"></div>
-
-  <div id="results-section" style="display:none">
-
-    <div class="cost-banner" id="cost-banner">
-      <div>
-        <div class="label">SNSF BRF 30 Ton — Total Sell Price</div>
-        <div class="big" id="banner-sell">--</div>
-      </div>
-      <div class="sub">
-        <div><div class="lbl">Total Cost</div><div class="val" id="banner-cost">--</div></div>
-        <div><div class="lbl">Main Scope Sell</div><div class="val" id="banner-main-sell">--</div></div>
-      </div>
-    </div>
-
-    <!-- ── Calculation Breakdown ── -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px" id="calc-grid">
+  <!-- ═══ STEP 2: Furnace & Recuperator ═══ -->
+  <div class="step" id="step-2">
+    <div class="cost-banner"><div><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b2-sell">--</div></div>
+      <div class="banner-sub"><div><div class="lbl">Cost</div><div class="val" id="b2-cost">--</div></div></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div class="card">
-        <h3>Furnace Dimensions</h3>
-        <table class="bom" id="tbl-furnace" style="font-size:0.8rem"></table>
+        <div class="card-title">Furnace Dimensions</div>
+        <table class="dt" id="tbl-furnace"></table>
       </div>
       <div class="card">
-        <h3>Recuperator Calculation</h3>
-        <table class="bom" id="tbl-recup" style="font-size:0.8rem"></table>
+        <div class="card-title">Recuperator Calculation</div>
+        <table class="dt" id="tbl-recup"></table>
       </div>
     </div>
-
-    <div class="card" style="margin-bottom:20px">
-      <h3>Mass Flow Control — Zone-wise Breakdown</h3>
-      <div id="mfc-zones"></div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
-      <div class="card">
-        <h3>Combustion Equipment</h3>
-        <table class="bom" id="tbl-combustion" style="font-size:0.8rem"></table>
-      </div>
-      <div class="card">
-        <h3>Refractory Breakdown</h3>
-        <table class="bom" id="tbl-refractory" style="font-size:0.8rem">
-        </table>
-      </div>
-    </div>
-
     <div class="card">
-      <h3>Bill of Materials — Cost Breakup</h3>
+      <div class="card-title">Combustion Equipment</div>
+      <table class="dt" id="tbl-combustion"></table>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(1)">← Back</button>
+      <button class="btn-primary" onclick="goStep(3)">Next: Mass Flow Control →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3: Mass Flow Control ═══ -->
+  <div class="step" id="step-3">
+    <div class="card">
+      <div class="card-title">Mass Flow Control — Zone-wise Breakdown</div>
+      <div class="zone-grid" id="mfc-zones"></div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(2)">← Back</button>
+      <button class="btn-primary" onclick="goStep(4)">Next: Refractory →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 4: Refractory ═══ -->
+  <div class="step" id="step-4">
+    <div class="card">
+      <div class="card-title">Refractory Breakdown</div>
+      <table class="dt" id="tbl-refractory"></table>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(3)">← Back</button>
+      <button class="btn-primary" onclick="goStep(5)">Next: BOM & Costing →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 5: BOM & Costing ═══ -->
+  <div class="step" id="step-5">
+    <div class="cost-banner"><div><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b5-sell">--</div></div>
+      <div class="banner-sub"><div><div class="lbl">Cost</div><div class="val" id="b5-cost">--</div></div><div><div class="lbl">Main Sell</div><div class="val" id="b5-main">--</div></div></div></div>
+    <div class="card">
+      <div class="card-title">Bill of Materials — Cost Breakup</div>
       <table class="bom">
-        <thead>
-          <tr>
-            <th>Section</th>
-            <th>Item</th>
-            <th class="num">Qty</th>
-            <th>Unit</th>
-            <th class="num">Unit Price</th>
-            <th class="num">Cost Price</th>
-            <th class="markup-col">Markup</th>
-            <th class="num">Sell Price</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Section</th><th>Item</th><th class="num">Qty</th><th>Unit</th>
+          <th class="num">Unit Price</th><th class="num">Cost</th><th style="text-align:center">Markup</th><th class="num">Sell</th>
+        </tr></thead>
         <tbody id="bom-body"></tbody>
       </table>
-
       <div class="summary-card">
         <table>
           <tr class="sub-head"><td colspan="2">Main Scope</td></tr>
-          <tr><td>Cost Price</td><td id="s-main-cost">--</td></tr>
-          <tr><td>Sell Price</td><td id="s-main-sell">--</td></tr>
+          <tr><td>Cost</td><td id="s-main-cost">--</td></tr>
+          <tr><td>Sell</td><td id="s-main-sell">--</td></tr>
           <tr class="sub-head" id="ng-head" style="display:none"><td colspan="2">NG Optional</td></tr>
-          <tr id="ng-cost-row" style="display:none"><td>Cost Price</td><td id="s-ng-cost">--</td></tr>
-          <tr id="ng-sell-row" style="display:none"><td>Sell Price</td><td id="s-ng-sell">--</td></tr>
-          <tr class="sub-head" id="client-head" style="display:none"><td colspan="2">Client Scope</td></tr>
-          <tr id="client-cost-row" style="display:none"><td>Cost Price</td><td id="s-client-cost">--</td></tr>
-          <tr id="client-sell-row" style="display:none"><td>Sell Price</td><td id="s-client-sell">--</td></tr>
-          <tr class="grand"><td><b>Grand Total Cost</b></td><td id="s-grand-cost">--</td></tr>
-          <tr class="grand"><td><b>Grand Total Sell</b></td><td id="s-grand-sell">--</td></tr>
+          <tr id="ng-c" style="display:none"><td>Cost</td><td id="s-ng-cost">--</td></tr>
+          <tr id="ng-s" style="display:none"><td>Sell</td><td id="s-ng-sell">--</td></tr>
+          <tr class="sub-head" id="cl-head" style="display:none"><td colspan="2">Client Scope</td></tr>
+          <tr id="cl-c" style="display:none"><td>Cost</td><td id="s-cl-cost">--</td></tr>
+          <tr id="cl-s" style="display:none"><td>Sell</td><td id="s-cl-sell">--</td></tr>
+          <tr class="grand"><td><b>Grand Cost</b></td><td id="s-grand-cost">--</td></tr>
+          <tr class="grand"><td><b>Grand Sell</b></td><td id="s-grand-sell">--</td></tr>
         </table>
-        <button class="btn btn-navy" style="width:100%;margin-top:16px;" onclick="downloadExcel()">Download Excel</button>
+        <button class="btn-primary" style="width:100%;margin-top:16px" onclick="downloadExcel()">Download Excel</button>
       </div>
     </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(4)">← Back</button>
+    </div>
   </div>
+
 </div>
 
 <script>
 const API = "";
-const fmt = (n) => new Intl.NumberFormat("en-IN", {maximumFractionDigits: 0}).format(n);
+const fmt = n => new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
 let lastData = null;
+const STEPS = [1,2,3,4,5];
 
-async function calculate() {
-  const includeNG     = document.getElementById("chk-ng").checked;
-  const includeClient = document.getElementById("chk-client").checked;
-  const errBox = document.getElementById("error-box");
-  errBox.style.display = "none";
-
-  try {
-    const res = await fetch(`${API}/api/snsf-brf-calculate`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({include_ng_optional: includeNG, include_client_scope: includeClient}),
-    });
-    const data = await res.json();
-    if (data.error) { errBox.textContent = data.error; errBox.style.display = "block"; return; }
-    lastData = data;
-    renderResults(data, includeNG, includeClient);
-  } catch (e) {
-    errBox.textContent = "API error: " + e.message;
-    errBox.style.display = "block";
-  }
+function goStep(n) {
+  STEPS.forEach(i => {
+    document.getElementById('step-'+i).classList.toggle('active', i===n);
+    const t = document.getElementById('tab-'+i);
+    t.classList.remove('active','done');
+    if(i===n) t.classList.add('active');
+    else if(i<n) t.classList.add('done');
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function renderResults(data, showNG, showClient) {
-  document.getElementById("results-section").style.display = "block";
+async function calculate() {
+  const ng = document.getElementById("chk-ng").checked;
+  const cl = document.getElementById("chk-client").checked;
+  const errBox = document.getElementById("error-box");
+  errBox.style.display = "none";
+  try {
+    const res = await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({include_ng_optional:ng,include_client_scope:cl})});
+    const data = await res.json();
+    if(data.error){errBox.textContent=data.error;errBox.style.display="block";return;}
+    lastData = data;
+    renderAll(data, ng, cl);
+    goStep(2);
+  } catch(e) { errBox.textContent="API error: "+e.message; errBox.style.display="block"; }
+}
 
-  // ── Calculation tables ──
-  const sp = data.supplementary || {};
-  const fc = sp.furnace_calc || {};
+function renderAll(data, showNG, showCL) {
+  const sp = data.supplementary||{};
+  const s = data.cost_summary;
+  const fc = sp.furnace_calc||{};
+  const rc = sp.recuperator||{};
+
+  // Banners
+  ["b2","b5"].forEach(p => {
+    document.getElementById(p+"-sell").textContent = "\u20B9 "+fmt(s.grand_sell);
+    document.getElementById(p+"-cost").textContent = "\u20B9 "+fmt(s.grand_cost);
+  });
+  document.getElementById("b5-main").textContent = "\u20B9 "+fmt(s.main_sell);
+
+  // Step 2: Furnace
   document.getElementById("tbl-furnace").innerHTML = `
-    <tr><td style="font-weight:700">Furnace Capacity</td><td style="text-align:right">${fc.furnace_capacity_tph} TPH</td></tr>
-    <tr><td>Billet Dimensions</td><td style="text-align:right">${fc.billet_L_mm} x ${fc.billet_W_mm} x ${fc.billet_H_mm} mm</td></tr>
-    <tr><td>Billet Weight</td><td style="text-align:right">${fmt(fc.billet_weight_kg)} kg</td></tr>
-    <tr><td>Inside Material</td><td style="text-align:right">${fmt(fc.inside_material_kg)} kg</td></tr>
-    <tr><td>Effective Length</td><td style="text-align:right">${fc.effective_length_m} m</td></tr>
-    <tr><td>Effective Width</td><td style="text-align:right">${fc.effective_width_m} m</td></tr>
-    <tr><td>Overall Width</td><td style="text-align:right">${fmt(fc.overall_width_mm)} mm</td></tr>
-    <tr><td>Overall Length</td><td style="text-align:right">${fmt(fc.overall_length_mm)} mm</td></tr>
-    <tr><td>Calorific Value</td><td style="text-align:right">${fmt(fc.calorific_value_kcal_nm3)} kcal/Nm3</td></tr>`;
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Furnace Capacity</td><td>${fc.furnace_capacity_tph} TPH</td></tr>
+    <tr><td>Billet Dimensions</td><td>${fc.billet_L_mm} x ${fc.billet_W_mm} x ${fc.billet_H_mm} mm</td></tr>
+    <tr><td>Billet Weight</td><td>${fmt(fc.billet_weight_kg)} kg</td></tr>
+    <tr><td>Inside Material</td><td>${fmt(fc.inside_material_kg)} kg</td></tr>
+    <tr><td>Effective Length</td><td>${fc.effective_length_m} m</td></tr>
+    <tr><td>Effective Width</td><td>${fc.effective_width_m} m</td></tr>
+    <tr><td>Overall Width</td><td>${fmt(fc.overall_width_mm)} mm</td></tr>
+    <tr><td>Overall Length</td><td>${fmt(fc.overall_length_mm)} mm</td></tr>
+    <tr><td>Calorific Value</td><td>${fmt(fc.calorific_value_kcal_nm3)} kcal/Nm\u00B3</td></tr>`;
 
-  const rc = sp.recuperator || {};
   document.getElementById("tbl-recup").innerHTML = `
-    <tr><td style="font-weight:700">${rc.title || ''}</td><td></td></tr>
-    <tr><td>Flue Gas Flow</td><td style="text-align:right">${fmt(rc.total_flue_gas_nm3hr)} Nm3/hr</td></tr>
-    <tr><td>Flue Gas Mass</td><td style="text-align:right">${fmt(rc.total_mass_flue_gas_kghr)} Kg/hr</td></tr>
-    <tr><td>Flue Gas Temp (In/Out)</td><td style="text-align:right">${rc.initial_temp_flue_gas_c} / ${rc.final_temp_flue_gas_c} C</td></tr>
-    <tr><td>Air Volume</td><td style="text-align:right">${fmt(rc.air_volume_nm3hr)} Nm3/hr</td></tr>
-    <tr><td>Air Temp (In/Out)</td><td style="text-align:right">${rc.initial_air_temp_c} / ${rc.final_air_temp_c} C</td></tr>
-    <tr><td>Heat Required</td><td style="text-align:right">${fmt(rc.heat_required_kcal)} kcal</td></tr>
-    <tr><td>LMTD</td><td style="text-align:right">${rc.lmtd_c} C</td></tr>
-    <tr><td>Surface Area</td><td style="text-align:right">${rc.surface_area_m2} m2</td></tr>
-    <tr><td>Pipes</td><td style="text-align:right">${rc.pipes_total} (${rc.pipes_per_row}x${rc.pipes_per_column})</td></tr>
-    <tr><td>Pipe Dia / Material</td><td style="text-align:right">${rc.pipe_dia_mm} mm — ${rc.material}</td></tr>
-    <tr><td>Hot Bank Weight</td><td style="text-align:right">${rc.hot_bank_weight_kg} Kg</td></tr>`;
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td style="font-weight:700">${rc.title||''}</td><td></td></tr>
+    <tr><td>Flue Gas Flow</td><td>${fmt(rc.total_flue_gas_nm3hr)} Nm\u00B3/hr</td></tr>
+    <tr><td>Flue Gas Mass</td><td>${fmt(rc.total_mass_flue_gas_kghr)} Kg/hr</td></tr>
+    <tr><td>Flue Gas Temp (In/Out)</td><td>${rc.initial_temp_flue_gas_c} / ${rc.final_temp_flue_gas_c} \u00B0C</td></tr>
+    <tr><td>Air Volume</td><td>${fmt(rc.air_volume_nm3hr)} Nm\u00B3/hr</td></tr>
+    <tr><td>Air Temp (In/Out)</td><td>${rc.initial_air_temp_c} / ${rc.final_air_temp_c} \u00B0C</td></tr>
+    <tr><td>Heat Required</td><td>${fmt(rc.heat_required_kcal)} kcal</td></tr>
+    <tr><td>LMTD</td><td>${rc.lmtd_c} \u00B0C</td></tr>
+    <tr><td>Surface Area</td><td>${rc.surface_area_m2} m\u00B2</td></tr>
+    <tr><td>Pipes</td><td>${rc.pipes_total} (${rc.pipes_per_row}x${rc.pipes_per_column})</td></tr>
+    <tr><td>Material</td><td>${rc.material}</td></tr>
+    <tr><td>Hot Bank Weight</td><td>${rc.hot_bank_weight_kg} Kg</td></tr>`;
 
-  // Mass Flow Control zones
-  const mfc = sp.mass_flow_control || [];
-  document.getElementById("mfc-zones").innerHTML = '<div class="zone-grid">' + mfc.map(z => `
-    <div class="zone-card">
-      <h4>${z.zone}</h4>
-      <table>${z.items.map(it => `<tr><td>${it.item}</td><td>${it.qty}</td><td>${fmt(it.price * it.qty)}</td></tr>`).join("")}</table>
-    </div>`).join("") + '</div>';
+  const comb = sp.combustion_items||[];
+  document.getElementById("tbl-combustion").innerHTML = `<tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>${
+    comb.map(c=>`<tr><td>${c.item}</td><td style="text-align:right">${c.qty}</td><td style="text-align:right">${fmt(c.price)}</td><td style="text-align:right">${fmt(c.qty*c.price)}</td></tr>`).join("")}
+    <tr class="total"><td>Total</td><td></td><td></td><td style="text-align:right">${fmt(comb.reduce((s,c)=>s+c.qty*c.price,0))}</td></tr>`;
 
-  // Combustion items
-  const comb = sp.combustion_items || [];
-  document.getElementById("tbl-combustion").innerHTML = `
-    <tr><th style="background:var(--navy);color:#fff;padding:8px">Item</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Qty</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Total</th></tr>
-    ${comb.map(c => `<tr><td>${c.item}</td><td style="text-align:right">${c.qty}</td><td style="text-align:right">${fmt(c.qty * c.price)}</td></tr>`).join("")}`;
+  // Step 3: Mass Flow Control
+  const mfc = sp.mass_flow_control||[];
+  document.getElementById("mfc-zones").innerHTML = mfc.map(z=>`
+    <div class="zone-card"><h4>${z.zone}</h4><table>
+    <tr><th style="text-align:left;font-size:.72rem;color:var(--muted)">Item</th><th style="text-align:center;font-size:.72rem;color:var(--muted)">Qty</th><th style="text-align:right;font-size:.72rem;color:var(--muted)">Total</th></tr>
+    ${z.items.map(it=>`<tr><td>${it.item}</td><td style="text-align:center">${it.qty}</td><td style="text-align:right">${fmt(it.price*it.qty)}</td></tr>`).join("")}
+    </table></div>`).join("");
 
-  // Refractory items
-  const ref = sp.refractory_items || [];
+  // Step 4: Refractory
+  const ref = sp.refractory_items||[];
   document.getElementById("tbl-refractory").innerHTML = `
-    <tr><th style="background:var(--navy);color:#fff;padding:8px">Item</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Weight (Kg)</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Cost</th></tr>
-    ${ref.map(r => `<tr><td style="font-size:0.75rem">${r.item}</td><td style="text-align:right">${fmt(r.weight_kg)}</td><td style="text-align:right">${fmt(r.cost)}</td></tr>`).join("")}
-    <tr style="background:#eff6ff;font-weight:700"><td>Total</td><td></td><td style="text-align:right">${fmt(ref.reduce((s,r)=>s+r.cost,0))}</td></tr>`;
+    <tr><th>Item</th><th>Qty</th><th>Weight (Kg)</th><th>Rate</th><th>Cost</th></tr>
+    ${ref.map(r=>`<tr><td style="font-size:.78rem">${r.item}</td><td style="text-align:right">${fmt(r.qty)}</td><td style="text-align:right">${fmt(r.weight_kg)}</td><td style="text-align:right">${fmt(r.rate)}</td><td style="text-align:right">${fmt(r.cost)}</td></tr>`).join("")}
+    <tr class="total"><td>Total Refractory</td><td></td><td></td><td></td><td style="text-align:right">${fmt(ref.reduce((s,r)=>s+r.cost,0))}</td></tr>`;
 
-  // BOM table
+  // Step 5: BOM
   const tbody = document.getElementById("bom-body");
-  let lastSection = "";
-  tbody.innerHTML = data.bom.map(row => {
-    let sectionRow = "";
-    if (row.SECTION !== lastSection) {
-      lastSection = row.SECTION;
-      sectionRow = `<tr class="section-row"><td colspan="8">${row.SECTION}</td></tr>`;
-    }
-    return sectionRow + `<tr>
-      <td></td>
-      <td>${row.ITEM}</td>
-      <td class="num">${row.QTY}</td>
-      <td>${row.UNIT}</td>
-      <td class="num">${fmt(row["UNIT PRICE"])}</td>
-      <td class="num">${fmt(row["COST PRICE"])}</td>
-      <td class="markup-col">${row.MARKUP}x</td>
-      <td class="num">${fmt(row["SELL PRICE"])}</td>
-    </tr>`;
+  let lastSec = "";
+  tbody.innerHTML = data.bom.map(row=>{
+    let sh="";
+    if(row.SECTION!==lastSec){lastSec=row.SECTION;sh=`<tr class="section-row"><td colspan="8">${row.SECTION}</td></tr>`;}
+    return sh+`<tr><td></td><td>${row.ITEM}</td><td class="num">${row.QTY}</td><td>${row.UNIT}</td><td class="num">${fmt(row["UNIT PRICE"])}</td><td class="num">${fmt(row["COST PRICE"])}</td><td style="text-align:center">${row.MARKUP}x</td><td class="num">${fmt(row["SELL PRICE"])}</td></tr>`;
   }).join("");
 
-  // Summary
-  const s = data.cost_summary;
-  document.getElementById("s-main-cost").textContent  = "₹ " + fmt(s.main_cost);
-  document.getElementById("s-main-sell").textContent  = "₹ " + fmt(s.main_sell);
-  document.getElementById("s-grand-cost").textContent = "₹ " + fmt(s.grand_cost);
-  document.getElementById("s-grand-sell").textContent = "₹ " + fmt(s.grand_sell);
+  document.getElementById("s-main-cost").textContent  = "\u20B9 "+fmt(s.main_cost);
+  document.getElementById("s-main-sell").textContent  = "\u20B9 "+fmt(s.main_sell);
+  document.getElementById("s-grand-cost").textContent = "\u20B9 "+fmt(s.grand_cost);
+  document.getElementById("s-grand-sell").textContent = "\u20B9 "+fmt(s.grand_sell);
 
-  // NG optional
-  ["ng-head","ng-cost-row","ng-sell-row"].forEach(id =>
-    document.getElementById(id).style.display = showNG ? "" : "none");
-  if (showNG) {
-    document.getElementById("s-ng-cost").textContent = "₹ " + fmt(s.ng_optional_cost);
-    document.getElementById("s-ng-sell").textContent = "₹ " + fmt(s.ng_optional_sell);
-  }
-
-  // Client scope
-  ["client-head","client-cost-row","client-sell-row"].forEach(id =>
-    document.getElementById(id).style.display = showClient ? "" : "none");
-  if (showClient) {
-    document.getElementById("s-client-cost").textContent = "₹ " + fmt(s.client_scope_cost);
-    document.getElementById("s-client-sell").textContent = "₹ " + fmt(s.client_scope_sell);
-  }
-
-  // Banner
-  document.getElementById("banner-sell").textContent      = "₹ " + fmt(s.grand_sell);
-  document.getElementById("banner-cost").textContent      = "₹ " + fmt(s.grand_cost);
-  document.getElementById("banner-main-sell").textContent  = "₹ " + fmt(s.main_sell);
-  document.getElementById("cost-banner").style.display = "flex";
+  ["ng-head","ng-c","ng-s"].forEach(id=>document.getElementById(id).style.display=showNG?"":"none");
+  if(showNG){document.getElementById("s-ng-cost").textContent="\u20B9 "+fmt(s.ng_optional_cost);document.getElementById("s-ng-sell").textContent="\u20B9 "+fmt(s.ng_optional_sell);}
+  ["cl-head","cl-c","cl-s"].forEach(id=>document.getElementById(id).style.display=showCL?"":"none");
+  if(showCL){document.getElementById("s-cl-cost").textContent="\u20B9 "+fmt(s.client_scope_cost);document.getElementById("s-cl-sell").textContent="\u20B9 "+fmt(s.client_scope_sell);}
 }
 
 async function downloadExcel() {
-  if (!lastData) return;
-  const res = await fetch(`${API}/api/export-excel`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      equipment_type: "SNSF BRF",
-      customer: {},
-      bom: lastData.bom,
-      cost_summary: lastData.cost_summary,
-      equipment: {supplementary: lastData.supplementary},
-    }),
-  });
+  if(!lastData)return;
+  const res = await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({equipment_type:"SNSF BRF",customer:{},bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}})});
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
+  a.href = URL.createObjectURL(blob);
   a.download = `SNSF_BRF_Costing_${new Date().toISOString().slice(0,10)}.xlsx`;
   a.click();
-  URL.revokeObjectURL(url);
 }
 </script>
 </body>

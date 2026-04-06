@@ -7,86 +7,83 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
-    :root {
-      --navy:   #1a3a5c;
-      --navy2:  #0f2744;
-      --green:  #059669;
-      --red:    #dc2626;
-      --border: #e5e7eb;
-      --text:   #0f172a;
-      --muted:  #64748b;
-      --bg:     #f8fafc;
+    :root { --navy:#1a3a5c; --navy2:#0f2744; --green:#059669; --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f8fafc; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:#fff; color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
+
+    nav { background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 32px; position:sticky; top:0; z-index:100; height:56px; box-shadow:0 1px 0 var(--border); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:900; font-size:.95rem; margin-right:24px; letter-spacing:-.4px; }
+    .brand-mark { width:30px; height:30px; background:var(--navy); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.7rem; font-weight:900; }
+    .step-tabs { display:flex; flex:1; }
+    .step-tab { padding:0 18px; height:56px; font-size:.82rem; font-weight:500; color:#94a3b8; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .step-tab.active { color:var(--navy); border-bottom-color:var(--navy); font-weight:600; }
+    .step-tab.done { color:var(--green); }
+    .tab-n { width:22px; height:22px; border-radius:50%; background:#e2e8f0; display:inline-flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700; color:#64748b; }
+    .step-tab.active .tab-n { background:var(--navy); color:#fff; }
+    .step-tab.done .tab-n { background:var(--green); color:#fff; }
+    .topnav-links { margin-left:auto; display:flex; gap:2px; }
+    .topnav-links a { font-size:.82rem; color:var(--muted); text-decoration:none; padding:6px 11px; border-radius:6px; font-weight:500; }
+    .topnav-links a:hover { background:#f1f5f9; color:var(--navy); }
+    .topnav-links a.active { background:#eff6ff; color:var(--navy); font-weight:600; }
+
+    .page { max-width:900px; margin:0 auto; padding:32px 20px 60px; }
+    .step { display:none; } .step.active { display:block; }
+    .card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:20px; }
+    .card-title { font-size:.95rem; font-weight:700; color:var(--navy); margin-bottom:16px; }
+    .field { margin-bottom:14px; }
+    .field label { display:block; font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.3px; }
+    .field select, .field input { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:.88rem; font-family:inherit; }
+    .field .hint { font-size:.72rem; color:#94a3b8; margin-top:4px; }
+    .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+    .btn-primary { background:var(--navy); color:#fff; border:none; padding:12px 28px; border-radius:8px; font-size:.88rem; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-primary:hover { background:var(--navy2); }
+    .btn-back { background:none; border:1px solid var(--border); padding:10px 20px; border-radius:8px; font-size:.85rem; cursor:pointer; font-family:inherit; color:var(--muted); }
+    .step-nav { display:flex; gap:12px; margin-top:20px; align-items:center; }
+
+    .cost-banner { background:var(--navy); color:white; border-radius:10px; padding:18px 28px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .banner-label { font-size:.78rem; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
+    .banner-value { font-size:1.7rem; font-weight:800; letter-spacing:-.5px; }
+    .banner-sub { display:flex; gap:32px; font-size:.88rem; }
+    .banner-sub .val { font-weight:700; }
+    .banner-sub .lbl { opacity:.65; }
+
+    table.dt { width:100%; border-collapse:collapse; font-size:.82rem; }
+    table.dt th { background:var(--bg); padding:8px 12px; text-align:left; font-weight:600; font-size:.75rem; color:var(--navy); border-bottom:2px solid var(--border); }
+    table.dt td { padding:7px 12px; border-bottom:1px solid #f1f5f9; }
+    table.dt td:last-child { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+    table.dt tr.total td { background:#eff6ff; font-weight:700; color:var(--navy); }
+
+    table.bom { width:100%; border-collapse:collapse; font-size:.82rem; }
+    table.bom th { background:var(--navy); color:#fff; padding:10px 12px; text-align:left; font-weight:600; font-size:.75rem; text-transform:uppercase; }
+    table.bom td { padding:9px 12px; border-bottom:1px solid #f1f5f9; }
+    table.bom tr:hover td { background:#f8fafc; }
+    table.bom tr.section-row td { background:#f1f5f9; font-weight:700; color:var(--navy); }
+    table.bom .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+    .summary-card { background:#f8fafc; border:1.5px solid var(--border); border-radius:10px; padding:20px 24px; margin-top:20px; max-width:450px; margin-left:auto; }
+    .summary-card table { width:100%; }
+    .summary-card td { padding:6px 0; font-size:.88rem; }
+    .summary-card td:last-child { text-align:right; font-weight:700; }
+    .summary-card .grand td { border-top:2px solid var(--navy); padding-top:10px; font-size:1rem; color:var(--navy); }
+
+    .alert-error { padding:14px 18px; border-radius:8px; font-size:.85rem; margin-bottom:16px; display:none; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; }
+    @media(max-width:700px) {
+      .step-tabs { overflow-x:auto; width:100%; } .topnav-links { display:none; }
+      .field-grid { grid-template-columns:1fr; }
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #fff; color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
-
-    .topnav {
-      background: #fff; border-bottom: 1px solid var(--border);
-      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
-      display: flex; align-items: center; padding: 0 40px;
-      position: sticky; top: 0; z-index: 100; height: 56px;
-    }
-    .topnav-brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 0.95rem; color: var(--text); margin-right: 32px; letter-spacing: -.4px; text-decoration: none; }
-    .brand-mark { width: 30px; height: 30px; background: var(--navy); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.7rem; font-weight: 900; letter-spacing: -.2px; flex-shrink: 0; }
-    .topnav-links { margin-left: auto; display: flex; gap: 4px; }
-    .topnav-links a { text-decoration: none; font-size: 0.78rem; font-weight: 500; color: var(--muted); padding: 6px 14px; border-radius: 6px; transition: all .15s; }
-    .topnav-links a:hover { background: var(--bg); color: var(--text); }
-    .topnav-links a.active { background: var(--navy); color: #fff; }
-
-    .page { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
-    .page-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
-    .page-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; }
-
-    .card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
-    .card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; color: var(--navy); }
-
-    .form-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; }
-    .field { flex: 1; min-width: 200px; }
-    .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
-    .field select, .field input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.88rem; font-family: inherit; }
-    .field .hint { font-size: 0.72rem; color: #94a3b8; margin-top: 4px; }
-
-    .btn { padding: 10px 28px; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
-    .btn-navy { background: var(--navy); color: #fff; }
-    .btn-navy:hover { background: var(--navy2); }
-
-    .cost-banner { display: none; background: var(--navy); color: white; border-radius: 10px; padding: 18px 28px; margin-bottom: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-    .cost-banner .label { font-size: 0.78rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }
-    .cost-banner .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.5px; }
-    .cost-banner .sub { display: flex; gap: 32px; font-size: 0.88rem; }
-    .cost-banner .sub .val { font-weight: 700; }
-    .cost-banner .sub .lbl { opacity: 0.65; }
-
-    table.bom { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    table.bom th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.3px; }
-    table.bom td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; }
-    table.bom tr:hover td { background: #f8fafc; }
-    table.bom tr.section-row td { background: #f1f5f9; font-weight: 700; color: var(--navy); }
-    table.bom .num { text-align: right; font-variant-numeric: tabular-nums; }
-
-    .summary-card { background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-top: 20px; max-width: 450px; margin-left: auto; }
-    .summary-card table { width: 100%; }
-    .summary-card td { padding: 6px 0; font-size: 0.88rem; }
-    .summary-card td:last-child { text-align: right; font-weight: 700; }
-    .summary-card .grand td { border-top: 2px solid var(--navy); padding-top: 10px; font-size: 1rem; color: var(--navy); }
-
-    /* Calc tables */
-    .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-    @media(max-width:768px) { .calc-grid { grid-template-columns: 1fr; } }
-    table.calc { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-    table.calc th { background: var(--bg); padding: 8px 12px; text-align: left; font-weight: 600; font-size: 0.75rem; color: var(--navy); border-bottom: 2px solid var(--border); }
-    table.calc td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; }
-    table.calc td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-    table.calc tr.total td { background: #eff6ff; font-weight: 700; color: var(--navy); }
-
-    .alert { padding: 14px 18px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
-    .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
   </style>
 </head>
 <body>
 
-<nav class="topnav">
-  <div class="topnav-brand"><div class="brand-mark">EN</div> ENCON</div>
+<nav>
+  <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
+  <div class="step-tabs">
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Configuration</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace Calc</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Pipe & Recuperator</div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>BOM & Costing</div>
+  </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
     <a href="/hlph">HLPH</a>
@@ -97,280 +94,239 @@
 </nav>
 
 <div class="page">
-  <h1 class="page-title">Box Type Furnace — 10 Ton Reheating Furnace</h1>
-  <p class="page-sub">Select combustion control mode and generate costing breakdown</p>
 
-  <div class="card">
-    <h3>Configuration</h3>
-    <div class="form-row">
-      <div class="field">
-        <label>Combustion Control Mode</label>
-        <select id="combustion-mode">
-          <option value="onoff">ON/OFF Control</option>
-          <option value="massflow">Mass Flow Control</option>
-        </select>
-        <div class="hint">Mass Flow adds zone-wise orifice plates, DPTs, and control valves</div>
+  <!-- ═══ STEP 1: Configuration ═══ -->
+  <div class="step active" id="step-1">
+    <div class="card">
+      <div class="card-title">Box Type Furnace — 10 Ton Reheating Furnace</div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Combustion Control Mode</label>
+          <select id="combustion-mode">
+            <option value="onoff">ON/OFF Control</option>
+            <option value="massflow">Mass Flow Control</option>
+          </select>
+          <div class="hint">Mass Flow adds zone-wise orifice plates, DPTs, and control valves</div>
+        </div>
+        <div class="field">
+          <label>Sell Price Markup</label>
+          <input id="markup" type="number" value="1.8" step="0.1" min="1"/>
+          <div class="hint">Multiplier on cost price (default 1.8x)</div>
+        </div>
       </div>
-      <div class="field">
-        <label>Sell Price Markup</label>
-        <input id="markup" type="number" value="1.8" step="0.1" min="1"/>
-        <div class="hint">Multiplier on cost price (default 1.8x)</div>
-      </div>
-      <div class="field" style="display:flex; flex-direction:column; justify-content:flex-end;">
-        <button class="btn btn-navy" onclick="calculate()">Calculate</button>
-      </div>
+    </div>
+    <div class="alert-error" id="error-box"></div>
+    <div class="step-nav">
+      <button class="btn-primary" id="calcBtn" onclick="calculate()">Calculate &amp; Build BOM</button>
     </div>
   </div>
 
-  <div class="alert alert-error" id="error-box"></div>
-
-  <div id="results-section" style="display:none">
-
-    <div class="cost-banner" id="cost-banner">
-      <div>
-        <div class="label">Box Type Furnace — Quoted Price</div>
-        <div class="big" id="banner-quoted">--</div>
-      </div>
-      <div class="sub">
-        <div><div class="lbl">Cost Price</div><div class="val" id="banner-cost">--</div></div>
-        <div><div class="lbl">Sell Price (1.8x)</div><div class="val" id="banner-sell">--</div></div>
+  <!-- ═══ STEP 2: Furnace Calculation ═══ -->
+  <div class="step" id="step-2">
+    <div class="cost-banner" id="cost-banner-2">
+      <div><div class="banner-label">Quoted Price</div><div class="banner-value" id="b2-quoted">--</div></div>
+      <div class="banner-sub">
+        <div><div class="lbl">Cost</div><div class="val" id="b2-cost">--</div></div>
+        <div><div class="lbl">Sell</div><div class="val" id="b2-sell">--</div></div>
       </div>
     </div>
-
-    <!-- ── Calculation Breakdown ── -->
-    <div class="calc-grid">
-      <div class="card">
-        <h3>Furnace Parameters</h3>
-        <table class="calc" id="tbl-params"></table>
-      </div>
-      <div class="card">
-        <h3>Heat Load Calculation</h3>
-        <table class="calc" id="tbl-heatload"></table>
-      </div>
-    </div>
-
-    <div class="calc-grid">
-      <div class="card">
-        <h3>Pipe Sizing — Air</h3>
-        <table class="calc" id="tbl-pipe-air"></table>
-      </div>
-      <div class="card">
-        <h3>Pipe Sizing — Gas</h3>
-        <table class="calc" id="tbl-pipe-gas"></table>
-      </div>
-    </div>
-
     <div class="card">
-      <h3>Recuperator Calculation</h3>
-      <div class="calc-grid" style="margin-bottom:0">
-        <table class="calc" id="tbl-recup-thermal"></table>
-        <table class="calc" id="tbl-recup-physical"></table>
+      <div class="card-title">Furnace Parameters</div>
+      <table class="dt" id="tbl-params"></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Heat Load Calculation</div>
+      <table class="dt" id="tbl-heatload"></table>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(1)">← Back</button>
+      <button class="btn-primary" onclick="goStep(3)">Next: Pipe & Recuperator →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3: Pipe Sizing & Recuperator ═══ -->
+  <div class="step" id="step-3">
+    <div class="card">
+      <div class="card-title">Pipe Sizing — Air</div>
+      <table class="dt" id="tbl-pipe-air"></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Pipe Sizing — Gas</div>
+      <table class="dt" id="tbl-pipe-gas"></table>
+    </div>
+    <div class="card">
+      <div class="card-title">Recuperator Calculation</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <table class="dt" id="tbl-recup-thermal"></table>
+        <table class="dt" id="tbl-recup-physical"></table>
       </div>
     </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(2)">← Back</button>
+      <button class="btn-primary" onclick="goStep(4)">Next: BOM & Costing →</button>
+    </div>
+  </div>
 
-    <!-- ── BOM ── -->
+  <!-- ═══ STEP 4: BOM & Costing ═══ -->
+  <div class="step" id="step-4">
+    <div class="cost-banner">
+      <div><div class="banner-label">Quoted Price</div><div class="banner-value" id="b4-quoted">--</div></div>
+      <div class="banner-sub">
+        <div><div class="lbl">Cost</div><div class="val" id="b4-cost">--</div></div>
+        <div><div class="lbl">Sell</div><div class="val" id="b4-sell">--</div></div>
+      </div>
+    </div>
     <div class="card">
-      <h3>Bill of Materials</h3>
+      <div class="card-title">Bill of Materials</div>
       <table class="bom">
-        <thead>
-          <tr>
-            <th>Section</th>
-            <th>Item</th>
-            <th class="num">Qty</th>
-            <th>Unit</th>
-            <th class="num">Unit Price</th>
-            <th class="num">Cost Price</th>
-            <th class="num">Sell Price</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Section</th><th>Item</th><th class="num">Qty</th><th>Unit</th>
+          <th class="num">Unit Price</th><th class="num">Cost Price</th><th class="num">Sell Price</th>
+        </tr></thead>
         <tbody id="bom-body"></tbody>
       </table>
-
       <div class="summary-card">
         <table>
           <tr><td>Structure Cost</td><td id="s-structure">--</td></tr>
-          <tr><td>Combustion System Cost</td><td id="s-combustion">--</td></tr>
-          <tr><td><b>Total Cost Price</b></td><td id="s-total-cost">--</td></tr>
-          <tr><td>Sell Price (markup)</td><td id="s-sell">--</td></tr>
+          <tr><td>Combustion System</td><td id="s-combustion">--</td></tr>
+          <tr><td><b>Total Cost</b></td><td id="s-total-cost">--</td></tr>
+          <tr><td>Sell Price</td><td id="s-sell">--</td></tr>
           <tr><td>Designing (10%)</td><td id="s-designing">--</td></tr>
           <tr><td>Negotiation (10%)</td><td id="s-negotiation">--</td></tr>
           <tr class="grand"><td><b>Quoted Price</b></td><td id="s-quoted">--</td></tr>
         </table>
-        <button class="btn btn-navy" style="width:100%;margin-top:16px;" onclick="downloadExcel()">Download Excel</button>
+        <button class="btn-primary" style="width:100%;margin-top:16px" onclick="downloadExcel()">Download Excel</button>
       </div>
     </div>
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(3)">← Back</button>
+    </div>
   </div>
+
 </div>
 
 <script>
 const API = "";
-const fmt = (n) => new Intl.NumberFormat("en-IN", {maximumFractionDigits: 0}).format(n);
-const fmt2 = (n) => new Intl.NumberFormat("en-IN", {maximumFractionDigits: 2}).format(n);
+const fmt = n => new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
+const fmt2 = n => new Intl.NumberFormat("en-IN",{maximumFractionDigits:2}).format(n);
 let lastData = null;
 
-function kv(rows) { return rows.map(([l,v]) => `<tr><td>${l}</td><td>${v}</td></tr>`).join(""); }
-
-async function calculate() {
-  const mode   = document.getElementById("combustion-mode").value;
-  const markup = parseFloat(document.getElementById("markup").value) || 1.8;
-  const errBox = document.getElementById("error-box");
-  errBox.style.display = "none";
-
-  try {
-    const res = await fetch(`${API}/api/btf-calculate`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({combustion_mode: mode, markup: markup}),
-    });
-    const data = await res.json();
-    if (data.error) { errBox.textContent = data.error; errBox.style.display = "block"; return; }
-    lastData = data;
-    renderResults(data);
-  } catch (e) {
-    errBox.textContent = "API error: " + e.message;
-    errBox.style.display = "block";
-  }
+function goStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step-'+i).classList.toggle('active', i===n);
+    const t = document.getElementById('tab-'+i);
+    t.classList.remove('active','done');
+    if (i===n) t.classList.add('active');
+    else if (i<n) t.classList.add('done');
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function renderResults(data) {
-  document.getElementById("results-section").style.display = "block";
+function kv(rows) { return rows.map(([l,v])=>`<tr><td>${l}</td><td>${v}</td></tr>`).join(""); }
 
-  // ── Calculation tables ──
+async function calculate() {
+  const mode = document.getElementById("combustion-mode").value;
+  const markup = parseFloat(document.getElementById("markup").value)||1.8;
+  const errBox = document.getElementById("error-box");
+  errBox.style.display = "none";
+  try {
+    const res = await fetch(`${API}/api/btf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({combustion_mode:mode,markup})});
+    const data = await res.json();
+    if(data.error){errBox.textContent=data.error;errBox.style.display="block";return;}
+    lastData = data;
+    renderAll(data);
+    goStep(2);
+  } catch(e) { errBox.textContent="API error: "+e.message; errBox.style.display="block"; }
+}
+
+function renderAll(data) {
   const sp = data.supplementary;
   const fp = sp.furnace_params;
   const fd = sp.furnace_dimensions;
+  const s = data.cost_summary;
 
-  document.getElementById("tbl-params").innerHTML = `
-    <tr><th colspan="2">Furnace Specification</th></tr>
-    ${kv([
-      ["Furnace Internal (L x W x H)", `${fd.internal_L_mm} x ${fd.internal_W_mm} x ${fd.internal_H_mm} mm`],
-      ["Furnace Capacity", `${fp.furnace_capacity_tph} Ton/hr`],
-      ["Total Load", `${fp.total_load_tonne} Tonne`],
-      ["Gas Consumption (Std)", `${fp.std_gas_consumption_nm3_ton} Nm\u00B3/Ton`],
-      ["Fuel Consumption", `${fp.fuel_consumption_nm3hr} Nm\u00B3/hr`],
-      ["Air Flow", `${fmt(fp.air_flow_nm3hr)} Nm\u00B3/hr`],
-      ["CFM", `${fmt2(fp.cfm)}`],
-      ["Blower HP (Calc)", `${fmt2(fp.blower_hp_calc)} HP`],
-      ["Blower HP (Selected)", `${fp.blower_hp_selected} HP`],
-      ["No. of Burners", `${fp.no_of_burners}`],
-      ["No. of Zones", `${fp.no_of_zones}`],
-      ["Heating Zone 1", `${fp.heating_zone_1_burners} burners`],
-      ["Heating Zone 2", `${fp.heating_zone_2_burners} burners`],
-      ["Rating / Zone", `${fmt(fp.rating_per_zone_kcal)} kcal (${fmt2(fp.rating_per_zone_kw)} kW)`],
-    ])}`;
+  // Banners
+  ["b2","b4"].forEach(p => {
+    document.getElementById(p+"-quoted").textContent = "\u20B9 "+fmt(s.quoted_price);
+    document.getElementById(p+"-cost").textContent   = "\u20B9 "+fmt(s.total_cost);
+    document.getElementById(p+"-sell").textContent   = "\u20B9 "+fmt(s.sell_price);
+  });
 
-  document.getElementById("tbl-heatload").innerHTML = `
-    <tr><th>Component</th><th>kcal</th></tr>
-    ${sp.heat_load.map(h =>
-      `<tr class="${h.item==='Total'||h.item==='Gross'?'total':''}"><td>${h.item}</td><td>${fmt(h.value)}</td></tr>`
-    ).join("")}`;
+  // Step 2: Furnace
+  document.getElementById("tbl-params").innerHTML = `<tr><th colspan="2">Specification</th></tr>${kv([
+    ["Furnace Internal (L x W x H)",`${fd.internal_L_mm} x ${fd.internal_W_mm} x ${fd.internal_H_mm} mm`],
+    ["Furnace Capacity",`${fp.furnace_capacity_tph} Ton/hr`],
+    ["Total Load",`${fp.total_load_tonne} Tonne`],
+    ["Std Gas Consumption",`${fp.std_gas_consumption_nm3_ton} Nm\u00B3/Ton`],
+    ["Fuel Consumption",`${fp.fuel_consumption_nm3hr} Nm\u00B3/hr`],
+    ["Air Flow",`${fmt(fp.air_flow_nm3hr)} Nm\u00B3/hr`],
+    ["CFM",`${fmt2(fp.cfm)}`],
+    ["Blower HP (Calc / Selected)",`${fmt2(fp.blower_hp_calc)} / ${fp.blower_hp_selected} HP`],
+    ["Burners",`${fp.no_of_burners} (Zone 1: ${fp.heating_zone_1_burners}, Zone 2: ${fp.heating_zone_2_burners})`],
+    ["Rating / Zone",`${fmt(fp.rating_per_zone_kcal)} kcal (${fmt2(fp.rating_per_zone_kw)} kW)`],
+  ])}`;
 
-  // Pipe sizing
+  document.getElementById("tbl-heatload").innerHTML = `<tr><th>Component</th><th>kcal</th></tr>${
+    sp.heat_load.map(h=>`<tr class="${h.item==='Total'||h.item==='Gross'?'total':''}"><td>${h.item}</td><td>${fmt(h.value)}</td></tr>`).join("")}`;
+
+  // Step 3: Pipe & Recuperator
   const pa = sp.pipe_sizing;
-  document.getElementById("tbl-pipe-air").innerHTML = `
-    <tr><th>Parameter</th><th>Zone 1 / Zone 2</th></tr>
-    ${kv([
-      ["Flow (Nm\u00B3/hr)", `${fmt2(pa.air_zone1.flow_nm3hr)} / ${fmt2(pa.air_zone2.flow_nm3hr)}`],
-      ["Velocity (m/s)", `${pa.air_zone1.velocity_ms} / ${pa.air_zone2.velocity_ms}`],
-      ["Inner Dia (mm)", `${fmt2(pa.air_zone1.inner_dia_mm)} / ${fmt2(pa.air_zone2.inner_dia_mm)}`],
-    ])}`;
+  document.getElementById("tbl-pipe-air").innerHTML = `<tr><th>Parameter</th><th>Zone 1</th><th>Zone 2</th></tr>
+    <tr><td>Flow (Nm\u00B3/hr)</td><td style="text-align:right">${fmt2(pa.air_zone1.flow_nm3hr)}</td><td style="text-align:right">${fmt2(pa.air_zone2.flow_nm3hr)}</td></tr>
+    <tr><td>Velocity (m/s)</td><td style="text-align:right">${pa.air_zone1.velocity_ms}</td><td style="text-align:right">${pa.air_zone2.velocity_ms}</td></tr>
+    <tr><td>Inner Dia (mm)</td><td style="text-align:right">${fmt2(pa.air_zone1.inner_dia_mm)}</td><td style="text-align:right">${fmt2(pa.air_zone2.inner_dia_mm)}</td></tr>`;
 
-  document.getElementById("tbl-pipe-gas").innerHTML = `
-    <tr><th>Parameter</th><th>Zone 1 / Zone 2</th></tr>
-    ${kv([
-      ["Flow (Nm\u00B3/hr)", `${fmt2(pa.gas_zone1.flow_nm3hr)} / ${fmt2(pa.gas_zone2.flow_nm3hr)}`],
-      ["Velocity (m/s)", `${pa.gas_zone1.velocity_ms} / ${pa.gas_zone2.velocity_ms}`],
-      ["Inner Dia (mm)", `${fmt2(pa.gas_zone1.inner_dia_mm)} / ${fmt2(pa.gas_zone2.inner_dia_mm)}`],
-    ])}`;
+  document.getElementById("tbl-pipe-gas").innerHTML = `<tr><th>Parameter</th><th>Zone 1</th><th>Zone 2</th></tr>
+    <tr><td>Flow (Nm\u00B3/hr)</td><td style="text-align:right">${fmt2(pa.gas_zone1.flow_nm3hr)}</td><td style="text-align:right">${fmt2(pa.gas_zone2.flow_nm3hr)}</td></tr>
+    <tr><td>Velocity (m/s)</td><td style="text-align:right">${pa.gas_zone1.velocity_ms}</td><td style="text-align:right">${pa.gas_zone2.velocity_ms}</td></tr>
+    <tr><td>Inner Dia (mm)</td><td style="text-align:right">${fmt2(pa.gas_zone1.inner_dia_mm)}</td><td style="text-align:right">${fmt2(pa.gas_zone2.inner_dia_mm)}</td></tr>`;
 
-  // Recuperator
   const rc = sp.recuperator;
-  document.getElementById("tbl-recup-thermal").innerHTML = `
-    <tr><th colspan="2">Thermal Data</th></tr>
-    ${kv([
-      ["Total Flue Gas", `${fmt(rc.total_flue_gas_nm3hr)} Nm\u00B3/hr`],
-      ["Mass of Flue Gas", `${fmt(rc.total_mass_flue_gas_kghr)} Kg/hr`],
-      ["Sp. Heat (Flue Gas)", `${rc.specific_heat_flue_gas} kcal/Kg-C`],
-      ["Flue Gas Temp (In)", `${rc.initial_temp_flue_gas_c} \u00B0C`],
-      ["Flue Gas Temp (Out)", `${fmt2(rc.final_temp_flue_gas_c)} \u00B0C`],
-      ["Air Volume", `${fmt(rc.air_volume_nm3hr)} Nm\u00B3/hr`],
-      ["Air Temp (In)", `${rc.initial_air_temp_c} \u00B0C`],
-      ["Air Temp (Out)", `${rc.final_air_temp_c} \u00B0C`],
-      ["Heat Required", `${fmt(rc.heat_required_kcal)} kcal`],
-      ["LMTD", `${fmt2(rc.lmtd_c)} \u00B0C`],
-      ["Surface Area", `${fmt2(rc.surface_area_m2)} m\u00B2`],
-    ])}`;
+  document.getElementById("tbl-recup-thermal").innerHTML = `<tr><th colspan="2">Thermal Data</th></tr>${kv([
+    ["Flue Gas Flow",`${fmt(rc.total_flue_gas_nm3hr)} Nm\u00B3/hr`],
+    ["Flue Gas Mass",`${fmt(rc.total_mass_flue_gas_kghr)} Kg/hr`],
+    ["Flue Gas Temp (In/Out)",`${rc.initial_temp_flue_gas_c} / ${fmt2(rc.final_temp_flue_gas_c)} \u00B0C`],
+    ["Air Volume",`${fmt(rc.air_volume_nm3hr)} Nm\u00B3/hr`],
+    ["Air Temp (In/Out)",`${rc.initial_air_temp_c} / ${rc.final_air_temp_c} \u00B0C`],
+    ["Heat Required",`${fmt(rc.heat_required_kcal)} kcal`],
+    ["LMTD",`${fmt2(rc.lmtd_c)} \u00B0C`],
+    ["Surface Area",`${fmt2(rc.surface_area_m2)} m\u00B2`],
+  ])}`;
+  document.getElementById("tbl-recup-physical").innerHTML = `<tr><th colspan="2">Physical Data</th></tr>${kv([
+    ["Bank (L x W)",`${rc.bank_length_mm} x ${rc.bank_width_mm} mm`],
+    ["Bank Gap",`${rc.bank_gap_mm} mm`],
+    ["Pipes",`${rc.pipes_total} (${rc.pipes_per_row} x ${rc.pipes_per_column})`],
+    ["Pipe Dia x Length",`${rc.pipe_dia_mm} mm x ${rc.pipe_length_m} m`],
+    ["Pipe Thickness",`${rc.pipe_thickness_mm} mm`],
+    ["Hot Bank Weight",`${fmt2(rc.hot_bank_weight_kg)} Kg`],
+  ])}`;
 
-  document.getElementById("tbl-recup-physical").innerHTML = `
-    <tr><th colspan="2">Physical Data</th></tr>
-    ${kv([
-      ["Bank (L x W)", `${rc.bank_length_mm} x ${rc.bank_width_mm} mm`],
-      ["Bank Gap", `${rc.bank_gap_mm} mm`],
-      ["Total Pipes", `${rc.pipes_total} (${rc.pipes_per_row} x ${rc.pipes_per_column})`],
-      ["Pipe Dia", `${rc.pipe_dia_mm} mm`],
-      ["Pipe Length", `${rc.pipe_length_m} m`],
-      ["Pipe Thickness", `${rc.pipe_thickness_mm} mm`],
-      ["Pipe Weight", `${rc.pipe_weight_kg_m} Kg/m`],
-      ["Hot Bank Weight", `${fmt2(rc.hot_bank_weight_kg)} Kg`],
-    ])}`;
-
-  // ── BOM table ──
+  // Step 4: BOM
   const tbody = document.getElementById("bom-body");
-  let lastSection = "";
+  let lastSec = "";
   tbody.innerHTML = data.bom.map(row => {
-    let sectionRow = "";
-    if (row.SECTION !== lastSection) {
-      lastSection = row.SECTION;
-      sectionRow = `<tr class="section-row"><td colspan="7">${row.SECTION}</td></tr>`;
-    }
-    return sectionRow + `<tr>
-      <td></td>
-      <td>${row.ITEM}</td>
-      <td class="num">${row.QTY}</td>
-      <td>${row.UNIT}</td>
-      <td class="num">${fmt(row["UNIT PRICE"])}</td>
-      <td class="num">${fmt(row["COST PRICE"])}</td>
-      <td class="num">${fmt(row["SELL PRICE"])}</td>
-    </tr>`;
+    let sh = "";
+    if(row.SECTION!==lastSec){lastSec=row.SECTION;sh=`<tr class="section-row"><td colspan="7">${row.SECTION}</td></tr>`;}
+    return sh+`<tr><td></td><td>${row.ITEM}</td><td class="num">${row.QTY}</td><td>${row.UNIT}</td><td class="num">${fmt(row["UNIT PRICE"])}</td><td class="num">${fmt(row["COST PRICE"])}</td><td class="num">${fmt(row["SELL PRICE"])}</td></tr>`;
   }).join("");
 
-  // Summary
-  const s = data.cost_summary;
-  document.getElementById("s-structure").textContent    = "\u20B9 " + fmt(s.structure_cost);
-  document.getElementById("s-combustion").textContent   = "\u20B9 " + fmt(s.combustion_cost);
-  document.getElementById("s-total-cost").textContent   = "\u20B9 " + fmt(s.total_cost);
-  document.getElementById("s-sell").textContent         = "\u20B9 " + fmt(s.sell_price);
-  document.getElementById("s-designing").textContent    = "\u20B9 " + fmt(s.designing_10pct);
-  document.getElementById("s-negotiation").textContent  = "\u20B9 " + fmt(s.negotiation_10pct);
-  document.getElementById("s-quoted").textContent       = "\u20B9 " + fmt(s.quoted_price);
-
-  // Banner
-  document.getElementById("banner-quoted").textContent = "\u20B9 " + fmt(s.quoted_price);
-  document.getElementById("banner-cost").textContent   = "\u20B9 " + fmt(s.total_cost);
-  document.getElementById("banner-sell").textContent   = "\u20B9 " + fmt(s.sell_price);
-  document.getElementById("cost-banner").style.display = "flex";
+  document.getElementById("s-structure").textContent   ="\u20B9 "+fmt(s.structure_cost);
+  document.getElementById("s-combustion").textContent  ="\u20B9 "+fmt(s.combustion_cost);
+  document.getElementById("s-total-cost").textContent  ="\u20B9 "+fmt(s.total_cost);
+  document.getElementById("s-sell").textContent        ="\u20B9 "+fmt(s.sell_price);
+  document.getElementById("s-designing").textContent   ="\u20B9 "+fmt(s.designing_10pct);
+  document.getElementById("s-negotiation").textContent ="\u20B9 "+fmt(s.negotiation_10pct);
+  document.getElementById("s-quoted").textContent      ="\u20B9 "+fmt(s.quoted_price);
 }
 
 async function downloadExcel() {
-  if (!lastData) return;
-  const res = await fetch(`${API}/api/export-excel`, {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      equipment_type: "BTF",
-      customer: {},
-      bom: lastData.bom,
-      cost_summary: lastData.cost_summary,
-      equipment: {supplementary: lastData.supplementary},
-    }),
-  });
+  if(!lastData) return;
+  const res = await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({equipment_type:"BTF",customer:{},bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}})});
   const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
+  a.href = URL.createObjectURL(blob);
   a.download = `BTF_Costing_${new Date().toISOString().slice(0,10)}.xlsx`;
   a.click();
-  URL.revokeObjectURL(url);
 }
 </script>
 </body>
