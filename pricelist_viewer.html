@@ -399,13 +399,15 @@ function attachEditHandlers(container, table) {
           const data = await res.json();
           if (data.success) {
             flashSaved(tdEl, fmt(val));
-            const row = tdEl.closest('tr');
-            if (row) {
-              const amtCell = row.querySelector(`.amount-cell[data-rowid="${rowid}"]`);
-              if (amtCell && data.amount != null) amtCell.textContent = fmt(data.amount);
-            }
-            setStatus(`Saved ${field} = ${val}`, `rowid ${rowid}`);
+            setStatus(`Saved ${field} = ${val} — cascading...`, `rowid ${rowid}`);
             updateFormulaBar(field.toUpperCase(), String(val));
+            // CASCADE: show overlay, re-fetch all data so computed prices update across all sheets
+            document.getElementById('cascade-overlay').classList.add('show');
+            setTimeout(async () => {
+              await loadAll();
+              document.getElementById('cascade-overlay').classList.remove('show');
+              setStatus('Cascade complete — all sheets recalculated');
+            }, 200);
           } else {
             tdEl.innerHTML = orig;
             setStatus('Error: ' + (data.error || 'Unknown'));
