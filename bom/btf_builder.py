@@ -2,6 +2,7 @@
 """
 BOM builder for Box Type Furnace (10 Ton Reheating Furnace).
 Two combustion modes: ON/OFF and Mass Flow.
+Includes full calculation breakdown matching legacy Excel.
 """
 
 import pandas as pd
@@ -76,6 +77,91 @@ COMBUSTION_MASSFLOW = [
 ]
 
 
+# ── Supplementary calculation data (from legacy Excel) ──────────────────────
+
+FURNACE_DIMENSIONS = {
+    "internal_L_mm": 2590, "internal_W_mm": 2660, "internal_H_mm": 1550,
+    "ceramic_fibre_L_mm": 7300, "ceramic_fibre_W_mm": 600, "ceramic_fibre_thk_mm": 25,
+    "total_ceramic_rolls": 340,
+    "ms_sheet_vol_m3": 0.0756, "ms_density_kg_m3": 7850, "ms_sheet_wt_kg": 593.46,
+    "ms_sheets_reqd": 3, "ms_wt_total_kg": 2640,
+}
+
+HEAT_LOAD_CALC = [
+    {"item": "Heat to Charge",      "value": 158400, "unit": "kcal"},
+    {"item": "Heat to Pier",        "value": 19800,  "unit": "kcal"},
+    {"item": "Heat to Refractory",  "value": 72000,  "unit": "kcal"},
+    {"item": "Heat to Insulation",  "value": 18480,  "unit": "kcal"},
+    {"item": "Surface Loss",        "value": 10000,  "unit": "kcal"},
+    {"item": "To Casting",          "value": 4125,   "unit": "kcal"},
+    {"item": "Total",               "value": 282805, "unit": "kcal"},
+    {"item": "Gross",               "value": 377073, "unit": "kcal"},
+]
+
+FURNACE_PARAMS = {
+    "furnace_capacity_tph": 2.0,
+    "total_load_tonne": 10.0,
+    "std_gas_consumption_nm3_ton": 40.0,
+    "fuel_consumption_nm3hr": 80,
+    "air_flow_nm3hr": 840,
+    "cfm": 494.12,
+    "blower_hp_calc": 6.18,
+    "blower_hp_selected": 10,
+    "no_of_burners": 6,
+    "no_of_zones": 2,
+    "heating_zone_1_burners": 3,
+    "heating_zone_2_burners": 3,
+    "rating_per_zone_kcal": 188537,
+    "rating_per_zone_kw": 219.23,
+    "std_burner_rating_lph": 40.0,
+}
+
+PIPE_SIZING = {
+    "air_zone1": {"flow_nm3hr": 166.67, "velocity_ms": 15.0, "inner_dia_mm": 62.70},
+    "air_zone2": {"flow_nm3hr": 500.0,  "velocity_ms": 15.0, "inner_dia_mm": 108.61},
+    "gas_zone1": {"flow_nm3hr": 15.0,   "velocity_ms": 13.0, "inner_dia_mm": 20.21},
+    "gas_zone2": {"flow_nm3hr": 25.0,   "velocity_ms": 13.0, "inner_dia_mm": 26.09},
+}
+
+RECUPERATOR_CALC = {
+    "total_flue_gas_nm3hr": 920,
+    "total_mass_flue_gas_kghr": 1104,
+    "specific_heat_flue_gas": 0.23,
+    "initial_temp_flue_gas_c": 600.0,
+    "final_temp_flue_gas_c": 389.19,
+    "heat_transfer_coeff": 30.0,
+    "air_volume_nm3hr": 840,
+    "initial_air_temp_c": 35.0,
+    "final_air_temp_c": 250.0,
+    "specific_heat_air": 0.247,
+    "heat_required_kcal": 53530,
+    "lmtd_c": 316.88,
+    "surface_area_m2": 5.63,
+    "bank_length_mm": 526.4,
+    "bank_width_mm": 535.5,
+    "bank_gap_mm": 150.0,
+    "pipes_total": 120,
+    "pipes_per_row": 12,
+    "pipes_per_column": 10,
+    "pipe_dia_mm": 33.4,
+    "pipe_length_m": 0.5,
+    "pipe_thickness_mm": 4.5,
+    "pipe_weight_kg_m": 3.24,
+    "hot_bank_weight_kg": 97.2,
+}
+
+
+def get_supplementary():
+    """Return all calculation data for display in UI."""
+    return {
+        "furnace_dimensions": FURNACE_DIMENSIONS,
+        "heat_load": HEAT_LOAD_CALC,
+        "furnace_params": FURNACE_PARAMS,
+        "pipe_sizing": PIPE_SIZING,
+        "recuperator": RECUPERATOR_CALC,
+    }
+
+
 def build_btf_df(combustion_mode: str = "onoff", markup: float = 1.8) -> pd.DataFrame:
     """
     Build BOM for Box Type Furnace.
@@ -106,7 +192,7 @@ def build_btf_df(combustion_mode: str = "onoff", markup: float = 1.8) -> pd.Data
     total_sell = round(total_cost * markup, 0)
     designing = round(total_sell * 0.10, 0)
     negotiation = round(total_sell * 0.10, 0)
-    quoted = round(total_sell + designing + negotiation, -3)  # round to nearest 1000
+    quoted = round(total_sell + designing + negotiation, -3)
 
     summary = {
         "structure_cost": float(structure_cost),

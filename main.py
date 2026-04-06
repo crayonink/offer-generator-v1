@@ -1153,13 +1153,14 @@ class BTFCalcRequest(BaseModel):
 @app.post("/api/btf-calculate")
 def btf_calculate(req: BTFCalcRequest):
     try:
-        from bom.btf_builder import build_btf_df
+        from bom.btf_builder import build_btf_df, get_supplementary
         import json
         df, summary = build_btf_df(combustion_mode=req.combustion_mode, markup=req.markup)
         bom = json.loads(df.to_json(orient="records"))
         return {
             "bom": bom,
             "cost_summary": summary,
+            "supplementary": get_supplementary(),
         }
     except Exception as e:
         import traceback
@@ -1183,7 +1184,7 @@ class SNSFBRFCalcRequest(BaseModel):
 @app.post("/api/snsf-brf-calculate")
 def snsf_brf_calculate(req: SNSFBRFCalcRequest):
     try:
-        from bom.snsf_brf_builder import build_snsf_brf_df
+        from bom.snsf_brf_builder import build_snsf_brf_df, get_supplementary
         import json
         df, summary = build_snsf_brf_df(
             include_ng_optional=req.include_ng_optional,
@@ -1193,6 +1194,7 @@ def snsf_brf_calculate(req: SNSFBRFCalcRequest):
         return {
             "bom": bom,
             "cost_summary": summary,
+            "supplementary": get_supplementary(),
         }
     except Exception as e:
         import traceback
@@ -2118,6 +2120,82 @@ def export_excel(req: ExcelExportRequest):
             c.border = thin()
             ws.row_dimensions[r1].height = 20
             r1 += 1
+
+        # ── Calculation sheet (BTF only — from supplementary data) ────────
+        supp = (req.equipment or {}).get("supplementary", {})
+        if supp and req.equipment_type == "BTF":
+            wsc = wb.create_sheet("Calculation")
+            wsc.column_dimensions["A"].width = 36
+            wsc.column_dimensions["B"].width = 24
+
+            rc = 1
+            wsc.merge_cells(f"A{rc}:B{rc}")
+            hdr(wsc, rc, 1, "FURNACE PARAMETERS", size=10)
+            rc += 1
+            fp = supp.get("furnace_params", {})
+            fp_rows = [
+                ("Furnace Capacity", f'{fp.get("furnace_capacity_tph","")} Ton/hr'),
+                ("Total Load", f'{fp.get("total_load_tonne","")} Tonne'),
+                ("Std Gas Consumption", f'{fp.get("std_gas_consumption_nm3_ton","")} Nm3/Ton'),
+                ("Fuel Consumption", f'{fp.get("fuel_consumption_nm3hr","")} Nm3/hr'),
+                ("Air Flow", f'{fp.get("air_flow_nm3hr","")} Nm3/hr'),
+                ("CFM", f'{fp.get("cfm","")}'),
+                ("Blower HP (Calc)", f'{fp.get("blower_hp_calc","")} HP'),
+                ("Blower HP (Selected)", f'{fp.get("blower_hp_selected","")} HP'),
+                ("No. of Burners", f'{fp.get("no_of_burners","")}'),
+                ("No. of Zones", f'{fp.get("no_of_zones","")}'),
+                ("Rating / Zone (kcal)", f'{fp.get("rating_per_zone_kcal","")}'),
+                ("Rating / Zone (kW)", f'{fp.get("rating_per_zone_kw","")}'),
+            ]
+            for label, val in fp_rows:
+                cell(wsc, rc, 1, label, bold=True, bg=GREY)
+                cell(wsc, rc, 2, val, bg=WHITE)
+                rc += 1
+            rc += 1
+
+            wsc.merge_cells(f"A{rc}:B{rc}")
+            hdr(wsc, rc, 1, "HEAT LOAD CALCULATION", size=10)
+            rc += 1
+            for h in supp.get("heat_load", []):
+                is_t = h["item"] in ("Total", "Gross")
+                bg = LIGHT if is_t else GREY
+                cell(wsc, rc, 1, h["item"], bold=is_t, bg=bg)
+                cell(wsc, rc, 2, f'{h["value"]:,.0f} {h["unit"]}', bg=bg, align="right")
+                rc += 1
+            rc += 1
+
+            wsc.merge_cells(f"A{rc}:B{rc}")
+            hdr(wsc, rc, 1, "PIPE SIZING", size=10)
+            rc += 1
+            ps = supp.get("pipe_sizing", {})
+            for label, key in [("Air Zone 1","air_zone1"),("Air Zone 2","air_zone2"),("Gas Zone 1","gas_zone1"),("Gas Zone 2","gas_zone2")]:
+                p = ps.get(key, {})
+                cell(wsc, rc, 1, f'{label}: Flow', bold=True, bg=GREY)
+                cell(wsc, rc, 2, f'{p.get("flow_nm3hr","")} Nm3/hr @ {p.get("velocity_ms","")} m/s -> {p.get("inner_dia_mm","")} mm', bg=WHITE)
+                rc += 1
+            rc += 1
+
+            wsc.merge_cells(f"A{rc}:B{rc}")
+            hdr(wsc, rc, 1, "RECUPERATOR", size=10)
+            rc += 1
+            rcp = supp.get("recuperator", {})
+            rcp_rows = [
+                ("Flue Gas Flow", f'{rcp.get("total_flue_gas_nm3hr","")} Nm3/hr'),
+                ("Flue Gas Mass", f'{rcp.get("total_mass_flue_gas_kghr","")} Kg/hr'),
+                ("Flue Gas Temp (In/Out)", f'{rcp.get("initial_temp_flue_gas_c","")} / {rcp.get("final_temp_flue_gas_c","")} C'),
+                ("Air Volume", f'{rcp.get("air_volume_nm3hr","")} Nm3/hr'),
+                ("Air Temp (In/Out)", f'{rcp.get("initial_air_temp_c","")} / {rcp.get("final_air_temp_c","")} C'),
+                ("Heat Required", f'{rcp.get("heat_required_kcal","")} kcal'),
+                ("LMTD", f'{rcp.get("lmtd_c","")} C'),
+                ("Surface Area", f'{rcp.get("surface_area_m2","")} m2'),
+                ("Pipes", f'{rcp.get("pipes_total","")} ({rcp.get("pipes_per_row","")}) x {rcp.get("pipes_per_column","")}'),
+                ("Pipe Dia x Length", f'{rcp.get("pipe_dia_mm","")} mm x {rcp.get("pipe_length_m","")} m'),
+                ("Hot Bank Weight", f'{rcp.get("hot_bank_weight_kg","")} Kg'),
+            ]
+            for label, val in rcp_rows:
+                cell(wsc, rc, 1, label, bold=True, bg=GREY)
+                cell(wsc, rc, 2, val, bg=WHITE)
+                rc += 1
 
         buf = io.BytesIO()
         wb.save(buf)

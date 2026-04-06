@@ -74,6 +74,13 @@
     .summary-card .grand td { border-top: 2px solid var(--navy); padding-top: 10px; font-size: 1rem; color: var(--navy); }
     .summary-card .sub-head td { color: var(--muted); font-size: 0.78rem; padding-top: 12px; font-weight: 600; text-transform: uppercase; }
 
+    .zone-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
+    .zone-card h4 { font-size: 0.82rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .zone-card table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .zone-card td { padding: 4px 8px; }
+    .zone-card td:last-child { text-align: right; font-weight: 600; }
+    .zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+
     .alert { padding: 14px 18px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px; display: none; }
     .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
   </style>
@@ -128,6 +135,35 @@
       <div class="sub">
         <div><div class="lbl">Total Cost</div><div class="val" id="banner-cost">--</div></div>
         <div><div class="lbl">Main Scope Sell</div><div class="val" id="banner-main-sell">--</div></div>
+      </div>
+    </div>
+
+    <!-- ── Calculation Breakdown ── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px" id="calc-grid">
+      <div class="card">
+        <h3>Furnace Dimensions</h3>
+        <table class="bom" id="tbl-furnace" style="font-size:0.8rem"></table>
+      </div>
+      <div class="card">
+        <h3>Recuperator Calculation</h3>
+        <table class="bom" id="tbl-recup" style="font-size:0.8rem"></table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <h3>Mass Flow Control — Zone-wise Breakdown</h3>
+      <div id="mfc-zones"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+      <div class="card">
+        <h3>Combustion Equipment</h3>
+        <table class="bom" id="tbl-combustion" style="font-size:0.8rem"></table>
+      </div>
+      <div class="card">
+        <h3>Refractory Breakdown</h3>
+        <table class="bom" id="tbl-refractory" style="font-size:0.8rem">
+        </table>
       </div>
     </div>
 
@@ -199,6 +235,56 @@ async function calculate() {
 function renderResults(data, showNG, showClient) {
   document.getElementById("results-section").style.display = "block";
 
+  // ── Calculation tables ──
+  const sp = data.supplementary || {};
+  const fc = sp.furnace_calc || {};
+  document.getElementById("tbl-furnace").innerHTML = `
+    <tr><td style="font-weight:700">Furnace Capacity</td><td style="text-align:right">${fc.furnace_capacity_tph} TPH</td></tr>
+    <tr><td>Billet Dimensions</td><td style="text-align:right">${fc.billet_L_mm} x ${fc.billet_W_mm} x ${fc.billet_H_mm} mm</td></tr>
+    <tr><td>Billet Weight</td><td style="text-align:right">${fmt(fc.billet_weight_kg)} kg</td></tr>
+    <tr><td>Inside Material</td><td style="text-align:right">${fmt(fc.inside_material_kg)} kg</td></tr>
+    <tr><td>Effective Length</td><td style="text-align:right">${fc.effective_length_m} m</td></tr>
+    <tr><td>Effective Width</td><td style="text-align:right">${fc.effective_width_m} m</td></tr>
+    <tr><td>Overall Width</td><td style="text-align:right">${fmt(fc.overall_width_mm)} mm</td></tr>
+    <tr><td>Overall Length</td><td style="text-align:right">${fmt(fc.overall_length_mm)} mm</td></tr>
+    <tr><td>Calorific Value</td><td style="text-align:right">${fmt(fc.calorific_value_kcal_nm3)} kcal/Nm3</td></tr>`;
+
+  const rc = sp.recuperator || {};
+  document.getElementById("tbl-recup").innerHTML = `
+    <tr><td style="font-weight:700">${rc.title || ''}</td><td></td></tr>
+    <tr><td>Flue Gas Flow</td><td style="text-align:right">${fmt(rc.total_flue_gas_nm3hr)} Nm3/hr</td></tr>
+    <tr><td>Flue Gas Mass</td><td style="text-align:right">${fmt(rc.total_mass_flue_gas_kghr)} Kg/hr</td></tr>
+    <tr><td>Flue Gas Temp (In/Out)</td><td style="text-align:right">${rc.initial_temp_flue_gas_c} / ${rc.final_temp_flue_gas_c} C</td></tr>
+    <tr><td>Air Volume</td><td style="text-align:right">${fmt(rc.air_volume_nm3hr)} Nm3/hr</td></tr>
+    <tr><td>Air Temp (In/Out)</td><td style="text-align:right">${rc.initial_air_temp_c} / ${rc.final_air_temp_c} C</td></tr>
+    <tr><td>Heat Required</td><td style="text-align:right">${fmt(rc.heat_required_kcal)} kcal</td></tr>
+    <tr><td>LMTD</td><td style="text-align:right">${rc.lmtd_c} C</td></tr>
+    <tr><td>Surface Area</td><td style="text-align:right">${rc.surface_area_m2} m2</td></tr>
+    <tr><td>Pipes</td><td style="text-align:right">${rc.pipes_total} (${rc.pipes_per_row}x${rc.pipes_per_column})</td></tr>
+    <tr><td>Pipe Dia / Material</td><td style="text-align:right">${rc.pipe_dia_mm} mm — ${rc.material}</td></tr>
+    <tr><td>Hot Bank Weight</td><td style="text-align:right">${rc.hot_bank_weight_kg} Kg</td></tr>`;
+
+  // Mass Flow Control zones
+  const mfc = sp.mass_flow_control || [];
+  document.getElementById("mfc-zones").innerHTML = '<div class="zone-grid">' + mfc.map(z => `
+    <div class="zone-card">
+      <h4>${z.zone}</h4>
+      <table>${z.items.map(it => `<tr><td>${it.item}</td><td>${it.qty}</td><td>${fmt(it.price * it.qty)}</td></tr>`).join("")}</table>
+    </div>`).join("") + '</div>';
+
+  // Combustion items
+  const comb = sp.combustion_items || [];
+  document.getElementById("tbl-combustion").innerHTML = `
+    <tr><th style="background:var(--navy);color:#fff;padding:8px">Item</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Qty</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Total</th></tr>
+    ${comb.map(c => `<tr><td>${c.item}</td><td style="text-align:right">${c.qty}</td><td style="text-align:right">${fmt(c.qty * c.price)}</td></tr>`).join("")}`;
+
+  // Refractory items
+  const ref = sp.refractory_items || [];
+  document.getElementById("tbl-refractory").innerHTML = `
+    <tr><th style="background:var(--navy);color:#fff;padding:8px">Item</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Weight (Kg)</th><th style="background:var(--navy);color:#fff;padding:8px;text-align:right">Cost</th></tr>
+    ${ref.map(r => `<tr><td style="font-size:0.75rem">${r.item}</td><td style="text-align:right">${fmt(r.weight_kg)}</td><td style="text-align:right">${fmt(r.cost)}</td></tr>`).join("")}
+    <tr style="background:#eff6ff;font-weight:700"><td>Total</td><td></td><td style="text-align:right">${fmt(ref.reduce((s,r)=>s+r.cost,0))}</td></tr>`;
+
   // BOM table
   const tbody = document.getElementById("bom-body");
   let lastSection = "";
@@ -260,6 +346,7 @@ async function downloadExcel() {
       customer: {},
       bom: lastData.bom,
       cost_summary: lastData.cost_summary,
+      equipment: {supplementary: lastData.supplementary},
     }),
   });
   const blob = await res.blob();
