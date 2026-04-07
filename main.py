@@ -720,6 +720,14 @@ def update_pricelist_rate(req: RateUpdateRequest):
     def _norm(s):
         s = str(s or "").upper()
         s = _re.sub(r"[\s\-_\(\)\*\.\,\"\']+", " ", s).strip()
+        s = _re.sub(r"\s+", " ", s)  # collapse multiple spaces
+        # Also create a no-space version for comparison
+        return s
+
+    def _norm_compact(s):
+        """Extra compact normalization — removes ALL spaces and dots."""
+        s = str(s or "").upper()
+        s = _re.sub(r"[^A-Z0-9]", "", s)
         return s
 
     try:
@@ -747,6 +755,7 @@ def update_pricelist_rate(req: RateUpdateRequest):
             ("hpu_master",                 "item"),
         ]
         norm_item = _norm(req.item)
+        compact_item = _norm_compact(req.item)
         cascade_counts = {}
 
         for table, name_col in PARTS_TABLES:
@@ -755,8 +764,10 @@ def update_pricelist_rate(req: RateUpdateRequest):
             ).fetchall()
             updated = 0
             for rowid, part_name, qty, rate in rows:
-                # Match by normalized name only (no rate check)
-                if _norm(part_name or "") != norm_item:
+                norm_part = _norm(part_name or "")
+                compact_part = _norm_compact(part_name or "")
+                # Match by normalized name OR compact name (handles S.S vs SS, M.S. vs MS etc)
+                if norm_part != norm_item and compact_part != compact_item:
                     continue
                 new_amount = round(float(qty or 0) * req.price, 2) if qty is not None else None
                 conn.execute(
