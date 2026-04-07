@@ -129,10 +129,20 @@ def parse_rates(xl, conn):
     if not rows:
         return {"error": "No price data found in Rates sheet"}
 
-    # Deduplicate — keep last occurrence
-    seen = {}
+    # Deduplicate — compact normalization to catch M.S./MS, quotes, space variants
+    def _compact(s):
+        return re.sub(r"[^A-Z0-9]", "", str(s).upper())
+
+    seen = {}  # compact_key -> row
     for r in rows:
-        seen[r[0]] = r
+        key = _compact(r[0])
+        if key in seen:
+            # Keep the one with the cleaner name (shorter or no special chars)
+            existing_name = seen[key][0]
+            if len(r[0]) <= len(existing_name):
+                seen[key] = r
+        else:
+            seen[key] = r
     rows = list(seen.values())
 
     conn.execute("""
@@ -148,7 +158,16 @@ def parse_rates(xl, conn):
         except Exception:
             pass
 
+    # Build compact->existing item map from DB to avoid inserting near-dupes
+    existing = {}
+    for (db_item,) in conn.execute("SELECT item FROM component_price_master"):
+        existing[_compact(db_item)] = db_item
+
     for item, category, unit, price, prev, excel_row, excel_col in rows:
+        ck = _compact(item)
+        # If a near-duplicate already exists in DB with a different exact name, use that name
+        if ck in existing and existing[ck] != item:
+            item = existing[ck]
         conn.execute("""
             INSERT INTO component_price_master (item, category, unit, price, previous_price, excel_row, excel_col)
             VALUES (?,?,?,?,?,?,?)
@@ -157,6 +176,7 @@ def parse_rates(xl, conn):
                 price=excluded.price, previous_price=excluded.previous_price,
                 excel_row=excluded.excel_row, excel_col=excluded.excel_col
         """, (item, category, unit, price, prev, excel_row, excel_col))
+        existing[ck] = item
 
     return {"rows": len(rows)}
 
