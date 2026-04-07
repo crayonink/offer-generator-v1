@@ -758,6 +758,30 @@ def update_pricelist_rate(req: RateUpdateRequest):
         compact_item = _norm_compact(req.item)
         cascade_counts = {}
 
+        # ── Method 1: Use formula mapping table (exact legacy links) ──
+        mapped_targets = conn.execute(
+            "SELECT target_table, target_item FROM rate_cascade_map WHERE rates_item = ?",
+            (req.item,)
+        ).fetchall()
+
+        for target_table, target_item in mapped_targets:
+            name_col = "particular" if "parts" in target_table else "item"
+            rows = conn.execute(
+                f"SELECT rowid, {name_col}, qty FROM {target_table} WHERE {name_col} = ?",
+                (target_item,)
+            ).fetchall()
+            updated = 0
+            for rowid, part_name, qty in rows:
+                new_amount = round(float(qty or 0) * req.price, 2) if qty is not None else None
+                conn.execute(
+                    f"UPDATE {target_table} SET rate=?, amount=? WHERE rowid=?",
+                    (req.price, new_amount, rowid)
+                )
+                updated += 1
+            if updated:
+                cascade_counts[target_table] = cascade_counts.get(target_table, 0) + updated
+
+        # ── Method 2: Fuzzy name match (for items not in mapping table) ──
         for table, name_col in PARTS_TABLES:
             rows = conn.execute(
                 f"SELECT rowid, {name_col}, qty, rate FROM {table} WHERE rate IS NOT NULL"
@@ -766,7 +790,6 @@ def update_pricelist_rate(req: RateUpdateRequest):
             for rowid, part_name, qty, rate in rows:
                 norm_part = _norm(part_name or "")
                 compact_part = _norm_compact(part_name or "")
-                # Match by normalized name OR compact name (handles S.S vs SS, M.S. vs MS etc)
                 if norm_part != norm_item and compact_part != compact_item:
                     continue
                 new_amount = round(float(qty or 0) * req.price, 2) if qty is not None else None
@@ -776,7 +799,7 @@ def update_pricelist_rate(req: RateUpdateRequest):
                 )
                 updated += 1
             if updated:
-                cascade_counts[table] = updated
+                cascade_counts[table] = cascade_counts.get(table, 0) + updated
 
         conn.commit()
 
