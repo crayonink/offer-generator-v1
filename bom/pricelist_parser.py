@@ -104,12 +104,9 @@ def parse_rates(xl, conn):
         prev  = clean_num(row.iloc[3]  if len(row) > 3 else None)
         if item and price and not is_header(item):
             # SS Pipe: compute price per metre from geometry formula
-            if re.search(r'ss\s*pipe', item, re.I) and re.search(r'\d+\s*[Xx]\s*\d+\s*mm', item, re.I):
-                price_mtr = _ss_pipe_price_per_mtr(item, price)
-                if price_mtr is not None:
-                    prev_mtr = _ss_pipe_price_per_mtr(item, prev) if prev else price_mtr
-                    rows.append((item, "Raw Material", "mtr", price_mtr, prev_mtr, excel_row, 3))
-                    continue
+            # Skip raw "SS Pipe 304 60 X 3mm" rows — the "(per mtr)" computed row will be kept instead
+            if re.search(r'ss\s*pipe', item, re.I) and re.search(r'\d+\s*[Xx]\s*\d+\s*mm', item, re.I) and 'per mtr' not in item.lower():
+                continue
             unit = "kg" if price <= 500 else "nos"
             if "per mtr" in item.lower() or "(per mtr)" in item.lower():
                 unit = "mtr"
