@@ -86,6 +86,12 @@ def parse_rates(xl, conn):
         if not isinstance(v, str):
             return None
         s = v.strip()
+        # Normalize: collapse multiple spaces, strip trailing spaces inside parens
+        s = re.sub(r'\s+', ' ', s)
+        s = re.sub(r'\(\s+', '(', s)
+        s = re.sub(r'\s+\)', ')', s)
+        # Remove quotes around single letters (M.S. Tube "B" -> M.S. Tube B)
+        s = s.replace('"', '')
         return s if len(s) >= 2 and not s.replace(".", "").replace(",", "").isdigit() else None
 
     rows = []  # tuples of (item, category, unit, price, prev, excel_row, excel_col)
