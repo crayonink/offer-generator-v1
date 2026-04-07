@@ -3,12 +3,29 @@
 BOM builder for Box Type Furnace (10 Ton Reheating Furnace).
 Two combustion modes: ON/OFF and Mass Flow.
 Includes full calculation breakdown matching legacy Excel.
+All prices read from btf_price_master DB table.
 """
 
 import pandas as pd
+import sqlite3
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 
 
-# ── Structure items (common to both modes) ──────────────────────────────────
+def _load_btf_items(category: str) -> list:
+    """Load items from btf_price_master for a given category."""
+    conn = sqlite3.connect(DB_PATH)
+    rows = conn.execute(
+        "SELECT item, qty, unit, rate FROM btf_price_master WHERE category=? ORDER BY rowid",
+        (category,)
+    ).fetchall()
+    conn.close()
+    return [{"item": r[0], "qty": r[1], "unit": r[2] or "", "rate": r[3]} for r in rows]
+
+
+# Fallback hardcoded data (used only if DB is empty)
 STRUCTURE_ITEMS = [
     {"item": "MS Structure",                  "qty": 8700, "unit": "kg",    "rate": 65.0,      "cost": 565500},
     {"item": "Piping",                        "qty": 4000, "unit": "kg",    "rate": 65.0,      "cost": 260000},
@@ -354,15 +371,25 @@ def build_btf_df(combustion_mode: str = "onoff", markup: float = 1.8) -> pd.Data
     """
     rows = []
 
-    # Structure items
-    for s in STRUCTURE_ITEMS:
-        rows.append(("Structure", s["item"], s["qty"], s["unit"], s["rate"], s["cost"]))
+    # Structure items — from DB, fallback to hardcoded
+    db_structure = _load_btf_items("Structure")
+    structure_data = db_structure if db_structure else STRUCTURE_ITEMS
+    for s in structure_data:
+        cost = round(s["qty"] * s["rate"], 0) if "cost" not in s else s["cost"]
+        rows.append(("Structure", s["item"], s["qty"], s.get("unit", ""), s["rate"], cost))
 
-    # Combustion system items
-    comb_items = COMBUSTION_ONOFF if combustion_mode == "onoff" else COMBUSTION_MASSFLOW
-    for c in comb_items:
-        total = c["qty"] * c["unit_price"]
-        rows.append(("Combustion System", c["item"], c["qty"], "", c["unit_price"], total))
+    # Combustion system items — from DB, fallback to hardcoded
+    comb_category = "Combustion-Massflow" if combustion_mode == "massflow" else "Combustion-ONOFF"
+    db_comb = _load_btf_items(comb_category)
+    if db_comb:
+        for c in db_comb:
+            total = round(c["qty"] * c["rate"], 0)
+            rows.append(("Combustion System", c["item"], c["qty"], c.get("unit", ""), c["rate"], total))
+    else:
+        comb_items = COMBUSTION_ONOFF if combustion_mode == "onoff" else COMBUSTION_MASSFLOW
+        for c in comb_items:
+            total = c["qty"] * c["unit_price"]
+            rows.append(("Combustion System", c["item"], c["qty"], "", c["unit_price"], total))
 
     df = pd.DataFrame(rows, columns=["SECTION", "ITEM", "QTY", "UNIT", "UNIT PRICE", "COST PRICE"])
 

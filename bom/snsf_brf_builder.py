@@ -2,10 +2,50 @@
 """
 BOM builder for SNSF BRF (Billet Reheating Furnace, 30 Ton).
 Per-item markup multipliers as per the costing breakup sheet.
-Includes full calculation breakdown matching legacy Excel.
+All prices read from snsf_brf_price_master DB table.
 """
 
 import pandas as pd
+import sqlite3
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "vlph.db")
+
+
+def _load_snsf_items(include_ng=False, include_client=False) -> list:
+    """Load items from snsf_brf_price_master."""
+    conn = sqlite3.connect(DB_PATH)
+    exclude = []
+    if not include_ng:
+        exclude.append("NG Optional")
+    if not include_client:
+        exclude.append("Client Scope")
+
+    if exclude:
+        placeholders = ",".join("?" * len(exclude))
+        rows = conn.execute(
+            f"SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master WHERE category NOT IN ({placeholders}) ORDER BY rowid",
+            exclude
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master ORDER BY rowid"
+        ).fetchall()
+
+    if include_ng:
+        ng_rows = conn.execute(
+            "SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master WHERE category='NG Optional' ORDER BY rowid"
+        ).fetchall()
+        rows = list(rows) + list(ng_rows)
+    if include_client:
+        cl_rows = conn.execute(
+            "SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master WHERE category='Client Scope' ORDER BY rowid"
+        ).fetchall()
+        rows = list(rows) + list(cl_rows)
+
+    conn.close()
+    return [{"section": r[0], "item": r[1], "qty": r[2], "unit": r[3] or "", "unit_price": r[4], "markup": r[5]} for r in rows]
 
 
 # ── Main BOM items (from Breakup sheet) ─────────────────────────────────────
@@ -407,11 +447,16 @@ def build_snsf_brf_df(
     include_ng_optional: bool = False,
     include_client_scope: bool = False,
 ) -> pd.DataFrame:
-    items = list(BRF_ITEMS)
-    if include_ng_optional:
-        items.extend(BRF_NG_OPTIONAL)
-    if include_client_scope:
-        items.extend(BRF_CLIENT_SCOPE)
+    # Load from DB, fallback to hardcoded
+    db_items = _load_snsf_items(include_ng=include_ng_optional, include_client=include_client_scope)
+    if db_items:
+        items = db_items
+    else:
+        items = list(BRF_ITEMS)
+        if include_ng_optional:
+            items.extend(BRF_NG_OPTIONAL)
+        if include_client_scope:
+            items.extend(BRF_CLIENT_SCOPE)
 
     rows = []
     for it in items:
