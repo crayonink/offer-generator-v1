@@ -11,7 +11,7 @@ BOUGHT_OUT_EXCLUDE_ITEMS = {
 
 FUEL_NAMES = {
     "ng": "NG", "lpg": "LPG", "cog": "COG",
-    "bg": "BG", "rlng": "RLNG",
+    "bg": "BG", "rlng": "RLNG", "ldo": "LDO",
 }
 
 
