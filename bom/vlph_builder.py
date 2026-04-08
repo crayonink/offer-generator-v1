@@ -212,18 +212,18 @@ def build_vlph_120t_df(
 
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
     STATIC_SKIP = {"CONTROL PANEL"}  # CONTROL PANEL added separately below
-    # PLC replaces P.PID and RATIO CONTROLLER
-    if is_plc:
+    # PLC and PLC+AGR replace P.PID and RATIO CONTROLLER
+    if is_plc or is_plc_agr:
         STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
 
-    rows += [
-        _row("MISC ITEMS", "CONTROL PANEL", "1 Set", 1),
-        _row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "15 NB", 3),
-        _row("MISC ITEMS", "PLC WITH HMI", "", 1),
-    ]
+    rows.append(_row("MISC ITEMS", "CONTROL PANEL", "1 Set", 1))
+    rows.append(_row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "15 NB", 3))
+    # PLC WITH HMI only for PLC and PLC+AGR
+    if is_plc or is_plc_agr:
+        rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1))
 
     df = pd.DataFrame(
         rows,
