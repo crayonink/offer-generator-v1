@@ -31,29 +31,51 @@ def _row(media: str, item: str, ref: str, qty, unit_price_override=None):
     return (media, item, ref, qty, unit_price, unit_price * qty)
 
 
-def _fuel_line_rows(label: str, equipment: dict):
-    """Generate gas line BOM rows for a single fuel."""
-    gas_train_name = f'GAS TRAIN {equipment["ng_gas_train"]["max_flow"]:.0f} NM3/Hr'
-    return [
-        _row(
-            f"{label} LINE", gas_train_name,
+OIL_FUELS = {"ldo"}
+GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
+
+
+def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
+                    control_mode: str = "automatic", auto_control_type: str = "plc"):
+    """Generate fuel line BOM rows for a single fuel."""
+    media = f"{label} LINE"
+    rows = []
+
+    # Gas train (gas fuels only)
+    if fuel_type in GAS_FUELS:
+        gas_train_name = f'GAS TRAIN {equipment["ng_gas_train"]["max_flow"]:.0f} NM3/Hr'
+        rows.append(_row(
+            media, gas_train_name,
             f'{equipment["ng_gas_train"]["inlet_nb"]} x '
             f'{equipment["ng_gas_train"]["outlet_nb"]} NB',
-            1,
-            unit_price_override=equipment["ng_gas_train"]["price"],
-        ),
-        _row(f"{label} LINE", "ORIFICE PLATE (Gas)",
-             f'{equipment["agr"]["nb"]} NB', 1),
-        _row(f"{label} LINE", "FLOW TRANSMITTER (DPT) (Gas)", "", 1),
-        _row(f"{label} LINE", "PNEUMATIC CONTROL VALVE (Gas)",
-             f'{equipment["agr"]["nb"]} NB', 1),
-        _row(
-            f"{label} LINE", "AGR",
+            1, unit_price_override=equipment["ng_gas_train"]["price"],
+        ))
+
+    # PLC instrumentation
+    if control_mode == "automatic" and auto_control_type == "plc":
+        if fuel_type in GAS_FUELS:
+            # Gas: FT (DPT) + Control Valve
+            rows += [
+                _row(media, "ORIFICE PLATE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
+                _row(media, "FLOW TRANSMITTER (DPT) (Gas)", "Output 4-20 mA", 1),
+                _row(media, "PNEUMATIC CONTROL VALVE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
+            ]
+        elif fuel_type in OIL_FUELS:
+            # Oil: Flowmeter + Control Valve
+            rows += [
+                _row(media, "FLOWMETER", "", 1),
+                _row(media, "PNEUMATIC CONTROL VALVE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
+            ]
+
+    # AGR (gas fuels only)
+    if fuel_type in GAS_FUELS:
+        rows.append(_row(
+            media, "AGR",
             f'{equipment["agr"]["nb"]} NB',
-            1,
-            unit_price_override=equipment["agr"]["price"],
-        ),
-    ]
+            1, unit_price_override=equipment["agr"]["price"],
+        ))
+
+    return rows
 
 
 def build_vlph_120t_df(
@@ -80,12 +102,19 @@ def build_vlph_120t_df(
     params = get_vlph_params(ladle_tons)
 
     # ── COMBUSTION AIR LINE ─────────────────────────────────────────────────
+    is_plc = control_mode == "automatic" and auto_control_type == "plc"
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
         _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
-        _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
-        _row("COMB AIR", "FLOW TRANSMITTER (DPT)", "Output 4-20 mA, 230V AC", 1),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
+    ]
+    # PLC: air line gets Orifice Plate + Flow Transmitter
+    if is_plc:
+        rows += [
+            _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
+            _row("COMB AIR", "FLOW TRANSMITTER (DPT)", "Output 4-20 mA, 230V AC", 1),
+        ]
+    rows += [
         _row(
             "COMB AIR", "PNEUMATIC CONTROL VALVE",
             f'{equipment["motorized_control_valve"]["nb"]} NB, '
@@ -111,12 +140,12 @@ def build_vlph_120t_df(
         _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)", "15 NB, 1500 mm", 1),
     ]
 
-    # ── FUEL 1 GAS LINE ────────────────────────────────────────────────────
-    rows += _fuel_line_rows(f1_label, equipment)
+    # ── FUEL 1 LINE ────────────────────────────────────────────────────────
+    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode, auto_control_type)
 
-    # ── FUEL 2 GAS LINE (dual fuel only) ───────────────────────────────────
+    # ── FUEL 2 LINE (dual fuel only) ──────────────────────────────────────
     if is_dual:
-        rows += _fuel_line_rows(f2_label, equipment2)
+        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type)
 
     # ── NG PILOT LINE ──────────────────────────────────────────────────────
     rows += [
@@ -129,15 +158,6 @@ def build_vlph_120t_df(
         _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE", "15 NB - 1500 mm LONG", 1),
     ]
 
-    # ── NITROGEN PURGING ───────────────────────────────────────────────────
-    rows += [
-        _row("N2 PURGING", "BALL VALVE (N2)", "20 NB", 1),
-        _row("N2 PURGING", "PRESSURE GAUGE WITH TNV (N2)", '0-10 kg/cm2, Dial 4"', 1),
-        _row("N2 PURGING", "PRESSURE REGULATING VALVE (N2)", "25 NB", 1),
-        _row("N2 PURGING", "PRESSURE SWITCH HIGH", "0-10 kg/cm2", 1),
-        _row("N2 PURGING", "SOLENOID VALVE (N2)", "20 NB", 1),
-        _row("N2 PURGING", "CHECK VALVE", "20 NB", 1),
-    ]
 
     # ── ENCON ITEMS ────────────────────────────────────────────────────────
     burner_desc = "ENCON DUAL FUEL Burner" if is_dual else equipment["burner"]["model"]
