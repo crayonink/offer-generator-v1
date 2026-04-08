@@ -78,7 +78,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     1, unit_price_override=equipment["agr"]["price"],
                 ))
             elif fuel_type in OIL_FUELS:
-                rows.append(_row(media, "AOR", f'{oil_nb} NB', 1))
+                rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1))
 
     # AGR for non-PLC+AGR/PID modes (gas fuels)
     if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid")):
