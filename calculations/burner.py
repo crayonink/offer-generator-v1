@@ -48,7 +48,7 @@ def calculate_burner(inputs: BurnerInputs) -> BurnerResults:
         raise ValueError("efficiency must be greater than zero")
 
     # Average temperature to be raised
-    avg_temp_rise = ((inputs.Tf + 200) / 2) - ((inputs.Ti + 100) / 2)
+    avg_temp_rise = ((inputs.Tf + inputs.Ti)/2)
 
     # Firing rate
     firing_rate_kcal = (
