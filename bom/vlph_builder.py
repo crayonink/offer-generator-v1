@@ -124,13 +124,7 @@ def build_vlph_120t_df(
         _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
     ]
-    # PLC: air gets Orifice Plate + Flow Transmitter + Control Valve
-    if is_plc:
-        rows += [
-            _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
-            _row("COMB AIR", "DPT (Air)", "Output 4-20 mA, 230V AC", 1),
-        ]
-    # PLC, PLC+AGR, PID: air gets control valve
+    # PLC, PLC+AGR, PID: air gets control valve only
     if is_plc or is_plc_agr or is_pid:
         rows.append(_row(
             "COMB AIR", "PNEUMATIC CONTROL VALVE",
