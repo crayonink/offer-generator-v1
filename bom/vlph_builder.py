@@ -2,7 +2,6 @@ import pandas as pd
 
 from bom.static_items import static_items
 from bom.price_master import get_price
-from bom.hpu_calculator import get_hpu_cost
 from bom.ladle_params import get_vlph_params
 
 
@@ -75,32 +74,8 @@ def build_vlph_120t_df(
 
     rows = []
 
-    # ── SYSTEM STRUCTURE (from Pricelist WorkBook — Vertical sheet) ─────────
+    # Get ladle params (for ceramic rolls count, etc.)
     params = get_vlph_params(ladle_tons)
-    hpu    = get_hpu_cost(params["hpu_kw"])
-
-    try:
-        ceramic_price = get_price("Ceramic Fiber")
-    except ValueError:
-        ceramic_price = 2000.0
-
-    rows += [
-        _row("STRUCTURE", "MS STRUCTURE",
-             f'{params["ms_structure_kg"]} Kgs @ Rs.{params["ms_structure_rate"]}/kg',
-             1, unit_price_override=params["ms_structure_cost"]),
-        _row("SYSTEM", f'H & P UNIT ({hpu["model"]} — {hpu["kw"]} kW)',
-             "Duplex Configuration",
-             1, unit_price_override=hpu["price"]),
-        _row("SYSTEM", "CERAMIC FIBER",
-             f'{params["ceramic_rolls"]} Rolls',
-             params["ceramic_rolls"], unit_price_override=ceramic_price),
-        _row("SYSTEM", "CONTROL PANEL",
-             "1 Set",
-             1, unit_price_override=params["control_panel_cost"]),
-        _row("SYSTEM", "SWIRLING MECH, PIPELINE & FITTINGS",
-             "Incl. Nuts, Bolts, Paint",
-             1, unit_price_override=params["pipeline_swirling_cost"]),
-    ]
 
     # ── COMBUSTION AIR LINE ─────────────────────────────────────────────────
     rows += [
@@ -202,12 +177,13 @@ def build_vlph_120t_df(
     ]
 
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
-    STATIC_SKIP = {"CONTROL PANEL"}
+    STATIC_SKIP = {"CONTROL PANEL"}  # CONTROL PANEL added separately below
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
 
     rows += [
+        _row("MISC ITEMS", "CONTROL PANEL", "1 Set", 1),
         _row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "15 NB", 3),
         _row("MISC ITEMS", "PLC WITH HMI", "", 1),
     ]
@@ -217,25 +193,22 @@ def build_vlph_120t_df(
         columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "UNIT PRICE", "TOTAL"],
     )
 
-    # Summary rows
-    system_total = df.loc[df["MEDIA"].isin(["STRUCTURE", "SYSTEM"]), "TOTAL"].sum()
-
+    # Summary rows (SAIL style: Bought Out + In-house/ENCON)
     bought_out_total = df.loc[
-        (~df["MEDIA"].isin(["ENCON ITEMS", "STRUCTURE", "SYSTEM"]))
+        (df["MEDIA"] != "ENCON ITEMS")
         & (~df["ITEM NAME"].isin(BOUGHT_OUT_EXCLUDE_ITEMS)),
         "TOTAL",
     ].sum()
 
     encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
 
-    grand_total = system_total + bought_out_total + encon_total
+    grand_total = bought_out_total + encon_total
 
     df = pd.concat(
         [
             df,
             pd.DataFrame(
                 [
-                    ("", "SYSTEM ITEMS TOTAL",  "", "", "", system_total),
                     ("", "BOUGHT OUT ITEMS",     "", "", "", bought_out_total),
                     ("", "ENCON ITEMS",          "", "", "", encon_total),
                     ("", "GRAND TOTAL",          "", "", "", grand_total),

@@ -926,8 +926,6 @@ def vlph_calculate(req: VLPHCalcRequest):
 
         # Split summary rows from detail rows
         detail = bom_df[bom_df["MEDIA"] != ""].copy()
-        summary_names = ["SYSTEM ITEMS TOTAL", "BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]
-        system_total     = float(bom_df.loc[bom_df["ITEM NAME"] == "SYSTEM ITEMS TOTAL", "TOTAL"].values[0]) if "SYSTEM ITEMS TOTAL" in bom_df["ITEM NAME"].values else 0
         bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS",   "TOTAL"].values[0]) if "BOUGHT OUT ITEMS" in bom_df["ITEM NAME"].values else 0
         encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0]) if "ENCON ITEMS" in bom_df["ITEM NAME"].values else 0
         grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
@@ -975,7 +973,6 @@ def vlph_calculate(req: VLPHCalcRequest):
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {
-                "system_total":     round(system_total, 2),
                 "bought_out_total": round(bought_out_total, 2),
                 "encon_total":      round(encon_total, 2),
                 "grand_total":      round(grand_total, 2),
@@ -1167,7 +1164,6 @@ def hlph_calculate(req: VLPHCalcRequest):
         bom_df = build_hlph_df(equipment, ladle_tons=req.ladle_tons)
 
         detail = bom_df[bom_df["MEDIA"] != ""].copy()
-        system_total     = float(bom_df.loc[bom_df["ITEM NAME"] == "SYSTEM ITEMS TOTAL", "TOTAL"].values[0])
         bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS",   "TOTAL"].values[0])
         encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0])
         grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0])
@@ -1210,7 +1206,6 @@ def hlph_calculate(req: VLPHCalcRequest):
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {
-                "system_total":     round(system_total, 2),
                 "bought_out_total": round(bought_out_total, 2),
                 "encon_total":      round(encon_total, 2),
                 "grand_total":      round(grand_total, 2),
