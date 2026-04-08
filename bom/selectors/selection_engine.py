@@ -1,3 +1,6 @@
+import sqlite3
+import os
+
 from bom.selectors.encon_burner import select_encon_mg_burner
 from bom.selectors.ng_gas_train import select_ng_gas_train
 from bom.selectors.agr_selector import select_agr
@@ -13,8 +16,23 @@ from bom.selectors.air_duct_selector import select_air_duct
 from bom.selectors.rotary_joint_selector import select_rotary_joint
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float) -> dict:
+
+def _select_dual_fuel_burner(burner_size: str) -> float:
+    """Look up dual fuel burner set price from burner_pricelist_master."""
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT price FROM burner_pricelist_master "
+        "WHERE section LIKE '%DUAL%' AND burner_size=? AND component='BURNER SET'",
+        (burner_size,)
+    ).fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500) -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     Returns a flat dict — each key maps directly to the selected component dict.
@@ -36,7 +54,14 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float) -> dict:
 
     # Burner
     try:
-        burner = select_encon_mg_burner(ng_flow_nm3hr)
+        burner = select_encon_mg_burner(ng_flow_nm3hr, fuel_cv=fuel_cv)
+        # Override with dual fuel burner price if applicable
+        if is_dual_fuel:
+            # pricelist uses "ENCON 5A", selector returns "ENCON G-5A"
+            pricelist_name = burner["model"].replace("G-", "").replace(" -G ", " ")
+            dual_price = _select_dual_fuel_burner(pricelist_name)
+            if dual_price > 0:
+                burner["price"] = dual_price
     except Exception:
         burner = {
             "model": "TEST-BURNER",

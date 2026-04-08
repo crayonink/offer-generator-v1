@@ -163,28 +163,42 @@ def build_vlph_120t_df(
     ]
 
     # ── ENCON ITEMS ────────────────────────────────────────────────────────
-    burner_model = equipment["burner"]["model"]
-    if is_dual:
-        burner_model = f"ENCON DUAL FUEL Burner ({burner_model})"
+    burner_desc = "ENCON DUAL FUEL Burner" if is_dual else equipment["burner"]["model"]
     rows += [
         _row(
-            "ENCON ITEMS", burner_model,
+            "ENCON ITEMS", burner_desc,
             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
             1,
             unit_price_override=equipment["burner"]["price"],
         ),
+        _row("ENCON ITEMS", "BEARING (24026)", "", 2),
+        _row("ENCON ITEMS", "PLUMMER BLOCK",
+             f'{params.get("plummer_block_kg", 300)} kg @ Rs.170/kg',
+             1, unit_price_override=params.get("plummer_block_kg", 300) * 170),
+        _row("ENCON ITEMS", "SHAFT",
+             f'{params.get("shaft_kg", 350)} kg @ Rs.120/kg',
+             1, unit_price_override=params.get("shaft_kg", 350) * 120),
+        _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
+             f'{params.get("fabrication_kg", 1900)} kg @ Rs.110/kg',
+             1, unit_price_override=params.get("fabrication_kg", 1900) * 110),
+        _row("ENCON ITEMS", "AIR-GAS PIPELINE",
+             f'{params.get("pipeline_kg", 1000)} kg @ Rs.125/kg',
+             1, unit_price_override=params.get("pipeline_kg", 1000) * 125),
         _row(
-            "ENCON ITEMS", equipment["blower"]["model"],
+            "ENCON ITEMS", "COMBUSTION AIR BLOWER",
             f'{equipment["blower"]["hp"]} HP, '
             f'{equipment["blower"]["pressure"]} WC, '
-            f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
+            f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr — {equipment["blower"]["model"]}',
             1,
-            unit_price_override=equipment["blower"]["price_basic"],
+            unit_price_override=equipment["blower"]["price_premium"],
         ),
-        _row("ENCON ITEMS", "ENCON-PB (NG/LPG) - 100 KW", "", 1),
-        _row("ENCON ITEMS", "Ignition Transformer", "", 1),
-        _row("ENCON ITEMS", "Burner Control Unit", "", 1),
-        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1),
+        _row("ENCON ITEMS", "IGNITION TRANSFORMER", "", 1),
+        _row("ENCON ITEMS", "SEQUENCE CONTROLLER", "", 1),
+        _row("ENCON ITEMS", "UV SENSOR WITH AIR JACKET", "", 1),
+        _row("ENCON ITEMS", "PILOT BURNER", "", 1),
+        _row("ENCON ITEMS", "CERAMIC FIBRE",
+             f'{params["ceramic_rolls"]} Rolls',
+             params["ceramic_rolls"]),
     ]
 
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
@@ -193,7 +207,6 @@ def build_vlph_120t_df(
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
 
-    # Additional misc items from SAIL spec
     rows += [
         _row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "15 NB", 3),
         _row("MISC ITEMS", "PLC WITH HMI", "", 1),

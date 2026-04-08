@@ -882,13 +882,16 @@ def vlph_calculate(req: VLPHCalcRequest):
             ng_flow_nm3hr=br1.extra_firing_rate_nm3hr,
             air_flow_nm3hr=br1.air_qty_nm3hr,
         ))
+        # --- Fuel 2 calculation (if dual fuel) ---
+        is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
+
         equip1 = select_equipment(
             ng_flow_nm3hr=br1.extra_firing_rate_nm3hr,
             air_flow_nm3hr=br1.air_qty_nm3hr,
+            is_dual_fuel=is_dual,
+            fuel_cv=f1_cv,
         )
 
-        # --- Fuel 2 calculation (if dual fuel) ---
-        is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
         br2 = None
         pipes2 = None
         equip2 = None
@@ -908,6 +911,8 @@ def vlph_calculate(req: VLPHCalcRequest):
             equip2 = select_equipment(
                 ng_flow_nm3hr=br2.extra_firing_rate_nm3hr,
                 air_flow_nm3hr=br2.air_qty_nm3hr,
+                is_dual_fuel=is_dual,
+                fuel_cv=req.fuel2_cv,
             )
 
         # Air is CV-independent, so use fuel1 for air sizing

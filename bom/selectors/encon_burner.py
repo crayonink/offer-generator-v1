@@ -1,13 +1,13 @@
 import sqlite3
 
-def select_encon_mg_burner(required_gas_flow_nm3hr: float) -> dict:
+def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 10500) -> dict:
     """
     Select ENCON Gas Burner based on gas firing rate.
-    Converts Nm3/hr → equivalent oil LPH.
+    Converts Nm3/hr → equivalent oil LPH using actual fuel CV.
     """
 
-    # 🔥 Convert Gas Nm3/hr to equivalent Oil LPH
-    equivalent_lph = required_gas_flow_nm3hr * 10500 / 8600
+    # Convert Gas Nm3/hr to equivalent Oil LPH using actual fuel CV
+    equivalent_lph = required_gas_flow_nm3hr * fuel_cv / 8600
 
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
