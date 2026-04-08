@@ -364,38 +364,70 @@
       <h1>Process Parameters</h1>
       <p>Enter thermal inputs to size the VLPH burner and select equipment.</p>
     </div>
-    <div class="step-heading">Step 2 — Burner Size Calculation Inputs</div>
+    <div class="step-heading">Step 2 — Equipment Sizing</div>
 
-    <div class="fg fg-2" style="margin-bottom:24px">
-      <div class="field">
-        <label>Initial Temperature — Ti (°C) <span class="req">*</span></label>
-        <input id="Ti" type="number" value="650" placeholder="e.g. 650"/>
-        <div class="hint">Initial ladle temperature</div>
-      </div>
-      <div class="field">
-        <label>Final Temperature — Tf (°C) <span class="req">*</span></label>
-        <input id="Tf" type="number" value="1200" placeholder="e.g. 1200"/>
-        <div class="hint">Target ladle temperature — must be greater than Ti</div>
+    <!-- Input Mode Toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button id="mode-calc" class="btn-grid-item selected" onclick="setInputMode('calc')" style="padding:10px 20px;border-radius:8px;border:1.5px solid var(--border);background:var(--navy);color:#fff;cursor:pointer;font-size:.84rem;font-weight:600;">Calculate from Process Parameters</button>
+      <button id="mode-direct" class="btn-grid-item" onclick="setInputMode('direct')" style="padding:10px 20px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text);cursor:pointer;font-size:.84rem;font-weight:600;">Direct Input (Known Burner Capacity)</button>
+    </div>
+
+    <!-- Direct Input Mode -->
+    <div id="direct-inputs" style="display:none;margin-bottom:24px;">
+      <div class="fg fg-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>Burner Capacity (Nm³/hr) <span class="req">*</span></label>
+          <input id="direct_burner_capacity" type="number" value="300" placeholder="e.g. 300"/>
+          <div class="hint">Gas flow rate to the burner</div>
+        </div>
+        <div class="field">
+          <label>Ladle Capacity (tons) <span class="req">*</span></label>
+          <select id="direct_ladle_tons">
+            <option value="10">10 T</option>
+            <option value="15">15 T</option>
+            <option value="20">20 T</option>
+            <option value="30">30 T</option>
+            <option value="40">40 T</option>
+            <option value="60" selected>60 T</option>
+          </select>
+          <div class="hint">Ladle size for structure/ceramic sizing</div>
+        </div>
       </div>
     </div>
 
-    <div class="fg fg-2" style="margin-bottom:16px">
-      <div class="field">
-        <label>Ladle Capacity (tons) <span class="req">*</span></label>
-        <select id="ladle_tons">
-          <option value="10">10 T</option>
-          <option value="15">15 T</option>
-          <option value="20">20 T</option>
-          <option value="30">30 T</option>
-          <option value="40">40 T</option>
-          <option value="60">60 T</option>
-        </select>
-        <div class="hint">Drives MS structure, HPU, ceramic fiber sizing</div>
+    <!-- Calc Input Mode -->
+    <div id="calc-inputs">
+      <div class="fg fg-2" style="margin-bottom:24px">
+        <div class="field">
+          <label>Initial Temperature — Ti (°C) <span class="req">*</span></label>
+          <input id="Ti" type="number" value="650" placeholder="e.g. 650"/>
+          <div class="hint">Initial ladle temperature</div>
+        </div>
+        <div class="field">
+          <label>Final Temperature — Tf (°C) <span class="req">*</span></label>
+          <input id="Tf" type="number" value="1200" placeholder="e.g. 1200"/>
+          <div class="hint">Target ladle temperature — must be greater than Ti</div>
+        </div>
       </div>
-      <div class="field">
-        <label>Refractory Weight (kg) <span class="req">*</span></label>
-        <input id="refractory_weight" type="number" value="21500"/>
-        <div class="hint">Total refractory mass</div>
+
+      <div class="fg fg-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>Ladle Capacity (tons) <span class="req">*</span></label>
+          <select id="ladle_tons">
+            <option value="10">10 T</option>
+            <option value="15">15 T</option>
+            <option value="20">20 T</option>
+            <option value="30">30 T</option>
+            <option value="40">40 T</option>
+            <option value="60">60 T</option>
+          </select>
+          <div class="hint">Drives structure, ceramic fiber sizing</div>
+        </div>
+        <div class="field">
+          <label>Refractory Weight (kg) <span class="req">*</span></label>
+          <input id="refractory_weight" type="number" value="21500"/>
+          <div class="hint">Total refractory mass</div>
+        </div>
       </div>
     </div>
 
@@ -439,55 +471,35 @@
       <input type="hidden" id="fuel_cv" value="8500"/>
     </div>
 
-    <div class="fg fg-1" style="margin-bottom:24px">
-      <div class="field">
-        <label>Time Taken (hours) <span class="req">*</span></label>
-        <select id="time_taken_hr">
-          <option value="0.5">0.5 hr</option>
-          <option value="1">1.0 hr</option>
-          <option value="1.5">1.5 hr</option>
-          <option value="2" selected>2.0 hr</option>
-          <option value="2.5">2.5 hr</option>
-          <option value="3">3.0 hr</option>
-          <option value="3.5">3.5 hr</option>
-          <option value="4">4.0 hr</option>
-          <option value="4.5">4.5 hr</option>
-          <option value="5">5.0 hr</option>
-          <option value="5.5">5.5 hr</option>
-          <option value="6">6.0 hr</option>
-          <option value="6.5">6.5 hr</option>
-          <option value="7">7.0 hr</option>
-          <option value="7.5">7.5 hr</option>
-          <option value="8">8.0 hr</option>
-          <option value="8.5">8.5 hr</option>
-          <option value="9">9.0 hr</option>
-          <option value="9.5">9.5 hr</option>
-          <option value="10">10.0 hr</option>
-          <option value="10.5">10.5 hr</option>
-          <option value="11">11.0 hr</option>
-          <option value="11.5">11.5 hr</option>
-          <option value="12">12.0 hr</option>
-          <option value="12.5">12.5 hr</option>
-          <option value="13">13.0 hr</option>
-          <option value="13.5">13.5 hr</option>
-          <option value="14">14.0 hr</option>
-          <option value="14.5">14.5 hr</option>
-          <option value="15">15.0 hr</option>
-        </select>
-        <div class="hint">Preheating cycle time</div>
+    <div id="calc-extras">
+      <div class="fg fg-1" style="margin-bottom:24px">
+        <div class="field">
+          <label>Time Taken (hours) <span class="req">*</span></label>
+          <select id="time_taken_hr">
+            <option value="0.5">0.5 hr</option>
+            <option value="1">1.0 hr</option>
+            <option value="1.5">1.5 hr</option>
+            <option value="2" selected>2.0 hr</option>
+            <option value="2.5">2.5 hr</option>
+            <option value="3">3.0 hr</option>
+            <option value="3.5">3.5 hr</option>
+            <option value="4">4.0 hr</option>
+          </select>
+          <div class="hint">Preheating cycle time</div>
+        </div>
       </div>
-    </div>
 
-    <div class="fg fg-2">
-      <div class="field">
-        <label>Refractory Heat Factor</label>
-        <input id="refractory_heat_factor" type="number" value="0.25" step="0.01"/>
-        <div class="hint">default 0.25</div>
-      </div>
-      <div class="field">
-        <label>Efficiency</label>
-        <input id="efficiency" type="number" value="0.52" step="0.01"/>
-        <div class="hint">default 0.52</div>
+      <div class="fg fg-2">
+        <div class="field">
+          <label>Refractory Heat Factor</label>
+          <input id="refractory_heat_factor" type="number" value="0.25" step="0.01"/>
+          <div class="hint">default 0.25</div>
+        </div>
+        <div class="field">
+          <label>Efficiency</label>
+          <input id="efficiency" type="number" value="0.52" step="0.01"/>
+          <div class="hint">default 0.52</div>
+        </div>
       </div>
     </div>
 
@@ -720,6 +732,25 @@ function goStep(n) {
 /* ── Fuel selector ── */
 const FUEL_CVS   = { ng: 8500, rlng: 10500, lpg: 10800, cog: 4300, bg: 850 };
 const FUEL_NAMES = { ng: 'Natural Gas', rlng: 'RLNG', lpg: 'LPG', cog: 'Coke Oven Gas', bg: 'BG (Blast Furnace Gas)' };
+
+/* ── Input Mode Toggle ── */
+let inputMode = 'calc';
+function setInputMode(mode) {
+  inputMode = mode;
+  document.getElementById('calc-inputs').style.display = mode === 'calc' ? '' : 'none';
+  document.getElementById('calc-extras').style.display = mode === 'calc' ? '' : 'none';
+  document.getElementById('direct-inputs').style.display = mode === 'direct' ? '' : 'none';
+  const btnCalc = document.getElementById('mode-calc');
+  const btnDirect = document.getElementById('mode-direct');
+  if (mode === 'calc') {
+    btnCalc.style.background = 'var(--navy)'; btnCalc.style.color = '#fff'; btnCalc.style.borderColor = 'var(--navy)';
+    btnDirect.style.background = '#fff'; btnDirect.style.color = 'var(--text)'; btnDirect.style.borderColor = 'var(--border)';
+  } else {
+    btnDirect.style.background = 'var(--navy)'; btnDirect.style.color = '#fff'; btnDirect.style.borderColor = 'var(--navy)';
+    btnCalc.style.background = '#fff'; btnCalc.style.color = 'var(--text)'; btnCalc.style.borderColor = 'var(--border)';
+  }
+}
+
 function onFuelChange() {
   const f1 = document.getElementById('fuel1_type').value;
   const f2 = document.getElementById('fuel2_type').value;
@@ -770,26 +801,46 @@ async function calculate() {
   const btn = document.getElementById("calc-btn");
   btn.classList.add("loading"); btn.disabled = true;
 
-  const ti = val("Ti"), tf = val("Tf");
-  if (tf <= ti) { showError("error-box", "Final temperature (Tf) must be greater than initial temperature (Ti)."); btn.classList.remove("loading"); btn.disabled = false; return; }
+  const f1cv = parseFloat(document.getElementById("fuel1_cv").value) || 8500;
+  const f2cv = parseFloat(document.getElementById("fuel2_cv").value) || 0;
+  const f1type = document.getElementById("fuel1_type").value;
+  const f2type = document.getElementById("fuel2_type").value;
+
+  let payload;
+  if (inputMode === 'direct') {
+    // Direct input: send burner capacity, skip process params
+    const cap = val("direct_burner_capacity");
+    if (cap <= 0) { showError("error-box", "Burner Capacity must be > 0"); btn.classList.remove("loading"); btn.disabled = false; return; }
+    payload = {
+      mode: "direct",
+      direct_burner_capacity: cap,
+      fuel_cv: f1cv,
+      fuel1_type: f1type, fuel1_cv: f1cv,
+      fuel2_type: f2type, fuel2_cv: f2cv,
+      ladle_tons: val("direct_ladle_tons"),
+    };
+  } else {
+    const ti = val("Ti"), tf = val("Tf");
+    if (tf <= ti) { showError("error-box", "Final temperature (Tf) must be greater than initial temperature (Ti)."); btn.classList.remove("loading"); btn.disabled = false; return; }
+    payload = {
+      mode: "calc",
+      Ti: ti, Tf: tf,
+      refractory_weight: val("refractory_weight"),
+      fuel_cv: f1cv,
+      fuel1_type: f1type, fuel1_cv: f1cv,
+      fuel2_type: f2type, fuel2_cv: f2cv,
+      time_taken_hr: val("time_taken_hr"),
+      refractory_heat_factor: val("refractory_heat_factor"),
+      efficiency: val("efficiency"),
+      ladle_tons: val("ladle_tons"),
+    };
+  }
 
   try {
     const res = await fetch(`${API}/api/vlph-calculate`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        Ti: ti, Tf: tf,
-        refractory_weight:      val("refractory_weight"),
-        fuel_cv:                parseFloat(document.getElementById("fuel1_cv").value) || 8500,
-        fuel1_type:             document.getElementById("fuel1_type").value,
-        fuel1_cv:               parseFloat(document.getElementById("fuel1_cv").value) || 8500,
-        fuel2_type:             document.getElementById("fuel2_type").value,
-        fuel2_cv:               parseFloat(document.getElementById("fuel2_cv").value) || 0,
-        time_taken_hr:          val("time_taken_hr"),
-        refractory_heat_factor: val("refractory_heat_factor"),
-        efficiency:             val("efficiency"),
-        ladle_tons:             val("ladle_tons"),
-      }),
+      body: JSON.stringify(payload),
     });
     const d = await res.json();
     if (d.error) throw new Error(d.error + (d.trace ? "\n\n" + d.trace : ""));

@@ -435,11 +435,12 @@ class ItemUpdateRequest(BaseModel):
     rate: Optional[float] = None
 
 class VLPHCalcRequest(BaseModel):
-    Ti: float
-    Tf: float
-    refractory_weight: float
+    mode: str = "calc"                          # "calc" or "direct"
+    Ti: float = 650.0
+    Tf: float = 1200.0
+    refractory_weight: float = 21500.0
     fuel_cv: float = 8500.0
-    time_taken_hr: float
+    time_taken_hr: float = 2.0
     refractory_heat_factor: float = 0.25
     efficiency: float = 0.52
     ladle_tons: float = 10.0
@@ -447,6 +448,7 @@ class VLPHCalcRequest(BaseModel):
     fuel1_cv: float = 8500.0
     fuel2_type: str = "none"
     fuel2_cv: float = 0.0
+    direct_burner_capacity: float = 0.0         # Nm3/hr (direct mode)
 
 
 class QuoteItem(BaseModel):
@@ -868,26 +870,37 @@ def vlph_calculate(req: VLPHCalcRequest):
 
         FUEL_NAMES = {"ng": "Natural Gas", "lpg": "LPG", "cog": "COG", "bg": "BG", "rlng": "RLNG"}
 
-        # --- Fuel 1 calculation (always) ---
         f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
-        br1 = calculate_burner(BurnerInputs(
-            Ti=req.Ti, Tf=req.Tf,
-            refractory_weight=req.refractory_weight,
-            fuel_cv=f1_cv,
-            time_taken_hr=req.time_taken_hr,
-            refractory_heat_factor=req.refractory_heat_factor,
-            efficiency=req.efficiency,
-        ))
+
+        if req.mode == "direct":
+            # --- Direct mode: use burner capacity directly ---
+            ng_flow = req.direct_burner_capacity
+            # Air qty: fuel_cv * flow * 118 / 100000 (same formula as burner calc)
+            air_flow = f1_cv * ng_flow * 118 / 100000
+            br1 = None  # no burner calc results in direct mode
+        else:
+            # --- Calc mode: calculate from process params ---
+            br1 = calculate_burner(BurnerInputs(
+                Ti=req.Ti, Tf=req.Tf,
+                refractory_weight=req.refractory_weight,
+                fuel_cv=f1_cv,
+                time_taken_hr=req.time_taken_hr,
+                refractory_heat_factor=req.refractory_heat_factor,
+                efficiency=req.efficiency,
+            ))
+            ng_flow = br1.extra_firing_rate_nm3hr
+            air_flow = br1.air_qty_nm3hr
+
         pipes1 = calculate_pipe_sizes(PipeInputs(
-            ng_flow_nm3hr=br1.extra_firing_rate_nm3hr,
-            air_flow_nm3hr=br1.air_qty_nm3hr,
+            ng_flow_nm3hr=ng_flow,
+            air_flow_nm3hr=air_flow,
         ))
         # --- Fuel 2 calculation (if dual fuel) ---
         is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
 
         equip1 = select_equipment(
-            ng_flow_nm3hr=br1.extra_firing_rate_nm3hr,
-            air_flow_nm3hr=br1.air_qty_nm3hr,
+            ng_flow_nm3hr=ng_flow,
+            air_flow_nm3hr=air_flow,
             is_dual_fuel=is_dual,
             fuel_cv=f1_cv,
         )
@@ -895,22 +908,32 @@ def vlph_calculate(req: VLPHCalcRequest):
         br2 = None
         pipes2 = None
         equip2 = None
+        ng_flow2 = 0
+        air_flow2 = 0
         if is_dual:
-            br2 = calculate_burner(BurnerInputs(
-                Ti=req.Ti, Tf=req.Tf,
-                refractory_weight=req.refractory_weight,
-                fuel_cv=req.fuel2_cv,
-                time_taken_hr=req.time_taken_hr,
-                refractory_heat_factor=req.refractory_heat_factor,
-                efficiency=req.efficiency,
-            ))
+            if req.mode == "direct":
+                # In direct mode, fuel2 flow = same heat, different CV
+                # heat = fuel1_flow * fuel1_cv, so fuel2_flow = heat / fuel2_cv
+                ng_flow2 = (ng_flow * f1_cv) / req.fuel2_cv
+                air_flow2 = req.fuel2_cv * ng_flow2 * 118 / 100000
+            else:
+                br2 = calculate_burner(BurnerInputs(
+                    Ti=req.Ti, Tf=req.Tf,
+                    refractory_weight=req.refractory_weight,
+                    fuel_cv=req.fuel2_cv,
+                    time_taken_hr=req.time_taken_hr,
+                    refractory_heat_factor=req.refractory_heat_factor,
+                    efficiency=req.efficiency,
+                ))
+                ng_flow2 = br2.extra_firing_rate_nm3hr
+                air_flow2 = br2.air_qty_nm3hr
             pipes2 = calculate_pipe_sizes(PipeInputs(
-                ng_flow_nm3hr=br2.extra_firing_rate_nm3hr,
-                air_flow_nm3hr=br2.air_qty_nm3hr,
+                ng_flow_nm3hr=ng_flow2,
+                air_flow_nm3hr=air_flow2,
             ))
             equip2 = select_equipment(
-                ng_flow_nm3hr=br2.extra_firing_rate_nm3hr,
-                air_flow_nm3hr=br2.air_qty_nm3hr,
+                ng_flow_nm3hr=ng_flow2,
+                air_flow_nm3hr=air_flow2,
                 is_dual_fuel=is_dual,
                 fuel_cv=req.fuel2_cv,
             )
@@ -931,8 +954,11 @@ def vlph_calculate(req: VLPHCalcRequest):
         grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
         # Build response
+        cfm = air_flow / 1.7
+        blower_hp_calc = cfm / 114
         resp = {
             "calculations": {
+                "mode": req.mode,
                 "Ti": req.Ti,
                 "Tf": req.Tf,
                 "refractory_weight": req.refractory_weight,
@@ -941,24 +967,24 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "fuel1_name": FUEL_NAMES.get(req.fuel1_type, req.fuel1_type),
                 "fuel1_cv": f1_cv,
                 "time_taken_hr": req.time_taken_hr,
-                "avg_temp_rise":                  round(br1.avg_temp_rise, 2),
-                "firing_rate_kcal":               round(br1.firing_rate_kcal, 2),
-                "heat_load_kcal":                 round(br1.heat_load_kcal, 2),
-                "fuel_consumption_nm3":           round(br1.fuel_consumption_nm3, 2),
-                "calculated_firing_rate_nm3hr":   round(br1.calculated_firing_rate_nm3hr, 2),
-                "extra_firing_rate_nm3hr":        round(br1.extra_firing_rate_nm3hr, 2),
-                "final_firing_rate_mw":           round(br1.final_firing_rate_mw, 2),
-                "air_qty_nm3hr":                  round(br1.air_qty_nm3hr, 2),
-                "cfm":                            round(br1.cfm, 2),
-                "blower_hp_calc":                 round(br1.blower_hp, 2),
+                "avg_temp_rise":                  round(br1.avg_temp_rise, 2) if br1 else 0,
+                "firing_rate_kcal":               round(br1.firing_rate_kcal, 2) if br1 else 0,
+                "heat_load_kcal":                 round(br1.heat_load_kcal, 2) if br1 else 0,
+                "fuel_consumption_nm3":           round(br1.fuel_consumption_nm3, 2) if br1 else 0,
+                "calculated_firing_rate_nm3hr":   round(br1.calculated_firing_rate_nm3hr, 2) if br1 else round(ng_flow / 1.1, 2),
+                "extra_firing_rate_nm3hr":        round(ng_flow, 2),
+                "final_firing_rate_mw":           round(br1.final_firing_rate_mw, 2) if br1 else round(ng_flow * f1_cv / (860 * 1000), 2),
+                "air_qty_nm3hr":                  round(air_flow, 2),
+                "cfm":                            round(cfm, 2),
+                "blower_hp_calc":                 round(blower_hp_calc, 2),
             },
             "pipes": {
                 "fuel1_label": FUEL_NAMES.get(req.fuel1_type, "Fuel 1"),
-                "ng_flow":      round(br1.extra_firing_rate_nm3hr, 2),
+                "ng_flow":      round(ng_flow, 2),
                 "ng_velocity":  25.0,
                 "ng_dia_mm":    round(pipes1.ng_pipe_inner_dia_mm, 2),
                 "ng_nb":        pipes1.ng_pipe_nb,
-                "air_flow":     round(br1.air_qty_nm3hr, 2),
+                "air_flow":     round(air_flow, 2),
                 "air_velocity": 15.0,
                 "air_dia_mm":   round(pipes1.air_pipe_inner_dia_mm, 2),
                 "air_nb":       pipes1.air_pipe_nb,
@@ -980,16 +1006,16 @@ def vlph_calculate(req: VLPHCalcRequest):
         }
 
         # Add fuel2 data if dual fuel
-        if is_dual and br2:
+        if is_dual and pipes2:
             resp["calculations"]["is_dual"] = True
             resp["calculations"]["fuel2_type"] = req.fuel2_type
             resp["calculations"]["fuel2_name"] = FUEL_NAMES.get(req.fuel2_type, req.fuel2_type)
             resp["calculations"]["fuel2_cv"] = req.fuel2_cv
-            resp["calculations"]["fuel2_consumption_nm3"] = round(br2.fuel_consumption_nm3, 2)
-            resp["calculations"]["fuel2_firing_rate_nm3hr"] = round(br2.calculated_firing_rate_nm3hr, 2)
-            resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(br2.extra_firing_rate_nm3hr, 2)
+            resp["calculations"]["fuel2_consumption_nm3"] = round(br2.fuel_consumption_nm3, 2) if br2 else 0
+            resp["calculations"]["fuel2_firing_rate_nm3hr"] = round(br2.calculated_firing_rate_nm3hr, 2) if br2 else round(ng_flow2 / 1.1, 2)
+            resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(ng_flow2, 2)
             resp["pipes"]["fuel2_label"] = FUEL_NAMES.get(req.fuel2_type, "Fuel 2")
-            resp["pipes"]["fuel2_flow"] = round(br2.extra_firing_rate_nm3hr, 2)
+            resp["pipes"]["fuel2_flow"] = round(ng_flow2, 2)
             resp["pipes"]["fuel2_dia_mm"] = round(pipes2.ng_pipe_inner_dia_mm, 2)
             resp["pipes"]["fuel2_nb"] = pipes2.ng_pipe_nb
 
