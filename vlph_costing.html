@@ -623,7 +623,7 @@
             <tr><td class="lbl">Ti</td>                   <td class="val" id="r-Ti">—</td>       <td class="unit">°C</td></tr>
             <tr><td class="lbl">Tf</td>                   <td class="val" id="r-Tf">—</td>       <td class="unit">°C</td></tr>
             <tr><td class="lbl">Refractory Weight</td>    <td class="val" id="r-wt">—</td>       <td class="unit">kg</td></tr>
-            <tr><td class="lbl">MG Fuel CV</td>           <td class="val" id="r-cv">—</td>       <td class="unit">kcal/Nm³</td></tr>
+            <tr><td class="lbl" id="r-cv-label">Fuel CV</td> <td class="val" id="r-cv">—</td>       <td class="unit">kcal/Nm³</td></tr>
             <tr class="ch"><td colspan="3">Calculation Results</td></tr>
             <tr><td class="lbl">Avg. Temp Rise</td>       <td class="val" id="r-avg">—</td>      <td class="unit">°C</td></tr>
             <tr><td class="lbl">Time Taken</td>           <td class="val" id="r-time">—</td>     <td class="unit">hr</td></tr>
@@ -648,7 +648,7 @@
       <!-- Pipe sizing -->
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="result-section" style="margin-bottom:0">
-          <div class="result-title">NG Pipe Sizing</div>
+          <div class="result-title" id="pipe1-title">NG Pipe Sizing</div>
           <div class="result-card">
             <table class="ct">
               <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-ng-q">—</td> <td class="unit">Nm³/hr</td></tr>
@@ -907,6 +907,8 @@ function renderResults(d) {
   set("r-Tf",      fmt(c.Tf, 0));
   set("r-wt",      fmt(c.refractory_weight, 0));
   set("r-cv",      fmt(c.fuel_cv, 0));
+  set("r-cv-label", (c.fuel1_name || "Fuel") + " CV");
+  set("pipe1-title", (c.fuel1_name || "NG") + " Pipe Sizing");
   set("r-avg",     fmt(c.avg_temp_rise, 2));
   set("r-time",    c.time_taken_hr);
   set("r-fr-kcal", fmt(c.firing_rate_kcal, 0));
