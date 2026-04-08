@@ -67,7 +67,9 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
             elif fuel_type in OIL_FUELS:
                 rows += [
                     _row(media, "FLOWMETER", f'{oil_nb} NB', 1),
-                    _row(media, "PNEUMATIC CONTROL VALVE (Oil)", f'{oil_nb} NB', 1),
+                    _row(media, "MOTORIZED CONTROL VALVE", f'{oil_nb} NB', 1),
+                    _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1),
+                    _row(media, "PRESSURE SWITCH LOW", '', 1),
                 ]
         elif auto_control_type in ("plc_agr", "pid"):
             # PLC+AGR / PID: gas → AGR only, oil → AOR only
@@ -221,6 +223,9 @@ def build_vlph_120t_df(
     # PLC and PLC+AGR replace P.PID and RATIO CONTROLLER
     if is_plc or is_plc_agr:
         STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
+    # PID: no temperature transmitter
+    if is_pid:
+        STATIC_SKIP.add("TEMPERATURE TRANSMITTER")
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
