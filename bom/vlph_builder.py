@@ -51,24 +51,34 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
             1, unit_price_override=equipment["ng_gas_train"]["price"],
         ))
 
-    # PLC instrumentation
-    if control_mode == "automatic" and auto_control_type == "plc":
-        if fuel_type in GAS_FUELS:
-            # Gas: FT (DPT) + Control Valve
-            rows += [
-                _row(media, "ORIFICE PLATE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
-                _row(media, "FLOW TRANSMITTER (DPT) (Gas)", "Output 4-20 mA", 1),
-                _row(media, "PNEUMATIC CONTROL VALVE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
-            ]
-        elif fuel_type in OIL_FUELS:
-            # Oil: Flowmeter + Control Valve
-            rows += [
-                _row(media, "FLOWMETER", "", 1),
-                _row(media, "PNEUMATIC CONTROL VALVE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
-            ]
+    # Control-type-specific instrumentation
+    if control_mode == "automatic":
+        if auto_control_type == "plc":
+            # PLC: gas → FT + control valve, oil → flowmeter + control valve
+            if fuel_type in GAS_FUELS:
+                rows += [
+                    _row(media, "ORIFICE PLATE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
+                    _row(media, "FLOW TRANSMITTER (DPT) (Gas)", "Output 4-20 mA", 1),
+                    _row(media, "PNEUMATIC CONTROL VALVE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
+                ]
+            elif fuel_type in OIL_FUELS:
+                rows += [
+                    _row(media, "FLOWMETER", "", 1),
+                    _row(media, "PNEUMATIC CONTROL VALVE (Oil)", "", 1),
+                ]
+        elif auto_control_type == "plc_agr":
+            # PLC+AGR: gas → AGR only, oil → AOR only
+            if fuel_type in GAS_FUELS:
+                rows.append(_row(
+                    media, "AGR",
+                    f'{equipment["agr"]["nb"]} NB',
+                    1, unit_price_override=equipment["agr"]["price"],
+                ))
+            elif fuel_type in OIL_FUELS:
+                rows.append(_row(media, "AOR", "", 1))
 
-    # AGR (gas fuels only)
-    if fuel_type in GAS_FUELS:
+    # AGR for non-PLC+AGR modes (gas fuels) — ratio control on the line
+    if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type == "plc_agr"):
         rows.append(_row(
             media, "AGR",
             f'{equipment["agr"]["nb"]} NB',
@@ -103,25 +113,29 @@ def build_vlph_120t_df(
 
     # ── COMBUSTION AIR LINE ─────────────────────────────────────────────────
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
+    is_plc_agr = control_mode == "automatic" and auto_control_type == "plc_agr"
+
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
         _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
     ]
-    # PLC: air line gets Orifice Plate + Flow Transmitter
+    # PLC: air gets Orifice Plate + Flow Transmitter + Control Valve
     if is_plc:
         rows += [
             _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
             _row("COMB AIR", "FLOW TRANSMITTER (DPT)", "Output 4-20 mA, 230V AC", 1),
         ]
-    rows += [
-        _row(
+    # PLC, PLC+AGR: air gets control valve
+    if is_plc or is_plc_agr:
+        rows.append(_row(
             "COMB AIR", "PNEUMATIC CONTROL VALVE",
             f'{equipment["motorized_control_valve"]["nb"]} NB, '
             f'FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
             1,
             unit_price_override=equipment["motorized_control_valve"]["price"],
-        ),
+        ))
+    rows += [
         _row(
             "COMB AIR", "BUTTERFLY VALVE",
             f'{equipment["butterfly_valve"]["nb"]} NB',
