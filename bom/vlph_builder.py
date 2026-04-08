@@ -218,6 +218,9 @@ def build_vlph_120t_df(
 
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
     STATIC_SKIP = {"CONTROL PANEL"}  # CONTROL PANEL added separately below
+    # PLC replaces P.PID and RATIO CONTROLLER
+    if is_plc:
+        STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
