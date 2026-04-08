@@ -481,6 +481,25 @@
       <input type="hidden" id="fuel_cv" value="8500"/>
     </div>
 
+    <div class="fg fg-2" style="margin-bottom:24px">
+      <div class="field">
+        <label>Control Mode <span class="req">*</span></label>
+        <select id="control_mode" onchange="onControlModeChange()">
+          <option value="manual">Manual</option>
+          <option value="automatic" selected>Automatic</option>
+        </select>
+        <div class="hint">Manual = operator-controlled, Automatic = instrumented control</div>
+      </div>
+      <div class="field" id="auto-type-wrap">
+        <label>Automatic Control Type</label>
+        <select id="auto_control_type">
+          <option value="agr" selected>AGR (Air-Gas Ratio)</option>
+          <option value="mass_flow">Mass Flow Control</option>
+        </select>
+        <div class="hint">AGR = ratio controller, Mass Flow = DPT + PLC based</div>
+      </div>
+    </div>
+
     <div class="fg fg-1" style="margin-bottom:24px">
       <div class="field">
         <label>Blower Pressure</label>
@@ -763,6 +782,12 @@ function setInputMode(mode) {
   }
 }
 
+/* ── Control Mode Toggle ── */
+function onControlModeChange() {
+  const mode = document.getElementById('control_mode').value;
+  document.getElementById('auto-type-wrap').style.display = mode === 'automatic' ? '' : 'none';
+}
+
 function onFuelChange() {
   const f1 = document.getElementById('fuel1_type').value;
   const f2 = document.getElementById('fuel2_type').value;
@@ -831,6 +856,8 @@ async function calculate() {
       fuel2_type: f2type, fuel2_cv: f2cv,
       ladle_tons: val("direct_ladle_tons"),
       blower_pressure: document.getElementById("blower_pressure").value,
+      control_mode: document.getElementById("control_mode").value,
+      auto_control_type: document.getElementById("auto_control_type").value,
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -847,6 +874,8 @@ async function calculate() {
       efficiency: val("efficiency"),
       ladle_tons: val("ladle_tons"),
       blower_pressure: document.getElementById("blower_pressure").value,
+      control_mode: document.getElementById("control_mode").value,
+      auto_control_type: document.getElementById("auto_control_type").value,
     };
   }
 

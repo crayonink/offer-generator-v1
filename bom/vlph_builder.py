@@ -62,6 +62,8 @@ def build_vlph_120t_df(
     fuel1_type: str = "ng",
     fuel2_type: str = "none",
     equipment2: dict = None,
+    control_mode: str = "automatic",
+    auto_control_type: str = "agr",
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.

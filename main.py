@@ -450,6 +450,8 @@ class VLPHCalcRequest(BaseModel):
     fuel2_cv: float = 0.0
     direct_burner_capacity: float = 0.0         # Nm3/hr (direct mode)
     blower_pressure: str = "28"                  # "28" or "40" (WG inches)
+    control_mode: str = "automatic"              # "manual" or "automatic"
+    auto_control_type: str = "agr"               # "agr" or "mass_flow" (when automatic)
 
 
 class QuoteItem(BaseModel):
@@ -954,6 +956,8 @@ def vlph_calculate(req: VLPHCalcRequest):
             fuel1_type=req.fuel1_type,
             fuel2_type=req.fuel2_type,
             equipment2=equip2,
+            control_mode=req.control_mode,
+            auto_control_type=req.auto_control_type,
         )
 
         # Split summary rows from detail rows
@@ -975,6 +979,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "fuel1_type": req.fuel1_type,
                 "fuel1_name": FUEL_NAMES.get(req.fuel1_type, req.fuel1_type),
                 "fuel1_cv": f1_cv,
+                "control_mode": req.control_mode,
+                "auto_control_type": req.auto_control_type if req.control_mode == "automatic" else None,
                 "time_taken_hr": req.time_taken_hr,
                 "avg_temp_rise":                  round(br1.avg_temp_rise, 2) if br1 else 0,
                 "firing_rate_kcal":               round(br1.firing_rate_kcal, 2) if br1 else 0,
