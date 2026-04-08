@@ -443,6 +443,10 @@ class VLPHCalcRequest(BaseModel):
     refractory_heat_factor: float = 0.25
     efficiency: float = 0.52
     ladle_tons: float = 10.0
+    fuel1_type: str = "ng"
+    fuel1_cv: float = 8500.0
+    fuel2_type: str = "none"
+    fuel2_cv: float = 0.0
 
 
 class QuoteItem(BaseModel):
@@ -862,71 +866,107 @@ def vlph_calculate(req: VLPHCalcRequest):
         from bom.selectors.selection_engine import select_equipment
         from bom.vlph_builder import build_vlph_120t_df
 
-        burner_inputs = BurnerInputs(
-            Ti=req.Ti,
-            Tf=req.Tf,
+        FUEL_NAMES = {"ng": "Natural Gas", "lpg": "LPG", "cog": "COG", "bg": "BG", "rlng": "RLNG"}
+
+        # --- Fuel 1 calculation (always) ---
+        f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
+        br1 = calculate_burner(BurnerInputs(
+            Ti=req.Ti, Tf=req.Tf,
             refractory_weight=req.refractory_weight,
-            fuel_cv=req.fuel_cv,
+            fuel_cv=f1_cv,
             time_taken_hr=req.time_taken_hr,
             refractory_heat_factor=req.refractory_heat_factor,
             efficiency=req.efficiency,
-        )
-        br = calculate_burner(burner_inputs)
-
-        pipe_results = calculate_pipe_sizes(PipeInputs(
-            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
-            air_flow_nm3hr=br.air_qty_nm3hr,
         ))
-
-        equipment = select_equipment(
-            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
-            air_flow_nm3hr=br.air_qty_nm3hr,
+        pipes1 = calculate_pipe_sizes(PipeInputs(
+            ng_flow_nm3hr=br1.extra_firing_rate_nm3hr,
+            air_flow_nm3hr=br1.air_qty_nm3hr,
+        ))
+        equip1 = select_equipment(
+            ng_flow_nm3hr=br1.extra_firing_rate_nm3hr,
+            air_flow_nm3hr=br1.air_qty_nm3hr,
         )
 
-        bom_df = build_vlph_120t_df(equipment, ladle_tons=req.ladle_tons)
+        # --- Fuel 2 calculation (if dual fuel) ---
+        is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
+        br2 = None
+        pipes2 = None
+        equip2 = None
+        if is_dual:
+            br2 = calculate_burner(BurnerInputs(
+                Ti=req.Ti, Tf=req.Tf,
+                refractory_weight=req.refractory_weight,
+                fuel_cv=req.fuel2_cv,
+                time_taken_hr=req.time_taken_hr,
+                refractory_heat_factor=req.refractory_heat_factor,
+                efficiency=req.efficiency,
+            ))
+            pipes2 = calculate_pipe_sizes(PipeInputs(
+                ng_flow_nm3hr=br2.extra_firing_rate_nm3hr,
+                air_flow_nm3hr=br2.air_qty_nm3hr,
+            ))
+            equip2 = select_equipment(
+                ng_flow_nm3hr=br2.extra_firing_rate_nm3hr,
+                air_flow_nm3hr=br2.air_qty_nm3hr,
+            )
+
+        # Air is CV-independent, so use fuel1 for air sizing
+        bom_df = build_vlph_120t_df(
+            equipment=equip1,
+            ladle_tons=req.ladle_tons,
+            fuel1_type=req.fuel1_type,
+            fuel2_type=req.fuel2_type,
+            equipment2=equip2,
+        )
 
         # Split summary rows from detail rows
         detail = bom_df[bom_df["MEDIA"] != ""].copy()
-        system_total     = float(bom_df.loc[bom_df["ITEM NAME"] == "SYSTEM ITEMS TOTAL", "TOTAL"].values[0])
-        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS",   "TOTAL"].values[0])
-        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0])
-        grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0])
+        summary_names = ["SYSTEM ITEMS TOTAL", "BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]
+        system_total     = float(bom_df.loc[bom_df["ITEM NAME"] == "SYSTEM ITEMS TOTAL", "TOTAL"].values[0]) if "SYSTEM ITEMS TOTAL" in bom_df["ITEM NAME"].values else 0
+        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS",   "TOTAL"].values[0]) if "BOUGHT OUT ITEMS" in bom_df["ITEM NAME"].values else 0
+        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0]) if "ENCON ITEMS" in bom_df["ITEM NAME"].values else 0
+        grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
-        return {
+        # Build response
+        resp = {
             "calculations": {
                 "Ti": req.Ti,
                 "Tf": req.Tf,
                 "refractory_weight": req.refractory_weight,
-                "fuel_cv": req.fuel_cv,
+                "fuel_cv": f1_cv,
+                "fuel1_type": req.fuel1_type,
+                "fuel1_name": FUEL_NAMES.get(req.fuel1_type, req.fuel1_type),
+                "fuel1_cv": f1_cv,
                 "time_taken_hr": req.time_taken_hr,
-                "avg_temp_rise":                  round(br.avg_temp_rise, 2),
-                "firing_rate_kcal":               round(br.firing_rate_kcal, 2),
-                "heat_load_kcal":                 round(br.heat_load_kcal, 2),
-                "fuel_consumption_nm3":           round(br.fuel_consumption_nm3, 2),
-                "calculated_firing_rate_nm3hr":   round(br.calculated_firing_rate_nm3hr, 2),
-                "extra_firing_rate_nm3hr":        round(br.extra_firing_rate_nm3hr, 2),
-                "final_firing_rate_mw":           round(br.final_firing_rate_mw, 2),
-                "air_qty_nm3hr":                  round(br.air_qty_nm3hr, 2),
-                "cfm":                            round(br.cfm, 2),
-                "blower_hp_calc":                 round(br.blower_hp, 2),
+                "avg_temp_rise":                  round(br1.avg_temp_rise, 2),
+                "firing_rate_kcal":               round(br1.firing_rate_kcal, 2),
+                "heat_load_kcal":                 round(br1.heat_load_kcal, 2),
+                "fuel_consumption_nm3":           round(br1.fuel_consumption_nm3, 2),
+                "calculated_firing_rate_nm3hr":   round(br1.calculated_firing_rate_nm3hr, 2),
+                "extra_firing_rate_nm3hr":        round(br1.extra_firing_rate_nm3hr, 2),
+                "final_firing_rate_mw":           round(br1.final_firing_rate_mw, 2),
+                "air_qty_nm3hr":                  round(br1.air_qty_nm3hr, 2),
+                "cfm":                            round(br1.cfm, 2),
+                "blower_hp_calc":                 round(br1.blower_hp, 2),
             },
             "pipes": {
-                "ng_flow":      round(br.extra_firing_rate_nm3hr, 2),
+                "fuel1_label": FUEL_NAMES.get(req.fuel1_type, "Fuel 1"),
+                "ng_flow":      round(br1.extra_firing_rate_nm3hr, 2),
                 "ng_velocity":  25.0,
-                "ng_dia_mm":    round(pipe_results.ng_pipe_inner_dia_mm, 2),
-                "ng_nb":        pipe_results.ng_pipe_nb,
-                "air_flow":     round(br.air_qty_nm3hr, 2),
+                "ng_dia_mm":    round(pipes1.ng_pipe_inner_dia_mm, 2),
+                "ng_nb":        pipes1.ng_pipe_nb,
+                "air_flow":     round(br1.air_qty_nm3hr, 2),
                 "air_velocity": 15.0,
-                "air_dia_mm":   round(pipe_results.air_pipe_inner_dia_mm, 2),
-                "air_nb":       pipe_results.air_pipe_nb,
+                "air_dia_mm":   round(pipes1.air_pipe_inner_dia_mm, 2),
+                "air_nb":       pipes1.air_pipe_nb,
             },
             "equipment": {
-                "burner_model":   equipment["burner"]["model"],
-                "blower_model":   equipment["blower"]["model"],
-                "blower_hp":      equipment["blower"]["hp"],
-                "blower_airflow": equipment["blower"]["airflow_nm3hr"],
-                "ng_gas_train":   f'{equipment["ng_gas_train"]["inlet_nb"]} x {equipment["ng_gas_train"]["outlet_nb"]} NB',
-                "agr_nb":         equipment["agr"]["nb"],
+                "burner_model":   equip1["burner"]["model"],
+                "blower_model":   equip1["blower"]["model"],
+                "blower_hp":      equip1["blower"]["hp"],
+                "blower_airflow": equip1["blower"]["airflow_nm3hr"],
+                "ng_gas_train":   f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB',
+                "agr_nb":         equip1["agr"]["nb"],
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {
@@ -936,6 +976,22 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "grand_total":      round(grand_total, 2),
             },
         }
+
+        # Add fuel2 data if dual fuel
+        if is_dual and br2:
+            resp["calculations"]["is_dual"] = True
+            resp["calculations"]["fuel2_type"] = req.fuel2_type
+            resp["calculations"]["fuel2_name"] = FUEL_NAMES.get(req.fuel2_type, req.fuel2_type)
+            resp["calculations"]["fuel2_cv"] = req.fuel2_cv
+            resp["calculations"]["fuel2_consumption_nm3"] = round(br2.fuel_consumption_nm3, 2)
+            resp["calculations"]["fuel2_firing_rate_nm3hr"] = round(br2.calculated_firing_rate_nm3hr, 2)
+            resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(br2.extra_firing_rate_nm3hr, 2)
+            resp["pipes"]["fuel2_label"] = FUEL_NAMES.get(req.fuel2_type, "Fuel 2")
+            resp["pipes"]["fuel2_flow"] = round(br2.extra_firing_rate_nm3hr, 2)
+            resp["pipes"]["fuel2_dia_mm"] = round(pipes2.ng_pipe_inner_dia_mm, 2)
+            resp["pipes"]["fuel2_nb"] = pipes2.ng_pipe_nb
+
+        return resp
     except Exception as e:
         import traceback
         return {"error": str(e), "trace": traceback.format_exc()}

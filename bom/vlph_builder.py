@@ -10,37 +10,14 @@ BOUGHT_OUT_EXCLUDE_ITEMS = {
     "RATIO CONTROLLER",
 }
 
-LEGACY_ITEM_SEQUENCE = [
-    "COMPENSATOR",
-    "PRESSURE GAUGE WITH TNV",
-    "PRESSURE SWITCH LOW",
-    "MOTORIZED CONTROL VALVE",
-    "BUTTERFLY VALVE",
-    "ROTARY JOINT",
-    "BALL VALVE (Pilot Burner)",
-    "BALL VALVE (UV LINE)",
-    "FLEXIBLE HOSE (Pilot Burner)",
-    "FLEXIBLE HOSE (UV LINE)",
-    "BALL VALVE",
-    "PRESSURE GAUGE WITH NV",
-    "PRESSURE SWITCH HIGH + LOW",
-    "SOLENOID VALVE",
-    "PRESSURE REGULATING VALVE",
-    "FLEXIBLE HOSE PIPE",
-    "AGR",
-    "THERMOCOUPLE",
-    "COMPENSATING LEAD",
-    "LIMIT SWITCHES",
-    "CONTROL PANEL",
-    "HYDRAULIC POWER PACK & CYLINDER",
-    "CABLE FOR IGNITION TRANSFORMER",
-    "TEMPERATURE TRANSMITTER",
-    "P.PID",
-    "RATIO CONTROLLER",
-]
+FUEL_NAMES = {
+    "ng": "NG", "lpg": "LPG", "cog": "COG",
+    "bg": "BG", "rlng": "RLNG",
+}
 
 
-def _row(media: str, item: str, ref: str, qty: int, unit_price_override=None):
+def _row(media: str, item: str, ref: str, qty, unit_price_override=None):
+    qty = qty if qty else 1
     if unit_price_override is not None:
         unit_price = unit_price_override
     else:
@@ -55,13 +32,46 @@ def _row(media: str, item: str, ref: str, qty: int, unit_price_override=None):
     return (media, item, ref, qty, unit_price, unit_price * qty)
 
 
-def build_vlph_120t_df(equipment: dict, ladle_tons: float = 10.0) -> pd.DataFrame:
+def _fuel_line_rows(label: str, equipment: dict):
+    """Generate gas line BOM rows for a single fuel."""
+    gas_train_name = f'GAS TRAIN {equipment["ng_gas_train"]["max_flow"]:.0f} NM3/Hr'
+    return [
+        _row(
+            f"{label} LINE", gas_train_name,
+            f'{equipment["ng_gas_train"]["inlet_nb"]} x '
+            f'{equipment["ng_gas_train"]["outlet_nb"]} NB',
+            1,
+            unit_price_override=equipment["ng_gas_train"]["price"],
+        ),
+        _row(f"{label} LINE", "ORIFICE PLATE (Gas)",
+             f'{equipment["agr"]["nb"]} NB', 1),
+        _row(f"{label} LINE", "FLOW TRANSMITTER (DPT) (Gas)", "", 1),
+        _row(f"{label} LINE", "PNEUMATIC CONTROL VALVE (Gas)",
+             f'{equipment["agr"]["nb"]} NB', 1),
+        _row(
+            f"{label} LINE", "AGR",
+            f'{equipment["agr"]["nb"]} NB',
+            1,
+            unit_price_override=equipment["agr"]["price"],
+        ),
+    ]
+
+
+def build_vlph_120t_df(
+    equipment: dict,
+    ladle_tons: float = 10.0,
+    fuel1_type: str = "ng",
+    fuel2_type: str = "none",
+    equipment2: dict = None,
+) -> pd.DataFrame:
     """
-    Builds VLPH BOM DataFrame from already-selected equipment dict.
-    equipment must come from bom.selectors.selection_engine.select_equipment()
-    ladle_tons drives MS Structure weight, HPU size, ceramic fiber rolls,
-    swirling mechanism cost and control panel cost (from Pricelist WorkBook).
+    Builds VLPH BOM DataFrame.
+    For dual fuel, equipment2 contains the second fuel's gas line equipment.
     """
+
+    f1_label = FUEL_NAMES.get(fuel1_type, fuel1_type.upper())
+    f2_label = FUEL_NAMES.get(fuel2_type, fuel2_type.upper()) if fuel2_type != "none" else None
+    is_dual = fuel2_type != "none" and equipment2 is not None
 
     rows = []
 
@@ -72,7 +82,7 @@ def build_vlph_120t_df(equipment: dict, ladle_tons: float = 10.0) -> pd.DataFram
     try:
         ceramic_price = get_price("Ceramic Fiber")
     except ValueError:
-        ceramic_price = 2000.0  # fallback per roll
+        ceramic_price = 2000.0
 
     rows += [
         _row("STRUCTURE", "MS STRUCTURE",
@@ -92,13 +102,15 @@ def build_vlph_120t_df(equipment: dict, ladle_tons: float = 10.0) -> pd.DataFram
              1, unit_price_override=params["pipeline_swirling_cost"]),
     ]
 
-    # COMBUSTION AIR LINE
+    # ── COMBUSTION AIR LINE ─────────────────────────────────────────────────
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
         _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
+        _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
+        _row("COMB AIR", "FLOW TRANSMITTER (DPT)", "Output 4-20 mA, 230V AC", 1),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
         _row(
-            "COMB AIR", "MOTORIZED CONTROL VALVE",
+            "COMB AIR", "PNEUMATIC CONTROL VALVE",
             f'{equipment["motorized_control_valve"]["nb"]} NB, '
             f'FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
             1,
@@ -116,49 +128,48 @@ def build_vlph_120t_df(equipment: dict, ladle_tons: float = 10.0) -> pd.DataFram
             1,
             unit_price_override=equipment["rotary_joint"]["price"],
         ),
+        _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1),
+        _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1),
+        _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)", "20 NB, 1500 mm", 1),
+        _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)", "15 NB, 1500 mm", 1),
     ]
 
-    # NG PILOT LINE
+    # ── FUEL 1 GAS LINE ────────────────────────────────────────────────────
+    rows += _fuel_line_rows(f1_label, equipment)
+
+    # ── FUEL 2 GAS LINE (dual fuel only) ───────────────────────────────────
+    if is_dual:
+        rows += _fuel_line_rows(f2_label, equipment2)
+
+    # ── NG PILOT LINE ──────────────────────────────────────────────────────
     rows += [
-        _row("NG PILOT LINE", "BALL VALVE", "20 NB", 2),
-        _row("NG PILOT LINE", "BALL VALVE (Pilot Burner)", "20 NB", 1),
-        _row("NG PILOT LINE", "BALL VALVE (UV LINE)", "15 NB", 1),
+        _row("NG PILOT LINE", "BALL VALVE", "20 NB", 1),
         _row("NG PILOT LINE", "PRESSURE GAUGE WITH NV", '0-1600 mm WC, Dial 4"', 1),
-        _row("NG PILOT LINE", "PRESSURE SWITCH HIGH + LOW", "", 2),
+        _row("NG PILOT LINE", "BALL VALVE", "15 NB", 1),
         _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1),
-        _row(
-            "NG PILOT LINE", "PRESSURE REGULATING VALVE",
-            f'{equipment["agr"]["nb"]} NB',
-            1,
-        ),
-        _row("NG PILOT LINE", "FLEXIBLE HOSE (Pilot Burner)", "20 NB, 1500 mm", 1),
-        _row("NG PILOT LINE", "FLEXIBLE HOSE (UV LINE)", "15 NB, 1500 mm", 1),
+        _row("NG PILOT LINE", "PRESSURE REGULATING VALVE",
+             f'{equipment["agr"]["nb"]} NB', 1),
         _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE", "15 NB - 1500 mm LONG", 1),
     ]
 
-    # MG LINE
-    gas_train_name = f'GAS TRAIN {equipment["ng_gas_train"]["max_flow"]:.0f} NM3/Hr'
+    # ── NITROGEN PURGING ───────────────────────────────────────────────────
     rows += [
-        _row(
-            "MG LINE", gas_train_name,
-            f'{equipment["ng_gas_train"]["inlet_nb"]} x '
-            f'{equipment["ng_gas_train"]["outlet_nb"]} NB',
-            1,
-            unit_price_override=equipment["ng_gas_train"]["price"],
-        ),
-        _row(
-            "MG LINE", "AGR",
-            f'{equipment["agr"]["nb"]} NB',
-            1,
-            unit_price_override=equipment["agr"]["price"],
-        ),
+        _row("N2 PURGING", "BALL VALVE (N2)", "20 NB", 1),
+        _row("N2 PURGING", "PRESSURE GAUGE WITH TNV (N2)", '0-10 kg/cm2, Dial 4"', 1),
+        _row("N2 PURGING", "PRESSURE REGULATING VALVE (N2)", "25 NB", 1),
+        _row("N2 PURGING", "PRESSURE SWITCH HIGH", "0-10 kg/cm2", 1),
+        _row("N2 PURGING", "SOLENOID VALVE (N2)", "20 NB", 1),
+        _row("N2 PURGING", "CHECK VALVE", "20 NB", 1),
     ]
 
-    # ENCON ITEMS
+    # ── ENCON ITEMS ────────────────────────────────────────────────────────
+    burner_model = equipment["burner"]["model"]
+    if is_dual:
+        burner_model = f"ENCON DUAL FUEL Burner ({burner_model})"
     rows += [
         _row(
-            "ENCON ITEMS", equipment["burner"]["model"],
-            f'NATURAL GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+            "ENCON ITEMS", burner_model,
+            f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
             1,
             unit_price_override=equipment["burner"]["price"],
         ),
@@ -176,21 +187,22 @@ def build_vlph_120t_df(equipment: dict, ladle_tons: float = 10.0) -> pd.DataFram
         _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1),
     ]
 
-    # STATIC ITEMS — skip CONTROL PANEL (now in SYSTEM section above)
+    # ── MISC ITEMS ─────────────────────────────────────────────────────────
     STATIC_SKIP = {"CONTROL PANEL"}
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
 
+    # Additional misc items from SAIL spec
+    rows += [
+        _row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "15 NB", 3),
+        _row("MISC ITEMS", "PLC WITH HMI", "", 1),
+    ]
+
     df = pd.DataFrame(
         rows,
         columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "UNIT PRICE", "TOTAL"],
     )
-
-    # Sort by legacy sequence (STRUCTURE/SYSTEM rows float to top via 999)
-    order_map = {name: i for i, name in enumerate(LEGACY_ITEM_SEQUENCE)}
-    df["_order"] = df["ITEM NAME"].map(order_map).fillna(999)
-    df = df.sort_values("_order").drop(columns="_order").reset_index(drop=True)
 
     # Summary rows
     system_total = df.loc[df["MEDIA"].isin(["STRUCTURE", "SYSTEM"]), "TOTAL"].sum()
