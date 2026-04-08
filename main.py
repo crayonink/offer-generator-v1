@@ -873,11 +873,18 @@ def vlph_calculate(req: VLPHCalcRequest):
         f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
 
         if req.mode == "direct":
-            # --- Direct mode: use burner capacity directly ---
-            ng_flow = req.direct_burner_capacity
-            # Air qty: fuel_cv * flow * 118 / 100000 (same formula as burner calc)
-            air_flow = f1_cv * ng_flow * 118 / 100000
-            br1 = None  # no burner calc results in direct mode
+            # --- Direct mode: burner capacity = higher-CV fuel flow ---
+            # Heat output from the entered capacity (using higher CV fuel)
+            is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
+            if is_dual:
+                higher_cv = max(f1_cv, req.fuel2_cv)
+            else:
+                higher_cv = f1_cv
+            heat_kcal_hr = req.direct_burner_capacity * higher_cv
+            # Each fuel's flow = heat / its CV
+            ng_flow = heat_kcal_hr / f1_cv
+            air_flow = heat_kcal_hr * 118 / 100000
+            br1 = None
         else:
             # --- Calc mode: calculate from process params ---
             br1 = calculate_burner(BurnerInputs(
@@ -912,10 +919,9 @@ def vlph_calculate(req: VLPHCalcRequest):
         air_flow2 = 0
         if is_dual:
             if req.mode == "direct":
-                # In direct mode, fuel2 flow = same heat, different CV
-                # heat = fuel1_flow * fuel1_cv, so fuel2_flow = heat / fuel2_cv
-                ng_flow2 = (ng_flow * f1_cv) / req.fuel2_cv
-                air_flow2 = req.fuel2_cv * ng_flow2 * 118 / 100000
+                # Same heat, different CV → different flow
+                ng_flow2 = heat_kcal_hr / req.fuel2_cv
+                air_flow2 = air_flow  # air is CV-independent (same heat)
             else:
                 br2 = calculate_burner(BurnerInputs(
                     Ti=req.Ti, Tf=req.Tf,
