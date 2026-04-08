@@ -120,7 +120,7 @@ def build_vlph_120t_df(
     is_pid = control_mode == "automatic" and auto_control_type == "pid"
 
     rows += [
-        _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
+        _row("COMB AIR", "COMPENSATOR", "", 1),
         _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
     ]
