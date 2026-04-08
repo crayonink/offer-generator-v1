@@ -51,6 +51,9 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
             1, unit_price_override=equipment["ng_gas_train"]["price"],
         ))
 
+    # Oil line size is always 20 NB
+    oil_nb = 20
+
     # Control-type-specific instrumentation
     if control_mode == "automatic":
         if auto_control_type == "plc":
@@ -63,8 +66,8 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 ]
             elif fuel_type in OIL_FUELS:
                 rows += [
-                    _row(media, "FLOWMETER", "", 1),
-                    _row(media, "PNEUMATIC CONTROL VALVE (Oil)", "", 1),
+                    _row(media, "FLOWMETER", f'{oil_nb} NB', 1),
+                    _row(media, "PNEUMATIC CONTROL VALVE (Oil)", f'{oil_nb} NB', 1),
                 ]
         elif auto_control_type in ("plc_agr", "pid"):
             # PLC+AGR / PID: gas → AGR only, oil → AOR only
@@ -75,7 +78,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     1, unit_price_override=equipment["agr"]["price"],
                 ))
             elif fuel_type in OIL_FUELS:
-                rows.append(_row(media, "AOR", "", 1))
+                rows.append(_row(media, "AOR", f'{oil_nb} NB', 1))
 
     # AGR for non-PLC+AGR/PID modes (gas fuels)
     if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid")):
