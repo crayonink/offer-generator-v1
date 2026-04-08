@@ -66,8 +66,8 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     _row(media, "FLOWMETER", "", 1),
                     _row(media, "PNEUMATIC CONTROL VALVE (Oil)", "", 1),
                 ]
-        elif auto_control_type == "plc_agr":
-            # PLC+AGR: gas → AGR only, oil → AOR only
+        elif auto_control_type in ("plc_agr", "pid"):
+            # PLC+AGR / PID: gas → AGR only, oil → AOR only
             if fuel_type in GAS_FUELS:
                 rows.append(_row(
                     media, "AGR",
@@ -77,8 +77,8 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
             elif fuel_type in OIL_FUELS:
                 rows.append(_row(media, "AOR", "", 1))
 
-    # AGR for non-PLC+AGR modes (gas fuels) — ratio control on the line
-    if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type == "plc_agr"):
+    # AGR for non-PLC+AGR/PID modes (gas fuels)
+    if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid")):
         rows.append(_row(
             media, "AGR",
             f'{equipment["agr"]["nb"]} NB',
@@ -114,6 +114,7 @@ def build_vlph_120t_df(
     # ── COMBUSTION AIR LINE ─────────────────────────────────────────────────
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
     is_plc_agr = control_mode == "automatic" and auto_control_type == "plc_agr"
+    is_pid = control_mode == "automatic" and auto_control_type == "pid"
 
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
@@ -126,8 +127,8 @@ def build_vlph_120t_df(
             _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
             _row("COMB AIR", "FLOW TRANSMITTER (DPT)", "Output 4-20 mA, 230V AC", 1),
         ]
-    # PLC, PLC+AGR: air gets control valve
-    if is_plc or is_plc_agr:
+    # PLC, PLC+AGR, PID: air gets control valve
+    if is_plc or is_plc_agr or is_pid:
         rows.append(_row(
             "COMB AIR", "PNEUMATIC CONTROL VALVE",
             f'{equipment["motorized_control_valve"]["nb"]} NB, '
