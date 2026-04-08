@@ -471,6 +471,17 @@
       <input type="hidden" id="fuel_cv" value="8500"/>
     </div>
 
+    <div class="fg fg-1" style="margin-bottom:24px">
+      <div class="field">
+        <label>Blower Pressure</label>
+        <select id="blower_pressure">
+          <option value="28">28" WG (Standard)</option>
+          <option value="40">40" WG (High Pressure — SAIL/Large Systems)</option>
+        </select>
+        <div class="hint">40" WG for larger systems (60T+), 28" WG for standard</div>
+      </div>
+    </div>
+
     <div id="calc-extras">
       <div class="fg fg-1" style="margin-bottom:24px">
         <div class="field">
@@ -818,6 +829,7 @@ async function calculate() {
       fuel1_type: f1type, fuel1_cv: f1cv,
       fuel2_type: f2type, fuel2_cv: f2cv,
       ladle_tons: val("direct_ladle_tons"),
+      blower_pressure: document.getElementById("blower_pressure").value,
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -833,6 +845,7 @@ async function calculate() {
       refractory_heat_factor: val("refractory_heat_factor"),
       efficiency: val("efficiency"),
       ladle_tons: val("ladle_tons"),
+      blower_pressure: document.getElementById("blower_pressure").value,
     };
   }
 

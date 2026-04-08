@@ -449,6 +449,7 @@ class VLPHCalcRequest(BaseModel):
     fuel2_type: str = "none"
     fuel2_cv: float = 0.0
     direct_burner_capacity: float = 0.0         # Nm3/hr (direct mode)
+    blower_pressure: str = "28"                  # "28" or "40" (WG inches)
 
 
 class QuoteItem(BaseModel):
@@ -910,6 +911,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             air_flow_nm3hr=air_flow,
             is_dual_fuel=is_dual,
             fuel_cv=f1_cv,
+            blower_pressure=req.blower_pressure,
         )
 
         br2 = None
@@ -942,6 +944,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 air_flow_nm3hr=air_flow2,
                 is_dual_fuel=is_dual,
                 fuel_cv=req.fuel2_cv,
+                blower_pressure=req.blower_pressure,
             )
 
         # Air is CV-independent, so use fuel1 for air sizing

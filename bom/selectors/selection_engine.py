@@ -32,7 +32,7 @@ def _select_dual_fuel_burner(burner_size: str) -> float:
     return row[0] if row else 0
 
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500) -> dict:
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28") -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     Returns a flat dict — each key maps directly to the selected component dict.
@@ -85,9 +85,13 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     butterfly_valve = select_butterfly_valve(air_nb)
     rotary_joint = select_rotary_joint(air_nb)
 
-    # Blower — correct formula: cfm / 114 (matches calculation sheet)
-    required_hp = (air_flow_nm3hr / 1.7) / 114
-    blower = select_blower(required_hp)
+    # Blower — HP formula depends on pressure
+    cfm = air_flow_nm3hr / 1.7
+    if blower_pressure == "40":
+        required_hp = cfm * 40 / 3200   # 40" WG formula (SAIL standard)
+    else:
+        required_hp = cfm / 114          # 28" WG formula
+    blower = select_blower(required_hp, series=blower_pressure)
 
     return {
         "pipe": pipe_results,
