@@ -57,11 +57,11 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     # Control-type-specific instrumentation
     if control_mode == "automatic":
         if auto_control_type == "plc":
-            # PLC: gas → FT + control valve, oil → flowmeter + control valve
+            # PLC: gas → orifice plate + DPT + control valve, oil → flowmeter + control valve
             if fuel_type in GAS_FUELS:
                 rows += [
-                    _row(media, "ORIFICE PLATE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
-                    _row(media, "FLOW TRANSMITTER (DPT) (Gas)", "Output 4-20 mA", 1),
+                    _row(media, "ORIFICE PLATE", f'{equipment["agr"]["nb"]} NB', 1),
+                    _row(media, "DPT", "Output 4-20 mA", 1),
                     _row(media, "PNEUMATIC CONTROL VALVE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
                 ]
             elif fuel_type in OIL_FUELS:
@@ -128,7 +128,7 @@ def build_vlph_120t_df(
     if is_plc:
         rows += [
             _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
-            _row("COMB AIR", "FLOW TRANSMITTER (DPT)", "Output 4-20 mA, 230V AC", 1),
+            _row("COMB AIR", "DPT (Air)", "Output 4-20 mA, 230V AC", 1),
         ]
     # PLC, PLC+AGR, PID: air gets control valve
     if is_plc or is_plc_agr or is_pid:

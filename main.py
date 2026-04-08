@@ -995,10 +995,11 @@ def vlph_calculate(req: VLPHCalcRequest):
             },
             "pipes": {
                 "fuel1_label": FUEL_NAMES.get(req.fuel1_type, "Fuel 1"),
+                "fuel1_is_oil": req.fuel1_type in ("ldo",),
                 "ng_flow":      round(ng_flow, 2),
-                "ng_velocity":  25.0,
-                "ng_dia_mm":    round(pipes1.ng_pipe_inner_dia_mm, 2),
-                "ng_nb":        pipes1.ng_pipe_nb,
+                "ng_velocity":  25.0 if req.fuel1_type not in ("ldo",) else 0,
+                "ng_dia_mm":    round(pipes1.ng_pipe_inner_dia_mm, 2) if req.fuel1_type not in ("ldo",) else 20,
+                "ng_nb":        pipes1.ng_pipe_nb if req.fuel1_type not in ("ldo",) else 20,
                 "air_flow":     round(air_flow, 2),
                 "air_velocity": 15.0,
                 "air_dia_mm":   round(pipes1.air_pipe_inner_dia_mm, 2),
@@ -1031,8 +1032,10 @@ def vlph_calculate(req: VLPHCalcRequest):
             resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(ng_flow2, 2)
             resp["pipes"]["fuel2_label"] = FUEL_NAMES.get(req.fuel2_type, "Fuel 2")
             resp["pipes"]["fuel2_flow"] = round(ng_flow2, 2)
-            resp["pipes"]["fuel2_dia_mm"] = round(pipes2.ng_pipe_inner_dia_mm, 2)
-            resp["pipes"]["fuel2_nb"] = pipes2.ng_pipe_nb
+            f2_is_oil = req.fuel2_type in ("ldo",)
+            resp["pipes"]["fuel2_is_oil"] = f2_is_oil
+            resp["pipes"]["fuel2_dia_mm"] = round(pipes2.ng_pipe_inner_dia_mm, 2) if not f2_is_oil else 20
+            resp["pipes"]["fuel2_nb"] = pipes2.ng_pipe_nb if not f2_is_oil else 20
 
         return resp
     except Exception as e:
