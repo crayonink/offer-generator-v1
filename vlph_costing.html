@@ -493,10 +493,11 @@
       <div class="field" id="auto-type-wrap">
         <label>Automatic Control Type</label>
         <select id="auto_control_type">
-          <option value="agr" selected>AGR (Air-Gas Ratio)</option>
-          <option value="mass_flow">Mass Flow Control</option>
+          <option value="plc" selected>PLC</option>
+          <option value="plc_agr">PLC with AGR</option>
+          <option value="pid">PID</option>
         </select>
-        <div class="hint">AGR = ratio controller, Mass Flow = DPT + PLC based</div>
+        <div class="hint">PLC = PLC with HMI, PLC+AGR = PLC with Air-Gas Ratio, PID = PID controller</div>
       </div>
     </div>
 
