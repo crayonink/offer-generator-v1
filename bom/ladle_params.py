@@ -168,12 +168,11 @@ def get_vlph_params(ladle_tons: float) -> dict:
     if rows is None:
         return _vlph_fallback(ladle_tons)
 
-    # MS STRUCTURE — compute live: ms_kg × plate_rate × 2.1
+    # MS STRUCTURE — use amount directly from DB (rate varies with qty/ladle size)
     ms = rows.get("MS STRUCTURE", {})
     ms_kg       = int(_parse_qty_num(ms.get("qty_str")) or 0)
-    plate_rate  = _live_ms_plate_rate()
-    ms_rate     = round(plate_rate * MS_PLATE_MARKUP, 2)
-    ms_cost     = round(ms_kg * ms_rate, 2) if ms_kg else ms.get("amount", 0.0)
+    ms_cost     = ms.get("amount", 0.0)
+    ms_rate     = round(ms_cost / ms_kg, 2) if ms_kg else 0
 
     # CERAMIC FIBER
     cf = rows.get("CERAMIC FIBER", {})
@@ -224,12 +223,11 @@ def get_hlph_params(ladle_tons: float) -> dict:
     if rows is None:
         return _hlph_fallback(ladle_tons)
 
-    # MS STRUCTURE — compute live: ms_kg × plate_rate × 2.1
+    # MS STRUCTURE — use amount directly from DB (rate varies with qty/ladle size)
     ms = rows.get("MS STRUCTURE", {})
     ms_kg       = int(_parse_qty_num(ms.get("qty_str")) or 0)
-    plate_rate  = _live_ms_plate_rate()
-    ms_rate     = round(plate_rate * MS_PLATE_MARKUP, 2)
-    ms_cost     = round(ms_kg * ms_rate, 2) if ms_kg else ms.get("amount", 0.0)
+    ms_cost     = ms.get("amount", 0.0)
+    ms_rate     = round(ms_cost / ms_kg, 2) if ms_kg else 0
 
     # CERAMIC FIBER
     cf = rows.get("CERAMIC FIBER", {})
