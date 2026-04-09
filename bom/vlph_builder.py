@@ -56,6 +56,19 @@ OIL_FUELS = {"ldo"}
 GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
 
 
+def _get_cheapest_solenoid_valve(nb: int) -> float:
+    """Get cheapest MADAS solenoid valve price for a given NB."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    nb_str = f'{nb:03d}'
+    row = conn.execute(
+        "SELECT list_price FROM solenoidvalve_component_master WHERE size=? ORDER BY list_price ASC LIMIT 1",
+        (nb_str,)
+    ).fetchone()
+    conn.close()
+    return float(row[0]) if row else 0
+
+
 def _get_cheapest_ball_valve(nb: int) -> float:
     """Get cheapest L&T ball valve price for a given NB."""
     import sqlite3
@@ -110,7 +123,8 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     _row(media, "BALL VALVE", f'{oil_nb} NB, L&T', 1, unit_price_override=bv_price),
                     _row(media, "FLOWMETER", f'{oil_nb} NB', 1),
                     _row(media, "MOTORIZED CONTROL VALVE 025NB (Globe)", "CAIR", 1),
-                    _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1),
+                    _row(media, "SOLENOID VALVE", f'{oil_nb} NB, MADAS', 1,
+                         unit_price_override=_get_cheapest_solenoid_valve(oil_nb)),
                     _row(media, "PRESSURE SWITCH LOW", '', 1),
                 ]
         elif auto_control_type in ("plc_agr", "pid"):
@@ -282,7 +296,8 @@ def build_vlph_120t_df(
         _row("NG PILOT LINE", "PRESSURE GAUGE WITH NV", '', 1),
         _row("NG PILOT LINE", "BALL VALVE", "15 NB, L&T", 1,
              unit_price_override=_get_cheapest_ball_valve(15)),
-        _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1),
+        _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB, MADAS", 1,
+             unit_price_override=_get_cheapest_solenoid_valve(15)),
         _row("NG PILOT LINE", "PRESSURE REGULATING VALVE",
              f'{equipment["agr"]["nb"]} NB', 1),
         _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE", "15 NB - 1500 mm LONG", 1),
