@@ -88,7 +88,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 rows += [
                     _row(media, "ORIFICE PLATE", f'{gas_op_nb}NB (Orifice) / {gas_nb}NB (Gas Pipe)', 1,
                          unit_price_override=gas_op_price),
-                    _row(media, "DPT", "Output 4-20 mA", 1),
+                    _row(media, "DPT", "", 1),
                     _row(media, f"CONTROL VALVE ({gcv_vendor})", f'{gas_nb} NB', 1,
                          unit_price_override=gcv_price),
                 ]
@@ -226,7 +226,7 @@ def build_vlph_120t_df(
         rows += [
             _row("COMB AIR", f"ORIFICE PLATE", f'{op_nb}NB (Orifice) / {air_nb}NB (Air Pipe)', 1,
                  unit_price_override=op_price),
-            _row("COMB AIR", "DPT (Air)", f'{air_nb} NB, Output 4-20 mA', 1),
+            _row("COMB AIR", "DPT (Air)", '', 1),
         ]
     # PLC, PLC+AGR, PID: air gets control valve (vendor-selected)
     if is_plc or is_plc_agr or is_pid:
