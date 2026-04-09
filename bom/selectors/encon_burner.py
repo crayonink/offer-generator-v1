@@ -34,12 +34,8 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
 
     model = row[0]
 
-    # -------------------------------------------------
-    # 2️⃣ Fetch price from burner_pricelist_master
-    #    burner_selection_master stores "ENCON G-4A" but
-    #    pricelist stores "ENCON 4A" — strip the "G-" prefix
-    # -------------------------------------------------
-    pricelist_name = model.replace("G-", "")  # "ENCON G-4A" → "ENCON 4A"
+    # Fetch price from burner_pricelist_master
+    pricelist_name = model  # "ENCON 4A"
 
     cursor.execute("""
         SELECT price

@@ -57,8 +57,7 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         burner = select_encon_mg_burner(ng_flow_nm3hr, fuel_cv=fuel_cv)
         # Override with dual fuel burner price if applicable
         if is_dual_fuel:
-            # pricelist uses "ENCON 5A", selector returns "ENCON G-5A"
-            pricelist_name = burner["model"].replace("G-", "").replace(" -G ", " ")
+            pricelist_name = burner["model"]
             dual_price = _select_dual_fuel_burner(pricelist_name)
             if dual_price > 0:
                 burner["price"] = dual_price
