@@ -123,7 +123,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 gcv_vendor = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
                 gas_op_nb, gas_op_price = _get_orifice_price(gas_nb)
                 rows += [
-                    _row(media, "ORIFICE PLATE", f'{gas_op_nb}NB (Orifice) / {gas_nb}NB (Gas Pipe)', 1,
+                    _row(media, "ORIFICE PLATE", f'{gas_op_nb} NB', 1,
                          unit_price_override=gas_op_price),
                     _row(media, "DPT", "", 1),
                     _row(media, f"CONTROL VALVE ({gcv_vendor})", f'{gas_nb} NB', 1,
@@ -264,7 +264,7 @@ def build_vlph_120t_df(
     if is_plc:
         op_nb, op_price = _get_orifice_price(air_nb)
         rows += [
-            _row("COMB AIR", f"ORIFICE PLATE", f'{op_nb}NB (Orifice) / {air_nb}NB (Air Pipe)', 1,
+            _row("COMB AIR", "ORIFICE PLATE", f'{op_nb} NB', 1,
                  unit_price_override=op_price),
             _row("COMB AIR", "DPT (Air)", '', 1),
         ]
