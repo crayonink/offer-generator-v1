@@ -56,6 +56,18 @@ OIL_FUELS = {"ldo"}
 GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
 
 
+def _get_flexible_hose_price(nb: int) -> tuple:
+    """Get flexible hose price by NB (next bigger if exact not found). Returns (actual_nb, price)."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT dn, price FROM flexible_hose_master WHERE dn >= ? ORDER BY dn LIMIT 1",
+        (nb,)
+    ).fetchone()
+    conn.close()
+    return (int(row[0]), float(row[1])) if row else (nb, 0)
+
+
 def _get_cheapest_solenoid_valve(nb: int) -> float:
     """Get cheapest MADAS solenoid valve price for a given NB."""
     import sqlite3
@@ -278,8 +290,12 @@ def build_vlph_120t_df(
              unit_price_override=_get_cheapest_ball_valve(20)),
         _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB, L&T", 1,
              unit_price_override=_get_cheapest_ball_valve(15)),
-        _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)", "20 NB, 1500 mm", 1),
-        _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)", "15 NB, 1500 mm", 1),
+        _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)",
+             f'{_get_flexible_hose_price(20)[0]} NB, 1500mm, Bengal Ind.',
+             1, unit_price_override=_get_flexible_hose_price(20)[1]),
+        _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)",
+             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm, Bengal Ind.',
+             1, unit_price_override=_get_flexible_hose_price(15)[1]),
     ]
 
     # ── FUEL 1 LINE ────────────────────────────────────────────────────────
@@ -300,7 +316,9 @@ def build_vlph_120t_df(
              unit_price_override=_get_cheapest_solenoid_valve(15)),
         _row("NG PILOT LINE", "PRESSURE REGULATING VALVE",
              f'{equipment["agr"]["nb"]} NB', 1),
-        _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE", "15 NB - 1500 mm LONG", 1),
+        _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE",
+             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm, Bengal Ind.',
+             1, unit_price_override=_get_flexible_hose_price(15)[1]),
     ]
 
 
