@@ -242,7 +242,7 @@ def build_vlph_120t_df(
     rows += [
         _row(
             "COMB AIR", "ROTARY JOINT",
-            f'{air_nb} NB',
+            f'{equipment["rotary_joint"]["nb"]}NB (Third Party) / {air_nb}NB (Air Pipe)',
             1,
             unit_price_override=equipment["rotary_joint"]["price"],
         ),
