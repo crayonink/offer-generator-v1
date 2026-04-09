@@ -309,7 +309,7 @@ def build_vlph_120t_df(
     rows += [
         _row("NG PILOT LINE", "BALL VALVE", "20 NB, L&T", 1,
              unit_price_override=_get_cheapest_ball_valve(20)),
-        _row("NG PILOT LINE", "PRESSURE GAUGE WITH NV", '', 1),
+        _row("NG PILOT LINE", pg_item, '', 1),
         _row("NG PILOT LINE", "BALL VALVE", "15 NB, L&T", 1,
              unit_price_override=_get_cheapest_ball_valve(15)),
         _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB, MADAS", 1,
