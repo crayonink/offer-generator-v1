@@ -454,6 +454,7 @@ class VLPHCalcRequest(BaseModel):
     auto_control_type: str = "agr"               # "plc", "plc_agr", "pid"
     control_valve_vendor: str = "dembla"         # "dembla" or "cair"
     shutoff_valve_vendor: str = "dembla"         # "dembla" or "cair"
+    pressure_gauge_vendor: str = "baumer"        # "baumer" or "hguru"
 
 
 class QuoteItem(BaseModel):
@@ -962,6 +963,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             auto_control_type=req.auto_control_type,
             control_valve_vendor=req.control_valve_vendor,
             shutoff_valve_vendor=req.shutoff_valve_vendor,
+            pressure_gauge_vendor=req.pressure_gauge_vendor,
         )
 
         # Split summary rows from detail rows

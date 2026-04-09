@@ -174,6 +174,7 @@ def build_vlph_120t_df(
     auto_control_type: str = "agr",
     control_valve_vendor: str = "dembla",
     shutoff_valve_vendor: str = "dembla",
+    pressure_gauge_vendor: str = "baumer",
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -197,10 +198,12 @@ def build_vlph_120t_df(
     # Air pipe NB — minimum 125 NB, or next bigger from pipe sizing
     air_nb = max(125, equipment["air_duct"]["nb"])
 
+    pg_vendor = pressure_gauge_vendor.upper()
+    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
     rows += [
-        _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB', 1),
-        _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
-        _row("COMB AIR", "PRESSURE SWITCH LOW", f'{air_nb} NB, 0-150 mBAR', 1),
+        _row("COMB AIR", "COMPENSATOR", "", 1),
+        _row("COMB AIR", pg_item, '0-2000 mm WC, Dial 4"', 1),
+        _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
     ]
     # PLC: air gets orifice plate + DPT + control valve
     if is_plc:

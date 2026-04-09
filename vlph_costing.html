@@ -528,7 +528,13 @@
         </select>
         <div class="hint">Used for air/gas line shut off valves</div>
       </div>
-      <div class="field"></div>
+      <div class="field">
+        <label>Pressure Gauge Vendor</label>
+        <select id="pressure_gauge_vendor">
+          <option value="baumer" selected>BAUMER (Rs. 4,000)</option>
+          <option value="hguru">HGURU (Rs. 3,000)</option>
+        </select>
+      </div>
     </div>
 
     <div id="calc-extras">
@@ -880,6 +886,7 @@ async function calculate() {
       auto_control_type: document.getElementById("auto_control_type").value,
       control_valve_vendor: document.getElementById("control_valve_vendor").value,
       shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
+      pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -900,6 +907,7 @@ async function calculate() {
       auto_control_type: document.getElementById("auto_control_type").value,
       control_valve_vendor: document.getElementById("control_valve_vendor").value,
       shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
+      pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
     };
   }
 
