@@ -202,8 +202,8 @@ def build_vlph_120t_df(
     pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
     rows += [
         _row("COMB AIR", "COMPENSATOR", "", 1),
-        _row("COMB AIR", pg_item, '0-2000 mm WC, Dial 4"', 1),
-        _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
+        _row("COMB AIR", pg_item, '', 1),
+        _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1),
     ]
     # PLC: air gets orifice plate + DPT + control valve
     if is_plc:
