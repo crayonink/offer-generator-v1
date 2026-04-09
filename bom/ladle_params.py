@@ -174,9 +174,11 @@ def get_vlph_params(ladle_tons: float) -> dict:
     ms_cost     = ms.get("amount", 0.0)
     ms_rate     = round(ms_cost / ms_kg, 2) if ms_kg else 0
 
-    # CERAMIC FIBER
+    # CERAMIC FIBER — use amount directly from DB
     cf = rows.get("CERAMIC FIBER", {})
     cf_rolls = int(_parse_qty_num(cf.get("qty_str")) or 0)
+    cf_cost  = cf.get("amount", 0.0)
+    cf_rate  = round(cf_cost / cf_rolls, 2) if cf_rolls else 0
 
     # CONTROL PANEL
     panel_cost = rows.get("CONTROL PANEL", {}).get("amount", 0.0)
@@ -205,6 +207,8 @@ def get_vlph_params(ladle_tons: float) -> dict:
         "ms_structure_rate":      ms_rate,
         "ms_structure_cost":      round(ms_cost, 2),
         "ceramic_rolls":          cf_rolls,
+        "ceramic_rate":           cf_rate,
+        "ceramic_cost":           round(cf_cost, 2),
         "hpu_kw":                 hpu_kw,
         "pipeline_swirling_cost": round(pipeline_cost, 2),
         "control_panel_cost":     round(panel_cost, 2),
@@ -229,9 +233,11 @@ def get_hlph_params(ladle_tons: float) -> dict:
     ms_cost     = ms.get("amount", 0.0)
     ms_rate     = round(ms_cost / ms_kg, 2) if ms_kg else 0
 
-    # CERAMIC FIBER
+    # CERAMIC FIBER — use amount directly from DB
     cf = rows.get("CERAMIC FIBER", {})
     cf_rolls = int(_parse_qty_num(cf.get("qty_str")) or 0)
+    cf_cost  = cf.get("amount", 0.0)
+    cf_rate  = round(cf_cost / cf_rolls, 2) if cf_rolls else 0
 
     # CONTROL PANEL
     panel_cost = rows.get("CONTROL PANEL", {}).get("amount", 0.0)

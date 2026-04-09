@@ -357,8 +357,9 @@ def build_vlph_120t_df(
         _row("ENCON ITEMS", "UV SENSOR WITH AIR JACKET", "", 1),
         _row("ENCON ITEMS", "PILOT BURNER", "", 1),
         _row("ENCON ITEMS", "CERAMIC FIBRE",
-             f'{params["ceramic_rolls"]} Rolls',
-             params["ceramic_rolls"]),
+             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+             params["ceramic_rolls"],
+             unit_price_override=params.get("ceramic_rate", 0)),
     ]
 
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
