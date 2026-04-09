@@ -142,22 +142,25 @@ def build_vlph_120t_df(
     is_plc_agr = control_mode == "automatic" and auto_control_type == "plc_agr"
     is_pid = control_mode == "automatic" and auto_control_type == "pid"
 
+    # Air pipe NB — minimum 125 NB, or next bigger from pipe sizing
+    air_nb = max(125, equipment["air_duct"]["nb"])
+
     rows += [
-        _row("COMB AIR", "COMPENSATOR", "", 1),
-        _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
-        _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
+        _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB', 1),
+        _row("COMB AIR", "PRESSURE GAUGE WITH TNV", f'{air_nb} NB, 0-2000 mm WC, Dial 4"', 1),
+        _row("COMB AIR", "PRESSURE SWITCH LOW", f'{air_nb} NB, 0-150 mBAR', 1),
     ]
     # PLC: air gets orifice plate + DPT + control valve
     if is_plc:
         rows += [
-            _row("COMB AIR", "ORIFICE PLATE (Air)", f'{equipment["air_duct"]["nb"]} NB', 1),
-            _row("COMB AIR", "DPT (Air)", "Output 4-20 mA", 1),
+            _row("COMB AIR", "ORIFICE PLATE (Air)", f'{air_nb} NB', 1),
+            _row("COMB AIR", "DPT (Air)", f'{air_nb} NB, Output 4-20 mA', 1),
         ]
     # PLC, PLC+AGR, PID: air gets control valve
     if is_plc or is_plc_agr or is_pid:
         rows.append(_row(
             "COMB AIR", "PNEUMATIC CONTROL VALVE",
-            f'{equipment["motorized_control_valve"]["nb"]} NB, '
+            f'{air_nb} NB, '
             f'FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
             1,
             unit_price_override=equipment["motorized_control_valve"]["price"],
@@ -165,13 +168,13 @@ def build_vlph_120t_df(
     rows += [
         _row(
             "COMB AIR", "BUTTERFLY VALVE",
-            f'{equipment["butterfly_valve"]["nb"]} NB',
+            f'{air_nb} NB',
             1,
             unit_price_override=equipment["butterfly_valve"]["price"],
         ),
         _row(
             "COMB AIR", "ROTARY JOINT",
-            f'{equipment["rotary_joint"]["nb"]} NB',
+            f'{air_nb} NB',
             1,
             unit_price_override=equipment["rotary_joint"]["price"],
         ),
