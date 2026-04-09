@@ -222,15 +222,7 @@ def build_vlph_120t_df(
             1,
             unit_price_override=cv_price,
         ))
-    _, so_price = _get_valve_price(air_nb, "shutoff", shutoff_valve_vendor)
-    so_vendor = "DEMBLA" if shutoff_valve_vendor == "dembla" else "CAIR"
     rows += [
-        _row(
-            "COMB AIR", f"SHUT OFF VALVE ({so_vendor})",
-            f'{air_nb} NB',
-            1,
-            unit_price_override=so_price,
-        ),
         _row(
             "COMB AIR", "ROTARY JOINT",
             f'{air_nb} NB',
