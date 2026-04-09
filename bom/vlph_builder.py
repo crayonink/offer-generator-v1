@@ -84,8 +84,10 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 gas_nb = equipment["agr"]["nb"]
                 _, gcv_price = _get_valve_price(gas_nb, "control", control_valve_vendor)
                 gcv_vendor = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
+                gas_op_price = _get_orifice_price(gas_nb)
                 rows += [
-                    _row(media, "ORIFICE PLATE", f'{gas_nb} NB', 1),
+                    _row(media, f"ORIFICE PLATE {gas_nb} NB", f'{gas_nb} NB', 1,
+                         unit_price_override=gas_op_price),
                     _row(media, "DPT", "Output 4-20 mA", 1),
                     _row(media, f"CONTROL VALVE ({gcv_vendor})", f'{gas_nb} NB', 1,
                          unit_price_override=gcv_price),
@@ -117,6 +119,18 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         ))
 
     return rows
+
+
+def _get_orifice_price(nb: int) -> float:
+    """Look up orifice plate total price by NB (next bigger if exact not found)."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT total_price FROM orifice_plate_master WHERE nb >= ? ORDER BY nb LIMIT 1",
+        (nb,)
+    ).fetchone()
+    conn.close()
+    return float(row[0]) if row else 0
 
 
 def _get_valve_price(nb: int, valve_type: str, vendor: str) -> tuple:
@@ -207,8 +221,10 @@ def build_vlph_120t_df(
     ]
     # PLC: air gets orifice plate + DPT + control valve
     if is_plc:
+        op_price = _get_orifice_price(air_nb)
         rows += [
-            _row("COMB AIR", "ORIFICE PLATE (Air)", f'{air_nb} NB', 1),
+            _row("COMB AIR", f"ORIFICE PLATE {air_nb} NB", f'{air_nb} NB', 1,
+                 unit_price_override=op_price),
             _row("COMB AIR", "DPT (Air)", f'{air_nb} NB, Output 4-20 mA', 1),
         ]
     # PLC, PLC+AGR, PID: air gets control valve (vendor-selected)
