@@ -1,7 +1,7 @@
 import pandas as pd
 
 from bom.static_items import static_items
-from bom.price_master import get_price
+from bom.price_master import get_price, DB_PATH
 from bom.ladle_params import get_vlph_params
 
 
@@ -15,15 +15,36 @@ FUEL_NAMES = {
 }
 
 
+def _get_price_fuzzy(item_name: str) -> float:
+    """Try exact match first, then partial match on item name."""
+    try:
+        return get_price(item_name)
+    except ValueError:
+        pass
+    # Fuzzy: try without parenthetical suffix e.g. "MOTORIZED CONTROL VALVE 25NB (Globe)" → "MOTORIZED CONTROL VALVE 25NB"
+    base = item_name.split("(")[0].strip()
+    if base != item_name:
+        try:
+            return get_price(base)
+        except ValueError:
+            pass
+    # Try DB LIKE query as last resort
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT price FROM component_price_master WHERE item LIKE ? LIMIT 1",
+        (f"%{base}%",)
+    ).fetchone()
+    conn.close()
+    return float(row[0]) if row else 0
+
+
 def _row(media: str, item: str, ref: str, qty, unit_price_override=None):
     qty = qty if qty else 1
     if unit_price_override is not None:
         unit_price = unit_price_override
     else:
-        try:
-            unit_price = get_price(item)
-        except ValueError:
-            unit_price = 0
+        unit_price = _get_price_fuzzy(item)
 
     if unit_price == 0:
         print(f"WARNING: No price found for '{item}'")
