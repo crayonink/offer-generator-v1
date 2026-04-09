@@ -65,15 +65,16 @@ def write_calculation_sheet(
         ("Ti", burner_inputs.Ti, "°C"),
         ("Tf", burner_inputs.Tf, "°C"),
         ("Actual Refractory Weight", burner_inputs.refractory_weight, "Kg"),
-        ("MG Fuel CV", burner_inputs.fuel_cv, "Kcal/Nm³"),
+        ("Fuel CV", burner_inputs.fuel_cv, "Kcal/Nm³"),
 
         ("Average Temperature Rise", burner_results.avg_temp_rise, "°C"),
         ("Time Taken", burner_inputs.time_taken_hr, "Hr"),
 
+        ("Firing Rate", burner_results.firing_rate_kcal, "Kcal/hr"),
+        ("Heat Load", burner_results.heat_load_kcal, "Kcal"),
         ("Fuel Consumption", burner_results.fuel_consumption_nm3, "Nm³"),
         ("Calculated Firing Rate", burner_results.calculated_firing_rate_nm3hr, "Nm³/hr"),
         ("10% Extra Firing Rate", burner_results.extra_firing_rate_nm3hr, "Nm³/hr"),
-        ("Final Firing Rate", burner_results.extra_firing_rate_nm3hr, "Nm³/hr"),
 
         ("Air Qty", burner_results.air_qty_nm3hr, "Nm³/hr"),
         ("CFM", burner_results.cfm, "CFM"),
@@ -85,7 +86,7 @@ def write_calculation_sheet(
         r = start_row + i
 
         ws[f"B{r}"] = label
-        ws[f"C{r}"] = value
+        ws[f"C{r}"] = round(value, 2) if isinstance(value, float) else value
         ws[f"D{r}"] = unit
 
         ws[f"C{r}"].fill = YELLOW
@@ -100,7 +101,7 @@ def write_calculation_sheet(
     ws["I4"] = round(burner_results.extra_firing_rate_nm3hr, 2)
 
     ws["H5"] = "V = VELOCITY (m/s)"
-    ws["I5"] = 17
+    ws["I5"] = 25
     ws["I5"].fill = YELLOW
 
     ws["H6"] = "d = Inner Dia (mm)"
@@ -123,4 +124,4 @@ def write_calculation_sheet(
     ws["I17"] = round(pipe_results.air_pipe_inner_dia_mm, 2)
     ws["I17"].fill = YELLOW
 
-    ws["I18"] = "300 NB"
+    ws["I18"] = f"{pipe_results.air_pipe_nb} NB"
