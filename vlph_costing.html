@@ -501,7 +501,7 @@
       </div>
     </div>
 
-    <div class="fg fg-1" style="margin-bottom:24px">
+    <div class="fg fg-2" style="margin-bottom:24px">
       <div class="field">
         <label>Blower Pressure</label>
         <select id="blower_pressure">
@@ -510,6 +510,25 @@
         </select>
         <div class="hint">40" WG for larger systems (60T+), 28" WG for standard</div>
       </div>
+      <div class="field">
+        <label>Control Valve Vendor</label>
+        <select id="control_valve_vendor">
+          <option value="dembla" selected>DEMBLA (Pneumatic)</option>
+          <option value="cair">CAIR (Motorized)</option>
+        </select>
+        <div class="hint">DEMBLA = pneumatic actuator, CAIR = electric actuator</div>
+      </div>
+    </div>
+    <div class="fg fg-2" style="margin-bottom:24px">
+      <div class="field">
+        <label>Shut Off Valve Vendor</label>
+        <select id="shutoff_valve_vendor">
+          <option value="dembla" selected>DEMBLA (Pneumatic)</option>
+          <option value="cair">CAIR (Motorized)</option>
+        </select>
+        <div class="hint">Used for air/gas line shut off valves</div>
+      </div>
+      <div class="field"></div>
     </div>
 
     <div id="calc-extras">
@@ -859,6 +878,8 @@ async function calculate() {
       blower_pressure: document.getElementById("blower_pressure").value,
       control_mode: document.getElementById("control_mode").value,
       auto_control_type: document.getElementById("auto_control_type").value,
+      control_valve_vendor: document.getElementById("control_valve_vendor").value,
+      shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -877,6 +898,8 @@ async function calculate() {
       blower_pressure: document.getElementById("blower_pressure").value,
       control_mode: document.getElementById("control_mode").value,
       auto_control_type: document.getElementById("auto_control_type").value,
+      control_valve_vendor: document.getElementById("control_valve_vendor").value,
+      shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
     };
   }
 

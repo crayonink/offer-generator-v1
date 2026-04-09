@@ -57,7 +57,8 @@ GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
 
 
 def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
-                    control_mode: str = "automatic", auto_control_type: str = "plc"):
+                    control_mode: str = "automatic", auto_control_type: str = "plc",
+                    control_valve_vendor: str = "dembla"):
     """Generate fuel line BOM rows for a single fuel."""
     media = f"{label} LINE"
     rows = []
@@ -80,10 +81,14 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         if auto_control_type == "plc":
             # PLC: gas → orifice plate + DPT + control valve, oil → flowmeter + control valve
             if fuel_type in GAS_FUELS:
+                gas_nb = equipment["agr"]["nb"]
+                _, gcv_price = _get_valve_price(gas_nb, "control", control_valve_vendor)
+                gcv_vendor = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
                 rows += [
-                    _row(media, "ORIFICE PLATE", f'{equipment["agr"]["nb"]} NB', 1),
+                    _row(media, "ORIFICE PLATE", f'{gas_nb} NB', 1),
                     _row(media, "DPT", "Output 4-20 mA", 1),
-                    _row(media, "PNEUMATIC CONTROL VALVE (Gas)", f'{equipment["agr"]["nb"]} NB', 1),
+                    _row(media, f"CONTROL VALVE ({gcv_vendor})", f'{gas_nb} NB', 1,
+                         unit_price_override=gcv_price),
                 ]
             elif fuel_type in OIL_FUELS:
                 rows += [
@@ -114,6 +119,51 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     return rows
 
 
+def _get_valve_price(nb: int, valve_type: str, vendor: str) -> tuple:
+    """Look up valve price from DB by NB and vendor. Returns (item_name, price)."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    nb_str = f'{nb:03d}'
+
+    if vendor == "dembla":
+        if valve_type == "control":
+            item = f'CONTROL VALVE {nb_str}NB'
+        else:
+            item = f'SHUT OFF VALVE {nb_str}NB'
+        row = conn.execute(
+            "SELECT price FROM component_price_master WHERE item=? AND company='DEMBLA'", (item,)
+        ).fetchone()
+        if not row:
+            # Try next bigger NB
+            row = conn.execute(
+                "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company='DEMBLA' ORDER BY item LIMIT 1",
+                (f'{"CONTROL" if valve_type == "control" else "SHUT OFF"} VALVE %NB',)
+            ).fetchone()
+            if row:
+                return row[0], row[1]
+        make = "DEMBLA"
+    else:
+        if valve_type == "control":
+            item = f'MOTORIZED CONTROL VALVE {nb_str}NB'
+        else:
+            item = f'SHUT OFF VALVE {nb_str}NB (Butterfly)'
+        row = conn.execute(
+            "SELECT price FROM component_price_master WHERE item=? AND company='CAIR'", (item,)
+        ).fetchone()
+        if not row:
+            row = conn.execute(
+                "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company='CAIR' ORDER BY item LIMIT 1",
+                (f'{"MOTORIZED CONTROL" if valve_type == "control" else "SHUT OFF"} VALVE %NB%',)
+            ).fetchone()
+            if row:
+                return row[0], row[1]
+        make = "CAIR"
+
+    conn.close()
+    price = row[0] if row else 0
+    return item, price
+
+
 def build_vlph_120t_df(
     equipment: dict,
     ladle_tons: float = 10.0,
@@ -122,6 +172,8 @@ def build_vlph_120t_df(
     equipment2: dict = None,
     control_mode: str = "automatic",
     auto_control_type: str = "agr",
+    control_valve_vendor: str = "dembla",
+    shutoff_valve_vendor: str = "dembla",
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -156,21 +208,25 @@ def build_vlph_120t_df(
             _row("COMB AIR", "ORIFICE PLATE (Air)", f'{air_nb} NB', 1),
             _row("COMB AIR", "DPT (Air)", f'{air_nb} NB, Output 4-20 mA', 1),
         ]
-    # PLC, PLC+AGR, PID: air gets control valve
+    # PLC, PLC+AGR, PID: air gets control valve (vendor-selected)
     if is_plc or is_plc_agr or is_pid:
+        _, cv_price = _get_valve_price(air_nb, "control", control_valve_vendor)
+        vendor_label = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
         rows.append(_row(
-            "COMB AIR", "PNEUMATIC CONTROL VALVE",
+            "COMB AIR", f"CONTROL VALVE ({vendor_label})",
             f'{air_nb} NB, '
             f'FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
             1,
-            unit_price_override=equipment["motorized_control_valve"]["price"],
+            unit_price_override=cv_price,
         ))
+    _, so_price = _get_valve_price(air_nb, "shutoff", shutoff_valve_vendor)
+    so_vendor = "DEMBLA" if shutoff_valve_vendor == "dembla" else "CAIR"
     rows += [
         _row(
-            "COMB AIR", "BUTTERFLY VALVE",
+            "COMB AIR", f"SHUT OFF VALVE ({so_vendor})",
             f'{air_nb} NB',
             1,
-            unit_price_override=equipment["butterfly_valve"]["price"],
+            unit_price_override=so_price,
         ),
         _row(
             "COMB AIR", "ROTARY JOINT",
@@ -185,11 +241,11 @@ def build_vlph_120t_df(
     ]
 
     # ── FUEL 1 LINE ────────────────────────────────────────────────────────
-    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode, auto_control_type)
+    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode, auto_control_type, control_valve_vendor)
 
     # ── FUEL 2 LINE (dual fuel only) ──────────────────────────────────────
     if is_dual:
-        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type)
+        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor)
 
     # ── NG PILOT LINE ──────────────────────────────────────────────────────
     rows += [

@@ -451,7 +451,9 @@ class VLPHCalcRequest(BaseModel):
     direct_burner_capacity: float = 0.0         # Nm3/hr (direct mode)
     blower_pressure: str = "28"                  # "28" or "40" (WG inches)
     control_mode: str = "automatic"              # "manual" or "automatic"
-    auto_control_type: str = "agr"               # "agr" or "mass_flow" (when automatic)
+    auto_control_type: str = "agr"               # "plc", "plc_agr", "pid"
+    control_valve_vendor: str = "dembla"         # "dembla" or "cair"
+    shutoff_valve_vendor: str = "dembla"         # "dembla" or "cair"
 
 
 class QuoteItem(BaseModel):
@@ -958,6 +960,8 @@ def vlph_calculate(req: VLPHCalcRequest):
             equipment2=equip2,
             control_mode=req.control_mode,
             auto_control_type=req.auto_control_type,
+            control_valve_vendor=req.control_valve_vendor,
+            shutoff_valve_vendor=req.shutoff_valve_vendor,
         )
 
         # Split summary rows from detail rows
