@@ -67,8 +67,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
             elif fuel_type in OIL_FUELS:
                 rows += [
                     _row(media, "FLOWMETER", f'{oil_nb} NB', 1),
-                    _row(media, "MOTORIZED CONTROL VALVE", f'25 NB, CAIR Globe Valve', 1,
-                         unit_price_override=25819),
+                    _row(media, "MOTORIZED CONTROL VALVE 25NB (Globe)", "CAIR", 1),
                     _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1),
                     _row(media, "PRESSURE SWITCH LOW", '', 1),
                 ]
