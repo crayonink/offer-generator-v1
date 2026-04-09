@@ -14,6 +14,7 @@ from bom.selectors.air_valve_selector import (
 
 from bom.selectors.air_duct_selector import select_air_duct
 from bom.selectors.rotary_joint_selector import select_rotary_joint
+
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

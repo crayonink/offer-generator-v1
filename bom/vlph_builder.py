@@ -123,7 +123,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 gas_op_nb, gas_op_price = _get_orifice_price(gas_nb)
                 rows += [
                     _row(media, "ORIFICE PLATE", f'{gas_op_nb} NB', 1,
-                         unit_price_override=gas_op_price, make="ES"),
+                         unit_price_override=gas_op_price, make="ENCON"),
                     _row(media, "DPT", "", 1, make="HONEYWELL"),
                     _row(media, "CONTROL VALVE", f'{gas_nb} NB', 1,
                          unit_price_override=gcv_price, make=gcv_vendor),
@@ -264,7 +264,7 @@ def build_vlph_120t_df(
         op_nb, op_price = _get_orifice_price(air_nb)
         rows += [
             _row("COMB AIR", "ORIFICE PLATE", f'{op_nb} NB', 1,
-                 unit_price_override=op_price, make="ES"),
+                 unit_price_override=op_price, make="ENCON"),
             _row("COMB AIR", "DPT", '', 1, make="HONEYWELL"),
         ]
     # PLC, PLC+AGR, PID: air gets control valve (vendor-selected)
@@ -332,14 +332,14 @@ def build_vlph_120t_df(
              1, unit_price_override=params["ms_structure_cost"], make="ENCON"),
         _row("ENCON ITEMS", "AIR-GAS PIPELINE", "", 1,
              unit_price_override=params.get("pipeline_kg", 1000) * 125, make="ENCON"),
-        _row("ENCON ITEMS", "COMBUSTION AIR BLOWER",
+        _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
-             f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr — {equipment["blower"]["model"]}',
+             f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"], make="ENCON"),
-        _row("ENCON ITEMS", "IGNITION TRANSFORMER", "", 1, make="ENCON"),
-        _row("ENCON ITEMS", "SEQUENCE CONTROLLER", "", 1, make="ENCON"),
-        _row("ENCON ITEMS", "UV SENSOR WITH AIR JACKET", "", 1, make="ENCON"),
-        _row("ENCON ITEMS", "PILOT BURNER", "", 1, make="ENCON"),
+        _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="ENCON"),
+        _row("ENCON ITEMS", "Burner Control Unit", "", 1, make="ENCON"),
+        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="ENCON"),
+        _row("ENCON ITEMS", "ENCON-PB (NG/LPG) - 100 KW", "", 1, make="ENCON"),
         _row("ENCON ITEMS", "CERAMIC FIBRE",
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
              params["ceramic_rolls"],
