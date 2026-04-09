@@ -147,7 +147,8 @@
       border-radius: 50%; animation: spin .7s linear infinite;
     }
     .loading .spinner-ring { display: inline-block; }
-    .loading .btn-txt::after { content: "ing..."; }
+    .loading .btn-txt { font-size: 0; }
+    .loading .btn-txt::after { content: "Calculating..."; font-size: 1rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Alerts ── */
