@@ -14,7 +14,7 @@ def select_air_duct(air_flow_nm3hr: float, velocity_ms: float = 15.0) -> dict:
     ) * 1000
 
     # Standard available duct sizes
-    STANDARD_NB = [200, 250, 300, 350]
+    STANDARD_NB = [125, 150, 200, 250, 300, 350, 400, 450, 500, 600]
 
     # Select next available NB >= calculated diameter
     nb = next((n for n in STANDARD_NB if n >= diameter_mm), STANDARD_NB[-1])
