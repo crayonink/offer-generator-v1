@@ -56,6 +56,18 @@ OIL_FUELS = {"ldo"}
 GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
 
 
+def _get_cheapest_ball_valve(nb: int) -> float:
+    """Get cheapest L&T ball valve price for a given NB."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT price FROM component_price_master WHERE company='L&T' AND item LIKE ? ORDER BY price ASC LIMIT 1",
+        (f'BALL VALVE {nb:03d}NB%',)
+    ).fetchone()
+    conn.close()
+    return float(row[0]) if row else 0
+
+
 def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     control_mode: str = "automatic", auto_control_type: str = "plc",
                     control_valve_vendor: str = "dembla"):
@@ -93,7 +105,9 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                          unit_price_override=gcv_price),
                 ]
             elif fuel_type in OIL_FUELS:
+                bv_price = _get_cheapest_ball_valve(oil_nb)
                 rows += [
+                    _row(media, "BALL VALVE", f'{oil_nb} NB, L&T', 1, unit_price_override=bv_price),
                     _row(media, "FLOWMETER", f'{oil_nb} NB', 1),
                     _row(media, "MOTORIZED CONTROL VALVE 025NB (Globe)", "CAIR", 1),
                     _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1),
