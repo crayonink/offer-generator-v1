@@ -52,6 +52,22 @@ def ensure_log_table():
 
 ensure_log_table()
 
+
+def ensure_valve_sizes():
+    """Ensure butterfly valve and rotary joint tables have entries up to 600 NB."""
+    conn = sqlite3.connect(DB_PATH)
+    bv_defaults = [(400, 50000), (450, 60000), (500, 75000), (600, 95000)]
+    rj_defaults = [(400, 65000), (450, 75000), (500, 90000), (600, 110000)]
+    for nb, price in bv_defaults:
+        conn.execute("INSERT OR IGNORE INTO butterfly_valve_master (nb, price) VALUES (?,?)", (nb, price))
+    for nb, price in rj_defaults:
+        conn.execute("INSERT OR IGNORE INTO rotary_joint_master (nb, price) VALUES (?,?)", (nb, price))
+    conn.commit()
+    conn.close()
+
+ensure_valve_sizes()
+
+
 def ensure_extra_columns():
     """Add updated_at and company columns to component_price_master if not present."""
     conn = sqlite3.connect(DB_PATH)
