@@ -199,7 +199,7 @@ def build_vlph_120t_df(
 
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB', 1),
-        _row("COMB AIR", "PRESSURE GAUGE WITH TNV", f'{air_nb} NB, 0-2000 mm WC, Dial 4"', 1),
+        _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
         _row("COMB AIR", "PRESSURE SWITCH LOW", f'{air_nb} NB, 0-150 mBAR', 1),
     ]
     # PLC: air gets orifice plate + DPT + control valve
