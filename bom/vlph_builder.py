@@ -144,17 +144,17 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 rows.append(_row(
                     media, "AGR",
                     f'{equipment["agr"]["nb"]} NB',
-                    1, unit_price_override=equipment["agr"]["price"], make="ENCON",
+                    1, unit_price_override=equipment["agr"]["price"],
                 ))
             elif fuel_type in OIL_FUELS:
-                rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1, make=""))
+                rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1))
 
     # AGR for non-PLC+AGR/PID modes (gas fuels)
     if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid")):
         rows.append(_row(
             media, "AGR",
             f'{equipment["agr"]["nb"]} NB',
-            1, unit_price_override=equipment["agr"]["price"], make="ENCON",
+            1, unit_price_override=equipment["agr"]["price"],
         ))
 
     return rows
@@ -255,7 +255,7 @@ def build_vlph_120t_df(
     pg_vendor = pressure_gauge_vendor.upper()
     pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
     rows += [
-        _row("COMB AIR", "COMPENSATOR", "", 1, make="ENCON"),
+        _row("COMB AIR", "COMPENSATOR", "", 1),
         _row("COMB AIR", pg_item, '', 1, make=pg_vendor),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
     ]
@@ -321,29 +321,29 @@ def build_vlph_120t_df(
     rows += [
         _row("ENCON ITEMS", burner_desc,
              f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
-             1, unit_price_override=equipment["burner"]["price"], make="ENCON"),
-        _row("ENCON ITEMS", "BEARING (24026)", "", 2, make="ENCON"),
+             1, unit_price_override=equipment["burner"]["price"]),
+        _row("ENCON ITEMS", "BEARING (24026)", "", 2),
         _row("ENCON ITEMS", "PLUMMER BLOCK", "", 1,
-             unit_price_override=params.get("plummer_block_kg", 300) * 170, make="ENCON"),
+             unit_price_override=params.get("plummer_block_kg", 300) * 170),
         _row("ENCON ITEMS", "SHAFT", "", 1,
-             unit_price_override=params.get("shaft_kg", 350) * 120, make="ENCON"),
+             unit_price_override=params.get("shaft_kg", 350) * 120),
         _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
              f'{params["ms_structure_kg"]} kg @ Rs.{params["ms_structure_rate"]}/kg',
-             1, unit_price_override=params["ms_structure_cost"], make="ENCON"),
+             1, unit_price_override=params["ms_structure_cost"]),
         _row("ENCON ITEMS", "AIR-GAS PIPELINE", "", 1,
-             unit_price_override=params.get("pipeline_kg", 1000) * 125, make="ENCON"),
+             unit_price_override=params.get("pipeline_kg", 1000) * 125),
         _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
-             1, unit_price_override=equipment["blower"]["price_premium"], make="ENCON"),
-        _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="ENCON"),
-        _row("ENCON ITEMS", "Burner Control Unit", "", 1, make="ENCON"),
-        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="ENCON"),
-        _row("ENCON ITEMS", "ENCON-PB (NG/LPG) - 100 KW", "", 1, make="ENCON"),
+             1, unit_price_override=equipment["blower"]["price_premium"]),
+        _row("ENCON ITEMS", "Ignition Transformer", "", 1),
+        _row("ENCON ITEMS", "Burner Control Unit", "", 1),
+        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1),
+        _row("ENCON ITEMS", "ENCON-PB (NG/LPG) - 100 KW", "", 1),
         _row("ENCON ITEMS", "CERAMIC FIBRE",
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
              params["ceramic_rolls"],
-             unit_price_override=params.get("ceramic_rate", 0), make="ENCON"),
+             unit_price_override=params.get("ceramic_rate", 0)),
     ]
 
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
@@ -354,12 +354,12 @@ def build_vlph_120t_df(
         STATIC_SKIP.add("TEMPERATURE TRANSMITTER")
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
-            rows.append(_row(media, item, ref, qty, make="ENCON"))
+            rows.append(_row(media, item, ref, qty))
 
-    rows.append(_row("MISC ITEMS", "CONTROL PANEL", "", 1, make="ENCON"))
+    rows.append(_row("MISC ITEMS", "CONTROL PANEL", "", 1))
     rows.append(_row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "", 3, make="L&T"))
     if is_plc or is_plc_agr:
-        rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1, make="ENCON"))
+        rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1))
 
     df = pd.DataFrame(
         rows,
