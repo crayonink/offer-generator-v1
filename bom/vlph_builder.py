@@ -260,8 +260,10 @@ def build_vlph_120t_df(
             1,
             unit_price_override=equipment["rotary_joint"]["price"],
         ),
-        _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1),
-        _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1),
+        _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB, L&T", 1,
+             unit_price_override=_get_cheapest_ball_valve(20)),
+        _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB, L&T", 1,
+             unit_price_override=_get_cheapest_ball_valve(15)),
         _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)", "20 NB, 1500 mm", 1),
         _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)", "15 NB, 1500 mm", 1),
     ]
@@ -275,9 +277,11 @@ def build_vlph_120t_df(
 
     # ── NG PILOT LINE ──────────────────────────────────────────────────────
     rows += [
-        _row("NG PILOT LINE", "BALL VALVE", "20 NB", 1),
-        _row("NG PILOT LINE", "PRESSURE GAUGE WITH NV", '0-1600 mm WC, Dial 4"', 1),
-        _row("NG PILOT LINE", "BALL VALVE", "15 NB", 1),
+        _row("NG PILOT LINE", "BALL VALVE", "20 NB, L&T", 1,
+             unit_price_override=_get_cheapest_ball_valve(20)),
+        _row("NG PILOT LINE", "PRESSURE GAUGE WITH NV", '', 1),
+        _row("NG PILOT LINE", "BALL VALVE", "15 NB, L&T", 1,
+             unit_price_override=_get_cheapest_ball_valve(15)),
         _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1),
         _row("NG PILOT LINE", "PRESSURE REGULATING VALVE",
              f'{equipment["agr"]["nb"]} NB', 1),
