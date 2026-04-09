@@ -316,7 +316,7 @@ def build_vlph_120t_df(
              unit_price_override=_get_cheapest_solenoid_valve(15)),
         _row("NG PILOT LINE", "PRESSURE REGULATING VALVE",
              f'{equipment["agr"]["nb"]} NB', 1),
-        _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE",
+        _row("NG PILOT LINE", "FLEXIBLE HOSE",
              f'{_get_flexible_hose_price(15)[0]} NB, 1500mm, Bengal Ind.',
              1, unit_price_override=_get_flexible_hose_price(15)[1]),
     ]
