@@ -1035,7 +1035,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "ng_gas_train":   f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB',
                 "agr_nb":         equip1["agr"]["nb"],
             },
-            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
+            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {
                 "bought_out_total": round(bought_out_total, 2),
                 "encon_total":      round(encon_total, 2),
@@ -1270,7 +1270,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "ng_gas_train":   f'{equipment["ng_gas_train"]["inlet_nb"]} x {equipment["ng_gas_train"]["outlet_nb"]} NB',
                 "agr_nb":         equipment["agr"]["nb"],
             },
-            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
+            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {
                 "bought_out_total": round(bought_out_total, 2),
                 "encon_total":      round(encon_total, 2),

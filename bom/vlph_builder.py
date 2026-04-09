@@ -39,7 +39,7 @@ def _get_price_fuzzy(item_name: str) -> float:
     return float(row[0]) if row else 0
 
 
-def _row(media: str, item: str, ref: str, qty, unit_price_override=None):
+def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make: str = ""):
     qty = qty if qty else 1
     if unit_price_override is not None:
         unit_price = unit_price_override
@@ -49,7 +49,7 @@ def _row(media: str, item: str, ref: str, qty, unit_price_override=None):
     if unit_price == 0:
         print(f"WARNING: No price found for '{item}'")
 
-    return (media, item, ref, qty, unit_price, unit_price * qty)
+    return (media, item, ref, qty, make, unit_price, unit_price * qty)
 
 
 OIL_FUELS = {"ldo"}
@@ -107,7 +107,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
             media, gas_train_name,
             f'{equipment["ng_gas_train"]["inlet_nb"]} x '
             f'{equipment["ng_gas_train"]["outlet_nb"]} NB',
-            1, unit_price_override=equipment["ng_gas_train"]["price"],
+            1, unit_price_override=equipment["ng_gas_train"]["price"], make="MADAS",
         ))
 
     # Oil line size is always 20 NB
@@ -116,7 +116,6 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     # Control-type-specific instrumentation
     if control_mode == "automatic":
         if auto_control_type == "plc":
-            # PLC: gas → orifice plate + DPT + control valve, oil → flowmeter + control valve
             if fuel_type in GAS_FUELS:
                 gas_nb = equipment["agr"]["nb"]
                 _, gcv_price = _get_valve_price(gas_nb, "control", control_valve_vendor)
@@ -124,38 +123,38 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 gas_op_nb, gas_op_price = _get_orifice_price(gas_nb)
                 rows += [
                     _row(media, "ORIFICE PLATE", f'{gas_op_nb} NB', 1,
-                         unit_price_override=gas_op_price),
-                    _row(media, "DPT", "", 1),
-                    _row(media, f"CONTROL VALVE ({gcv_vendor})", f'{gas_nb} NB', 1,
-                         unit_price_override=gcv_price),
+                         unit_price_override=gas_op_price, make="ES"),
+                    _row(media, "DPT", "", 1, make="HONEYWELL"),
+                    _row(media, "CONTROL VALVE", f'{gas_nb} NB', 1,
+                         unit_price_override=gcv_price, make=gcv_vendor),
                 ]
             elif fuel_type in OIL_FUELS:
                 bv_price = _get_cheapest_ball_valve(oil_nb)
                 rows += [
-                    _row(media, "BALL VALVE", f'{oil_nb} NB, L&T', 1, unit_price_override=bv_price),
-                    _row(media, "FLOWMETER", f'{oil_nb} NB', 1),
-                    _row(media, "MOTORIZED CONTROL VALVE 025NB (Globe)", "CAIR", 1),
-                    _row(media, "SOLENOID VALVE", f'{oil_nb} NB, MADAS', 1,
-                         unit_price_override=_get_cheapest_solenoid_valve(oil_nb)),
-                    _row(media, "PRESSURE SWITCH LOW", '', 1),
+                    _row(media, "BALL VALVE", f'{oil_nb} NB', 1,
+                         unit_price_override=bv_price, make="L&T"),
+                    _row(media, "FLOWMETER", f'{oil_nb} NB', 1, make=""),
+                    _row(media, "MOTORIZED CONTROL VALVE", "025NB (Globe)", 1, make="CAIR"),
+                    _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1,
+                         unit_price_override=_get_cheapest_solenoid_valve(oil_nb), make="MADAS"),
+                    _row(media, "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
                 ]
         elif auto_control_type in ("plc_agr", "pid"):
-            # PLC+AGR / PID: gas → AGR only, oil → AOR only
             if fuel_type in GAS_FUELS:
                 rows.append(_row(
                     media, "AGR",
                     f'{equipment["agr"]["nb"]} NB',
-                    1, unit_price_override=equipment["agr"]["price"],
+                    1, unit_price_override=equipment["agr"]["price"], make="ENCON",
                 ))
             elif fuel_type in OIL_FUELS:
-                rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1))
+                rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1, make=""))
 
     # AGR for non-PLC+AGR/PID modes (gas fuels)
     if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid")):
         rows.append(_row(
             media, "AGR",
             f'{equipment["agr"]["nb"]} NB',
-            1, unit_price_override=equipment["agr"]["price"],
+            1, unit_price_override=equipment["agr"]["price"], make="ENCON",
         ))
 
     return rows
@@ -256,46 +255,41 @@ def build_vlph_120t_df(
     pg_vendor = pressure_gauge_vendor.upper()
     pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
     rows += [
-        _row("COMB AIR", "COMPENSATOR", "", 1),
-        _row("COMB AIR", pg_item, '', 1),
-        _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1),
+        _row("COMB AIR", "COMPENSATOR", "", 1, make="ENCON"),
+        _row("COMB AIR", pg_item, '', 1, make=pg_vendor),
+        _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
     ]
     # PLC: air gets orifice plate + DPT + control valve
     if is_plc:
         op_nb, op_price = _get_orifice_price(air_nb)
         rows += [
             _row("COMB AIR", "ORIFICE PLATE", f'{op_nb} NB', 1,
-                 unit_price_override=op_price),
-            _row("COMB AIR", "DPT (Air)", '', 1),
+                 unit_price_override=op_price, make="ES"),
+            _row("COMB AIR", "DPT", '', 1, make="HONEYWELL"),
         ]
     # PLC, PLC+AGR, PID: air gets control valve (vendor-selected)
     if is_plc or is_plc_agr or is_pid:
         _, cv_price = _get_valve_price(air_nb, "control", control_valve_vendor)
         vendor_label = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
         rows.append(_row(
-            "COMB AIR", f"CONTROL VALVE ({vendor_label})",
-            f'{air_nb} NB, '
-            f'FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
-            1,
-            unit_price_override=cv_price,
+            "COMB AIR", "CONTROL VALVE",
+            f'{air_nb} NB, FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
+            1, unit_price_override=cv_price, make=vendor_label,
         ))
     rows += [
-        _row(
-            "COMB AIR", "ROTARY JOINT",
-            f'{equipment["rotary_joint"]["nb"]} NB',
-            1,
-            unit_price_override=equipment["rotary_joint"]["price"],
-        ),
-        _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB, L&T", 1,
-             unit_price_override=_get_cheapest_ball_valve(20)),
-        _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB, L&T", 1,
-             unit_price_override=_get_cheapest_ball_valve(15)),
+        _row("COMB AIR", "ROTARY JOINT",
+             f'{equipment["rotary_joint"]["nb"]} NB', 1,
+             unit_price_override=equipment["rotary_joint"]["price"], make="THIRD PARTY"),
+        _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+        _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
         _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)",
-             f'{_get_flexible_hose_price(20)[0]} NB, 1500mm, Bengal Ind.',
-             1, unit_price_override=_get_flexible_hose_price(20)[1]),
+             f'{_get_flexible_hose_price(20)[0]} NB, 1500mm', 1,
+             unit_price_override=_get_flexible_hose_price(20)[1], make="BENGAL IND."),
         _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)",
-             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm, Bengal Ind.',
-             1, unit_price_override=_get_flexible_hose_price(15)[1]),
+             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
     ]
 
     # ── FUEL 1 LINE ────────────────────────────────────────────────────────
@@ -307,75 +301,69 @@ def build_vlph_120t_df(
 
     # ── NG PILOT LINE ──────────────────────────────────────────────────────
     rows += [
-        _row("NG PILOT LINE", "BALL VALVE", "20 NB, L&T", 1,
-             unit_price_override=_get_cheapest_ball_valve(20)),
-        _row("NG PILOT LINE", pg_item, '', 1),
-        _row("NG PILOT LINE", "BALL VALVE", "15 NB, L&T", 1,
-             unit_price_override=_get_cheapest_ball_valve(15)),
-        _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB, MADAS", 1,
-             unit_price_override=_get_cheapest_solenoid_valve(15)),
+        _row("NG PILOT LINE", "BALL VALVE", "20 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+        _row("NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
+        _row("NG PILOT LINE", "BALL VALVE", "15 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+        _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
+             unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
         _row("NG PILOT LINE", "PRESSURE REGULATING VALVE",
-             f'{equipment["agr"]["nb"]} NB', 1),
+             f'{equipment["agr"]["nb"]} NB', 1, make="MADAS"),
         _row("NG PILOT LINE", "FLEXIBLE HOSE",
-             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm, Bengal Ind.',
-             1, unit_price_override=_get_flexible_hose_price(15)[1]),
+             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
     ]
 
 
     # ── ENCON ITEMS ────────────────────────────────────────────────────────
     burner_desc = "ENCON DUAL FUEL Burner" if is_dual else equipment["burner"]["model"]
     rows += [
-        _row(
-            "ENCON ITEMS", burner_desc,
-            f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
-            1,
-            unit_price_override=equipment["burner"]["price"],
-        ),
-        _row("ENCON ITEMS", "BEARING (24026)", "", 2),
+        _row("ENCON ITEMS", burner_desc,
+             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             1, unit_price_override=equipment["burner"]["price"], make="ENCON"),
+        _row("ENCON ITEMS", "BEARING (24026)", "", 2, make="ENCON"),
         _row("ENCON ITEMS", "PLUMMER BLOCK", "", 1,
-             unit_price_override=params.get("plummer_block_kg", 300) * 170),
+             unit_price_override=params.get("plummer_block_kg", 300) * 170, make="ENCON"),
         _row("ENCON ITEMS", "SHAFT", "", 1,
-             unit_price_override=params.get("shaft_kg", 350) * 120),
+             unit_price_override=params.get("shaft_kg", 350) * 120, make="ENCON"),
         _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
              f'{params["ms_structure_kg"]} kg @ Rs.{params["ms_structure_rate"]}/kg',
-             1, unit_price_override=params["ms_structure_cost"]),
+             1, unit_price_override=params["ms_structure_cost"], make="ENCON"),
         _row("ENCON ITEMS", "AIR-GAS PIPELINE", "", 1,
-             unit_price_override=params.get("pipeline_kg", 1000) * 125),
+             unit_price_override=params.get("pipeline_kg", 1000) * 125, make="ENCON"),
         _row("ENCON ITEMS", "COMBUSTION AIR BLOWER",
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr — {equipment["blower"]["model"]}',
-             1, unit_price_override=equipment["blower"]["price_premium"]),
-        _row("ENCON ITEMS", "IGNITION TRANSFORMER", "", 1),
-        _row("ENCON ITEMS", "SEQUENCE CONTROLLER", "", 1),
-        _row("ENCON ITEMS", "UV SENSOR WITH AIR JACKET", "", 1),
-        _row("ENCON ITEMS", "PILOT BURNER", "", 1),
+             1, unit_price_override=equipment["blower"]["price_premium"], make="ENCON"),
+        _row("ENCON ITEMS", "IGNITION TRANSFORMER", "", 1, make="ENCON"),
+        _row("ENCON ITEMS", "SEQUENCE CONTROLLER", "", 1, make="ENCON"),
+        _row("ENCON ITEMS", "UV SENSOR WITH AIR JACKET", "", 1, make="ENCON"),
+        _row("ENCON ITEMS", "PILOT BURNER", "", 1, make="ENCON"),
         _row("ENCON ITEMS", "CERAMIC FIBRE",
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
              params["ceramic_rolls"],
-             unit_price_override=params.get("ceramic_rate", 0)),
+             unit_price_override=params.get("ceramic_rate", 0), make="ENCON"),
     ]
 
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
-    STATIC_SKIP = {"CONTROL PANEL"}  # CONTROL PANEL added separately below
-    # PLC and PLC+AGR replace P.PID and RATIO CONTROLLER
+    STATIC_SKIP = {"CONTROL PANEL"}
     if is_plc or is_plc_agr:
         STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
-    # PID: no temperature transmitter
     if is_pid:
         STATIC_SKIP.add("TEMPERATURE TRANSMITTER")
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
-            rows.append(_row(media, item, ref, qty))
+            rows.append(_row(media, item, ref, qty, make="ENCON"))
 
-    rows.append(_row("MISC ITEMS", "CONTROL PANEL", "1 Set", 1))
-    rows.append(_row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "15 NB", 3))
-    # PLC WITH HMI only for PLC and PLC+AGR
+    rows.append(_row("MISC ITEMS", "CONTROL PANEL", "", 1, make="ENCON"))
+    rows.append(_row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "", 3, make="L&T"))
     if is_plc or is_plc_agr:
-        rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1))
+        rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1, make="ENCON"))
 
     df = pd.DataFrame(
         rows,
-        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "UNIT PRICE", "TOTAL"],
+        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE", "TOTAL"],
     )
 
     # Summary rows (SAIL style: Bought Out + In-house/ENCON)
@@ -394,9 +382,9 @@ def build_vlph_120t_df(
             df,
             pd.DataFrame(
                 [
-                    ("", "BOUGHT OUT ITEMS",     "", "", "", bought_out_total),
-                    ("", "ENCON ITEMS",          "", "", "", encon_total),
-                    ("", "GRAND TOTAL",          "", "", "", grand_total),
+                    ("", "BOUGHT OUT ITEMS",     "", "", "", "", bought_out_total),
+                    ("", "ENCON ITEMS",          "", "", "", "", encon_total),
+                    ("", "GRAND TOTAL",          "", "", "", "", grand_total),
                 ],
                 columns=df.columns,
             ),

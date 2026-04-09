@@ -703,6 +703,7 @@
               <th>Item Name</th>
               <th>Reference / Specification</th>
               <th class="r">Qty</th>
+              <th>Make</th>
               <th class="r">Unit Price (₹)</th>
               <th class="r">Total (₹)</th>
             </tr>
@@ -961,6 +962,7 @@ function renderResults(d) {
     <td style="font-weight:500">${r["ITEM NAME"]}</td>
     <td style="color:var(--muted);font-size:0.77rem">${r.REFERENCE||""}</td>
     <td class="r">${r.QTY}</td>
+    <td style="font-size:0.77rem;color:var(--navy)">${r.MAKE||""}</td>
     <td class="r">₹ ${fmt(r["UNIT PRICE"],0)}</td>
     <td class="r" style="font-weight:600">₹ ${fmt(r.TOTAL,0)}</td>
   </tr>`).join("");
