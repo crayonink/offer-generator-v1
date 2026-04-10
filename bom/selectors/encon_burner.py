@@ -34,8 +34,15 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     burner_pressure_wg  : 24 or 36 (inches w.g.) — drives firing rate range lookup.
     """
 
-    # Convert Gas Nm3/hr to equivalent Oil LPH using actual fuel CV
-    equivalent_lph = required_gas_flow_nm3hr * fuel_cv / 8600
+    # Convert flow to LPH for selection.
+    # For oil fuels the burner-calc output is already in LPH (CV is in kcal/L),
+    # so no conversion is needed. For gas fuels we convert Nm3/hr to oil-equivalent
+    # LPH using a reference oil CV of 8600 kcal/L.
+    category = _resolve_category(fuel_type)
+    if category == "oil":
+        equivalent_lph = required_gas_flow_nm3hr   # already LPH
+    else:
+        equivalent_lph = required_gas_flow_nm3hr * fuel_cv / 8600
 
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
@@ -70,7 +77,6 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     # ldo/fo/hsd/sko → oil → FILM section
     # ng/lpg/cog/bg/rlng → gas → GAS section
     # dual → DUAL FUEL section
-    category = _resolve_category(fuel_type)
     section_keyword = SECTION_BY_CATEGORY[category]
 
     cursor.execute("""
