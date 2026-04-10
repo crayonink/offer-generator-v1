@@ -16,27 +16,11 @@ FUEL_NAMES = {
 
 
 def _get_price_fuzzy(item_name: str) -> float:
-    """Try exact match first, then partial match on item name."""
+    """Exact match only — no fuzzy lookups."""
     try:
         return get_price(item_name)
     except ValueError:
-        pass
-    # Fuzzy: try without parenthetical suffix e.g. "MOTORIZED CONTROL VALVE 25NB (Globe)" → "MOTORIZED CONTROL VALVE 25NB"
-    base = item_name.split("(")[0].strip()
-    if base != item_name:
-        try:
-            return get_price(base)
-        except ValueError:
-            pass
-    # Try DB LIKE query as last resort
-    import sqlite3
-    conn = sqlite3.connect(DB_PATH)
-    row = conn.execute(
-        "SELECT price FROM component_price_master WHERE item LIKE ? LIMIT 1",
-        (f"%{base}%",)
-    ).fetchone()
-    conn.close()
-    return float(row[0]) if row else 0
+        return 0
 
 
 def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make: str = ""):
@@ -336,9 +320,9 @@ def build_vlph_120t_df(
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"]),
-        _row("ENCON ITEMS", "Ignition Transformer", "", 1),
-        _row("ENCON ITEMS", "Burner Control Unit", "", 1),
-        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1),
+        _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
+        _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
+        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
         _row("ENCON ITEMS", "ENCON-PB (NG/LPG) - 100 KW", "", 1),
         _row("ENCON ITEMS", "CERAMIC FIBRE",
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
