@@ -23,7 +23,19 @@ def _get_price_fuzzy(item_name: str) -> float:
         return 0
 
 
-def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make: str = ""):
+def _get_company(item_name: str) -> str:
+    """Look up company/make from component_price_master."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT company FROM component_price_master WHERE item=? LIMIT 1",
+        (item_name,),
+    ).fetchone()
+    conn.close()
+    return row[0] if row and row[0] else ""
+
+
+def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make=None):
     qty = qty if qty else 1
     if unit_price_override is not None:
         unit_price = unit_price_override
@@ -32,6 +44,9 @@ def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make: s
 
     if unit_price == 0:
         print(f"WARNING: No price found for '{item}'")
+
+    if make is None:
+        make = _get_company(item)
 
     return (media, item, ref, qty, make, unit_price, unit_price * qty)
 
