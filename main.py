@@ -474,7 +474,7 @@ class VLPHCalcRequest(BaseModel):
     shutoff_valve_vendor: str = "lt_lever"       # "lt_lever" or "lt_gear" (L&T butterfly variants)
     pressure_gauge_vendor: str = "baumer"        # "baumer" or "hguru"
     hpu_variant: str = "Duplex 1"                # "Simplex" | "Duplex 1" | "Duplex 2" — for oil fuels
-    burner_pressure_wg: int = 24                 # 24 or 36 (inches w.g.) — IIP-ENCON Film Burner pressure
+    # burner_pressure_wg is derived from blower_pressure (28→24, 40→36)
     pilot_burner: str = "auto"                   # "auto" | "lpg_10" | "nglpg_100" | "cog_100"
     pipeline_weight_kg: float = 1000.0           # Air-gas pipeline weight (700–2000 kg, step 100)
 
@@ -933,6 +933,9 @@ def vlph_calculate(req: VLPHCalcRequest):
         # --- Fuel 2 calculation (if dual fuel) ---
         is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
 
+        # Burner pressure derived from blower pressure: 28" -> 24" w.g., 40" -> 36" w.g.
+        burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
+
         equip1 = select_equipment(
             ng_flow_nm3hr=ng_flow,
             air_flow_nm3hr=air_flow,
@@ -941,7 +944,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             blower_pressure=req.blower_pressure,
             fuel_type=req.fuel1_type,
             hpu_variant=req.hpu_variant,
-            burner_pressure_wg=req.burner_pressure_wg,
+            burner_pressure_wg=burner_pressure_wg,
             shutoff_valve_vendor=req.shutoff_valve_vendor,
         )
 
@@ -978,7 +981,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 blower_pressure=req.blower_pressure,
                 fuel_type=req.fuel2_type,
                 hpu_variant=req.hpu_variant,
-                burner_pressure_wg=req.burner_pressure_wg,
+                burner_pressure_wg=burner_pressure_wg,
                 shutoff_valve_vendor=req.shutoff_valve_vendor,
             )
 
