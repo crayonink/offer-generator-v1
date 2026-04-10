@@ -666,8 +666,8 @@
             <tr class="ch"><td colspan="3">Equipment Selected</td></tr>
             <tr><td class="lbl">Blower</td>               <td class="val" id="r-blower" colspan="2">—</td></tr>
             <tr><td class="lbl">Burner Model</td>         <td class="val" id="eq-burner" colspan="2">—</td></tr>
-            <tr><td class="lbl">NG Gas Train</td>         <td class="val" id="eq-gt"     colspan="2">—</td></tr>
-            <tr><td class="lbl">AGR</td>                  <td class="val" id="eq-agr"    colspan="2">—</td></tr>
+            <tr id="row-gt"><td class="lbl">NG Gas Train</td>         <td class="val" id="eq-gt"     colspan="2">—</td></tr>
+            <tr id="row-agr"><td class="lbl">AGR</td>                  <td class="val" id="eq-agr"    colspan="2">—</td></tr>
           </table>
         </div>
       </div>
@@ -960,6 +960,13 @@ function renderResults(d) {
   set("eq-burner", eq.burner_model);
   set("eq-gt",     eq.ng_gas_train);
   set("eq-agr",    eq.agr_nb + " NB");
+
+  // Hide NG Gas Train + AGR rows for oil-based fuels (LDO/FO/HSD/SKO)
+  const oilFuels = new Set(["ldo", "fo", "hsd", "sko"]);
+  const f1Type = document.getElementById("fuel1_type").value;
+  const isOil = oilFuels.has(f1Type);
+  document.getElementById("row-gt").style.display  = isOil ? "none" : "";
+  document.getElementById("row-agr").style.display = isOil ? "none" : "";
   set("p-ng-q",    fmt(p.ng_flow, 2));
   set("p-ng-d",    p.ng_dia_mm);
   set("p-ng-nb",   p.ng_nb + " NB");
