@@ -79,7 +79,7 @@ def calculate_burner(inputs: BurnerInputs) -> BurnerResults:
     # Air quantity (Nm3/hr)
     air_qty_nm3hr = (
         inputs.fuel_cv * extra_firing_rate_nm3hr * 118
-    ) / 100000 / 2
+    ) / 100000
 
     # CFM = air flow / 1.7
     cfm = air_qty_nm3hr / 1.7
