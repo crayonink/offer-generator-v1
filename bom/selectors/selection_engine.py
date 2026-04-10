@@ -17,7 +17,7 @@ from bom.selectors.encon_burner import _resolve_category
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24) -> dict:
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24, shutoff_valve_vendor: str = "cair") -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     fuel_type: 'gas', 'oil', or 'dual' — picks the burner pricelist section.
@@ -67,7 +67,7 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     # Air side
     air_duct = select_air_duct(air_flow_nm3hr)
     motorized_control_valve = select_motorized_control_valve(air_flow_nm3hr)
-    butterfly_valve = select_butterfly_valve(air_nb)
+    butterfly_valve = select_butterfly_valve(air_nb, vendor=shutoff_valve_vendor)
     rotary_joint = select_rotary_joint(air_nb)
 
     # Blower HP = CFM × pressure (inches w.g.) / 3200

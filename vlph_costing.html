@@ -584,7 +584,14 @@
       </div>
     </div>
     <div class="fg fg-2" style="margin-bottom:24px">
-      <div class="field"></div>
+      <div class="field">
+        <label>Shut-Off Valve Vendor</label>
+        <select id="shutoff_valve_vendor">
+          <option value="cair" selected>CAIR (Butterfly)</option>
+          <option value="dembla">DEMBLA</option>
+        </select>
+        <div class="hint">CAIR = butterfly type, DEMBLA = ball type</div>
+      </div>
       <div class="field">
         <label>Pressure Gauge Vendor</label>
         <select id="pressure_gauge_vendor">
@@ -987,7 +994,7 @@ async function calculate() {
       control_mode: document.getElementById("control_mode").value,
       auto_control_type: document.getElementById("auto_control_type").value,
       control_valve_vendor: document.getElementById("control_valve_vendor").value,
-      shutoff_valve_vendor: "dembla",
+      shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
       burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),
@@ -1012,7 +1019,7 @@ async function calculate() {
       control_mode: document.getElementById("control_mode").value,
       auto_control_type: document.getElementById("auto_control_type").value,
       control_valve_vendor: document.getElementById("control_valve_vendor").value,
-      shutoff_valve_vendor: "dembla",
+      shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
       burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),

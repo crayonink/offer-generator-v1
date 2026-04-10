@@ -32,35 +32,47 @@ def select_motorized_control_valve(air_flow_nm3hr: float) -> dict:
 
 
 
-def select_butterfly_valve(nb: int) -> dict:
+def select_butterfly_valve(nb: int, vendor: str = "cair") -> dict:
     """
-    Select Butterfly Valve from component_price_master.
-    Picks CAIR shut-off butterfly entries:
-      'SHUT OFF VALVE 040NB (Butterfly)' ... 'SHUT OFF VALVE 350NB (Butterfly)'
+    Select Shut-Off Valve from component_price_master based on vendor.
+
+    vendor = 'cair'   -> 'SHUT OFF VALVE XXXNB (Butterfly)' rows (CAIR)
+    vendor = 'dembla' -> 'SHUT OFF VALVE XXXNB' rows (DEMBLA)
+
     Returns the smallest available NB >= requested.
     """
+    vendor_lower = vendor.lower()
+    if vendor_lower == "dembla":
+        like_pattern = "SHUT OFF VALVE %NB"
+        company      = "DEMBLA"
+    else:
+        like_pattern = "SHUT OFF VALVE %NB (Butterfly)"
+        company      = "CAIR"
+
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT specification, price
+        SELECT item, price
         FROM component_price_master
-        WHERE item LIKE 'SHUT OFF VALVE %NB (Butterfly)'
+        WHERE item LIKE ?
+          AND company = ?
           AND CAST(SUBSTR(item, 16, 3) AS INTEGER) >= ?
         ORDER BY CAST(SUBSTR(item, 16, 3) AS INTEGER) ASC
         LIMIT 1
-    """, (nb,))
+    """, (like_pattern, company, nb))
 
     row = cursor.fetchone()
     conn.close()
 
     if not row:
-        raise ValueError(f"No Butterfly Valve found for NB >= {nb}")
+        raise ValueError(f"No Shut-Off Valve found for NB >= {nb} ({company})")
 
-    spec = row[0] or ""           # e.g. '040NB (Butterfly)'
-    nb_val = int(spec[:3]) if spec[:3].isdigit() else nb
+    item = row[0]                 # e.g. 'SHUT OFF VALVE 040NB (Butterfly)'
+    nb_str = item[15:18]
+    nb_val = int(nb_str) if nb_str.isdigit() else nb
     return {
         "nb":    nb_val,
         "price": float(row[1]),
-        "make":  "CAIR",
+        "make":  company,
     }
