@@ -3,6 +3,7 @@ import pandas as pd
 from bom.static_items import static_items
 from bom.price_master import get_price, DB_PATH
 from bom.ladle_params import get_vlph_params
+from bom.selectors.gas_regulator_selector import select_gas_regulator
 
 
 BOUGHT_OUT_EXCLUDE_ITEMS = {
@@ -322,8 +323,26 @@ def build_vlph_120t_df(
              unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
         _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
-        _row("NG PILOT LINE", "PRESSURE REGULATING VALVE",
-             f'{equipment["agr"]["nb"]} NB', 1, make="MADAS"),
+    ]
+    # Pressure Regulating Valve — pulled from MADAS gas_regulator_master.
+    # Oil fuels use smallest available size (DN025); gas fuels use AGR pipe NB.
+    if fuel1_type in OIL_FUELS:
+        reg_nb_request = 20
+    else:
+        reg_nb_request = equipment["agr"]["nb"]
+    try:
+        reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
+        rows.append(_row(
+            "NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
+            1, unit_price_override=reg["price"], make="MADAS",
+        ))
+    except ValueError:
+        rows.append(_row(
+            "NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            f'{reg_nb_request} NB', 1, make="MADAS",
+        ))
+    rows += [
         _row("NG PILOT LINE", "FLEXIBLE HOSE",
              f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
              unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
