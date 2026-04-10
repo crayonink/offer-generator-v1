@@ -41,7 +41,7 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         SELECT price
         FROM burner_pricelist_master
         WHERE burner_size = ?
-          AND component = 'BURNER ALONE'
+          AND component = 'BURNER SET'
           AND section LIKE '%GAS%'
         LIMIT 1
     """, (pricelist_name,))
