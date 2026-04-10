@@ -76,16 +76,16 @@ def calculate_burner(inputs: BurnerInputs) -> BurnerResults:
         extra_firing_rate_nm3hr * inputs.fuel_cv
     ) / (860 * 1000)
 
-    # Air quantity
+    # Air quantity (Nm3/hr)
     air_qty_nm3hr = (
         inputs.fuel_cv * extra_firing_rate_nm3hr * 118
-    ) / 100000
+    ) / 100000 / 2
 
-    # CFM
+    # CFM = air flow / 1.7
     cfm = air_qty_nm3hr / 1.7
 
-    # Blower size (HP)
-    blower_hp = cfm / 114
+    # Blower HP at reference 28" w.g. — actual selection uses chosen pressure.
+    blower_hp = cfm * 28 / 3200
 
     return BurnerResults(
         avg_temp_rise=avg_temp_rise,

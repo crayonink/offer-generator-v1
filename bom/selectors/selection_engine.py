@@ -70,12 +70,10 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     butterfly_valve = select_butterfly_valve(air_nb)
     rotary_joint = select_rotary_joint(air_nb)
 
-    # Blower — HP formula depends on pressure
+    # Blower HP = CFM × pressure (inches w.g.) / 3200
     cfm = air_flow_nm3hr / 1.7
-    if blower_pressure == "40":
-        required_hp = cfm * 40 / 3200   # 40" WG formula (SAIL standard)
-    else:
-        required_hp = cfm / 114          # 28" WG formula
+    pressure_in_wg = int(blower_pressure)   # "28" or "40"
+    required_hp = cfm * pressure_in_wg / 3200
     blower = select_blower(required_hp, series=blower_pressure)
 
     # HPU — only for oil-based fuels (ldo, fo, hsd, sko) and dual fuel.
