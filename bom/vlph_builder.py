@@ -165,7 +165,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 rows += [
                     _row(media, "BALL VALVE", f'{oil_nb} NB', 1,
                          unit_price_override=bv_price, make="L&T"),
-                    _row(media, "FLOWMETER", f'{oil_nb} NB', 1, make=""),
+                    _row(media, "FLOWMETER", f'{oil_nb} NB', 1, make="ELETA"),
                     _row(media, "MOTORIZED CONTROL VALVE", "025NB (Globe)", 1,
                          unit_price_override=_get_price_fuzzy("MOTORIZED CONTROL VALVE 025NB (Globe)"),
                          make="CAIR"),
