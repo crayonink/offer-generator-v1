@@ -18,10 +18,11 @@ FUEL_NAMES = {
     "bg":   "BG",
     "rlng": "RLNG",
     # Oil-based fuels (sub-categories of OIL)
-    "ldo":  "LDO",
-    "fo":   "FO",
-    "hsd":  "HSD",
-    "sko":  "SKO",
+    "ldo":   "LDO",
+    "fo":    "Furnace Oil",
+    "lshs":  "LSHS",
+    "hsd":   "HSD",
+    "sko":   "SKO",
 }
 
 
@@ -61,7 +62,7 @@ def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make=No
     return (media, item, ref, qty, make, unit_price, unit_price * qty)
 
 
-OIL_FUELS = {"ldo", "fo", "hsd", "sko"}
+OIL_FUELS = {"ldo", "fo", "lshs", "hsd", "sko"}
 GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
 
 

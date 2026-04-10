@@ -4,7 +4,7 @@ import sqlite3
 GAS_SUBTYPES = {"gas", "ng", "rlng", "lpg", "cog", "bg"}
 
 # Oil-fuel sub-types → all map to IIP-ENCON Film Burner section
-OIL_SUBTYPES = {"oil", "ldo", "fo", "hsd", "sko"}
+OIL_SUBTYPES = {"oil", "ldo", "fo", "lshs", "hsd", "sko"}
 
 # Map fuel category → burner pricelist section keyword
 SECTION_BY_CATEGORY = {
