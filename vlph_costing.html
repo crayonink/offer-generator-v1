@@ -1120,7 +1120,6 @@ function renderResults(d) {
   const cd = document.getElementById("client-data-card");
   cd.style.display = "block";
   set("cd-fuel1", c.fuel1_name || "Natural Gas");
-  const f1Type = document.getElementById("fuel1_type").value;
   set("cd-cv1", fmt(c.fuel1_cv || c.fuel_cv, 0) + " " + cvUnit(f1Type));
   // Update results-table CV unit too
   const rCvUnit = document.getElementById("r-cv-unit");
