@@ -261,6 +261,7 @@ def build_vlph_120t_df(
     control_valve_vendor: str = "dembla",
     shutoff_valve_vendor: str = "dembla",
     pressure_gauge_vendor: str = "baumer",
+    pilot_burner: str = "auto",
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -397,7 +398,14 @@ def build_vlph_120t_df(
         _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
         _row(
             "ENCON ITEMS",
-            "ENCON-PB-LPG-10KW" if fuel1_type in OIL_FUELS else "ENCON-PB (NG/LPG) - 100 KW",
+            (
+                "ENCON-PB-LPG-10KW"          if pilot_burner == "lpg_10"
+                else "ENCON-PB (NG/LPG) - 100 KW" if pilot_burner == "nglpg_100"
+                else "ENCON PB COG 100 KW"      if pilot_burner == "cog_100"
+                # auto: oil fuels → 10 KW LPG, gas fuels → 100 KW NG/LPG
+                else ("ENCON-PB-LPG-10KW" if fuel1_type in OIL_FUELS
+                      else "ENCON-PB (NG/LPG) - 100 KW")
+            ),
             "", 1,
         ),
         _row("ENCON ITEMS", "CERAMIC FIBRE",

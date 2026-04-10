@@ -546,6 +546,15 @@
           <option value="36">36" w.g.</option>
         </select>
       </div>
+      <div class="field">
+        <label>Pilot Burner</label>
+        <select id="pilot_burner">
+          <option value="auto" selected>Auto (10 KW for oil, 100 KW for gas)</option>
+          <option value="lpg_10">ENCON-PB-LPG-10KW (Rs. 11,000)</option>
+          <option value="nglpg_100">ENCON-PB (NG/LPG) - 100 KW (Rs. 21,000)</option>
+          <option value="cog_100">ENCON PB COG 100 KW (Rs. 32,000)</option>
+        </select>
+      </div>
     </div>
 
     <div id="calc-extras">
@@ -901,6 +910,7 @@ async function calculate() {
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
       burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),
+      pilot_burner: document.getElementById("pilot_burner").value,
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -924,6 +934,7 @@ async function calculate() {
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
       burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),
+      pilot_burner: document.getElementById("pilot_burner").value,
     };
   }
 

@@ -473,6 +473,7 @@ class VLPHCalcRequest(BaseModel):
     pressure_gauge_vendor: str = "baumer"        # "baumer" or "hguru"
     hpu_variant: str = "Duplex 1"                # "Simplex" | "Duplex 1" | "Duplex 2" — for oil fuels
     burner_pressure_wg: int = 24                 # 24 or 36 (inches w.g.) — IIP-ENCON Film Burner pressure
+    pilot_burner: str = "auto"                   # "auto" | "lpg_10" | "nglpg_100" | "cog_100"
 
 
 class QuoteItem(BaseModel):
@@ -988,6 +989,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             control_valve_vendor=req.control_valve_vendor,
             shutoff_valve_vendor=req.shutoff_valve_vendor,
             pressure_gauge_vendor=req.pressure_gauge_vendor,
+            pilot_burner=req.pilot_burner,
         )
 
         # Split summary rows from detail rows
