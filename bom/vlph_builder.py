@@ -173,17 +173,21 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     _row(media, "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
                 ]
         elif auto_control_type in ("plc_agr", "pid"):
-            if fuel_type in GAS_FUELS:
-                rows.append(_row(
-                    media, "AGR",
-                    f'{equipment["agr"]["nb"]} NB',
-                    1, unit_price_override=equipment["agr"]["price"],
-                ))
-            elif fuel_type in OIL_FUELS:
+            if fuel_type in OIL_FUELS:
                 rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1))
+            # Gas-fuel AGR is added by the consolidated block below
 
-    # AGR for non-PLC+AGR/PID modes (gas fuels)
-    if fuel_type in GAS_FUELS and not (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid")):
+    # AGR — only appears for gas fuels in modes that explicitly use it:
+    #   manual, plc_agr, pid. In pure PLC mode the ratio is controlled by
+    #   orifice plate + DPT + control valve (no AGR needed).
+    needs_agr = (
+        fuel_type in GAS_FUELS
+        and (
+            control_mode == "manual"
+            or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
+        )
+    )
+    if needs_agr:
         rows.append(_row(
             media, "AGR",
             f'{equipment["agr"]["nb"]} NB',
