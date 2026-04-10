@@ -262,6 +262,7 @@ def build_vlph_120t_df(
     shutoff_valve_vendor: str = "dembla",
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
+    pipeline_weight_kg: float = 1000.0,
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -387,8 +388,9 @@ def build_vlph_120t_df(
         _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
              f'{params["ms_structure_kg"]} kg @ Rs.120/kg',
              1, unit_price_override=params["ms_structure_kg"] * 120),
-        _row("ENCON ITEMS", "AIR-GAS PIPELINE", "", 1,
-             unit_price_override=params.get("pipeline_kg", 1000) * 125),
+        _row("ENCON ITEMS", "AIR-GAS PIPELINE",
+             f'{pipeline_weight_kg:.0f} kg @ Rs.125/kg', 1,
+             unit_price_override=pipeline_weight_kg * 125),
         _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',

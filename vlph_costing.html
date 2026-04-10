@@ -555,6 +555,26 @@
           <option value="cog_100">ENCON PB COG 100 KW (Rs. 32,000)</option>
         </select>
       </div>
+      <div class="field">
+        <label>Air-Gas Pipeline Weight</label>
+        <select id="pipeline_weight_kg">
+          <option value="700">700 kg</option>
+          <option value="800">800 kg</option>
+          <option value="900">900 kg</option>
+          <option value="1000" selected>1000 kg</option>
+          <option value="1100">1100 kg</option>
+          <option value="1200">1200 kg</option>
+          <option value="1300">1300 kg</option>
+          <option value="1400">1400 kg</option>
+          <option value="1500">1500 kg</option>
+          <option value="1600">1600 kg</option>
+          <option value="1700">1700 kg</option>
+          <option value="1800">1800 kg</option>
+          <option value="1900">1900 kg</option>
+          <option value="2000">2000 kg</option>
+        </select>
+        <div class="hint">Rs. 125/kg</div>
+      </div>
     </div>
 
     <div id="calc-extras">
@@ -911,6 +931,7 @@ async function calculate() {
       hpu_variant: document.getElementById("hpu_variant").value,
       burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),
       pilot_burner: document.getElementById("pilot_burner").value,
+      pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -935,6 +956,7 @@ async function calculate() {
       hpu_variant: document.getElementById("hpu_variant").value,
       burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),
       pilot_burner: document.getElementById("pilot_burner").value,
+      pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
     };
   }
 

@@ -474,6 +474,7 @@ class VLPHCalcRequest(BaseModel):
     hpu_variant: str = "Duplex 1"                # "Simplex" | "Duplex 1" | "Duplex 2" — for oil fuels
     burner_pressure_wg: int = 24                 # 24 or 36 (inches w.g.) — IIP-ENCON Film Burner pressure
     pilot_burner: str = "auto"                   # "auto" | "lpg_10" | "nglpg_100" | "cog_100"
+    pipeline_weight_kg: float = 1000.0           # Air-gas pipeline weight (700–2000 kg, step 100)
 
 
 class QuoteItem(BaseModel):
@@ -990,6 +991,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             shutoff_valve_vendor=req.shutoff_valve_vendor,
             pressure_gauge_vendor=req.pressure_gauge_vendor,
             pilot_burner=req.pilot_burner,
+            pipeline_weight_kg=req.pipeline_weight_kg,
         )
 
         # Split summary rows from detail rows
