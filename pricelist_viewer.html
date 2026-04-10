@@ -1190,6 +1190,7 @@ const BURNER_GROUPS = [
   { label: 'Oil Film Burners',     filter: k => k.includes('FILM') || (k.includes('DUAL') && k.includes('FUEL')) || (k.includes('SPARES') && !k.includes('HIGH VELOCITY')) },
   { label: 'Gas Burners',          filter: k => k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('PILOT') },
   { label: 'High Velocity Burners',filter: k => k.includes('HIGH VELOCITY') },
+  { label: 'Pilot Burners',        filter: k => k.includes('PILOT') },
 ];
 
 function renderBurnerPivot(sheetId, burners) {

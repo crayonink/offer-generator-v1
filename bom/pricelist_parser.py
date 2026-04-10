@@ -560,7 +560,7 @@ def parse_burner(xl, conn):
         ("PB-LPG -10 KW", 11000), ("(NG/LPG) -100 KW", 21000),
         ("PB COG 100 KW", 32000), ("ELECTRODE FOR LPG PILOT", 1650),
         ("ELECTRODE FOR COG PILOT", 3300), ("BURNER CONTROL UNIT", 10000),
-        ("IGNITION TRANSFORMER", 5500),
+        ("IGNITION TRANSFORMER", 5500), ("UV SENSOR WITH AIR JACKET", 13000),
     ]:
         records.append({"section": S_PILOT,
                         "burner_size": f"ENCON {model}".upper(),
