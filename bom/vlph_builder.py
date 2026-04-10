@@ -17,6 +17,7 @@ FUEL_NAMES = {
     "cog":  "COG",
     "bg":   "BG",
     "rlng": "RLNG",
+    "mg":   "Mixed Gas",
     # Oil-based fuels (sub-categories of OIL)
     "ldo":   "LDO",
     "fo":    "Furnace Oil",
@@ -63,7 +64,7 @@ def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make=No
 
 
 OIL_FUELS = {"ldo", "fo", "lshs", "hsd", "sko"}
-GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
+GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg", "mg"}
 
 
 def _get_flexible_hose_price(nb: int) -> tuple:

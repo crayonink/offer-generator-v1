@@ -511,6 +511,7 @@
             <option value="ng">Natural Gas (NG)</option>
             <option value="rlng">RLNG</option>
             <option value="lpg">LPG</option>
+            <option value="mg">Mixed Gas (MG)</option>
             <option value="ldo">LDO (Light Diesel Oil)</option>
             <option value="fo">Furnace Oil (FO)</option>
             <option value="lshs">LSHS (Low Sulphur Heavy Stock)</option>
@@ -527,6 +528,7 @@
             <option value="ng">Natural Gas (NG)</option>
             <option value="rlng">RLNG</option>
             <option value="lpg">LPG</option>
+            <option value="mg">Mixed Gas (MG)</option>
             <option value="ldo">LDO (Light Diesel Oil)</option>
             <option value="fo">Furnace Oil (FO)</option>
             <option value="lshs">LSHS (Low Sulphur Heavy Stock)</option>
@@ -900,8 +902,8 @@ function goStep(n) {
 }
 
 /* ── Fuel selector ── */
-const FUEL_CVS   = { ng: 8500, rlng: 10500, lpg: 10800, cog: 4300, bg: 850, ldo: 10500, fo: 11000, lshs: 10500 };
-const FUEL_NAMES = { ng: 'Natural Gas', rlng: 'RLNG', lpg: 'LPG', cog: 'Coke Oven Gas', bg: 'BG (Blast Furnace Gas)', ldo: 'LDO (Light Diesel Oil)', fo: 'Furnace Oil', lshs: 'LSHS' };
+const FUEL_CVS   = { ng: 8500, rlng: 10500, lpg: 10800, cog: 4300, bg: 850, mg: 2000, ldo: 10500, fo: 11000, lshs: 10500 };
+const FUEL_NAMES = { ng: 'Natural Gas', rlng: 'RLNG', lpg: 'LPG', cog: 'Coke Oven Gas', bg: 'BG (Blast Furnace Gas)', mg: 'Mixed Gas', ldo: 'LDO (Light Diesel Oil)', fo: 'Furnace Oil', lshs: 'LSHS' };
 
 /* ── Input Mode Toggle ── */
 let inputMode = 'calc';

@@ -1,7 +1,7 @@
 import sqlite3
 
 # Gas-fuel sub-types → all map to ENCON Gas Burner section
-GAS_SUBTYPES = {"gas", "ng", "rlng", "lpg", "cog", "bg"}
+GAS_SUBTYPES = {"gas", "ng", "rlng", "lpg", "cog", "bg", "mg"}
 
 # Oil-fuel sub-types → all map to IIP-ENCON Film Burner section
 OIL_SUBTYPES = {"oil", "ldo", "fo", "lshs", "hsd", "sko"}
