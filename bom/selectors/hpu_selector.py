@@ -5,15 +5,20 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 
 
-# Burner size → matched HPU capacity (kW), per ENCON Film Burner spec
-BURNER_TO_HPU_KW = {
-    "ENCON 2A": 3,
-    "ENCON 3A": 3,
-    "ENCON 4A": 6,
-    "ENCON 5A": 9,
-    "ENCON 6A": 9,
-    "ENCON 7A": 12,
-}
+# HPU heater capacity (kW) → max flow rate it can deliver (Litres/hour)
+# From ENCON Heating & Pumping Unit datasheet.
+HPU_FLOW_BY_KW = [
+    (3,   40),
+    (6,   80),
+    (9,   120),
+    (12,  160),
+    (16,  200),
+    (20,  250),
+    (24,  300),
+    (30,  400),
+    (36,  500),
+    (48,  600),
+]
 
 
 # Variant → model prefix
@@ -24,19 +29,29 @@ VARIANT_PREFIX = {
 }
 
 
-def select_hpu(burner_model: str, variant: str = "Duplex 1") -> dict:
-    """
-    Select Heating & Pumping Unit (HPU) for a given burner model + variant.
+def _hpu_kw_for_lph(required_lph: float) -> int:
+    """Pick the smallest HPU kW whose max flow rate >= required LPH."""
+    for kw, max_flow in HPU_FLOW_BY_KW:
+        if max_flow >= required_lph:
+            return kw
+    # Above largest available — return the biggest
+    return HPU_FLOW_BY_KW[-1][0]
 
-    Returns dict with model name and total cost (sum of all line items in
-    hpu_master for that unit_kw + variant combination).
+
+def select_hpu(required_lph: float, variant: str = "Duplex 1") -> dict:
+    """
+    Select Heating & Pumping Unit (HPU) sized to actual oil firing rate (LPH).
+
+    required_lph : actual fuel flow rate the HPU must deliver
+    variant      : 'Simplex' | 'Duplex 1' | 'Duplex 2'
+
+    Returns dict with HPU model name + total cost (sum of all hpu_master line
+    items for that unit_kw + variant combination).
     """
     if variant not in VARIANT_PREFIX:
         raise ValueError(f"Invalid HPU variant '{variant}'. Use one of {list(VARIANT_PREFIX)}")
 
-    unit_kw = BURNER_TO_HPU_KW.get(burner_model)
-    if unit_kw is None:
-        raise ValueError(f"No HPU mapping for burner '{burner_model}'")
+    unit_kw = _hpu_kw_for_lph(required_lph)
 
     conn = sqlite3.connect(DB_PATH)
     row = conn.execute(
