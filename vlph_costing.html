@@ -518,7 +518,7 @@
             <option value="cog">Coke Oven Gas (COG)</option>
             <option value="bg">BG (Blast Furnace Gas)</option>
           </select>
-          <label style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
+          <label id="fuel1_cv_label" style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
           <input id="fuel1_cv" type="number" value="8500" oninput="updateBlendedCV()"/>
         </div>
         <div class="field">
@@ -536,7 +536,7 @@
             <option value="bg">BG (Blast Furnace Gas)</option>
           </select>
           <div id="fuel2-cv-wrap" style="display:none;">
-            <label style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
+            <label id="fuel2_cv_label" style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
             <input id="fuel2_cv" type="number" value="0" oninput="updateBlendedCV()"/>
           </div>
         </div>
@@ -762,7 +762,7 @@
             <tr><td class="lbl">Ti</td>                   <td class="val" id="r-Ti">—</td>       <td class="unit">°C</td></tr>
             <tr><td class="lbl">Tf</td>                   <td class="val" id="r-Tf">—</td>       <td class="unit">°C</td></tr>
             <tr><td class="lbl">Refractory Weight</td>    <td class="val" id="r-wt">—</td>       <td class="unit">kg</td></tr>
-            <tr><td class="lbl" id="r-cv-label">Fuel CV</td> <td class="val" id="r-cv">—</td>       <td class="unit">kcal/Nm³</td></tr>
+            <tr><td class="lbl" id="r-cv-label">Fuel CV</td> <td class="val" id="r-cv">—</td>       <td class="unit" id="r-cv-unit">kcal/Nm³</td></tr>
             <tr class="ch"><td colspan="3">Calculation Results</td></tr>
             <tr><td class="lbl">Avg. Temp Rise</td>       <td class="val" id="r-avg">—</td>      <td class="unit">°C</td></tr>
             <tr><td class="lbl">Time Taken</td>           <td class="val" id="r-time">—</td>     <td class="unit">hr</td></tr>
@@ -929,15 +929,20 @@ function onControlModeChange() {
   document.getElementById('auto-type-wrap').style.display = mode === 'automatic' ? '' : 'none';
 }
 
+const OIL_FUEL_SET = new Set(["ldo", "fo", "lshs", "hsd", "sko"]);
+function cvUnit(fuelType) { return OIL_FUEL_SET.has(fuelType) ? "kcal/kg" : "kcal/Nm³"; }
+
 function onFuelChange() {
   const f1 = document.getElementById('fuel1_type').value;
   const f2 = document.getElementById('fuel2_type').value;
   document.getElementById('fuel1_cv').value = FUEL_CVS[f1] || 0;
+  document.getElementById('fuel1_cv_label').textContent = `CV (${cvUnit(f1)})`;
   const isDual = f2 !== 'none';
   document.getElementById('fuel2-cv-wrap').style.display  = isDual ? 'block' : 'none';
   document.getElementById('fuel-ratio-row').style.display = isDual ? 'block' : 'none';
   if (isDual) {
     document.getElementById('fuel2_cv').value = FUEL_CVS[f2] || 0;
+    document.getElementById('fuel2_cv_label').textContent = `CV (${cvUnit(f2)})`;
     document.getElementById('f1-ratio-name').textContent = FUEL_NAMES[f1];
     document.getElementById('f2-ratio-name').textContent = FUEL_NAMES[f2];
   }
@@ -1115,7 +1120,11 @@ function renderResults(d) {
   const cd = document.getElementById("client-data-card");
   cd.style.display = "block";
   set("cd-fuel1", c.fuel1_name || "Natural Gas");
-  set("cd-cv1", fmt(c.fuel1_cv || c.fuel_cv, 0) + " kcal/Nm³");
+  const f1Type = document.getElementById("fuel1_type").value;
+  set("cd-cv1", fmt(c.fuel1_cv || c.fuel_cv, 0) + " " + cvUnit(f1Type));
+  // Update results-table CV unit too
+  const rCvUnit = document.getElementById("r-cv-unit");
+  if (rCvUnit) rCvUnit.textContent = cvUnit(f1Type);
   set("cd-burner-cap", fmt(c.extra_firing_rate_nm3hr, 0) + " Nm³/hr");
   set("cd-burner-size", eq.burner_model);
   set("cd-blower", fmt(eq.blower_airflow, 0) + " Nm³/hr — " + eq.blower_model);
@@ -1133,7 +1142,8 @@ function renderResults(d) {
     document.getElementById("cd-cv2-row").style.display = "";
     document.getElementById("cd-fuel2-pipe").style.display = "";
     set("cd-fuel2", c.fuel2_name);
-    set("cd-cv2", fmt(c.fuel2_cv, 0) + " kcal/Nm³");
+    const f2Type = document.getElementById("fuel2_type").value;
+    set("cd-cv2", fmt(c.fuel2_cv, 0) + " " + cvUnit(f2Type));
     set("cd-fuel2-pipe-label", c.fuel2_name + " Line Size");
     set("cd-gas2-flow", fmt(p.fuel2_flow, 0) + " Nm³/hr");
     set("cd-gas2-nb", p.fuel2_nb + " NB");
