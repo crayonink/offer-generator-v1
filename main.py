@@ -471,6 +471,7 @@ class VLPHCalcRequest(BaseModel):
     control_valve_vendor: str = "dembla"         # "dembla" or "cair"
     shutoff_valve_vendor: str = "dembla"         # "dembla" or "cair"
     pressure_gauge_vendor: str = "baumer"        # "baumer" or "hguru"
+    hpu_variant: str = "Duplex 1"                # "Simplex" | "Duplex 1" | "Duplex 2" — for oil fuels
 
 
 class QuoteItem(BaseModel):
@@ -933,6 +934,8 @@ def vlph_calculate(req: VLPHCalcRequest):
             is_dual_fuel=is_dual,
             fuel_cv=f1_cv,
             blower_pressure=req.blower_pressure,
+            fuel_type=req.fuel1_type,
+            hpu_variant=req.hpu_variant,
         )
 
         br2 = None
@@ -966,6 +969,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 is_dual_fuel=is_dual,
                 fuel_cv=req.fuel2_cv,
                 blower_pressure=req.blower_pressure,
+                fuel_type=req.fuel2_type,
+                hpu_variant=req.hpu_variant,
             )
 
         # Air is CV-independent, so use fuel1 for air sizing

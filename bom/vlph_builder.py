@@ -360,6 +360,15 @@ def build_vlph_120t_df(
              unit_price_override=params.get("ceramic_rate", 0)),
     ]
 
+    # HEATING & PUMPING UNIT (oil-based fuels only)
+    hpu = equipment.get("hpu")
+    if hpu:
+        rows.append(_row(
+            "ENCON ITEMS", hpu["model"],
+            f'{hpu["unit_kw"]} KW {hpu["variant"]} (Heating & Pumping Unit)',
+            1, unit_price_override=hpu["price"],
+        ))
+
     # ── MISC ITEMS ─────────────────────────────────────────────────────────
     STATIC_SKIP = {"CONTROL PANEL"}
     if is_plc or is_plc_agr:

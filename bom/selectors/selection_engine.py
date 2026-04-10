@@ -11,11 +11,13 @@ from bom.selectors.air_valve_selector import (
 
 from bom.selectors.air_duct_selector import select_air_duct
 from bom.selectors.rotary_joint_selector import select_rotary_joint
+from bom.selectors.hpu_selector import select_hpu
+from bom.selectors.encon_burner import _resolve_category
 
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas") -> dict:
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1") -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     fuel_type: 'gas', 'oil', or 'dual' — picks the burner pricelist section.
@@ -71,6 +73,14 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         required_hp = cfm / 114          # 28" WG formula
     blower = select_blower(required_hp, series=blower_pressure)
 
+    # HPU — only for oil-based fuels (ldo, fo, hsd, sko) and dual fuel
+    hpu = None
+    if _resolve_category(burner_fuel_type) in ("oil", "dual"):
+        try:
+            hpu = select_hpu(burner["model"], variant=hpu_variant)
+        except ValueError:
+            hpu = None
+
     return {
         "pipe": pipe_results,
         "burner": burner,
@@ -81,4 +91,5 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         "motorized_control_valve": motorized_control_valve,
         "butterfly_valve": butterfly_valve,
         "rotary_joint": rotary_joint,
+        "hpu": hpu,
     }
