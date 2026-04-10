@@ -67,7 +67,14 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     # Air side
     air_duct = select_air_duct(air_flow_nm3hr)
     motorized_control_valve = select_motorized_control_valve(air_flow_nm3hr)
-    butterfly_valve = select_butterfly_valve(air_nb, vendor=shutoff_valve_vendor)
+    # Butterfly valve — fall back from Lever to Gear if pipe NB exceeds 300
+    try:
+        butterfly_valve = select_butterfly_valve(air_nb, vendor=shutoff_valve_vendor)
+    except ValueError:
+        if shutoff_valve_vendor == "lt_lever":
+            butterfly_valve = select_butterfly_valve(air_nb, vendor="lt_gear")
+        else:
+            raise
     rotary_joint = select_rotary_joint(air_nb)
 
     # Blower HP = CFM × pressure (inches w.g.) / 3200

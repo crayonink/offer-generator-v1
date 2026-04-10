@@ -469,7 +469,7 @@ class VLPHCalcRequest(BaseModel):
     control_mode: str = "automatic"              # "manual" or "automatic"
     auto_control_type: str = "agr"               # "plc", "plc_agr", "pid"
     control_valve_vendor: str = "dembla"         # "dembla" or "cair"
-    shutoff_valve_vendor: str = "cair"           # "cair" (butterfly) or "dembla" (ball)
+    shutoff_valve_vendor: str = "lt_lever"       # "lt_lever" or "lt_gear" (L&T butterfly variants)
     pressure_gauge_vendor: str = "baumer"        # "baumer" or "hguru"
     hpu_variant: str = "Duplex 1"                # "Simplex" | "Duplex 1" | "Duplex 2" — for oil fuels
     burner_pressure_wg: int = 24                 # 24 or 36 (inches w.g.) — IIP-ENCON Film Burner pressure

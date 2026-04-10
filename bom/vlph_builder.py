@@ -259,7 +259,7 @@ def build_vlph_120t_df(
     control_mode: str = "automatic",
     auto_control_type: str = "agr",
     control_valve_vendor: str = "dembla",
-    shutoff_valve_vendor: str = "dembla",
+    shutoff_valve_vendor: str = "lt_lever",
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
@@ -315,6 +315,13 @@ def build_vlph_120t_df(
             "COMB AIR", "CONTROL VALVE",
             f'{cv_nb} NB, FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
             1, unit_price_override=cv_price, make=vendor_label,
+        ))
+        # Butterfly valve (L&T) — sized to air pipe NB
+        bfv = equipment["butterfly_valve"]
+        rows.append(_row(
+            "COMB AIR", "BUTTERFLY VALVE",
+            f'{bfv["nb"]} NB',
+            1, unit_price_override=bfv["price"], make=bfv["make"],
         ))
     rows += [
         _row("COMB AIR", "ROTARY JOINT",
