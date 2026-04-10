@@ -81,14 +81,23 @@ SOLENOID_VALVE_DISCOUNT = 0.45  # 45% discount on MADAS list price
 
 
 def _get_cheapest_solenoid_valve(nb: int) -> float:
-    """Get cheapest MADAS solenoid valve price for a given NB,
-    with 45% discount applied to the list price."""
+    """Get cheapest MADAS solenoid valve from the
+    'AUTOMATIC RESET WITH FLOW REGULATION' section for a given NB,
+    with 45% discount applied to the list price.
+    """
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
     nb_str = f'{nb:03d}'
     row = conn.execute(
-        "SELECT list_price FROM solenoidvalve_component_master WHERE size=? ORDER BY list_price ASC LIMIT 1",
-        (nb_str,)
+        """
+        SELECT list_price
+        FROM solenoidvalve_component_master
+        WHERE size = ?
+          AND section LIKE '%AUTOMATIC RESET WITH FLOW REGULATION%'
+        ORDER BY list_price ASC
+        LIMIT 1
+        """,
+        (nb_str,),
     ).fetchone()
     conn.close()
     if not row:
