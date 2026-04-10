@@ -76,8 +76,12 @@ def _get_flexible_hose_price(nb: int) -> tuple:
     return (int(row[0]), float(row[1])) if row else (nb, 0)
 
 
+SOLENOID_VALVE_DISCOUNT = 0.45  # 45% discount on MADAS list price
+
+
 def _get_cheapest_solenoid_valve(nb: int) -> float:
-    """Get cheapest MADAS solenoid valve price for a given NB."""
+    """Get cheapest MADAS solenoid valve price for a given NB,
+    with 45% discount applied to the list price."""
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
     nb_str = f'{nb:03d}'
@@ -86,7 +90,9 @@ def _get_cheapest_solenoid_valve(nb: int) -> float:
         (nb_str,)
     ).fetchone()
     conn.close()
-    return float(row[0]) if row else 0
+    if not row:
+        return 0
+    return float(row[0]) * (1 - SOLENOID_VALVE_DISCOUNT)
 
 
 def _get_cheapest_ball_valve(nb: int) -> float:
