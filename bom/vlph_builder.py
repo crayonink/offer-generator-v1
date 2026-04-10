@@ -383,8 +383,8 @@ def build_vlph_120t_df(
     hpu = equipment.get("hpu")
     if hpu:
         rows.append(_row(
-            "ENCON ITEMS", hpu["model"],
-            f'{hpu["unit_kw"]} KW {hpu["variant"]} (Heating & Pumping Unit)',
+            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
             1, unit_price_override=hpu["price"],
         ))
 
