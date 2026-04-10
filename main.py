@@ -996,9 +996,9 @@ def vlph_calculate(req: VLPHCalcRequest):
         encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0]) if "ENCON ITEMS" in bom_df["ITEM NAME"].values else 0
         grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
-        # Build response
+        # Build response — blower HP at user-selected pressure
         cfm = air_flow / 1.7
-        blower_hp_calc = cfm / 114
+        blower_hp_calc = cfm * int(req.blower_pressure) / 3200
         resp = {
             "calculations": {
                 "mode": req.mode,
@@ -1258,7 +1258,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "final_firing_rate_mw":           round(br.final_firing_rate_mw, 2),
                 "air_qty_nm3hr":                  round(br.air_qty_nm3hr, 2),
                 "cfm":                            round(br.cfm, 2),
-                "blower_hp_calc":                 round(br.blower_hp, 2),
+                "blower_hp_calc":                 round(br.cfm * int(req.blower_pressure) / 3200, 2),
             },
             "pipes": {
                 "ng_flow":      round(br.extra_firing_rate_nm3hr, 2),
