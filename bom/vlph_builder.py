@@ -356,12 +356,8 @@ def build_vlph_120t_df(
         _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
     ]
-    # Pressure Regulating Valve — pulled from MADAS gas_regulator_master.
-    # Oil fuels use smallest available size (DN025); gas fuels use AGR pipe NB.
-    if fuel1_type in OIL_FUELS:
-        reg_nb_request = 20
-    else:
-        reg_nb_request = equipment["agr"]["nb"]
+    # Pressure Regulating Valve — NG pilot line uses 20 NB (DN025) for ALL fuels.
+    reg_nb_request = 20
     try:
         reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
         rows.append(_row(
