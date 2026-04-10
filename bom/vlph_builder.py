@@ -132,15 +132,21 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     if control_mode == "automatic":
         if auto_control_type == "plc":
             if fuel_type in GAS_FUELS:
-                gas_nb = equipment["agr"]["nb"]
-                _, gcv_price = _get_valve_price(gas_nb, "control", control_valve_vendor)
+                from calculations.pipes import STANDARD_PIPE_NB
+                gas_pipe_nb = equipment["agr"]["nb"]
+                # Control valve is one pipe size smaller than the gas pipe NB
+                try:
+                    gas_cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(gas_pipe_nb) - 1)]
+                except ValueError:
+                    gas_cv_nb = gas_pipe_nb
+                _, gcv_price = _get_valve_price(gas_cv_nb, "control", control_valve_vendor)
                 gcv_vendor = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
-                gas_op_nb, gas_op_price = _get_orifice_price(gas_nb)
+                gas_op_nb, gas_op_price = _get_orifice_price(gas_pipe_nb)
                 rows += [
                     _row(media, "ORIFICE PLATE", f'{gas_op_nb} NB', 1,
                          unit_price_override=gas_op_price, make="ENCON"),
                     _row(media, "DPT", "", 1, make="HONEYWELL"),
-                    _row(media, "CONTROL VALVE", f'{gas_nb} NB', 1,
+                    _row(media, "CONTROL VALVE", f'{gas_cv_nb} NB', 1,
                          unit_price_override=gcv_price, make=gcv_vendor),
                 ]
             elif fuel_type in OIL_FUELS:
@@ -284,13 +290,19 @@ def build_vlph_120t_df(
                  unit_price_override=op_price, make="ENCON"),
             _row("COMB AIR", "DPT", '', 1, make="HONEYWELL"),
         ]
-    # PLC, PLC+AGR, PID: air gets control valve (vendor-selected)
+    # PLC, PLC+AGR, PID: air gets control valve (vendor-selected).
+    # Control valve NB is one pipe size smaller than the air pipe NB.
     if is_plc or is_plc_agr or is_pid:
-        _, cv_price = _get_valve_price(air_nb, "control", control_valve_vendor)
+        from calculations.pipes import STANDARD_PIPE_NB
+        try:
+            cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(air_nb) - 1)]
+        except ValueError:
+            cv_nb = air_nb
+        _, cv_price = _get_valve_price(cv_nb, "control", control_valve_vendor)
         vendor_label = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
         rows.append(_row(
             "COMB AIR", "CONTROL VALVE",
-            f'{air_nb} NB, FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
+            f'{cv_nb} NB, FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
             1, unit_price_override=cv_price, make=vendor_label,
         ))
     rows += [
