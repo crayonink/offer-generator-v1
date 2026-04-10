@@ -30,7 +30,7 @@ def round_up_to_nb(diameter_mm: float) -> int:
 class PipeInputs:
     ng_flow_nm3hr: float
     air_flow_nm3hr: float
-    ng_velocity_ms: float = 25.0   # Design velocity (25 m/s for VLPH per calculation sheet)
+    ng_velocity_ms: float = 12.7   # Design velocity for all gas fuels (NG/LPG/COG/BG/RLNG/MG)
     air_velocity_ms: float = 15.0
 
 

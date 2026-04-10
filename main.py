@@ -1038,7 +1038,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "fuel1_label": FUEL_NAMES.get(req.fuel1_type, "Fuel 1"),
                 "fuel1_is_oil": req.fuel1_type in ("ldo",),
                 "ng_flow":      round(ng_flow, 2),
-                "ng_velocity":  25.0 if req.fuel1_type not in ("ldo",) else 0,
+                "ng_velocity":  12.7 if req.fuel1_type not in ("ldo",) else 0,
                 "ng_dia_mm":    round(pipes1.ng_pipe_inner_dia_mm, 2) if req.fuel1_type not in ("ldo",) else 20,
                 "ng_nb":        pipes1.ng_pipe_nb if req.fuel1_type not in ("ldo",) else 20,
                 "air_flow":     round(air_flow, 2),
@@ -1273,7 +1273,7 @@ def hlph_calculate(req: VLPHCalcRequest):
             },
             "pipes": {
                 "ng_flow":      round(br.extra_firing_rate_nm3hr, 2),
-                "ng_velocity":  25.0,
+                "ng_velocity":  12.7,
                 "ng_dia_mm":    round(pipe_results.ng_pipe_inner_dia_mm, 2),
                 "ng_nb":        pipe_results.ng_pipe_nb,
                 "air_flow":     round(br.air_qty_nm3hr, 2),
