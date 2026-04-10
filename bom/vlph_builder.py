@@ -395,7 +395,11 @@ def build_vlph_120t_df(
         _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
         _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
         _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
-        _row("ENCON ITEMS", "ENCON-PB (NG/LPG) - 100 KW", "", 1),
+        _row(
+            "ENCON ITEMS",
+            "ENCON-PB-LPG-10KW" if fuel1_type in OIL_FUELS else "ENCON-PB (NG/LPG) - 100 KW",
+            "", 1,
+        ),
         _row("ENCON ITEMS", "CERAMIC FIBRE",
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
              params["ceramic_rolls"],
