@@ -10,8 +10,17 @@ BOUGHT_OUT_EXCLUDE_ITEMS = {
 }
 
 FUEL_NAMES = {
-    "ng": "NG", "lpg": "LPG", "cog": "COG",
-    "bg": "BG", "rlng": "RLNG", "ldo": "LDO",
+    # Gas fuels
+    "ng":   "NG",
+    "lpg":  "LPG",
+    "cog":  "COG",
+    "bg":   "BG",
+    "rlng": "RLNG",
+    # Oil-based fuels (sub-categories of OIL)
+    "ldo":  "LDO",
+    "fo":   "FO",
+    "hsd":  "HSD",
+    "sko":  "SKO",
 }
 
 
@@ -51,7 +60,7 @@ def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make=No
     return (media, item, ref, qty, make, unit_price, unit_price * qty)
 
 
-OIL_FUELS = {"ldo"}
+OIL_FUELS = {"ldo", "fo", "hsd", "sko"}
 GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg"}
 
 

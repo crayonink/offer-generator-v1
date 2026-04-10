@@ -1,11 +1,29 @@
 import sqlite3
 
-# Map fuel types → burner pricelist section keyword
-SECTION_BY_FUEL = {
+# Gas-fuel sub-types → all map to ENCON Gas Burner section
+GAS_SUBTYPES = {"gas", "ng", "rlng", "lpg", "cog", "bg"}
+
+# Oil-fuel sub-types → all map to IIP-ENCON Film Burner section
+OIL_SUBTYPES = {"oil", "ldo", "fo", "hsd", "sko"}
+
+# Map fuel category → burner pricelist section keyword
+SECTION_BY_CATEGORY = {
     "gas":  "GAS",         # ENCON Gas Burner
-    "oil":  "FILM",        # IIP-ENCON Film Burner (oil)
+    "oil":  "FILM",        # IIP-ENCON Film Burner (any oil sub-type)
     "dual": "DUAL FUEL",   # Dual Fuel Burner
 }
+
+
+def _resolve_category(fuel_type: str) -> str:
+    """Map a specific fuel sub-type (ldo, fo, ng, rlng, ...) to its category."""
+    f = fuel_type.lower()
+    if f in OIL_SUBTYPES:
+        return "oil"
+    if f in GAS_SUBTYPES:
+        return "gas"
+    if f == "dual":
+        return "dual"
+    return "gas"
 
 
 def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 10500, fuel_type: str = "gas") -> dict:
@@ -43,8 +61,12 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
 
     model = row[0]
 
-    # Fetch price from burner_pricelist_master based on fuel type
-    section_keyword = SECTION_BY_FUEL.get(fuel_type.lower(), "GAS")
+    # Fetch price from burner_pricelist_master based on fuel category
+    # ldo/fo/hsd/sko → oil → FILM section
+    # ng/lpg/cog/bg/rlng → gas → GAS section
+    # dual → DUAL FUEL section
+    category = _resolve_category(fuel_type)
+    section_keyword = SECTION_BY_CATEGORY[category]
 
     cursor.execute("""
         SELECT price
