@@ -4,6 +4,8 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 
+GAS_REGULATOR_DISCOUNT = 0.45   # 45% off MADAS list price
+
 
 def select_gas_regulator(nb: int, category: str = "Standard 5 Bar") -> dict:
     """
@@ -13,8 +15,8 @@ def select_gas_regulator(nb: int, category: str = "Standard 5 Bar") -> dict:
     category : 'Standard 5 Bar' (default), 'Reinforced 5 Bar',
                'Pilot 5 Bar', 'OPSO/UPSO 5 Bar', 'Standard 2 Bar'.
 
-    For oil-based fuels the pilot line uses the smallest available regulator
-    (DN025 / 25 NB) — pass nb=20 or nb=25 and you'll get the DN025 row.
+    Returned `price` has the 45% MADAS discount already applied
+    (list × 0.55). The original list price is also returned for reference.
     """
     conn = sqlite3.connect(DB_PATH)
     row = conn.execute(
@@ -34,11 +36,14 @@ def select_gas_regulator(nb: int, category: str = "Standard 5 Bar") -> dict:
             f"No MADAS gas regulator found for NB >= {nb} in category '{category}'"
         )
 
+    list_price = float(row[3])
+    net_price  = list_price * (1 - GAS_REGULATOR_DISCOUNT)
     return {
         "nb":         row[0],
         "part_code":  row[1],
         "p2_range":   row[2],
-        "price":      float(row[3]),
+        "list_price": list_price,
+        "price":      round(net_price, 2),
         "connection": row[4],
         "category":   category,
     }
