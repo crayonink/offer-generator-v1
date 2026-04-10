@@ -472,6 +472,7 @@ class VLPHCalcRequest(BaseModel):
     shutoff_valve_vendor: str = "dembla"         # "dembla" or "cair"
     pressure_gauge_vendor: str = "baumer"        # "baumer" or "hguru"
     hpu_variant: str = "Duplex 1"                # "Simplex" | "Duplex 1" | "Duplex 2" — for oil fuels
+    burner_pressure_wg: int = 24                 # 24 or 36 (inches w.g.) — IIP-ENCON Film Burner pressure
 
 
 class QuoteItem(BaseModel):
@@ -936,6 +937,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             blower_pressure=req.blower_pressure,
             fuel_type=req.fuel1_type,
             hpu_variant=req.hpu_variant,
+            burner_pressure_wg=req.burner_pressure_wg,
         )
 
         br2 = None
@@ -971,6 +973,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 blower_pressure=req.blower_pressure,
                 fuel_type=req.fuel2_type,
                 hpu_variant=req.hpu_variant,
+                burner_pressure_wg=req.burner_pressure_wg,
             )
 
         # Air is CV-independent, so use fuel1 for air sizing

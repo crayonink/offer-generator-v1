@@ -26,11 +26,12 @@ def _resolve_category(fuel_type: str) -> str:
     return "gas"
 
 
-def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 10500, fuel_type: str = "gas") -> dict:
+def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 10500, fuel_type: str = "gas", burner_pressure_wg: int = 24) -> dict:
     """
     Select ENCON Burner based on firing rate.
-    fuel_type: 'gas' (default), 'oil', or 'dual' — picks the appropriate
-    section in burner_pricelist_master.
+
+    fuel_type           : 'gas' (default), 'oil', or 'dual' — drives pricelist section.
+    burner_pressure_wg  : 24 or 36 (inches w.g.) — drives firing rate range lookup.
     """
 
     # Convert Gas Nm3/hr to equivalent Oil LPH using actual fuel CV
@@ -40,14 +41,18 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     cursor = conn.cursor()
 
     # -------------------------------------------------
-    # 1. Select burner model using LPH range
+    # 1. Select burner model using LPH range at the given pressure.
+    #    Pick the smallest model whose max range is >= required LPH so the
+    #    burner is properly sized (not the first one that overlaps).
     # -------------------------------------------------
     cursor.execute("""
         SELECT model
         FROM burner_selection_master
-        WHERE ? BETWEEN min_firing_lph AND max_firing_lph
+        WHERE pressure_wg = ?
+          AND ? BETWEEN min_firing_lph AND max_firing_lph
+        ORDER BY max_firing_lph ASC
         LIMIT 1
-    """, (equivalent_lph,))
+    """, (burner_pressure_wg, equivalent_lph))
 
     row = cursor.fetchone()
 
@@ -56,7 +61,7 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         raise ValueError(
             f"No ENCON burner available for "
             f"{required_gas_flow_nm3hr:.1f} Nm3/hr "
-            f"(~ {equivalent_lph:.1f} LPH)"
+            f"(~ {equivalent_lph:.1f} LPH) at {burner_pressure_wg}\" w.g."
         )
 
     model = row[0]
@@ -92,4 +97,5 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         "equivalent_lph": round(equivalent_lph, 2),
         "price": price_row[0],
         "fuel_type": fuel_type,
+        "burner_pressure_wg": burner_pressure_wg,
     }

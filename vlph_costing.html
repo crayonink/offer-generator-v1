@@ -537,6 +537,13 @@
           <option value="Duplex 2">Duplex-II (HPDD)</option>
         </select>
       </div>
+      <div class="field">
+        <label>Burner Pressure</label>
+        <select id="burner_pressure_wg">
+          <option value="24" selected>24" w.g.</option>
+          <option value="36">36" w.g.</option>
+        </select>
+      </div>
     </div>
 
     <div id="calc-extras">
@@ -891,6 +898,7 @@ async function calculate() {
       shutoff_valve_vendor: "dembla",
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
+      burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -913,6 +921,7 @@ async function calculate() {
       shutoff_valve_vendor: "dembla",
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
+      burner_pressure_wg: parseInt(document.getElementById("burner_pressure_wg").value, 10),
     };
   }
 

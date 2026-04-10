@@ -17,7 +17,7 @@ from bom.selectors.encon_burner import _resolve_category
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1") -> dict:
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24) -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     fuel_type: 'gas', 'oil', or 'dual' — picks the burner pricelist section.
@@ -41,7 +41,12 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     # Burner — fuel_type drives which pricelist section is used
     burner_fuel_type = "dual" if is_dual_fuel else fuel_type
     try:
-        burner = select_encon_mg_burner(ng_flow_nm3hr, fuel_cv=fuel_cv, fuel_type=burner_fuel_type)
+        burner = select_encon_mg_burner(
+            ng_flow_nm3hr,
+            fuel_cv=fuel_cv,
+            fuel_type=burner_fuel_type,
+            burner_pressure_wg=burner_pressure_wg,
+        )
     except Exception:
         burner = {
             "model": "TEST-BURNER",
