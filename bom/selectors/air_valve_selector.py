@@ -34,14 +34,38 @@ def select_motorized_control_valve(air_flow_nm3hr: float) -> dict:
 
 def select_butterfly_valve(nb: int, vendor: str = "cair") -> dict:
     """
-    Select Shut-Off Valve from component_price_master based on vendor.
+    Select Shut-Off Valve based on vendor.
 
-    vendor = 'cair'   -> 'SHUT OFF VALVE XXXNB (Butterfly)' rows (CAIR)
-    vendor = 'dembla' -> 'SHUT OFF VALVE XXXNB' rows (DEMBLA)
+    vendor = 'cair'      -> CAIR butterfly (SHUT OFF VALVE XXXNB (Butterfly))
+    vendor = 'dembla'    -> DEMBLA ball  (SHUT OFF VALVE XXXNB)
+    vendor = 'lt_lever'  -> L&T 2IWE4SL Lever (lt_butterfly_valve_master)
+    vendor = 'lt_gear'   -> L&T 2IWE4SG Gear  (lt_butterfly_valve_master)
 
     Returns the smallest available NB >= requested.
     """
     vendor_lower = vendor.lower()
+    conn = sqlite3.connect("vlph.db")
+
+    # ── L&T butterfly valves ───────────────────────────────────────────────
+    if vendor_lower in ("lt_lever", "lt_gear"):
+        model = "2IWE4SL" if vendor_lower == "lt_lever" else "2IWE4SG"
+        row = conn.execute("""
+            SELECT nb, price, operation
+            FROM lt_butterfly_valve_master
+            WHERE model = ? AND nb >= ?
+            ORDER BY nb ASC
+            LIMIT 1
+        """, (model, nb)).fetchone()
+        conn.close()
+        if not row:
+            raise ValueError(f"No L&T {model} butterfly valve found for NB >= {nb}")
+        return {
+            "nb":    int(row[0]),
+            "price": float(row[1]),
+            "make":  f"L&T {model} ({row[2]})",
+        }
+
+    # ── CAIR / DEMBLA shut-off valves from component_price_master ──────────
     if vendor_lower == "dembla":
         like_pattern = "SHUT OFF VALVE %NB"
         company      = "DEMBLA"
@@ -49,9 +73,7 @@ def select_butterfly_valve(nb: int, vendor: str = "cair") -> dict:
         like_pattern = "SHUT OFF VALVE %NB (Butterfly)"
         company      = "CAIR"
 
-    conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
-
     cursor.execute("""
         SELECT item, price
         FROM component_price_master
