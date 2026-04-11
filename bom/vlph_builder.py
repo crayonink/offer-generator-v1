@@ -170,7 +170,8 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     except ValueError:
         cv_nb = gas_pipe_nb
 
-    # PNEUMATIC SHUT OFF VALVE — on hold (skipped for now)
+    # Shut-off valve — DEMBLA (pneumatic), sized to gas pipe NB
+    _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", "dembla")
 
     # Pneumatic control valve — always DEMBLA for Mix Gas (pneumatic only).
     # When additional pneumatic vendors are added, expand this.
@@ -205,7 +206,8 @@ def _mix_gas_line_rows(media: str, equipment: dict,
              unit_price_override=gv_price, make="L&T"),
         _row(media, pg_item, f'{gas_pipe_nb} NB', 1, make=pg_vendor),
         _row(media, "PRESSURE SWITCH LOW", "", 1, make="MADAS"),
-        # PNEUMATIC SHUT OFF VALVE — on hold, skipped for now
+        _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
+             unit_price_override=shutoff_price, make="DEMBLA"),
         # ORIFICE PLATE WITH DPT — on hold, skipped for now
         _row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
              unit_price_override=pcv_price, make=pcv_make),
@@ -474,14 +476,16 @@ def build_vlph_120t_df(
         rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, shutoff_valve_vendor)
 
     # ── NITROGEN PURGING LINE (MG/COG only, when user enabled it) ─────────
+    # Prices are specific to the nitrogen purging assembly and don't match
+    # the regular gas-line items' prices, so they're inlined here.
     if purging_line == "yes":
         rows += [
-            _row("NITROGEN PURGING", "BALL VALVE (N2)",               "20 NB", 1),
-            _row("NITROGEN PURGING", "PRESSURE GAUGE WITH TNV (N2)",  "0-1600 mmWC", 1),
-            _row("NITROGEN PURGING", "PRESSURE REGULATING VALVE (N2)", "25 NB", 1),
-            _row("NITROGEN PURGING", "PRESSURE SWITCH HIGH (N2)",     "", 1),
-            _row("NITROGEN PURGING", "SOLENOID VALVE (N2)",           "20 NB", 1),
-            _row("NITROGEN PURGING", "CHECK VALVE (N2)",              "20 NB", 1),
+            _row("NITROGEN PURGING", "BALL VALVE",                "20 NB",       1, unit_price_override=1800,  make="AUDCO/L&T/LEADER"),
+            _row("NITROGEN PURGING", "PRESSURE GAUGE WITH TNV",   "0-1600 mmWC", 1, unit_price_override=4000,  make="HGURU/BAUMER"),
+            _row("NITROGEN PURGING", "PRESSURE REGULATING VALVE", "25 NB",       1, unit_price_override=35000, make="NIRMAL"),
+            _row("NITROGEN PURGING", "PRESSURE SWITCH HIGH",      "",            1, unit_price_override=10000, make="SWITZER"),
+            _row("NITROGEN PURGING", "SOLENOID VALVE",            "20 NB",       1, unit_price_override=5000,  make="MADAS"),
+            _row("NITROGEN PURGING", "CHECK VALVE",               "20 NB",       1, unit_price_override=3300,  make="AUDCO/L&T/LEADER"),
         ]
 
     # ── NG PILOT LINE ──────────────────────────────────────────────────────
