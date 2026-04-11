@@ -907,11 +907,42 @@ function goStep(n) {
 }
 
 /* ── Fuel selector ── */
-const FUEL_CVS   = { ng: 8500, rlng: 10500, lpg: 10800, cog: 4300, bg: 850, mg: 2000, ldo: 10500, fo: 11000, lshs: 10500 };
-const FUEL_NAMES = { ng: 'Natural Gas (NG)', rlng: 'RLNG', lpg: 'LPG', cog: 'Coke Oven Gas (COG)', bg: 'BG (Blast Furnace Gas)', mg: 'Mixed Gas (MG)', ldo: 'LDO (Light Diesel Oil)', fo: 'Furnace Oil (FO)', lshs: 'LSHS (Low Sulphur Heavy Stock)' };
+/* CVs per ENCON master table: gas fuels in kcal/Nm³, oil fuels in kcal/kg */
+const FUEL_CVS = {
+  // Gas fuels (kcal/Nm³)
+  ng:   9000,
+  rlng: 9500,
+  lpg:  22500,
+  cog:  4200,
+  bg:   900,
+  mg:   2000,
+  // Oil fuels (kcal/kg)
+  hsd:  10800,
+  ldo:  10700,
+  hdo:  10500,
+  fo:   11000,
+  sko:  11100,
+  cfo:  10000,
+  lshs: 10600,
+};
+const FUEL_NAMES = {
+  ng:   'Natural Gas (NG)',
+  rlng: 'RLNG',
+  lpg:  'LPG',
+  cog:  'Coke Oven Gas (COG)',
+  bg:   'Blast Furnace Gas (BFG)',
+  mg:   'Mixed Gas (MG)',
+  hsd:  'Diesel (HSD)',
+  ldo:  'Light Diesel Oil (LDO)',
+  hdo:  'Heavy Diesel Oil (HDO)',
+  fo:   'Furnace Oil (FO)',
+  sko:  'Kerosene (SKO)',
+  cfo:  'Cracked Fuel Oil (CFO)',
+  lshs: 'Low Sulphur Heavy Stock (LSHS)',
+};
 const FUEL_CATEGORIES = {
   gas: ['ng', 'rlng', 'lpg', 'mg', 'cog', 'bg'],
-  oil: ['ldo', 'fo', 'lshs'],
+  oil: ['hsd', 'ldo', 'hdo', 'fo', 'sko', 'cfo', 'lshs'],
 };
 let currentFuelCategory = 'gas';
 
@@ -920,12 +951,23 @@ function setFuelCategory(cat) {
   document.querySelectorAll('.fuel-cat-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.cat === cat);
   });
-  const fuels = FUEL_CATEGORIES[cat];
+  const f1Fuels = FUEL_CATEGORIES[cat];
   const f1Sel = document.getElementById('fuel1_type');
   const f2Sel = document.getElementById('fuel2_type');
-  f1Sel.innerHTML = fuels.map(k => `<option value="${k}">${FUEL_NAMES[k]}</option>`).join('');
-  f2Sel.innerHTML = '<option value="none">— None (single fuel) —</option>' +
-    fuels.map(k => `<option value="${k}">${FUEL_NAMES[k]}</option>`).join('');
+
+  // Fuel 1 is limited to the selected category
+  f1Sel.innerHTML = f1Fuels.map(k => `<option value="${k}">${FUEL_NAMES[k]}</option>`).join('');
+
+  // Fuel 2 shows ALL fuels grouped by category so the user can mix
+  // (e.g. NG + LDO for gas/oil dual-fuel burners)
+  f2Sel.innerHTML =
+    '<option value="none">— None (single fuel) —</option>' +
+    '<optgroup label="Gas Fuels">' +
+      FUEL_CATEGORIES.gas.map(k => `<option value="${k}">${FUEL_NAMES[k]}</option>`).join('') +
+    '</optgroup>' +
+    '<optgroup label="Oil Fuels">' +
+      FUEL_CATEGORIES.oil.map(k => `<option value="${k}">${FUEL_NAMES[k]}</option>`).join('') +
+    '</optgroup>';
   onFuelChange();
 }
 
@@ -953,7 +995,7 @@ function onControlModeChange() {
   document.getElementById('auto-type-wrap').style.display = mode === 'automatic' ? '' : 'none';
 }
 
-const OIL_FUEL_SET = new Set(["ldo", "fo", "lshs", "hsd", "sko"]);
+const OIL_FUEL_SET = new Set(["hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"]);
 function cvUnit(fuelType) { return OIL_FUEL_SET.has(fuelType) ? "kcal/kg" : "kcal/Nm³"; }
 
 const PURGING_FUELS = new Set(["mg", "cog"]);

@@ -897,8 +897,12 @@ def vlph_calculate(req: VLPHCalcRequest):
         from bom.selectors.selection_engine import select_equipment
         from bom.vlph_builder import build_vlph_120t_df
 
-        FUEL_NAMES = {"ng": "Natural Gas", "lpg": "LPG", "cog": "COG", "bg": "BG", "rlng": "RLNG", "ldo": "LDO", "fo": "Furnace Oil", "lshs": "LSHS", "hsd": "HSD", "sko": "SKO", "mg": "Mixed Gas"}
-        OIL_FUELS = {"ldo", "fo", "lshs", "hsd", "sko"}
+        FUEL_NAMES = {
+            "ng": "Natural Gas", "lpg": "LPG", "cog": "COG", "bg": "BFG", "rlng": "RLNG", "mg": "Mixed Gas",
+            "hsd": "Diesel (HSD)", "ldo": "LDO", "hdo": "HDO", "fo": "Furnace Oil",
+            "sko": "Kerosene (SKO)", "cfo": "CFO", "lshs": "LSHS",
+        }
+        OIL_FUELS = {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
 
         f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
 
