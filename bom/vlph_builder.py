@@ -140,6 +140,94 @@ def _get_cheapest_ball_valve(nb: int) -> float:
     return float(row[0]) if row else 0
 
 
+def _cog_line_rows(media: str, equipment: dict,
+                   control_mode: str, auto_control_type: str,
+                   pressure_gauge_vendor: str,
+                   shutoff_valve_vendor: str = "lt_lever"):
+    """
+    Coke Oven Gas BOM — discrete components, prices pulled from DB.
+    Matches the ENCON COG pricelist layout.
+
+    PLC mode: all 9 items incl. ORIFICE PLATE + DPT
+    PLC+AGR / PID / manual: ORIFICE PLATE + DPT replaced by AGR
+    """
+    from calculations.pipes import STANDARD_PIPE_NB
+    from bom.selectors.air_valve_selector import select_butterfly_valve
+
+    gas_pipe_nb = equipment["pipe"].ng_pipe_nb
+
+    # Control valve NB is one pipe size smaller than the gas pipe NB
+    try:
+        cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(gas_pipe_nb) - 1)]
+    except ValueError:
+        cv_nb = gas_pipe_nb
+
+    # Gate valve — L&T, NB-scaled
+    gv_nb, gv_price = _get_gate_valve_price(gas_pipe_nb)
+
+    # Shut off valve — DEMBLA pneumatic, NB-scaled
+    _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", "dembla")
+
+    # Pneumatic control valve — DEMBLA, one pipe size smaller
+    _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
+
+    # Butterfly valve — follows user's L&T vendor choice
+    try:
+        bfv = select_butterfly_valve(gas_pipe_nb, vendor=shutoff_valve_vendor)
+    except ValueError:
+        if shutoff_valve_vendor == "lt_lever":
+            try:
+                bfv = select_butterfly_valve(gas_pipe_nb, vendor="lt_gear")
+            except ValueError:
+                bfv = {"nb": gas_pipe_nb, "price": 0, "make": "L&T"}
+        else:
+            bfv = {"nb": gas_pipe_nb, "price": 0, "make": "L&T"}
+
+    is_plc = control_mode == "automatic" and auto_control_type == "plc"
+    needs_agr = (
+        control_mode == "manual"
+        or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
+    )
+
+    pg_vendor = pressure_gauge_vendor.upper()
+    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+
+    rows = [
+        _row(media, "GATE VALVE", f'{gv_nb} NB', 1,
+             unit_price_override=gv_price, make="L&T"),
+        _row(media, pg_item, "", 1, make=pg_vendor),
+        _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
+             unit_price_override=shutoff_price, make="DEMBLA"),
+        _row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"),
+    ]
+
+    if is_plc:
+        rows += [
+            _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
+                 unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
+                 make="ENGINEERING SPECIALITY"),
+            _row(media, "DPT", "", 1,
+                 unit_price_override=_get_price_fuzzy("DPT (COG)"),
+                 make="HONEYWELL"),
+        ]
+
+    rows += [
+        _row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+             unit_price_override=pcv_price, make="DEMBLA"),
+        _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
+             unit_price_override=bfv["price"], make=bfv.get("make", "L&T")),
+    ]
+
+    if needs_agr:
+        rows.append(_row(
+            media, "AGR",
+            f'{equipment["agr"]["nb"]} NB',
+            1, unit_price_override=equipment["agr"]["price"],
+        ))
+
+    return rows
+
+
 def _mix_gas_line_rows(media: str, equipment: dict,
                        control_mode: str, auto_control_type: str,
                        pressure_gauge_vendor: str,
@@ -201,6 +289,8 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     # bigger NB if the exact size isn't listed (65 NB and 125 NB are blank).
     gv_nb, gv_price = _get_gate_valve_price(gas_pipe_nb)
 
+    is_plc = control_mode == "automatic" and auto_control_type == "plc"
+
     rows = [
         _row(media, "GATE VALVE", f'{gv_nb} NB', 1,
              unit_price_override=gv_price, make="L&T"),
@@ -208,7 +298,20 @@ def _mix_gas_line_rows(media: str, equipment: dict,
         _row(media, "PRESSURE SWITCH LOW", "", 1, make="MADAS"),
         _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
              unit_price_override=shutoff_price, make="DEMBLA"),
-        # ORIFICE PLATE WITH DPT — on hold, skipped for now
+    ]
+
+    # ORIFICE PLATE + DPT — only in pure PLC mode (ratio by orifice/DPT/CV)
+    if is_plc:
+        rows += [
+            _row(media, "ORIFICE PLATE", "", 1,
+                 unit_price_override=_get_price_fuzzy("ORIFICE PLATE (Gas)"),
+                 make="ENGINEERING SPECIALITY"),
+            _row(media, "DPT", "", 1,
+                 unit_price_override=_get_price_fuzzy("DPT"),
+                 make="HONEYWELL"),
+        ]
+
+    rows += [
         _row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
              unit_price_override=pcv_price, make=pcv_make),
         _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
@@ -244,6 +347,13 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     # Mix Gas has a dedicated discrete-component BOM (no packaged gas train)
     if fuel_type == "mg":
         return _mix_gas_line_rows(
+            media, equipment, control_mode, auto_control_type,
+            pressure_gauge_vendor, shutoff_valve_vendor,
+        )
+
+    # Coke Oven Gas has its own discrete-component BOM
+    if fuel_type == "cog":
+        return _cog_line_rows(
             media, equipment, control_mode, auto_control_type,
             pressure_gauge_vendor, shutoff_valve_vendor,
         )
