@@ -797,9 +797,10 @@
           <div class="result-title" id="pipe1-title">NG Pipe Sizing</div>
           <div class="result-card">
             <table class="ct">
-              <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-ng-q">—</td> <td class="unit" id="p-ng-q-unit">Nm³/hr</td></tr>
-              <tr id="p-ng-d-row"><td class="lbl">Inner Dia</td>    <td class="val" id="p-ng-d">—</td> <td class="unit">mm</td></tr>
-              <tr><td class="lbl">Selected NB</td>  <td class="val" id="p-ng-nb" colspan="2">—</td></tr>
+              <tr><td class="lbl">Q = Flow</td>             <td class="val" id="p-ng-q">—</td>  <td class="unit" id="p-ng-q-unit">Nm³/hr</td></tr>
+              <tr id="p-ng-gt-flow-row"><td class="lbl">Gas Train Flow</td>   <td class="val" id="p-ng-gt-flow">—</td> <td class="unit">Nm³/hr</td></tr>
+              <tr id="p-ng-gt-model-row"><td class="lbl">Gas Train</td>        <td class="val" id="p-ng-gt-model" colspan="2">—</td></tr>
+              <tr id="p-ng-nb-row"><td class="lbl">Selected NB</td>    <td class="val" id="p-ng-nb" colspan="2">—</td></tr>
             </table>
           </div>
         </div>
@@ -807,9 +808,10 @@
           <div class="result-title" id="pipe2-title">Fuel 2 Pipe Sizing</div>
           <div class="result-card">
             <table class="ct">
-              <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-ng2-q">—</td> <td class="unit" id="p-ng2-q-unit">Nm³/hr</td></tr>
-              <tr id="p-ng2-d-row"><td class="lbl">Inner Dia</td>    <td class="val" id="p-ng2-d">—</td> <td class="unit">mm</td></tr>
-              <tr><td class="lbl">Selected NB</td>  <td class="val" id="p-ng2-nb" colspan="2">—</td></tr>
+              <tr><td class="lbl">Q = Flow</td>              <td class="val" id="p-ng2-q">—</td>  <td class="unit" id="p-ng2-q-unit">Nm³/hr</td></tr>
+              <tr id="p-ng2-gt-flow-row"><td class="lbl">Gas Train Flow</td> <td class="val" id="p-ng2-gt-flow">—</td> <td class="unit">Nm³/hr</td></tr>
+              <tr id="p-ng2-gt-model-row"><td class="lbl">Gas Train</td>     <td class="val" id="p-ng2-gt-model" colspan="2">—</td></tr>
+              <tr id="p-ng2-nb-row"><td class="lbl">Selected NB</td>    <td class="val" id="p-ng2-nb" colspan="2">—</td></tr>
             </table>
           </div>
         </div>
@@ -1190,13 +1192,16 @@ function renderResults(d) {
   if (isOil) {
     set("p-ng-q", fmt(p.fuel1_oil_lph, 2));
     document.getElementById("p-ng-q-unit").textContent = "LPH";
-    document.getElementById("p-ng-d-row").style.display = "none";
+    document.getElementById("p-ng-gt-flow-row").style.display = "none";
+    document.getElementById("p-ng-gt-model-row").style.display = "none";
     set("p-ng-nb", p.ng_nb + " NB");
   } else {
     set("p-ng-q", fmt(p.ng_flow, 2));
     document.getElementById("p-ng-q-unit").textContent = "Nm³/hr";
-    document.getElementById("p-ng-d-row").style.display = "";
-    set("p-ng-d", p.ng_dia_mm);
+    document.getElementById("p-ng-gt-flow-row").style.display = "";
+    document.getElementById("p-ng-gt-model-row").style.display = "";
+    set("p-ng-gt-flow", fmt(p.gas_train_flow, 0));
+    set("p-ng-gt-model", p.gas_train_model || "—");
     set("p-ng-nb", p.ng_nb + " NB");
   }
   // Fuel 2 pipe sizing card (dual-fuel only)
@@ -1210,12 +1215,15 @@ function renderResults(d) {
     if (f2IsOil) {
       set("p-ng2-q", fmt(p.fuel2_oil_lph, 2));
       document.getElementById("p-ng2-q-unit").textContent = "LPH";
-      document.getElementById("p-ng2-d-row").style.display = "none";
+      document.getElementById("p-ng2-gt-flow-row").style.display = "none";
+      document.getElementById("p-ng2-gt-model-row").style.display = "none";
     } else {
       set("p-ng2-q", fmt(p.fuel2_flow, 2));
       document.getElementById("p-ng2-q-unit").textContent = "Nm³/hr";
-      document.getElementById("p-ng2-d-row").style.display = "";
-      set("p-ng2-d", p.fuel2_dia_mm);
+      document.getElementById("p-ng2-gt-flow-row").style.display = "";
+      document.getElementById("p-ng2-gt-model-row").style.display = "";
+      set("p-ng2-gt-flow", fmt(p.fuel2_gas_train_flow, 0));
+      set("p-ng2-gt-model", p.fuel2_gas_train_model || "—");
     }
     set("p-ng2-nb", p.fuel2_nb + " NB");
   } else {

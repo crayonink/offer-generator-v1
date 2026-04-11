@@ -1057,6 +1057,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "ng_velocity":  12.7 if not f1_is_oil else 0,
                 "ng_dia_mm":    round(pipes1.ng_pipe_inner_dia_mm, 2) if not f1_is_oil else f1_oil_nb,
                 "ng_nb":        pipes1.ng_pipe_nb if not f1_is_oil else f1_oil_nb,
+                "gas_train_flow": round(equip1["ng_gas_train"]["max_flow"], 0) if not f1_is_oil else None,
+                "gas_train_model": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]}' if not f1_is_oil else None,
                 "air_flow":     round(air_flow, 2),
                 "air_velocity": 15.0,
                 "air_dia_mm":   round(pipes1.air_pipe_inner_dia_mm, 2),
@@ -1096,6 +1098,9 @@ def vlph_calculate(req: VLPHCalcRequest):
             resp["pipes"]["fuel2_oil_lph"] = round(f2_oil_lph, 2) if f2_is_oil else None
             resp["pipes"]["fuel2_dia_mm"] = round(pipes2.ng_pipe_inner_dia_mm, 2) if not f2_is_oil else f2_oil_nb
             resp["pipes"]["fuel2_nb"] = pipes2.ng_pipe_nb if not f2_is_oil else f2_oil_nb
+            if not f2_is_oil and equip2:
+                resp["pipes"]["fuel2_gas_train_flow"] = round(equip2["ng_gas_train"]["max_flow"], 0)
+                resp["pipes"]["fuel2_gas_train_model"] = f'{equip2["ng_gas_train"]["inlet_nb"]} x {equip2["ng_gas_train"]["outlet_nb"]}'
 
         return resp
     except Exception as e:
