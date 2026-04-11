@@ -1070,7 +1070,10 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "blower_hp":      equip1["blower"]["hp"],
                 "blower_airflow": equip1["blower"]["airflow_nm3hr"],
                 "ng_gas_train":   f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB',
-                "agr_nb":         equip1["agr"]["nb"],
+                "hpu": (
+                    f'{equip1["hpu"]["model"]} — {equip1["hpu"]["unit_kw"]} KW {equip1["hpu"]["variant"]}'
+                    if equip1.get("hpu") else None
+                ),
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": {

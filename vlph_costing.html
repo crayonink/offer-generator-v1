@@ -786,7 +786,7 @@
             <tr><td class="lbl">Blower</td>               <td class="val" id="r-blower" colspan="2">—</td></tr>
             <tr><td class="lbl">Burner Model</td>         <td class="val" id="eq-burner" colspan="2">—</td></tr>
             <tr id="row-gt"><td class="lbl">NG Gas Train</td>         <td class="val" id="eq-gt"     colspan="2">—</td></tr>
-            <tr id="row-agr"><td class="lbl">AGR</td>                  <td class="val" id="eq-agr"    colspan="2">—</td></tr>
+            <tr id="row-hpu" style="display:none"><td class="lbl">HPU</td> <td class="val" id="eq-hpu" colspan="2">—</td></tr>
           </table>
         </div>
       </div>
@@ -1176,14 +1176,18 @@ function renderResults(d) {
   set("r-blower",  `${eq.blower_hp} HP, ${fmt(eq.blower_airflow,0)} Nm³/hr — ${eq.blower_model}`);
   set("eq-burner", eq.burner_model);
   set("eq-gt",     eq.ng_gas_train);
-  set("eq-agr",    eq.agr_nb + " NB");
 
-  // Hide NG Gas Train + AGR rows for oil-based fuels
-  const oilFuels = new Set(["ldo", "fo", "lshs", "hsd", "sko"]);
+  // Hide NG Gas Train for oil-based fuels; show HPU for oil/dual fuel
+  const oilFuels = OIL_FUEL_SET;
   const f1Type = document.getElementById("fuel1_type").value;
   const isOil = oilFuels.has(f1Type);
   document.getElementById("row-gt").style.display  = isOil ? "none" : "";
-  document.getElementById("row-agr").style.display = isOil ? "none" : "";
+  if (eq.hpu) {
+    document.getElementById("row-hpu").style.display = "";
+    set("eq-hpu", eq.hpu);
+  } else {
+    document.getElementById("row-hpu").style.display = "none";
+  }
 
   // Fuel 1 pipe sizing card — switch between gas and oil display
   document.getElementById("pipe1-title").textContent = isOil
