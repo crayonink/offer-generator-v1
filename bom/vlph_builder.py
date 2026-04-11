@@ -67,6 +67,27 @@ OIL_FUELS = {"ldo", "fo", "lshs", "hsd", "sko"}
 GAS_FUELS = {"ng", "rlng", "lpg", "cog", "bg", "mg"}
 
 
+def _get_gate_valve_price(nb: int) -> tuple:
+    """L&T 113-8/IBR gate valve lookup by NB (next bigger if exact not found).
+    Returns (actual_nb, price)."""
+    import sqlite3, re
+    conn = sqlite3.connect(DB_PATH)
+    rows = conn.execute(
+        "SELECT item, price FROM component_price_master WHERE item LIKE 'GATE VALVE %NB' ORDER BY item"
+    ).fetchall()
+    conn.close()
+    candidates = []
+    for item, price in rows:
+        m = re.match(r'GATE VALVE (\d+)NB', item)
+        if m:
+            candidates.append((int(m.group(1)), float(price)))
+    candidates.sort()
+    for cnb, cprice in candidates:
+        if cnb >= nb:
+            return cnb, cprice
+    return (candidates[-1][0], candidates[-1][1]) if candidates else (nb, 0)
+
+
 def _get_flexible_hose_price(nb: int) -> tuple:
     """Get flexible hose price by NB (next bigger if exact not found). Returns (actual_nb, price)."""
     import sqlite3
@@ -119,12 +140,111 @@ def _get_cheapest_ball_valve(nb: int) -> float:
     return float(row[0]) if row else 0
 
 
+def _mix_gas_line_rows(media: str, equipment: dict,
+                       control_mode: str, auto_control_type: str,
+                       pressure_gauge_vendor: str,
+                       shutoff_valve_vendor: str = "lt_lever"):
+    """
+    Mix Gas BOM — discrete components instead of a packaged gas train.
+    Structure matches the ENCON Mix Gas pricelist layout.
+
+    Common to all control modes: gate valve, pressure gauge with TNV,
+    pressure switch low, pneumatic shut-off valve, pneumatic control valve,
+    butterfly valve, rotary joint.
+
+    PLC adds: (ORIFICE PLATE WITH DPT — currently on hold, skipped)
+    PLC+AGR / PID / manual: AGR is added by the consolidated block below.
+    """
+    from calculations.pipes import STANDARD_PIPE_NB
+    from bom.selectors.air_valve_selector import select_butterfly_valve
+    from bom.selectors.rotary_joint_selector import select_rotary_joint
+
+    pg_vendor = pressure_gauge_vendor.upper()
+    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+
+    gas_pipe_nb = equipment["pipe"].ng_pipe_nb
+
+    # Control valve is one pipe size smaller than the gas pipe NB
+    try:
+        cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(gas_pipe_nb) - 1)]
+    except ValueError:
+        cv_nb = gas_pipe_nb
+
+    # PNEUMATIC SHUT OFF VALVE — on hold (skipped for now)
+
+    # Pneumatic control valve — always DEMBLA for Mix Gas (pneumatic only).
+    # When additional pneumatic vendors are added, expand this.
+    _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
+    pcv_make = "DEMBLA"
+
+    # Butterfly valve sized to gas pipe NB — follow user's vendor choice,
+    # fall back from Lever to Gear if the requested NB is out of Lever range.
+    try:
+        bfv = select_butterfly_valve(gas_pipe_nb, vendor=shutoff_valve_vendor)
+    except ValueError:
+        if shutoff_valve_vendor == "lt_lever":
+            try:
+                bfv = select_butterfly_valve(gas_pipe_nb, vendor="lt_gear")
+            except ValueError:
+                bfv = {"nb": gas_pipe_nb, "price": 0, "make": "L&T"}
+        else:
+            bfv = {"nb": gas_pipe_nb, "price": 0, "make": "L&T"}
+
+    # Rotary joint sized to gas pipe NB
+    try:
+        rj = select_rotary_joint(gas_pipe_nb)
+    except ValueError:
+        rj = {"nb": gas_pipe_nb, "price": 0, "company": "THIRD PARTY"}
+
+    # Gate valve sized to gas pipe NB (L&T 113-8/IBR Class 150). Use next
+    # bigger NB if the exact size isn't listed (65 NB and 125 NB are blank).
+    gv_nb, gv_price = _get_gate_valve_price(gas_pipe_nb)
+
+    rows = [
+        _row(media, "GATE VALVE", f'{gv_nb} NB', 1,
+             unit_price_override=gv_price, make="L&T"),
+        _row(media, pg_item, f'{gas_pipe_nb} NB', 1, make=pg_vendor),
+        _row(media, "PRESSURE SWITCH LOW", "", 1, make="MADAS"),
+        # PNEUMATIC SHUT OFF VALVE — on hold, skipped for now
+        # ORIFICE PLATE WITH DPT — on hold, skipped for now
+        _row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+             unit_price_override=pcv_price, make=pcv_make),
+        _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
+             unit_price_override=bfv["price"], make=bfv.get("make", "L&T")),
+        _row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
+             unit_price_override=rj["price"], make=rj.get("company", "THIRD PARTY")),
+    ]
+
+    # AGR is added for modes that use it (manual / plc_agr / pid)
+    needs_agr = (
+        control_mode == "manual"
+        or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
+    )
+    if needs_agr:
+        rows.append(_row(
+            media, "AGR",
+            f'{equipment["agr"]["nb"]} NB',
+            1, unit_price_override=equipment["agr"]["price"],
+        ))
+
+    return rows
+
+
 def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     control_mode: str = "automatic", auto_control_type: str = "plc",
-                    control_valve_vendor: str = "dembla"):
+                    control_valve_vendor: str = "dembla",
+                    pressure_gauge_vendor: str = "baumer",
+                    shutoff_valve_vendor: str = "lt_lever"):
     """Generate fuel line BOM rows for a single fuel."""
     media = f"{label} LINE"
     rows = []
+
+    # Mix Gas has a dedicated discrete-component BOM (no packaged gas train)
+    if fuel_type == "mg":
+        return _mix_gas_line_rows(
+            media, equipment, control_mode, auto_control_type,
+            pressure_gauge_vendor, shutoff_valve_vendor,
+        )
 
     # Gas train (gas fuels only)
     if fuel_type in GAS_FUELS:
@@ -347,11 +467,11 @@ def build_vlph_120t_df(
     ]
 
     # ── FUEL 1 LINE ────────────────────────────────────────────────────────
-    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode, auto_control_type, control_valve_vendor)
+    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, shutoff_valve_vendor)
 
     # ── FUEL 2 LINE (dual fuel only) ──────────────────────────────────────
     if is_dual:
-        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor)
+        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, shutoff_valve_vendor)
 
     # ── NITROGEN PURGING LINE (MG/COG only, when user enabled it) ─────────
     if purging_line == "yes":

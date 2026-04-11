@@ -553,7 +553,7 @@
         </div>
       </div>
       <div id="purging-row" style="display:none;margin-top:12px;background:#fef3c7;border-radius:10px;padding:14px 16px;border:1px solid #fcd34d;">
-        <label style="font-size:.72rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px;">Purging Line (for MG / COG)</label>
+        <label style="font-size:.72rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px;">Purging Line</label>
         <div style="display:flex;gap:20px;align-items:center;">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.86rem;">
             <input type="radio" name="purging_line" value="no" checked> No
@@ -619,6 +619,7 @@
         <select id="pressure_gauge_vendor">
           <option value="baumer" selected>BAUMER (Rs. 4,000)</option>
           <option value="hguru">HGURU (Rs. 3,000)</option>
+          <option value="wika">WIKA (Rs. 6,500)</option>
         </select>
       </div>
       <div class="field">
@@ -968,6 +969,17 @@ function onFuelChange() {
   // Purging line — only for MG / COG fuels (either fuel 1 or fuel 2)
   const needsPurging = PURGING_FUELS.has(f1) || (isDual && PURGING_FUELS.has(f2));
   document.getElementById('purging-row').style.display = needsPurging ? 'block' : 'none';
+
+  // Mix Gas uses only DEMBLA (pneumatic) control valves — lock the dropdown
+  const cvSel = document.getElementById('control_valve_vendor');
+  const isMG = (f1 === 'mg') || (isDual && f2 === 'mg');
+  const cairOpt = cvSel.querySelector('option[value="cair"]');
+  if (isMG) {
+    cvSel.value = 'dembla';
+    if (cairOpt) cairOpt.disabled = true;
+  } else {
+    if (cairOpt) cairOpt.disabled = false;
+  }
   if (isDual) {
     document.getElementById('fuel2_cv').value = FUEL_CVS[f2] || 0;
     document.getElementById('fuel2_cv_label').textContent = `CV (${cvUnit(f2)})`;
