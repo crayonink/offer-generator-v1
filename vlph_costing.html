@@ -727,18 +727,15 @@
           <table style="width:100%;font-size:.84rem;border-collapse:collapse;">
             <tr><td colspan="2" style="padding:4px 0;font-weight:700;color:var(--navy);font-size:.76rem;text-transform:uppercase;letter-spacing:.4px;">Air Line Size</td></tr>
             <tr><td style="padding:3px 0;color:#64748b;width:45%">Air Flow</td><td style="font-weight:600;" id="cd-air-flow">—</td></tr>
-            <tr><td style="padding:3px 0;color:#64748b">Velocity</td><td style="font-weight:600;" id="cd-air-vel">15 m/s</td></tr>
             <tr><td style="padding:3px 0;color:#64748b">Pipe NB</td><td style="font-weight:600;" id="cd-air-nb">—</td></tr>
             <tr><td colspan="2" style="border-top:1px solid #e2e8f0;padding:6px 0 2px;"></td></tr>
             <tr><td colspan="2" style="padding:4px 0;font-weight:700;color:var(--navy);font-size:.76rem;text-transform:uppercase;letter-spacing:.4px;" id="cd-fuel1-pipe-label">Gas Line Size</td></tr>
             <tr><td style="padding:3px 0;color:#64748b">Gas Flow</td><td style="font-weight:600;" id="cd-gas1-flow">—</td></tr>
-            <tr><td style="padding:3px 0;color:#64748b">Velocity</td><td style="font-weight:600;" id="cd-gas1-vel">12.7 m/s</td></tr>
             <tr><td style="padding:3px 0;color:#64748b">Pipe NB</td><td style="font-weight:600;" id="cd-gas1-nb">—</td></tr>
             <tbody id="cd-fuel2-pipe" style="display:none">
               <tr><td colspan="2" style="border-top:1px solid #e2e8f0;padding:6px 0 2px;"></td></tr>
               <tr><td colspan="2" style="padding:4px 0;font-weight:700;color:var(--navy);font-size:.76rem;text-transform:uppercase;letter-spacing:.4px;" id="cd-fuel2-pipe-label">Fuel 2 Line Size</td></tr>
               <tr><td style="padding:3px 0;color:#64748b">Gas Flow</td><td style="font-weight:600;" id="cd-gas2-flow">—</td></tr>
-              <tr><td style="padding:3px 0;color:#64748b">Velocity</td><td style="font-weight:600;" id="cd-gas2-vel">12.7 m/s</td></tr>
               <tr><td style="padding:3px 0;color:#64748b">Pipe NB</td><td style="font-weight:600;" id="cd-gas2-nb">—</td></tr>
             </tbody>
           </table>
@@ -788,7 +785,6 @@
           <div class="result-card">
             <table class="ct">
               <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-ng-q">—</td> <td class="unit" id="p-ng-q-unit">Nm³/hr</td></tr>
-              <tr id="p-ng-v-row"><td class="lbl">V = Velocity</td> <td class="val" id="p-ng-v">12.7</td>           <td class="unit">m/s</td></tr>
               <tr id="p-ng-d-row"><td class="lbl">Inner Dia</td>    <td class="val" id="p-ng-d">—</td> <td class="unit">mm</td></tr>
               <tr><td class="lbl">Selected NB</td>  <td class="val" id="p-ng-nb" colspan="2">—</td></tr>
             </table>
@@ -799,7 +795,6 @@
           <div class="result-card">
             <table class="ct">
               <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-air-q">—</td> <td class="unit">Nm³/hr</td></tr>
-              <tr><td class="lbl">V = Velocity</td> <td class="val">15</td>              <td class="unit">m/s</td></tr>
               <tr><td class="lbl">Inner Dia</td>    <td class="val" id="p-air-d">—</td> <td class="unit">mm</td></tr>
               <tr><td class="lbl">Selected NB</td>  <td class="val" id="p-air-nb" colspan="2">—</td></tr>
             </table>
@@ -1112,15 +1107,12 @@ function renderResults(d) {
   if (isOil) {
     set("p-ng-q", fmt(p.fuel1_oil_lph, 2));
     document.getElementById("p-ng-q-unit").textContent = "LPH";
-    document.getElementById("p-ng-v-row").style.display = "none";
     document.getElementById("p-ng-d-row").style.display = "none";
     set("p-ng-nb", p.ng_nb + " NB");
   } else {
     set("p-ng-q", fmt(p.ng_flow, 2));
     document.getElementById("p-ng-q-unit").textContent = "Nm³/hr";
-    document.getElementById("p-ng-v-row").style.display = "";
     document.getElementById("p-ng-d-row").style.display = "";
-    set("p-ng-v", "12.7");
     set("p-ng-d", p.ng_dia_mm);
     set("p-ng-nb", p.ng_nb + " NB");
   }
