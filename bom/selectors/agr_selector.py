@@ -31,6 +31,23 @@ def select_agr(nb: int, connection: str, ratio: str, compact: str) -> dict:
     """, (nb, connection, ratio, compact))
 
     row = cursor.fetchone()
+
+    # Fall back: if exact NB not found, pick the largest available AGR for the
+    # same (connection, ratio, compact) combo. AGRs top out at 100 NB flanged;
+    # for oversize gas lines (e.g. low-CV Mixed Gas) the biggest AGR is still
+    # an acceptable selection — the engineer can review if needed.
+    if not row:
+        cursor.execute("""
+            SELECT enag, item_code, nb, connection, ratio, compact, list_price, pmax_mbar
+            FROM agr_master
+            WHERE connection = ?
+              AND ratio      = ?
+              AND compact    = ?
+            ORDER BY nb DESC
+            LIMIT 1
+        """, (connection, ratio, compact))
+        row = cursor.fetchone()
+
     conn.close()
 
     if not row:

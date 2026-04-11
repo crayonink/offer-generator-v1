@@ -948,6 +948,8 @@ def vlph_calculate(req: VLPHCalcRequest):
             hpu_variant=req.hpu_variant,
             burner_pressure_wg=burner_pressure_wg,
             shutoff_valve_vendor=req.shutoff_valve_vendor,
+            control_mode=req.control_mode,
+            auto_control_type=req.auto_control_type,
         )
 
         f1_is_oil = req.fuel1_type in OIL_FUELS
@@ -989,6 +991,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 hpu_variant=req.hpu_variant,
                 burner_pressure_wg=burner_pressure_wg,
                 shutoff_valve_vendor=req.shutoff_valve_vendor,
+                control_mode=req.control_mode,
+                auto_control_type=req.auto_control_type,
             )
 
         # Air is CV-independent, so use fuel1 for air sizing

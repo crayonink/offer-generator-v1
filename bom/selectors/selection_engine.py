@@ -17,7 +17,7 @@ from bom.selectors.encon_burner import _resolve_category
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24, shutoff_valve_vendor: str = "cair") -> dict:
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24, shutoff_valve_vendor: str = "cair", control_mode: str = "automatic", auto_control_type: str = "plc") -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     fuel_type: 'gas', 'oil', or 'dual' — picks the burner pricelist section.
@@ -57,12 +57,25 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
 
     # NG side
     ng_gas_train = select_ng_gas_train(ng_flow_nm3hr)
-    agr = select_agr(
-        nb=ng_nb,
-        connection="Flanged" if ng_nb >= 65 else "Threaded",
-        ratio="1:1",
-        compact="No",
+
+    # AGR — only required for control modes that actually use it.
+    # Pure PLC mode uses orifice plate + DPT + control valve for ratio control,
+    # so AGR is not in the BOM and we skip selection entirely (important for
+    # low-CV fuels like Mixed Gas where no AGR in that NB range exists).
+    needs_agr = (
+        control_mode == "manual"
+        or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
     )
+    if needs_agr:
+        agr = select_agr(
+            nb=ng_nb,
+            connection="Flanged" if ng_nb >= 65 else "Threaded",
+            ratio="1:1",
+            compact="No",
+        )
+    else:
+        agr = {"nb": ng_nb, "price": 0, "enag": None, "item_code": None,
+               "connection": None, "ratio": None, "compact": None, "pmax_mbar": None}
 
     # Air side
     air_duct = select_air_duct(air_flow_nm3hr)

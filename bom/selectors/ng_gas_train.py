@@ -22,6 +22,20 @@ def select_ng_gas_train(required_flow_nm3hr: float) -> dict:
     """, (required_flow_nm3hr,))
 
     row = cursor.fetchone()
+
+    # Fall back: if flow exceeds the largest available gas train, pick the
+    # largest one. Low-CV fuels (Mixed Gas, Blast Furnace Gas) produce very
+    # high volumetric flows that can exceed the pricelist range — the engineer
+    # can scale up manually if needed.
+    if not row:
+        cursor.execute("""
+            SELECT inlet_nb, outlet_nb, min_flow, max_flow, price_inr
+            FROM gas_train_master
+            ORDER BY max_flow DESC
+            LIMIT 1
+        """)
+        row = cursor.fetchone()
+
     conn.close()
 
     if not row:
