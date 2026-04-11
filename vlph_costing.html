@@ -1167,7 +1167,7 @@ function renderResults(d) {
   if (c.is_dual) {
     document.getElementById("cd-fuel2-row").style.display = "";
     document.getElementById("cd-cv2-row").style.display = "";
-    document.getElementById("cd-fuel2-pipe").style.display = "";
+    document.getElementById("cd-fuel2-pipe").style.display = "table-row-group";
     set("cd-fuel2", c.fuel2_name);
     const f2Type = document.getElementById("fuel2_type").value;
     set("cd-cv2", fmt(c.fuel2_cv, 0) + " " + cvUnit(f2Type));
