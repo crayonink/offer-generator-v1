@@ -552,6 +552,18 @@
           <b id="f1-ratio-name"></b> and <b id="f2-ratio-name"></b>.
         </div>
       </div>
+      <div id="purging-row" style="display:none;margin-top:12px;background:#fef3c7;border-radius:10px;padding:14px 16px;border:1px solid #fcd34d;">
+        <label style="font-size:.72rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px;">Purging Line (for MG / COG)</label>
+        <div style="display:flex;gap:20px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.86rem;">
+            <input type="radio" name="purging_line" value="no" checked> No
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.86rem;">
+            <input type="radio" name="purging_line" value="yes"> Yes
+          </label>
+          <span style="font-size:.76rem;color:#78350f;">Required for hazardous gases before startup</span>
+        </div>
+      </div>
       <input type="hidden" id="fuel_cv" value="8500"/>
     </div>
 
@@ -943,6 +955,8 @@ function onControlModeChange() {
 const OIL_FUEL_SET = new Set(["ldo", "fo", "lshs", "hsd", "sko"]);
 function cvUnit(fuelType) { return OIL_FUEL_SET.has(fuelType) ? "kcal/kg" : "kcal/Nm³"; }
 
+const PURGING_FUELS = new Set(["mg", "cog"]);
+
 function onFuelChange() {
   const f1 = document.getElementById('fuel1_type').value;
   const f2 = document.getElementById('fuel2_type').value;
@@ -951,6 +965,9 @@ function onFuelChange() {
   const isDual = f2 !== 'none';
   document.getElementById('fuel2-cv-wrap').style.display  = isDual ? 'block' : 'none';
   document.getElementById('fuel-ratio-row').style.display = isDual ? 'block' : 'none';
+  // Purging line — only for MG / COG fuels (either fuel 1 or fuel 2)
+  const needsPurging = PURGING_FUELS.has(f1) || (isDual && PURGING_FUELS.has(f2));
+  document.getElementById('purging-row').style.display = needsPurging ? 'block' : 'none';
   if (isDual) {
     document.getElementById('fuel2_cv').value = FUEL_CVS[f2] || 0;
     document.getElementById('fuel2_cv_label').textContent = `CV (${cvUnit(f2)})`;
@@ -1021,6 +1038,7 @@ async function calculate() {
       hpu_variant: document.getElementById("hpu_variant").value,
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
+      purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -1045,6 +1063,7 @@ async function calculate() {
       hpu_variant: document.getElementById("hpu_variant").value,
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
+      purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
     };
   }
 

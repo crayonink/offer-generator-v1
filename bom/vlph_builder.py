@@ -269,6 +269,7 @@ def build_vlph_120t_df(
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
+    purging_line: str = "no",
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -351,6 +352,17 @@ def build_vlph_120t_df(
     # ── FUEL 2 LINE (dual fuel only) ──────────────────────────────────────
     if is_dual:
         rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor)
+
+    # ── NITROGEN PURGING LINE (MG/COG only, when user enabled it) ─────────
+    if purging_line == "yes":
+        rows += [
+            _row("NITROGEN PURGING", "BALL VALVE (N2)",               "20 NB", 1),
+            _row("NITROGEN PURGING", "PRESSURE GAUGE WITH TNV (N2)",  "0-1600 mmWC", 1),
+            _row("NITROGEN PURGING", "PRESSURE REGULATING VALVE (N2)", "25 NB", 1),
+            _row("NITROGEN PURGING", "PRESSURE SWITCH HIGH (N2)",     "", 1),
+            _row("NITROGEN PURGING", "SOLENOID VALVE (N2)",           "20 NB", 1),
+            _row("NITROGEN PURGING", "CHECK VALVE (N2)",              "20 NB", 1),
+        ]
 
     # ── NG PILOT LINE ──────────────────────────────────────────────────────
     rows += [

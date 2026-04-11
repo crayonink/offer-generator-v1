@@ -477,6 +477,7 @@ class VLPHCalcRequest(BaseModel):
     # burner_pressure_wg is derived from blower_pressure (28→24, 40→36)
     pilot_burner: str = "auto"                   # "auto" | "lpg_10" | "nglpg_100" | "cog_100"
     pipeline_weight_kg: float = 1000.0           # Air-gas pipeline weight (700–2000 kg, step 100)
+    purging_line: str = "no"                     # "yes" | "no" — nitrogen purging line for MG/COG
 
 
 class QuoteItem(BaseModel):
@@ -1004,6 +1005,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             pressure_gauge_vendor=req.pressure_gauge_vendor,
             pilot_burner=req.pilot_burner,
             pipeline_weight_kg=req.pipeline_weight_kg,
+            purging_line=req.purging_line,
         )
 
         # Split summary rows from detail rows
