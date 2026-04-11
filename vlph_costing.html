@@ -803,6 +803,16 @@
             </table>
           </div>
         </div>
+        <div class="result-section" id="pipe2-section" style="margin-bottom:0; display:none">
+          <div class="result-title" id="pipe2-title">Fuel 2 Pipe Sizing</div>
+          <div class="result-card">
+            <table class="ct">
+              <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-ng2-q">—</td> <td class="unit" id="p-ng2-q-unit">Nm³/hr</td></tr>
+              <tr id="p-ng2-d-row"><td class="lbl">Inner Dia</td>    <td class="val" id="p-ng2-d">—</td> <td class="unit">mm</td></tr>
+              <tr><td class="lbl">Selected NB</td>  <td class="val" id="p-ng2-nb" colspan="2">—</td></tr>
+            </table>
+          </div>
+        </div>
         <div class="result-section" style="margin-bottom:0">
           <div class="result-title">Air Pipe Sizing</div>
           <div class="result-card">
@@ -1189,6 +1199,29 @@ function renderResults(d) {
     set("p-ng-d", p.ng_dia_mm);
     set("p-ng-nb", p.ng_nb + " NB");
   }
+  // Fuel 2 pipe sizing card (dual-fuel only)
+  const pipe2Section = document.getElementById("pipe2-section");
+  if (c.is_dual) {
+    pipe2Section.style.display = "";
+    const f2IsOil = p.fuel2_is_oil;
+    document.getElementById("pipe2-title").textContent = f2IsOil
+      ? (c.fuel2_name || "Oil") + " Line Size"
+      : (c.fuel2_name || "Fuel 2") + " Pipe Sizing";
+    if (f2IsOil) {
+      set("p-ng2-q", fmt(p.fuel2_oil_lph, 2));
+      document.getElementById("p-ng2-q-unit").textContent = "LPH";
+      document.getElementById("p-ng2-d-row").style.display = "none";
+    } else {
+      set("p-ng2-q", fmt(p.fuel2_flow, 2));
+      document.getElementById("p-ng2-q-unit").textContent = "Nm³/hr";
+      document.getElementById("p-ng2-d-row").style.display = "";
+      set("p-ng2-d", p.fuel2_dia_mm);
+    }
+    set("p-ng2-nb", p.fuel2_nb + " NB");
+  } else {
+    pipe2Section.style.display = "none";
+  }
+
   set("p-air-q",   fmt(p.air_flow, 2));
   set("p-air-d",   p.air_dia_mm);
   set("p-air-nb",  p.air_nb + " NB");
