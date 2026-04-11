@@ -475,17 +475,17 @@ def build_vlph_120t_df(
     if is_dual:
         rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, shutoff_valve_vendor)
 
-    # ── NITROGEN PURGING LINE (MG/COG only, when user enabled it) ─────────
+    # ── PURGING LINE LINE (MG/COG only, when user enabled it) ─────────
     # Prices are specific to the nitrogen purging assembly and don't match
     # the regular gas-line items' prices, so they're inlined here.
     if purging_line == "yes":
         rows += [
-            _row("NITROGEN PURGING", "BALL VALVE",                "20 NB",       1, unit_price_override=1800,  make="AUDCO/L&T/LEADER"),
-            _row("NITROGEN PURGING", "PRESSURE GAUGE WITH TNV",   "0-1600 mmWC", 1, unit_price_override=4000,  make="HGURU/BAUMER"),
-            _row("NITROGEN PURGING", "PRESSURE REGULATING VALVE", "25 NB",       1, unit_price_override=35000, make="NIRMAL"),
-            _row("NITROGEN PURGING", "PRESSURE SWITCH HIGH",      "",            1, unit_price_override=10000, make="SWITZER"),
-            _row("NITROGEN PURGING", "SOLENOID VALVE",            "20 NB",       1, unit_price_override=5000,  make="MADAS"),
-            _row("NITROGEN PURGING", "CHECK VALVE",               "20 NB",       1, unit_price_override=3300,  make="AUDCO/L&T/LEADER"),
+            _row("PURGING LINE", "BALL VALVE",                "20 NB",       1, unit_price_override=1800,  make="AUDCO/L&T/LEADER"),
+            _row("PURGING LINE", "PRESSURE GAUGE WITH TNV",   "0-1600 mmWC", 1, unit_price_override=4000,  make="HGURU/BAUMER"),
+            _row("PURGING LINE", "PRESSURE REGULATING VALVE", "25 NB",       1, unit_price_override=35000, make="NIRMAL"),
+            _row("PURGING LINE", "PRESSURE SWITCH HIGH",      "",            1, unit_price_override=10000, make="SWITZER"),
+            _row("PURGING LINE", "SOLENOID VALVE",            "20 NB",       1, unit_price_override=5000,  make="MADAS"),
+            _row("PURGING LINE", "CHECK VALVE",               "20 NB",       1, unit_price_override=3300,  make="AUDCO/L&T/LEADER"),
         ]
 
     # ── NG PILOT LINE ──────────────────────────────────────────────────────
