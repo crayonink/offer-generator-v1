@@ -118,6 +118,23 @@
       box-shadow: 0 2px 8px rgba(26,58,92,.3);
     }
 
+    /* ── Fuel category toggle ── */
+    .fuel-cat-toggle {
+      display: inline-flex; background: #f1f5f9; border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 4px; gap: 4px;
+    }
+    .fuel-cat-btn {
+      padding: 9px 26px; border: none; background: transparent;
+      font-size: 0.86rem; font-weight: 600; color: #64748b;
+      border-radius: 7px; cursor: pointer; font-family: inherit;
+      transition: all .18s;
+    }
+    .fuel-cat-btn:hover { color: var(--navy); }
+    .fuel-cat-btn.active {
+      background: var(--navy); color: #fff;
+      box-shadow: 0 2px 6px rgba(26,58,92,.22);
+    }
+
     /* ── Action buttons ── */
     .action-row { margin-top: 32px; display: flex; gap: 12px; }
     .btn-primary {
@@ -504,37 +521,24 @@
     </div>
 
     <div style="margin-bottom:24px;">
+      <!-- Fuel category toggle -->
+      <div style="margin-bottom:14px;">
+        <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px;">Fuel Category <span class="req">*</span></label>
+        <div class="fuel-cat-toggle" role="tablist">
+          <button type="button" class="fuel-cat-btn active" data-cat="gas" onclick="setFuelCategory('gas')">Gas Fuels</button>
+          <button type="button" class="fuel-cat-btn" data-cat="oil" onclick="setFuelCategory('oil')">Oil Fuels</button>
+        </div>
+      </div>
       <div class="fg fg-2" style="margin-bottom:0">
         <div class="field">
           <label>Fuel 1 <span class="req">*</span></label>
-          <select id="fuel1_type" onchange="onFuelChange()">
-            <option value="ng">Natural Gas (NG)</option>
-            <option value="rlng">RLNG</option>
-            <option value="lpg">LPG</option>
-            <option value="mg">Mixed Gas (MG)</option>
-            <option value="ldo">LDO (Light Diesel Oil)</option>
-            <option value="fo">Furnace Oil (FO)</option>
-            <option value="lshs">LSHS (Low Sulphur Heavy Stock)</option>
-            <option value="cog">Coke Oven Gas (COG)</option>
-            <option value="bg">BG (Blast Furnace Gas)</option>
-          </select>
+          <select id="fuel1_type" onchange="onFuelChange()"></select>
           <label id="fuel1_cv_label" style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
           <input id="fuel1_cv" type="number" value="8500" oninput="updateBlendedCV()"/>
         </div>
         <div class="field">
           <label>Fuel 2 <span style="font-weight:400;color:#94a3b8;font-size:.8rem;">(optional)</span></label>
-          <select id="fuel2_type" onchange="onFuelChange()">
-            <option value="none">— None (single fuel) —</option>
-            <option value="ng">Natural Gas (NG)</option>
-            <option value="rlng">RLNG</option>
-            <option value="lpg">LPG</option>
-            <option value="mg">Mixed Gas (MG)</option>
-            <option value="ldo">LDO (Light Diesel Oil)</option>
-            <option value="fo">Furnace Oil (FO)</option>
-            <option value="lshs">LSHS (Low Sulphur Heavy Stock)</option>
-            <option value="cog">Coke Oven Gas (COG)</option>
-            <option value="bg">BG (Blast Furnace Gas)</option>
-          </select>
+          <select id="fuel2_type" onchange="onFuelChange()"></select>
           <div id="fuel2-cv-wrap" style="display:none;">
             <label id="fuel2_cv_label" style="margin-top:8px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">CV (kcal/Nm³)</label>
             <input id="fuel2_cv" type="number" value="0" oninput="updateBlendedCV()"/>
@@ -783,9 +787,9 @@
           <div class="result-title" id="pipe1-title">NG Pipe Sizing</div>
           <div class="result-card">
             <table class="ct">
-              <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-ng-q">—</td> <td class="unit">Nm³/hr</td></tr>
-              <tr><td class="lbl">V = Velocity</td> <td class="val">12.7</td>           <td class="unit">m/s</td></tr>
-              <tr><td class="lbl">Inner Dia</td>    <td class="val" id="p-ng-d">—</td> <td class="unit">mm</td></tr>
+              <tr><td class="lbl">Q = Flow</td>     <td class="val" id="p-ng-q">—</td> <td class="unit" id="p-ng-q-unit">Nm³/hr</td></tr>
+              <tr id="p-ng-v-row"><td class="lbl">V = Velocity</td> <td class="val" id="p-ng-v">12.7</td>           <td class="unit">m/s</td></tr>
+              <tr id="p-ng-d-row"><td class="lbl">Inner Dia</td>    <td class="val" id="p-ng-d">—</td> <td class="unit">mm</td></tr>
               <tr><td class="lbl">Selected NB</td>  <td class="val" id="p-ng-nb" colspan="2">—</td></tr>
             </table>
           </div>
@@ -896,7 +900,26 @@ function goStep(n) {
 
 /* ── Fuel selector ── */
 const FUEL_CVS   = { ng: 8500, rlng: 10500, lpg: 10800, cog: 4300, bg: 850, mg: 2000, ldo: 10500, fo: 11000, lshs: 10500 };
-const FUEL_NAMES = { ng: 'Natural Gas', rlng: 'RLNG', lpg: 'LPG', cog: 'Coke Oven Gas', bg: 'BG (Blast Furnace Gas)', mg: 'Mixed Gas', ldo: 'LDO (Light Diesel Oil)', fo: 'Furnace Oil', lshs: 'LSHS' };
+const FUEL_NAMES = { ng: 'Natural Gas (NG)', rlng: 'RLNG', lpg: 'LPG', cog: 'Coke Oven Gas (COG)', bg: 'BG (Blast Furnace Gas)', mg: 'Mixed Gas (MG)', ldo: 'LDO (Light Diesel Oil)', fo: 'Furnace Oil (FO)', lshs: 'LSHS (Low Sulphur Heavy Stock)' };
+const FUEL_CATEGORIES = {
+  gas: ['ng', 'rlng', 'lpg', 'mg', 'cog', 'bg'],
+  oil: ['ldo', 'fo', 'lshs'],
+};
+let currentFuelCategory = 'gas';
+
+function setFuelCategory(cat) {
+  currentFuelCategory = cat;
+  document.querySelectorAll('.fuel-cat-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat);
+  });
+  const fuels = FUEL_CATEGORIES[cat];
+  const f1Sel = document.getElementById('fuel1_type');
+  const f2Sel = document.getElementById('fuel2_type');
+  f1Sel.innerHTML = fuels.map(k => `<option value="${k}">${FUEL_NAMES[k]}</option>`).join('');
+  f2Sel.innerHTML = '<option value="none">— None (single fuel) —</option>' +
+    fuels.map(k => `<option value="${k}">${FUEL_NAMES[k]}</option>`).join('');
+  onFuelChange();
+}
 
 /* ── Input Mode Toggle ── */
 let inputMode = 'calc';
@@ -1081,9 +1104,26 @@ function renderResults(d) {
   const isOil = oilFuels.has(f1Type);
   document.getElementById("row-gt").style.display  = isOil ? "none" : "";
   document.getElementById("row-agr").style.display = isOil ? "none" : "";
-  set("p-ng-q",    fmt(p.ng_flow, 2));
-  set("p-ng-d",    p.ng_dia_mm);
-  set("p-ng-nb",   p.ng_nb + " NB");
+
+  // Fuel 1 pipe sizing card — switch between gas and oil display
+  document.getElementById("pipe1-title").textContent = isOil
+    ? (c.fuel1_name || "Oil") + " Line Size"
+    : (c.fuel1_name || "NG") + " Pipe Sizing";
+  if (isOil) {
+    set("p-ng-q", fmt(p.fuel1_oil_lph, 2));
+    document.getElementById("p-ng-q-unit").textContent = "LPH";
+    document.getElementById("p-ng-v-row").style.display = "none";
+    document.getElementById("p-ng-d-row").style.display = "none";
+    set("p-ng-nb", p.ng_nb + " NB");
+  } else {
+    set("p-ng-q", fmt(p.ng_flow, 2));
+    document.getElementById("p-ng-q-unit").textContent = "Nm³/hr";
+    document.getElementById("p-ng-v-row").style.display = "";
+    document.getElementById("p-ng-d-row").style.display = "";
+    set("p-ng-v", "12.7");
+    set("p-ng-d", p.ng_dia_mm);
+    set("p-ng-nb", p.ng_nb + " NB");
+  }
   set("p-air-q",   fmt(p.air_flow, 2));
   set("p-air-d",   p.air_dia_mm);
   set("p-air-nb",  p.air_nb + " NB");
@@ -1122,8 +1162,13 @@ function renderResults(d) {
   set("cd-hp", fmt(c.blower_hp_calc, 1) + " HP");
   set("cd-air-flow", fmt(p.air_flow, 0) + " Nm³/hr");
   set("cd-air-nb", p.air_nb + " NB");
-  set("cd-fuel1-pipe-label", (c.fuel1_name || "NG") + " Line Size");
-  set("cd-gas1-flow", fmt(p.ng_flow, 0) + " Nm³/hr");
+  if (isOil) {
+    set("cd-fuel1-pipe-label", "Oil Line Size");
+    set("cd-gas1-flow", fmt(p.fuel1_oil_lph, 0) + " LPH");
+  } else {
+    set("cd-fuel1-pipe-label", (c.fuel1_name || "NG") + " Line Size");
+    set("cd-gas1-flow", fmt(p.ng_flow, 0) + " Nm³/hr");
+  }
   set("cd-gas1-nb", p.ng_nb + " NB");
 
   // Dual fuel
@@ -1134,8 +1179,13 @@ function renderResults(d) {
     set("cd-fuel2", c.fuel2_name);
     const f2Type = document.getElementById("fuel2_type").value;
     set("cd-cv2", fmt(c.fuel2_cv, 0) + " " + cvUnit(f2Type));
-    set("cd-fuel2-pipe-label", c.fuel2_name + " Line Size");
-    set("cd-gas2-flow", fmt(p.fuel2_flow, 0) + " Nm³/hr");
+    if (p.fuel2_is_oil) {
+      set("cd-fuel2-pipe-label", "Oil Line Size");
+      set("cd-gas2-flow", fmt(p.fuel2_oil_lph, 0) + " LPH");
+    } else {
+      set("cd-fuel2-pipe-label", c.fuel2_name + " Line Size");
+      set("cd-gas2-flow", fmt(p.fuel2_flow, 0) + " Nm³/hr");
+    }
     set("cd-gas2-nb", p.fuel2_nb + " NB");
   } else {
     document.getElementById("cd-fuel2-row").style.display = "none";
@@ -1247,6 +1297,9 @@ async function generateQuote() {
     btn.classList.remove("loading"); btn.disabled = false;
   }
 }
+
+// Initialize fuel dropdowns on page load
+setFuelCategory('gas');
 </script>
 </body>
 </html>

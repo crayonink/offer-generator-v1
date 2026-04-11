@@ -34,6 +34,11 @@ class PipeInputs:
     air_velocity_ms: float = 15.0
 
 
+def select_oil_pipe_nb(oil_flow_lph: float) -> int:
+    """Oil fuel line NB by flow rate. <=250 LPH → 20 NB, else 25 NB."""
+    return 20 if oil_flow_lph <= 250 else 25
+
+
 # -------------------------------------------------
 # OUTPUT DATA STRUCTURE
 # -------------------------------------------------
