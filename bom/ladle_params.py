@@ -271,6 +271,7 @@ def get_hlph_params(ladle_tons: float) -> dict:
         "ms_structure_rate":  ms_rate,
         "ms_structure_cost":  round(ms_cost, 2),
         "ceramic_rolls":      cf_rolls,
+        "ceramic_rate":       cf_rate,
         "hpu_kw":             hpu_kw,
         "pipeline_cost":      round(pipeline_cost, 2),
         "trolley_drive_cost": round(trolley_cost, 2),
