@@ -144,7 +144,8 @@ def _cog_line_rows(media: str, equipment: dict,
                    control_mode: str, auto_control_type: str,
                    pressure_gauge_vendor: str,
                    butterfly_valve_vendor: str = "lt_lever",
-                   shutoff_valve_vendor: str = "aira"):
+                   shutoff_valve_vendor: str = "aira",
+                   base_only: bool = False):
     """
     Coke Oven Gas BOM — discrete components, prices pulled from DB.
     Matches the ENCON COG pricelist layout.
@@ -199,32 +200,32 @@ def _cog_line_rows(media: str, equipment: dict,
         _row(media, pg_item, "", 1, make=pg_vendor),
         _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
              unit_price_override=shutoff_price, make=shutoff_valve_vendor.upper()),
-        _row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"),
-    ]
-
-    if is_plc:
-        rows += [
-            _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
-                 unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
-                 make="ENGINEERING SPECIALITY"),
-            _row(media, "DPT", "", 1,
-                 unit_price_override=_get_price_fuzzy("DPT (COG)"),
-                 make="HONEYWELL"),
-        ]
-
-    rows += [
-        _row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
-             unit_price_override=pcv_price, make="DEMBLA"),
         _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
              unit_price_override=bfv["price"], make=bfv.get("make", "L&T")),
     ]
 
-    if needs_agr:
-        rows.append(_row(
-            media, "AGR",
-            f'{equipment["agr"]["nb"]} NB',
-            1, unit_price_override=equipment["agr"]["price"],
-        ))
+    if not base_only:
+        rows.append(_row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"))
+
+        if is_plc:
+            rows += [
+                _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
+                     unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
+                     make="ENGINEERING SPECIALITY"),
+                _row(media, "DPT", "", 1,
+                     unit_price_override=_get_price_fuzzy("DPT (COG)"),
+                     make="HONEYWELL"),
+            ]
+
+        rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+             unit_price_override=pcv_price, make="DEMBLA"))
+
+        if needs_agr:
+            rows.append(_row(
+                media, "AGR",
+                f'{equipment["agr"]["nb"]} NB',
+                1, unit_price_override=equipment["agr"]["price"],
+            ))
 
     return rows
 
@@ -233,7 +234,8 @@ def _mix_gas_line_rows(media: str, equipment: dict,
                        control_mode: str, auto_control_type: str,
                        pressure_gauge_vendor: str,
                        butterfly_valve_vendor: str = "lt_lever",
-                       shutoff_valve_vendor: str = "aira"):
+                       shutoff_valve_vendor: str = "aira",
+                       base_only: bool = False):
     """
     Mix Gas BOM — discrete components instead of a packaged gas train.
     Structure matches the ENCON Mix Gas pricelist layout.
@@ -297,42 +299,40 @@ def _mix_gas_line_rows(media: str, equipment: dict,
         _row(media, "GATE VALVE", f'{gv_nb} NB', 1,
              unit_price_override=gv_price, make="L&T"),
         _row(media, pg_item, f'{gas_pipe_nb} NB', 1, make=pg_vendor),
-        _row(media, "PRESSURE SWITCH LOW", "", 1, make="MADAS"),
         _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
              unit_price_override=shutoff_price, make=shutoff_valve_vendor.upper()),
-    ]
-
-    # ORIFICE PLATE + DPT — only in pure PLC mode (ratio by orifice/DPT/CV)
-    if is_plc:
-        rows += [
-            _row(media, "ORIFICE PLATE", "", 1,
-                 unit_price_override=_get_price_fuzzy("ORIFICE PLATE (Gas)"),
-                 make="ENGINEERING SPECIALITY"),
-            _row(media, "DPT", "", 1,
-                 unit_price_override=_get_price_fuzzy("DPT"),
-                 make="HONEYWELL"),
-        ]
-
-    rows += [
-        _row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
-             unit_price_override=pcv_price, make=pcv_make),
         _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
              unit_price_override=bfv["price"], make=bfv.get("make", "L&T")),
         _row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
              unit_price_override=rj["price"], make=rj.get("company", "THIRD PARTY")),
     ]
 
-    # AGR is added for modes that use it (manual / plc_agr / pid)
-    needs_agr = (
-        control_mode == "manual"
-        or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
-    )
-    if needs_agr:
-        rows.append(_row(
-            media, "AGR",
-            f'{equipment["agr"]["nb"]} NB',
-            1, unit_price_override=equipment["agr"]["price"],
-        ))
+    if not base_only:
+        rows.append(_row(media, "PRESSURE SWITCH LOW", "", 1, make="MADAS"))
+
+        if is_plc:
+            rows += [
+                _row(media, "ORIFICE PLATE", "", 1,
+                     unit_price_override=_get_price_fuzzy("ORIFICE PLATE (Gas)"),
+                     make="ENGINEERING SPECIALITY"),
+                _row(media, "DPT", "", 1,
+                     unit_price_override=_get_price_fuzzy("DPT"),
+                     make="HONEYWELL"),
+            ]
+
+        rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+             unit_price_override=pcv_price, make=pcv_make))
+
+        needs_agr = (
+            control_mode == "manual"
+            or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
+        )
+        if needs_agr:
+            rows.append(_row(
+                media, "AGR",
+                f'{equipment["agr"]["nb"]} NB',
+                1, unit_price_override=equipment["agr"]["price"],
+            ))
 
     return rows
 
@@ -354,6 +354,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         return _mix_gas_line_rows(
             media, equipment, control_mode, auto_control_type,
             pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor,
+            base_only=base_only,
         )
 
     # Coke Oven Gas has its own discrete-component BOM
@@ -361,6 +362,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         return _cog_line_rows(
             media, equipment, control_mode, auto_control_type,
             pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor,
+            base_only=base_only,
         )
 
     # Gas train (gas fuels only)
