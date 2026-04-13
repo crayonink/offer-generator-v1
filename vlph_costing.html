@@ -591,7 +591,15 @@
     <!-- Manual BOM Inputs (shown only when control_mode = manual) -->
     <div id="manual-inputs" style="display:none; margin-bottom:24px;">
       <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Manual BOM Inputs</div>
-      <div class="fg fg-3" style="margin-bottom:12px">
+      <div class="fg fg-2">
+        <div class="field">
+          <label>Pilot Burner Required?</label>
+          <select id="manual_pilot_burner">
+            <option value="yes" selected>Yes</option>
+            <option value="no">No</option>
+          </select>
+          <div class="hint">Include pilot burner, ignition transformer, UV sensor in BOM</div>
+        </div>
       </div>
     </div>
 
@@ -1143,10 +1151,7 @@ async function calculate() {
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
-
-
-
-
+      manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
 
     };
   } else {
@@ -1173,10 +1178,7 @@ async function calculate() {
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
-
-
-
-
+      manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
 
     };
   }

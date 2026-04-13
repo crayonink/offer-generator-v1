@@ -739,11 +739,13 @@ def build_vlph_manual_df(
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
+    include_pilot: bool = True,
 ) -> pd.DataFrame:
     """
     Manual / simplified VLPH BOM — matches the Lloyds manual costing format.
     Bought Out items are few; In-House items are grouped.
     LPG NG Pilot Line is expanded with individual items (same as automatic).
+    include_pilot=False skips pilot burner, ignition transformer, UV sensor, pilot line.
     """
 
     pg_vendor = pressure_gauge_vendor.upper()
@@ -773,34 +775,35 @@ def build_vlph_manual_df(
         base_only=True,
     )
 
-    # ── LPG NG PILOT LINE (detailed — same as automatic) ─────────────────
-    rows += [
-        _row("LPG NG PILOT LINE", "BALL VALVE", "20 NB", 1,
-             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-        _row("LPG NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
-        _row("LPG NG PILOT LINE", "BALL VALVE", "15 NB", 1,
-             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
-        _row("LPG NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
-             unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
-    ]
-    reg_nb_request = 20
-    try:
-        reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
-        rows.append(_row(
-            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
-            f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
-            1, unit_price_override=reg["price"], make="MADAS",
-        ))
-    except ValueError:
-        rows.append(_row(
-            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
-            f'{reg_nb_request} NB', 1, make="MADAS",
-        ))
-    rows += [
-        _row("LPG NG PILOT LINE", "FLEXIBLE HOSE",
-             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
-             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
-    ]
+    # ── LPG NG PILOT LINE (only if pilot burner is included) ──────────────
+    if include_pilot:
+        rows += [
+            _row("LPG NG PILOT LINE", "BALL VALVE", "20 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+            _row("LPG NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
+            _row("LPG NG PILOT LINE", "BALL VALVE", "15 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+            _row("LPG NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
+                 unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
+        ]
+        reg_nb_request = 20
+        try:
+            reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
+            rows.append(_row(
+                "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+                f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
+                1, unit_price_override=reg["price"], make="MADAS",
+            ))
+        except ValueError:
+            rows.append(_row(
+                "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+                f'{reg_nb_request} NB', 1, make="MADAS",
+            ))
+        rows += [
+            _row("LPG NG PILOT LINE", "FLEXIBLE HOSE",
+                 f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
+        ]
 
     # ── IN-HOUSE / ENCON ITEMS ────────────────────────────────────────────
     rows += [
@@ -827,20 +830,25 @@ def build_vlph_manual_df(
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"]),
-        _row(
-            "ENCON ITEMS",
-            {
-                "lpg_10":  "ENCON-PB-LPG-10KW",
-                "ng_10":   "ENCON-PB NG 10 KW",
-                "lpg_100": "ENCON-PB LPG 100 KW",
-                "ng_100":  "ENCON-PB NG 100 KW",
-                "cog_100": "ENCON PB COG 100 KW",
-            }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-            "", 1,
-        ),
-        _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
-        _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
-        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
+    ]
+    if include_pilot:
+        rows += [
+            _row(
+                "ENCON ITEMS",
+                {
+                    "lpg_10":  "ENCON-PB-LPG-10KW",
+                    "ng_10":   "ENCON-PB NG 10 KW",
+                    "lpg_100": "ENCON-PB LPG 100 KW",
+                    "ng_100":  "ENCON-PB NG 100 KW",
+                    "cog_100": "ENCON PB COG 100 KW",
+                }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
+                "", 1,
+            ),
+            _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
+            _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
+            _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
+        ]
+    rows += [
         _row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
