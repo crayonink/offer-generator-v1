@@ -787,8 +787,8 @@
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r-cfr">—</td>      <td class="unit" id="r-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r-efr">—</td>      <td class="unit" id="r-efr-unit">Nm³/hr</td></tr>
             <tr id="r-kghr-row" style="display:none"><td class="lbl">Equiv. Firing Rate</td> <td class="val" id="r-kghr">—</td> <td class="unit">kg/hr</td></tr>
-            <tr id="r-density-row" style="display:none"><td class="lbl">Fuel Density</td> <td class="val" id="r-density">—</td> <td class="unit">kg/l</td></tr>
-            <tr id="r-lph-row" style="display:none"><td class="lbl">Firing Rate (LPH)</td> <td class="val" id="r-lph">—</td> <td class="unit">l/hr</td></tr>
+            <tr id="r-density-row" style="display:none"><td class="lbl">Fuel Density</td> <td class="val" id="r-density">—</td> <td class="unit">kg/ltr</td></tr>
+            <tr id="r-lph-row" style="display:none"><td class="lbl">Firing Rate (LPH)</td> <td class="val" id="r-lph">—</td> <td class="unit">ltr/hr</td></tr>
             <tr><td class="lbl">Firing Rate</td>          <td class="val" id="r-mw">—</td>       <td class="unit">MW</td></tr>
             <tr><td class="lbl">Air Quantity</td>         <td class="val" id="r-air">—</td>      <td class="unit">Nm³/hr</td></tr>
             <tr><td class="lbl">CFM</td>                  <td class="val" id="r-cfm">—</td>      <td class="unit">CFM</td></tr>
@@ -812,8 +812,8 @@
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r2-cfr">—</td>      <td class="unit" id="r2-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r2-efr">—</td>      <td class="unit" id="r2-efr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">Equiv. Firing Rate</td>   <td class="val" id="r2-kghr">—</td>     <td class="unit">kg/hr</td></tr>
-            <tr><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit">kg/l</td></tr>
-            <tr><td class="lbl">Firing Rate (LPH)</td>    <td class="val" id="r2-lph">—</td>      <td class="unit">l/hr</td></tr>
+            <tr><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit">kg/ltr</td></tr>
+            <tr><td class="lbl">Firing Rate (LPH)</td>    <td class="val" id="r2-lph">—</td>      <td class="unit">ltr/hr</td></tr>
           </table>
         </div>
       </div>
@@ -1287,7 +1287,7 @@ function renderResults(d) {
     : (c.fuel1_name || "NG") + " Pipe Sizing";
   if (isOil) {
     set("p-ng-q", fmt(p.fuel1_oil_lph, 2));
-    document.getElementById("p-ng-q-unit").textContent = "LPH";
+    document.getElementById("p-ng-q-unit").textContent = "ltr/hr";
     document.getElementById("p-ng-gt-flow-row").style.display = "none";
     document.getElementById("p-ng-gt-model-row").style.display = "none";
     document.getElementById("p-ng-nb-row").style.display = "";
@@ -1316,7 +1316,7 @@ function renderResults(d) {
       : (c.fuel2_name || "Fuel 2") + " Pipe Sizing";
     if (f2IsOil) {
       set("p-ng2-q", fmt(p.fuel2_oil_lph, 2));
-      document.getElementById("p-ng2-q-unit").textContent = "LPH";
+      document.getElementById("p-ng2-q-unit").textContent = "ltr/hr";
       document.getElementById("p-ng2-gt-flow-row").style.display = "none";
       document.getElementById("p-ng2-gt-model-row").style.display = "none";
       document.getElementById("p-ng2-nb-row").style.display = "";
