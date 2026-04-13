@@ -73,12 +73,12 @@ def _get_gate_valve_price(nb: int) -> tuple:
     import sqlite3, re
     conn = sqlite3.connect(DB_PATH)
     rows = conn.execute(
-        "SELECT item, price FROM component_price_master WHERE item LIKE 'GATE VALVE %NB' ORDER BY item"
+        "SELECT item, price FROM component_price_master WHERE item LIKE 'GATE VALVE % NB' ORDER BY item"
     ).fetchall()
     conn.close()
     candidates = []
     for item, price in rows:
-        m = re.match(r'GATE VALVE (\d+)NB', item)
+        m = re.match(r'GATE VALVE (\d+) NB', item)
         if m:
             candidates.append((int(m.group(1)), float(price)))
     candidates.sort()
@@ -134,7 +134,7 @@ def _get_cheapest_ball_valve(nb: int) -> float:
     conn = sqlite3.connect(DB_PATH)
     row = conn.execute(
         "SELECT price FROM component_price_master WHERE company='L&T' AND item LIKE ? ORDER BY price ASC LIMIT 1",
-        (f'BALL VALVE {nb:03d}NB%',)
+        (f'BALL VALVE {nb} NB%',)
     ).fetchone()
     conn.close()
     return float(row[0]) if row else 0
@@ -459,14 +459,14 @@ def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
     conn = sqlite3.connect(DB_PATH)
     import re
     nb = int(re.sub(r'[^\d]', '', str(nb)) or 0)
-    nb_str = f'{nb:03d}'
+    nb_str = f'{nb} NB'
 
     if vendor in ("dembla", "aira"):
         company = vendor.upper()
         if valve_type == "control":
-            item = f'CONTROL VALVE {nb_str}NB'
+            item = f'CONTROL VALVE {nb_str}'
         else:
-            item = f'SHUT OFF VALVE {nb_str}NB'
+            item = f'SHUT OFF VALVE {nb_str}'
         row = conn.execute(
             "SELECT price FROM component_price_master WHERE item=? AND company=?", (item, company)
         ).fetchone()
@@ -475,7 +475,7 @@ def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
             prefix = "CONTROL" if valve_type == "control" else "SHUT OFF"
             row = conn.execute(
                 "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company=? AND item > ? ORDER BY item LIMIT 1",
-                (f'{prefix} VALVE %NB', company, item)
+                (f'{prefix} VALVE % NB', company, item)
             ).fetchone()
             if row:
                 conn.close()
@@ -483,23 +483,23 @@ def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
     elif vendor == "cair":
         company = "CAIR"
         if valve_type == "control":
-            item = f'MOTORIZED CONTROL VALVE {nb_str}NB'
+            item = f'MOTORIZED CONTROL VALVE {nb_str}'
         else:
-            item = f'SHUT OFF VALVE {nb_str}NB (Butterfly)'
+            item = f'SHUT OFF VALVE {nb_str} (Butterfly)'
         row = conn.execute(
             "SELECT price FROM component_price_master WHERE item=? AND company='CAIR'", (item,)
         ).fetchone()
         if not row:
             row = conn.execute(
                 "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company='CAIR' ORDER BY item LIMIT 1",
-                (f'{"MOTORIZED CONTROL" if valve_type == "control" else "SHUT OFF"} VALVE %NB%',)
+                (f'{"MOTORIZED CONTROL" if valve_type == "control" else "SHUT OFF"} VALVE % NB%',)
             ).fetchone()
             if row:
                 conn.close()
                 return row[0], row[1]
     else:
         company = vendor.upper()
-        item = f'CONTROL VALVE {nb_str}NB' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}NB'
+        item = f'CONTROL VALVE {nb_str}' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}'
         row = None
 
     conn.close()
