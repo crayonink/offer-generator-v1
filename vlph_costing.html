@@ -1231,11 +1231,16 @@ function renderResults(d) {
   } else {
     set("p-ng-q", fmt(p.ng_flow, 2));
     document.getElementById("p-ng-q-unit").textContent = "Nm³/hr";
+    const noGasTrain = c.fuel1_type === "cog" || c.fuel1_type === "mg";
     document.getElementById("p-ng-gt-flow-row").style.display = "";
-    document.getElementById("p-ng-gt-model-row").style.display = "";
-    document.getElementById("p-ng-nb-row").style.display = "none";
+    document.getElementById("p-ng-gt-model-row").style.display = noGasTrain ? "none" : "";
+    document.getElementById("p-ng-nb-row").style.display = noGasTrain ? "" : "none";
     set("p-ng-gt-flow", fmt(p.gas_train_flow, 0));
-    set("p-ng-gt-model", p.gas_train_model || "—");
+    if (noGasTrain) {
+      set("p-ng-nb", p.ng_nb + " NB");
+    } else {
+      set("p-ng-gt-model", p.gas_train_model || "—");
+    }
   }
   // Fuel 2 pipe sizing card (dual-fuel only)
   const pipe2Section = document.getElementById("pipe2-section");
@@ -1255,11 +1260,16 @@ function renderResults(d) {
     } else {
       set("p-ng2-q", fmt(p.fuel2_flow, 2));
       document.getElementById("p-ng2-q-unit").textContent = "Nm³/hr";
+      const noGasTrain2 = c.fuel2_type === "cog" || c.fuel2_type === "mg";
       document.getElementById("p-ng2-gt-flow-row").style.display = "";
-      document.getElementById("p-ng2-gt-model-row").style.display = "";
-      document.getElementById("p-ng2-nb-row").style.display = "none";
+      document.getElementById("p-ng2-gt-model-row").style.display = noGasTrain2 ? "none" : "";
+      document.getElementById("p-ng2-nb-row").style.display = noGasTrain2 ? "" : "none";
       set("p-ng2-gt-flow", fmt(p.fuel2_gas_train_flow, 0));
-      set("p-ng2-gt-model", p.fuel2_gas_train_model || "—");
+      if (noGasTrain2) {
+        set("p-ng2-nb", p.fuel2_nb + " NB");
+      } else {
+        set("p-ng2-gt-model", p.fuel2_gas_train_model || "—");
+      }
     }
   } else {
     pipe2Section.style.display = "none";
