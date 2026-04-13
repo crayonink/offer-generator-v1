@@ -385,7 +385,8 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                 if fuel_type in ("ng", "lpg", "rlng"):
                     from calculations.pipes import STANDARD_PIPE_NB
                     # Orifice plate = gas train outlet NB (2nd DN)
-                    gt_outlet_nb = equipment["ng_gas_train"]["outlet_nb"]
+                    import re as _re
+                    gt_outlet_nb = int(_re.sub(r'[^\d]', '', str(equipment["ng_gas_train"]["outlet_nb"])) or 0)
                     gas_op_nb, gas_op_price = _get_orifice_price(gt_outlet_nb)
                     # Control valve = one pipe size smaller than outlet NB
                     try:
@@ -456,7 +457,8 @@ def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
     """Look up valve price from DB by NB and vendor. Returns (item_name, price)."""
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
-    nb = int(nb)
+    import re
+    nb = int(re.sub(r'[^\d]', '', str(nb)) or 0)
     nb_str = f'{nb:03d}'
 
     if vendor in ("dembla", "aira"):
