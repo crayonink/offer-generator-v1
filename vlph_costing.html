@@ -783,9 +783,9 @@
             <tr><td class="lbl">Time Taken</td>           <td class="val" id="r-time">—</td>     <td class="unit">hr</td></tr>
             <tr><td class="lbl">Firing Rate</td>          <td class="val" id="r-fr-kcal">—</td>  <td class="unit">kcal/hr</td></tr>
             <tr><td class="lbl">Heat Load</td>            <td class="val" id="r-hl">—</td>       <td class="unit">kcal</td></tr>
-            <tr><td class="lbl">Fuel Consumption</td>     <td class="val" id="r-fc">—</td>       <td class="unit">Nm³</td></tr>
-            <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r-cfr">—</td>      <td class="unit">Nm³/hr</td></tr>
-            <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r-efr">—</td>      <td class="unit">Nm³/hr</td></tr>
+            <tr><td class="lbl">Fuel Consumption</td>     <td class="val" id="r-fc">—</td>       <td class="unit" id="r-fc-unit">Nm³</td></tr>
+            <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r-cfr">—</td>      <td class="unit" id="r-cfr-unit">Nm³/hr</td></tr>
+            <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r-efr">—</td>      <td class="unit" id="r-efr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">Firing Rate</td>          <td class="val" id="r-mw">—</td>       <td class="unit">MW</td></tr>
             <tr><td class="lbl">Air Quantity</td>         <td class="val" id="r-air">—</td>      <td class="unit">Nm³/hr</td></tr>
             <tr><td class="lbl">CFM</td>                  <td class="val" id="r-cfm">—</td>      <td class="unit">CFM</td></tr>
@@ -1209,6 +1209,9 @@ function renderResults(d) {
   const oilFuels = OIL_FUEL_SET;
   const f1Type = document.getElementById("fuel1_type").value;
   const isOil = oilFuels.has(f1Type);
+  document.getElementById("r-fc-unit").textContent  = isOil ? "kg"    : "Nm³";
+  document.getElementById("r-cfr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
+  document.getElementById("r-efr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
   document.getElementById("row-gt").style.display  = isOil ? "none" : "";
   if (eq.hpu) {
     document.getElementById("row-hpu").style.display = "";
