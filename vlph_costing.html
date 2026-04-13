@@ -802,6 +802,22 @@
         </div>
       </div>
 
+      <!-- Fuel 2 Calculation (dual fuel only) -->
+      <div class="result-section" id="fuel2-calc-section" style="margin-bottom:0; display:none;">
+        <div class="result-title" id="fuel2-calc-title">Fuel 2 Calculation</div>
+        <div class="result-card">
+          <table class="ct">
+            <tr><td class="lbl" id="r2-cv-label">Fuel 2 CV</td> <td class="val" id="r2-cv">—</td> <td class="unit" id="r2-cv-unit">kcal/Nm³</td></tr>
+            <tr><td class="lbl">Fuel Consumption</td>     <td class="val" id="r2-fc">—</td>       <td class="unit" id="r2-fc-unit">Nm³</td></tr>
+            <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r2-cfr">—</td>      <td class="unit" id="r2-cfr-unit">Nm³/hr</td></tr>
+            <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r2-efr">—</td>      <td class="unit" id="r2-efr-unit">Nm³/hr</td></tr>
+            <tr><td class="lbl">Equiv. Firing Rate</td>   <td class="val" id="r2-kghr">—</td>     <td class="unit">kg/hr</td></tr>
+            <tr><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit">kg/l</td></tr>
+            <tr><td class="lbl">Firing Rate (LPH)</td>    <td class="val" id="r2-lph">—</td>      <td class="unit">l/hr</td></tr>
+          </table>
+        </div>
+      </div>
+
       <!-- Pipe sizing -->
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="result-section" style="margin-bottom:0">
@@ -1234,6 +1250,35 @@ function renderResults(d) {
     set("eq-hpu", eq.hpu);
   } else {
     document.getElementById("row-hpu").style.display = "none";
+  }
+
+  // Fuel 2 calculation card (dual fuel only)
+  const fuel2CalcSection = document.getElementById("fuel2-calc-section");
+  if (c.is_dual) {
+    fuel2CalcSection.style.display = "";
+    const f2Type = c.fuel2_type;
+    const f2IsOil = oilFuels.has(f2Type);
+    const f2Name = c.fuel2_name || "Fuel 2";
+    document.getElementById("fuel2-calc-title").textContent = f2Name + " Calculation";
+    set("r2-cv-label", f2Name + " CV");
+    set("r2-cv", fmt(c.fuel2_cv, 0));
+    document.getElementById("r2-cv-unit").textContent = f2IsOil ? "kcal/kg" : "kcal/Nm³";
+    document.getElementById("r2-fc-unit").textContent  = f2IsOil ? "kg"    : "Nm³";
+    document.getElementById("r2-cfr-unit").textContent = f2IsOil ? "kg/hr" : "Nm³/hr";
+    document.getElementById("r2-efr-unit").textContent = f2IsOil ? "kg/hr" : "Nm³/hr";
+    set("r2-fc",  fmt(c.fuel2_consumption_nm3, 2));
+    set("r2-cfr", fmt(c.fuel2_firing_rate_nm3hr, 2));
+    set("r2-efr", fmt(c.fuel2_extra_firing_rate_nm3hr, 2));
+    if (f2IsOil) {
+      set("r2-kghr", fmt(c.fuel2_extra_firing_rate_nm3hr, 2));
+    } else {
+      const kghr2 = c.fuel2_extra_firing_rate_nm3hr * c.fuel2_cv / 10500;
+      set("r2-kghr", fmt(kghr2, 2));
+    }
+    set("r2-density", c.fuel2_fuel_density);
+    set("r2-lph",     fmt(c.fuel2_equivalent_lph, 2));
+  } else {
+    fuel2CalcSection.style.display = "none";
   }
 
   // Fuel 1 pipe sizing card — switch between gas and oil display

@@ -1104,6 +1104,8 @@ def vlph_calculate(req: VLPHCalcRequest):
             resp["calculations"]["fuel2_consumption_nm3"] = round(br2.fuel_consumption_nm3, 2) if br2 else 0
             resp["calculations"]["fuel2_firing_rate_nm3hr"] = round(br2.calculated_firing_rate_nm3hr, 2) if br2 else round(ng_flow2 / 1.1, 2)
             resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(ng_flow2, 2)
+            resp["calculations"]["fuel2_equivalent_lph"] = round(equip2["burner"].get("equivalent_lph", 0), 2) if equip2 else 0
+            resp["calculations"]["fuel2_fuel_density"] = equip2["burner"].get("fuel_density", 0) if equip2 else 0
             resp["pipes"]["fuel2_label"] = FUEL_NAMES.get(req.fuel2_type, "Fuel 2")
             resp["pipes"]["fuel2_flow"] = round(ng_flow2, 2)
             f2_is_oil = req.fuel2_type in OIL_FUELS
