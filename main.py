@@ -480,6 +480,7 @@ class VLPHCalcRequest(BaseModel):
     pipeline_weight_kg: float = 1000.0           # Air-gas pipeline weight (700–2000 kg, step 100)
     purging_line: str = "no"                     # "yes" | "no" — nitrogen purging line for MG/COG
     manual_pilot_burner: str = "yes"             # "yes" | "no" — include pilot burner in manual BOM
+    pilot_line_fuel: str = "lpg"                 # "lpg" | "ng" — pilot line fuel type (manual mode)
 
 
 class QuoteItem(BaseModel):
@@ -1013,6 +1014,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 pilot_burner=req.pilot_burner,
                 pipeline_weight_kg=req.pipeline_weight_kg,
                 include_pilot=req.manual_pilot_burner == "yes",
+                pilot_line_fuel=req.pilot_line_fuel,
             )
         else:
             bom_df = build_vlph_120t_df(

@@ -753,6 +753,7 @@ def build_vlph_manual_df(
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
     include_pilot: bool = True,
+    pilot_line_fuel: str = "lpg",
 ) -> pd.DataFrame:
     """
     Manual / simplified VLPH BOM — matches the Lloyds manual costing format.
@@ -788,32 +789,33 @@ def build_vlph_manual_df(
         base_only=True,
     )
 
-    # ── LPG NG PILOT LINE (only if pilot burner is included) ──────────────
+    # ── PILOT LINE (only if pilot burner is included) ──────────────
+    pilot_media = f"{pilot_line_fuel.upper()} PILOT LINE"
     if include_pilot:
         rows += [
-            _row("LPG NG PILOT LINE", "BALL VALVE", "20 NB", 1,
+            _row(pilot_media, "BALL VALVE", "20 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-            _row("LPG NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
-            _row("LPG NG PILOT LINE", "BALL VALVE", "15 NB", 1,
+            _row(pilot_media, pg_item, '', 1, make=pg_vendor),
+            _row(pilot_media, "BALL VALVE", "15 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
-            _row("LPG NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
+            _row(pilot_media, "SOLENOID VALVE", "15 NB", 1,
                  unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
         ]
         reg_nb_request = 20
         try:
             reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
             rows.append(_row(
-                "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+                pilot_media, "PRESSURE REGULATING VALVE",
                 f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
                 1, unit_price_override=reg["price"], make="MADAS",
             ))
         except ValueError:
             rows.append(_row(
-                "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+                pilot_media, "PRESSURE REGULATING VALVE",
                 f'{reg_nb_request} NB', 1, make="MADAS",
             ))
         rows += [
-            _row("LPG NG PILOT LINE", "FLEXIBLE HOSE",
+            _row(pilot_media, "FLEXIBLE HOSE",
                  f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
                  unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
         ]

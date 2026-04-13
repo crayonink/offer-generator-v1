@@ -594,11 +594,19 @@
       <div class="fg fg-2">
         <div class="field">
           <label>Pilot Burner Required?</label>
-          <select id="manual_pilot_burner">
+          <select id="manual_pilot_burner" onchange="onManualPilotChange()">
             <option value="yes" selected>Yes</option>
             <option value="no">No</option>
           </select>
           <div class="hint">Include pilot burner, ignition transformer, UV sensor in BOM</div>
+        </div>
+        <div class="field" id="pilot-fuel-wrap">
+          <label>Pilot Line Fuel</label>
+          <select id="pilot_line_fuel">
+            <option value="lpg" selected>LPG</option>
+            <option value="ng">NG</option>
+          </select>
+          <div class="hint">Fuel type for the pilot line</div>
         </div>
       </div>
     </div>
@@ -1063,6 +1071,11 @@ function onControlModeChange() {
   document.getElementById('manual-inputs').style.display = mode === 'manual' ? '' : 'none';
 }
 
+function onManualPilotChange() {
+  const need = document.getElementById('manual_pilot_burner').value === 'yes';
+  document.getElementById('pilot-fuel-wrap').style.display = need ? '' : 'none';
+}
+
 const OIL_FUEL_SET = new Set(["hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"]);
 function cvUnit(fuelType) { return OIL_FUEL_SET.has(fuelType) ? "kcal/kg" : "kcal/Nm³"; }
 
@@ -1163,6 +1176,7 @@ async function calculate() {
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
+      pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
 
     };
   } else {
@@ -1191,6 +1205,7 @@ async function calculate() {
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
+      pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
 
     };
   }
