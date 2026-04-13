@@ -50,13 +50,15 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
 
     # Convert flow to LPH for burner selection.
     # Oil fuels: burner-calc gives kg/hr → divide by density to get l/hr.
-    # Gas fuels: convert Nm3/hr to oil-equivalent LPH using reference CV 8600 kcal/L.
+    # Gas fuels: Nm3/hr × CV ÷ 10500 = kg/hr, then ÷ 0.85 = l/hr.
     category = _resolve_category(fuel_type)
     if category == "oil":
         density = _get_fuel_density(fuel_type)
         equivalent_lph = required_gas_flow_nm3hr / density  # kg/hr → l/hr
     else:
-        equivalent_lph = required_gas_flow_nm3hr * fuel_cv / 8600
+        equivalent_kghr = required_gas_flow_nm3hr * fuel_cv / 10500
+        density = 0.85  # standard density for gas-to-oil conversion
+        equivalent_lph = equivalent_kghr / density
 
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
@@ -115,7 +117,7 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         "model": model,
         "input_nm3hr": required_gas_flow_nm3hr,
         "equivalent_lph": round(equivalent_lph, 2),
-        "fuel_density": density if category == "oil" else 0,
+        "fuel_density": density,
         "price": price_row[0],
         "fuel_type": fuel_type,
         "burner_pressure_wg": burner_pressure_wg,
