@@ -786,6 +786,7 @@
             <tr><td class="lbl">Fuel Consumption</td>     <td class="val" id="r-fc">—</td>       <td class="unit" id="r-fc-unit">Nm³</td></tr>
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r-cfr">—</td>      <td class="unit" id="r-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r-efr">—</td>      <td class="unit" id="r-efr-unit">Nm³/hr</td></tr>
+            <tr id="r-kghr-row" style="display:none"><td class="lbl">Equiv. Firing Rate</td> <td class="val" id="r-kghr">—</td> <td class="unit">kg/hr</td></tr>
             <tr id="r-density-row" style="display:none"><td class="lbl">Fuel Density</td> <td class="val" id="r-density">—</td> <td class="unit">kg/l</td></tr>
             <tr id="r-lph-row" style="display:none"><td class="lbl">Firing Rate (LPH)</td> <td class="val" id="r-lph">—</td> <td class="unit">l/hr</td></tr>
             <tr><td class="lbl">Firing Rate</td>          <td class="val" id="r-mw">—</td>       <td class="unit">MW</td></tr>
@@ -1214,12 +1215,19 @@ function renderResults(d) {
   document.getElementById("r-fc-unit").textContent  = isOil ? "kg"    : "Nm³";
   document.getElementById("r-cfr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
   document.getElementById("r-efr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
-  document.getElementById("r-density-row").style.display = isOil ? "" : "none";
-  document.getElementById("r-lph-row").style.display     = isOil ? "" : "none";
+  document.getElementById("r-kghr-row").style.display    = "";
+  document.getElementById("r-density-row").style.display = "";
+  document.getElementById("r-lph-row").style.display     = "";
   if (isOil) {
-    set("r-density", c.fuel_density);
-    set("r-lph",     fmt(c.equivalent_lph, 2));
+    // Oil: firing rate is already kg/hr, density from DB
+    set("r-kghr", fmt(c.extra_firing_rate_nm3hr, 2));
+  } else {
+    // Gas: Nm3/hr × CV / 10500 = kg/hr
+    const kghr = c.extra_firing_rate_nm3hr * (c.fuel_cv || c.fuel1_cv) / 10500;
+    set("r-kghr", fmt(kghr, 2));
   }
+  set("r-density", c.fuel_density);
+  set("r-lph",     fmt(c.equivalent_lph, 2));
   document.getElementById("row-gt").style.display  = isOil ? "none" : "";
   if (eq.hpu) {
     document.getElementById("row-hpu").style.display = "";
