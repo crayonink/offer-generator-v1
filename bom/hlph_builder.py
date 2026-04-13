@@ -70,8 +70,17 @@ def build_hlph_df(
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
              params["ceramic_rolls"],
              unit_price_override=params.get("ceramic_rate", 0)),
-        _row("ENCON ITEMS", "TROLLEY DRIVE MECHANISM", "",
-             1, unit_price_override=params["trolley_drive_cost"]),
+    ]
+
+    # ── TROLLEY MECHANISM (individual items from DB) ──────────────────────
+    rows += [
+        _row("MISC ITEMS", "GEARED MOTOR MECHANISM", "3 HP", 1, make="POWERTEK"),
+        _row("MISC ITEMS", "TROLLEY WHEEL", "CastIron", 4, make="ENCON"),
+        _row("MISC ITEMS", "PLUMMER BLOCK", "MS IS-2062", 6, make="ENCON"),
+        _row("MISC ITEMS", "SHAFT (1 long, 2 Short)", "EN-8", 1, make="ENCON"),
+        _row("MISC ITEMS", "BEARING", "NU2214", 4, make="ENCON"),
+        _row("MISC ITEMS", "SLIEVE", "", 4, make="ENCON"),
+        _row("MISC ITEMS", "FRAME", "MS Structure", 1000, make="ENCON"),
     ]
 
     # ── COMBUSTION AIR LINE ───────────────────────────────────────────────
@@ -339,8 +348,6 @@ def build_hlph_manual_df(
         _row("ENCON ITEMS", "FABRICATION",
              f'{params["ms_structure_kg"]} KG',
              1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
-        _row("ENCON ITEMS", "TROLLEY DRIVE MECHANISM", "",
-             1, unit_price_override=params["trolley_drive_cost"]),
     ]
 
     # HPU — for oil fuels
@@ -353,7 +360,13 @@ def build_hlph_manual_df(
         ))
 
     rows += [
-        _row("ENCON ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "", 1),
+        _row("MISC ITEMS", "GEARED MOTOR MECHANISM", "3 HP", 1, make="POWERTEK"),
+        _row("MISC ITEMS", "TROLLEY WHEEL", "CastIron", 4, make="ENCON"),
+        _row("MISC ITEMS", "PLUMMER BLOCK", "MS IS-2062", 6, make="ENCON"),
+        _row("MISC ITEMS", "SHAFT (1 long, 2 Short)", "EN-8", 1, make="ENCON"),
+        _row("MISC ITEMS", "BEARING", "NU2214", 4, make="ENCON"),
+        _row("MISC ITEMS", "SLIEVE", "", 4, make="ENCON"),
+        _row("MISC ITEMS", "FRAME", "MS Structure", 1000, make="ENCON"),
         _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
