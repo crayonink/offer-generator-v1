@@ -517,6 +517,7 @@ def build_vlph_120t_df(
     shutoff_valve_vendor: str = "aira",
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
+    pilot_line_fuel: str = "lpg",
     pipeline_weight_kg: float = 1000.0,
     purging_line: str = "no",
 ) -> pd.DataFrame:
@@ -615,32 +616,32 @@ def build_vlph_120t_df(
             _row("PURGING LINE", "CHECK VALVE",               "20 NB",       1, unit_price_override=3300,  make="AUDCO/L&T/LEADER"),
         ]
 
-    # ── LPG NG PILOT LINE ──────────────────────────────────────────────────────
+    # ── PILOT LINE ─────────────────────────────────────────────────────────
+    pl_media = f"{pilot_line_fuel.upper()} PILOT LINE"
     rows += [
-        _row("LPG NG PILOT LINE", "BALL VALVE", "20 NB", 1,
+        _row(pl_media, "BALL VALVE", "20 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-        _row("LPG NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
-        _row("LPG NG PILOT LINE", "BALL VALVE", "15 NB", 1,
+        _row(pl_media, pg_item, '', 1, make=pg_vendor),
+        _row(pl_media, "BALL VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
-        _row("LPG NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
+        _row(pl_media, "SOLENOID VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
     ]
-    # Pressure Regulating Valve — NG pilot line uses 20 NB (DN025) for ALL fuels.
     reg_nb_request = 20
     try:
         reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
         rows.append(_row(
-            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            pl_media, "PRESSURE REGULATING VALVE",
             f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
             1, unit_price_override=reg["price"], make="MADAS",
         ))
     except ValueError:
         rows.append(_row(
-            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            pl_media, "PRESSURE REGULATING VALVE",
             f'{reg_nb_request} NB', 1, make="MADAS",
         ))
     rows += [
-        _row("LPG NG PILOT LINE", "FLEXIBLE HOSE",
+        _row(pl_media, "FLEXIBLE HOSE",
              f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
              unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
     ]

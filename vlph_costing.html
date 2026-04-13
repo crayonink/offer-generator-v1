@@ -600,14 +600,6 @@
           </select>
           <div class="hint">Include pilot burner, ignition transformer, UV sensor in BOM</div>
         </div>
-        <div class="field" id="pilot-fuel-wrap">
-          <label>Pilot Line Fuel</label>
-          <select id="pilot_line_fuel">
-            <option value="lpg" selected>LPG</option>
-            <option value="ng">NG</option>
-          </select>
-          <div class="hint">Fuel type for the pilot line</div>
-        </div>
       </div>
     </div>
 
@@ -662,6 +654,13 @@
           <option value="Simplex">Simplex (HPS)</option>
           <option value="Duplex 1" selected>Duplex-I (HPD)</option>
           <option value="Duplex 2">Duplex-II (HPDD)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pilot Line Fuel</label>
+        <select id="pilot_line_fuel">
+          <option value="lpg" selected>LPG</option>
+          <option value="ng">NG</option>
         </select>
       </div>
       <div class="field">
@@ -1072,8 +1071,7 @@ function onControlModeChange() {
 }
 
 function onManualPilotChange() {
-  const need = document.getElementById('manual_pilot_burner').value === 'yes';
-  document.getElementById('pilot-fuel-wrap').style.display = need ? '' : 'none';
+  // placeholder — pilot fuel is now in the common section
 }
 
 const OIL_FUEL_SET = new Set(["hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"]);

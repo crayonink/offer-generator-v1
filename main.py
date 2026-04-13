@@ -1030,6 +1030,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 shutoff_valve_vendor=req.shutoff_valve_vendor,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
+                pilot_line_fuel=req.pilot_line_fuel,
                 pipeline_weight_kg=req.pipeline_weight_kg,
                 purging_line=req.purging_line,
             )
