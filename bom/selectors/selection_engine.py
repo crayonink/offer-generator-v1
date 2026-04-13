@@ -17,7 +17,7 @@ from bom.selectors.encon_burner import _resolve_category
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24, shutoff_valve_vendor: str = "cair", control_mode: str = "automatic", auto_control_type: str = "plc") -> dict:
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24, butterfly_valve_vendor: str = "lt_lever", shutoff_valve_vendor: str = "aira", control_mode: str = "automatic", auto_control_type: str = "plc") -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     fuel_type: 'gas', 'oil', or 'dual' — picks the burner pricelist section.
@@ -82,9 +82,9 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     motorized_control_valve = select_motorized_control_valve(air_flow_nm3hr)
     # Butterfly valve — fall back from Lever to Gear if pipe NB exceeds 300
     try:
-        butterfly_valve = select_butterfly_valve(air_nb, vendor=shutoff_valve_vendor)
+        butterfly_valve = select_butterfly_valve(air_nb, vendor=butterfly_valve_vendor)
     except ValueError:
-        if shutoff_valve_vendor == "lt_lever":
+        if butterfly_valve_vendor == "lt_lever":
             butterfly_valve = select_butterfly_valve(air_nb, vendor="lt_gear")
         else:
             raise

@@ -143,7 +143,8 @@ def _get_cheapest_ball_valve(nb: int) -> float:
 def _cog_line_rows(media: str, equipment: dict,
                    control_mode: str, auto_control_type: str,
                    pressure_gauge_vendor: str,
-                   shutoff_valve_vendor: str = "lt_lever"):
+                   butterfly_valve_vendor: str = "lt_lever",
+                   shutoff_valve_vendor: str = "aira"):
     """
     Coke Oven Gas BOM — discrete components, prices pulled from DB.
     Matches the ENCON COG pricelist layout.
@@ -165,17 +166,17 @@ def _cog_line_rows(media: str, equipment: dict,
     # Gate valve — L&T, NB-scaled
     gv_nb, gv_price = _get_gate_valve_price(gas_pipe_nb)
 
-    # Shut off valve — DEMBLA pneumatic, NB-scaled
-    _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", "dembla")
+    # Shut off valve — vendor-selected, NB-scaled
+    _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", shutoff_valve_vendor)
 
     # Pneumatic control valve — DEMBLA, one pipe size smaller
     _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
 
     # Butterfly valve — follows user's L&T vendor choice
     try:
-        bfv = select_butterfly_valve(gas_pipe_nb, vendor=shutoff_valve_vendor)
+        bfv = select_butterfly_valve(gas_pipe_nb, vendor=butterfly_valve_vendor)
     except ValueError:
-        if shutoff_valve_vendor == "lt_lever":
+        if butterfly_valve_vendor == "lt_lever":
             try:
                 bfv = select_butterfly_valve(gas_pipe_nb, vendor="lt_gear")
             except ValueError:
@@ -197,7 +198,7 @@ def _cog_line_rows(media: str, equipment: dict,
              unit_price_override=gv_price, make="L&T"),
         _row(media, pg_item, "", 1, make=pg_vendor),
         _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
-             unit_price_override=shutoff_price, make="DEMBLA"),
+             unit_price_override=shutoff_price, make=shutoff_valve_vendor.upper()),
         _row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"),
     ]
 
@@ -231,7 +232,8 @@ def _cog_line_rows(media: str, equipment: dict,
 def _mix_gas_line_rows(media: str, equipment: dict,
                        control_mode: str, auto_control_type: str,
                        pressure_gauge_vendor: str,
-                       shutoff_valve_vendor: str = "lt_lever"):
+                       butterfly_valve_vendor: str = "lt_lever",
+                       shutoff_valve_vendor: str = "aira"):
     """
     Mix Gas BOM — discrete components instead of a packaged gas train.
     Structure matches the ENCON Mix Gas pricelist layout.
@@ -258,8 +260,8 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     except ValueError:
         cv_nb = gas_pipe_nb
 
-    # Shut-off valve — DEMBLA (pneumatic), sized to gas pipe NB
-    _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", "dembla")
+    # Shut-off valve — vendor-selected, sized to gas pipe NB
+    _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", shutoff_valve_vendor)
 
     # Pneumatic control valve — always DEMBLA for Mix Gas (pneumatic only).
     # When additional pneumatic vendors are added, expand this.
@@ -269,9 +271,9 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     # Butterfly valve sized to gas pipe NB — follow user's vendor choice,
     # fall back from Lever to Gear if the requested NB is out of Lever range.
     try:
-        bfv = select_butterfly_valve(gas_pipe_nb, vendor=shutoff_valve_vendor)
+        bfv = select_butterfly_valve(gas_pipe_nb, vendor=butterfly_valve_vendor)
     except ValueError:
-        if shutoff_valve_vendor == "lt_lever":
+        if butterfly_valve_vendor == "lt_lever":
             try:
                 bfv = select_butterfly_valve(gas_pipe_nb, vendor="lt_gear")
             except ValueError:
@@ -297,7 +299,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
         _row(media, pg_item, f'{gas_pipe_nb} NB', 1, make=pg_vendor),
         _row(media, "PRESSURE SWITCH LOW", "", 1, make="MADAS"),
         _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
-             unit_price_override=shutoff_price, make="DEMBLA"),
+             unit_price_override=shutoff_price, make=shutoff_valve_vendor.upper()),
     ]
 
     # ORIFICE PLATE + DPT — only in pure PLC mode (ratio by orifice/DPT/CV)
@@ -339,7 +341,8 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     control_mode: str = "automatic", auto_control_type: str = "plc",
                     control_valve_vendor: str = "dembla",
                     pressure_gauge_vendor: str = "baumer",
-                    shutoff_valve_vendor: str = "lt_lever",
+                    butterfly_valve_vendor: str = "lt_lever",
+                    shutoff_valve_vendor: str = "aira",
                     base_only: bool = False):
     """Generate fuel line BOM rows for a single fuel.
     base_only=True skips all instrumentation (AGR, orifice, DPT, control valve)."""
@@ -350,14 +353,14 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     if fuel_type == "mg":
         return _mix_gas_line_rows(
             media, equipment, control_mode, auto_control_type,
-            pressure_gauge_vendor, shutoff_valve_vendor,
+            pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor,
         )
 
     # Coke Oven Gas has its own discrete-component BOM
     if fuel_type == "cog":
         return _cog_line_rows(
             media, equipment, control_mode, auto_control_type,
-            pressure_gauge_vendor, shutoff_valve_vendor,
+            pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor,
         )
 
     # Gas train (gas fuels only)
@@ -508,7 +511,8 @@ def build_vlph_120t_df(
     control_mode: str = "automatic",
     auto_control_type: str = "agr",
     control_valve_vendor: str = "dembla",
-    shutoff_valve_vendor: str = "lt_lever",
+    butterfly_valve_vendor: str = "lt_lever",
+    shutoff_valve_vendor: str = "aira",
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
@@ -590,11 +594,11 @@ def build_vlph_120t_df(
     ]
 
     # ── FUEL 1 LINE ────────────────────────────────────────────────────────
-    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, shutoff_valve_vendor)
+    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor)
 
     # ── FUEL 2 LINE (dual fuel only) ──────────────────────────────────────
     if is_dual:
-        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, shutoff_valve_vendor)
+        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode, auto_control_type, control_valve_vendor, pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor)
 
     # ── PURGING LINE LINE (MG/COG only, when user enabled it) ─────────
     # Prices are specific to the nitrogen purging assembly and don't match

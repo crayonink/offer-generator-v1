@@ -622,10 +622,19 @@
         <div class="hint">DEMBLA/AIRA = pneumatic actuator, CAIR = electric actuator</div>
       </div>
     </div>
-    <div class="fg fg-2" style="margin-bottom:24px">
+    <div class="fg fg-3" style="margin-bottom:24px">
+      <div class="field">
+        <label>Shut Off Valve Vendor</label>
+        <select id="shutoff_valve_vendor">
+          <option value="dembla">DEMBLA (Pneumatic)</option>
+          <option value="aira" selected>AIRA (Pneumatic)</option>
+          <option value="cair">CAIR (Motorized)</option>
+        </select>
+        <div class="hint">Pneumatic or motorized shut off valve</div>
+      </div>
       <div class="field">
         <label>Butterfly Valve (L&amp;T)</label>
-        <select id="shutoff_valve_vendor">
+        <select id="butterfly_valve_vendor">
           <option value="lt_lever" selected>L&amp;T 2IWE4SL (Lever)</option>
           <option value="lt_gear">L&amp;T 2IWE4SG (Gear)</option>
         </select>
@@ -1147,6 +1156,7 @@ async function calculate() {
       auto_control_type: document.getElementById("auto_control_type").value,
       control_valve_vendor: document.getElementById("control_valve_vendor").value,
       shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
+      butterfly_valve_vendor: document.getElementById("butterfly_valve_vendor").value,
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
       pilot_burner: document.getElementById("pilot_burner").value,
@@ -1174,6 +1184,7 @@ async function calculate() {
       auto_control_type: document.getElementById("auto_control_type").value,
       control_valve_vendor: document.getElementById("control_valve_vendor").value,
       shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
+      butterfly_valve_vendor: document.getElementById("butterfly_valve_vendor").value,
       pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
       hpu_variant: document.getElementById("hpu_variant").value,
       pilot_burner: document.getElementById("pilot_burner").value,

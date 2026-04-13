@@ -471,7 +471,8 @@ class VLPHCalcRequest(BaseModel):
     control_mode: str = "automatic"              # "manual" or "automatic"
     auto_control_type: str = "agr"               # "plc", "plc_agr", "pid"
     control_valve_vendor: str = "dembla"         # "dembla" or "cair"
-    shutoff_valve_vendor: str = "lt_lever"       # "lt_lever" or "lt_gear" (L&T butterfly variants)
+    shutoff_valve_vendor: str = "aira"           # "dembla", "aira", or "cair" — shut off valve vendor
+    butterfly_valve_vendor: str = "lt_lever"     # "lt_lever" or "lt_gear" (L&T butterfly variants)
     pressure_gauge_vendor: str = "baumer"        # "baumer" or "hguru"
     hpu_variant: str = "Duplex 1"                # "Simplex" | "Duplex 1" | "Duplex 2" — for oil fuels
     # burner_pressure_wg is derived from blower_pressure (28→24, 40→36)
@@ -952,6 +953,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             fuel_type=req.fuel1_type,
             hpu_variant=req.hpu_variant,
             burner_pressure_wg=burner_pressure_wg,
+            butterfly_valve_vendor=req.butterfly_valve_vendor,
             shutoff_valve_vendor=req.shutoff_valve_vendor,
             control_mode=req.control_mode,
             auto_control_type=req.auto_control_type,
@@ -995,6 +997,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 fuel_type=req.fuel2_type,
                 hpu_variant=req.hpu_variant,
                 burner_pressure_wg=burner_pressure_wg,
+                butterfly_valve_vendor=req.butterfly_valve_vendor,
                 shutoff_valve_vendor=req.shutoff_valve_vendor,
                 control_mode=req.control_mode,
                 auto_control_type=req.auto_control_type,
@@ -1021,6 +1024,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 control_mode=req.control_mode,
                 auto_control_type=req.auto_control_type,
                 control_valve_vendor=req.control_valve_vendor,
+                butterfly_valve_vendor=req.butterfly_valve_vendor,
                 shutoff_valve_vendor=req.shutoff_valve_vendor,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
