@@ -430,7 +430,11 @@ function renderRates(data) {
   data.forEach(r => { cats[r.category] = cats[r.category] || []; cats[r.category].push(r); });
 
   let rowNum = 0;
-  let html = `<div class="xl-wrap"><table class="xl-table" style="min-width:800px;">
+  let html = `<div style="padding:6px 10px;background:#f0f0f0;display:flex;gap:10px;align-items:center;">
+    <input type="text" id="rates-search" placeholder="Search items..." oninput="filterRates(this.value)" style="padding:5px 10px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:250px;font-family:inherit;"/>
+    <span style="font-size:11px;color:#666;">${data.length} items in ${Object.keys(cats).length} categories</span>
+  </div>
+  <div class="xl-wrap"><table class="xl-table" id="rates-table" style="min-width:800px;">
     <thead><tr>
       <th class="rn"></th>
       <th class="item-th" style="min-width:300px;">Item</th>
@@ -527,6 +531,21 @@ function renderRates(data) {
         }
       });
     });
+  });
+}
+
+function filterRates(query) {
+  const table = document.getElementById('rates-table');
+  if (!table) return;
+  const q = query.toLowerCase().trim();
+  const rows = table.querySelectorAll('tbody tr');
+  rows.forEach(tr => {
+    if (tr.classList.contains('section-hdr')) {
+      tr.style.display = q ? 'none' : '';
+      return;
+    }
+    const text = tr.textContent.toLowerCase();
+    tr.style.display = text.includes(q) ? '' : 'none';
   });
 }
 
