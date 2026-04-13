@@ -616,9 +616,10 @@
         <label>Control Valve Vendor</label>
         <select id="control_valve_vendor">
           <option value="dembla" selected>DEMBLA (Pneumatic)</option>
+          <option value="aira">AIRA (Pneumatic)</option>
           <option value="cair">CAIR (Motorized)</option>
         </select>
-        <div class="hint">DEMBLA = pneumatic actuator, CAIR = electric actuator</div>
+        <div class="hint">DEMBLA/AIRA = pneumatic actuator, CAIR = electric actuator</div>
       </div>
     </div>
     <div class="fg fg-2" style="margin-bottom:24px">
@@ -1070,12 +1071,12 @@ function onFuelChange() {
   const needsPurging = PURGING_FUELS.has(f1) || (isDual && PURGING_FUELS.has(f2));
   document.getElementById('purging-row').style.display = needsPurging ? 'block' : 'none';
 
-  // Mix Gas uses only DEMBLA (pneumatic) control valves — lock the dropdown
+  // Mix Gas uses only pneumatic control valves (DEMBLA/AIRA) — disable CAIR
   const cvSel = document.getElementById('control_valve_vendor');
   const isMG = (f1 === 'mg') || (isDual && f2 === 'mg');
   const cairOpt = cvSel.querySelector('option[value="cair"]');
   if (isMG) {
-    cvSel.value = 'dembla';
+    if (cvSel.value === 'cair') cvSel.value = 'dembla';
     if (cairOpt) cairOpt.disabled = true;
   } else {
     if (cairOpt) cairOpt.disabled = false;

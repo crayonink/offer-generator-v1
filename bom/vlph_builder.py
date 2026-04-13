@@ -388,7 +388,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     except ValueError:
                         gas_cv_nb = gt_outlet_nb
                     _, gcv_price = _get_valve_price(gas_cv_nb, "control", control_valve_vendor)
-                    gcv_vendor = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
+                    gcv_vendor = control_valve_vendor.upper()
                     rows += [
                         _row(media, "ORIFICE PLATE", f'{gas_op_nb} NB', 1,
                              unit_price_override=gas_op_price, make="ENCON"),
@@ -453,24 +453,27 @@ def _get_valve_price(nb: int, valve_type: str, vendor: str) -> tuple:
     conn = sqlite3.connect(DB_PATH)
     nb_str = f'{nb:03d}'
 
-    if vendor == "dembla":
+    if vendor in ("dembla", "aira"):
+        company = vendor.upper()
         if valve_type == "control":
             item = f'CONTROL VALVE {nb_str}NB'
         else:
             item = f'SHUT OFF VALVE {nb_str}NB'
         row = conn.execute(
-            "SELECT price FROM component_price_master WHERE item=? AND company='DEMBLA'", (item,)
+            "SELECT price FROM component_price_master WHERE item=? AND company=?", (item, company)
         ).fetchone()
         if not row:
             # Try next bigger NB
+            prefix = "CONTROL" if valve_type == "control" else "SHUT OFF"
             row = conn.execute(
-                "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company='DEMBLA' ORDER BY item LIMIT 1",
-                (f'{"CONTROL" if valve_type == "control" else "SHUT OFF"} VALVE %NB',)
+                "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company=? AND item > ? ORDER BY item LIMIT 1",
+                (f'{prefix} VALVE %NB', company, item)
             ).fetchone()
             if row:
+                conn.close()
                 return row[0], row[1]
-        make = "DEMBLA"
-    else:
+    elif vendor == "cair":
+        company = "CAIR"
         if valve_type == "control":
             item = f'MOTORIZED CONTROL VALVE {nb_str}NB'
         else:
@@ -484,8 +487,12 @@ def _get_valve_price(nb: int, valve_type: str, vendor: str) -> tuple:
                 (f'{"MOTORIZED CONTROL" if valve_type == "control" else "SHUT OFF"} VALVE %NB%',)
             ).fetchone()
             if row:
+                conn.close()
                 return row[0], row[1]
-        make = "CAIR"
+    else:
+        company = vendor.upper()
+        item = f'CONTROL VALVE {nb_str}NB' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}NB'
+        row = None
 
     conn.close()
     price = row[0] if row else 0
@@ -553,7 +560,7 @@ def build_vlph_120t_df(
         except ValueError:
             cv_nb = air_nb
         _, cv_price = _get_valve_price(cv_nb, "control", control_valve_vendor)
-        vendor_label = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
+        vendor_label = control_valve_vendor.upper()
         rows.append(_row(
             "COMB AIR", "CONTROL VALVE",
             f'{cv_nb} NB, FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
