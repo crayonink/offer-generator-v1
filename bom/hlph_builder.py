@@ -5,221 +5,404 @@ BOM builder for Horizontal Ladle Pre-Heater (HLPH).
 Differences from VLPH:
   - No ROTARY JOINT (horizontal — no swirling mechanism)
   - Has TROLLEY DRIVE MECHANISM instead
+  - Uses get_hlph_params for structure/ceramic/trolley sizing
+
+Shares fuel line logic, vendor support, and base_only with VLPH.
 """
 
 import pandas as pd
 
-from bom.static_items import static_items
-from bom.price_master import get_price
-from bom.hpu_calculator import get_hpu_cost
+from bom.price_master import get_price, DB_PATH
 from bom.ladle_params import get_hlph_params
+from bom.vlph_builder import (
+    _row, _fuel_line_rows, _get_cheapest_ball_valve,
+    _get_cheapest_solenoid_valve, _get_flexible_hose_price,
+    _get_price_fuzzy, FUEL_NAMES, OIL_FUELS, GAS_FUELS,
+)
+from bom.selectors.gas_regulator_selector import select_gas_regulator
 
 
-BOUGHT_OUT_EXCLUDE_ITEMS = {
-    "RATIO CONTROLLER",
-}
-
-LEGACY_ITEM_SEQUENCE = [
-    "COMPENSATOR",
-    "PRESSURE GAUGE WITH TNV",
-    "PRESSURE SWITCH LOW",
-    "MOTORIZED CONTROL VALVE",
-    "BUTTERFLY VALVE",
-    "BALL VALVE (Pilot Burner)",
-    "BALL VALVE (UV LINE)",
-    "FLEXIBLE HOSE (Pilot Burner)",
-    "FLEXIBLE HOSE (UV LINE)",
-    "BALL VALVE",
-    "PRESSURE GAUGE WITH NV",
-    "PRESSURE SWITCH HIGH + LOW",
-    "SOLENOID VALVE",
-    "PRESSURE REGULATING VALVE",
-    "FLEXIBLE HOSE PIPE",
-    "AGR",
-    "THERMOCOUPLE",
-    "COMPENSATING LEAD",
-    "LIMIT SWITCHES",
-    "CONTROL PANEL",
-    "HYDRAULIC POWER PACK & CYLINDER",
-    "CABLE FOR IGNITION TRANSFORMER",
-    "TEMPERATURE TRANSMITTER",
-    "P.PID",
-    "RATIO CONTROLLER",
-]
-
-
-def _row(media: str, item: str, ref: str, qty: int, unit_price_override=None):
-    if unit_price_override is not None:
-        unit_price = unit_price_override
-    else:
-        try:
-            unit_price = get_price(item)
-        except ValueError:
-            unit_price = 0
-
-    if unit_price == 0:
-        print(f"WARNING: No price found for '{item}'")
-
-    return (media, item, ref, qty, unit_price, unit_price * qty)
-
-
-def build_hlph_df(equipment: dict, ladle_tons: float = 10.0) -> pd.DataFrame:
+def build_hlph_df(
+    equipment: dict,
+    ladle_tons: float = 10.0,
+    fuel1_type: str = "ng",
+    fuel2_type: str = "none",
+    equipment2: dict = None,
+    control_mode: str = "automatic",
+    auto_control_type: str = "agr",
+    control_valve_vendor: str = "dembla",
+    butterfly_valve_vendor: str = "lt_lever",
+    shutoff_valve_vendor: str = "aira",
+    pressure_gauge_vendor: str = "baumer",
+    pilot_burner: str = "auto",
+    pilot_line_fuel: str = "lpg",
+    pipeline_weight_kg: float = 1000.0,
+    purging_line: str = "no",
+) -> pd.DataFrame:
     """
-    Builds HLPH BOM DataFrame from already-selected equipment dict.
-    equipment must come from bom.selectors.selection_engine.select_equipment()
-    ladle_tons drives MS Structure weight, HPU size, ceramic fiber rolls,
-    pipeline cost and trolley drive cost (from Pricelist WorkBook).
+    Builds HLPH BOM DataFrame (automatic mode).
+    Same logic as VLPH but no rotary joint, has trolley drive.
     """
+
+    f1_label = FUEL_NAMES.get(fuel1_type, fuel1_type.upper())
+    f2_label = FUEL_NAMES.get(fuel2_type, fuel2_type.upper()) if fuel2_type != "none" else None
+    is_dual = fuel2_type != "none" and equipment2 is not None
 
     rows = []
-
-    # ── SYSTEM STRUCTURE (from Pricelist WorkBook — Horizontal sheet) ────────
     params = get_hlph_params(ladle_tons)
-    hpu    = get_hpu_cost(params["hpu_kw"])
 
-    try:
-        ceramic_price = get_price("Ceramic Fiber")
-    except ValueError:
-        ceramic_price = 2000.0
+    pg_vendor = pressure_gauge_vendor.upper()
+    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
 
+    is_plc = control_mode == "automatic" and auto_control_type == "plc"
+    is_plc_agr = control_mode == "automatic" and auto_control_type == "plc_agr"
+    is_pid = control_mode == "automatic" and auto_control_type == "pid"
+
+    # ── STRUCTURE & SYSTEM ────────────────────────────────────────────────
     rows += [
-        _row("STRUCTURE", "MS STRUCTURE",
-             f'{params["ms_structure_kg"]} Kgs @ Rs.{params["ms_structure_rate"]}/kg',
-             1, unit_price_override=params["ms_structure_cost"]),
-        _row("SYSTEM", f'H & P UNIT ({hpu["model"]} — {hpu["kw"]} kW)',
-             "Duplex Configuration",
-             1, unit_price_override=hpu["price"]),
-        _row("SYSTEM", "CERAMIC FIBER",
-             f'{params["ceramic_rolls"]} Rolls',
-             params["ceramic_rolls"], unit_price_override=ceramic_price),
-        _row("SYSTEM", "CONTROL PANEL",
-             "1 Set",
-             1, unit_price_override=params["control_panel_cost"]),
-        _row("SYSTEM", "TROLLEY DRIVE MECHANISM",
-             "",
+        _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
+             f'{params["ms_structure_kg"]} kg',
+             1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
+        _row("ENCON ITEMS", "AIR-GAS PIPELINE",
+             f'{pipeline_weight_kg:.0f} kg', 1,
+             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
+        _row("ENCON ITEMS", "CERAMIC FIBRE",
+             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+             params["ceramic_rolls"],
+             unit_price_override=params.get("ceramic_rate", 0)),
+        _row("ENCON ITEMS", "TROLLEY DRIVE MECHANISM", "",
              1, unit_price_override=params["trolley_drive_cost"]),
-        _row("SYSTEM", "PIPELINE & FITTINGS",
-             "Incl. Nuts, Bolts, Paint",
-             1, unit_price_override=params["pipeline_cost"]),
     ]
 
-    # COMBUSTION AIR LINE — same as VLPH but no rotary joint
+    # ── COMBUSTION AIR LINE ───────────────────────────────────────────────
+    air_nb = max(125, equipment["air_duct"]["nb"])
+
     rows += [
-        _row("COMB AIR", "COMPENSATOR", f'{equipment["air_duct"]["nb"]} NB F150#', 1),
-        _row("COMB AIR", "PRESSURE GAUGE WITH TNV", '0-2000 mm WC, Dial 4"', 1),
-        _row("COMB AIR", "PRESSURE SWITCH LOW", '0-150 mBAR', 1),
-        _row(
-            "COMB AIR", "MOTORIZED CONTROL VALVE",
-            f'{equipment["motorized_control_valve"]["nb"]} NB, '
-            f'FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
-            1,
-            unit_price_override=equipment["motorized_control_valve"]["price"],
-        ),
-        _row(
+        _row("COMB AIR", "COMPENSATOR", "", 1),
+        _row("COMB AIR", pg_item, '', 1, make=pg_vendor),
+        _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
+    ]
+    if is_plc:
+        from bom.vlph_builder import _get_orifice_price
+        op_nb, op_price = _get_orifice_price(air_nb)
+        rows += [
+            _row("COMB AIR", "ORIFICE PLATE", f'{op_nb} NB', 1,
+                 unit_price_override=op_price, make="ENCON"),
+            _row("COMB AIR", "DPT", '', 1, make="HONEYWELL"),
+        ]
+    if is_plc or is_plc_agr or is_pid:
+        from calculations.pipes import STANDARD_PIPE_NB
+        from bom.vlph_builder import _get_valve_price
+        try:
+            cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(air_nb) - 1)]
+        except ValueError:
+            cv_nb = air_nb
+        _, cv_price = _get_valve_price(cv_nb, "control", control_valve_vendor)
+        vendor_label = control_valve_vendor.upper()
+        rows.append(_row(
+            "COMB AIR", "CONTROL VALVE",
+            f'{cv_nb} NB',
+            1, unit_price_override=cv_price, make=vendor_label,
+        ))
+        bfv = equipment["butterfly_valve"]
+        rows.append(_row(
             "COMB AIR", "BUTTERFLY VALVE",
-            f'{equipment["butterfly_valve"]["nb"]} NB',
-            1,
-            unit_price_override=equipment["butterfly_valve"]["price"],
-        ),
-        # No ROTARY JOINT for HLPH
-    ]
-
-    # NG PILOT LINE
+            f'{bfv["nb"]} NB',
+            1, unit_price_override=bfv["price"], make=bfv.get("make", "L&T"),
+        ))
+    # No ROTARY JOINT for HLPH
     rows += [
-        _row("NG PILOT LINE", "BALL VALVE", "20 NB", 2),
-        _row("NG PILOT LINE", "BALL VALVE (Pilot Burner)", "20 NB", 1),
-        _row("NG PILOT LINE", "BALL VALVE (UV LINE)", "15 NB", 1),
-        _row("NG PILOT LINE", "PRESSURE GAUGE WITH NV", '0-1600 mm WC, Dial 4"', 1),
-        _row("NG PILOT LINE", "PRESSURE SWITCH HIGH + LOW", "", 2),
-        _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1),
-        _row(
-            "NG PILOT LINE", "PRESSURE REGULATING VALVE",
-            f'{equipment["agr"]["nb"]} NB',
-            1,
-        ),
-        _row("NG PILOT LINE", "FLEXIBLE HOSE (Pilot Burner)", "20 NB, 1500 mm", 1),
-        _row("NG PILOT LINE", "FLEXIBLE HOSE (UV LINE)", "15 NB, 1500 mm", 1),
-        _row("NG PILOT LINE", "FLEXIBLE HOSE PIPE", "15 NB - 1500 mm LONG", 1),
+        _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+        _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+        _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)",
+             f'{_get_flexible_hose_price(20)[0]} NB, 1500mm', 1,
+             unit_price_override=_get_flexible_hose_price(20)[1], make="BENGAL IND."),
+        _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)",
+             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
     ]
 
-    # MG LINE
-    gas_train_name = f'GAS TRAIN {equipment["ng_gas_train"]["max_flow"]:.0f} NM3/Hr'
+    # ── FUEL 1 LINE ──────────────────────────────────────────────────────
+    rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode,
+                            auto_control_type, control_valve_vendor,
+                            pressure_gauge_vendor, butterfly_valve_vendor,
+                            shutoff_valve_vendor)
+
+    # ── FUEL 2 LINE (dual fuel only) ─────────────────────────────────────
+    if is_dual:
+        rows += _fuel_line_rows(f2_label, fuel2_type, equipment2, control_mode,
+                                auto_control_type, control_valve_vendor,
+                                pressure_gauge_vendor, butterfly_valve_vendor,
+                                shutoff_valve_vendor)
+
+    # ── PURGING LINE (MG/COG only) ───────────────────────────────────────
+    if purging_line == "yes":
+        rows += [
+            _row("PURGING LINE", "BALL VALVE", "20 NB", 1, unit_price_override=1800, make="AUDCO/L&T/LEADER"),
+            _row("PURGING LINE", "PRESSURE GAUGE WITH TNV", "0-1600 mmWC", 1, unit_price_override=4000, make="HGURU/BAUMER"),
+            _row("PURGING LINE", "PRESSURE REGULATING VALVE", "25 NB", 1, unit_price_override=35000, make="NIRMAL"),
+            _row("PURGING LINE", "PRESSURE SWITCH HIGH", "", 1, unit_price_override=10000, make="SWITZER"),
+            _row("PURGING LINE", "SOLENOID VALVE", "20 NB", 1, unit_price_override=5000, make="MADAS"),
+            _row("PURGING LINE", "CHECK VALVE", "20 NB", 1, unit_price_override=3300, make="AUDCO/L&T/LEADER"),
+        ]
+
+    # ── PILOT LINE ────────────────────────────────────────────────────────
+    pl_media = f"{pilot_line_fuel.upper()} PILOT LINE"
     rows += [
-        _row(
-            "MG LINE", gas_train_name,
-            f'{equipment["ng_gas_train"]["inlet_nb"]} x '
-            f'{equipment["ng_gas_train"]["outlet_nb"]} NB',
-            1,
-            unit_price_override=equipment["ng_gas_train"]["price"],
-        ),
-        _row(
-            "MG LINE", "AGR",
-            f'{equipment["agr"]["nb"]} NB',
-            1,
-            unit_price_override=equipment["agr"]["price"],
-        ),
+        _row(pl_media, "BALL VALVE", "20 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+        _row(pl_media, pg_item, '', 1, make=pg_vendor),
+        _row(pl_media, "BALL VALVE", "15 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+        _row(pl_media, "SOLENOID VALVE", "15 NB", 1,
+             unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
     ]
-
-    # ENCON ITEMS
+    reg_nb_request = 20
+    try:
+        reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
+        rows.append(_row(
+            pl_media, "PRESSURE REGULATING VALVE",
+            f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
+            1, unit_price_override=reg["price"], make="MADAS",
+        ))
+    except ValueError:
+        rows.append(_row(
+            pl_media, "PRESSURE REGULATING VALVE",
+            f'{reg_nb_request} NB', 1, make="MADAS",
+        ))
     rows += [
-        _row(
-            "ENCON ITEMS", equipment["burner"]["model"],
-            f'NATURAL GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
-            1,
-            unit_price_override=equipment["burner"]["price"],
-        ),
-        _row(
-            "ENCON ITEMS", equipment["blower"]["model"],
-            f'{equipment["blower"]["hp"]} HP, '
-            f'{equipment["blower"]["pressure"]} WC, '
-            f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
-            1,
-            unit_price_override=equipment["blower"]["price_basic"],
-        ),
-        _row("ENCON ITEMS", "ENCON-PB (NG/LPG) - 100 KW", "", 1),
-        _row("ENCON ITEMS", "Ignition Transformer", "", 1),
-        _row("ENCON ITEMS", "Burner Control Unit", "", 1),
-        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1),
+        _row(pl_media, "FLEXIBLE HOSE",
+             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
     ]
 
-    # STATIC ITEMS — skip CONTROL PANEL (now in SYSTEM section above)
+    # ── ENCON ITEMS ───────────────────────────────────────────────────────
+    burner_desc = "ENCON DUAL FUEL Burner" if is_dual else equipment["burner"]["model"]
+    rows += [
+        _row("ENCON ITEMS", burner_desc,
+             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             1, unit_price_override=equipment["burner"]["price"]),
+        _row("ENCON ITEMS", equipment["blower"]["model"],
+             f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
+             f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
+             1, unit_price_override=equipment["blower"]["price_premium"]),
+        _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
+        _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
+        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
+        _row(
+            "ENCON ITEMS",
+            {
+                "lpg_10":  "ENCON-PB-LPG-10KW",
+                "ng_10":   "ENCON-PB NG 10 KW",
+                "lpg_100": "ENCON-PB LPG 100 KW",
+                "ng_100":  "ENCON-PB NG 100 KW",
+                "cog_100": "ENCON PB COG 100 KW",
+            }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
+            "", 1,
+        ),
+    ]
+
+    # HPU — for oil fuels
+    hpu = equipment.get("hpu")
+    if hpu:
+        rows.append(_row(
+            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
+            1, unit_price_override=hpu["price"],
+        ))
+
+    # ── MISC ITEMS ────────────────────────────────────────────────────────
     STATIC_SKIP = {"CONTROL PANEL"}
+    if is_plc or is_plc_agr:
+        STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
+    if is_pid:
+        STATIC_SKIP.add("TEMPERATURE TRANSMITTER")
+    from bom.static_items import static_items
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
 
+    rows.append(_row("MISC ITEMS", "CONTROL PANEL", "", 1))
+    rows.append(_row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "", 3, make="L&T"))
+    if is_plc or is_plc_agr:
+        rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1))
+
     df = pd.DataFrame(
         rows,
-        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "UNIT PRICE", "TOTAL"],
+        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE", "TOTAL"],
     )
 
-    # Sort by legacy sequence
-    order_map = {name: i for i, name in enumerate(LEGACY_ITEM_SEQUENCE)}
-    df["_order"] = df["ITEM NAME"].map(order_map).fillna(999)
-    df = df.sort_values("_order").drop(columns="_order").reset_index(drop=True)
-
-    # Summary rows
-    system_total = df.loc[df["MEDIA"].isin(["STRUCTURE", "SYSTEM"]), "TOTAL"].sum()
-
     bought_out_total = df.loc[
-        (~df["MEDIA"].isin(["ENCON ITEMS", "STRUCTURE", "SYSTEM"]))
-        & (~df["ITEM NAME"].isin(BOUGHT_OUT_EXCLUDE_ITEMS)),
-        "TOTAL",
+        (df["MEDIA"] != "ENCON ITEMS"), "TOTAL"
     ].sum()
-
     encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
-
-    grand_total = system_total + bought_out_total + encon_total
+    grand_total = bought_out_total + encon_total
 
     df = pd.concat(
         [
             df,
             pd.DataFrame(
                 [
-                    ("", "SYSTEM ITEMS TOTAL",  "", "", "", system_total),
-                    ("", "BOUGHT OUT ITEMS",     "", "", "", bought_out_total),
-                    ("", "ENCON ITEMS",          "", "", "", encon_total),
-                    ("", "GRAND TOTAL",          "", "", "", grand_total),
+                    ("", "BOUGHT OUT ITEMS", "", "", "", "", bought_out_total),
+                    ("", "ENCON ITEMS",      "", "", "", "", encon_total),
+                    ("", "GRAND TOTAL",      "", "", "", "", grand_total),
+                ],
+                columns=df.columns,
+            ),
+        ],
+        ignore_index=True,
+    )
+
+    return df
+
+
+def build_hlph_manual_df(
+    equipment: dict,
+    ladle_tons: float = 10.0,
+    fuel1_type: str = "ng",
+    pressure_gauge_vendor: str = "baumer",
+    pilot_burner: str = "auto",
+    pipeline_weight_kg: float = 1000.0,
+    include_pilot: bool = True,
+    pilot_line_fuel: str = "lpg",
+) -> pd.DataFrame:
+    """
+    Manual / simplified HLPH BOM.
+    Same as VLPH manual but no rotary joint, has trolley drive.
+    No automation items (AGR, orifice, DPT, control valve, pressure switch).
+    """
+
+    pg_vendor = pressure_gauge_vendor.upper()
+    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    params = get_hlph_params(ladle_tons)
+
+    rows = []
+    air_nb = max(125, equipment["air_duct"]["nb"])
+
+    # ── BOUGHT OUT ITEMS ──────────────────────────────────────────────────
+    rows += [
+        _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB F150#', 1),
+        _row("COMB AIR", pg_item, 'RANGE- 0-1600 mBAR', 1, make=pg_vendor),
+        _row("COMB AIR", "BUTTERFLY VALVE",
+             f'{equipment["butterfly_valve"]["nb"]} NB', 1,
+             unit_price_override=equipment["butterfly_valve"]["price"],
+             make=equipment["butterfly_valve"].get("make", "L&T")),
+        _row("MISC ITEMS", "CONTROL PANEL", "", 1),
+    ]
+
+    # ── FUEL LINE (base items only) ──────────────────────────────────────
+    f1_label = FUEL_NAMES.get(fuel1_type, fuel1_type.upper())
+    rows += _fuel_line_rows(
+        f1_label, fuel1_type, equipment,
+        pressure_gauge_vendor=pressure_gauge_vendor,
+        base_only=True,
+    )
+
+    # ── PILOT LINE (only if pilot burner is included) ────────────────────
+    pilot_media = f"{pilot_line_fuel.upper()} PILOT LINE"
+    if include_pilot:
+        rows += [
+            _row(pilot_media, "BALL VALVE", "20 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+            _row(pilot_media, pg_item, '', 1, make=pg_vendor),
+            _row(pilot_media, "BALL VALVE", "15 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+            _row(pilot_media, "SOLENOID VALVE", "15 NB", 1,
+                 unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
+        ]
+        reg_nb_request = 20
+        try:
+            reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
+            rows.append(_row(
+                pilot_media, "PRESSURE REGULATING VALVE",
+                f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
+                1, unit_price_override=reg["price"], make="MADAS",
+            ))
+        except ValueError:
+            rows.append(_row(
+                pilot_media, "PRESSURE REGULATING VALVE",
+                f'{reg_nb_request} NB', 1, make="MADAS",
+            ))
+        rows += [
+            _row(pilot_media, "FLEXIBLE HOSE",
+                 f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
+        ]
+
+    # ── IN-HOUSE / ENCON ITEMS ────────────────────────────────────────────
+    rows += [
+        _row("ENCON ITEMS", equipment["burner"]["model"],
+             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             1, unit_price_override=equipment["burner"]["price"]),
+        _row("ENCON ITEMS", "FABRICATION",
+             f'{params["ms_structure_kg"]} KG',
+             1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
+        _row("ENCON ITEMS", "TROLLEY DRIVE MECHANISM", "",
+             1, unit_price_override=params["trolley_drive_cost"]),
+    ]
+
+    # HPU — for oil fuels
+    hpu = equipment.get("hpu")
+    if hpu:
+        rows.append(_row(
+            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
+            1, unit_price_override=hpu["price"],
+        ))
+
+    rows += [
+        _row("ENCON ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "", 1),
+        _row("ENCON ITEMS", equipment["blower"]["model"],
+             f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
+             f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
+             1, unit_price_override=equipment["blower"]["price_premium"]),
+    ]
+    if include_pilot:
+        rows += [
+            _row(
+                "ENCON ITEMS",
+                {
+                    "lpg_10":  "ENCON-PB-LPG-10KW",
+                    "ng_10":   "ENCON-PB NG 10 KW",
+                    "lpg_100": "ENCON-PB LPG 100 KW",
+                    "ng_100":  "ENCON-PB NG 100 KW",
+                    "cog_100": "ENCON PB COG 100 KW",
+                }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
+                "", 1,
+            ),
+            _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
+            _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
+            _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
+        ]
+    rows += [
+        _row("ENCON ITEMS", "AIR-GAS PIPELINE",
+             f'{pipeline_weight_kg:.0f} kg', 1,
+             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
+        _row("ENCON ITEMS", "CERAMIC FIBRE",
+             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+             params["ceramic_rolls"],
+             unit_price_override=params.get("ceramic_rate", 0)),
+    ]
+
+    df = pd.DataFrame(
+        rows,
+        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE", "TOTAL"],
+    )
+
+    bought_out_total = df.loc[(df["MEDIA"] != "ENCON ITEMS"), "TOTAL"].sum()
+    encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
+    grand_total = bought_out_total + encon_total
+
+    df = pd.concat(
+        [
+            df,
+            pd.DataFrame(
+                [
+                    ("", "BOUGHT OUT ITEMS", "", "", "", "", bought_out_total),
+                    ("", "ENCON ITEMS",      "", "", "", "", encon_total),
+                    ("", "GRAND TOTAL",      "", "", "", "", grand_total),
                 ],
                 columns=df.columns,
             ),

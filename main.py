@@ -1271,84 +1271,157 @@ def regen_calculate(req: RegenCalcRequest):
 def hlph_calculate(req: VLPHCalcRequest):
     try:
         from calculations.burner import BurnerInputs, calculate_burner
-        from calculations.pipes import PipeInputs, calculate_pipe_sizes
+        from calculations.pipes import PipeInputs, calculate_pipe_sizes, select_oil_pipe_nb
         from bom.selectors.selection_engine import select_equipment
-        from bom.hlph_builder import build_hlph_df
+        from bom.hlph_builder import build_hlph_df, build_hlph_manual_df
+
+        FUEL_NAMES = {
+            "ng": "Natural Gas", "lpg": "LPG", "cog": "COG", "bg": "BFG", "rlng": "RLNG", "mg": "Mixed Gas",
+            "hsd": "Diesel (HSD)", "ldo": "LDO", "hdo": "HDO", "fo": "Furnace Oil",
+            "sko": "Kerosene (SKO)", "cfo": "CFO", "lshs": "LSHS",
+        }
+        OIL_FUELS = {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
+
+        f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
 
         burner_inputs = BurnerInputs(
-            Ti=req.Ti,
-            Tf=req.Tf,
+            Ti=req.Ti, Tf=req.Tf,
             refractory_weight=req.refractory_weight,
-            fuel_cv=req.fuel_cv,
+            fuel_cv=f1_cv,
             time_taken_hr=req.time_taken_hr,
             refractory_heat_factor=req.refractory_heat_factor,
             efficiency=req.efficiency,
         )
         br = calculate_burner(burner_inputs)
+        ng_flow = br.extra_firing_rate_nm3hr
+        air_flow = br.air_qty_nm3hr
 
-        pipe_results = calculate_pipe_sizes(PipeInputs(
-            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
-            air_flow_nm3hr=br.air_qty_nm3hr,
-        ))
+        pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow))
 
-        equipment = select_equipment(
-            ng_flow_nm3hr=br.extra_firing_rate_nm3hr,
-            air_flow_nm3hr=br.air_qty_nm3hr,
+        burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
+        is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
+
+        equip1 = select_equipment(
+            ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow,
+            is_dual_fuel=is_dual, fuel_cv=f1_cv,
+            blower_pressure=req.blower_pressure, fuel_type=req.fuel1_type,
+            hpu_variant=req.hpu_variant, burner_pressure_wg=burner_pressure_wg,
+            butterfly_valve_vendor=req.butterfly_valve_vendor,
+            shutoff_valve_vendor=req.shutoff_valve_vendor,
+            control_mode=req.control_mode, auto_control_type=req.auto_control_type,
         )
 
-        bom_df = build_hlph_df(equipment, ladle_tons=req.ladle_tons)
+        f1_is_oil = req.fuel1_type in OIL_FUELS
+        f1_oil_lph = equip1["burner"].get("equivalent_lph", 0) if f1_is_oil else 0
+
+        # Fuel 2
+        br2, equip2, ng_flow2 = None, None, 0
+        if is_dual:
+            br2 = calculate_burner(BurnerInputs(
+                Ti=req.Ti, Tf=req.Tf,
+                refractory_weight=req.refractory_weight,
+                fuel_cv=req.fuel2_cv,
+                time_taken_hr=req.time_taken_hr,
+                refractory_heat_factor=req.refractory_heat_factor,
+                efficiency=req.efficiency,
+            ))
+            ng_flow2 = br2.extra_firing_rate_nm3hr
+            equip2 = select_equipment(
+                ng_flow_nm3hr=ng_flow2, air_flow_nm3hr=br2.air_qty_nm3hr,
+                is_dual_fuel=is_dual, fuel_cv=req.fuel2_cv,
+                blower_pressure=req.blower_pressure, fuel_type=req.fuel2_type,
+                hpu_variant=req.hpu_variant, burner_pressure_wg=burner_pressure_wg,
+                butterfly_valve_vendor=req.butterfly_valve_vendor,
+                shutoff_valve_vendor=req.shutoff_valve_vendor,
+                control_mode=req.control_mode, auto_control_type=req.auto_control_type,
+            )
+
+        if req.control_mode == "manual":
+            bom_df = build_hlph_manual_df(
+                equipment=equip1, ladle_tons=req.ladle_tons,
+                fuel1_type=req.fuel1_type,
+                pressure_gauge_vendor=req.pressure_gauge_vendor,
+                pilot_burner=req.pilot_burner,
+                pipeline_weight_kg=req.pipeline_weight_kg,
+                include_pilot=req.manual_pilot_burner == "yes",
+                pilot_line_fuel=req.pilot_line_fuel,
+            )
+        else:
+            bom_df = build_hlph_df(
+                equipment=equip1, ladle_tons=req.ladle_tons,
+                fuel1_type=req.fuel1_type, fuel2_type=req.fuel2_type,
+                equipment2=equip2,
+                control_mode=req.control_mode, auto_control_type=req.auto_control_type,
+                control_valve_vendor=req.control_valve_vendor,
+                butterfly_valve_vendor=req.butterfly_valve_vendor,
+                shutoff_valve_vendor=req.shutoff_valve_vendor,
+                pressure_gauge_vendor=req.pressure_gauge_vendor,
+                pilot_burner=req.pilot_burner, pilot_line_fuel=req.pilot_line_fuel,
+                pipeline_weight_kg=req.pipeline_weight_kg,
+                purging_line=req.purging_line,
+            )
 
         detail = bom_df[bom_df["MEDIA"] != ""].copy()
-        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS",   "TOTAL"].values[0])
-        encon_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS",        "TOTAL"].values[0])
-        grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0])
+        bought_out_total = float(bom_df.loc[bom_df["ITEM NAME"] == "BOUGHT OUT ITEMS", "TOTAL"].values[0]) if "BOUGHT OUT ITEMS" in bom_df["ITEM NAME"].values else 0
+        encon_total = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS", "TOTAL"].values[0]) if "ENCON ITEMS" in bom_df["ITEM NAME"].values else 0
+        grand_total = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL", "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
-        return {
+        cfm = air_flow / 1.7
+        blower_hp_calc = cfm * int(req.blower_pressure) / 3200
+
+        resp = {
             "calculations": {
-                "Ti": req.Ti,
-                "Tf": req.Tf,
+                "Ti": req.Ti, "Tf": req.Tf,
                 "refractory_weight": req.refractory_weight,
-                "fuel_cv": req.fuel_cv,
+                "fuel_cv": f1_cv,
+                "fuel1_type": req.fuel1_type,
+                "fuel1_name": FUEL_NAMES.get(req.fuel1_type, req.fuel1_type),
+                "fuel1_cv": f1_cv,
+                "is_dual": is_dual,
                 "time_taken_hr": req.time_taken_hr,
-                "avg_temp_rise":                  round(br.avg_temp_rise, 2),
-                "firing_rate_kcal":               round(br.firing_rate_kcal, 2),
-                "heat_load_kcal":                 round(br.heat_load_kcal, 2),
-                "fuel_consumption_nm3":           round(br.fuel_consumption_nm3, 2),
-                "calculated_firing_rate_nm3hr":   round(br.calculated_firing_rate_nm3hr, 2),
-                "extra_firing_rate_nm3hr":        round(br.extra_firing_rate_nm3hr, 2),
-                "final_firing_rate_mw":           round(br.final_firing_rate_mw, 2),
-                "air_qty_nm3hr":                  round(br.air_qty_nm3hr, 2),
-                "cfm":                            round(br.cfm, 2),
-                "blower_hp_calc":                 round(br.cfm * int(req.blower_pressure) / 3200, 2),
+                "avg_temp_rise": round(br.avg_temp_rise, 2),
+                "firing_rate_kcal": round(br.firing_rate_kcal, 2),
+                "heat_load_kcal": round(br.heat_load_kcal, 2),
+                "fuel_consumption_nm3": round(br.fuel_consumption_nm3, 2),
+                "calculated_firing_rate_nm3hr": round(br.calculated_firing_rate_nm3hr, 2),
+                "extra_firing_rate_nm3hr": round(ng_flow, 2),
+                "equivalent_lph": round(equip1["burner"].get("equivalent_lph", 0), 2),
+                "fuel_density": equip1["burner"].get("fuel_density", 0),
+                "final_firing_rate_mw": round(br.final_firing_rate_mw, 2),
+                "air_qty_nm3hr": round(air_flow, 2),
+                "cfm": round(cfm, 2),
+                "blower_hp_calc": round(blower_hp_calc, 2),
             },
             "pipes": {
-                "ng_flow":      round(br.extra_firing_rate_nm3hr, 2),
-                "ng_velocity":  12.7,
-                "ng_dia_mm":    round(pipe_results.ng_pipe_inner_dia_mm, 2),
-                "ng_nb":        pipe_results.ng_pipe_nb,
-                "air_flow":     round(br.air_qty_nm3hr, 2),
-                "air_velocity": 15.0,
-                "air_dia_mm":   round(pipe_results.air_pipe_inner_dia_mm, 2),
-                "air_nb":       pipe_results.air_pipe_nb,
+                "fuel1_label": FUEL_NAMES.get(req.fuel1_type, "Fuel 1"),
+                "fuel1_is_oil": f1_is_oil,
+                "fuel1_oil_lph": round(f1_oil_lph, 2) if f1_is_oil else None,
+                "ng_flow": round(ng_flow, 2),
+                "ng_nb": pipes1.ng_pipe_nb,
+                "air_flow": round(air_flow, 2),
+                "air_nb": pipes1.air_pipe_nb,
+                "gas_train_flow": round(equip1["ng_gas_train"]["max_flow"], 0) if equip1.get("ng_gas_train") else 0,
+                "gas_train_model": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]}' if equip1.get("ng_gas_train") else "",
             },
             "equipment": {
-                "burner_model":   equipment["burner"]["model"],
-                "blower_model":   equipment["blower"]["model"],
-                "blower_hp":      equipment["blower"]["hp"],
-                "blower_airflow": equipment["blower"]["airflow_nm3hr"],
-                "ng_gas_train":   f'{equipment["ng_gas_train"]["inlet_nb"]} x {equipment["ng_gas_train"]["outlet_nb"]} NB',
-                "agr_nb":         equipment["agr"]["nb"],
+                "burner_model": equip1["burner"]["model"],
+                "blower_model": equip1["blower"]["model"],
+                "blower_hp": equip1["blower"]["hp"],
+                "blower_airflow": equip1["blower"]["airflow_nm3hr"],
+                "ng_gas_train": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB' if equip1.get("ng_gas_train") else "",
+                "hpu": f'{equip1["hpu"]["model"]} — {equip1["hpu"]["unit_kw"]} KW' if equip1.get("hpu") else None,
             },
-            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
+            "bom": detail.to_dict(orient="records"),
             "cost_summary": {
                 "bought_out_total": round(bought_out_total, 2),
-                "encon_total":      round(encon_total, 2),
-                "grand_total":      round(grand_total, 2),
+                "encon_total": round(encon_total, 2),
+                "grand_total": round(grand_total, 2),
             },
         }
+        return resp
     except Exception as e:
         import traceback
-        return {"error": str(e), "detail": traceback.format_exc()}
+        return {"error": str(e), "trace": traceback.format_exc()}
 
 
 # ── Box Type Furnace ────────────────────────────────────────────────────────

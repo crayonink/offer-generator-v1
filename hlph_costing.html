@@ -476,6 +476,135 @@
       </div>
     </div>
 
+    <!-- Control Mode & Vendors -->
+    <div class="fg fg-2" style="margin-bottom:24px">
+      <div class="field">
+        <label>Control Mode <span class="req">*</span></label>
+        <select id="control_mode" onchange="onControlModeChange()">
+          <option value="manual">Manual</option>
+          <option value="automatic" selected>Automatic</option>
+        </select>
+        <div class="hint">Manual = operator-controlled, Automatic = instrumented control</div>
+      </div>
+      <div class="field" id="auto-type-wrap">
+        <label>Automatic Control Type</label>
+        <select id="auto_control_type">
+          <option value="plc" selected>PLC</option>
+          <option value="plc_agr">PLC with AGR</option>
+          <option value="pid">PID</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Manual BOM Inputs -->
+    <div id="manual-inputs" style="display:none; margin-bottom:24px;">
+      <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Manual BOM Inputs</div>
+      <div class="fg fg-2">
+        <div class="field">
+          <label>Pilot Burner Required?</label>
+          <select id="manual_pilot_burner">
+            <option value="yes" selected>Yes</option>
+            <option value="no">No</option>
+          </select>
+          <div class="hint">Include pilot burner, ignition transformer, UV sensor in BOM</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fg fg-2" style="margin-bottom:24px">
+      <div class="field">
+        <label>Blower Pressure</label>
+        <select id="blower_pressure">
+          <option value="28">28" WG (Standard)</option>
+          <option value="40">40" WG (High Pressure)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Control Valve Vendor</label>
+        <select id="control_valve_vendor">
+          <option value="dembla" selected>DEMBLA (Pneumatic)</option>
+          <option value="aira">AIRA (Pneumatic)</option>
+          <option value="cair">CAIR (Motorized)</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg fg-3" style="margin-bottom:24px">
+      <div class="field">
+        <label>Shut Off Valve Vendor</label>
+        <select id="shutoff_valve_vendor">
+          <option value="dembla">DEMBLA (Pneumatic)</option>
+          <option value="aira" selected>AIRA (Pneumatic)</option>
+          <option value="cair">CAIR (Motorized)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Butterfly Valve (L&amp;T)</label>
+        <select id="butterfly_valve_vendor">
+          <option value="lt_lever" selected>L&amp;T Lever</option>
+          <option value="lt_gear">L&amp;T Gear</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pressure Gauge Vendor</label>
+        <select id="pressure_gauge_vendor">
+          <option value="baumer" selected>BAUMER</option>
+          <option value="hguru">HGURU</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg fg-3" style="margin-bottom:24px">
+      <div class="field">
+        <label>HPU Variant <span class="hint" style="font-weight:normal">(oil fuels only)</span></label>
+        <select id="hpu_variant">
+          <option value="Simplex">Simplex (HPS)</option>
+          <option value="Duplex 1" selected>Duplex-I (HPD)</option>
+          <option value="Duplex 2">Duplex-II (HPDD)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pilot Line Fuel</label>
+        <select id="pilot_line_fuel">
+          <option value="lpg" selected>LPG</option>
+          <option value="ng">NG</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pilot Burner</label>
+        <select id="pilot_burner">
+          <option value="lpg_10" selected>ENCON-PB LPG 10 KW</option>
+          <option value="ng_10">ENCON-PB NG 10 KW</option>
+          <option value="lpg_100">ENCON-PB LPG 100 KW</option>
+          <option value="ng_100">ENCON-PB NG 100 KW</option>
+          <option value="cog_100">ENCON PB COG 100 KW</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg fg-2" style="margin-bottom:24px">
+      <div class="field">
+        <label>Air-Gas Pipeline Weight</label>
+        <select id="pipeline_weight_kg">
+          <option value="700">700 kg</option>
+          <option value="800">800 kg</option>
+          <option value="900">900 kg</option>
+          <option value="1000" selected>1000 kg</option>
+          <option value="1200">1200 kg</option>
+          <option value="1500">1500 kg</option>
+          <option value="2000">2000 kg</option>
+        </select>
+      </div>
+    </div>
+    <div id="purging-row" style="display:none;margin-top:12px;background:#fef3c7;border-radius:10px;padding:14px 16px;border:1px solid #fcd34d;">
+      <label style="font-size:.72rem;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px;">Purging Line</label>
+      <div style="display:flex;gap:20px;align-items:center;">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.86rem;">
+          <input type="radio" name="purging_line" value="no" checked> No
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.86rem;">
+          <input type="radio" name="purging_line" value="yes"> Yes
+        </label>
+      </div>
+    </div>
+
     <div class="alert-error" id="error-box"></div>
 
     <div class="action-row">
