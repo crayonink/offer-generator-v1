@@ -2875,17 +2875,26 @@ def export_excel(req: ExcelExportRequest):
     r += 1
 
     calc = req.calculations
+    fuel_name = calc.get("fuel1_name", "")
+    fuel_type = calc.get("fuel1_type", "ng")
+    is_oil = fuel_type in {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
+    cv_unit = "kcal/kg" if is_oil else "kcal/Nm³"
+    flow_unit = "kg" if is_oil else "Nm³"
+    rate_unit = "kg/hr" if is_oil else "Nm³/hr"
     params = [
         ("Initial Temp (Ti)",       f"{calc.get('Ti','')} °C"),
         ("Final Temp (Tf)",         f"{calc.get('Tf','')} °C"),
         ("Refractory Weight",       f"{calc.get('refractory_weight','')} kg"),
-        ("Fuel CV",                 f"{calc.get('fuel_cv','')} kcal/Nm³"),
+        ("Fuel",                    fuel_name),
+        ("Fuel CV",                 f"{calc.get('fuel_cv','')} {cv_unit}"),
         ("Time Taken",              f"{calc.get('time_taken_hr','')} hr"),
         ("Heat Load",               f"{calc.get('heat_load_kcal','')} kcal"),
         ("Firing Rate",             f"{calc.get('firing_rate_kcal','')} kcal/hr"),
-        ("Fuel Consumption",        f"{calc.get('fuel_consumption_nm3','')} Nm³"),
-        ("Calc. Firing Rate",       f"{calc.get('calculated_firing_rate_nm3hr','')} Nm³/hr"),
-        ("Design Firing Rate",      f"{calc.get('extra_firing_rate_nm3hr','')} Nm³/hr"),
+        ("Fuel Consumption",        f"{calc.get('fuel_consumption_nm3','')} {flow_unit}"),
+        ("Calc. Firing Rate",       f"{calc.get('calculated_firing_rate_nm3hr','')} {rate_unit}"),
+        ("Design Firing Rate",      f"{calc.get('extra_firing_rate_nm3hr','')} {rate_unit}"),
+        ("Equiv. Firing Rate (LPH)", f"{calc.get('equivalent_lph','')} ltr/hr"),
+        ("Fuel Density",            f"{calc.get('fuel_density','')} kg/ltr"),
     ]
     for i, (label, val) in enumerate(params):
         bg = GREY if i % 2 == 0 else WHITE
