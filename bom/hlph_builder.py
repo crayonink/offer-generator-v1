@@ -223,7 +223,7 @@ def build_hlph_df(
         ))
 
     # ── MISC ITEMS ────────────────────────────────────────────────────────
-    STATIC_SKIP = {"CONTROL PANEL"}
+    STATIC_SKIP = {"CONTROL PANEL", "HYDRAULIC POWER PACK & CYLINDER"}
     if is_plc or is_plc_agr:
         STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
     if is_pid:
