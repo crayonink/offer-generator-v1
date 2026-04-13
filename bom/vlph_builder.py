@@ -762,6 +762,16 @@ def build_vlph_manual_df(
         _row("MISC ITEMS", "CONTROL PANEL", "", 1),
     ]
 
+    # ── FUEL LINE (same logic as automatic, manual control mode) ────────
+    f1_label = FUEL_NAMES.get(fuel1_type, fuel1_type.upper())
+    rows += _fuel_line_rows(
+        f1_label, fuel1_type, equipment,
+        control_mode="manual", auto_control_type="agr",
+        control_valve_vendor="dembla",
+        pressure_gauge_vendor=pressure_gauge_vendor,
+        shutoff_valve_vendor="lt_lever",
+    )
+
     # ── LPG NG PILOT LINE (detailed — same as automatic) ─────────────────
     rows += [
         _row("LPG NG PILOT LINE", "BALL VALVE", "20 NB", 1,
