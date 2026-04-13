@@ -786,6 +786,8 @@
             <tr><td class="lbl">Fuel Consumption</td>     <td class="val" id="r-fc">—</td>       <td class="unit" id="r-fc-unit">Nm³</td></tr>
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r-cfr">—</td>      <td class="unit" id="r-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r-efr">—</td>      <td class="unit" id="r-efr-unit">Nm³/hr</td></tr>
+            <tr id="r-density-row" style="display:none"><td class="lbl">Fuel Density</td> <td class="val" id="r-density">—</td> <td class="unit">kg/l</td></tr>
+            <tr id="r-lph-row" style="display:none"><td class="lbl">Firing Rate (LPH)</td> <td class="val" id="r-lph">—</td> <td class="unit">l/hr</td></tr>
             <tr><td class="lbl">Firing Rate</td>          <td class="val" id="r-mw">—</td>       <td class="unit">MW</td></tr>
             <tr><td class="lbl">Air Quantity</td>         <td class="val" id="r-air">—</td>      <td class="unit">Nm³/hr</td></tr>
             <tr><td class="lbl">CFM</td>                  <td class="val" id="r-cfm">—</td>      <td class="unit">CFM</td></tr>
@@ -1212,6 +1214,12 @@ function renderResults(d) {
   document.getElementById("r-fc-unit").textContent  = isOil ? "kg"    : "Nm³";
   document.getElementById("r-cfr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
   document.getElementById("r-efr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
+  document.getElementById("r-density-row").style.display = isOil ? "" : "none";
+  document.getElementById("r-lph-row").style.display     = isOil ? "" : "none";
+  if (isOil) {
+    set("r-density", c.fuel_density);
+    set("r-lph",     fmt(c.equivalent_lph, 2));
+  }
   document.getElementById("row-gt").style.display  = isOil ? "none" : "";
   if (eq.hpu) {
     document.getElementById("row-hpu").style.display = "";

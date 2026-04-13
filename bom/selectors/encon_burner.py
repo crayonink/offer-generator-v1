@@ -4,7 +4,7 @@ import sqlite3
 GAS_SUBTYPES = {"gas", "ng", "rlng", "lpg", "cog", "bg", "mg"}
 
 # Oil-fuel sub-types → all map to IIP-ENCON Film Burner section
-OIL_SUBTYPES = {"oil", "ldo", "fo", "lshs", "hsd", "sko"}
+OIL_SUBTYPES = {"oil", "ldo", "fo", "lshs", "hsd", "sko", "hdo", "cfo"}
 
 # Map fuel category → burner pricelist section keyword
 SECTION_BY_CATEGORY = {
@@ -12,6 +12,20 @@ SECTION_BY_CATEGORY = {
     "oil":  "FILM",        # IIP-ENCON Film Burner (any oil sub-type)
     "dual": "DUAL FUEL",   # Dual Fuel Burner
 }
+
+
+def _get_fuel_density(fuel_type: str) -> float:
+    """Fetch fuel density (kg/litre) from component_price_master."""
+    key = f"FUEL DENSITY {fuel_type.upper()}"
+    conn = sqlite3.connect("vlph.db")
+    row = conn.execute(
+        "SELECT price FROM component_price_master WHERE item = ? LIMIT 1",
+        (key,),
+    ).fetchone()
+    conn.close()
+    if row:
+        return float(row[0])
+    return 0.85  # fallback to LDO density
 
 
 def _resolve_category(fuel_type: str) -> str:
@@ -34,13 +48,13 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     burner_pressure_wg  : 24 or 36 (inches w.g.) — drives firing rate range lookup.
     """
 
-    # Convert flow to LPH for selection.
-    # For oil fuels the burner-calc output is already in LPH (CV is in kcal/L),
-    # so no conversion is needed. For gas fuels we convert Nm3/hr to oil-equivalent
-    # LPH using a reference oil CV of 8600 kcal/L.
+    # Convert flow to LPH for burner selection.
+    # Oil fuels: burner-calc gives kg/hr → divide by density to get l/hr.
+    # Gas fuels: convert Nm3/hr to oil-equivalent LPH using reference CV 8600 kcal/L.
     category = _resolve_category(fuel_type)
     if category == "oil":
-        equivalent_lph = required_gas_flow_nm3hr   # already LPH
+        density = _get_fuel_density(fuel_type)
+        equivalent_lph = required_gas_flow_nm3hr / density  # kg/hr → l/hr
     else:
         equivalent_lph = required_gas_flow_nm3hr * fuel_cv / 8600
 
@@ -101,6 +115,7 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         "model": model,
         "input_nm3hr": required_gas_flow_nm3hr,
         "equivalent_lph": round(equivalent_lph, 2),
+        "fuel_density": density if category == "oil" else 0,
         "price": price_row[0],
         "fuel_type": fuel_type,
         "burner_pressure_wg": burner_pressure_wg,

@@ -1054,6 +1054,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "fuel_consumption_nm3":           round(br1.fuel_consumption_nm3, 2) if br1 else 0,
                 "calculated_firing_rate_nm3hr":   round(br1.calculated_firing_rate_nm3hr, 2) if br1 else round(ng_flow / 1.1, 2),
                 "extra_firing_rate_nm3hr":        round(ng_flow, 2),
+                "equivalent_lph":                 round(equip1["burner"].get("equivalent_lph", 0), 2),
+                "fuel_density":                   equip1["burner"].get("fuel_density", 0),
                 "final_firing_rate_mw":           round(br1.final_firing_rate_mw, 2) if br1 else round(ng_flow * f1_cv / (860 * 1000), 2),
                 "air_qty_nm3hr":                  round(air_flow, 2),
                 "cfm":                            round(cfm, 2),
