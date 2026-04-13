@@ -478,11 +478,6 @@ class VLPHCalcRequest(BaseModel):
     pilot_burner: str = "auto"                   # "auto" | "lpg_10" | "nglpg_100" | "cog_100"
     pipeline_weight_kg: float = 1000.0           # Air-gas pipeline weight (700–2000 kg, step 100)
     purging_line: str = "no"                     # "yes" | "no" — nitrogen purging line for MG/COG
-    fabrication_weight_kg: float = 2500.0        # manual mode: fabrication weight
-    fabrication_rate: float = 110.0              # manual mode: Rs per kg
-    pipeline_cost: float = 40000.0               # manual mode: flat pipeline cost
-    cable_tray_cost: float = 40000.0             # manual mode: flat cable tray cost
-    hydraulic_system_cost: float = 175000.0      # manual mode: hydraulic system cost
 
 
 class QuoteItem(BaseModel):
@@ -1012,11 +1007,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 fuel1_type=req.fuel1_type,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
-                fabrication_weight_kg=req.fabrication_weight_kg,
-                fabrication_rate=req.fabrication_rate,
-                pipeline_cost=req.pipeline_cost,
-                cable_tray_cost=req.cable_tray_cost,
-                hydraulic_system_cost=req.hydraulic_system_cost,
+                pipeline_weight_kg=req.pipeline_weight_kg,
             )
         else:
             bom_df = build_vlph_120t_df(

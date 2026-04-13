@@ -641,11 +641,11 @@ def build_vlph_120t_df(
         _row("ENCON ITEMS", "SHAFT", "", 1,
              unit_price_override=params.get("shaft_kg", 350) * 120),
         _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
-             f'{params["ms_structure_kg"]} kg @ Rs.120/kg',
-             1, unit_price_override=params["ms_structure_kg"] * 120),
+             f'{params["ms_structure_kg"]} kg',
+             1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
         _row("ENCON ITEMS", "AIR-GAS PIPELINE",
-             f'{pipeline_weight_kg:.0f} kg @ Rs.125/kg', 1,
-             unit_price_override=pipeline_weight_kg * 125),
+             f'{pipeline_weight_kg:.0f} kg', 1,
+             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
         _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
@@ -734,11 +734,7 @@ def build_vlph_manual_df(
     fuel1_type: str = "ng",
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
-    fabrication_weight_kg: float = 2500.0,
-    fabrication_rate: float = 110.0,
-    pipeline_cost: float = 40000.0,
-    cable_tray_cost: float = 40000.0,
-    hydraulic_system_cost: float = 175000.0,
+    pipeline_weight_kg: float = 1000.0,
 ) -> pd.DataFrame:
     """
     Manual / simplified VLPH BOM — matches the Lloyds manual costing format.
@@ -800,9 +796,8 @@ def build_vlph_manual_df(
              f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["burner"]["price"]),
         _row("ENCON ITEMS", "FABRICATION",
-             f'{fabrication_weight_kg:.0f} KG @ Rs.{fabrication_rate:.0f}/kg',
-             fabrication_weight_kg,
-             unit_price_override=fabrication_rate),
+             f'{params["ms_structure_kg"]} KG',
+             1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
     ]
 
     # HPU — for oil fuels
@@ -815,8 +810,7 @@ def build_vlph_manual_df(
         ))
 
     rows += [
-        _row("ENCON ITEMS", "HYDRAULIC SYSTEM", "", 1,
-             unit_price_override=hydraulic_system_cost),
+        _row("ENCON ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "", 1),
         _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
@@ -835,10 +829,9 @@ def build_vlph_manual_df(
         _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
         _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
         _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
-        _row("ENCON ITEMS", "AIR-GAS PIPELINE", "", 1,
-             unit_price_override=pipeline_cost),
-        _row("ENCON ITEMS", "CABLE TRAY", "", 1,
-             unit_price_override=cable_tray_cost),
+        _row("ENCON ITEMS", "AIR-GAS PIPELINE",
+             f'{pipeline_weight_kg:.0f} kg', 1,
+             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
         _row("ENCON ITEMS", "CERAMIC FIBRE",
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
              params["ceramic_rolls"],

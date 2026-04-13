@@ -591,29 +591,6 @@
     <div id="manual-inputs" style="display:none; margin-bottom:24px;">
       <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Manual BOM Inputs</div>
       <div class="fg fg-3" style="margin-bottom:12px">
-        <div class="field">
-          <label>Fabrication Weight (KG)</label>
-          <input id="fabrication_weight_kg" type="number" value="2500" step="100"/>
-          <div class="hint">MS structure fabrication weight</div>
-        </div>
-        <div class="field">
-          <label>Fabrication Rate (Rs/KG)</label>
-          <input id="fabrication_rate" type="number" value="110" step="5"/>
-        </div>
-        <div class="field">
-          <label>Hydraulic System Cost (Rs)</label>
-          <input id="hydraulic_system_cost" type="number" value="175000" step="5000"/>
-        </div>
-      </div>
-      <div class="fg fg-2">
-        <div class="field">
-          <label>Pipeline Cost (Rs)</label>
-          <input id="pipeline_cost" type="number" value="40000" step="5000"/>
-        </div>
-        <div class="field">
-          <label>Cable Tray Cost (Rs)</label>
-          <input id="cable_tray_cost" type="number" value="40000" step="5000"/>
-        </div>
       </div>
     </div>
 
@@ -1146,11 +1123,11 @@ async function calculate() {
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
-      fabrication_weight_kg: val("fabrication_weight_kg"),
-      fabrication_rate: val("fabrication_rate"),
-      pipeline_cost: val("pipeline_cost"),
-      cable_tray_cost: val("cable_tray_cost"),
-      hydraulic_system_cost: val("hydraulic_system_cost"),
+
+
+
+
+
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -1176,11 +1153,11 @@ async function calculate() {
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
-      fabrication_weight_kg: val("fabrication_weight_kg"),
-      fabrication_rate: val("fabrication_rate"),
-      pipeline_cost: val("pipeline_cost"),
-      cable_tray_cost: val("cable_tray_cost"),
-      hydraulic_system_cost: val("hydraulic_system_cost"),
+
+
+
+
+
     };
   }
 
