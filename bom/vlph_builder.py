@@ -339,8 +339,10 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                     control_mode: str = "automatic", auto_control_type: str = "plc",
                     control_valve_vendor: str = "dembla",
                     pressure_gauge_vendor: str = "baumer",
-                    shutoff_valve_vendor: str = "lt_lever"):
-    """Generate fuel line BOM rows for a single fuel."""
+                    shutoff_valve_vendor: str = "lt_lever",
+                    base_only: bool = False):
+    """Generate fuel line BOM rows for a single fuel.
+    base_only=True skips all instrumentation (AGR, orifice, DPT, control valve)."""
     media = f"{label} LINE"
     rows = []
 
@@ -371,62 +373,63 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     # Oil line size is always 20 NB
     oil_nb = 20
 
-    # Control-type-specific instrumentation
-    if control_mode == "automatic":
-        if auto_control_type == "plc":
-            if fuel_type in ("ng", "lpg", "rlng"):
-                from calculations.pipes import STANDARD_PIPE_NB
-                # Orifice plate = gas train outlet NB (2nd DN)
-                gt_outlet_nb = equipment["ng_gas_train"]["outlet_nb"]
-                gas_op_nb, gas_op_price = _get_orifice_price(gt_outlet_nb)
-                # Control valve = one pipe size smaller than outlet NB
-                try:
-                    gas_cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(gt_outlet_nb) - 1)]
-                except ValueError:
-                    gas_cv_nb = gt_outlet_nb
-                _, gcv_price = _get_valve_price(gas_cv_nb, "control", control_valve_vendor)
-                gcv_vendor = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
-                rows += [
-                    _row(media, "ORIFICE PLATE", f'{gas_op_nb} NB', 1,
-                         unit_price_override=gas_op_price, make="ENCON"),
-                    _row(media, "DPT", "", 1, make="HONEYWELL"),
-                    _row(media, "CONTROL VALVE", f'{gas_cv_nb} NB', 1,
-                         unit_price_override=gcv_price, make=gcv_vendor),
-                ]
-            elif fuel_type in OIL_FUELS:
-                bv_price = _get_cheapest_ball_valve(oil_nb)
-                rows += [
-                    _row(media, "BALL VALVE", f'{oil_nb} NB', 1,
-                         unit_price_override=bv_price, make="L&T"),
-                    _row(media, "FLOWMETER", f'{oil_nb} NB', 1, make="ELETA"),
-                    _row(media, "MOTORIZED CONTROL VALVE", "025NB (Globe)", 1,
-                         unit_price_override=_get_price_fuzzy("MOTORIZED CONTROL VALVE 025NB (Globe)"),
-                         make="CAIR"),
-                    _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1,
-                         unit_price_override=_get_cheapest_solenoid_valve(oil_nb), make="MADAS"),
-                    _row(media, "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
-                ]
-        elif auto_control_type in ("plc_agr", "pid"):
-            if fuel_type in OIL_FUELS:
-                rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1))
-            # Gas-fuel AGR is added by the consolidated block below
+    # Control-type-specific instrumentation (skipped in base_only / manual BOM)
+    if not base_only:
+        if control_mode == "automatic":
+            if auto_control_type == "plc":
+                if fuel_type in ("ng", "lpg", "rlng"):
+                    from calculations.pipes import STANDARD_PIPE_NB
+                    # Orifice plate = gas train outlet NB (2nd DN)
+                    gt_outlet_nb = equipment["ng_gas_train"]["outlet_nb"]
+                    gas_op_nb, gas_op_price = _get_orifice_price(gt_outlet_nb)
+                    # Control valve = one pipe size smaller than outlet NB
+                    try:
+                        gas_cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(gt_outlet_nb) - 1)]
+                    except ValueError:
+                        gas_cv_nb = gt_outlet_nb
+                    _, gcv_price = _get_valve_price(gas_cv_nb, "control", control_valve_vendor)
+                    gcv_vendor = "DEMBLA" if control_valve_vendor == "dembla" else "CAIR"
+                    rows += [
+                        _row(media, "ORIFICE PLATE", f'{gas_op_nb} NB', 1,
+                             unit_price_override=gas_op_price, make="ENCON"),
+                        _row(media, "DPT", "", 1, make="HONEYWELL"),
+                        _row(media, "CONTROL VALVE", f'{gas_cv_nb} NB', 1,
+                             unit_price_override=gcv_price, make=gcv_vendor),
+                    ]
+                elif fuel_type in OIL_FUELS:
+                    bv_price = _get_cheapest_ball_valve(oil_nb)
+                    rows += [
+                        _row(media, "BALL VALVE", f'{oil_nb} NB', 1,
+                             unit_price_override=bv_price, make="L&T"),
+                        _row(media, "FLOWMETER", f'{oil_nb} NB', 1, make="ELETA"),
+                        _row(media, "MOTORIZED CONTROL VALVE", "025NB (Globe)", 1,
+                             unit_price_override=_get_price_fuzzy("MOTORIZED CONTROL VALVE 025NB (Globe)"),
+                             make="CAIR"),
+                        _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1,
+                             unit_price_override=_get_cheapest_solenoid_valve(oil_nb), make="MADAS"),
+                        _row(media, "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
+                    ]
+            elif auto_control_type in ("plc_agr", "pid"):
+                if fuel_type in OIL_FUELS:
+                    rows.append(_row(media, "AIR OIL REGULATOR", f'{oil_nb} NB', 1))
+                # Gas-fuel AGR is added by the consolidated block below
 
-    # AGR — only appears for gas fuels in modes that explicitly use it:
-    #   manual, plc_agr, pid. In pure PLC mode the ratio is controlled by
-    #   orifice plate + DPT + control valve (no AGR needed).
-    needs_agr = (
-        fuel_type in GAS_FUELS
-        and (
-            control_mode == "manual"
-            or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
+        # AGR — only appears for gas fuels in modes that explicitly use it:
+        #   manual, plc_agr, pid. In pure PLC mode the ratio is controlled by
+        #   orifice plate + DPT + control valve (no AGR needed).
+        needs_agr = (
+            fuel_type in GAS_FUELS
+            and (
+                control_mode == "manual"
+                or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
+            )
         )
-    )
-    if needs_agr:
-        rows.append(_row(
-            media, "AGR",
-            f'{equipment["agr"]["nb"]} NB',
-            1, unit_price_override=equipment["agr"]["price"],
-        ))
+        if needs_agr:
+            rows.append(_row(
+                media, "AGR",
+                f'{equipment["agr"]["nb"]} NB',
+                1, unit_price_override=equipment["agr"]["price"],
+            ))
 
     return rows
 
@@ -762,14 +765,12 @@ def build_vlph_manual_df(
         _row("MISC ITEMS", "CONTROL PANEL", "", 1),
     ]
 
-    # ── FUEL LINE (same logic as automatic, manual control mode) ────────
+    # ── FUEL LINE (base items only — no AGR, orifice, DPT, control valve) ─
     f1_label = FUEL_NAMES.get(fuel1_type, fuel1_type.upper())
     rows += _fuel_line_rows(
         f1_label, fuel1_type, equipment,
-        control_mode="manual", auto_control_type="agr",
-        control_valve_vendor="dembla",
         pressure_gauge_vendor=pressure_gauge_vendor,
-        shutoff_valve_vendor="lt_lever",
+        base_only=True,
     )
 
     # ── LPG NG PILOT LINE (detailed — same as automatic) ─────────────────
