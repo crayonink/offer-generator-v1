@@ -768,6 +768,20 @@
       document.getElementById('fuel1_ratio').value = 50;
       document.getElementById('fuel2_ratio').value = 50;
     }
+    // Purging line — only for MG/COG, not in manual mode
+    const isManualMode = document.getElementById('control_mode').value === 'manual';
+    const needsPurging = !isManualMode && (PURGING_FUELS.has(f1) || (isDual && PURGING_FUELS.has(f2)));
+    document.getElementById('purging-row').style.display = needsPurging ? 'block' : 'none';
+    // Mix Gas — disable CAIR for control valve
+    const cvSel = document.getElementById('control_valve_vendor');
+    const isMG = (f1 === 'mg') || (isDual && f2 === 'mg');
+    const cairOpt = cvSel.querySelector('option[value="cair"]');
+    if (isMG) {
+      if (cvSel.value === 'cair') cvSel.value = 'dembla';
+      if (cairOpt) cairOpt.disabled = true;
+    } else {
+      if (cairOpt) cairOpt.disabled = false;
+    }
     updateBlendedCV();
   }
   function updateRatio(changed) {
@@ -813,6 +827,17 @@
     el.textContent = ""; el.style.display = "none";
   }
 
+  /* ── Control Mode Toggle ── */
+  function onControlModeChange() {
+    const mode = document.getElementById('control_mode').value;
+    document.getElementById('auto-type-wrap').style.display = mode === 'automatic' ? '' : 'none';
+    document.getElementById('manual-inputs').style.display = mode === 'manual' ? '' : 'none';
+    if (mode === 'manual') document.getElementById('purging-row').style.display = 'none';
+  }
+
+  const OIL_FUEL_SET = new Set(["hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"]);
+  const PURGING_FUELS = new Set(["mg", "cog"]);
+
   /* ── Calculate ── */
   async function calculate() {
     hideError("error-box");
@@ -822,14 +847,34 @@
     const ti = val("Ti"), tf = val("Tf");
     if (tf <= ti) { showError("error-box", "Final temperature (Tf) must be greater than initial temperature (Ti)."); btn.classList.remove("loading"); btn.disabled = false; return; }
 
+    const f1type = document.getElementById("fuel1_type").value;
+    const f2type = document.getElementById("fuel2_type").value;
+    const f1cv = parseFloat(document.getElementById("fuel1_cv").value) || 8500;
+    const f2cv = parseFloat(document.getElementById("fuel2_cv")?.value) || 0;
+
     const payload = {
       Ti: ti, Tf: tf,
       refractory_weight: val("refractory_weight"),
       fuel_cv: val("fuel_cv"),
+      fuel1_type: f1type, fuel1_cv: f1cv,
+      fuel2_type: f2type, fuel2_cv: f2cv,
       time_taken_hr: val("time_taken_hr"),
       refractory_heat_factor: val("refractory_heat_factor"),
       efficiency: val("efficiency"),
       ladle_tons: val("ladle_tons"),
+      blower_pressure: document.getElementById("blower_pressure").value,
+      control_mode: document.getElementById("control_mode").value,
+      auto_control_type: document.getElementById("auto_control_type").value,
+      control_valve_vendor: document.getElementById("control_valve_vendor").value,
+      shutoff_valve_vendor: document.getElementById("shutoff_valve_vendor").value,
+      butterfly_valve_vendor: document.getElementById("butterfly_valve_vendor").value,
+      pressure_gauge_vendor: document.getElementById("pressure_gauge_vendor").value,
+      hpu_variant: document.getElementById("hpu_variant").value,
+      pilot_burner: document.getElementById("pilot_burner").value,
+      pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
+      pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
+      purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
+      manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
     };
 
     try {
