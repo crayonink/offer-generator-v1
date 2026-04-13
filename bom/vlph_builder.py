@@ -374,7 +374,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
     # Control-type-specific instrumentation
     if control_mode == "automatic":
         if auto_control_type == "plc":
-            if fuel_type in GAS_FUELS:
+            if fuel_type in ("ng", "lpg", "rlng"):
                 from calculations.pipes import STANDARD_PIPE_NB
                 # Orifice plate = gas train outlet NB (2nd DN)
                 gt_outlet_nb = equipment["ng_gas_train"]["outlet_nb"]
