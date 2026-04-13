@@ -478,6 +478,11 @@ class VLPHCalcRequest(BaseModel):
     pilot_burner: str = "auto"                   # "auto" | "lpg_10" | "nglpg_100" | "cog_100"
     pipeline_weight_kg: float = 1000.0           # Air-gas pipeline weight (700–2000 kg, step 100)
     purging_line: str = "no"                     # "yes" | "no" — nitrogen purging line for MG/COG
+    fabrication_weight_kg: float = 2500.0        # manual mode: fabrication weight
+    fabrication_rate: float = 110.0              # manual mode: Rs per kg
+    pipeline_cost: float = 40000.0               # manual mode: flat pipeline cost
+    cable_tray_cost: float = 40000.0             # manual mode: flat cable tray cost
+    hydraulic_system_cost: float = 175000.0      # manual mode: hydraulic system cost
 
 
 class QuoteItem(BaseModel):
@@ -895,7 +900,7 @@ def vlph_calculate(req: VLPHCalcRequest):
         from calculations.burner import BurnerInputs, calculate_burner
         from calculations.pipes import PipeInputs, calculate_pipe_sizes, select_oil_pipe_nb
         from bom.selectors.selection_engine import select_equipment
-        from bom.vlph_builder import build_vlph_120t_df
+        from bom.vlph_builder import build_vlph_120t_df, build_vlph_manual_df
 
         FUEL_NAMES = {
             "ng": "Natural Gas", "lpg": "LPG", "cog": "COG", "bg": "BFG", "rlng": "RLNG", "mg": "Mixed Gas",
@@ -1000,21 +1005,35 @@ def vlph_calculate(req: VLPHCalcRequest):
             )
 
         # Air is CV-independent, so use fuel1 for air sizing
-        bom_df = build_vlph_120t_df(
-            equipment=equip1,
-            ladle_tons=req.ladle_tons,
-            fuel1_type=req.fuel1_type,
-            fuel2_type=req.fuel2_type,
-            equipment2=equip2,
-            control_mode=req.control_mode,
-            auto_control_type=req.auto_control_type,
-            control_valve_vendor=req.control_valve_vendor,
-            shutoff_valve_vendor=req.shutoff_valve_vendor,
-            pressure_gauge_vendor=req.pressure_gauge_vendor,
-            pilot_burner=req.pilot_burner,
-            pipeline_weight_kg=req.pipeline_weight_kg,
-            purging_line=req.purging_line,
-        )
+        if req.control_mode == "manual":
+            bom_df = build_vlph_manual_df(
+                equipment=equip1,
+                ladle_tons=req.ladle_tons,
+                fuel1_type=req.fuel1_type,
+                pressure_gauge_vendor=req.pressure_gauge_vendor,
+                pilot_burner=req.pilot_burner,
+                fabrication_weight_kg=req.fabrication_weight_kg,
+                fabrication_rate=req.fabrication_rate,
+                pipeline_cost=req.pipeline_cost,
+                cable_tray_cost=req.cable_tray_cost,
+                hydraulic_system_cost=req.hydraulic_system_cost,
+            )
+        else:
+            bom_df = build_vlph_120t_df(
+                equipment=equip1,
+                ladle_tons=req.ladle_tons,
+                fuel1_type=req.fuel1_type,
+                fuel2_type=req.fuel2_type,
+                equipment2=equip2,
+                control_mode=req.control_mode,
+                auto_control_type=req.auto_control_type,
+                control_valve_vendor=req.control_valve_vendor,
+                shutoff_valve_vendor=req.shutoff_valve_vendor,
+                pressure_gauge_vendor=req.pressure_gauge_vendor,
+                pilot_burner=req.pilot_burner,
+                pipeline_weight_kg=req.pipeline_weight_kg,
+                purging_line=req.purging_line,
+            )
 
         # Split summary rows from detail rows
         detail = bom_df[bom_df["MEDIA"] != ""].copy()

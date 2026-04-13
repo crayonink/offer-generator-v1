@@ -598,14 +598,14 @@ def build_vlph_120t_df(
             _row("PURGING LINE", "CHECK VALVE",               "20 NB",       1, unit_price_override=3300,  make="AUDCO/L&T/LEADER"),
         ]
 
-    # ── NG PILOT LINE ──────────────────────────────────────────────────────
+    # ── LPG NG PILOT LINE ──────────────────────────────────────────────────────
     rows += [
-        _row("NG PILOT LINE", "BALL VALVE", "20 NB", 1,
+        _row("LPG NG PILOT LINE", "BALL VALVE", "20 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-        _row("NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
-        _row("NG PILOT LINE", "BALL VALVE", "15 NB", 1,
+        _row("LPG NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
+        _row("LPG NG PILOT LINE", "BALL VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
-        _row("NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
+        _row("LPG NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
     ]
     # Pressure Regulating Valve — NG pilot line uses 20 NB (DN025) for ALL fuels.
@@ -613,17 +613,17 @@ def build_vlph_120t_df(
     try:
         reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
         rows.append(_row(
-            "NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
             f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
             1, unit_price_override=reg["price"], make="MADAS",
         ))
     except ValueError:
         rows.append(_row(
-            "NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
             f'{reg_nb_request} NB', 1, make="MADAS",
         ))
     rows += [
-        _row("NG PILOT LINE", "FLEXIBLE HOSE",
+        _row("LPG NG PILOT LINE", "FLEXIBLE HOSE",
              f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
              unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
     ]
@@ -718,6 +718,152 @@ def build_vlph_120t_df(
                     ("", "BOUGHT OUT ITEMS",     "", "", "", "", bought_out_total),
                     ("", "ENCON ITEMS",          "", "", "", "", encon_total),
                     ("", "GRAND TOTAL",          "", "", "", "", grand_total),
+                ],
+                columns=df.columns,
+            ),
+        ],
+        ignore_index=True,
+    )
+
+    return df
+
+
+def build_vlph_manual_df(
+    equipment: dict,
+    ladle_tons: float = 10.0,
+    fuel1_type: str = "ng",
+    pressure_gauge_vendor: str = "baumer",
+    pilot_burner: str = "auto",
+    fabrication_weight_kg: float = 2500.0,
+    fabrication_rate: float = 110.0,
+    pipeline_cost: float = 40000.0,
+    cable_tray_cost: float = 40000.0,
+    hydraulic_system_cost: float = 175000.0,
+) -> pd.DataFrame:
+    """
+    Manual / simplified VLPH BOM — matches the Lloyds manual costing format.
+    Bought Out items are few; In-House items are grouped.
+    LPG NG Pilot Line is expanded with individual items (same as automatic).
+    """
+
+    pg_vendor = pressure_gauge_vendor.upper()
+    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    params = get_vlph_params(ladle_tons)
+
+    rows = []
+
+    # ── BOUGHT OUT ITEMS ──────────────────────────────────────────────────
+    air_nb = max(125, equipment["air_duct"]["nb"])
+
+    rows += [
+        _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB F150#', 1),
+        _row("COMB AIR", pg_item, 'RANGE- 0-1600 mBAR', 1, make=pg_vendor),
+        _row("COMB AIR", "BUTTERFLY VALVE",
+             f'{equipment["butterfly_valve"]["nb"]} NB', 1,
+             unit_price_override=equipment["butterfly_valve"]["price"],
+             make=equipment["butterfly_valve"].get("make", "L&T")),
+        _row("MISC ITEMS", "CONTROL PANEL", "", 1),
+    ]
+
+    # ── LPG NG PILOT LINE (detailed — same as automatic) ─────────────────
+    rows += [
+        _row("LPG NG PILOT LINE", "BALL VALVE", "20 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+        _row("LPG NG PILOT LINE", pg_item, '', 1, make=pg_vendor),
+        _row("LPG NG PILOT LINE", "BALL VALVE", "15 NB", 1,
+             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+        _row("LPG NG PILOT LINE", "SOLENOID VALVE", "15 NB", 1,
+             unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
+    ]
+    reg_nb_request = 20
+    try:
+        reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
+        rows.append(_row(
+            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
+            1, unit_price_override=reg["price"], make="MADAS",
+        ))
+    except ValueError:
+        rows.append(_row(
+            "LPG NG PILOT LINE", "PRESSURE REGULATING VALVE",
+            f'{reg_nb_request} NB', 1, make="MADAS",
+        ))
+    rows += [
+        _row("LPG NG PILOT LINE", "FLEXIBLE HOSE",
+             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
+    ]
+
+    # ── IN-HOUSE / ENCON ITEMS ────────────────────────────────────────────
+    rows += [
+        _row("ENCON ITEMS", equipment["burner"]["model"],
+             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             1, unit_price_override=equipment["burner"]["price"]),
+        _row("ENCON ITEMS", "FABRICATION",
+             f'{fabrication_weight_kg:.0f} KG @ Rs.{fabrication_rate:.0f}/kg',
+             fabrication_weight_kg,
+             unit_price_override=fabrication_rate),
+    ]
+
+    # HPU — for oil fuels
+    hpu = equipment.get("hpu")
+    if hpu:
+        rows.append(_row(
+            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
+            1, unit_price_override=hpu["price"],
+        ))
+
+    rows += [
+        _row("ENCON ITEMS", "HYDRAULIC SYSTEM", "", 1,
+             unit_price_override=hydraulic_system_cost),
+        _row("ENCON ITEMS", equipment["blower"]["model"],
+             f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
+             f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
+             1, unit_price_override=equipment["blower"]["price_premium"]),
+        _row(
+            "ENCON ITEMS",
+            {
+                "lpg_10":  "ENCON-PB-LPG-10KW",
+                "ng_10":   "ENCON-PB NG 10 KW",
+                "lpg_100": "ENCON-PB LPG 100 KW",
+                "ng_100":  "ENCON-PB NG 100 KW",
+                "cog_100": "ENCON PB COG 100 KW",
+            }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
+            "", 1,
+        ),
+        _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
+        _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
+        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
+        _row("ENCON ITEMS", "AIR-GAS PIPELINE", "", 1,
+             unit_price_override=pipeline_cost),
+        _row("ENCON ITEMS", "CABLE TRAY", "", 1,
+             unit_price_override=cable_tray_cost),
+        _row("ENCON ITEMS", "CERAMIC FIBRE",
+             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+             params["ceramic_rolls"],
+             unit_price_override=params.get("ceramic_rate", 0)),
+    ]
+
+    df = pd.DataFrame(
+        rows,
+        columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE", "TOTAL"],
+    )
+
+    bought_out_total = df.loc[
+        (df["MEDIA"] != "ENCON ITEMS"), "TOTAL"
+    ].sum()
+    encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
+    grand_total = bought_out_total + encon_total
+
+    df = pd.concat(
+        [
+            df,
+            pd.DataFrame(
+                [
+                    ("", "BOUGHT OUT ITEMS", "", "", "", "", bought_out_total),
+                    ("", "ENCON ITEMS",      "", "", "", "", encon_total),
+                    ("", "GRAND TOTAL",      "", "", "", "", grand_total),
                 ],
                 columns=df.columns,
             ),

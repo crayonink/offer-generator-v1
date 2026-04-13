@@ -587,6 +587,36 @@
       </div>
     </div>
 
+    <!-- Manual BOM Inputs (shown only when control_mode = manual) -->
+    <div id="manual-inputs" style="display:none; margin-bottom:24px;">
+      <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Manual BOM Inputs</div>
+      <div class="fg fg-3" style="margin-bottom:12px">
+        <div class="field">
+          <label>Fabrication Weight (KG)</label>
+          <input id="fabrication_weight_kg" type="number" value="2500" step="100"/>
+          <div class="hint">MS structure fabrication weight</div>
+        </div>
+        <div class="field">
+          <label>Fabrication Rate (Rs/KG)</label>
+          <input id="fabrication_rate" type="number" value="110" step="5"/>
+        </div>
+        <div class="field">
+          <label>Hydraulic System Cost (Rs)</label>
+          <input id="hydraulic_system_cost" type="number" value="175000" step="5000"/>
+        </div>
+      </div>
+      <div class="fg fg-2">
+        <div class="field">
+          <label>Pipeline Cost (Rs)</label>
+          <input id="pipeline_cost" type="number" value="40000" step="5000"/>
+        </div>
+        <div class="field">
+          <label>Cable Tray Cost (Rs)</label>
+          <input id="cable_tray_cost" type="number" value="40000" step="5000"/>
+        </div>
+      </div>
+    </div>
+
     <div class="fg fg-2" style="margin-bottom:24px">
       <div class="field">
         <label>Blower Pressure</label>
@@ -854,6 +884,15 @@
             <tr><td>ENCON Items</td>                          <td id="s-encon">—</td></tr>
             <tr class="tot"><td><b>Grand Total</b></td>       <td id="s-grand">—</td></tr>
           </table>
+          <!-- Markup summary (manual mode only) -->
+          <table id="markup-summary" style="display:none; margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+            <tr><td>Bought Out Sell (x1.8)</td>               <td id="s-bought-sell">—</td></tr>
+            <tr><td>In-House Sell</td>                        <td id="s-encon-sell">—</td></tr>
+            <tr><td>Unit Price (Cost + Sell)</td>             <td id="s-unit-sell">—</td></tr>
+            <tr><td>Designing (10%)</td>                      <td id="s-designing">—</td></tr>
+            <tr><td>Negotiation (10%)</td>                    <td id="s-negotiation">—</td></tr>
+            <tr class="tot"><td><b>Total Unit Price</b></td>  <td id="s-total-unit">—</td></tr>
+          </table>
         </div>
       </div>
     </div>
@@ -1006,6 +1045,7 @@ function setInputMode(mode) {
 function onControlModeChange() {
   const mode = document.getElementById('control_mode').value;
   document.getElementById('auto-type-wrap').style.display = mode === 'automatic' ? '' : 'none';
+  document.getElementById('manual-inputs').style.display = mode === 'manual' ? '' : 'none';
 }
 
 const OIL_FUEL_SET = new Set(["hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"]);
@@ -1106,6 +1146,11 @@ async function calculate() {
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
+      fabrication_weight_kg: val("fabrication_weight_kg"),
+      fabrication_rate: val("fabrication_rate"),
+      pipeline_cost: val("pipeline_cost"),
+      cable_tray_cost: val("cable_tray_cost"),
+      hydraulic_system_cost: val("hydraulic_system_cost"),
     };
   } else {
     const ti = val("Ti"), tf = val("Tf");
@@ -1131,6 +1176,11 @@ async function calculate() {
       pilot_burner: document.getElementById("pilot_burner").value,
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
+      fabrication_weight_kg: val("fabrication_weight_kg"),
+      fabrication_rate: val("fabrication_rate"),
+      pipeline_cost: val("pipeline_cost"),
+      cable_tray_cost: val("cable_tray_cost"),
+      hydraulic_system_cost: val("hydraulic_system_cost"),
     };
   }
 
@@ -1260,6 +1310,28 @@ function renderResults(d) {
   set("banner-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("banner-encon",  "₹ " + fmt(s.encon_total, 0));
   document.getElementById("cost-banner").classList.add("visible");
+
+  // Markup summary (manual mode)
+  const isManual = document.getElementById("control_mode").value === "manual";
+  const markupEl = document.getElementById("markup-summary");
+  if (isManual) {
+    const boughtSell = s.bought_out_total * 1.8;
+    const enconSell  = s.encon_total;
+    const unitSell   = boughtSell + enconSell;
+    const designing  = unitSell * 0.10;
+    const negotiation= unitSell * 0.10;
+    const totalUnit  = unitSell + designing + negotiation;
+    set("s-bought-sell", "₹ " + fmt(boughtSell, 0));
+    set("s-encon-sell",  "₹ " + fmt(enconSell, 0));
+    set("s-unit-sell",   "₹ " + fmt(unitSell, 0));
+    set("s-designing",   "₹ " + fmt(designing, 0));
+    set("s-negotiation", "₹ " + fmt(negotiation, 0));
+    set("s-total-unit",  "₹ " + fmt(totalUnit, 0));
+    markupEl.style.display = "";
+    set("banner-total", "₹ " + fmt(totalUnit, 0));
+  } else {
+    markupEl.style.display = "none";
+  }
 
   // ── Client Data Summary Card ──
   const cd = document.getElementById("client-data-card");
