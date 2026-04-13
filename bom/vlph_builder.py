@@ -452,10 +452,11 @@ def _get_orifice_price(nb: int) -> tuple:
     return (int(row[0]), float(row[1])) if row else (nb, 0)
 
 
-def _get_valve_price(nb: int, valve_type: str, vendor: str) -> tuple:
+def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
     """Look up valve price from DB by NB and vendor. Returns (item_name, price)."""
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
+    nb = int(nb)
     nb_str = f'{nb:03d}'
 
     if vendor in ("dembla", "aira"):
