@@ -738,8 +738,11 @@ def build_vlph_120t_df(
     # structure, panel, HPU, etc.) stays at qty 1.
     if num_burners > 1:
         burner_model = equipment["burner"]["model"]
+        # Dual fuel renames the burner row to "ENCON DUAL- 5A" — cover both.
+        burner_model_dual = burner_model.replace("ENCON ", "ENCON DUAL- ")
         per_burner_items = {
             burner_model,
+            burner_model_dual,
             "Ignition Transformer",
             "Sequence Controller",
             "UV Sensor with Air Jacket",
