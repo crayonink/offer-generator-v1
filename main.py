@@ -1320,23 +1320,31 @@ def hlph_calculate(req: VLPHCalcRequest):
         OIL_FUELS = {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
 
         f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
+        is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
 
-        burner_inputs = BurnerInputs(
-            Ti=req.Ti, Tf=req.Tf,
-            refractory_weight=req.refractory_weight,
-            fuel_cv=f1_cv,
-            time_taken_hr=req.time_taken_hr,
-            refractory_heat_factor=req.refractory_heat_factor,
-            efficiency=req.efficiency,
-        )
-        br = calculate_burner(burner_inputs)
-        ng_flow = br.extra_firing_rate_nm3hr
-        air_flow = br.air_qty_nm3hr
+        if req.mode == "direct":
+            # Direct mode: burner capacity entered for higher-CV fuel
+            higher_cv = max(f1_cv, req.fuel2_cv) if is_dual else f1_cv
+            heat_kcal_hr = req.direct_burner_capacity * higher_cv
+            ng_flow  = heat_kcal_hr / f1_cv
+            air_flow = heat_kcal_hr * 118 / 100000
+            br = None
+        else:
+            burner_inputs = BurnerInputs(
+                Ti=req.Ti, Tf=req.Tf,
+                refractory_weight=req.refractory_weight,
+                fuel_cv=f1_cv,
+                time_taken_hr=req.time_taken_hr,
+                refractory_heat_factor=req.refractory_heat_factor,
+                efficiency=req.efficiency,
+            )
+            br = calculate_burner(burner_inputs)
+            ng_flow = br.extra_firing_rate_nm3hr
+            air_flow = br.air_qty_nm3hr
 
         pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow))
 
         burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
-        is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
 
         equip1 = select_equipment(
             ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow,
@@ -1352,19 +1360,25 @@ def hlph_calculate(req: VLPHCalcRequest):
         f1_oil_lph = equip1["burner"].get("equivalent_lph", 0) if f1_is_oil else 0
 
         # Fuel 2
-        br2, equip2, ng_flow2 = None, None, 0
+        br2, equip2, ng_flow2, air_flow2 = None, None, 0, 0
         if is_dual:
-            br2 = calculate_burner(BurnerInputs(
-                Ti=req.Ti, Tf=req.Tf,
-                refractory_weight=req.refractory_weight,
-                fuel_cv=req.fuel2_cv,
-                time_taken_hr=req.time_taken_hr,
-                refractory_heat_factor=req.refractory_heat_factor,
-                efficiency=req.efficiency,
-            ))
-            ng_flow2 = br2.extra_firing_rate_nm3hr
+            if req.mode == "direct":
+                # Same heat output, fuel2 flow at fuel2 CV; air is CV-independent
+                ng_flow2  = heat_kcal_hr / req.fuel2_cv
+                air_flow2 = air_flow
+            else:
+                br2 = calculate_burner(BurnerInputs(
+                    Ti=req.Ti, Tf=req.Tf,
+                    refractory_weight=req.refractory_weight,
+                    fuel_cv=req.fuel2_cv,
+                    time_taken_hr=req.time_taken_hr,
+                    refractory_heat_factor=req.refractory_heat_factor,
+                    efficiency=req.efficiency,
+                ))
+                ng_flow2  = br2.extra_firing_rate_nm3hr
+                air_flow2 = br2.air_qty_nm3hr
             equip2 = select_equipment(
-                ng_flow_nm3hr=ng_flow2, air_flow_nm3hr=br2.air_qty_nm3hr,
+                ng_flow_nm3hr=ng_flow2, air_flow_nm3hr=air_flow2,
                 is_dual_fuel=is_dual, fuel_cv=req.fuel2_cv,
                 blower_pressure=req.blower_pressure, fuel_type=req.fuel2_type,
                 hpu_variant=req.hpu_variant, burner_pressure_wg=burner_pressure_wg,
@@ -1416,16 +1430,17 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "fuel1_cv": f1_cv,
                 "is_dual": is_dual,
                 "time_taken_hr": req.time_taken_hr,
-                "avg_temp_rise": round(br.avg_temp_rise, 2),
-                "firing_rate_kcal": round(br.firing_rate_kcal, 2),
-                "heat_load_kcal": round(br.heat_load_kcal, 2),
-                "fuel_consumption_nm3": round(br.fuel_consumption_nm3, 2),
-                "calculated_firing_rate_nm3hr": round(br.calculated_firing_rate_nm3hr, 2),
-                "extra_firing_rate_nm3hr": round(ng_flow, 2),
-                "equivalent_lph": round(equip1["burner"].get("equivalent_lph", 0), 2),
-                "fuel_density": equip1["burner"].get("fuel_density", 0),
-                "final_firing_rate_mw": round(br.final_firing_rate_mw, 2),
-                "air_qty_nm3hr": round(air_flow, 2),
+                "mode": req.mode,
+                "avg_temp_rise":              round(br.avg_temp_rise, 2)              if br else 0,
+                "firing_rate_kcal":           round(br.firing_rate_kcal, 2)           if br else 0,
+                "heat_load_kcal":             round(br.heat_load_kcal, 2)             if br else 0,
+                "fuel_consumption_nm3":       round(br.fuel_consumption_nm3, 2)       if br else 0,
+                "calculated_firing_rate_nm3hr": round(br.calculated_firing_rate_nm3hr, 2) if br else round(ng_flow / 1.1, 2),
+                "extra_firing_rate_nm3hr":    round(ng_flow, 2),
+                "equivalent_lph":             round(equip1["burner"].get("equivalent_lph", 0), 2),
+                "fuel_density":               equip1["burner"].get("fuel_density", 0),
+                "final_firing_rate_mw":       round(br.final_firing_rate_mw, 2)       if br else round(ng_flow * f1_cv / (860 * 1000), 2),
+                "air_qty_nm3hr":              round(air_flow, 2),
                 "cfm": round(cfm, 2),
                 "blower_hp_calc": round(blower_hp_calc, 2),
             },
