@@ -96,10 +96,12 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     required_hp = cfm * pressure_in_wg / 3200
     blower = select_blower(required_hp, series=blower_pressure)
 
-    # HPU — only for oil-based fuels (ldo, fo, hsd, sko) and dual fuel.
+    # HPU — only for oil-based fuels (ldo, fo, hsd, sko).
+    # Check the actual fuel sub-type, not `burner_fuel_type` (which collapses to
+    # "dual" for dual-fuel and would incorrectly trigger HPU for gas+gas pairs).
     # Sized to actual oil firing rate (LPH), not burner model.
     hpu = None
-    if _resolve_category(burner_fuel_type) in ("oil", "dual"):
+    if _resolve_category(fuel_type) == "oil":
         try:
             hpu = select_hpu(burner["equivalent_lph"], variant=hpu_variant)
         except ValueError:

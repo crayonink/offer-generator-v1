@@ -652,10 +652,20 @@ def build_vlph_120t_df(
 
 
     # ── ENCON ITEMS ────────────────────────────────────────────────────────
-    burner_desc = "ENCON DUAL FUEL Burner" if is_dual else equipment["burner"]["model"]
+    # Dual fuel: one physical dual-fuel burner — match pricelist naming
+    # ("ENCON 5A" → "ENCON DUAL- 5A") and show both fuel flows in the ref.
+    if is_dual:
+        burner_desc = equipment["burner"]["model"].replace("ENCON ", "ENCON DUAL- ")
+        burner_ref = (
+            f'{f1_label}: {equipment["burner"]["input_nm3hr"]} Nm3/hr | '
+            f'{f2_label}: {equipment2["burner"]["input_nm3hr"]} Nm3/hr'
+        )
+    else:
+        burner_desc = equipment["burner"]["model"]
+        burner_ref = f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr'
     rows += [
         _row("ENCON ITEMS", burner_desc,
-             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             burner_ref,
              1, unit_price_override=equipment["burner"]["price"]),
         _row("ENCON ITEMS", "BEARING (24026)", "", 2),
         _row("ENCON ITEMS", "PLUMMER BLOCK", "", 1,
@@ -692,8 +702,9 @@ def build_vlph_120t_df(
              unit_price_override=params.get("ceramic_rate", 0)),
     ]
 
-    # HEATING & PUMPING UNIT (oil-based fuels only)
-    hpu = equipment.get("hpu")
+    # HEATING & PUMPING UNIT (oil-based fuels only).
+    # Dual fuel: HPU may come from equipment2 if the oil fuel is fuel2.
+    hpu = equipment.get("hpu") or (equipment2.get("hpu") if equipment2 else None)
     if hpu:
         rows.append(_row(
             "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
