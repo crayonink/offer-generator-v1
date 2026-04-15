@@ -520,6 +520,11 @@
           <input id="refractory_weight" type="number" value="21500"/>
           <div class="hint">Total refractory mass</div>
         </div>
+        <div class="field">
+          <label>Structure Weight (kg)</label>
+          <input id="ms_structure_kg" type="number" value="0" min="0" placeholder="e.g. 1500"/>
+          <div class="hint">Tundish MS weight — drives fabrication cost (leave 0 to auto-derive)</div>
+        </div>
       </div>
     </div>
 
@@ -1188,6 +1193,7 @@ async function calculate() {
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
       pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
       num_burners: parseInt(document.getElementById("num_burners").value) || 1,
+      ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
 
     };
   } else {
@@ -1218,6 +1224,7 @@ async function calculate() {
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
       pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
       num_burners: parseInt(document.getElementById("num_burners").value) || 1,
+      ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
 
     };
   }

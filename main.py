@@ -482,6 +482,7 @@ class VLPHCalcRequest(BaseModel):
     manual_pilot_burner: str = "yes"             # "yes" | "no" — include pilot burner in manual BOM
     pilot_line_fuel: str = "lpg"                 # "lpg" | "ng" — pilot line fuel type (manual mode)
     num_burners: int = 1                         # Number of burners (tundish: splits firing rate, multiplies burner-line items)
+    ms_structure_kg_override: float = 0.0        # Tundish: override MS structure weight used for fabrication cost
 
 
 class QuoteItem(BaseModel):
@@ -1065,6 +1066,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 pipeline_weight_kg=req.pipeline_weight_kg,
                 purging_line=req.purging_line,
                 num_burners=n_burners,
+                ms_structure_kg_override=req.ms_structure_kg_override,
             )
 
         # Split summary rows from detail rows

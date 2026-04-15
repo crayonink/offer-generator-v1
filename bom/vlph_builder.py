@@ -524,6 +524,7 @@ def build_vlph_120t_df(
     pipeline_weight_kg: float = 1000.0,
     purging_line: str = "no",
     num_burners: int = 1,
+    ms_structure_kg_override: float = 0.0,
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -673,8 +674,8 @@ def build_vlph_120t_df(
         _row("ENCON ITEMS", "SHAFT", "", 1,
              unit_price_override=params.get("shaft_kg", 350) * 120),
         _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
-             f'{params["ms_structure_kg"]} kg',
-             1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
+             f'{(ms_structure_kg_override or params["ms_structure_kg"])} kg',
+             1, unit_price_override=(ms_structure_kg_override or params["ms_structure_kg"]) * get_price("FABRICATION RATE")),
         _row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
