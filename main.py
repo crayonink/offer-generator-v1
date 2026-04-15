@@ -483,6 +483,7 @@ class VLPHCalcRequest(BaseModel):
     pilot_line_fuel: str = "lpg"                 # "lpg" | "ng" — pilot line fuel type (manual mode)
     num_burners: int = 1                         # Number of burners (tundish: splits firing rate, multiplies burner-line items)
     ms_structure_kg_override: float = 0.0        # Tundish: override MS structure weight used for fabrication cost
+    ceramic_rolls_override: int = 0              # Tundish: override ceramic-fibre roll count
 
 
 class QuoteItem(BaseModel):
@@ -1067,6 +1068,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 purging_line=req.purging_line,
                 num_burners=n_burners,
                 ms_structure_kg_override=req.ms_structure_kg_override,
+                ceramic_rolls_override=req.ceramic_rolls_override,
             )
 
         # Split summary rows from detail rows

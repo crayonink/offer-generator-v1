@@ -525,6 +525,7 @@ def build_vlph_120t_df(
     purging_line: str = "no",
     num_burners: int = 1,
     ms_structure_kg_override: float = 0.0,
+    ceramic_rolls_override: int = 0,
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -697,11 +698,14 @@ def build_vlph_120t_df(
             }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
             "", 1,
         ),
-        _row("ENCON ITEMS", "CERAMIC FIBRE",
-             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
-             params["ceramic_rolls"],
-             unit_price_override=params.get("ceramic_rate", 0)),
     ]
+    cf_rolls = ceramic_rolls_override or params["ceramic_rolls"]
+    rows.append(_row(
+        "ENCON ITEMS", "CERAMIC FIBRE",
+        f'{cf_rolls} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+        cf_rolls,
+        unit_price_override=params.get("ceramic_rate", 0),
+    ))
 
     # HEATING & PUMPING UNIT (oil-based fuels only).
     # Dual fuel: HPU may come from equipment2 if the oil fuel is fuel2.
