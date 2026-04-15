@@ -481,6 +481,7 @@ class VLPHCalcRequest(BaseModel):
     purging_line: str = "no"                     # "yes" | "no" — nitrogen purging line for MG/COG
     manual_pilot_burner: str = "yes"             # "yes" | "no" — include pilot burner in manual BOM
     pilot_line_fuel: str = "lpg"                 # "lpg" | "ng" — pilot line fuel type (manual mode)
+    num_burners: int = 1                         # Number of burners (tundish: splits firing rate, multiplies burner-line items)
 
 
 class QuoteItem(BaseModel):
@@ -525,6 +526,12 @@ def costing_form():
 @app.get("/hlph", response_class=HTMLResponse)
 def hlph_costing_form():
     html_path = os.path.join(BASE_DIR, "hlph_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+@app.get("/tundish", response_class=HTMLResponse)
+def tundish_costing_form():
+    html_path = os.path.join(BASE_DIR, "tundish_costing.html")
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
