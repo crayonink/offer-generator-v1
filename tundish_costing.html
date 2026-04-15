@@ -1274,7 +1274,9 @@ function renderResults(d) {
   set("r-cfm",     fmt(c.cfm, 2));
   set("r-bhp",     fmt(c.blower_hp_calc, 2));
   set("r-blower",  `${eq.blower_hp} HP, ${fmt(eq.blower_airflow,0)} Nm³/hr — ${eq.blower_model}`);
-  set("eq-burner", eq.burner_model);
+  set("eq-burner", (c.num_burners && c.num_burners > 1)
+    ? `${eq.burner_model} × ${c.num_burners}`
+    : eq.burner_model);
   set("eq-gt",     eq.ng_gas_train);
 
   // Hide NG Gas Train for oil-based fuels; show HPU for oil/dual fuel
