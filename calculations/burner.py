@@ -47,8 +47,13 @@ def calculate_burner(inputs: BurnerInputs) -> BurnerResults:
     if inputs.efficiency <= 0:
         raise ValueError("efficiency must be greater than zero")
 
-    # Average temperature to be raised
-    avg_temp_rise = ((inputs.Tf + inputs.Ti)/2)
+    # Average temperature to be raised.
+    # For warm-start ladles (Ti > 100 °C) the delta-based formula gives a
+    # more realistic figure than a plain mean.
+    if inputs.Ti > 100:
+        avg_temp_rise = (inputs.Tf - inputs.Ti) / 2 + 50
+    else:
+        avg_temp_rise = (inputs.Tf + inputs.Ti) / 2
 
     # Firing rate
     firing_rate_kcal = (
