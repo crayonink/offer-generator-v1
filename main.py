@@ -952,6 +952,12 @@ def vlph_calculate(req: VLPHCalcRequest):
         # Burner pressure derived from blower pressure: 28" -> 24" w.g., 40" -> 36" w.g.
         burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
 
+        # For tundish with multiple burners: blower/gas-train/main-line are sized for
+        # TOTAL flow, burner is sized for PER-BURNER flow.
+        n_burners = max(1, int(req.num_burners or 1))
+        per_burner_ng  = ng_flow / n_burners
+        per_burner_air = air_flow / n_burners
+
         equip1 = select_equipment(
             ng_flow_nm3hr=ng_flow,
             air_flow_nm3hr=air_flow,
@@ -966,6 +972,24 @@ def vlph_calculate(req: VLPHCalcRequest):
             control_mode=req.control_mode,
             auto_control_type=req.auto_control_type,
         )
+
+        # Tundish multi-burner: re-select burner for per-burner flow
+        if n_burners > 1:
+            equip_pb = select_equipment(
+                ng_flow_nm3hr=per_burner_ng,
+                air_flow_nm3hr=per_burner_air,
+                is_dual_fuel=is_dual,
+                fuel_cv=f1_cv,
+                blower_pressure=req.blower_pressure,
+                fuel_type=req.fuel1_type,
+                hpu_variant=req.hpu_variant,
+                burner_pressure_wg=burner_pressure_wg,
+                butterfly_valve_vendor=req.butterfly_valve_vendor,
+                shutoff_valve_vendor=req.shutoff_valve_vendor,
+                control_mode=req.control_mode,
+                auto_control_type=req.auto_control_type,
+            )
+            equip1["burner"] = equip_pb["burner"]
 
         f1_is_oil = req.fuel1_type in OIL_FUELS
         f1_oil_lph = equip1["burner"].get("equivalent_lph", 0) if f1_is_oil else 0
@@ -1040,6 +1064,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 pilot_line_fuel=req.pilot_line_fuel,
                 pipeline_weight_kg=req.pipeline_weight_kg,
                 purging_line=req.purging_line,
+                num_burners=n_burners,
             )
 
         # Split summary rows from detail rows

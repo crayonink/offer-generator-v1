@@ -523,6 +523,7 @@ def build_vlph_120t_df(
     pilot_line_fuel: str = "lpg",
     pipeline_weight_kg: float = 1000.0,
     purging_line: str = "no",
+    num_burners: int = 1,
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -719,6 +720,37 @@ def build_vlph_120t_df(
         rows,
         columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE", "TOTAL"],
     )
+
+    # ── Tundish: replicate burner-line items by number of burners ──────────
+    # Each burner has its own burner unit + ignition / UV / pilot / sensor set,
+    # and its own pilot line. Main equipment (blower, gas train, control valve,
+    # structure, panel, HPU, etc.) stays at qty 1.
+    if num_burners > 1:
+        burner_model = equipment["burner"]["model"]
+        per_burner_items = {
+            burner_model,
+            "Ignition Transformer",
+            "Sequence Controller",
+            "UV Sensor with Air Jacket",
+            "BALL VALVE (Pilot Burner)",
+            "BALL VALVE (UV LINE)",
+            "FLEXIBLE HOSE (Pilot Burner)",
+            "FLEXIBLE HOSE (UV LINE)",
+            "ENCON-PB-LPG-10KW",
+            "ENCON-PB NG 10 KW",
+            "ENCON-PB LPG 100 KW",
+            "ENCON-PB NG 100 KW",
+            "ENCON PB COG 100 KW",
+        }
+        pilot_line_media = {
+            f"{pl} PILOT LINE" for pl in ("LPG", "NG", "COG", "LNG", "RLNG")
+        }
+        mask = (
+            df["ITEM NAME"].isin(per_burner_items)
+            | df["MEDIA"].isin(pilot_line_media)
+        )
+        df.loc[mask, "QTY"]   = df.loc[mask, "QTY"]   * num_burners
+        df.loc[mask, "TOTAL"] = df.loc[mask, "TOTAL"] * num_burners
 
     # Summary rows (SAIL style: Bought Out + In-house/ENCON)
     bought_out_total = df.loc[
