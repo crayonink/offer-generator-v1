@@ -1089,6 +1089,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "control_mode": req.control_mode,
                 "auto_control_type": req.auto_control_type if req.control_mode == "automatic" else None,
                 "time_taken_hr": req.time_taken_hr,
+                "num_burners":                    n_burners,
                 "avg_temp_rise":                  round(br1.avg_temp_rise, 2) if br1 else 0,
                 "firing_rate_kcal":               round(br1.firing_rate_kcal, 2) if br1 else 0,
                 "heat_load_kcal":                 round(br1.heat_load_kcal, 2) if br1 else 0,
