@@ -1624,6 +1624,35 @@ async def generate_quote(req: QuoteRequest):
         output_path = os.path.join(QUOTES_FOLDER, filename)
         generate_quote_docx(quote_data, output_path)
 
+        # Persist to quotes_log so we can list/re-download past quotes later
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            conn.execute("""
+                INSERT INTO quotes_log (
+                    quote_no, ref_no, company_name, poc_name, email, mobile_no,
+                    project_name, equipment_type, ladle_tons, grand_total,
+                    marketing_person, technical_person, file_path
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                quote_data["quote_no"],
+                req.ref_no or "",
+                req.company_name or "",
+                req.poc_name or "",
+                req.email or "",
+                req.mobile_no or "",
+                req.project_name or "",
+                "VLPH" if not req.is_oil else "VLPH (Oil)",  # quick flag
+                float(req.ladle_tons or 0),
+                float(quote_data["grand_total"]),
+                req.marketing_person or "",
+                req.technical_person or "",
+                output_path,
+            ))
+            conn.commit()
+            conn.close()
+        except Exception as log_err:
+            print(f"WARN: quotes_log insert failed: {log_err}")
+
         return {
             "success": True,
             "quote_no": quote_data["quote_no"],
