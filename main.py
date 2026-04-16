@@ -1630,9 +1630,7 @@ async def generate_quote(req: QuoteRequest):
             "download_url": f"/api/download-quote/{filename}",
             "summary": {
                 "subtotal": quote_data["subtotal"],
-                "gst": quote_data["gst_amount"],
-                "freight": quote_data["freight"],
-                "total": quote_data["grand_total"],
+                "total":    quote_data["grand_total"],
             }
         }
     except Exception as e:
