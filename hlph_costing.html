@@ -431,6 +431,12 @@
         <input id="c-subject" type="text" placeholder="Supply of Horizontal Ladle Preheater complete with Combustion Equipment"/>
       </div>
     </div>
+    <div class="fg fg-1">
+      <div class="field">
+        <label>Marketing Person</label>
+        <input id="c-marketing" type="text" placeholder="ENCON sales/marketing rep handling this enquiry"/>
+      </div>
+    </div>
 
     <div class="action-row">
       <button class="btn-primary" onclick="goStep(2)">
@@ -1508,6 +1514,7 @@ async function downloadExcel() {
           email:           str("c-email"),
           project_name:    str("c-subject"),
           ref_no:          str("c-ref"),
+          marketing_person:str("c-marketing"),
         },
         calculations: lastCalc.calculations,
         bom:          lastCalc.bom,
@@ -1550,6 +1557,7 @@ async function generateQuote() {
     email:           str("c-email"),
     project_name:    str("c-subject") || "Supply of Horizontal Ladle Preheater complete with Combustion Equipment",
     ref_no:          str("c-ref"),
+    marketing_person:str("c-marketing"),
     gst_percent:     parseFloat(document.getElementById("q-gst").value)     || 18,
     freight:         parseFloat(document.getElementById("q-freight").value) || 0,
     valid_days:      parseInt(document.getElementById("q-valid").value)     || 30,

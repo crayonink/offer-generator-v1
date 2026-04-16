@@ -513,6 +513,7 @@ class QuoteRequest(BaseModel):
     # Enquiry
     project_name: Optional[str] = ""
     ref_no: Optional[str] = ""
+    marketing_person: Optional[str] = ""
     # Items & commercial
     items: List[QuoteItem]
     gst_percent: float = 18
@@ -1563,6 +1564,7 @@ async def generate_quote(req: QuoteRequest):
                 "email":         req.email,
                 "project_name":  req.project_name,
                 "ref_no":        req.ref_no,
+                "marketing_person": req.marketing_person,
                 "gstin":         req.company_gstin,
             },
             "items": [item.dict() for item in req.items],

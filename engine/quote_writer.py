@@ -34,6 +34,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "quote_no":    quote_data.get("quote_no", ""),
         "date":        quote_data.get("date", ""),
         "ref_no":      customer.get("ref_no", ""),
+        "marketing_person": customer.get("marketing_person", ""),
         "email":       customer.get("email", ""),
         "gstin":       customer.get("gstin", ""),
         "subtotal":    f"₹ {quote_data.get('subtotal', 0):,.0f}",
