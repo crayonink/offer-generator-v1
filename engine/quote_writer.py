@@ -47,7 +47,6 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "total_price_horizontal": f"₹ {total_horizontal:,.0f}" if total_horizontal else "N/A",
         "total_in_words":        customer.get("total_in_words", ""),
         "subtotal":              f"₹ {quote_data.get('subtotal', 0):,.0f}",
-        "freight":               f"₹ {quote_data.get('freight', 0):,.0f}",
         "grand_total":           f"₹ {quote_data.get('grand_total', 0):,.0f}",
         "valid_days":            quote_data.get("valid_days", 30),
         "items":                 quote_data.get("items", []),

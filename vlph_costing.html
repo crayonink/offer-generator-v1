@@ -999,9 +999,8 @@
       </tbody>
     </table>
 
-    <!-- Hidden commercial-term defaults -->
-    <input type="hidden" id="q-freight" value="0"/>
-    <input type="hidden" id="q-valid"   value="30"/>
+    <!-- Hidden commercial-term default (validity only) -->
+    <input type="hidden" id="q-valid" value="30"/>
 
     <div class="alert-error" id="quote-error"></div>
 
@@ -1678,8 +1677,7 @@ async function generateQuote() {
     marketing_person:str("c-marketing"),
     // Technical data for template (pulled from lastCalc)
     ...buildTechData(),
-    freight:         parseFloat(document.getElementById("q-freight").value) || 0,
-    valid_days:      parseInt(document.getElementById("q-valid").value)     || 30,
+    valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
     items: [{
       product_type: "Vertical Ladle Preheater",
       model:        "VLPH (As per Calculation)",
@@ -1705,8 +1703,6 @@ async function generateQuote() {
       <table style="font-size:0.85rem;border-collapse:collapse">
         <tr><td style="padding:3px 16px 3px 0;color:#555">Quote No.</td><td><b>${data.quote_no}</b></td></tr>
         <tr><td style="color:#555">Customer</td>        <td>${name} — ${company}</td></tr>
-        <tr><td style="color:#555">Subtotal</td>        <td>₹ ${fmt(data.summary.subtotal,0)}</td></tr>
-        <tr><td style="color:#555">Freight</td>         <td>₹ ${fmt(data.summary.freight,0)}</td></tr>
         <tr><td style="color:#555"><b>Grand Total</b></td><td><b>₹ ${fmt(data.summary.total,0)}</b></td></tr>
       </table>
       <a class="dl-btn" href="${API}${data.download_url}" download>Download Word Quote</a>
