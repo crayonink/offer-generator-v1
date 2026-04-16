@@ -536,6 +536,7 @@ class QuoteRequest(BaseModel):
     max_electrical_load: Optional[str] = ""
     total_in_words: Optional[str] = ""
     is_oil: Optional[bool] = False   # True for oil fuels — drives scope-of-supply rendering
+    bom_items: Optional[List[dict]] = []   # [{item, make}, ...] for the MAKE LIST table
     # Items & commercial
     items: List[QuoteItem]
     gst_percent: float = 18
@@ -1612,6 +1613,7 @@ async def generate_quote(req: QuoteRequest):
                 "max_electrical_load": req.max_electrical_load,
                 "total_in_words":      req.total_in_words,
                 "is_oil":              bool(req.is_oil),
+                "bom_items":           req.bom_items or [],
             },
             "items": [item.dict() for item in req.items],
             "gst_percent": req.gst_percent,

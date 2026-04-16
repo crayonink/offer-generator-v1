@@ -153,6 +153,13 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # in the scope-of-supply section of the template.
         "is_oil":                bool(customer.get("is_oil")),
         "is_gas":                not bool(customer.get("is_oil")),
+        # BOM items list for the MAKE LIST table on the last page.
+        # Each entry: {"item": "ITEM NAME", "make": "VENDOR" or "ENCON"}.
+        "make_list":             [
+            {"item": x.get("item", ""), "make": x.get("make") or "ENCON"}
+            for x in (customer.get("bom_items") or [])
+            if x.get("item")
+        ],
     }
 
     buffer = generate_word_offer(TEMPLATE_PATH, context)
@@ -161,6 +168,60 @@ def generate_quote_docx(quote_data: dict, output_path: str):
 
     # Post-process: drop any tech-data row whose value cell ended up empty.
     _strip_empty_tech_rows(output_path)
+
+    # Post-process: append BOM items (item, make) to the MAKE LIST table.
+    _append_make_list(output_path, context.get("make_list", []))
+
+
+def _append_make_list(docx_path: str, items: list):
+    """Find the table whose first row is ['ITEM', 'MAKE'] and append one
+    row per BOM item with item name + vendor make."""
+    if not items:
+        return
+    from docx import Document
+    from copy import deepcopy
+    from docx.oxml.ns import qn
+
+    doc = Document(docx_path)
+    target_table = None
+    for t in doc.tables:
+        if len(t.rows) >= 1 and len(t.rows[0].cells) >= 2:
+            cells = [c.text.strip() for c in t.rows[0].cells]
+            if cells[:2] == ["ITEM", "MAKE"]:
+                target_table = t
+                break
+    if target_table is None:
+        return
+
+    header_row = target_table.rows[0]
+    seen = set()  # de-dupe by item name (case-insensitive)
+    for entry in items:
+        item = (entry.get("item") or "").strip()
+        make = (entry.get("make") or "ENCON").strip() or "ENCON"
+        if not item:
+            continue
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+
+        # Clone the header row so formatting matches, then overwrite text
+        new_row = deepcopy(header_row._element)
+        # Clear text in each <w:t>
+        for t in new_row.iter(qn("w:t")):
+            t.text = ""
+        # Set first run text in cells 0 and 1
+        cells = new_row.findall(qn("w:tc"))
+        if len(cells) >= 2:
+            for cell, text in ((cells[0], item), (cells[1], make)):
+                # find first <w:t> in first paragraph and set it
+                t_elements = list(cell.iter(qn("w:t")))
+                if t_elements:
+                    t_elements[0].text = text
+                    t_elements[0].set(qn("xml:space"), "preserve")
+        target_table._element.append(new_row)
+
+    doc.save(docx_path)
 
 
 def _strip_empty_tech_rows(docx_path: str):

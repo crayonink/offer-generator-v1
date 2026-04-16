@@ -1722,6 +1722,9 @@ async function generateQuote() {
     ref_no:          str("c-ref"),
     marketing_person:str("c-marketing"),
     technical_person:str("c-technical"),
+    bom_items: (lastCalc.bom || [])
+      .filter(r => r["ITEM NAME"] && r["ITEM NAME"] !== "BOUGHT OUT ITEMS" && r["ITEM NAME"] !== "ENCON ITEMS")
+      .map(r => ({ item: r["ITEM NAME"], make: r.MAKE || "ENCON" })),
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
     items: [{
