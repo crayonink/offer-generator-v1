@@ -195,17 +195,49 @@ def _append_make_list(docx_path: str, items: list):
 
     header_row = target_table.rows[0]
     seen = set()  # de-dupe by item name (case-insensitive)
+
+    import re as _re
+    # Known vendor names that may leak into item names
+    KNOWN_VENDORS = {"BAUMER", "HGURU", "WIKA", "CAIR", "DEMBLA", "AIRA",
+                     "MADAS", "ENCON", "L&T", "LT", "AUDCO", "LEADER",
+                     "HONEYWELL", "BENGAL IND.", "BENGAL", "ROTEX", "VFLEX",
+                     "SB INTERNATIONAL", "SKF", "FAG", "ABB", "BB",
+                     "CROMPTON", "MASIBUS", "MURUGAPPA", "UNIFRAX",
+                     "SWITZER", "DANFOSS", "JINDAL", "TATA",
+                     "MAHARASHTRA SEAMLESS", "VARITECH", "JSD", "VANAZ",
+                     "LINEAR SYSTEM", "THIRD PARTY"}
+    # Location/usage qualifiers we want to drop
+    LOC_QUALIFIERS = {"PILOT BURNER", "UV LINE", "PILOT", "UV"}
+
+    def _clean_item(name: str, make_str: str) -> str:
+        n = name.strip()
+        # 1. 'GAS TRAIN <flow> NM3/Hr' → 'GAS TRAIN'
+        n = _re.sub(r"^(GAS TRAIN)\s.*$", r"\1", n, flags=_re.IGNORECASE)
+        # 2. Strip ALL trailing parentheticals that look like vendors or
+        #    location qualifiers. Keep technical qualifiers like (Ball),
+        #    (Globe), (Butterfly), (Lever), (Gear).
+        while True:
+            m = _re.search(r"\s*\(([^)]+)\)\s*$", n)
+            if not m:
+                break
+            inside = m.group(1).strip()
+            inside_u = inside.upper()
+            is_vendor = (
+                inside_u == make_str.upper()
+                or inside_u in KNOWN_VENDORS
+                or inside_u in LOC_QUALIFIERS
+            )
+            if not is_vendor:
+                break
+            n = n[:m.start()].rstrip()
+        return n
+
     for entry in items:
         item = (entry.get("item") or "").strip()
         make = (entry.get("make") or "ENCON").strip() or "ENCON"
         if not item:
             continue
-        # Safety net: strip trailing " (VENDOR)" if it matches the MAKE column
-        # (case-insensitive). Keeps technical qualifiers like (Ball), (Globe).
-        import re as _re
-        m = _re.search(r"\s*\(([^)]+)\)\s*$", item)
-        if m and m.group(1).strip().upper() == make.upper():
-            item = item[:m.start()].rstrip()
+        item = _clean_item(item, make)
         key = item.lower()
         if key in seen:
             continue
