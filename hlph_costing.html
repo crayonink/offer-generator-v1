@@ -999,22 +999,10 @@
       </tbody>
     </table>
 
-    <div class="step-heading">Commercial Terms</div>
-
-    <div class="fg fg-3">
-      <div class="field">
-        <label>GST (%)</label>
-        <input id="q-gst" type="number" value="18" step="1"/>
-      </div>
-      <div class="field">
-        <label>Freight (₹)</label>
-        <input id="q-freight" type="number" value="0"/>
-      </div>
-      <div class="field">
-        <label>Validity (days)</label>
-        <input id="q-valid" type="number" value="30"/>
-      </div>
-    </div>
+    <!-- Hidden commercial-term defaults (removed from UI per requirement) -->
+    <input type="hidden" id="q-gst"     value="18"/>
+    <input type="hidden" id="q-freight" value="0"/>
+    <input type="hidden" id="q-valid"   value="30"/>
 
     <div class="alert-error" id="quote-error"></div>
 
@@ -1584,6 +1572,19 @@ async function downloadExcel() {
   finally { btn.disabled = false; btn.textContent = "⬇ Download Excel"; }
 }
 
+function parseHP(str) {
+  const m = String(str || "").match(/[\d.]+/);
+  return m ? parseFloat(m[0]) : 0;
+}
+function recalcElectricalLoad() {
+  const blowerHp = parseHP(document.getElementById("td-blower_size")?.value);
+  const motorHp  = parseHP(document.getElementById("td-hydraulic_motor_hp")?.value);
+  if (!blowerHp && !motorHp) return;
+  const kw = Math.ceil((blowerHp + motorHp) * 0.746);
+  const el = document.getElementById("td-max_electrical_load");
+  if (el) el.value = `${kw} kW`;
+}
+
 /* ── Pre-fill the editable tech-data table from lastCalc ── */
 function fillTechDataTable() {
   if (!lastCalc) return;
@@ -1609,6 +1610,14 @@ function fillTechDataTable() {
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el && !el.value) el.value = val;
+  });
+  recalcElectricalLoad();
+  ["td-blower_size", "td-hydraulic_motor_hp"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.dataset.loadListener) {
+      el.addEventListener("input", recalcElectricalLoad);
+      el.dataset.loadListener = "1";
+    }
   });
 }
 
