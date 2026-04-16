@@ -1746,13 +1746,14 @@ async function generateQuote() {
     if (data.error) throw new Error(data.error);
 
     const name = str("c-name");
+    const displayedTotal = payload.items[0].total;
     document.getElementById("quote-result").style.display = "block";
     document.getElementById("quote-result").innerHTML = `
       <h4>Quote Generated Successfully</h4>
       <table style="font-size:0.85rem;border-collapse:collapse">
         <tr><td style="padding:3px 16px 3px 0;color:#555">Quote No.</td><td><b>${data.quote_no}</b></td></tr>
         <tr><td style="color:#555">Customer</td>        <td>${name} — ${company}</td></tr>
-        <tr><td style="color:#555"><b>Grand Total</b></td><td><b>₹ ${fmt(data.summary.total,0)}</b></td></tr>
+        <tr><td style="color:#555"><b>Grand Total</b></td><td><b>₹ ${fmt(displayedTotal,0)}</b></td></tr>
       </table>
       <a class="dl-btn" href="${API}${data.download_url}" download>Download Word Quote</a>
     `;
