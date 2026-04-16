@@ -624,7 +624,7 @@
         </select>
         <div class="hint">40" WG for larger systems (60T+), 28" WG for standard</div>
       </div>
-      <div class="field">
+      <div class="field auto-only">
         <label>Control Valve Vendor</label>
         <select id="control_valve_vendor">
           <option value="dembla" selected>DEMBLA (Pneumatic)</option>
@@ -635,7 +635,7 @@
       </div>
     </div>
     <div class="fg fg-3" style="margin-bottom:24px">
-      <div class="field">
+      <div class="field auto-only">
         <label>Shut Off Valve Vendor</label>
         <select id="shutoff_valve_vendor">
           <option value="dembla">DEMBLA (Pneumatic)</option>
@@ -816,17 +816,17 @@
         <div class="result-title">Burner Calculation</div>
         <div class="result-card">
           <table class="ct">
-            <tr class="ch"><td colspan="3">Process Parameters</td></tr>
-            <tr><td class="lbl">Ti</td>                   <td class="val" id="r-Ti">—</td>       <td class="unit">°C</td></tr>
-            <tr><td class="lbl">Tf</td>                   <td class="val" id="r-Tf">—</td>       <td class="unit">°C</td></tr>
-            <tr><td class="lbl">Refractory Weight</td>    <td class="val" id="r-wt">—</td>       <td class="unit">kg</td></tr>
+            <tr class="ch" id="row-process-header"><td colspan="3">Process Parameters</td></tr>
+            <tr id="row-Ti"><td class="lbl">Ti</td>                   <td class="val" id="r-Ti">—</td>       <td class="unit">°C</td></tr>
+            <tr id="row-Tf"><td class="lbl">Tf</td>                   <td class="val" id="r-Tf">—</td>       <td class="unit">°C</td></tr>
+            <tr id="row-wt"><td class="lbl">Refractory Weight</td>    <td class="val" id="r-wt">—</td>       <td class="unit">kg</td></tr>
             <tr><td class="lbl" id="r-cv-label">Fuel CV</td> <td class="val" id="r-cv">—</td>       <td class="unit" id="r-cv-unit">kcal/Nm³</td></tr>
             <tr class="ch"><td colspan="3">Calculation Results</td></tr>
-            <tr><td class="lbl">Avg. Temp Rise</td>       <td class="val" id="r-avg">—</td>      <td class="unit">°C</td></tr>
-            <tr><td class="lbl">Time Taken</td>           <td class="val" id="r-time">—</td>     <td class="unit">hr</td></tr>
-            <tr><td class="lbl">Firing Rate</td>          <td class="val" id="r-fr-kcal">—</td>  <td class="unit">kcal/hr</td></tr>
-            <tr><td class="lbl">Heat Load</td>            <td class="val" id="r-hl">—</td>       <td class="unit">kcal</td></tr>
-            <tr><td class="lbl">Fuel Consumption</td>     <td class="val" id="r-fc">—</td>       <td class="unit" id="r-fc-unit">Nm³</td></tr>
+            <tr id="row-avg"><td class="lbl">Avg. Temp Rise</td>       <td class="val" id="r-avg">—</td>      <td class="unit">°C</td></tr>
+            <tr id="row-time"><td class="lbl">Time Taken</td>           <td class="val" id="r-time">—</td>     <td class="unit">hr</td></tr>
+            <tr id="row-fr-kcal"><td class="lbl">Firing Rate</td>          <td class="val" id="r-fr-kcal">—</td>  <td class="unit">kcal/hr</td></tr>
+            <tr id="row-hl"><td class="lbl">Heat Load</td>            <td class="val" id="r-hl">—</td>       <td class="unit">kcal</td></tr>
+            <tr id="row-fc"><td class="lbl">Fuel Consumption</td>     <td class="val" id="r-fc">—</td>       <td class="unit" id="r-fc-unit">Nm³</td></tr>
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r-cfr">—</td>      <td class="unit" id="r-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r-efr">—</td>      <td class="unit" id="r-efr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">Number of Burners</td>    <td class="val" id="r-nb">—</td>       <td class="unit">nos</td></tr>
@@ -1087,6 +1087,10 @@ function onControlModeChange() {
   const mode = document.getElementById('control_mode').value;
   document.getElementById('auto-type-wrap').style.display = mode === 'automatic' ? '' : 'none';
   document.getElementById('manual-inputs').style.display = mode === 'manual' ? '' : 'none';
+  // Hide all automatic-only vendor fields in manual mode
+  document.querySelectorAll('.auto-only').forEach(el => {
+    el.style.display = mode === 'automatic' ? '' : 'none';
+  });
   if (mode === 'manual') document.getElementById('purging-row').style.display = 'none';
   else onFuelChange();
 }
@@ -1258,6 +1262,16 @@ async function calculate() {
 /* ── Render results ── */
 function renderResults(d) {
   const c = d.calculations, p = d.pipes, eq = d.equipment;
+
+  // Hide process-parameter and derived-calc rows in direct mode
+  const isDirect = inputMode === 'direct';
+  const directHideRows = ["row-Ti","row-Tf","row-wt","row-avg","row-time","row-fr-kcal","row-hl","row-fc"];
+  directHideRows.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isDirect ? "none" : "";
+  });
+  const processHdr = document.getElementById("row-process-header");
+  if (processHdr) processHdr.style.display = isDirect ? "none" : "";
 
   set("r-Ti",      fmt(c.Ti, 0));
   set("r-Tf",      fmt(c.Tf, 0));

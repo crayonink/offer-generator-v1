@@ -614,7 +614,7 @@
         </select>
         <div class="hint">40" WG for larger systems (60T+), 28" WG for standard</div>
       </div>
-      <div class="field">
+      <div class="field auto-only">
         <label>Control Valve Vendor</label>
         <select id="control_valve_vendor">
           <option value="dembla" selected>DEMBLA (Pneumatic)</option>
@@ -625,7 +625,7 @@
       </div>
     </div>
     <div class="fg fg-3" style="margin-bottom:24px">
-      <div class="field">
+      <div class="field auto-only">
         <label>Shut Off Valve Vendor</label>
         <select id="shutoff_valve_vendor">
           <option value="dembla">DEMBLA (Pneumatic)</option>
@@ -1070,6 +1070,10 @@ function onControlModeChange() {
   const mode = document.getElementById('control_mode').value;
   document.getElementById('auto-type-wrap').style.display = mode === 'automatic' ? '' : 'none';
   document.getElementById('manual-inputs').style.display = mode === 'manual' ? '' : 'none';
+  // Hide all automatic-only vendor fields in manual mode
+  document.querySelectorAll('.auto-only').forEach(el => {
+    el.style.display = mode === 'automatic' ? '' : 'none';
+  });
   if (mode === 'manual') document.getElementById('purging-row').style.display = 'none';
   else onFuelChange();
 }
