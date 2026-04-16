@@ -437,10 +437,14 @@
         <input id="c-subject" type="text" value="Offer for Tundish Preheater (Test)" placeholder="Supply of Vertical Ladle Preheater complete with Combustion Equipment"/>
       </div>
     </div>
-    <div class="fg fg-1">
+    <div class="fg fg-2">
       <div class="field">
         <label>Marketing Person</label>
         <input id="c-marketing" type="text" value="Atul Saxena" placeholder="ENCON sales/marketing rep handling this enquiry"/>
+      </div>
+      <div class="field">
+        <label>Technical Person</label>
+        <input id="c-technical" type="text" value="Jyotirmoy Rabha" placeholder="ENCON technical contact for this enquiry"/>
       </div>
     </div>
 
@@ -1703,6 +1707,7 @@ async function generateQuote() {
     subject:         str("c-subject") || "Offer for Tundish Preheater",
     ref_no:          str("c-ref"),
     marketing_person:str("c-marketing"),
+    technical_person:str("c-technical"),
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
     items: [{
