@@ -75,3 +75,42 @@ def generate_quote_docx(quote_data: dict, output_path: str):
     buffer = generate_word_offer(TEMPLATE_PATH, context)
     with open(output_path, "wb") as f:
         f.write(buffer.read())
+
+    # Post-process: drop any tech-data row whose value cell ended up empty.
+    _strip_empty_tech_rows(output_path)
+
+
+def _strip_empty_tech_rows(docx_path: str):
+    """In the rendered offer, find the Technical Data table and remove rows
+    whose value cell is blank (meaning the placeholder resolved to empty)."""
+    from docx import Document
+    doc = Document(docx_path)
+
+    # Identify the tech-data table by looking for the unique label 'Refractory Weight'.
+    tech_labels = {
+        "Ladle Dimensions", "Refractory Weight", "Heating Schedule",
+        "Calorific Value of Fuel", "Fuel Consumption",
+        "Burner Size & Capacity", "Combustion Air Blower",
+        "Blower Size", "Capacity of Blower",
+        "Motor recommended for Power Pack", "Maximum Electrical Load",
+    }
+
+    for table in doc.tables:
+        labels_in_table = {row.cells[0].text.strip() for row in table.rows if len(row.cells) >= 2}
+        if not (labels_in_table & {"Refractory Weight", "Heating Schedule"}):
+            continue
+        # This is the tech-data table — drop blank-value rows we own.
+        rows_to_remove = []
+        for row in table.rows:
+            if len(row.cells) < 2:
+                continue
+            label = row.cells[0].text.strip()
+            value = row.cells[1].text.strip()
+            # 'Centrifugal type, ' alone (no model) is also empty
+            if label in tech_labels and (not value or value == "Centrifugal type,"):
+                rows_to_remove.append(row)
+        for row in rows_to_remove:
+            row._element.getparent().remove(row._element)
+        break
+
+    doc.save(docx_path)
