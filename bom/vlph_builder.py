@@ -454,57 +454,58 @@ def _get_orifice_price(nb: int) -> tuple:
 
 
 def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
-    """Look up valve price from DB by NB and vendor. Returns (item_name, price)."""
-    import sqlite3
+    """Look up valve price from DB by NB and vendor. Returns (item_name, price).
+
+    Exact-match first; on miss, fall back to the smallest NB >= requested
+    (numeric comparison — alphabetical sort mis-picks 200 NB when asked for 20 NB).
+    """
+    import sqlite3, re
     conn = sqlite3.connect(DB_PATH)
-    import re
     nb = int(re.sub(r'[^\d]', '', str(nb)) or 0)
     nb_str = f'{nb} NB'
 
     if vendor in ("dembla", "aira"):
         company = vendor.upper()
-        if valve_type == "control":
-            item = f'CONTROL VALVE {nb_str}'
-        else:
-            item = f'SHUT OFF VALVE {nb_str}'
-        row = conn.execute(
-            "SELECT price FROM component_price_master WHERE item=? AND company=?", (item, company)
-        ).fetchone()
-        if not row:
-            # Try next bigger NB
-            prefix = "CONTROL" if valve_type == "control" else "SHUT OFF"
-            row = conn.execute(
-                "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company=? AND item > ? ORDER BY item LIMIT 1",
-                (f'{prefix} VALVE % NB', company, item)
-            ).fetchone()
-            if row:
-                conn.close()
-                return row[0], row[1]
+        item = f'CONTROL VALVE {nb_str}' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}'
+        like_prefix = 'CONTROL VALVE ' if valve_type == "control" else 'SHUT OFF VALVE '
     elif vendor == "cair":
         company = "CAIR"
-        if valve_type == "control":
-            item = f'MOTORIZED CONTROL VALVE {nb_str}'
-        else:
-            item = f'SHUT OFF VALVE {nb_str} (Butterfly)'
-        row = conn.execute(
-            "SELECT price FROM component_price_master WHERE item=? AND company='CAIR'", (item,)
-        ).fetchone()
-        if not row:
-            row = conn.execute(
-                "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company='CAIR' ORDER BY item LIMIT 1",
-                (f'{"MOTORIZED CONTROL" if valve_type == "control" else "SHUT OFF"} VALVE % NB%',)
-            ).fetchone()
-            if row:
-                conn.close()
-                return row[0], row[1]
+        item = (f'MOTORIZED CONTROL VALVE {nb_str}' if valve_type == "control"
+                else f'SHUT OFF VALVE {nb_str} (Butterfly)')
+        like_prefix = 'MOTORIZED CONTROL VALVE ' if valve_type == "control" else 'SHUT OFF VALVE '
     else:
-        company = vendor.upper()
-        item = f'CONTROL VALVE {nb_str}' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}'
-        row = None
+        conn.close()
+        return (f'CONTROL VALVE {nb_str}' if valve_type == "control"
+                else f'SHUT OFF VALVE {nb_str}'), 0
 
+    # Exact NB match
+    row = conn.execute(
+        "SELECT price FROM component_price_master WHERE item=? AND company=?",
+        (item, company),
+    ).fetchone()
+    if row:
+        conn.close()
+        return item, row[0]
+
+    # Fallback: smallest NB >= requested, sorted numerically
+    candidates = conn.execute(
+        "SELECT item, price FROM component_price_master WHERE item LIKE ? AND company=?",
+        (f'{like_prefix}% NB%', company),
+    ).fetchall()
     conn.close()
-    price = row[0] if row else 0
-    return item, price
+
+    best = None
+    for cand_item, cand_price in candidates:
+        m = re.search(r'(\d+)\s*NB', cand_item)
+        if not m:
+            continue
+        cand_nb = int(m.group(1))
+        if cand_nb >= nb and (best is None or cand_nb < best[0]):
+            best = (cand_nb, cand_item, cand_price)
+
+    if best:
+        return best[1], best[2]
+    return item, 0
 
 
 def build_vlph_120t_df(
