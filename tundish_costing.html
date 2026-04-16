@@ -1014,8 +1014,7 @@
       </tbody>
     </table>
 
-    <!-- Hidden commercial-term defaults (removed from UI per requirement) -->
-    <input type="hidden" id="q-gst"     value="18"/>
+    <!-- Hidden commercial-term defaults -->
     <input type="hidden" id="q-freight" value="0"/>
     <input type="hidden" id="q-valid"   value="30"/>
 
@@ -1704,7 +1703,6 @@ async function generateQuote() {
     ref_no:          str("c-ref"),
     marketing_person:str("c-marketing"),
     ...buildTechData(),
-    gst_percent:     parseFloat(document.getElementById("q-gst").value)     || 18,
     freight:         parseFloat(document.getElementById("q-freight").value) || 0,
     valid_days:      parseInt(document.getElementById("q-valid").value)     || 30,
     items: [{
@@ -1725,7 +1723,6 @@ async function generateQuote() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    const gst  = payload.gst_percent;
     const name = str("c-name");
     document.getElementById("quote-result").style.display = "block";
     document.getElementById("quote-result").innerHTML = `
@@ -1734,7 +1731,6 @@ async function generateQuote() {
         <tr><td style="padding:3px 16px 3px 0;color:#555">Quote No.</td><td><b>${data.quote_no}</b></td></tr>
         <tr><td style="color:#555">Customer</td>        <td>${name} — ${company}</td></tr>
         <tr><td style="color:#555">Subtotal</td>        <td>₹ ${fmt(data.summary.subtotal,0)}</td></tr>
-        <tr><td style="color:#555">GST (${gst}%)</td>   <td>₹ ${fmt(data.summary.gst,0)}</td></tr>
         <tr><td style="color:#555">Freight</td>         <td>₹ ${fmt(data.summary.freight,0)}</td></tr>
         <tr><td style="color:#555"><b>Grand Total</b></td><td><b>₹ ${fmt(data.summary.total,0)}</b></td></tr>
       </table>

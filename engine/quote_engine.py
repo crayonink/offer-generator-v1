@@ -112,10 +112,9 @@ def calculate_quote(form_data: dict) -> dict:
 
     conn.close()
 
-    gst_pct = form_data.get("gst_percent", 18)
+    # GST removed — grand total is subtotal + freight only.
     freight = float(form_data.get("freight", 0))
-    gst_amount = subtotal * gst_pct / 100
-    grand_total = subtotal + gst_amount + freight
+    grand_total = subtotal + freight
 
     seq = form_data["quote_seq"]
     quote_no = f"ENCON/Q/{datetime.now().year}/{seq}"
@@ -126,8 +125,6 @@ def calculate_quote(form_data: dict) -> dict:
         "customer": form_data["customer"],
         "items": priced_items,
         "subtotal": round(subtotal, 2),
-        "gst_percent": gst_pct,
-        "gst_amount": round(gst_amount, 2),
         "freight": freight,
         "grand_total": round(grand_total, 2),
         "valid_days": form_data.get("valid_days", 30),
