@@ -5,8 +5,79 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(BASE_DIR, "Offer_Template.docx")
 
 
+# ── Indian-English number-to-words (lakh / crore system) ──────────────────
+_ONES = ("", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT",
+         "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN",
+         "SIXTEEN", "SEVENTEEN", "EIGHTEEN", "NINETEEN")
+_TENS = ("", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY",
+         "EIGHTY", "NINETY")
+
+
+def _two_digits(n: int) -> str:
+    if n < 20:
+        return _ONES[n]
+    t, o = divmod(n, 10)
+    return _TENS[t] + ("-" + _ONES[o] if o else "")
+
+
+def _three_digits(n: int) -> str:
+    h, r = divmod(n, 100)
+    parts = []
+    if h:
+        parts.append(_ONES[h] + " HUNDRED")
+    if r:
+        parts.append(_two_digits(r))
+    return " ".join(parts)
+
+
+def amount_in_words_indian(amount) -> str:
+    """Format an integer rupee amount in Indian English words (lakh / crore)."""
+    try:
+        n = int(round(float(amount)))
+    except (TypeError, ValueError):
+        return ""
+    if n == 0:
+        return "ZERO"
+    crore, rem  = divmod(n, 10000000)
+    lakh,  rem  = divmod(rem, 100000)
+    thou,  rem  = divmod(rem, 1000)
+    parts = []
+    if crore:
+        parts.append(_three_digits(crore) + " CRORE")
+    if lakh:
+        parts.append(_two_digits(lakh) + " LAKH")
+    if thou:
+        parts.append(_two_digits(thou) + " THOUSAND")
+    if rem:
+        parts.append(_three_digits(rem))
+    return " ".join(parts).strip()
+
+
+def _supervision_rates() -> tuple:
+    """Look up supervision-charge rates from component_price_master.
+    Returns (mech_rate_str, plc_rate_str) formatted as Indian rupee strings."""
+    import sqlite3
+    db_path = os.path.join(BASE_DIR, "vlph.db")
+    rates = {"mech": 12500, "plc": 15000}  # safe defaults
+    try:
+        conn = sqlite3.connect(db_path)
+        for key, item in (("mech", "SUPERVISION CHARGE - MECHANICAL"),
+                          ("plc",  "SUPERVISION CHARGE - PLC & INSTRUMENTATION")):
+            row = conn.execute(
+                "SELECT price FROM component_price_master WHERE item=? LIMIT 1",
+                (item,)
+            ).fetchone()
+            if row:
+                rates[key] = float(row[0])
+        conn.close()
+    except Exception:
+        pass
+    return f"{rates['mech']:,.2f}", f"{rates['plc']:,.2f}"
+
+
 def generate_quote_docx(quote_data: dict, output_path: str):
     customer = quote_data["customer"]
+    sup_mech, sup_plc = _supervision_rates()
 
     # Determine vertical vs horizontal price from items
     total_vertical   = 0.0
@@ -45,9 +116,21 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "technical_person":      customer.get("technical_person", ""),
         "technical_phone":       customer.get("technical_phone", ""),
         # Pricing
-        "total_price_vertical":  f"₹ {total_vertical:,.0f}",
-        "total_price_horizontal": f"₹ {total_horizontal:,.0f}" if total_horizontal else "N/A",
-        "total_in_words":        customer.get("total_in_words", ""),
+        "total_price_vertical":  f"{total_vertical:,.2f}",
+        "total_price_horizontal": f"{total_horizontal:,.2f}" if total_horizontal else "N/A",
+        "total_in_words": (
+            customer.get("total_in_words")
+            or amount_in_words_indian(quote_data.get("grand_total", 0)) + " ONLY"
+        ),
+        "equipment_name": (
+            f"{('Vertical' if not customer.get('is_horizontal') else 'Horizontal')} "
+            f"Ladle Preheater – {customer.get('ladle_tons') or ''} Ton"
+            if customer.get("ladle_tons")
+            else (customer.get("project_name") or "")
+        ),
+        # Supervision-charge rates (from component_price_master)
+        "supervision_mech": sup_mech,
+        "supervision_plc":  sup_plc,
         "subtotal":              f"₹ {quote_data.get('subtotal', 0):,.0f}",
         "grand_total":           f"₹ {quote_data.get('grand_total', 0):,.0f}",
         "valid_days":            quote_data.get("valid_days", 30),
