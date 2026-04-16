@@ -91,7 +91,12 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     rotary_joint = select_rotary_joint(air_nb)
 
     # Blower HP = CFM × pressure (inches w.g.) / 3200
-    cfm = air_flow_nm3hr / 1.7
+    # For oil-based fuels, CFM is derived from fuel flow in LPH (× 10 factor).
+    # For gas/dual fuels, CFM is from air flow / 1.7 (standard).
+    if _resolve_category(fuel_type) == "oil" and burner.get("equivalent_lph"):
+        cfm = burner["equivalent_lph"] * 10
+    else:
+        cfm = air_flow_nm3hr / 1.7
     pressure_in_wg = int(blower_pressure)   # "28" or "40"
     required_hp = cfm * pressure_in_wg / 3200
     blower = select_blower(required_hp, series=blower_pressure)

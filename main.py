@@ -1103,7 +1103,11 @@ def vlph_calculate(req: VLPHCalcRequest):
         grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
         # Build response — blower HP at user-selected pressure
-        cfm = air_flow / 1.7
+        # For oil fuels: CFM = equivalent_lph × 10 (matches selection_engine).
+        if f1_is_oil and equip1["burner"].get("equivalent_lph"):
+            cfm = equip1["burner"]["equivalent_lph"] * 10
+        else:
+            cfm = air_flow / 1.7
         blower_hp_calc = cfm * int(req.blower_pressure) / 3200
         resp = {
             "calculations": {
@@ -1445,7 +1449,11 @@ def hlph_calculate(req: VLPHCalcRequest):
         encon_total = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS", "TOTAL"].values[0]) if "ENCON ITEMS" in bom_df["ITEM NAME"].values else 0
         grand_total = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL", "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
-        cfm = air_flow / 1.7
+        # For oil fuels: CFM = equivalent_lph × 10 (matches selection_engine).
+        if f1_is_oil and equip1["burner"].get("equivalent_lph"):
+            cfm = equip1["burner"]["equivalent_lph"] * 10
+        else:
+            cfm = air_flow / 1.7
         blower_hp_calc = cfm * int(req.blower_pressure) / 3200
 
         resp = {
