@@ -383,16 +383,12 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         if control_mode == "automatic":
             if auto_control_type == "plc":
                 if fuel_type in ("ng", "lpg", "rlng"):
-                    from calculations.pipes import STANDARD_PIPE_NB
                     # Orifice plate = gas train outlet NB (2nd DN)
                     import re as _re
                     gt_outlet_nb = int(_re.sub(r'[^\d]', '', str(equipment["ng_gas_train"]["outlet_nb"])) or 0)
                     gas_op_nb, gas_op_price = _get_orifice_price(gt_outlet_nb)
-                    # Control valve = one pipe size smaller than outlet NB
-                    try:
-                        gas_cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(gt_outlet_nb) - 1)]
-                    except ValueError:
-                        gas_cv_nb = gt_outlet_nb
+                    # Control valve = same NB as gas train outlet
+                    gas_cv_nb = gt_outlet_nb
                     _, gcv_price = _get_valve_price(gas_cv_nb, "control", control_valve_vendor)
                     gcv_vendor = control_valve_vendor.upper()
                     rows += [
