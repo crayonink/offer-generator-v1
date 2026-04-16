@@ -78,6 +78,12 @@
     /* ── Step heading ── */
     .step-heading { font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1.5px solid var(--border); }
 
+    /* ── Editable tech-data table ── */
+    .tech-data-table td { border: 1px solid var(--border); padding: 8px 12px; font-size: 0.85rem; }
+    .tech-data-table .tech-lbl { background: #f8fafc; color: var(--text); font-weight: 600; width: 42%; }
+    .tech-data-table input { width: 100%; border: none; background: transparent; font: inherit; color: var(--text); padding: 2px 0; outline: none; }
+    .tech-data-table input:focus { background: #fffbeb; }
+
     /* ── Section label ── */
     .sec-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 20px 0 10px; }
 
@@ -947,9 +953,53 @@
   <div class="step-panel" id="panel-4">
     <div class="hero">
       <h1>Generate Offer Document</h1>
-      <p>Customer details are pre-filled from Step 1.</p>
+      <p>Review technical data and commercial terms before generating.</p>
     </div>
-    <div class="step-heading">Step 4 — Commercial Terms</div>
+
+    <div class="step-heading">Technical Data for Ladle Preheater</div>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">
+      Auto-filled from your calculation. Edit any value before generating — edits are used in the Word offer.
+    </p>
+    <table class="tech-data-table" id="tech-data-table" style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+      <tbody>
+        <tr><td class="tech-lbl">Ladle Dimensions</td>
+            <td><input id="td-ladle_dim" type="text" placeholder="Top Dia: ~2950 mm, Height: 3600 mm"/></td></tr>
+        <tr><td class="tech-lbl">Drawing No.</td>
+            <td><input id="td-ladle_drawing_no" type="text" placeholder="21031.02.00.000"/></td></tr>
+        <tr><td class="tech-lbl">Refractory Weight</td>
+            <td><input id="td-refractory_weight_kg" type="text" placeholder="15,410 Kg"/></td></tr>
+        <tr><td class="tech-lbl">Heating Schedule</td>
+            <td><input id="td-heating_schedule" type="text"/></td></tr>
+        <tr><td class="tech-lbl">No. of Burner</td>
+            <td><input id="td-num_burner" type="text" value="1 No."/></td></tr>
+        <tr><td class="tech-lbl">Fuel</td>
+            <td><input id="td-fuel_name" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Calorific Value of Fuel</td>
+            <td><input id="td-fuel_cv" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Ignition of Burner</td>
+            <td><input id="td-ignition" type="text" value="Through LPG fired Pilot Burner"/></td></tr>
+        <tr><td class="tech-lbl">Fuel Consumption</td>
+            <td><input id="td-fuel_consumption" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Burner Size &amp; Capacity</td>
+            <td><input id="td-burner_model" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Combustion Air Blower</td>
+            <td><input id="td-blower_model" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Blower Size</td>
+            <td><input id="td-blower_size" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Capacity of Blower</td>
+            <td><input id="td-blower_capacity" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Lifting &amp; Lowering, Swivel angle</td>
+            <td><input id="td-lifting" type="text" value="Through Hydraulic cylinder operated with Power Pack, 85°"/></td></tr>
+        <tr><td class="tech-lbl">Motor recommended for Power Pack</td>
+            <td><input id="td-hydraulic_motor_hp" type="text" value="5 HP"/></td></tr>
+        <tr><td class="tech-lbl">Temperature Control</td>
+            <td><input id="td-temperature_control" type="text" value="Manually, Temp. Indicator with Thermocouple is added."/></td></tr>
+        <tr><td class="tech-lbl">Maximum Electrical Load</td>
+            <td><input id="td-max_electrical_load" type="text" placeholder="12 kW"/></td></tr>
+      </tbody>
+    </table>
+
+    <div class="step-heading">Commercial Terms</div>
 
     <div class="fg fg-3">
       <div class="field">
@@ -991,6 +1041,7 @@ function goStep(n) {
   document.querySelectorAll(".step-tab").forEach(t => t.classList.remove("active"));
   document.getElementById("panel-" + n).classList.add("active");
   document.getElementById("tab-" + n).classList.add("active");
+  if (n === 4 && typeof fillTechDataTable === "function") fillTechDataTable();
   window.scrollTo(0, 0);
 }
 
@@ -1533,32 +1584,53 @@ async function downloadExcel() {
   finally { btn.disabled = false; btn.textContent = "⬇ Download Excel"; }
 }
 
-/* ── Build technical-data payload from lastCalc for the Word template ── */
-function buildTechData() {
-  if (!lastCalc) return {};
+/* ── Pre-fill the editable tech-data table from lastCalc ── */
+function fillTechDataTable() {
+  if (!lastCalc) return;
   const c  = lastCalc.calculations || {};
   const eq = lastCalc.equipment    || {};
-  const ladleTons = parseFloat(document.getElementById("ladle_tons")?.value)
-                 || parseFloat(document.getElementById("direct_ladle_tons")?.value)
-                 || 0;
   const f1Name = (c.fuel1_name || "Fuel");
   const isOil  = !!(c.fuel_density);
   const fuelConsumption = isOil
     ? `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr of ${f1Name}`
     : `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
+  const defaults = {
+    "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
+    "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C in ${c.time_taken_hr || ""} Hours`,
+    "td-fuel_name":            f1Name,
+    "td-fuel_cv":              `${f1Name}: ${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
+    "td-fuel_consumption":     fuelConsumption,
+    "td-burner_model":         eq.burner_model || "",
+    "td-blower_model":         `Centrifugal type, ${eq.blower_model || ""}`,
+    "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
+    "td-blower_capacity":      eq.blower_airflow ? `${Math.round(eq.blower_airflow)} Nm³/hr` : "",
+  };
+  Object.entries(defaults).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = val;
+  });
+}
+
+function buildTechData() {
+  const get = id => (document.getElementById(id)?.value || "").trim();
+  const ladleTons = parseFloat(document.getElementById("ladle_tons")?.value)
+                 || parseFloat(document.getElementById("direct_ladle_tons")?.value)
+                 || 0;
   return {
     ladle_tons:          ladleTons,
-    refractory_weight_kg:`${(c.refractory_weight || 0).toLocaleString("en-IN")}`,
-    heating_schedule:    `${c.Ti || ""}°C to ${c.Tf || ""}°C in ${c.time_taken_hr || ""} Hours`,
-    fuel_cv:             `${f1Name}: ${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
-    fuel_consumption:    fuelConsumption,
-    burner_model:        eq.burner_model || "",
-    blower_model:        eq.blower_model || "",
-    blower_size:         `${eq.blower_hp || ""} HP @ 2900 RPM`,
-    blower_capacity:     eq.blower_airflow ? `${Math.round(eq.blower_airflow)} Nm³/hr` : "",
-    hydraulic_motor_hp:  "5 HP",
-    max_electrical_load: "",
+    ladle_dim:           get("td-ladle_dim"),
+    ladle_drawing_no:    get("td-ladle_drawing_no"),
+    refractory_weight_kg:get("td-refractory_weight_kg"),
+    heating_schedule:    get("td-heating_schedule"),
+    fuel_cv:             get("td-fuel_cv"),
+    fuel_consumption:    get("td-fuel_consumption"),
+    burner_model:        get("td-burner_model"),
+    blower_model:        get("td-blower_model"),
+    blower_size:         get("td-blower_size"),
+    blower_capacity:     get("td-blower_capacity"),
+    hydraulic_motor_hp:  get("td-hydraulic_motor_hp"),
+    max_electrical_load: get("td-max_electrical_load"),
   };
 }
 
