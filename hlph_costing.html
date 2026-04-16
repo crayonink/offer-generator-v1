@@ -1624,6 +1624,7 @@ function buildTechData() {
   const ladleTons = parseFloat(document.getElementById("ladle_tons")?.value)
                  || parseFloat(document.getElementById("direct_ladle_tons")?.value)
                  || 0;
+  const isOil = !!(lastCalc && lastCalc.calculations && lastCalc.calculations.fuel_density);
   return {
     ladle_tons:          ladleTons,
     ladle_dim:           get("td-ladle_dim"),
@@ -1638,6 +1639,7 @@ function buildTechData() {
     blower_capacity:     get("td-blower_capacity"),
     hydraulic_motor_hp:  get("td-hydraulic_motor_hp"),
     max_electrical_load: get("td-max_electrical_load"),
+    is_oil:              isOil,
   };
 }
 

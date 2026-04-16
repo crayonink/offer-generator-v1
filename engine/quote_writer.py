@@ -64,6 +64,10 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "blower_capacity":       customer.get("blower_capacity") or "",
         "hydraulic_motor_hp":    customer.get("hydraulic_motor_hp") or "",
         "max_electrical_load":   customer.get("max_electrical_load") or "",
+        # Fuel-type flags drive {%p if is_oil %} / {%p if is_gas %} blocks
+        # in the scope-of-supply section of the template.
+        "is_oil":                bool(customer.get("is_oil")),
+        "is_gas":                not bool(customer.get("is_oil")),
     }
 
     buffer = generate_word_offer(TEMPLATE_PATH, context)
