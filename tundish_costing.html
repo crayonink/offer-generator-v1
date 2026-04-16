@@ -1569,6 +1569,35 @@ async function downloadExcel() {
   finally { btn.disabled = false; btn.textContent = "⬇ Download Excel"; }
 }
 
+/* ── Build technical-data payload from lastCalc for the Word template ── */
+function buildTechData() {
+  if (!lastCalc) return {};
+  const c  = lastCalc.calculations || {};
+  const eq = lastCalc.equipment    || {};
+  const ladleTons = parseFloat(document.getElementById("ladle_tons")?.value)
+                 || parseFloat(document.getElementById("direct_ladle_tons")?.value)
+                 || 0;
+  const f1Name = (c.fuel1_name || "Fuel");
+  const isOil  = !!(c.fuel_density);
+  const fuelConsumption = isOil
+    ? `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr of ${f1Name}`
+    : `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
+  const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
+  return {
+    ladle_tons:          ladleTons,
+    refractory_weight_kg:`${(c.refractory_weight || 0).toLocaleString("en-IN")}`,
+    heating_schedule:    `${c.Ti || ""}°C to ${c.Tf || ""}°C in ${c.time_taken_hr || ""} Hours`,
+    fuel_cv:             `${f1Name}: ${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
+    fuel_consumption:    fuelConsumption,
+    burner_model:        eq.burner_model || "",
+    blower_model:        eq.blower_model || "",
+    blower_size:         `${eq.blower_hp || ""} HP @ 2900 RPM`,
+    blower_capacity:     eq.blower_airflow ? `${Math.round(eq.blower_airflow)} Nm³/hr` : "",
+    hydraulic_motor_hp:  "5 HP",
+    max_electrical_load: "",
+  };
+}
+
 /* ── Generate Quote ── */
 async function generateQuote() {
   if (!lastCalc) return;
@@ -1591,9 +1620,11 @@ async function generateQuote() {
     poc_designation: str("c-designation"),
     mobile_no:       str("c-phone"),
     email:           str("c-email"),
-    project_name:    str("c-subject") || "Supply of Vertical Ladle Preheater complete with Combustion Equipment",
+    project_name:    str("c-subject") || "Supply of Tundish Preheater complete with Combustion Equipment",
+    subject:         str("c-subject") || "Offer for Tundish Preheater",
     ref_no:          str("c-ref"),
     marketing_person:str("c-marketing"),
+    ...buildTechData(),
     gst_percent:     parseFloat(document.getElementById("q-gst").value)     || 18,
     freight:         parseFloat(document.getElementById("q-freight").value) || 0,
     valid_days:      parseInt(document.getElementById("q-valid").value)     || 30,

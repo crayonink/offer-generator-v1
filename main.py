@@ -512,8 +512,27 @@ class QuoteRequest(BaseModel):
     email: Optional[str] = ""
     # Enquiry
     project_name: Optional[str] = ""
+    subject: Optional[str] = ""
     ref_no: Optional[str] = ""
+    your_ref: Optional[str] = ""
+    enquiry_ref: Optional[str] = ""
     marketing_person: Optional[str] = ""
+    marketing_phone: Optional[str] = ""
+    # Technical data (passed from lastCalc to populate template tech table)
+    ladle_tons: Optional[float] = 0
+    ladle_dim: Optional[str] = ""
+    ladle_drawing_no: Optional[str] = ""
+    refractory_weight_kg: Optional[str] = ""
+    heating_schedule: Optional[str] = ""
+    fuel_cv: Optional[str] = ""
+    fuel_consumption: Optional[str] = ""
+    burner_model: Optional[str] = ""
+    blower_model: Optional[str] = ""
+    blower_size: Optional[str] = ""
+    blower_capacity: Optional[str] = ""
+    hydraulic_motor_hp: Optional[str] = ""
+    max_electrical_load: Optional[str] = ""
+    total_in_words: Optional[str] = ""
     # Items & commercial
     items: List[QuoteItem]
     gst_percent: float = 18
@@ -1556,16 +1575,37 @@ async def generate_quote(req: QuoteRequest):
         form_data = {
             "quote_seq": seq,
             "customer": {
-                "company_name":  req.company_name,
-                "address":       ", ".join(filter(None, [req.company_address, req.company_city, req.company_state, req.company_pin])),
-                "poc_name":      req.poc_name,
+                "company_name":    req.company_name,
+                "company_city":    req.company_city,
+                "company_state":   req.company_state,
+                "address":         ", ".join(filter(None, [req.company_address, req.company_city, req.company_state, req.company_pin])),
+                "poc_name":        req.poc_name,
                 "poc_designation": req.poc_designation,
-                "mobile_no":     req.mobile_no,
-                "email":         req.email,
-                "project_name":  req.project_name,
-                "ref_no":        req.ref_no,
+                "mobile_no":       req.mobile_no,
+                "email":           req.email,
+                "project_name":    req.project_name,
+                "subject":         req.subject or req.project_name,
+                "ref_no":          req.ref_no,
+                "your_ref":        req.your_ref or req.ref_no,
+                "enquiry_ref":     req.enquiry_ref or req.ref_no,
                 "marketing_person": req.marketing_person,
-                "gstin":         req.company_gstin,
+                "marketing_phone": req.marketing_phone,
+                "gstin":           req.company_gstin,
+                # Technical data (for template tech table)
+                "ladle_tons":          req.ladle_tons,
+                "ladle_dim":           req.ladle_dim,
+                "ladle_drawing_no":    req.ladle_drawing_no,
+                "refractory_weight_kg": req.refractory_weight_kg,
+                "heating_schedule":    req.heating_schedule,
+                "fuel_cv":             req.fuel_cv,
+                "fuel_consumption":    req.fuel_consumption,
+                "burner_model":        req.burner_model,
+                "blower_model":        req.blower_model,
+                "blower_size":         req.blower_size,
+                "blower_capacity":     req.blower_capacity,
+                "hydraulic_motor_hp":  req.hydraulic_motor_hp,
+                "max_electrical_load": req.max_electrical_load,
+                "total_in_words":      req.total_in_words,
             },
             "items": [item.dict() for item in req.items],
             "gst_percent": req.gst_percent,
