@@ -458,10 +458,17 @@
     <div id="direct-inputs" style="display:none;margin-bottom:24px;">
       <div class="fg fg-2" style="margin-bottom:16px">
         <div class="field">
-          <label>Burner Capacity (Nm³/hr) <span class="req">*</span></label>
+          <label>Burner Capacity (Nm³/hr)</label>
           <input id="direct_burner_capacity" type="number" value="300" placeholder="e.g. 300"/>
-          <div class="hint" id="direct-cap-hint">Enter flow for the higher-CV fuel. Other fuel flows are auto-derived from same heat output.</div>
+          <div class="hint" id="direct-cap-hint">Volumetric flow for the higher-CV fuel. Used only if Heat Input is blank.</div>
         </div>
+        <div class="field">
+          <label>Heat Input (kcal/hr)</label>
+          <input id="direct_heat_input_kcal_hr" type="number" placeholder="e.g. 1,000,000"/>
+          <div class="hint">Burner heat output. If filled, this is used and flow = heat / CV. Takes precedence over Burner Capacity.</div>
+        </div>
+      </div>
+      <div class="fg fg-2" style="margin-bottom:16px">
         <div class="field">
           <label>Ladle Capacity (tons) <span class="req">*</span></label>
           <select id="direct_ladle_tons">
@@ -1177,12 +1184,18 @@ async function calculate() {
 
   let payload;
   if (inputMode === 'direct') {
-    // Direct input: send burner capacity, skip process params
-    const cap = val("direct_burner_capacity");
-    if (cap <= 0) { showError("error-box", "Burner Capacity must be > 0"); btn.classList.remove("loading"); btn.disabled = false; return; }
+    // Direct input: user supplies either burner capacity (Nm³/hr) or heat input (kcal/hr).
+    // Heat input takes precedence on the backend.
+    const cap  = val("direct_burner_capacity");
+    const heat = val("direct_heat_input_kcal_hr");
+    if (cap <= 0 && heat <= 0) {
+      showError("error-box", "Enter either Burner Capacity or Heat Input (> 0)");
+      btn.classList.remove("loading"); btn.disabled = false; return;
+    }
     payload = {
       mode: "direct",
       direct_burner_capacity: cap,
+      direct_heat_input_kcal_hr: heat,
       fuel_cv: f1cv,
       fuel1_type: f1type, fuel1_cv: f1cv,
       fuel2_type: f2type, fuel2_cv: f2cv,
