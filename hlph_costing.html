@@ -1594,9 +1594,17 @@ function fillTechDataTable() {
   const eq = lastCalc.equipment    || {};
   const f1Name = (c.fuel1_name || "Fuel");
   const isOil  = !!(c.fuel_density);
-  const fuelConsumption = isOil
-    ? `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr of ${f1Name}`
-    : `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
+  let fuelConsumption;
+  if (isOil) {
+    const lph = c.equivalent_lph;
+    if (lph !== undefined && lph !== null && lph > 0) {
+      fuelConsumption = `${(+lph).toFixed(2)} Lit/hr of ${f1Name}`;
+    } else {
+      fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr of ${f1Name}`;
+    }
+  } else {
+    fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
+  }
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
