@@ -52,7 +52,9 @@ def build_hlph_df(
     params = get_hlph_params(ladle_tons)
 
     pg_vendor = pressure_gauge_vendor.upper()
-    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    # Clean display name; vendor only in MAKE column
+    pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
+    pg_item = "PRESSURE GAUGE WITH TNV"
 
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
     is_plc_agr = control_mode == "automatic" and auto_control_type == "plc_agr"
@@ -88,7 +90,7 @@ def build_hlph_df(
 
     rows += [
         _row("COMB AIR", "COMPENSATOR", "", 1),
-        _row("COMB AIR", pg_item, '', 1, make=pg_vendor),
+        _row("COMB AIR", pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
     ]
     if is_plc:
@@ -162,7 +164,7 @@ def build_hlph_df(
     rows += [
         _row(pl_media, "BALL VALVE", "20 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-        _row(pl_media, pg_item, '', 1, make=pg_vendor),
+        _row(pl_media, pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
         _row(pl_media, "BALL VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
         _row(pl_media, "SOLENOID VALVE", "15 NB", 1,
@@ -284,7 +286,9 @@ def build_hlph_manual_df(
     """
 
     pg_vendor = pressure_gauge_vendor.upper()
-    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    # Clean display name; vendor only in MAKE column
+    pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
+    pg_item = "PRESSURE GAUGE WITH TNV"
     params = get_hlph_params(ladle_tons)
 
     rows = []
@@ -293,7 +297,7 @@ def build_hlph_manual_df(
     # ── BOUGHT OUT ITEMS ──────────────────────────────────────────────────
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB F150#', 1),
-        _row("COMB AIR", pg_item, 'RANGE- 0-1600 mBAR', 1, make=pg_vendor),
+        _row("COMB AIR", pg_item, 'RANGE- 0-1600 mBAR', 1, unit_price_override=pg_price, make=pg_vendor),
         _row("COMB AIR", "BUTTERFLY VALVE",
              f'{equipment["butterfly_valve"]["nb"]} NB', 1,
              unit_price_override=equipment["butterfly_valve"]["price"],
@@ -315,7 +319,7 @@ def build_hlph_manual_df(
         rows += [
             _row(pilot_media, "BALL VALVE", "20 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-            _row(pilot_media, pg_item, '', 1, make=pg_vendor),
+            _row(pilot_media, pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
             _row(pilot_media, "BALL VALVE", "15 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
             _row(pilot_media, "SOLENOID VALVE", "15 NB", 1,

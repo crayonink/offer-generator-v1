@@ -200,6 +200,12 @@ def _append_make_list(docx_path: str, items: list):
         make = (entry.get("make") or "ENCON").strip() or "ENCON"
         if not item:
             continue
+        # Safety net: strip trailing " (VENDOR)" if it matches the MAKE column
+        # (case-insensitive). Keeps technical qualifiers like (Ball), (Globe).
+        import re as _re
+        m = _re.search(r"\s*\(([^)]+)\)\s*$", item)
+        if m and m.group(1).strip().upper() == make.upper():
+            item = item[:m.start()].rstrip()
         key = item.lower()
         if key in seen:
             continue

@@ -192,12 +192,15 @@ def _cog_line_rows(media: str, equipment: dict,
     )
 
     pg_vendor = pressure_gauge_vendor.upper()
-    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    # Use clean display name; vendor only shown in MAKE column.
+    # Keep vendor-suffixed key for DB price lookup.
+    pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
+    pg_item = "PRESSURE GAUGE WITH TNV"
 
     rows = [
         _row(media, "GATE VALVE", f'{gv_nb} NB', 1,
              unit_price_override=gv_price, make="L&T"),
-        _row(media, pg_item, "", 1, make=pg_vendor),
+        _row(media, pg_item, "", 1, unit_price_override=pg_price, make=pg_vendor),
         _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
              unit_price_override=shutoff_price, make=shutoff_valve_vendor.upper()),
         _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
@@ -252,7 +255,10 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     from bom.selectors.rotary_joint_selector import select_rotary_joint
 
     pg_vendor = pressure_gauge_vendor.upper()
-    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    # Use clean display name; vendor only shown in MAKE column.
+    # Keep vendor-suffixed key for DB price lookup.
+    pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
+    pg_item = "PRESSURE GAUGE WITH TNV"
 
     gas_pipe_nb = equipment["pipe"].ng_pipe_nb
 
@@ -298,7 +304,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     rows = [
         _row(media, "GATE VALVE", f'{gv_nb} NB', 1,
              unit_price_override=gv_price, make="L&T"),
-        _row(media, pg_item, f'{gas_pipe_nb} NB', 1, make=pg_vendor),
+        _row(media, pg_item, f'{gas_pipe_nb} NB', 1, unit_price_override=pg_price, make=pg_vendor),
         _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 1,
              unit_price_override=shutoff_price, make=shutoff_valve_vendor.upper()),
         _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
@@ -547,10 +553,13 @@ def build_vlph_120t_df(
     air_nb = max(125, equipment["air_duct"]["nb"])
 
     pg_vendor = pressure_gauge_vendor.upper()
-    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    # Use clean display name; vendor only shown in MAKE column.
+    # Keep vendor-suffixed key for DB price lookup.
+    pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
+    pg_item = "PRESSURE GAUGE WITH TNV"
     rows += [
         _row("COMB AIR", "COMPENSATOR", "", 1),
-        _row("COMB AIR", pg_item, '', 1, make=pg_vendor),
+        _row("COMB AIR", pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
         _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
     ]
     # PLC: air gets orifice plate + DPT + control valve
@@ -624,7 +633,7 @@ def build_vlph_120t_df(
     rows += [
         _row(pl_media, "BALL VALVE", "20 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-        _row(pl_media, pg_item, '', 1, make=pg_vendor),
+        _row(pl_media, pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
         _row(pl_media, "BALL VALVE", "15 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
         _row(pl_media, "SOLENOID VALVE", "15 NB", 1,
@@ -815,7 +824,10 @@ def build_vlph_manual_df(
     """
 
     pg_vendor = pressure_gauge_vendor.upper()
-    pg_item = f'PRESSURE GAUGE WITH TNV ({pg_vendor})'
+    # Use clean display name; vendor only shown in MAKE column.
+    # Keep vendor-suffixed key for DB price lookup.
+    pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
+    pg_item = "PRESSURE GAUGE WITH TNV"
     params = get_vlph_params(ladle_tons)
 
     rows = []
@@ -825,7 +837,7 @@ def build_vlph_manual_df(
 
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB F150#', 1),
-        _row("COMB AIR", pg_item, 'RANGE- 0-1600 mBAR', 1, make=pg_vendor),
+        _row("COMB AIR", pg_item, 'RANGE- 0-1600 mBAR', 1, unit_price_override=pg_price, make=pg_vendor),
         _row("COMB AIR", "BUTTERFLY VALVE",
              f'{equipment["butterfly_valve"]["nb"]} NB', 1,
              unit_price_override=equipment["butterfly_valve"]["price"],
@@ -847,7 +859,7 @@ def build_vlph_manual_df(
         rows += [
             _row(pilot_media, "BALL VALVE", "20 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-            _row(pilot_media, pg_item, '', 1, make=pg_vendor),
+            _row(pilot_media, pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
             _row(pilot_media, "BALL VALVE", "15 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
             _row(pilot_media, "SOLENOID VALVE", "15 NB", 1,
