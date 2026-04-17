@@ -466,7 +466,7 @@ class VLPHCalcRequest(BaseModel):
     fuel1_cv: float = 8500.0
     fuel2_type: str = "none"
     fuel2_cv: float = 0.0
-    direct_burner_capacity: float = 0.0         # Nm3/hr (direct mode — by flow)
+    direct_burner_capacity: float = 0.0         # kW (direct mode — per burner for tundish)
     direct_heat_input_kcal_hr: float = 0.0      # kcal/hr (direct mode — by heat; takes precedence over capacity)
     blower_pressure: str = "28"                  # "28" or "40" (WG inches)
     control_mode: str = "automatic"              # "manual" or "automatic"
@@ -951,14 +951,16 @@ def vlph_calculate(req: VLPHCalcRequest):
         f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
 
         if req.mode == "direct":
-            # --- Direct mode: user enters either burner capacity (Nm³/hr) or heat input (kcal/hr) ---
-            # If heat input is given, derive flow from it; otherwise treat capacity as flow.
+            # --- Direct mode: user enters burner capacity (kW) or heat input (kcal/hr) ---
+            # For tundish: capacity is PER BURNER; total = capacity × num_burners.
+            # Heat input takes precedence (already total).
             is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
+            n_burners = max(1, int(req.num_burners or 1))
             if req.direct_heat_input_kcal_hr and req.direct_heat_input_kcal_hr > 0:
                 heat_kcal_hr = req.direct_heat_input_kcal_hr
             else:
-                higher_cv = max(f1_cv, req.fuel2_cv) if is_dual else f1_cv
-                heat_kcal_hr = req.direct_burner_capacity * higher_cv
+                # kW → kcal/hr (× 860), then × num_burners for total
+                heat_kcal_hr = req.direct_burner_capacity * 860 * n_burners
             # Each fuel's flow = heat / its CV
             ng_flow = heat_kcal_hr / f1_cv
             air_flow = heat_kcal_hr * 118 / 100000
@@ -1359,12 +1361,11 @@ def hlph_calculate(req: VLPHCalcRequest):
         is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
 
         if req.mode == "direct":
-            # Direct mode: user enters either burner capacity (Nm³/hr) or heat input (kcal/hr)
+            # Direct mode: burner capacity in kW (× 860 → kcal/hr)
             if req.direct_heat_input_kcal_hr and req.direct_heat_input_kcal_hr > 0:
                 heat_kcal_hr = req.direct_heat_input_kcal_hr
             else:
-                higher_cv = max(f1_cv, req.fuel2_cv) if is_dual else f1_cv
-                heat_kcal_hr = req.direct_burner_capacity * higher_cv
+                heat_kcal_hr = req.direct_burner_capacity * 860
             ng_flow  = heat_kcal_hr / f1_cv
             air_flow = heat_kcal_hr * 118 / 100000
             br = None
