@@ -508,6 +508,18 @@
           <div class="hint">Splits total firing rate across burners; multiplies burner-line BOM items</div>
         </div>
       </div>
+      <div class="fg fg-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>MS Structure Weight (kg)</label>
+          <input id="direct_ms_structure_kg" type="number" value="0" min="0" placeholder="e.g. 1500"/>
+          <div class="hint">Tundish MS weight — drives fabrication cost (leave 0 to auto-derive)</div>
+        </div>
+        <div class="field">
+          <label>Ceramic Fibre Rolls</label>
+          <input id="direct_ceramic_rolls" type="number" value="0" min="0" placeholder="e.g. 9"/>
+          <div class="hint">Override ceramic rolls count (leave 0 to auto-derive)</div>
+        </div>
+      </div>
     </div>
 
     <!-- Calc Input Mode -->
@@ -1270,8 +1282,8 @@ async function calculate() {
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
       pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
       num_burners: parseInt(document.getElementById("direct_num_burners").value) || 1,
-      ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
-      ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
+      ms_structure_kg_override: parseFloat(document.getElementById("direct_ms_structure_kg").value) || 0,
+      ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
 
     };
   } else {
