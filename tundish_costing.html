@@ -1671,8 +1671,25 @@ function fillTechDataTable() {
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
 
-  // Per-burner firing rate
-  const perBurnerRate = (c.extra_firing_rate_nm3hr || 0) / nb;
+  // Per-fuel oil detection
+  const OIL_SET = new Set(["hsd","ldo","hdo","fo","sko","cfo","lshs"]);
+  const f1Type = document.getElementById("fuel1_type").value;
+  const f2Type = document.getElementById("fuel2_type").value;
+  const f1IsOil = OIL_SET.has(f1Type);
+  const f2IsOil = OIL_SET.has(f2Type);
+
+  // Fuel 1: per-burner firing rate + max consumption
+  let f1PerBurner, f1MaxConsumption, f1Unit;
+  if (f1IsOil) {
+    const lph = c.equivalent_lph || 0;
+    f1PerBurner = (lph / nb).toFixed(0);
+    f1MaxConsumption = Math.round(lph);
+    f1Unit = "Lit/hr";
+  } else {
+    f1PerBurner = ((c.extra_firing_rate_nm3hr || 0) / nb).toFixed(0);
+    f1MaxConsumption = Math.round(c.extra_firing_rate_nm3hr || 0);
+    f1Unit = "Nm³/hr";
+  }
 
   const defaults = {
     "td-num_burner":            `${nb} Nos.`,
@@ -1680,8 +1697,8 @@ function fillTechDataTable() {
     "td-fuel_cv":               `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-heating_schedule":      `${c.Tf || ""}°C`,
     "td-heating_time":          c.time_taken_hr ? `${c.time_taken_hr * 60} Min.` : "",
-    "td-fuel_consumption":      `${perBurnerRate.toFixed(0)} Nm³/hr. per burner`,
-    "td-max_fuel_consumption1": `${Math.round(c.extra_firing_rate_nm3hr || 0)} Nm3/Hr`,
+    "td-fuel_consumption":      `${f1PerBurner} ${f1Unit}. per burner`,
+    "td-max_fuel_consumption1": `${f1MaxConsumption} ${f1Unit === "Lit/hr" ? "Lit/Hr" : "Nm3/Hr"}`,
     "td-burner_model":          eq.burner_model || "Encon dual fuel burner",
     "td-blower_capacity":       cfm ? `${eq.blower_hp || ''} HP/${blowerPressure || ''}" WC, ${eq.blower_airflow ? Math.round(eq.blower_airflow) : ''} Nm3/hr, ${cfm} CFM` : "",
   };
@@ -1710,11 +1727,23 @@ function fillTechDataTable() {
     if (mfc2Label) mfc2Label.textContent = `Max Fuel Consumptions per cycle`;
     // Fuel 2 values
     const f2cv = c.fuel2_cv || c.fuel2_fuel_cv || "";
-    const f2cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
+    const f2cvUnit = f2IsOil ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${f2cv} ${f2cvUnit}`;
-    const f2FiringRate = c.fuel2_extra_firing_rate_nm3hr || 0;
-    defaults["td-fuel2_consumption"] = `${(f2FiringRate / nb).toFixed(0)} Nm³/hr. per burner`;
-    defaults["td-max_fuel_consumption2"] = `${Math.round(f2FiringRate)} Nm3/Hr`;
+
+    let f2PerBurner, f2MaxConsumption, f2Unit;
+    if (f2IsOil) {
+      const f2lph = c.fuel2_equivalent_lph || 0;
+      f2PerBurner = (f2lph / nb).toFixed(0);
+      f2MaxConsumption = Math.round(f2lph);
+      f2Unit = "Lit/hr";
+    } else {
+      const f2FiringRate = c.fuel2_extra_firing_rate_nm3hr || 0;
+      f2PerBurner = (f2FiringRate / nb).toFixed(0);
+      f2MaxConsumption = Math.round(f2FiringRate);
+      f2Unit = "Nm³/hr";
+    }
+    defaults["td-fuel2_consumption"] = `${f2PerBurner} ${f2Unit}. per burner`;
+    defaults["td-max_fuel_consumption2"] = `${f2MaxConsumption} ${f2Unit === "Lit/hr" ? "Lit/Hr" : "Nm3/Hr"}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
