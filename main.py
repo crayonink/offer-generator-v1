@@ -535,6 +535,12 @@ class QuoteRequest(BaseModel):
     hydraulic_motor_hp: Optional[str] = ""
     max_electrical_load: Optional[str] = ""
     total_in_words: Optional[str] = ""
+    heating_time: Optional[str] = ""
+    fuel_name: Optional[str] = ""
+    burner_capacity_range: Optional[str] = ""
+    pumping_unit: Optional[str] = ""
+    hood_movement: Optional[str] = ""
+    ignition_method: Optional[str] = ""
     is_oil: Optional[bool] = False   # True for oil fuels — drives scope-of-supply rendering
     control_mode: Optional[str] = "automatic"  # "manual" or "automatic" — drives scope text
     bom_items: Optional[List[dict]] = []   # [{item, make}, ...] for the MAKE LIST table
@@ -1621,6 +1627,12 @@ async def generate_quote(req: QuoteRequest):
                 "hydraulic_motor_hp":  req.hydraulic_motor_hp,
                 "max_electrical_load": req.max_electrical_load,
                 "total_in_words":      req.total_in_words,
+                "heating_time":        req.heating_time,
+                "fuel_name":           req.fuel_name,
+                "burner_capacity_range": req.burner_capacity_range,
+                "pumping_unit":        req.pumping_unit,
+                "hood_movement":       req.hood_movement,
+                "ignition_method":     req.ignition_method,
                 "is_oil":              bool(req.is_oil),
                 "control_mode":        req.control_mode or "automatic",
                 "bom_items":           req.bom_items or [],

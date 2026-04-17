@@ -198,7 +198,8 @@ def _append_make_list(docx_path: str, items: list):
     for t in doc.tables:
         if len(t.rows) >= 1 and len(t.rows[0].cells) >= 2:
             cells = [c.text.strip() for c in t.rows[0].cells]
-            if cells[:2] == ["ITEM", "MAKE"]:
+            # Detect both 2-col ("ITEM","MAKE") and 3-col ("S. No.","ITEM","MAKE") layouts
+            if cells[:2] == ["ITEM", "MAKE"] or cells[1:3] == ["ITEM", "MAKE"]:
                 target_table = t
                 break
     if target_table is None:
@@ -281,16 +282,24 @@ def _strip_empty_tech_rows(docx_path: str):
 
     # Identify the tech-data table by looking for the unique label 'Refractory Weight'.
     tech_labels = {
-        "Ladle Dimensions", "Refractory Weight", "Heating Schedule",
-        "Calorific Value of Fuel", "Fuel Consumption",
-        "Burner Size & Capacity", "Combustion Air Blower",
-        "Blower Size", "Capacity of Blower",
+        "Ladle Dimensions", "Ladle Type", "Reference TS",
+        "Refractory Weight", "Weight of refractory lining",
+        "Heating Schedule", "Heating Temperature", "Heating time",
+        "Calorific Value of Fuel", "Calorific value of LDO", "Calorific value",
+        "Fuel Consumption", "Firing Rate", "Firing Rate (R1)",
+        "Burner Size & Capacity", "Burner Capacity", "Burner Capacity (R1)",
+        "ENCON Burner", "Combustion Air Blower",
+        "Blower Size", "Capacity of Blower", "Blower Capacity / Motor rating",
+        "LDO Pumping Unit", "Pumping Unit",
+        "Movement of Hood",
         "Motor recommended for Power Pack", "Maximum Electrical Load",
+        "Maximum Electrical Load Required",
     }
 
     for table in doc.tables:
         labels_in_table = {row.cells[0].text.strip() for row in table.rows if len(row.cells) >= 2}
-        if not (labels_in_table & {"Refractory Weight", "Heating Schedule"}):
+        if not (labels_in_table & {"Refractory Weight", "Weight of refractory lining",
+                                    "Heating Schedule", "Heating Temperature"}):
             continue
         # This is the tech-data table — drop blank-value rows we own.
         rows_to_remove = []
