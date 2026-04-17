@@ -3,6 +3,7 @@ from export.word_writer import generate_word_offer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(BASE_DIR, "Offer_Template.docx")
+TUNDISH_TEMPLATE_PATH = os.path.join(BASE_DIR, "Tundish_Offer_Template.docx")
 
 
 # ── Indian-English number-to-words (lakh / crore system) ──────────────────
@@ -173,7 +174,13 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         ],
     }
 
-    buffer = generate_word_offer(TEMPLATE_PATH, context)
+    # Use tundish-specific template if the product type indicates tundish
+    is_tundish = any(
+        "tundish" in (item.get("product_type") or "").lower()
+        for item in quote_data.get("items", [])
+    )
+    template = TUNDISH_TEMPLATE_PATH if is_tundish and os.path.exists(TUNDISH_TEMPLATE_PATH) else TEMPLATE_PATH
+    buffer = generate_word_offer(template, context)
     with open(output_path, "wb") as f:
         f.write(buffer.read())
 
