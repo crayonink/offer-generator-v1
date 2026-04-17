@@ -76,6 +76,24 @@ def _supervision_rates() -> tuple:
     return f"{rates['mech']:,.2f}", f"{rates['plc']:,.2f}"
 
 
+def _build_equipment_name(customer, quote_data):
+    """Derive equipment name from items product_type or customer fields."""
+    # Check items for product type
+    for item in quote_data.get("items", []):
+        pt = (item.get("product_type") or "").lower()
+        if "tundish" in pt:
+            tons = customer.get("ladle_tons")
+            return f"Tundish Preheater – {tons} Ton" if tons else "Tundish Preheater"
+        elif "horizontal" in pt:
+            tons = customer.get("ladle_tons")
+            return f"Horizontal Ladle Preheater – {tons} Ton" if tons else "Horizontal Ladle Preheater"
+    # Default: Vertical Ladle Preheater
+    tons = customer.get("ladle_tons")
+    if tons:
+        return f"Vertical Ladle Preheater – {tons} Ton"
+    return customer.get("project_name") or ""
+
+
 def generate_quote_docx(quote_data: dict, output_path: str):
     customer = quote_data["customer"]
     sup_mech, sup_plc = _supervision_rates()
@@ -123,12 +141,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             customer.get("total_in_words")
             or amount_in_words_indian(quote_data.get("grand_total", 0)) + " ONLY"
         ),
-        "equipment_name": (
-            f"{('Vertical' if not customer.get('is_horizontal') else 'Horizontal')} "
-            f"Ladle Preheater – {customer.get('ladle_tons') or ''} Ton"
-            if customer.get("ladle_tons")
-            else (customer.get("project_name") or "")
-        ),
+        "equipment_name": _build_equipment_name(customer, quote_data),
         # Supervision-charge rates (from component_price_master)
         "supervision_mech": sup_mech,
         "supervision_plc":  sup_plc,
@@ -157,6 +170,28 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "pumping_unit":          customer.get("pumping_unit") or "",
         "hood_movement":         customer.get("hood_movement") or "Vertical Swiveling through bearing mechanism.",
         "ignition_method":       customer.get("ignition_method") or "Automatic Through LPG Fired Pilot Burner",
+        # Tundish-specific tech-data placeholders (pre-heating station)
+        "num_burners":           customer.get("num_burners") or "",
+        "fuel1_cv":              customer.get("fuel_cv") or "",
+        "fuel2_cv":              customer.get("fuel2_cv") or "",
+        "max_temperature":       customer.get("heating_schedule") or "",
+        "cycle_time":            customer.get("heating_time") or "",
+        "lifting_lowering":      customer.get("hood_movement") or "With Hydraulic cylinder & Power pack",
+        "firing_rate_fuel1":     customer.get("fuel_consumption") or "",
+        "max_consumption_fuel1": customer.get("max_fuel_consumption1") or "",
+        "firing_rate_fuel2":     customer.get("fuel2_consumption") or "",
+        "max_consumption_fuel2": customer.get("max_fuel_consumption2") or "",
+        "combustion_blower":     "Centrifugal type",
+        "motor_power_pack":      customer.get("hydraulic_motor_hp") or "10 HP",
+        # Tundish drying station — defaults to same as pre-heating (user edits in Word)
+        "max_temperature_dry":       customer.get("max_temperature_dry") or customer.get("heating_schedule") or "",
+        "cycle_time_dry":            customer.get("cycle_time_dry") or customer.get("heating_time") or "",
+        "firing_rate_fuel1_dry":     customer.get("firing_rate_fuel1_dry") or customer.get("fuel_consumption") or "",
+        "max_consumption_fuel1_dry": customer.get("max_consumption_fuel1_dry") or customer.get("max_fuel_consumption1") or "",
+        "firing_rate_fuel2_dry":     customer.get("firing_rate_fuel2_dry") or customer.get("fuel2_consumption") or "",
+        "max_consumption_fuel2_dry": customer.get("max_consumption_fuel2_dry") or customer.get("max_fuel_consumption2") or "",
+        "blower_size_dry":           customer.get("blower_size_dry") or customer.get("blower_capacity") or "",
+        "max_electrical_load_dry":   customer.get("max_electrical_load_dry") or customer.get("max_electrical_load") or "",
         # Fuel-type flags drive {%p if is_oil %} / {%p if is_gas %} blocks
         # in the scope-of-supply section of the template.
         "is_oil":                bool(customer.get("is_oil")),
