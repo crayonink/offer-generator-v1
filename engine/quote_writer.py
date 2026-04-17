@@ -153,6 +153,10 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # in the scope-of-supply section of the template.
         "is_oil":                bool(customer.get("is_oil")),
         "is_gas":                not bool(customer.get("is_oil")),
+        # Control-mode flags drive {%p if is_manual %} / {%p if is_automatic %}
+        # for temperature-control and control-panel scope sections.
+        "is_manual":             customer.get("control_mode") == "manual",
+        "is_automatic":          customer.get("control_mode") != "manual",
         # BOM items list for the MAKE LIST table on the last page.
         # Each entry: {"item": "ITEM NAME", "make": "VENDOR" or "ENCON"}.
         "make_list":             [

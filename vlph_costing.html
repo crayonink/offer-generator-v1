@@ -1668,6 +1668,7 @@ function buildTechData() {
     hydraulic_motor_hp:  get("td-hydraulic_motor_hp"),
     max_electrical_load: get("td-max_electrical_load"),
     is_oil:              isOil,
+    control_mode:        document.getElementById("control_mode")?.value || "automatic",
   };
 }
 
