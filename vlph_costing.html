@@ -503,6 +503,18 @@
           <div class="hint">Ladle size for structure/ceramic sizing</div>
         </div>
       </div>
+      <div class="fg fg-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>MS Structure Weight (kg)</label>
+          <input id="direct_ms_structure_kg" type="number" value="0" min="0" placeholder="e.g. 1500"/>
+          <div class="hint">Override MS structure weight (leave 0 to auto-derive from ladle capacity)</div>
+        </div>
+        <div class="field">
+          <label>Ceramic Fibre Rolls</label>
+          <input id="direct_ceramic_rolls" type="number" value="0" min="0" placeholder="e.g. 9"/>
+          <div class="hint">Override ceramic rolls count (leave 0 to auto-derive)</div>
+        </div>
+      </div>
     </div>
 
     <!-- Calc Input Mode -->
@@ -738,6 +750,18 @@
           <label>Efficiency</label>
           <input id="efficiency" type="number" value="0.52" step="0.01"/>
           <div class="hint">default 0.52</div>
+        </div>
+      </div>
+      <div class="fg fg-2" style="margin-top:16px">
+        <div class="field">
+          <label>MS Structure Weight (kg)</label>
+          <input id="ms_structure_kg" type="number" value="0" min="0" placeholder="e.g. 1500"/>
+          <div class="hint">Override MS structure weight (leave 0 to auto-derive)</div>
+        </div>
+        <div class="field">
+          <label>Ceramic Fibre Rolls</label>
+          <input id="ceramic_rolls" type="number" value="0" min="0" step="1" placeholder="e.g. 9"/>
+          <div class="hint">Override ceramic rolls count (leave 0 to auto-derive)</div>
         </div>
       </div>
     </div>
@@ -1248,6 +1272,8 @@ async function calculate() {
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
       pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
+      ms_structure_kg_override: parseFloat(document.getElementById("direct_ms_structure_kg").value) || 0,
+      ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
 
     };
   } else {
@@ -1277,6 +1303,8 @@ async function calculate() {
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
       pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
+      ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
+      ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
 
     };
   }
