@@ -1000,44 +1000,40 @@
     </p>
     <table class="tech-data-table" id="tech-data-table" style="width:100%;border-collapse:collapse;margin-bottom:28px;">
       <tbody>
-        <tr><td class="tech-lbl">Tundish Dimensions</td>
-            <td><input id="td-ladle_dim" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Drawing No.</td>
-            <td><input id="td-ladle_drawing_no" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Refractory Weight</td>
-            <td><input id="td-refractory_weight_kg" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Heating Temperature</td>
-            <td><input id="td-heating_schedule" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Heating Time</td>
-            <td><input id="td-heating_time" type="text"/></td></tr>
-        <tr><td class="tech-lbl">No. of Burner</td>
-            <td><input id="td-num_burner" type="text" value="1 No."/></td></tr>
+        <tr><td class="tech-lbl">No. Of Burners</td>
+            <td><input id="td-num_burner" type="text" value="3 Nos."/></td></tr>
         <tr><td class="tech-lbl">Fuel</td>
             <td><input id="td-fuel_name" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Calorific Value of Fuel</td>
+        <tr><td class="tech-lbl" id="td-cv1-label">Calorific Value Of Fuel 1</td>
             <td><input id="td-fuel_cv" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Firing Rate</td>
+        <tr id="td-cv2-row"><td class="tech-lbl" id="td-cv2-label">Calorific Value Of Fuel 2</td>
+            <td><input id="td-fuel2_cv" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Maximum Temperature</td>
+            <td><input id="td-heating_schedule" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Pre-heating Cycle Time</td>
+            <td><input id="td-heating_time" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Ignition of Burners</td>
+            <td><input id="td-ignition" type="text" value="Through NG fired Pilot Burner"/></td></tr>
+        <tr><td class="tech-lbl">Lifting &amp; lowering</td>
+            <td><input id="td-hood_movement" type="text" value="With Hydraulic cylinder & Power pack"/></td></tr>
+        <tr><td class="tech-lbl" id="td-fr1-label">Firing Rate for Fuel 1</td>
             <td><input id="td-fuel_consumption" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Burner Capacity</td>
-            <td><input id="td-burner_capacity_range" type="text"/></td></tr>
-        <tr><td class="tech-lbl">ENCON Burner</td>
+        <tr><td class="tech-lbl" id="td-maxfc1-label">Max Fuel Consumption per cycle (Fuel 1)</td>
+            <td><input id="td-max_fuel_consumption1" type="text"/></td></tr>
+        <tr id="td-fr2-row"><td class="tech-lbl" id="td-fr2-label">Firing Rate for Fuel 2</td>
+            <td><input id="td-fuel2_consumption" type="text"/></td></tr>
+        <tr id="td-maxfc2-row"><td class="tech-lbl" id="td-maxfc2-label">Max Fuel Consumption per cycle (Fuel 2)</td>
+            <td><input id="td-max_fuel_consumption2" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Burner Model</td>
             <td><input id="td-burner_model" type="text"/></td></tr>
         <tr><td class="tech-lbl">Combustion Air Blower</td>
-            <td><input id="td-blower_model" type="text"/></td></tr>
+            <td><input id="td-blower_model" type="text" value="Centrifugal type"/></td></tr>
         <tr><td class="tech-lbl">Blower Size</td>
-            <td><input id="td-blower_size" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Blower Capacity / Motor Rating</td>
             <td><input id="td-blower_capacity" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Pumping Unit</td>
-            <td><input id="td-pumping_unit" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
-            <td><input id="td-ignition" type="text" value="Automatic Through LPG Fired Pilot Burner"/></td></tr>
-        <tr><td class="tech-lbl">Motor recommended for Power Pack</td>
-            <td><input id="td-hydraulic_motor_hp" type="text" value="5 HP"/></td></tr>
-        <tr><td class="tech-lbl">Temperature Control</td>
-            <td><input id="td-temperature_control" type="text" value="Manually, Temp. Indicator with Thermocouple is added."/></td></tr>
+        <tr><td class="tech-lbl">Motor for Power Pack</td>
+            <td><input id="td-hydraulic_motor_hp" type="text" value="10 HP"/></td></tr>
         <tr><td class="tech-lbl">Maximum Electrical Load</td>
-            <td><input id="td-max_electrical_load" type="text"/></td></tr>
+            <td><input id="td-max_electrical_load" type="text" placeholder="18 kW"/></td></tr>
       </tbody>
     </table>
 
@@ -1669,23 +1665,61 @@ function fillTechDataTable() {
     fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
   }
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
-  const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
+  const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
+  const nb = c.num_burners || 1;
+  const isDual = c.is_dual;
+  const f2Name = c.fuel2_name || "Fuel 2";
+
+  // Per-burner firing rate
+  const perBurnerRate = (c.extra_firing_rate_nm3hr || 0) / nb;
+
   const defaults = {
-    "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
-    "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
-    "td-heating_time":         `${c.time_taken_hr || ""} Hours`,
-    "td-fuel_name":            f1Name,
-    "td-fuel_cv":              `${f1Name}: ${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
-    "td-fuel_consumption":     fuelConsumption,
-    "td-burner_capacity_range":isOil ? `${f1Name} – (15 -85) Litre/ hr.` : `${(c.extra_firing_rate_nm3hr||0).toFixed(0)} Nm³/hr`,
-    "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || ""),
-    "td-blower_model":         `Centrifugal type, ${eq.blower_model || ""}`,
-    "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
-    "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
-    "td-pumping_unit":         isOil ? `Flow Rate: ${(c.equivalent_lph||0).toFixed(0)} L/hr.` : "",
-    "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
+    "td-num_burner":            `${nb} Nos.`,
+    "td-fuel_name":             isDual ? `${f1Name} & ${f2Name}` : f1Name,
+    "td-fuel_cv":               `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
+    "td-heating_schedule":      `${c.Tf || ""}°C`,
+    "td-heating_time":          c.time_taken_hr ? `${c.time_taken_hr * 60} Min.` : "",
+    "td-fuel_consumption":      `${perBurnerRate.toFixed(0)} Nm³/hr. per burner`,
+    "td-max_fuel_consumption1": `${Math.round(c.extra_firing_rate_nm3hr || 0)} Nm3/Hr`,
+    "td-burner_model":          eq.burner_model || "Encon dual fuel burner",
+    "td-blower_capacity":       cfm ? `${eq.blower_hp || ''} HP/${blowerPressure || ''}" WC, ${eq.blower_airflow ? Math.round(eq.blower_airflow) : ''} Nm3/hr, ${cfm} CFM` : "",
   };
+
+  // Fuel 1 CV label
+  const cv1Label = document.getElementById("td-cv1-label");
+  if (cv1Label) cv1Label.textContent = `Calorific Value Of ${f1Name}`;
+  const fr1Label = document.getElementById("td-fr1-label");
+  if (fr1Label) fr1Label.textContent = `Firing Rate for ${f1Name}`;
+  const mfc1Label = document.getElementById("td-maxfc1-label");
+  if (mfc1Label) mfc1Label.textContent = `Max Fuel Consumptions per cycle`;
+
+  // Fuel 2 — show/hide rows and populate
+  const cv2Row = document.getElementById("td-cv2-row");
+  const fr2Row = document.getElementById("td-fr2-row");
+  const mfc2Row = document.getElementById("td-maxfc2-row");
+  if (isDual) {
+    if (cv2Row) cv2Row.style.display = "";
+    if (fr2Row) fr2Row.style.display = "";
+    if (mfc2Row) mfc2Row.style.display = "";
+    const cv2Label = document.getElementById("td-cv2-label");
+    if (cv2Label) cv2Label.textContent = `Calorific Value Of ${f2Name}`;
+    const fr2Label = document.getElementById("td-fr2-label");
+    if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
+    const mfc2Label = document.getElementById("td-maxfc2-label");
+    if (mfc2Label) mfc2Label.textContent = `Max Fuel Consumptions per cycle`;
+    // Fuel 2 values
+    const f2cv = c.fuel2_cv || c.fuel2_fuel_cv || "";
+    const f2cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
+    defaults["td-fuel2_cv"] = `${f2cv} ${f2cvUnit}`;
+    const f2FiringRate = c.fuel2_extra_firing_rate_nm3hr || 0;
+    defaults["td-fuel2_consumption"] = `${(f2FiringRate / nb).toFixed(0)} Nm³/hr. per burner`;
+    defaults["td-max_fuel_consumption2"] = `${Math.round(f2FiringRate)} Nm3/Hr`;
+  } else {
+    if (cv2Row) cv2Row.style.display = "none";
+    if (fr2Row) fr2Row.style.display = "none";
+    if (mfc2Row) mfc2Row.style.display = "none";
+  }
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el && !el.value) el.value = val;
