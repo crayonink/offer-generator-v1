@@ -1000,9 +1000,27 @@ def vlph_calculate(req: VLPHCalcRequest):
         per_burner_ng  = ng_flow / n_burners
         per_burner_air = air_flow / n_burners
 
+        # For dual fuel: pre-compute fuel 2 air flow so blower is sized for
+        # whichever fuel needs MORE air (lower CV = higher flow).
+        blower_air_flow = air_flow
+        if is_dual:
+            if req.mode == "direct":
+                air_flow2_pre = air_flow  # same heat → same air
+            else:
+                br2_pre = calculate_burner(BurnerInputs(
+                    Ti=req.Ti, Tf=req.Tf,
+                    refractory_weight=req.refractory_weight,
+                    fuel_cv=req.fuel2_cv,
+                    time_taken_hr=req.time_taken_hr,
+                    refractory_heat_factor=req.refractory_heat_factor,
+                    efficiency=req.efficiency,
+                ))
+                air_flow2_pre = br2_pre.air_qty_nm3hr
+            blower_air_flow = max(air_flow, air_flow2_pre)
+
         equip1 = select_equipment(
             ng_flow_nm3hr=ng_flow,
-            air_flow_nm3hr=air_flow,
+            air_flow_nm3hr=blower_air_flow,
             is_dual_fuel=is_dual,
             fuel_cv=f1_cv,
             blower_pressure=req.blower_pressure,
@@ -1118,11 +1136,12 @@ def vlph_calculate(req: VLPHCalcRequest):
         grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
         # Build response — blower HP at user-selected pressure
+        # Use blower_air_flow (max of fuel1/fuel2 air) for consistent sizing.
         # For oil fuels: CFM = equivalent_lph × 10 (matches selection_engine).
         if f1_is_oil and equip1["burner"].get("equivalent_lph"):
             cfm = equip1["burner"]["equivalent_lph"] * 10
         else:
-            cfm = air_flow / 1.7
+            cfm = blower_air_flow / 1.7
         blower_hp_calc = cfm * int(req.blower_pressure) / 3200
         resp = {
             "calculations": {
@@ -1392,8 +1411,25 @@ def hlph_calculate(req: VLPHCalcRequest):
 
         burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
 
+        # Dual fuel: blower sized for max(air1, air2)
+        blower_air_flow = air_flow
+        if is_dual:
+            if req.mode == "direct":
+                air_flow2_pre = air_flow
+            else:
+                br2_pre = calculate_burner(BurnerInputs(
+                    Ti=req.Ti, Tf=req.Tf,
+                    refractory_weight=req.refractory_weight,
+                    fuel_cv=req.fuel2_cv,
+                    time_taken_hr=req.time_taken_hr,
+                    refractory_heat_factor=req.refractory_heat_factor,
+                    efficiency=req.efficiency,
+                ))
+                air_flow2_pre = br2_pre.air_qty_nm3hr
+            blower_air_flow = max(air_flow, air_flow2_pre)
+
         equip1 = select_equipment(
-            ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow,
+            ng_flow_nm3hr=ng_flow, air_flow_nm3hr=blower_air_flow,
             is_dual_fuel=is_dual, fuel_cv=f1_cv,
             blower_pressure=req.blower_pressure, fuel_type=req.fuel1_type,
             hpu_variant=req.hpu_variant, burner_pressure_wg=burner_pressure_wg,
@@ -1467,7 +1503,7 @@ def hlph_calculate(req: VLPHCalcRequest):
         if f1_is_oil and equip1["burner"].get("equivalent_lph"):
             cfm = equip1["burner"]["equivalent_lph"] * 10
         else:
-            cfm = air_flow / 1.7
+            cfm = blower_air_flow / 1.7
         blower_hp_calc = cfm * int(req.blower_pressure) / 3200
 
         resp = {
