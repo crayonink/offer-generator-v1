@@ -541,6 +541,12 @@ class QuoteRequest(BaseModel):
     pumping_unit: Optional[str] = ""
     hood_movement: Optional[str] = ""
     ignition_method: Optional[str] = ""
+    # Tundish dual-fuel fields
+    num_burners: Optional[str] = ""
+    fuel2_cv: Optional[str] = ""
+    fuel2_consumption: Optional[str] = ""
+    max_fuel_consumption1: Optional[str] = ""
+    max_fuel_consumption2: Optional[str] = ""
     is_oil: Optional[bool] = False   # True for oil fuels — drives scope-of-supply rendering
     control_mode: Optional[str] = "automatic"  # "manual" or "automatic" — drives scope text
     bom_items: Optional[List[dict]] = []   # [{item, make}, ...] for the MAKE LIST table
@@ -1634,6 +1640,11 @@ async def generate_quote(req: QuoteRequest):
                 "pumping_unit":        req.pumping_unit,
                 "hood_movement":       req.hood_movement,
                 "ignition_method":     req.ignition_method,
+                "num_burners":         req.num_burners,
+                "fuel2_cv":            req.fuel2_cv,
+                "fuel2_consumption":   req.fuel2_consumption,
+                "max_fuel_consumption1": req.max_fuel_consumption1,
+                "max_fuel_consumption2": req.max_fuel_consumption2,
                 "is_oil":              bool(req.is_oil),
                 "control_mode":        req.control_mode or "automatic",
                 "bom_items":           req.bom_items or [],

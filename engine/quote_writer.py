@@ -76,6 +76,20 @@ def _supervision_rates() -> tuple:
     return f"{rates['mech']:,.2f}", f"{rates['plc']:,.2f}"
 
 
+def _fuel_label(fuel_name: str) -> str:
+    """Extract the first fuel name from 'NG & MG' or 'Natural Gas & Furnace Oil'."""
+    if "&" in fuel_name:
+        return fuel_name.split("&")[0].strip()
+    return fuel_name.strip()
+
+
+def _fuel_label2(fuel_name: str) -> str:
+    """Extract the second fuel name from 'NG & MG'."""
+    if "&" in fuel_name:
+        return fuel_name.split("&")[1].strip()
+    return ""
+
+
 def _build_equipment_name(customer, quote_data):
     """Derive equipment name from items product_type or customer fields."""
     # Check items for product type
@@ -171,6 +185,8 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "hood_movement":         customer.get("hood_movement") or "Vertical Swiveling through bearing mechanism.",
         "ignition_method":       customer.get("ignition_method") or "Automatic Through LPG Fired Pilot Burner",
         # Tundish-specific tech-data placeholders (pre-heating station)
+        "fuel1_label":           _fuel_label(customer.get("fuel_name", "")),
+        "fuel2_label":           _fuel_label2(customer.get("fuel_name", "")),
         "num_burners":           customer.get("num_burners") or "",
         "fuel1_cv":              customer.get("fuel_cv") or "",
         "fuel2_cv":              customer.get("fuel2_cv") or "",
