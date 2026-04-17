@@ -149,6 +149,13 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "blower_capacity":       customer.get("blower_capacity") or "",
         "hydraulic_motor_hp":    customer.get("hydraulic_motor_hp") or "",
         "max_electrical_load":   customer.get("max_electrical_load") or "",
+        # Extra tech-data fields for PLC template
+        "heating_time":          customer.get("heating_time") or "",
+        "fuel_name":             customer.get("fuel_name") or "",
+        "burner_capacity_range": customer.get("burner_capacity_range") or "",
+        "pumping_unit":          customer.get("pumping_unit") or "",
+        "hood_movement":         customer.get("hood_movement") or "Vertical Swiveling through bearing mechanism.",
+        "ignition_method":       customer.get("ignition_method") or "Automatic Through LPG Fired Pilot Burner",
         # Fuel-type flags drive {%p if is_oil %} / {%p if is_gas %} blocks
         # in the scope-of-supply section of the template.
         "is_oil":                bool(customer.get("is_oil")),
