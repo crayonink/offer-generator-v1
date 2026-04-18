@@ -76,6 +76,16 @@ def _supervision_rates() -> tuple:
     return f"{rates['mech']:,.2f}", f"{rates['plc']:,.2f}"
 
 
+def _combine_dual(val1, val2) -> str:
+    """Combine two fuel values into one string for single-column display.
+    If val2 is empty, returns val1 only."""
+    v1 = (val1 or "").strip()
+    v2 = (val2 or "").strip()
+    if v2:
+        return f"{v1}\n{v2}"
+    return v1
+
+
 def _fuel_label(fuel_name: str) -> str:
     """Extract the first fuel name from 'NG & MG' or 'Natural Gas & Furnace Oil'."""
     if "&" in fuel_name:
@@ -169,8 +179,8 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "ladle_drawing_no":      customer.get("ladle_drawing_no") or "",
         "refractory_weight_kg":  customer.get("refractory_weight_kg") or "",
         "heating_schedule":      customer.get("heating_schedule") or "",
-        "fuel_cv":               customer.get("fuel_cv") or "",
-        "fuel_consumption":      customer.get("fuel_consumption") or "",
+        "fuel_cv":               _combine_dual(customer.get("fuel_cv"), customer.get("fuel2_cv")),
+        "fuel_consumption":      _combine_dual(customer.get("fuel_consumption"), customer.get("fuel2_consumption")),
         "burner_model":          customer.get("burner_model") or "",
         "blower_model":          customer.get("blower_model") or "",
         "blower_size":           customer.get("blower_size") or "",
