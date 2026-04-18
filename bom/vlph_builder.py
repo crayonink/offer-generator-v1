@@ -786,7 +786,7 @@ def build_vlph_120t_df(
 
     encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
 
-    grand_total = bought_out_total + encon_total
+    grand_total = (bought_out_total * 1.8) + encon_total
 
     df = pd.concat(
         [
@@ -946,7 +946,7 @@ def build_vlph_manual_df(
         (df["MEDIA"] != "ENCON ITEMS"), "TOTAL"
     ].sum()
     encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
-    grand_total = bought_out_total + encon_total
+    grand_total = (bought_out_total * 1.8) + encon_total
 
     df = pd.concat(
         [

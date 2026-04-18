@@ -249,7 +249,7 @@ def build_hlph_df(
         (df["MEDIA"] != "ENCON ITEMS"), "TOTAL"
     ].sum()
     encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
-    grand_total = bought_out_total + encon_total
+    grand_total = (bought_out_total * 1.8) + encon_total
 
     df = pd.concat(
         [
@@ -410,7 +410,7 @@ def build_hlph_manual_df(
 
     bought_out_total = df.loc[(df["MEDIA"] != "ENCON ITEMS"), "TOTAL"].sum()
     encon_total = df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum()
-    grand_total = bought_out_total + encon_total
+    grand_total = (bought_out_total * 1.8) + encon_total
 
     df = pd.concat(
         [
