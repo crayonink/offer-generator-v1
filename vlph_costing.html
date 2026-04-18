@@ -998,10 +998,14 @@
             <td><input id="td-num_burner" type="text" value="1 No."/></td></tr>
         <tr><td class="tech-lbl">Fuel</td>
             <td><input id="td-fuel_name" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Calorific Value of Fuel</td>
+        <tr><td class="tech-lbl" id="td-cv1-label">Calorific Value of Fuel 1</td>
             <td><input id="td-fuel_cv" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Firing Rate</td>
+        <tr id="td-cv2-row" style="display:none"><td class="tech-lbl" id="td-cv2-label">Calorific Value of Fuel 2</td>
+            <td><input id="td-fuel2_cv" type="text"/></td></tr>
+        <tr><td class="tech-lbl" id="td-fr1-label">Firing Rate</td>
             <td><input id="td-fuel_consumption" type="text"/></td></tr>
+        <tr id="td-fr2-row" style="display:none"><td class="tech-lbl" id="td-fr2-label">Firing Rate for Fuel 2</td>
+            <td><input id="td-fuel2_consumption" type="text"/></td></tr>
         <tr><td class="tech-lbl">Burner Capacity</td>
             <td><input id="td-burner_capacity_range" type="text"/></td></tr>
         <tr><td class="tech-lbl">ENCON Burner</td>
@@ -1645,12 +1649,14 @@ function fillTechDataTable() {
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
+  const isDual = c.is_dual;
+  const f2Name = c.fuel2_name || "Fuel 2";
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
     "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
     "td-heating_time":         `${c.time_taken_hr || ""} Hours`,
-    "td-fuel_name":            f1Name,
-    "td-fuel_cv":              `${f1Name}: ${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
+    "td-fuel_name":            isDual ? `${f1Name} & ${f2Name}` : f1Name,
+    "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
     "td-burner_capacity_range":isOil ? `${f1Name} – (15 -85) Litre/ hr.` : `${(c.extra_firing_rate_nm3hr||0).toFixed(0)} Nm³/hr`,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || ""),
@@ -1661,6 +1667,37 @@ function fillTechDataTable() {
     "td-hood_movement":        "Vertical Swiveling through bearing mechanism.",
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
+
+  // Fuel 1 label
+  const cv1Label = document.getElementById("td-cv1-label");
+  if (cv1Label) cv1Label.textContent = `Calorific Value of ${f1Name}`;
+  const fr1Label = document.getElementById("td-fr1-label");
+  if (fr1Label) fr1Label.textContent = `Firing Rate for ${f1Name}`;
+
+  // Fuel 2 — show/hide and populate
+  const cv2Row = document.getElementById("td-cv2-row");
+  const fr2Row = document.getElementById("td-fr2-row");
+  if (isDual) {
+    if (cv2Row) cv2Row.style.display = "";
+    if (fr2Row) fr2Row.style.display = "";
+    const cv2Label = document.getElementById("td-cv2-label");
+    if (cv2Label) cv2Label.textContent = `Calorific Value of ${f2Name}`;
+    const fr2Label = document.getElementById("td-fr2-label");
+    if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
+    const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
+    defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
+    const f2Rate = c.fuel2_extra_firing_rate_nm3hr || 0;
+    const f2lph = c.fuel2_equivalent_lph || 0;
+    if (f2lph > 0) {
+      defaults["td-fuel2_consumption"] = `${f2lph.toFixed(2)} Lit/hr of ${f2Name}`;
+    } else {
+      defaults["td-fuel2_consumption"] = `${f2Rate.toFixed(2)} Nm³/hr of ${f2Name}`;
+    }
+  } else {
+    if (cv2Row) cv2Row.style.display = "none";
+    if (fr2Row) fr2Row.style.display = "none";
+  }
+
   // Only overwrite inputs the user hasn't already edited (value empty)
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
@@ -1695,7 +1732,9 @@ function buildTechData() {
     heating_time:         get("td-heating_time"),
     fuel_name:            get("td-fuel_name"),
     fuel_cv:              get("td-fuel_cv"),
+    fuel2_cv:             get("td-fuel2_cv"),
     fuel_consumption:     get("td-fuel_consumption"),
+    fuel2_consumption:    get("td-fuel2_consumption"),
     burner_capacity_range:get("td-burner_capacity_range"),
     burner_model:         get("td-burner_model"),
     blower_model:         get("td-blower_model"),
