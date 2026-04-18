@@ -17,7 +17,7 @@ from bom.selectors.encon_burner import _resolve_category
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
 
 
-def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24, butterfly_valve_vendor: str = "lt_lever", shutoff_valve_vendor: str = "aira", control_mode: str = "automatic", auto_control_type: str = "plc") -> dict:
+def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fuel: bool = False, fuel_cv: float = 10500, blower_pressure: str = "28", fuel_type: str = "gas", hpu_variant: str = "Duplex 1", burner_pressure_wg: int = 24, butterfly_valve_vendor: str = "lt_lever", shutoff_valve_vendor: str = "aira", control_mode: str = "automatic", auto_control_type: str = "plc", fuel2_lph: float = 0) -> dict:
     """
     Selects all equipment for a VLPH system based on gas and air flow rates.
     fuel_type: 'gas', 'oil', or 'dual' — picks the burner pricelist section.
@@ -91,12 +91,17 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     rotary_joint = select_rotary_joint(air_nb)
 
     # Blower HP = CFM × pressure (inches w.g.) / 3200
-    # For oil-based fuels, CFM is derived from fuel flow in LPH (× 10 factor).
-    # For gas/dual fuels, CFM is from air flow / 1.7 (standard).
+    # Gas CFM = air / 1.7. Oil CFM = LPH × 10 (accounts for atomization air).
+    # For dual fuel with any oil: use max(gas_cfm, oil_cfm) so blower handles
+    # both modes.
+    gas_cfm = air_flow_nm3hr / 1.7
+    oil_cfm = 0
     if _resolve_category(fuel_type) == "oil" and burner.get("equivalent_lph"):
-        cfm = burner["equivalent_lph"] * 10
-    else:
-        cfm = air_flow_nm3hr / 1.7
+        oil_cfm = burner["equivalent_lph"] * 10
+    # Dual-fuel: if fuel2 is oil, its LPH × 10 may exceed gas CFM
+    if fuel2_lph and fuel2_lph > 0:
+        oil_cfm = max(oil_cfm, fuel2_lph * 10)
+    cfm = max(gas_cfm, oil_cfm) if oil_cfm else gas_cfm
     pressure_in_wg = int(blower_pressure)   # "28" or "40"
     required_hp = cfm * pressure_in_wg / 3200
     blower = select_blower(required_hp, series=blower_pressure)

@@ -1018,6 +1018,14 @@ def vlph_calculate(req: VLPHCalcRequest):
                 air_flow2_pre = br2_pre.air_qty_nm3hr
             blower_air_flow = max(air_flow, air_flow2_pre)
 
+        # Pre-compute fuel2 oil LPH for blower CFM sizing in dual-fuel
+        f2_oil_lph_for_blower = 0
+        if is_dual and req.fuel2_type in OIL_FUELS:
+            f2_flow_kghr = heat_kcal_hr / req.fuel2_cv if req.fuel2_cv > 0 else 0
+            from bom.selectors.encon_burner import _get_fuel_density
+            f2_density = _get_fuel_density(req.fuel2_type)
+            f2_oil_lph_for_blower = f2_flow_kghr / f2_density if f2_density else 0
+
         equip1 = select_equipment(
             ng_flow_nm3hr=ng_flow,
             air_flow_nm3hr=blower_air_flow,
@@ -1031,6 +1039,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             shutoff_valve_vendor=req.shutoff_valve_vendor,
             control_mode=req.control_mode,
             auto_control_type=req.auto_control_type,
+            fuel2_lph=f2_oil_lph_for_blower,
         )
 
         # Tundish multi-burner: re-select burner for per-burner flow
@@ -1136,12 +1145,14 @@ def vlph_calculate(req: VLPHCalcRequest):
         grand_total      = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL",        "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
         # Build response — blower HP at user-selected pressure
-        # Use blower_air_flow (max of fuel1/fuel2 air) for consistent sizing.
-        # For oil fuels: CFM = equivalent_lph × 10 (matches selection_engine).
+        # Match the CFM logic in selection_engine: max(gas_cfm, oil_cfm)
+        gas_cfm = blower_air_flow / 1.7
+        oil_cfm = 0
         if f1_is_oil and equip1["burner"].get("equivalent_lph"):
-            cfm = equip1["burner"]["equivalent_lph"] * 10
-        else:
-            cfm = blower_air_flow / 1.7
+            oil_cfm = equip1["burner"]["equivalent_lph"] * 10
+        if f2_oil_lph_for_blower > 0:
+            oil_cfm = max(oil_cfm, f2_oil_lph_for_blower * 10)
+        cfm = max(gas_cfm, oil_cfm) if oil_cfm else gas_cfm
         blower_hp_calc = cfm * int(req.blower_pressure) / 3200
         resp = {
             "calculations": {
@@ -1428,6 +1439,15 @@ def hlph_calculate(req: VLPHCalcRequest):
                 air_flow2_pre = br2_pre.air_qty_nm3hr
             blower_air_flow = max(air_flow, air_flow2_pre)
 
+        # Pre-compute fuel2 oil LPH for dual-fuel blower CFM
+        f2_oil_lph_for_blower = 0
+        if is_dual and req.fuel2_type in OIL_FUELS:
+            heat_for_f2 = ng_flow * f1_cv if req.mode != "direct" else heat_kcal_hr
+            f2_flow_kghr = heat_for_f2 / req.fuel2_cv if req.fuel2_cv > 0 else 0
+            from bom.selectors.encon_burner import _get_fuel_density
+            f2_density = _get_fuel_density(req.fuel2_type)
+            f2_oil_lph_for_blower = f2_flow_kghr / f2_density if f2_density else 0
+
         equip1 = select_equipment(
             ng_flow_nm3hr=ng_flow, air_flow_nm3hr=blower_air_flow,
             is_dual_fuel=is_dual, fuel_cv=f1_cv,
@@ -1436,6 +1456,7 @@ def hlph_calculate(req: VLPHCalcRequest):
             butterfly_valve_vendor=req.butterfly_valve_vendor,
             shutoff_valve_vendor=req.shutoff_valve_vendor,
             control_mode=req.control_mode, auto_control_type=req.auto_control_type,
+            fuel2_lph=f2_oil_lph_for_blower,
         )
 
         f1_is_oil = req.fuel1_type in OIL_FUELS
@@ -1499,11 +1520,14 @@ def hlph_calculate(req: VLPHCalcRequest):
         encon_total = float(bom_df.loc[bom_df["ITEM NAME"] == "ENCON ITEMS", "TOTAL"].values[0]) if "ENCON ITEMS" in bom_df["ITEM NAME"].values else 0
         grand_total = float(bom_df.loc[bom_df["ITEM NAME"] == "GRAND TOTAL", "TOTAL"].values[0]) if "GRAND TOTAL" in bom_df["ITEM NAME"].values else 0
 
-        # For oil fuels: CFM = equivalent_lph × 10 (matches selection_engine).
+        # Match CFM logic in selection_engine: max(gas_cfm, oil_cfm)
+        gas_cfm = blower_air_flow / 1.7
+        oil_cfm = 0
         if f1_is_oil and equip1["burner"].get("equivalent_lph"):
-            cfm = equip1["burner"]["equivalent_lph"] * 10
-        else:
-            cfm = blower_air_flow / 1.7
+            oil_cfm = equip1["burner"]["equivalent_lph"] * 10
+        if f2_oil_lph_for_blower > 0:
+            oil_cfm = max(oil_cfm, f2_oil_lph_for_blower * 10)
+        cfm = max(gas_cfm, oil_cfm) if oil_cfm else gas_cfm
         blower_hp_calc = cfm * int(req.blower_pressure) / 3200
 
         resp = {
