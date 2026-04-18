@@ -66,15 +66,18 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         control_mode == "manual"
         or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
     )
+    # AGR is sized from gas train outlet NB (not the raw pipe NB)
+    import re as _re
+    gt_outlet_nb = int(_re.sub(r'[^\d]', '', str(ng_gas_train.get("outlet_nb", ""))) or ng_nb)
     if needs_agr:
         agr = select_agr(
-            nb=ng_nb,
-            connection="Flanged" if ng_nb >= 65 else "Threaded",
+            nb=gt_outlet_nb,
+            connection="Flanged" if gt_outlet_nb >= 65 else "Threaded",
             ratio="1:1",
             compact="No",
         )
     else:
-        agr = {"nb": ng_nb, "price": 0, "enag": None, "item_code": None,
+        agr = {"nb": gt_outlet_nb, "price": 0, "enag": None, "item_code": None,
                "connection": None, "ratio": None, "compact": None, "pmax_mbar": None}
 
     # Air side
