@@ -949,18 +949,13 @@
         </table>
         <div class="bom-footer">
           <table>
-            <tr><td>Bought Out Items</td>                     <td id="s-bought">—</td></tr>
+            <tr><td>Bought Out Items (raw)</td>               <td id="s-bought">—</td></tr>
+            <tr>
+              <td>Markup <input id="markup-factor" type="number" value="1.8" step="0.1" min="1" style="width:55px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font:inherit;text-align:center;" oninput="recalcGrandTotal()"/>×</td>
+              <td id="s-bought-marked">—</td>
+            </tr>
             <tr><td>ENCON Items</td>                          <td id="s-encon">—</td></tr>
             <tr class="tot"><td><b>Grand Total</b></td>       <td id="s-grand">—</td></tr>
-          </table>
-          <!-- Markup summary (manual mode only) -->
-          <table id="markup-summary" style="display:none; margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
-            <tr><td>Bought Out Sell (x1.8)</td>               <td id="s-bought-sell">—</td></tr>
-            <tr><td>In-House Sell</td>                        <td id="s-encon-sell">—</td></tr>
-            <tr><td>Unit Price (Cost + Sell)</td>             <td id="s-unit-sell">—</td></tr>
-            <tr><td>Designing (10%)</td>                      <td id="s-designing">—</td></tr>
-            <tr><td>Negotiation (10%)</td>                    <td id="s-negotiation">—</td></tr>
-            <tr class="tot"><td><b>Total Unit Price</b></td>  <td id="s-total-unit">—</td></tr>
           </table>
         </div>
       </div>
@@ -1493,33 +1488,15 @@ function renderResults(d) {
   const s = d.cost_summary;
   set("s-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("s-encon",  "₹ " + fmt(s.encon_total, 0));
-  set("s-grand",  "₹ " + fmt(s.grand_total, 0));
+  window._boughtRaw = s.bought_out_total;
+  window._enconRaw  = s.encon_total;
+  recalcGrandTotal();
   set("banner-total",  "₹ " + fmt(s.grand_total, 0));
   set("banner-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("banner-encon",  "₹ " + fmt(s.encon_total, 0));
   document.getElementById("cost-banner").classList.add("visible");
 
-  // Markup summary (manual mode)
-  const isManual = document.getElementById("control_mode").value === "manual";
-  const markupEl = document.getElementById("markup-summary");
-  if (isManual) {
-    const boughtSell = s.bought_out_total * 1.8;
-    const enconSell  = s.encon_total;
-    const unitSell   = boughtSell + enconSell;
-    const designing  = unitSell * 0.10;
-    const negotiation= unitSell * 0.10;
-    const totalUnit  = unitSell + designing + negotiation;
-    set("s-bought-sell", "₹ " + fmt(boughtSell, 0));
-    set("s-encon-sell",  "₹ " + fmt(enconSell, 0));
-    set("s-unit-sell",   "₹ " + fmt(unitSell, 0));
-    set("s-designing",   "₹ " + fmt(designing, 0));
-    set("s-negotiation", "₹ " + fmt(negotiation, 0));
-    set("s-total-unit",  "₹ " + fmt(totalUnit, 0));
-    markupEl.style.display = "";
-    set("banner-total", "₹ " + fmt(totalUnit, 0));
-  } else {
-    markupEl.style.display = "none";
-  }
+  // Markup is now always visible and editable in the cost summary
 
   // ── Client Data Summary Card ──
   const cd = document.getElementById("client-data-card");
@@ -1615,6 +1592,20 @@ function parseHP(str) {
   const m = String(str || "").match(/[\d.]+/);
   return m ? parseFloat(m[0]) : 0;
 }
+function recalcGrandTotal() {
+  const markup = parseFloat(document.getElementById("markup-factor")?.value) || 1.8;
+  const bought = window._boughtRaw || 0;
+  const encon  = window._enconRaw  || 0;
+  const boughtMarked = bought * markup;
+  const grand = boughtMarked + encon;
+  set("s-bought-marked", "₹ " + fmt(boughtMarked, 0));
+  set("s-grand", "₹ " + fmt(grand, 0));
+  set("banner-total", "₹ " + fmt(grand, 0));
+  if (lastCalc && lastCalc.cost_summary) {
+    lastCalc.cost_summary.grand_total = grand;
+  }
+}
+
 function recalcElectricalLoad() {
   const blowerHp = parseHP(document.getElementById("td-blower_size")?.value);
   const motorHp  = parseHP(document.getElementById("td-hydraulic_motor_hp")?.value);
