@@ -1021,7 +1021,9 @@ def vlph_calculate(req: VLPHCalcRequest):
         # Pre-compute fuel2 oil LPH for blower CFM sizing in dual-fuel
         f2_oil_lph_for_blower = 0
         if is_dual and req.fuel2_type in OIL_FUELS:
-            f2_flow_kghr = heat_kcal_hr / req.fuel2_cv if req.fuel2_cv > 0 else 0
+            # heat_kcal_hr exists in direct mode; in calc mode derive from fuel1 flow × CV
+            heat_for_f2 = heat_kcal_hr if req.mode == "direct" else (ng_flow * f1_cv)
+            f2_flow_kghr = heat_for_f2 / req.fuel2_cv if req.fuel2_cv > 0 else 0
             from bom.selectors.encon_burner import _get_fuel_density
             f2_density = _get_fuel_density(req.fuel2_type)
             f2_oil_lph_for_blower = f2_flow_kghr / f2_density if f2_density else 0
