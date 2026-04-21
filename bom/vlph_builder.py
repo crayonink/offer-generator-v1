@@ -107,10 +107,17 @@ def _get_cheapest_solenoid_valve(nb: int) -> float:
     """Get cheapest MADAS solenoid valve from the
     'AUTOMATIC RESET WITH FLOW REGULATION' section for a given NB,
     with 45% discount applied to the list price.
+
+    MADAS only makes this SV family up to DN100. If the requested NB is
+    larger than anything in the catalogue, fall back to the largest
+    available (DN100) — engineering convention is to step the main line
+    down with a reducer at the SV.
     """
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
     nb_str = f'{nb:03d}'
+
+    # 1. Exact match
     row = conn.execute(
         """
         SELECT list_price
@@ -122,6 +129,35 @@ def _get_cheapest_solenoid_valve(nb: int) -> float:
         """,
         (nb_str,),
     ).fetchone()
+
+    # 2. Fallback: largest available size ≤ requested NB (stepped down with reducer)
+    if not row:
+        row = conn.execute(
+            """
+            SELECT list_price
+            FROM solenoidvalve_component_master
+            WHERE section LIKE '%AUTOMATIC RESET WITH FLOW REGULATION%'
+              AND CAST(size AS INTEGER) <= ?
+              AND CAST(size AS INTEGER) > 0
+            ORDER BY CAST(size AS INTEGER) DESC, list_price ASC
+            LIMIT 1
+            """,
+            (nb,),
+        ).fetchone()
+
+    # 3. Last resort: cheapest row overall in this section (smallest available)
+    if not row:
+        row = conn.execute(
+            """
+            SELECT list_price
+            FROM solenoidvalve_component_master
+            WHERE section LIKE '%AUTOMATIC RESET WITH FLOW REGULATION%'
+              AND CAST(size AS INTEGER) > 0
+            ORDER BY CAST(size AS INTEGER) ASC, list_price ASC
+            LIMIT 1
+            """,
+        ).fetchone()
+
     conn.close()
     if not row:
         return 0
@@ -223,6 +259,64 @@ def _cog_line_rows(media: str, equipment: dict,
         rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
              unit_price_override=pcv_price, make="DEMBLA"))
 
+        if needs_agr:
+            rows.append(_row(
+                media, "AGR",
+                f'{equipment["agr"]["nb"]} NB',
+                1, unit_price_override=equipment["agr"]["price"],
+            ))
+
+    return rows
+
+
+def _bfg_line_rows(media: str, equipment: dict,
+                   control_mode: str, auto_control_type: str,
+                   pressure_gauge_vendor: str,
+                   base_only: bool = False):
+    """
+    Blast Furnace Gas BOM — discrete components instead of a packaged gas train.
+    BFG runs at low pressure and with variable composition, so a pre-assembled
+    IAPL/MADAS gas train isn't used. Engineer builds the main line from:
+      - Ball valve (isolation)
+      - Solenoid valve × 2 (double-block safety)
+      - Pressure gauge with TNV
+      - Pressure switch low
+      - Rotary joint
+      - AGR (only on PLC+AGR / PID / manual control)
+    """
+    from bom.selectors.rotary_joint_selector import select_rotary_joint
+
+    gas_pipe_nb = equipment["pipe"].ng_pipe_nb
+
+    # Rotary joint sized to gas pipe NB
+    try:
+        rj = select_rotary_joint(gas_pipe_nb)
+    except ValueError:
+        rj = {"nb": gas_pipe_nb, "price": 0, "company": "THIRD PARTY"}
+
+    pg_vendor = pressure_gauge_vendor.upper()
+    pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
+
+    sv_price = _get_cheapest_solenoid_valve(gas_pipe_nb)
+    bv_price = _get_cheapest_ball_valve(gas_pipe_nb)
+
+    rows = [
+        _row(media, "BALL VALVE", f'{gas_pipe_nb} NB', 1,
+             unit_price_override=bv_price, make="L&T"),
+        _row(media, "SOLENOID VALVE", f'{gas_pipe_nb} NB', 2,
+             unit_price_override=sv_price, make="MADAS"),
+        _row(media, "PRESSURE GAUGE WITH TNV", f'{gas_pipe_nb} NB', 1,
+             unit_price_override=pg_price, make=pg_vendor),
+        _row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"),
+        _row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
+             unit_price_override=rj["price"], make="THIRD PARTY"),
+    ]
+
+    if not base_only:
+        needs_agr = (
+            control_mode == "manual"
+            or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
+        )
         if needs_agr:
             rows.append(_row(
                 media, "AGR",
@@ -371,9 +465,20 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
             base_only=base_only,
         )
 
-    # Gas train (gas fuels only)
+    # Blast Furnace Gas has its own discrete-component BOM (no packaged gas train)
+    if fuel_type == "bg":
+        return _bfg_line_rows(
+            media, equipment, control_mode, auto_control_type,
+            pressure_gauge_vendor,
+            base_only=base_only,
+        )
+
+    # Gas train (gas fuels only — BFG/COG/MG already returned above with
+    # discrete-component BOMs). RLNG uses the NG pre-assembled gas train but
+    # prints with the fuel-specific prefix so the offer reads correctly.
     if fuel_type in GAS_FUELS:
-        gas_train_name = f'GAS TRAIN {equipment["ng_gas_train"]["max_flow"]:.0f} NM3/Hr'
+        fuel_prefix = {"rlng": "RLNG ", "lpg": "LPG "}.get(fuel_type, "")
+        gas_train_name = f'{fuel_prefix}GAS TRAIN {equipment["ng_gas_train"]["max_flow"]:.0f} NM3/Hr'
         rows.append(_row(
             media, gas_train_name,
             f'{equipment["ng_gas_train"]["inlet_nb"]} x '

@@ -218,6 +218,7 @@
   <div class="sheet-panel"        id="sheet-recuperator"> <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-rad-heat">    <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading...</div></div>
+  <div class="sheet-panel"        id="sheet-rotary-joint"><div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading...</div></div>
   <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading...</div></div>
@@ -237,6 +238,7 @@
     <div class="tab"        data-sheet="recuperator" onclick="switchTab('recuperator')">Recuperator</div>
     <div class="tab"        data-sheet="rad-heat"    onclick="switchTab('rad-heat')">Rad Heat</div>
     <div class="tab"        data-sheet="gail"        onclick="switchTab('gail')">GAIL Gas Burner</div>
+    <div class="tab"        data-sheet="rotary-joint" onclick="switchTab('rotary-joint')">Rotary Joint</div>
     <div class="tab"        data-sheet="hlph"        onclick="switchTab('hlph')">Horizontal</div>
     <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
     <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
@@ -331,6 +333,7 @@ function renderAll() {
   renderRecuperator(s.recuperator || {rows:[], rates:{}});
   renderRadHeat(s.rad_heat || {models:[],spares:[]}, s.rad_heat_tata || {models:[],spares:[]});
   renderGail(s.gail_gas_burner || []);
+  renderRotaryJoint(s.rotary_joint || []);
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
   renderBurnerPivot('burner-prices', s.burners || {});
@@ -1135,6 +1138,32 @@ function renderGail(data) {
     <thead><tr><th class="rn"></th>${labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
+}
+
+// ── Rotary Joint ────────────────────────────────────────────────────────────
+function renderRotaryJoint(data) {
+  const el = document.getElementById('sheet-rotary-joint');
+  if (!data.length) { el.innerHTML = emptyMsg(); return; }
+
+  const rows = data.map((r, i) => `
+    <tr>
+      <td class="rn">${i+1}</td>
+      <td style="text-align:center;">${esc(r.nb)}</td>
+      <td class="editable" data-rowid="${r.rowid}" data-field="price" style="text-align:right;">${fmt(r.price)}</td>
+      <td>${esc(r.company || '')}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `<div class="xl-wrap"><table class="xl-table">
+    <thead><tr>
+      <th class="rn"></th>
+      <th>NB</th>
+      <th>Price (&#8377;)</th>
+      <th>Company</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+
+  attachEditHandlers(el, 'rotary_joint_master');
 }
 
 // ── Horizontal / Vertical LPH — models side by side, grouped in tabs of 3 ────

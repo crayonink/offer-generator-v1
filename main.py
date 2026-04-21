@@ -132,6 +132,7 @@ ALLOWED_EDIT_TABLES = {
     'gas_burner_parts_master', 'horizontal_master', 'vertical_master',
     'recuperator_master', 'blower_pricelist_master',
     'rad_heat_master', 'rad_heat_tata_master', 'gail_gas_burner_master',
+    'rotary_joint_master',
 }
 
 def _find_latest_pricebook():
@@ -451,6 +452,7 @@ class ItemUpdateRequest(BaseModel):
     rowid: int
     qty: Optional[float] = None
     rate: Optional[float] = None
+    price: Optional[float] = None
 
 class VLPHCalcRequest(BaseModel):
     mode: str = "calc"                          # "calc" or "direct"
@@ -705,6 +707,13 @@ def pricelist_summary():
         gail_cols = [d[0] for d in c.execute("SELECT * FROM gail_gas_burner_master LIMIT 0").description]
         gail = [dict(zip(gail_cols, r)) for r in q("SELECT * FROM gail_gas_burner_master ORDER BY section, burner_size")]
 
+        # ── Rotary Joint ──────────────────────────────────────────────────
+        rj_cols = ["rowid"] + [d[0] for d in c.execute("SELECT * FROM rotary_joint_master LIMIT 0").description]
+        rotary_joint = [
+            dict(zip(rj_cols, r))
+            for r in q("SELECT rowid, * FROM rotary_joint_master ORDER BY nb")
+        ]
+
         # ── Burner Parts (Oil / HV Oil / Gas) ─────────────────────────────
         oil_parts = _parts_sections("oil_burner_parts_master",    markup=1.25)
         hv_parts  = _parts_sections("hv_oil_burner_parts_master", markup=1.25)
@@ -775,6 +784,7 @@ def pricelist_summary():
             "gas_burner_parts": gas_parts,
             "horizontal_lph": hlph,
             "vertical_lph": vlph,
+            "rotary_joint": rotary_joint,
             "regen_costing": regen_costing,
         }
     except Exception as e:
@@ -922,19 +932,29 @@ def update_pricelist_item(req: ItemUpdateRequest):
         return {"success": False, "error": f"Table '{req.table}' not editable"}
     try:
         conn = sqlite3.connect(DB_PATH)
-        if req.qty is not None:
+        cols = {r[1] for r in conn.execute(f"PRAGMA table_info({req.table})").fetchall()}
+        if req.qty is not None and 'qty' in cols:
             conn.execute(f"UPDATE {req.table} SET qty=? WHERE rowid=?", (req.qty, req.rowid))
-        if req.rate is not None:
+        if req.rate is not None and 'rate' in cols:
             conn.execute(f"UPDATE {req.table} SET rate=? WHERE rowid=?", (req.rate, req.rowid))
-        # Recalculate amount
-        row = conn.execute(f"SELECT qty, rate FROM {req.table} WHERE rowid=?", (req.rowid,)).fetchone()
-        if row and row[0] is not None and row[1] is not None:
-            amount = round(float(row[0]) * float(row[1]), 2)
-            conn.execute(f"UPDATE {req.table} SET amount=? WHERE rowid=?", (amount, req.rowid))
+        if req.price is not None and 'price' in cols:
+            conn.execute(f"UPDATE {req.table} SET price=? WHERE rowid=?", (req.price, req.rowid))
+        # Recalculate amount if qty/rate/amount all exist
+        if {'qty', 'rate', 'amount'} <= cols:
+            row = conn.execute(f"SELECT qty, rate FROM {req.table} WHERE rowid=?", (req.rowid,)).fetchone()
+            if row and row[0] is not None and row[1] is not None:
+                amount = round(float(row[0]) * float(row[1]), 2)
+                conn.execute(f"UPDATE {req.table} SET amount=? WHERE rowid=?", (amount, req.rowid))
         conn.commit()
-        row2 = conn.execute(f"SELECT qty, rate, amount FROM {req.table} WHERE rowid=?", (req.rowid,)).fetchone()
+        select_cols = [c for c in ('qty', 'rate', 'amount', 'price') if c in cols]
+        row2 = conn.execute(
+            f"SELECT {','.join(select_cols)} FROM {req.table} WHERE rowid=?", (req.rowid,)
+        ).fetchone() if select_cols else None
         conn.close()
-        return {"success": True, "qty": row2[0], "rate": row2[1], "amount": row2[2]}
+        result = {"success": True}
+        if row2 and select_cols:
+            result.update(dict(zip(select_cols, row2)))
+        return result
     except Exception as e:
         return {"success": False, "error": str(e)}
 
