@@ -196,6 +196,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "pumping_unit":          customer.get("pumping_unit") or "",
         "hood_movement":         customer.get("hood_movement") or "Vertical Swiveling through bearing mechanism.",
         "hood_type":             customer.get("hood_type") or "up_down",
+        "pilot_gas_type":        customer.get("pilot_gas_type") or "LPG",
         "ignition_method":       customer.get("ignition_method") or "Automatic Through LPG Fired Pilot Burner",
         # Tundish-specific tech-data placeholders (pre-heating station)
         "fuel1_label":           _fuel_label(customer.get("fuel_name", "")),
