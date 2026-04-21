@@ -1665,18 +1665,12 @@ function fillTechDataTable() {
   const isDualCheck = !!c.is_dual;
   // Prefix: for dual fuel use "Fuel 1:" / "Fuel 2:" so reader can match rates to fuels.
   const f1Prefix = isDualCheck ? "Fuel 1" : f1Name;
-  // For oil fuels show ltr/hr (preferred), else kg/hr; for gas show Nm³/hr.
-  let fuelConsumption;
-  if (isOil) {
-    const lph = c.equivalent_lph;
-    if (lph !== undefined && lph !== null && lph > 0) {
-      fuelConsumption = `${f1Prefix}: ${(+lph).toFixed(2)} Lit/hr`;
-    } else {
-      fuelConsumption = `${f1Prefix}: ${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr`;
-    }
-  } else {
-    fuelConsumption = `${f1Prefix}: ${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr`;
-  }
+  // Convert firing rate to kW: flow × CV / 860 (1 kW = 860 kcal/hr).
+  // For gas: rate_nm3hr × CV_kcal_per_nm3; for oil: rate_kg_per_hr × CV_kcal_per_kg.
+  const f1Rate = +(c.extra_firing_rate_nm3hr || 0);
+  const f1CV   = +(c.fuel_cv || c.fuel1_cv || 0);
+  const f1KW   = f1Rate * f1CV / 860;
+  const fuelConsumption = `${f1Prefix}: ${f1KW.toFixed(0)} kW`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
@@ -1689,7 +1683,7 @@ function fillTechDataTable() {
     "td-fuel_name":            isDual ? `Fuel 1: ${f1Name} & Fuel 2: ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
-    "td-burner_capacity_range":isOil ? `${f1Prefix} – (15 -85) Litre/ hr.` : `${f1Prefix}: ${(c.extra_firing_rate_nm3hr||0).toFixed(0)} Nm³/hr`,
+    "td-burner_capacity_range":`${f1Prefix}: ${f1KW.toFixed(0)} kW`,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
@@ -1717,13 +1711,11 @@ function fillTechDataTable() {
     if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
     const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
-    const f2Rate = c.fuel2_extra_firing_rate_nm3hr || 0;
-    const f2lph = c.fuel2_equivalent_lph || 0;
-    if (f2lph > 0) {
-      defaults["td-fuel2_consumption"] = `Fuel 2: ${f2lph.toFixed(2)} Lit/hr`;
-    } else {
-      defaults["td-fuel2_consumption"] = `Fuel 2: ${f2Rate.toFixed(2)} Nm³/hr`;
-    }
+    // Fuel 2 firing rate in kW (same conversion as fuel 1)
+    const f2Rate = +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const f2CV   = +(c.fuel2_cv || 0);
+    const f2KW   = f2Rate * f2CV / 860;
+    defaults["td-fuel2_consumption"] = `Fuel 2: ${f2KW.toFixed(0)} kW`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
