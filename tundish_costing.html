@@ -1642,7 +1642,9 @@ function fillTechDataTable() {
   const c  = lastCalc.calculations || {};
   const eq = lastCalc.equipment    || {};
   const f1Name = (c.fuel1_name || "Fuel");
-  const isOil  = !!(c.fuel_density);
+  // Detect oil by fuel type, NOT by presence of fuel_density
+  // (backend returns fuel_density=0.85 for gas too).
+  const isOil  = OIL_FUEL_SET.has((c.fuel1_type || "").toLowerCase());
   let fuelConsumption;
   if (isOil) {
     const lph = c.equivalent_lph;
@@ -1758,7 +1760,10 @@ function buildTechData() {
   const ladleTons = parseFloat(document.getElementById("ladle_tons")?.value)
                  || parseFloat(document.getElementById("direct_ladle_tons")?.value)
                  || 0;
-  const isOil = !!(lastCalc && lastCalc.calculations && lastCalc.calculations.fuel_density);
+  // Detect oil by fuel type, NOT by presence of fuel_density
+  // (backend returns fuel_density=0.85 for gas too).
+  const _c = (lastCalc && lastCalc.calculations) || {};
+  const isOil = OIL_FUEL_SET.has((_c.fuel1_type || "").toLowerCase());
   return {
     ladle_tons:           ladleTons,
     heating_schedule:     get("td-heating_schedule"),
