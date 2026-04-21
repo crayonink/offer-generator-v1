@@ -447,6 +447,24 @@
         <input id="c-technical" type="text" value="Jyotirmoy Rabha" placeholder="ENCON technical contact for this enquiry"/>
       </div>
     </div>
+    <div class="fg fg-4">
+      <div class="field">
+        <label>Marketing Email</label>
+        <input id="c-marketing-email" type="email" placeholder="e.g. atul@encon.co.in"/>
+      </div>
+      <div class="field">
+        <label>Marketing Phone</label>
+        <input id="c-marketing-phone" type="text" placeholder="e.g. +91 98765 43210"/>
+      </div>
+      <div class="field">
+        <label>Technical Email</label>
+        <input id="c-technical-email" type="email" placeholder="e.g. jyotirmoy@encon.co.in"/>
+      </div>
+      <div class="field">
+        <label>Technical Phone</label>
+        <input id="c-technical-phone" type="text" placeholder="e.g. +91 98765 43210"/>
+      </div>
+    </div>
 
     <div class="action-row">
       <button class="btn-primary" onclick="goStep(2)">
@@ -1776,7 +1794,11 @@ async function generateQuote() {
     subject:         str("c-subject") || "Offer for Ladle Preheater",
     ref_no:          str("c-ref"),
     marketing_person:str("c-marketing"),
+    marketing_email: str("c-marketing-email"),
+    marketing_phone: str("c-marketing-phone"),
     technical_person:str("c-technical"),
+    technical_email: str("c-technical-email"),
+    technical_phone: str("c-technical-phone"),
     // BOM items for the MAKE LIST table on the last page
     bom_items: (lastCalc.bom || [])
       .filter(r => r["ITEM NAME"] && r["ITEM NAME"] !== "BOUGHT OUT ITEMS" && r["ITEM NAME"] !== "ENCON ITEMS")

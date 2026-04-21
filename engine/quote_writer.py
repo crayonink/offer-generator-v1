@@ -156,8 +156,10 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "enquiry_ref":           customer.get("enquiry_ref") or customer.get("ref_no", ""),
         "marketing_person":      customer.get("marketing_person", ""),
         "marketing_phone":       customer.get("marketing_phone", ""),
+        "marketing_email":       customer.get("marketing_email", ""),
         "technical_person":      customer.get("technical_person", ""),
         "technical_phone":       customer.get("technical_phone", ""),
+        "technical_email":       customer.get("technical_email", ""),
         # Pricing
         "total_price_vertical":  f"{total_vertical:,.2f}",
         "total_price_horizontal": f"{total_horizontal:,.2f}" if total_horizontal else "N/A",

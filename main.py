@@ -520,8 +520,10 @@ class QuoteRequest(BaseModel):
     enquiry_ref: Optional[str] = ""
     marketing_person: Optional[str] = ""
     marketing_phone: Optional[str] = ""
+    marketing_email: Optional[str] = ""
     technical_person: Optional[str] = ""
     technical_phone: Optional[str] = ""
+    technical_email: Optional[str] = ""
     # Technical data (passed from lastCalc to populate template tech table)
     ladle_tons: Optional[float] = 0
     ladle_dim: Optional[str] = ""
@@ -1698,8 +1700,10 @@ async def generate_quote(req: QuoteRequest):
                 "enquiry_ref":     req.enquiry_ref or req.ref_no,
                 "marketing_person": req.marketing_person,
                 "marketing_phone": req.marketing_phone,
+                "marketing_email": req.marketing_email,
                 "technical_person": req.technical_person,
                 "technical_phone": req.technical_phone,
+                "technical_email": req.technical_email,
                 "gstin":           req.company_gstin,
                 # Technical data (for template tech table)
                 "ladle_tons":          req.ladle_tons,
