@@ -204,6 +204,23 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "fuel_cv":               _combine_dual(customer.get("fuel_cv"), customer.get("fuel2_cv")),
         "fuel_consumption":      _combine_dual(customer.get("fuel_consumption"), customer.get("fuel2_consumption")),
         "burner_model":          customer.get("burner_model") or "",
+        # Display name shown in the 'ENCON GAS/OIL/DUAL BURNER' body paragraphs.
+        # Prefixed per the ENCON pricelist: oil -> 'ENCON 7A', gas -> 'ENCON -G 7A',
+        # dual -> 'ENCON DUAL- 7A'. Falls back to burner_model if empty.
+        "burner_display_model":  (
+            customer.get("burner_display_model")
+            or (
+                customer.get("burner_model", "").replace("ENCON ", "ENCON -G ", 1)
+                if (not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")))
+                else customer.get("burner_model", "").replace("ENCON ", "ENCON DUAL- ", 1)
+                     if bool(customer.get("is_dual"))
+                else customer.get("burner_model", "")
+            )
+        ),
+        "burner_firing_rate":    (
+            customer.get("burner_firing_rate")
+            or customer.get("fuel_consumption", "")
+        ),
         "blower_model":          customer.get("blower_model") or "",
         "blower_size":           customer.get("blower_size") or "",
         "blower_capacity":       customer.get("blower_capacity") or "",
