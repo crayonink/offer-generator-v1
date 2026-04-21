@@ -1038,8 +1038,13 @@
             <td><input id="td-pumping_unit" type="text"/></td></tr>
         <tr><td class="tech-lbl">Movement of Hood</td>
             <td><select id="td-hood_movement">
-              <option value="Vertical Swivelling through bearing mechanism.">Swivelling type</option>
-              <option value="Up and Down movement through hydraulic mechanism.">Up and Down</option>
+              <option value="swivel">Swivelling type</option>
+              <option value="up_down">Up and Down</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Pilot Burner Fuel</td>
+            <td><select id="td-pilot_gas_type" onchange="onPilotFuelChange()">
+              <option value="LPG">LPG</option>
+              <option value="NG">NG</option>
             </select></td></tr>
         <tr><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
             <td><input id="td-ignition" type="text" value="Automatic Through LPG Fired Pilot Burner"/></td></tr>
@@ -1775,14 +1780,25 @@ function buildTechData() {
     pumping_unit:         get("td-pumping_unit"),
     hydraulic_motor_hp:   get("td-hydraulic_motor_hp"),
     max_electrical_load:  get("td-max_electrical_load"),
-    hood_movement:        get("td-hood_movement"),
+    hood_type:            get("td-hood_movement"),   // 'swivel' or 'up_down'
+    pilot_gas_type:       get("td-pilot_gas_type") || "LPG",
+    hood_movement:        (get("td-hood_movement") === "up_down"
+                            ? "Up and Down movement through hydraulic mechanism."
+                            : "Vertical Swivelling through bearing mechanism."),
     ignition_method:      get("td-ignition"),
     is_oil:               isOil,
+    is_dual:              !!(lastCalc.calculations || {}).is_dual,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
   };
 }
 
 /* ── Generate Quote ── */
+function onPilotFuelChange() {
+  const v = document.getElementById("td-pilot_gas_type").value;
+  const ign = document.getElementById("td-ignition");
+  if (ign) ign.value = `Automatic Through ${v} Fired Pilot Burner`;
+}
+
 function togglePreview(url) {
   const wrap  = document.getElementById("offer-preview-wrap");
   const frame = document.getElementById("offer-preview-frame");

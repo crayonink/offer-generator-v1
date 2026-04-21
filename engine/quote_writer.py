@@ -195,6 +195,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "burner_capacity_range": customer.get("burner_capacity_range") or "",
         "pumping_unit":          customer.get("pumping_unit") or "",
         "hood_movement":         customer.get("hood_movement") or "Vertical Swiveling through bearing mechanism.",
+        "hood_type":             customer.get("hood_type") or "up_down",
         "ignition_method":       customer.get("ignition_method") or "Automatic Through LPG Fired Pilot Burner",
         # Tundish-specific tech-data placeholders (pre-heating station)
         "fuel1_label":           _fuel_label(customer.get("fuel_name", "")),
@@ -222,8 +223,16 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "max_electrical_load_dry":   customer.get("max_electrical_load_dry") or customer.get("max_electrical_load") or "",
         # Fuel-type flags drive {%p if is_oil %} / {%p if is_gas %} blocks
         # in the scope-of-supply section of the template.
-        "is_oil":                bool(customer.get("is_oil")),
-        "is_gas":                not bool(customer.get("is_oil")),
+        # Mutually-exclusive burner-type flags: exactly one of is_oil/is_gas/is_dual is true.
+        "is_dual":               bool(customer.get("is_dual")),
+        "is_oil":                bool(customer.get("is_oil")) and not bool(customer.get("is_dual")),
+        "is_gas":                not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")),
+        # Label used in 'On the main ___ pipeline:' heading. Dual fuel keeps 'oil'
+        # since the oil-line components (flow meter, manual ball valve, etc.) still apply.
+        "fuel_line_label":       (
+            "gas" if (not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")))
+            else "oil"
+        ),
         # Control-mode flags drive {%p if is_manual %} / {%p if is_automatic %}
         # for temperature-control and control-panel scope sections.
         "is_manual":             customer.get("control_mode") == "manual",

@@ -544,6 +544,8 @@ class QuoteRequest(BaseModel):
     burner_capacity_range: Optional[str] = ""
     pumping_unit: Optional[str] = ""
     hood_movement: Optional[str] = ""
+    hood_type: Optional[str] = "up_down"   # 'swivel' or 'up_down'
+    pilot_gas_type: Optional[str] = "LPG"  # 'LPG' or 'NG'
     ignition_method: Optional[str] = ""
     # Tundish dual-fuel fields
     num_burners: Optional[str] = ""
@@ -552,6 +554,7 @@ class QuoteRequest(BaseModel):
     max_fuel_consumption1: Optional[str] = ""
     max_fuel_consumption2: Optional[str] = ""
     is_oil: Optional[bool] = False   # True for oil fuels — drives scope-of-supply rendering
+    is_dual: Optional[bool] = False  # True for dual-fuel (gas + oil)
     control_mode: Optional[str] = "automatic"  # "manual" or "automatic" — drives scope text
     bom_items: Optional[List[dict]] = []   # [{item, make}, ...] for the MAKE LIST table
     # Items & commercial
@@ -1725,6 +1728,7 @@ async def generate_quote(req: QuoteRequest):
                 "burner_capacity_range": req.burner_capacity_range,
                 "pumping_unit":        req.pumping_unit,
                 "hood_movement":       req.hood_movement,
+                "hood_type":           req.hood_type or "up_down",
                 "ignition_method":     req.ignition_method,
                 "num_burners":         req.num_burners,
                 "fuel2_cv":            req.fuel2_cv,
@@ -1732,6 +1736,7 @@ async def generate_quote(req: QuoteRequest):
                 "max_fuel_consumption1": req.max_fuel_consumption1,
                 "max_fuel_consumption2": req.max_fuel_consumption2,
                 "is_oil":              bool(req.is_oil),
+                "is_dual":             bool(req.is_dual),
                 "control_mode":        req.control_mode or "automatic",
                 "bom_items":           req.bom_items or [],
             },
