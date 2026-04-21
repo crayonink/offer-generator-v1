@@ -113,8 +113,19 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
             f"(fuel_type={fuel_type}, section keyword='{section_keyword}')"
         )
 
+    # Build a display-friendly model name that matches the ENCON pricelist
+    # convention: oil stays as-is (ENCON 7A), gas becomes 'ENCON -G 7A',
+    # dual becomes 'ENCON DUAL- 7A'.
+    if category == "gas":
+        display_model = model.replace("ENCON ", "ENCON -G ", 1)
+    elif category == "dual":
+        display_model = model.replace("ENCON ", "ENCON DUAL- ", 1)
+    else:
+        display_model = model  # oil — no prefix change
+
     return {
         "model": model,
+        "display_model": display_model,
         "input_nm3hr": required_gas_flow_nm3hr,
         "equivalent_lph": round(equivalent_lph, 2),
         "fuel_density": density,
