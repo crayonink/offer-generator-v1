@@ -1769,6 +1769,18 @@ function buildTechData() {
 }
 
 /* ── Generate Quote ── */
+function togglePreview(url) {
+  const wrap  = document.getElementById("offer-preview-wrap");
+  const frame = document.getElementById("offer-preview-frame");
+  if (wrap.style.display === "none" || !wrap.style.display) {
+    frame.src = url;
+    wrap.style.display = "block";
+    wrap.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    wrap.style.display = "none";
+  }
+}
+
 async function generateQuote() {
   if (!lastCalc) return;
   const company = str("c-company");
@@ -1840,7 +1852,17 @@ async function generateQuote() {
         <tr><td style="color:#555">Customer</td>        <td>${name} — ${company}</td></tr>
         <tr><td style="color:#555"><b>Grand Total</b></td><td><b>₹ ${fmt(displayedTotal,0)}</b></td></tr>
       </table>
-      <a class="dl-btn" href="${API}${data.download_url}" download>Download Word Quote</a>
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="dl-btn" href="${API}${data.download_url}" download>Download Word Quote</a>
+        <button class="dl-btn" style="background:#334155;" onclick="togglePreview('${API}${data.preview_url}')">Preview Offer</button>
+      </div>
+      <div id="offer-preview-wrap" style="display:none; margin-top:16px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:#fff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 14px; background:#f1f5f9; border-bottom:1px solid var(--border);">
+          <b style="font-size:0.85rem; color:var(--navy);">Offer Preview</b>
+          <button onclick="document.getElementById('offer-preview-wrap').style.display='none';" style="background:none; border:none; cursor:pointer; color:#64748b; font-size:1.1rem;">&times;</button>
+        </div>
+        <iframe id="offer-preview-frame" style="width:100%; height:70vh; border:0;"></iframe>
+      </div>
     `;
     document.getElementById("tab-4").classList.add("done");
   } catch(e) {

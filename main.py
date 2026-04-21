@@ -1779,6 +1779,7 @@ async def generate_quote(req: QuoteRequest):
             "success": True,
             "quote_no": quote_data["quote_no"],
             "download_url": f"/api/download-quote/{filename}",
+            "preview_url":  f"/api/preview-quote/{filename}",
             "summary": {
                 "subtotal": quote_data["subtotal"],
                 "total":    quote_data["grand_total"],
@@ -3231,6 +3232,29 @@ def download_quote(filename: str):
         return {"error": "File not found"}
     return FileResponse(path=file_path, filename=filename,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+
+@app.get("/api/preview-quote/{filename}")
+def preview_quote(filename: str):
+    """Render a generated offer .docx as HTML so it can be shown in the browser."""
+    import mammoth
+    file_path = os.path.join(QUOTES_FOLDER, filename)
+    if not os.path.exists(file_path):
+        return HTMLResponse("<p style='color:red'>File not found</p>", status_code=404)
+    with open(file_path, "rb") as f:
+        result = mammoth.convert_to_html(f)
+    html = f"""<!doctype html><html><head><meta charset="utf-8">
+<style>
+  body{{font-family:'Calibri','Segoe UI',Arial,sans-serif;font-size:11pt;color:#222;max-width:900px;margin:24px auto;padding:0 28px;line-height:1.4;}}
+  h1,h2,h3,h4{{color:#1a3a5c;margin:14px 0 6px;}}
+  table{{border-collapse:collapse;margin:10px 0;width:100%;}}
+  table td,table th{{border:1px solid #bbb;padding:4px 8px;font-size:10.5pt;vertical-align:top;}}
+  table th{{background:#eef2f7;}}
+  p{{margin:4px 0;}}
+  img{{max-width:100%;}}
+  a{{color:#1d4ed8;}}
+</style></head><body>{result.value}</body></html>"""
+    return HTMLResponse(html)
 
 
 @app.post("/upload-excel/")
