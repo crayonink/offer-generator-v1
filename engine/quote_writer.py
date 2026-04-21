@@ -340,6 +340,15 @@ def generate_quote_docx(quote_data: dict, output_path: str):
     # Post-process: append BOM items (item, make) to the MAKE LIST table.
     _append_make_list(output_path, context.get("make_list", []))
 
+    # Post-process: drop the unused column in the Scope of Supply (Annexure I)
+    # table — VLPH-only quotes should not show the Horizontal column and vice
+    # versa. total_vertical and total_horizontal were computed above.
+    _prune_scope_columns(
+        output_path,
+        has_vertical=(total_vertical > 0),
+        has_horizontal=(total_horizontal > 0),
+    )
+
 
 def _append_make_list(docx_path: str, items: list):
     """Find the table whose first row is ['ITEM', 'MAKE'] and append one
@@ -471,5 +480,47 @@ def _strip_empty_tech_rows(docx_path: str):
         for row in rows_to_remove:
             row._element.getparent().remove(row._element)
         break
+
+    doc.save(docx_path)
+
+
+def _prune_scope_columns(docx_path: str, has_vertical: bool, has_horizontal: bool):
+    """Annexure I scope-of-supply has two columns: Vertical and Horizontal.
+    If the quote is for only one of them, drop the other column so the
+    offer shows just the relevant scope."""
+    if has_vertical and has_horizontal:
+        return  # both needed, nothing to do
+    if not has_vertical and not has_horizontal:
+        return  # nothing to base decision on
+
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    doc = Document(docx_path)
+
+    # Find the scope table by its header row text.
+    target = None
+    for t in doc.tables:
+        if len(t.rows) < 2 or len(t.rows[0].cells) != 2:
+            continue
+        header = " | ".join(c.text.strip() for c in t.rows[0].cells)
+        if "Vertical Ladle" in header and "Horizontal Ladle" in header:
+            target = t
+            break
+    if target is None:
+        return
+
+    col_to_drop = 1 if has_vertical else 0   # 1 = horizontal, 0 = vertical
+    for row in list(target.rows):
+        tcs = row._element.findall(qn('w:tc'))
+        if col_to_drop < len(tcs):
+            tcs[col_to_drop].getparent().remove(tcs[col_to_drop])
+
+    # Also shrink the grid so the remaining column stretches across.
+    tblgrid = target._element.find(qn('w:tblGrid'))
+    if tblgrid is not None:
+        grid_cols = tblgrid.findall(qn('w:gridCol'))
+        if col_to_drop < len(grid_cols):
+            tblgrid.remove(grid_cols[col_to_drop])
 
     doc.save(docx_path)
