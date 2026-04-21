@@ -100,6 +100,19 @@ def _fuel_label2(fuel_name: str) -> str:
     return ""
 
 
+def _rewrite_pilot_name(item: str, pilot_gas: str) -> str:
+    """The BOM carries one fixed pilot-burner model. Rewrite its name so the
+    MAKE LIST reflects the fuel the user actually picked for the pilot."""
+    if not item:
+        return item
+    s = item.strip()
+    upper = s.upper()
+    # Only rewrite rows that are clearly the pilot burner model.
+    if "ENCON-PB" in upper or "ENCON PB" in upper or "PILOT BURNER" in upper:
+        return f"ENCON-PB {pilot_gas} 10 KW" if "10" in upper else f"ENCON-PB {pilot_gas} 100 KW"
+    return s
+
+
 def _build_equipment_name(customer, quote_data):
     """Derive equipment name from items product_type or customer fields."""
     # Check items for product type
@@ -234,14 +247,54 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             "gas" if (not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")))
             else "oil"
         ),
+        # Full PIPELINE sentence tail — 'gas pipeline from gas train to burner' for
+        # gas-only, otherwise 'LDO pipeline from LDO pumping unit to burner'.
+        "fuel_delivery_text":    (
+            "gas pipeline from gas train to burner"
+            if (not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")))
+            else "LDO pipeline from LDO pumping unit to burner"
+        ),
+        # ─── Scope of Supply (Annexure I) parameters ─────────────────────────
+        # Fuel tag next to 'Burner with Burner block & mounting Plate –'
+        "fuel_short": (
+            "NG"     if (not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")))
+            else "LDO/NG" if bool(customer.get("is_dual"))
+            else "LDO"
+        ),
+        # Burner product name shown in row 3 of the scope table
+        "burner_scope_name": (
+            "ENCON Dual-Fuel Burner" if bool(customer.get("is_dual"))
+            else "ENCON Gas Burner"  if not bool(customer.get("is_oil"))
+            else "ENCON IIP Film Burner"
+        ),
+        # Row 5 — fuel delivery unit
+        "pumping_scope_text": (
+            "Gas train with pressure regulating and control valves"
+            if (not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")))
+            else "LDO pumping unit with micro valve"
+        ),
+        # Row 6 (vertical column) — hood mechanism
+        "hood_scope_vertical": (
+            "Swiveling mechanism through bearing with mechanical locking"
+            if (customer.get("hood_type") == "swivel")
+            else "Hydraulic Cylinder for lifting and Lowering of the system"
+        ),
         # Control-mode flags drive {%p if is_manual %} / {%p if is_automatic %}
         # for temperature-control and control-panel scope sections.
         "is_manual":             customer.get("control_mode") == "manual",
         "is_automatic":          customer.get("control_mode") != "manual",
         # BOM items list for the MAKE LIST table on the last page.
         # Each entry: {"item": "ITEM NAME", "make": "VENDOR" or "ENCON"}.
+        # Pilot-burner rows are rewritten to match the selected pilot fuel
+        # (LPG vs NG) — the BOM itself always carries a single fixed entry.
         "make_list":             [
-            {"item": x.get("item", ""), "make": x.get("make") or "ENCON"}
+            {
+                "item": _rewrite_pilot_name(
+                    x.get("item", ""),
+                    (customer.get("pilot_gas_type") or "LPG").upper()
+                ),
+                "make": x.get("make") or "ENCON",
+            }
             for x in (customer.get("bom_items") or [])
             if x.get("item")
         ],
