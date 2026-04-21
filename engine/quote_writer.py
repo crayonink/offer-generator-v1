@@ -100,17 +100,24 @@ def _fuel_label2(fuel_name: str) -> str:
     return ""
 
 
+import re as _re_pilot
+
+
 def _rewrite_pilot_name(item: str, pilot_gas: str) -> str:
     """The BOM carries one fixed pilot-burner model. Rewrite its name so the
-    MAKE LIST reflects the fuel the user actually picked for the pilot."""
+    MAKE LIST reflects the fuel the user actually picked for the pilot.
+    Only rewrite rows whose model starts with 'ENCON-PB' / 'ENCON PB' — do NOT
+    match items like 'BALL VALVE (Pilot Burner)' that merely mention the pilot."""
     if not item:
         return item
     s = item.strip()
     upper = s.upper()
-    # Only rewrite rows that are clearly the pilot burner model.
-    if "ENCON-PB" in upper or "ENCON PB" in upper or "PILOT BURNER" in upper:
-        return f"ENCON-PB {pilot_gas} 10 KW" if "10" in upper else f"ENCON-PB {pilot_gas} 100 KW"
-    return s
+    if not (upper.startswith("ENCON-PB") or upper.startswith("ENCON PB")):
+        return s
+    # Detect KW rating by a number directly followed by KW (word-boundary).
+    m = _re_pilot.search(r"\b(\d+)\s*KW\b", upper)
+    rating = f"{m.group(1)} KW" if m else "100 KW"
+    return f"ENCON-PB {pilot_gas} {rating}"
 
 
 def _build_equipment_name(customer, quote_data):
