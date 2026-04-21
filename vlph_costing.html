@@ -1037,7 +1037,10 @@
         <tr><td class="tech-lbl">Pumping Unit</td>
             <td><input id="td-pumping_unit" type="text"/></td></tr>
         <tr><td class="tech-lbl">Movement of Hood</td>
-            <td><input id="td-hood_movement" type="text" value="Vertical Swiveling through bearing mechanism."/></td></tr>
+            <td><select id="td-hood_movement">
+              <option value="Vertical Swivelling through bearing mechanism.">Swivelling type</option>
+              <option value="Up and Down movement through hydraulic mechanism.">Up and Down</option>
+            </select></td></tr>
         <tr><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
             <td><input id="td-ignition" type="text" value="Automatic Through LPG Fired Pilot Burner"/></td></tr>
         <tr><td class="tech-lbl">Motor recommended for Power Pack</td>
@@ -1652,17 +1655,20 @@ function fillTechDataTable() {
   const eq = lastCalc.equipment    || {};
   const f1Name = (c.fuel1_name || "Fuel");
   const isOil  = !!(c.fuel_density);
+  const isDualCheck = !!c.is_dual;
+  // Prefix: for dual fuel use "Fuel 1:" / "Fuel 2:" so reader can match rates to fuels.
+  const f1Prefix = isDualCheck ? "Fuel 1" : f1Name;
   // For oil fuels show ltr/hr (preferred), else kg/hr; for gas show Nm³/hr.
   let fuelConsumption;
   if (isOil) {
     const lph = c.equivalent_lph;
     if (lph !== undefined && lph !== null && lph > 0) {
-      fuelConsumption = `${(+lph).toFixed(2)} Lit/hr of ${f1Name}`;
+      fuelConsumption = `${f1Prefix}: ${(+lph).toFixed(2)} Lit/hr`;
     } else {
-      fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr of ${f1Name}`;
+      fuelConsumption = `${f1Prefix}: ${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr`;
     }
   } else {
-    fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
+    fuelConsumption = `${f1Prefix}: ${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr`;
   }
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
@@ -1673,16 +1679,16 @@ function fillTechDataTable() {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
     "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
     "td-heating_time":         `${c.time_taken_hr || ""} Hours`,
-    "td-fuel_name":            isDual ? `${f1Name} & ${f2Name}` : f1Name,
+    "td-fuel_name":            isDual ? `Fuel 1: ${f1Name} & Fuel 2: ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
-    "td-burner_capacity_range":isOil ? `${f1Name} – (15 -85) Litre/ hr.` : `${(c.extra_firing_rate_nm3hr||0).toFixed(0)} Nm³/hr`,
+    "td-burner_capacity_range":isOil ? `${f1Prefix} – (15 -85) Litre/ hr.` : `${f1Prefix}: ${(c.extra_firing_rate_nm3hr||0).toFixed(0)} Nm³/hr`,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
     "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
     "td-pumping_unit":         isOil ? `Flow Rate: ${(c.equivalent_lph||0).toFixed(0)} L/hr.` : "",
-    "td-hood_movement":        "Vertical Swiveling through bearing mechanism.",
+    // td-hood_movement is a user-selected dropdown — don't auto-fill
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
 
@@ -1707,19 +1713,25 @@ function fillTechDataTable() {
     const f2Rate = c.fuel2_extra_firing_rate_nm3hr || 0;
     const f2lph = c.fuel2_equivalent_lph || 0;
     if (f2lph > 0) {
-      defaults["td-fuel2_consumption"] = `${f2lph.toFixed(2)} Lit/hr of ${f2Name}`;
+      defaults["td-fuel2_consumption"] = `Fuel 2: ${f2lph.toFixed(2)} Lit/hr`;
     } else {
-      defaults["td-fuel2_consumption"] = `${f2Rate.toFixed(2)} Nm³/hr of ${f2Name}`;
+      defaults["td-fuel2_consumption"] = `Fuel 2: ${f2Rate.toFixed(2)} Nm³/hr`;
     }
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
   }
 
-  // Only overwrite inputs the user hasn't already edited (value empty)
+  // Fields that must always reflect the latest calc (never stale).
+  // User edits to these get overwritten each time buildTechData() runs.
+  const AUTO_FIELDS = new Set([
+    "td-fuel_name", "td-fuel_cv", "td-fuel_consumption",
+    "td-burner_capacity_range", "td-fuel2_cv", "td-fuel2_consumption",
+  ]);
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
-    if (el && !el.value) el.value = val;
+    if (!el) return;
+    if (AUTO_FIELDS.has(id) || !el.value) el.value = val;
   });
   // Auto-compute electrical load once we have blower + motor HP
   recalcElectricalLoad();
