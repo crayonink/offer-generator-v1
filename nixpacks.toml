@@ -1,0 +1,4 @@
+# Tell Railway's nixpacks builder to add LibreOffice so the /api/pdf-quote
+# endpoint can convert generated .docx offers to PDF with high fidelity.
+[phases.setup]
+aptPkgs = ["libreoffice", "fonts-dejavu", "fonts-liberation"]

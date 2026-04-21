@@ -1786,6 +1786,7 @@ async def generate_quote(req: QuoteRequest):
             "quote_no": quote_data["quote_no"],
             "download_url": f"/api/download-quote/{filename}",
             "preview_url":  f"/api/preview-quote/{filename}",
+            "pdf_url":      f"/api/pdf-quote/{filename}",
             "summary": {
                 "subtotal": quote_data["subtotal"],
                 "total":    quote_data["grand_total"],
@@ -3238,6 +3239,56 @@ def download_quote(filename: str):
         return {"error": "File not found"}
     return FileResponse(path=file_path, filename=filename,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+
+def _soffice_binary():
+    """Locate LibreOffice binary across Linux / macOS / Windows."""
+    import shutil as _sh
+    for cand in ("soffice", "libreoffice",
+                 "/usr/bin/soffice", "/usr/bin/libreoffice",
+                 r"C:\Program Files\LibreOffice\program\soffice.exe",
+                 r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"):
+        if os.path.exists(cand) or _sh.which(cand):
+            return _sh.which(cand) or cand
+    return None
+
+
+@app.get("/api/pdf-quote/{filename}")
+def pdf_quote(filename: str):
+    """Convert a generated .docx offer to PDF using LibreOffice headless."""
+    import subprocess, tempfile
+    docx_path = os.path.join(QUOTES_FOLDER, filename)
+    if not os.path.exists(docx_path):
+        return {"error": "File not found"}
+
+    soffice = _soffice_binary()
+    if not soffice:
+        return {"error": "LibreOffice not installed on the server. Cannot convert to PDF."}
+
+    with tempfile.TemporaryDirectory() as out_dir:
+        try:
+            subprocess.run(
+                [soffice, "--headless", "--convert-to", "pdf",
+                 "--outdir", out_dir, docx_path],
+                check=True, capture_output=True, timeout=120,
+            )
+        except subprocess.CalledProcessError as e:
+            return {"error": f"LibreOffice conversion failed: {e.stderr.decode(errors='ignore')[:400]}"}
+        except subprocess.TimeoutExpired:
+            return {"error": "Conversion timed out after 120s"}
+
+        base = os.path.splitext(filename)[0]
+        pdf_src = os.path.join(out_dir, f"{base}.pdf")
+        if not os.path.exists(pdf_src):
+            return {"error": "LibreOffice produced no PDF"}
+
+        # Copy the PDF into QUOTES_FOLDER so it can be served again without re-conversion
+        pdf_dst = os.path.join(QUOTES_FOLDER, f"{base}.pdf")
+        import shutil
+        shutil.copyfile(pdf_src, pdf_dst)
+
+    return FileResponse(path=pdf_dst, filename=f"{base}.pdf",
+        media_type="application/pdf")
 
 
 @app.get("/api/preview-quote/{filename}")
