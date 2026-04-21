@@ -1729,6 +1729,7 @@ async def generate_quote(req: QuoteRequest):
                 "pumping_unit":        req.pumping_unit,
                 "hood_movement":       req.hood_movement,
                 "hood_type":           req.hood_type or "up_down",
+                "pilot_gas_type":      req.pilot_gas_type or "LPG",
                 "ignition_method":     req.ignition_method,
                 "num_burners":         req.num_burners,
                 "fuel2_cv":            req.fuel2_cv,
