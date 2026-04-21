@@ -1710,7 +1710,10 @@ function buildTechData() {
   const ladleTons = parseFloat(document.getElementById("ladle_tons")?.value)
                  || parseFloat(document.getElementById("direct_ladle_tons")?.value)
                  || 0;
-  const isOil = !!(lastCalc && lastCalc.calculations && lastCalc.calculations.fuel_density);
+  // Detect oil by fuel type, NOT by presence of fuel_density
+  // (backend returns fuel_density=0.85 for gas too).
+  const _c = (lastCalc && lastCalc.calculations) || {};
+  const isOil = OIL_FUEL_SET.has((_c.fuel1_type || "").toLowerCase());
   return {
     ladle_tons:           ladleTons,
     ladle_dim:            get("td-ladle_dim"),
