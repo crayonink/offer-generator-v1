@@ -176,6 +176,32 @@ def _get_cheapest_ball_valve(nb: int) -> float:
     return float(row[0]) if row else 0
 
 
+def _get_cheapest_butterfly_valve(nb: int) -> float:
+    """Get cheapest L&T butterfly valve (lever preferred) price for a given NB
+    from lt_butterfly_valve_master. Falls back to gear type if lever is not
+    available at that NB (levers only go up to 300 NB)."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT price FROM lt_butterfly_valve_master WHERE nb = ? ORDER BY price ASC LIMIT 1",
+        (nb,),
+    ).fetchone()
+    conn.close()
+    return float(row[0]) if row else 0
+
+
+def _get_cheapest_shutoff_valve(nb: int) -> float:
+    """Cheapest pneumatic shut-off valve price for a given NB."""
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT price FROM component_price_master WHERE item LIKE ? ORDER BY price ASC LIMIT 1",
+        (f'SHUT OFF VALVE {nb} NB%',),
+    ).fetchone()
+    conn.close()
+    return float(row[0]) if row else 0
+
+
 def _cog_line_rows(media: str, equipment: dict,
                    control_mode: str, auto_control_type: str,
                    pressure_gauge_vendor: str,
@@ -277,8 +303,8 @@ def _bfg_line_rows(media: str, equipment: dict,
     Blast Furnace Gas BOM — discrete components instead of a packaged gas train.
     BFG runs at low pressure and with variable composition, so a pre-assembled
     IAPL/MADAS gas train isn't used. Engineer builds the main line from:
-      - Ball valve (isolation)
-      - Solenoid valve × 2 (double-block safety)
+      - Butterfly valve (isolation — BFG needs full-bore, low-dP)
+      - Shut-off valve x 2 (double-block safety, replaces solenoid)
       - Pressure gauge with TNV
       - Pressure switch low
       - Rotary joint
@@ -297,14 +323,14 @@ def _bfg_line_rows(media: str, equipment: dict,
     pg_vendor = pressure_gauge_vendor.upper()
     pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
 
-    sv_price = _get_cheapest_solenoid_valve(gas_pipe_nb)
-    bv_price = _get_cheapest_ball_valve(gas_pipe_nb)
+    bfv_price = _get_cheapest_butterfly_valve(gas_pipe_nb)
+    so_price  = _get_cheapest_shutoff_valve(gas_pipe_nb)
 
     rows = [
-        _row(media, "BALL VALVE", f'{gas_pipe_nb} NB', 1,
-             unit_price_override=bv_price, make="L&T"),
-        _row(media, "SOLENOID VALVE", f'{gas_pipe_nb} NB', 2,
-             unit_price_override=sv_price, make="MADAS"),
+        _row(media, "BUTTERFLY VALVE", f'{gas_pipe_nb} NB', 1,
+             unit_price_override=bfv_price, make="L&T"),
+        _row(media, "SHUT OFF VALVE", f'{gas_pipe_nb} NB', 2,
+             unit_price_override=so_price, make="AIRA"),
         _row(media, "PRESSURE GAUGE WITH TNV", f'{gas_pipe_nb} NB', 1,
              unit_price_override=pg_price, make=pg_vendor),
         _row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"),
