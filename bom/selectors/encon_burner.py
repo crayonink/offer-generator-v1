@@ -53,12 +53,17 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     # Gas fuels: Nm3/hr × CV ÷ 10500 = kg/hr, then ÷ 0.85 = l/hr.
     category = _resolve_category(fuel_type)
     if category == "oil":
-        density = _get_fuel_density(fuel_type)
+        density = _get_fuel_density(fuel_type)           # kg/L
+        density_unit = "kg/ltr"
         equivalent_lph = required_gas_flow_nm3hr / density  # kg/hr → l/hr
     else:
+        # Actual gas density (kg/m3 = kg/Nm3 at STP) — used for display and mass-flow calcs.
+        density = _get_fuel_density(fuel_type)
+        density_unit = "kg/m³"
+        # Equivalent oil L/hr (display-only) still uses the reference 0.85 kg/L
+        # so the "equivalent_lph" figure remains comparable across fuels.
         equivalent_kghr = required_gas_flow_nm3hr * fuel_cv / 10500
-        density = 0.85  # standard density for gas-to-oil conversion
-        equivalent_lph = equivalent_kghr / density
+        equivalent_lph = equivalent_kghr / 0.85
 
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
@@ -129,6 +134,7 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         "input_nm3hr": required_gas_flow_nm3hr,
         "equivalent_lph": round(equivalent_lph, 2),
         "fuel_density": density,
+        "fuel_density_unit": density_unit,
         "price": price_row[0],
         "fuel_type": fuel_type,
         "burner_pressure_wg": burner_pressure_wg,

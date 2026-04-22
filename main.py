@@ -1222,6 +1222,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "extra_firing_rate_nm3hr":        round(ng_flow, 2),
                 "equivalent_lph":                 round(equip1["burner"].get("equivalent_lph", 0), 2),
                 "fuel_density":                   equip1["burner"].get("fuel_density", 0),
+                "fuel_density_unit":              equip1["burner"].get("fuel_density_unit", "kg/ltr"),
                 "final_firing_rate_mw":           round(br1.final_firing_rate_mw, 2) if br1 else round(ng_flow * f1_cv / (860 * 1000), 2),
                 "air_qty_nm3hr":                  round(air_flow, 2),
                 "cfm":                            round(cfm, 2),
@@ -1272,6 +1273,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(ng_flow2, 2)
             resp["calculations"]["fuel2_equivalent_lph"] = round(equip2["burner"].get("equivalent_lph", 0), 2) if equip2 else 0
             resp["calculations"]["fuel2_fuel_density"] = equip2["burner"].get("fuel_density", 0) if equip2 else 0
+            resp["calculations"]["fuel2_fuel_density_unit"] = equip2["burner"].get("fuel_density_unit", "kg/ltr") if equip2 else "kg/ltr"
             resp["pipes"]["fuel2_label"] = FUEL_NAMES.get(req.fuel2_type, "Fuel 2")
             resp["pipes"]["fuel2_flow"] = round(ng_flow2, 2)
             f2_is_oil = req.fuel2_type in OIL_FUELS
@@ -1606,6 +1608,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "extra_firing_rate_nm3hr":    round(ng_flow, 2),
                 "equivalent_lph":             round(equip1["burner"].get("equivalent_lph", 0), 2),
                 "fuel_density":               equip1["burner"].get("fuel_density", 0),
+                "fuel_density_unit":          equip1["burner"].get("fuel_density_unit", "kg/ltr"),
                 "final_firing_rate_mw":       round(br.final_firing_rate_mw, 2)       if br else round(ng_flow * f1_cv / (860 * 1000), 2),
                 "air_qty_nm3hr":              round(air_flow, 2),
                 "cfm": round(cfm, 2),
@@ -3185,7 +3188,7 @@ def export_excel(req: ExcelExportRequest):
         ("Calc. Firing Rate",       f"{calc.get('calculated_firing_rate_nm3hr','')} {rate_unit}"),
         ("Design Firing Rate",      f"{calc.get('extra_firing_rate_nm3hr','')} {rate_unit}"),
         ("Equiv. Firing Rate (LPH)", f"{calc.get('equivalent_lph','')} ltr/hr"),
-        ("Fuel Density",            f"{calc.get('fuel_density','')} kg/ltr"),
+        ("Fuel Density",            f"{calc.get('fuel_density','')} {calc.get('fuel_density_unit','kg/ltr')}"),
     ]
     for i, (label, val) in enumerate(params):
         bg = GREY if i % 2 == 0 else WHITE

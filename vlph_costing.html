@@ -860,7 +860,7 @@
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r-cfr">—</td>      <td class="unit" id="r-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r-efr">—</td>      <td class="unit" id="r-efr-unit">Nm³/hr</td></tr>
             <tr id="r-kghr-row" style="display:none"><td class="lbl">Equiv. Firing Rate</td> <td class="val" id="r-kghr">—</td> <td class="unit">kg/hr</td></tr>
-            <tr id="r-density-row" style="display:none"><td class="lbl">Fuel Density</td> <td class="val" id="r-density">—</td> <td class="unit">kg/ltr</td></tr>
+            <tr id="r-density-row" style="display:none"><td class="lbl">Fuel Density</td> <td class="val" id="r-density">—</td> <td class="unit" id="r-density-unit">kg/ltr</td></tr>
             <tr id="r-lph-row" style="display:none"><td class="lbl">Firing Rate (LPH)</td> <td class="val" id="r-lph">—</td> <td class="unit">ltr/hr</td></tr>
             <tr><td class="lbl">Firing Rate</td>          <td class="val" id="r-mw">—</td>       <td class="unit">MW</td></tr>
             <tr><td class="lbl">CFM</td>                  <td class="val" id="r-cfm">—</td>      <td class="unit">CFM</td></tr>
@@ -884,7 +884,7 @@
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r2-cfr">—</td>      <td class="unit" id="r2-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r2-efr">—</td>      <td class="unit" id="r2-efr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">Equiv. Firing Rate</td>   <td class="val" id="r2-kghr">—</td>     <td class="unit">kg/hr</td></tr>
-            <tr><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit">kg/ltr</td></tr>
+            <tr><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit" id="r2-density-unit">kg/ltr</td></tr>
             <tr><td class="lbl">Firing Rate (LPH)</td>    <td class="val" id="r2-lph">—</td>      <td class="unit">ltr/hr</td></tr>
           </table>
         </div>
@@ -1414,6 +1414,7 @@ function renderResults(d) {
     set("r-kghr", fmt(kghr, 2));
   }
   set("r-density", c.fuel_density);
+  set("r-density-unit", c.fuel_density_unit || "kg/ltr");
   set("r-lph",     fmt(c.equivalent_lph, 2));
   // Gas train is not used for oil fuels, COG, Mix Gas, or BFG — each of these
   // is built from discrete components, not a packaged IAPL/MADAS gas train.
@@ -1450,6 +1451,7 @@ function renderResults(d) {
       set("r2-kghr", fmt(kghr2, 2));
     }
     set("r2-density", c.fuel2_fuel_density);
+    set("r2-density-unit", c.fuel2_fuel_density_unit || "kg/ltr");
     set("r2-lph",     fmt(c.fuel2_equivalent_lph, 2));
   } else {
     fuel2CalcSection.style.display = "none";
