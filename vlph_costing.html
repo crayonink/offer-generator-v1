@@ -1079,10 +1079,20 @@ async function refreshLadleMapping() {
     setVal("ceramic_rolls",          data.ceramic_rolls);
   } catch (e) { /* leave zeros */ }
 }
+// Debounce so mid-typing keystrokes (e.g. "15" before "150") don't race the
+// final fetch — out-of-order responses were overwriting correct values.
+let _ladleRefreshTimer = null;
+function scheduleLadleMappingRefresh() {
+  clearTimeout(_ladleRefreshTimer);
+  _ladleRefreshTimer = setTimeout(refreshLadleMapping, 350);
+}
 window.addEventListener("DOMContentLoaded", () => {
   ["direct_ladle_tons", "ladle_tons"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener("input", refreshLadleMapping);
+    if (el) {
+      el.addEventListener("input",  scheduleLadleMappingRefresh);
+      el.addEventListener("change", refreshLadleMapping); // immediate on blur/commit
+    }
   });
   setTimeout(refreshLadleMapping, 300);
 });
