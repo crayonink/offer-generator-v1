@@ -1131,6 +1131,14 @@ def vlph_calculate(req: VLPHCalcRequest):
                 auto_control_type=req.auto_control_type,
             )
 
+        # Auto-fill fabrication (ms_structure) and pipeline weight from the
+        # fabrication_ladle_mapping table (nearest ladle-capacity match for a
+        # vertical preheater). User-supplied overrides still win.
+        from bom.vlph_builder import lookup_ladle_fab_pipeline
+        _mapped = lookup_ladle_fab_pipeline(req.ladle_tons, "vertical")
+        _pipeline_kg = _mapped.get("pipeline_kg") if _mapped else req.pipeline_weight_kg
+        _ms_override = req.ms_structure_kg_override or (_mapped.get("fabrication_kg", 0) if _mapped else 0)
+
         # Air is CV-independent, so use fuel1 for air sizing
         if req.control_mode == "manual":
             bom_df = build_vlph_manual_df(
@@ -1139,7 +1147,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 fuel1_type=req.fuel1_type,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
-                pipeline_weight_kg=req.pipeline_weight_kg,
+                pipeline_weight_kg=_pipeline_kg,
                 include_pilot=req.manual_pilot_burner == "yes",
                 pilot_line_fuel=req.pilot_line_fuel,
             )
@@ -1158,10 +1166,10 @@ def vlph_calculate(req: VLPHCalcRequest):
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
                 pilot_line_fuel=req.pilot_line_fuel,
-                pipeline_weight_kg=req.pipeline_weight_kg,
+                pipeline_weight_kg=_pipeline_kg,
                 purging_line=req.purging_line,
                 num_burners=n_burners,
-                ms_structure_kg_override=req.ms_structure_kg_override,
+                ms_structure_kg_override=_ms_override,
                 ceramic_rolls_override=req.ceramic_rolls_override,
             )
 
@@ -1517,13 +1525,20 @@ def hlph_calculate(req: VLPHCalcRequest):
                 control_mode=req.control_mode, auto_control_type=req.auto_control_type,
             )
 
+        # Auto-fill fabrication + pipeline weight from fabrication_ladle_mapping
+        # (nearest horizontal row). User override on ms_structure still wins.
+        from bom.vlph_builder import lookup_ladle_fab_pipeline
+        _mapped_h = lookup_ladle_fab_pipeline(req.ladle_tons, "horizontal")
+        _pipeline_kg_h = _mapped_h.get("pipeline_kg") if _mapped_h else req.pipeline_weight_kg
+        _ms_override_h = req.ms_structure_kg_override or (_mapped_h.get("fabrication_kg", 0) if _mapped_h else 0)
+
         if req.control_mode == "manual":
             bom_df = build_hlph_manual_df(
                 equipment=equip1, ladle_tons=req.ladle_tons,
                 fuel1_type=req.fuel1_type,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
-                pipeline_weight_kg=req.pipeline_weight_kg,
+                pipeline_weight_kg=_pipeline_kg_h,
                 include_pilot=req.manual_pilot_burner == "yes",
                 pilot_line_fuel=req.pilot_line_fuel,
             )
@@ -1538,8 +1553,9 @@ def hlph_calculate(req: VLPHCalcRequest):
                 shutoff_valve_vendor=req.shutoff_valve_vendor,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner, pilot_line_fuel=req.pilot_line_fuel,
-                pipeline_weight_kg=req.pipeline_weight_kg,
+                pipeline_weight_kg=_pipeline_kg_h,
                 purging_line=req.purging_line,
+                ms_structure_kg_override=_ms_override_h,
             )
 
         detail = bom_df[bom_df["MEDIA"] != ""].copy()

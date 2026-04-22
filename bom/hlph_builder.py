@@ -38,6 +38,7 @@ def build_hlph_df(
     pilot_line_fuel: str = "lpg",
     pipeline_weight_kg: float = 1000.0,
     purging_line: str = "no",
+    ms_structure_kg_override: float = 0.0,
 ) -> pd.DataFrame:
     """
     Builds HLPH BOM DataFrame (automatic mode).
@@ -61,10 +62,11 @@ def build_hlph_df(
     is_pid = control_mode == "automatic" and auto_control_type == "pid"
 
     # ── STRUCTURE & SYSTEM ────────────────────────────────────────────────
+    ms_kg = ms_structure_kg_override or params["ms_structure_kg"]
     rows += [
         _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
-             f'{params["ms_structure_kg"]} kg',
-             1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
+             f'{ms_kg} kg',
+             1, unit_price_override=ms_kg * get_price("FABRICATION RATE")),
         _row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),

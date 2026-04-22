@@ -190,6 +190,31 @@ def _get_cheapest_butterfly_valve(nb: int) -> float:
     return float(row[0]) if row else 0
 
 
+def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str) -> dict:
+    """Look up fabrication and pipeline weight for a given ladle capacity and
+    preheater type (vertical/horizontal) from the fabrication_ladle_mapping
+    table. Picks the row whose capacity is closest to the requested tons.
+    Returns {'fabrication_kg': float, 'pipeline_kg': float} or {} if no rows.
+    The 10%-added values are already stored in the table."""
+    import sqlite3
+    if not ladle_tons or preheater_type not in ('vertical', 'horizontal'):
+        return {}
+    conn = sqlite3.connect(DB_PATH)
+    rows = conn.execute(
+        "SELECT ladle_capacity_ton, fabrication_kg, pipeline_kg "
+        "FROM fabrication_ladle_mapping WHERE preheater_type = ?",
+        (preheater_type,),
+    ).fetchall()
+    conn.close()
+    if not rows:
+        return {}
+    best = min(rows, key=lambda r: abs(float(r[0]) - float(ladle_tons)))
+    return {
+        "fabrication_kg": round(float(best[1])),
+        "pipeline_kg":    round(float(best[2])),
+    }
+
+
 def _get_cheapest_shutoff_valve(nb: int) -> float:
     """Cheapest pneumatic shut-off valve price for a given NB."""
     import sqlite3
