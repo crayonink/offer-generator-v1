@@ -332,12 +332,21 @@ def _bfg_line_rows(media: str, equipment: dict,
       - Shut-off valve x 2 (double-block safety, replaces solenoid)
       - Pressure gauge with TNV
       - Pressure switch low
+      - Orifice plate + DPT (mass-flow measurement — PLC mode only)
+      - Pneumatic control valve (mass-flow regulation — always)
       - Rotary joint
       - AGR (only on PLC+AGR / PID / manual control)
     """
+    from calculations.pipes import STANDARD_PIPE_NB
     from bom.selectors.rotary_joint_selector import select_rotary_joint
 
     gas_pipe_nb = equipment["pipe"].ng_pipe_nb
+
+    # Control valve is one pipe size smaller than the gas pipe NB
+    try:
+        cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(gas_pipe_nb) - 1)]
+    except ValueError:
+        cv_nb = gas_pipe_nb
 
     # Rotary joint sized to gas pipe NB
     try:
@@ -350,6 +359,9 @@ def _bfg_line_rows(media: str, equipment: dict,
 
     bfv_price = _get_cheapest_butterfly_valve(gas_pipe_nb)
     so_price  = _get_cheapest_shutoff_valve(gas_pipe_nb)
+    _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
+
+    is_plc = control_mode == "automatic" and auto_control_type == "plc"
 
     rows = [
         _row(media, "BUTTERFLY VALVE", f'{gas_pipe_nb} NB', 1,
@@ -359,9 +371,24 @@ def _bfg_line_rows(media: str, equipment: dict,
         _row(media, "PRESSURE GAUGE WITH TNV", f'{gas_pipe_nb} NB', 1,
              unit_price_override=pg_price, make=pg_vendor),
         _row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"),
-        _row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
-             unit_price_override=rj["price"], make="THIRD PARTY"),
     ]
+
+    # Mass flow control elements — orifice + DPT only in PLC (flow-measurement
+    # needed only when the PLC regulates the valve directly, no AGR).
+    if is_plc:
+        rows += [
+            _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
+                 unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
+                 make="ENGINEERING SPECIALITY"),
+            _row(media, "DPT", "", 1,
+                 unit_price_override=_get_price_fuzzy("DPT (COG)"),
+                 make="HONEYWELL"),
+        ]
+    rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+                     unit_price_override=pcv_price, make="DEMBLA"))
+
+    rows.append(_row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
+                     unit_price_override=rj["price"], make="THIRD PARTY"))
 
     if not base_only:
         needs_agr = (
