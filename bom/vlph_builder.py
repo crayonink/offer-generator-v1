@@ -627,7 +627,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
                              unit_price_override=_get_price_fuzzy("MOTORIZED CONTROL VALVE 25 NB (Globe)"),
                              make="CAIR"),
                         _row(media, "SOLENOID VALVE", f'{oil_nb} NB', 1,
-                             unit_price_override=_get_cheapest_solenoid_valve(oil_nb), make="MADAS"),
+                             unit_price_override=_get_cheapest_solenoid_valve(oil_nb), make="ENCON"),
                         _row(media, "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
                     ]
             elif auto_control_type in ("plc_agr", "pid"):
