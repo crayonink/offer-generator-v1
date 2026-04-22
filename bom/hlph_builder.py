@@ -227,7 +227,7 @@ def build_hlph_df(
     hpu = equipment.get("hpu")
     if hpu:
         rows.append(_row(
-            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            "ENCON ITEMS", hpu.get("label", "Heating and Pumping Unit (HPU)"),
             f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
             1, unit_price_override=hpu["price"],
         ))
@@ -366,7 +366,7 @@ def build_hlph_manual_df(
     hpu = equipment.get("hpu")
     if hpu:
         rows.append(_row(
-            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            "ENCON ITEMS", hpu.get("label", "Heating and Pumping Unit (HPU)"),
             f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
             1, unit_price_override=hpu["price"],
         ))

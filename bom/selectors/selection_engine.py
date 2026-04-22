@@ -11,7 +11,7 @@ from bom.selectors.air_valve_selector import (
 
 from bom.selectors.air_duct_selector import select_air_duct
 from bom.selectors.rotary_joint_selector import select_rotary_joint
-from bom.selectors.hpu_selector import select_hpu
+from bom.selectors.hpu_selector import select_hpu, select_pumping_unit, PUMPING_UNIT_ONLY_FUELS
 from bom.selectors.encon_burner import _resolve_category
 
 from calculations.pipes import PipeInputs, calculate_pipe_sizes
@@ -109,14 +109,15 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     required_hp = cfm * pressure_in_wg / 3200
     blower = select_blower(required_hp, series=blower_pressure)
 
-    # HPU — only for oil-based fuels (ldo, fo, hsd, sko).
-    # Check the actual fuel sub-type, not `burner_fuel_type` (which collapses to
-    # "dual" for dual-fuel and would incorrectly trigger HPU for gas+gas pairs).
+    # HPU / Pumping Unit — only for oil-based fuels.
+    # Heavy oils (LSHS, FO) get a standalone Pumping Unit since the oil is
+    # pre-heated separately; other oils (LDO, HSD, SKO, HDO, CFO) use HPU.
     # Sized to actual oil firing rate (LPH), not burner model.
     hpu = None
     if _resolve_category(fuel_type) == "oil":
+        picker = select_pumping_unit if fuel_type.lower() in PUMPING_UNIT_ONLY_FUELS else select_hpu
         try:
-            hpu = select_hpu(burner["equivalent_lph"], variant=hpu_variant)
+            hpu = picker(burner["equivalent_lph"], variant=hpu_variant)
         except ValueError:
             hpu = None
 

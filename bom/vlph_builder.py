@@ -915,7 +915,7 @@ def build_vlph_120t_df(
     hpu = equipment.get("hpu") or (equipment2.get("hpu") if equipment2 else None)
     if hpu:
         rows.append(_row(
-            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            "ENCON ITEMS", hpu.get("label", "Heating and Pumping Unit (HPU)"),
             f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
             1, unit_price_override=hpu["price"],
         ))
@@ -1099,7 +1099,7 @@ def build_vlph_manual_df(
     hpu = equipment.get("hpu")
     if hpu:
         rows.append(_row(
-            "ENCON ITEMS", "Heating and Pumping Unit (HPU)",
+            "ENCON ITEMS", hpu.get("label", "Heating and Pumping Unit (HPU)"),
             f'{hpu["model"]} — {hpu["unit_kw"]} KW {hpu["variant"]}',
             1, unit_price_override=hpu["price"],
         ))

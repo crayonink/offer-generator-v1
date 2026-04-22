@@ -28,6 +28,17 @@ VARIANT_PREFIX = {
     "Duplex 2": "HPDD",
 }
 
+# Pumping-Unit variant → model prefix (used for LSHS / FO where the oil is
+# pre-heated separately, so no heating element is needed in the HPU package).
+PU_VARIANT_PREFIX = {
+    "Simplex":  "PUS",
+    "Duplex 1": "PUD",
+    "Duplex 2": "PUDD",
+}
+
+# Heavy oils that use a standalone Pumping Unit (heating handled elsewhere).
+PUMPING_UNIT_ONLY_FUELS = {"lshs", "fo"}
+
 
 def _hpu_kw_for_lph(required_lph: float) -> int:
     """Pick the smallest HPU kW whose max flow rate >= required LPH."""
@@ -70,4 +81,39 @@ def select_hpu(required_lph: float, variant: str = "Duplex 1") -> dict:
         "unit_kw": unit_kw,
         "variant": variant,
         "price":   total,
+        "unit_type": "HPU",
+        "label":    "Heating and Pumping Unit (HPU)",
+    }
+
+
+def select_pumping_unit(required_lph: float, variant: str = "Duplex 1") -> dict:
+    """
+    Select a standalone Pumping Unit (no heating element) for heavy oils like
+    LSHS/FO where the fuel is pre-heated separately. Price comes from
+    pumping_unit_price (sell_price, already includes margin).
+    """
+    if variant not in PU_VARIANT_PREFIX:
+        raise ValueError(f"Invalid Pumping Unit variant '{variant}'. Use one of {list(PU_VARIANT_PREFIX)}")
+
+    unit_kw = _hpu_kw_for_lph(required_lph)
+
+    conn = sqlite3.connect(DB_PATH)
+    row = conn.execute(
+        "SELECT sell_price FROM pumping_unit_price WHERE unit_kw = ? AND variant = ?",
+        (unit_kw, variant),
+    ).fetchone()
+    conn.close()
+
+    if not row or row[0] is None:
+        raise ValueError(f"No pumping-unit pricing for {unit_kw} kW / {variant}")
+
+    price = float(row[0])
+    model = f"{PU_VARIANT_PREFIX[variant]}-{unit_kw}"
+    return {
+        "model":   model,
+        "unit_kw": unit_kw,
+        "variant": variant,
+        "price":   price,
+        "unit_type": "PU",
+        "label":    "Pumping Unit",
     }
