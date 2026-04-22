@@ -53,42 +53,43 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     burner_pressure_wg  : 24 or 36 (inches w.g.) — drives firing rate range lookup.
     """
 
-    # Burner selection now matches by heat (kcal/hr) — density-free for gas.
-    # For oil, `required_gas_flow_nm3hr` is actually kg/hr (legacy arg name);
-    # for gas it is Nm3/hr. Either way, flow × CV = kcal/hr.
+    # Burner selection uses oil-equivalent LPH against the legacy LPH table:
+    #   Oil  : kg/hr / own density         → L/hr
+    #   Gas  : Nm3/hr × CV / 10500 / LDO ρ → oil-equivalent L/hr
+    #   Dual : sized on fuel1's flow via the caller (here 'dual' skips density).
     category = _resolve_category(fuel_type)
-    required_heat_kcal_hr = required_gas_flow_nm3hr * fuel_cv
 
     if category == "oil":
-        density = _get_fuel_density(fuel_type)           # kg/L, still needed for pump LPH
+        density = _get_fuel_density(fuel_type)           # kg/L
         density_unit = "kg/ltr"
-        equivalent_lph = required_gas_flow_nm3hr / density  # kg/hr → l/hr (pump sizing)
+        equivalent_lph = required_gas_flow_nm3hr / density  # kg/hr → L/hr
     elif category == "dual":
-        # Dual-fuel burner sized by total heat; density is fuel-specific and
-        # doesn't belong on the combined burner record.
         density = 0
         density_unit = ""
-        equivalent_lph = 0
+        # Use LDO reference so dual-burner selection can still hit the LPH table.
+        equivalent_kghr = required_gas_flow_nm3hr * fuel_cv / 10500
+        equivalent_lph  = equivalent_kghr / _get_fuel_density("ldo")
     else:
-        density = _get_fuel_density(fuel_type)           # kg/m3, display only
+        density = _get_fuel_density(fuel_type)           # kg/m3 (gas), display only
         density_unit = "kg/m³"
-        equivalent_lph = 0  # not meaningful for gas
+        equivalent_kghr = required_gas_flow_nm3hr * fuel_cv / 10500
+        equivalent_lph  = equivalent_kghr / _get_fuel_density("ldo")
 
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
 
     # -------------------------------------------------
-    # 1. Select burner model using heat-rating range (kcal/hr).
-    #    Pick the smallest model whose max range covers the required heat.
+    # 1. Select burner model using oil-equivalent LPH range.
+    #    Pick the smallest model whose max range covers the requirement.
     # -------------------------------------------------
     cursor.execute("""
         SELECT model
         FROM burner_selection_master
         WHERE pressure_wg = ?
-          AND ? BETWEEN min_firing_kcal_hr AND max_firing_kcal_hr
-        ORDER BY max_firing_kcal_hr ASC
+          AND ? BETWEEN min_firing_lph AND max_firing_lph
+        ORDER BY max_firing_lph ASC
         LIMIT 1
-    """, (burner_pressure_wg, required_heat_kcal_hr))
+    """, (burner_pressure_wg, equivalent_lph))
 
     row = cursor.fetchone()
 
@@ -96,7 +97,7 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         conn.close()
         raise ValueError(
             f"No ENCON burner available for "
-            f"{required_heat_kcal_hr:.0f} kcal/hr at {burner_pressure_wg}\" w.g."
+            f"{required_gas_flow_nm3hr:.1f} ({equivalent_lph:.1f} equiv LPH) at {burner_pressure_wg}\" w.g."
         )
 
     model = row[0]
