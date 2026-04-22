@@ -60,10 +60,11 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         # Actual gas density (kg/m3 = kg/Nm3 at STP) — used for display and mass-flow calcs.
         density = _get_fuel_density(fuel_type)
         density_unit = "kg/m³"
-        # Equivalent oil L/hr (display-only) still uses the reference 0.85 kg/L
-        # so the "equivalent_lph" figure remains comparable across fuels.
+        # Burner selection indexes by oil-equivalent LPH, so convert gas mass
+        # flow to an oil equivalent using LDO density from the DB (no hardcode).
         equivalent_kghr = required_gas_flow_nm3hr * fuel_cv / 10500
-        equivalent_lph = equivalent_kghr / 0.85
+        ldo_density = _get_fuel_density("ldo")
+        equivalent_lph = equivalent_kghr / ldo_density if ldo_density else 0
 
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
