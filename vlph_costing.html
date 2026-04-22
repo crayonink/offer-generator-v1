@@ -505,19 +505,7 @@
       <div class="fg fg-2" style="margin-bottom:16px">
         <div class="field">
           <label>Ladle Capacity (tons) <span class="req">*</span></label>
-          <select id="direct_ladle_tons">
-            <option value="10">10 T</option>
-            <option value="15">15 T</option>
-            <option value="20">20 T</option>
-            <option value="30">30 T</option>
-            <option value="40">40 T</option>
-            <option value="50">50 T</option>
-            <option value="60" selected>60 T</option>
-            <option value="70">70 T</option>
-            <option value="80">80 T</option>
-            <option value="90">90 T</option>
-            <option value="100">100 T</option>
-          </select>
+          <input id="direct_ladle_tons" type="number" min="1" step="1" value="60" placeholder="e.g. 65"/>
           <div class="hint">Ladle size for structure/ceramic sizing</div>
         </div>
       </div>
@@ -553,19 +541,7 @@
       <div class="fg fg-2" style="margin-bottom:16px">
         <div class="field">
           <label>Ladle Capacity (tons) <span class="req">*</span></label>
-          <select id="ladle_tons">
-            <option value="10">10 T</option>
-            <option value="15">15 T</option>
-            <option value="20">20 T</option>
-            <option value="30">30 T</option>
-            <option value="40">40 T</option>
-            <option value="50">50 T</option>
-            <option value="60">60 T</option>
-            <option value="70">70 T</option>
-            <option value="80">80 T</option>
-            <option value="90">90 T</option>
-            <option value="100">100 T</option>
-          </select>
+          <input id="ladle_tons" type="number" min="1" step="1" value="60" placeholder="e.g. 65"/>
           <div class="hint">Drives structure, ceramic fiber sizing</div>
         </div>
         <div class="field">
@@ -1407,7 +1383,10 @@ function renderResults(d) {
   }
   set("r-density", c.fuel_density);
   set("r-lph",     fmt(c.equivalent_lph, 2));
-  document.getElementById("row-gt").style.display  = isOil ? "none" : "";
+  // Gas train is not used for oil fuels, COG, Mix Gas, or BFG — each of these
+  // is built from discrete components, not a packaged IAPL/MADAS gas train.
+  const noGasTrainFuel = isOil || ["cog", "mg", "bg"].includes(f1Type);
+  document.getElementById("row-gt").style.display  = noGasTrainFuel ? "none" : "";
   if (eq.hpu) {
     document.getElementById("row-hpu").style.display = "";
     set("eq-hpu", eq.hpu);
@@ -1458,8 +1437,9 @@ function renderResults(d) {
   } else {
     set("p-ng-q", fmt(p.ng_flow, 2));
     document.getElementById("p-ng-q-unit").textContent = "Nm³/hr";
-    const noGasTrain = c.fuel1_type === "cog" || c.fuel1_type === "mg";
-    document.getElementById("p-ng-gt-flow-row").style.display = "";
+    // BFG, COG and Mix Gas don't use a packaged gas train — show just pipe NB.
+    const noGasTrain = ["cog", "mg", "bg"].includes(c.fuel1_type);
+    document.getElementById("p-ng-gt-flow-row").style.display = noGasTrain ? "none" : "";
     document.getElementById("p-ng-gt-model-row").style.display = noGasTrain ? "none" : "";
     document.getElementById("p-ng-nb-row").style.display = noGasTrain ? "" : "none";
     set("p-ng-gt-flow", fmt(p.gas_train_flow, 0));

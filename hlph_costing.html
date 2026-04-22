@@ -487,19 +487,7 @@
       <div class="fg fg-2" style="margin-bottom:16px">
         <div class="field">
           <label>Ladle Capacity (tons) <span class="req">*</span></label>
-          <select id="direct_ladle_tons">
-            <option value="10">10 T</option>
-            <option value="15">15 T</option>
-            <option value="20">20 T</option>
-            <option value="30">30 T</option>
-            <option value="40">40 T</option>
-            <option value="50">50 T</option>
-            <option value="60" selected>60 T</option>
-            <option value="70">70 T</option>
-            <option value="80">80 T</option>
-            <option value="90">90 T</option>
-            <option value="100">100 T</option>
-          </select>
+          <input id="direct_ladle_tons" type="number" min="1" step="1" value="60" placeholder="e.g. 65"/>
           <div class="hint">Ladle size for structure/ceramic sizing</div>
         </div>
       </div>
@@ -535,19 +523,7 @@
       <div class="fg fg-2" style="margin-bottom:16px">
         <div class="field">
           <label>Ladle Capacity (tons) <span class="req">*</span></label>
-          <select id="ladle_tons">
-            <option value="10">10 T</option>
-            <option value="15">15 T</option>
-            <option value="20">20 T</option>
-            <option value="30">30 T</option>
-            <option value="40">40 T</option>
-            <option value="50">50 T</option>
-            <option value="60">60 T</option>
-            <option value="70">70 T</option>
-            <option value="80">80 T</option>
-            <option value="90">90 T</option>
-            <option value="100">100 T</option>
-          </select>
+          <input id="ladle_tons" type="number" min="1" step="1" value="60" placeholder="e.g. 65"/>
           <div class="hint">Drives structure, ceramic fiber sizing</div>
         </div>
         <div class="field">
