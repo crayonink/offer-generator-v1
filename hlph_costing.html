@@ -1519,12 +1519,12 @@ function renderResults(d) {
   // Update results-table CV unit too
   const rCvUnit = document.getElementById("r-cv-unit");
   if (rCvUnit) rCvUnit.textContent = cvUnit(f1Type);
-  // Burner capacity in Lit/hr for oil fuels, Nm³/hr for gas
-  if (isOil) {
-    const lph = c.equivalent_lph || p.fuel1_oil_lph || 0;
-    set("cd-burner-cap", fmt(lph, 0) + " Lit/hr");
-  } else {
-    set("cd-burner-cap", fmt(c.extra_firing_rate_nm3hr, 0) + " Nm³/hr");
+  // Burner capacity always shown in kW (heat input)
+  {
+    const rate = +(c.extra_firing_rate_nm3hr || 0);
+    const cv   = +(c.fuel1_cv || c.fuel_cv || 0);
+    const kw   = rate * cv / 860;
+    set("cd-burner-cap", fmt(kw, 0) + " kW");
   }
   set("cd-burner-size", eq.burner_model);
   set("cd-blower", fmt(eq.blower_airflow, 0) + " Nm³/hr — " + eq.blower_model);
@@ -1637,17 +1637,10 @@ function fillTechDataTable() {
   // Detect oil by fuel type, NOT by presence of fuel_density
   // (backend returns fuel_density=0.85 for gas too — it's used for kg/hr→l/hr conversion).
   const isOil  = OIL_FUEL_SET.has((c.fuel1_type || "").toLowerCase());
-  let fuelConsumption;
-  if (isOil) {
-    const lph = c.equivalent_lph;
-    if (lph !== undefined && lph !== null && lph > 0) {
-      fuelConsumption = `${(+lph).toFixed(2)} Lit/hr of ${f1Name}`;
-    } else {
-      fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr of ${f1Name}`;
-    }
-  } else {
-    fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
-  }
+  const f1Rate = +(c.extra_firing_rate_nm3hr || 0);
+  const f1CV   = +(c.fuel1_cv || c.fuel_cv || 0);
+  const f1KW   = f1Rate * f1CV / 860;
+  const fuelConsumption = `${f1Name}: ${f1KW.toFixed(0)} kW`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
@@ -1660,7 +1653,7 @@ function fillTechDataTable() {
     "td-fuel_name":            isDual ? `${f1Name} & ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
-    "td-burner_capacity_range":isOil ? `${f1Name} – (15 -85) Litre/ hr.` : `${(c.extra_firing_rate_nm3hr||0).toFixed(0)} Nm³/hr`,
+    "td-burner_capacity_range":`${f1Name}: ${f1KW.toFixed(0)} kW`,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
@@ -1689,12 +1682,9 @@ function fillTechDataTable() {
     const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
     const f2Rate = c.fuel2_extra_firing_rate_nm3hr || 0;
-    const f2lph = c.fuel2_equivalent_lph || 0;
-    if (f2lph > 0) {
-      defaults["td-fuel2_consumption"] = `${f2lph.toFixed(2)} Lit/hr of ${f2Name}`;
-    } else {
-      defaults["td-fuel2_consumption"] = `${f2Rate.toFixed(2)} Nm³/hr of ${f2Name}`;
-    }
+    const f2CV   = +(c.fuel2_cv || 0);
+    const f2KW   = f2Rate * f2CV / 860;
+    defaults["td-fuel2_consumption"] = `${f2Name}: ${f2KW.toFixed(0)} kW`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";

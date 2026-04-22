@@ -1550,12 +1550,12 @@ function renderResults(d) {
   // Update results-table CV unit too
   const rCvUnit = document.getElementById("r-cv-unit");
   if (rCvUnit) rCvUnit.textContent = cvUnit(f1Type);
-  // Burner capacity in Lit/hr for oil fuels, Nm³/hr for gas
-  if (isOil) {
-    const lph = c.equivalent_lph || p.fuel1_oil_lph || 0;
-    set("cd-burner-cap", fmt(lph, 0) + " Lit/hr");
-  } else {
-    set("cd-burner-cap", fmt(c.extra_firing_rate_nm3hr, 0) + " Nm³/hr");
+  // Burner capacity always shown in kW (heat input)
+  {
+    const rate = +(c.extra_firing_rate_nm3hr || 0);
+    const cv   = +(c.fuel1_cv || c.fuel_cv || 0);
+    const kw   = rate * cv / 860;
+    set("cd-burner-cap", fmt(kw, 0) + " kW");
   }
   set("cd-burner-size", eq.burner_model);
   set("cd-blower", fmt(eq.blower_airflow, 0) + " Nm³/hr — " + eq.blower_model);

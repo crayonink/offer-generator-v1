@@ -1561,12 +1561,12 @@ function renderResults(d) {
   // Update results-table CV unit too
   const rCvUnit = document.getElementById("r-cv-unit");
   if (rCvUnit) rCvUnit.textContent = cvUnit(f1Type);
-  // Burner capacity in Lit/hr for oil fuels, Nm³/hr for gas
-  if (isOil) {
-    const lph = c.equivalent_lph || p.fuel1_oil_lph || 0;
-    set("cd-burner-cap", fmt(lph, 0) + " Lit/hr");
-  } else {
-    set("cd-burner-cap", fmt(c.extra_firing_rate_nm3hr, 0) + " Nm³/hr");
+  // Burner capacity always shown in kW (heat input)
+  {
+    const rate = +(c.extra_firing_rate_nm3hr || 0);
+    const cv   = +(c.fuel1_cv || c.fuel_cv || 0);
+    const kw   = rate * cv / 860;
+    set("cd-burner-cap", fmt(kw, 0) + " kW");
   }
   set("cd-burner-size", eq.burner_model);
   set("cd-blower", fmt(eq.blower_airflow, 0) + " Nm³/hr — " + eq.blower_model);
@@ -1704,18 +1704,19 @@ function fillTechDataTable() {
   const f1IsOil = OIL_SET.has(f1Type);
   const f2IsOil = OIL_SET.has(f2Type);
 
-  // Fuel 1: per-burner firing rate + max consumption
-  let f1PerBurner, f1MaxConsumption, f1Unit;
-  if (f1IsOil) {
-    const lph = c.equivalent_lph || 0;
-    f1PerBurner = (lph / nb).toFixed(0);
-    f1MaxConsumption = Math.round(lph);
-    f1Unit = "Lit/hr";
-  } else {
-    f1PerBurner = ((c.extra_firing_rate_nm3hr || 0) / nb).toFixed(0);
-    f1MaxConsumption = Math.round(c.extra_firing_rate_nm3hr || 0);
-    f1Unit = "Nm³/hr";
-  }
+  // Fuel 1: per-burner firing rate (always kW) + max consumption
+  const f1CVval = +(c.fuel_cv || c.fuel1_cv || 0);
+  const f1RateTotal = f1IsOil
+    ? (+(c.equivalent_lph || 0))                     // L/hr (for reference only)
+    : (+(c.extra_firing_rate_nm3hr || 0));           // Nm³/hr
+  // kW always = (flow × CV) / 860 — works for gas (Nm³/hr × kcal/Nm³) and oil (kg/hr × kcal/kg)
+  const f1MassFlow = f1IsOil
+    ? (+(c.extra_firing_rate_nm3hr || 0))            // for oil this field carries kg/hr
+    : (+(c.extra_firing_rate_nm3hr || 0));           // for gas Nm³/hr
+  const f1KWtotal   = f1MassFlow * f1CVval / 860;
+  const f1PerBurner = (f1KWtotal / nb).toFixed(0);
+  const f1MaxConsumption = Math.round(f1KWtotal);
+  const f1Unit = "kW";
 
   const defaults = {
     "td-num_burner":            `${nb} Nos.`,
@@ -1723,8 +1724,8 @@ function fillTechDataTable() {
     "td-fuel_cv":               `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-heating_schedule":      `${c.Tf || ""}°C`,
     "td-heating_time":          c.time_taken_hr ? `${c.time_taken_hr * 60} Min.` : "",
-    "td-fuel_consumption":      `${f1PerBurner} ${f1Unit}. per burner`,
-    "td-max_fuel_consumption1": `${f1MaxConsumption} ${f1Unit === "Lit/hr" ? "Lit/Hr" : "Nm3/Hr"}`,
+    "td-fuel_consumption":      `${f1PerBurner} ${f1Unit} per burner`,
+    "td-max_fuel_consumption1": `${f1MaxConsumption} ${f1Unit}`,
     "td-burner_model":          eq.burner_model || "Encon dual fuel burner",
     "td-blower_capacity":       cfm ? `${eq.blower_hp || ''} HP/${blowerPressure || ''}" WC, ${eq.blower_airflow ? Math.round(eq.blower_airflow) : ''} Nm3/hr, ${cfm} CFM` : "",
   };
@@ -1756,20 +1757,13 @@ function fillTechDataTable() {
     const f2cvUnit = f2IsOil ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${f2cv} ${f2cvUnit}`;
 
-    let f2PerBurner, f2MaxConsumption, f2Unit;
-    if (f2IsOil) {
-      const f2lph = c.fuel2_equivalent_lph || 0;
-      f2PerBurner = (f2lph / nb).toFixed(0);
-      f2MaxConsumption = Math.round(f2lph);
-      f2Unit = "Lit/hr";
-    } else {
-      const f2FiringRate = c.fuel2_extra_firing_rate_nm3hr || 0;
-      f2PerBurner = (f2FiringRate / nb).toFixed(0);
-      f2MaxConsumption = Math.round(f2FiringRate);
-      f2Unit = "Nm³/hr";
-    }
-    defaults["td-fuel2_consumption"] = `${f2PerBurner} ${f2Unit}. per burner`;
-    defaults["td-max_fuel_consumption2"] = `${f2MaxConsumption} ${f2Unit === "Lit/hr" ? "Lit/Hr" : "Nm3/Hr"}`;
+    const f2CVval    = +(c.fuel2_cv || 0);
+    const f2MassFlow = +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const f2KWtotal  = f2MassFlow * f2CVval / 860;
+    const f2PerBurner     = (f2KWtotal / nb).toFixed(0);
+    const f2MaxConsumption = Math.round(f2KWtotal);
+    defaults["td-fuel2_consumption"]     = `${f2PerBurner} kW per burner`;
+    defaults["td-max_fuel_consumption2"] = `${f2MaxConsumption} kW`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
