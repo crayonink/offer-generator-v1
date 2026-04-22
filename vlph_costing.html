@@ -509,16 +509,21 @@
           <div class="hint">Ladle size for structure/ceramic sizing</div>
         </div>
       </div>
-      <div class="fg fg-2" style="margin-bottom:16px">
+      <div class="fg fg-3" style="margin-bottom:16px">
         <div class="field">
           <label>MS Structure Weight (kg)</label>
-          <input id="direct_ms_structure_kg" type="number" value="0" min="0" placeholder="e.g. 1500"/>
-          <div class="hint">Override MS structure weight (leave 0 to auto-derive from ladle capacity)</div>
+          <input id="direct_ms_structure_kg" type="number" value="0" min="0" readonly style="background:#f1f5f9;cursor:not-allowed;"/>
+          <div class="hint">Auto from ladle capacity (+10%)</div>
+        </div>
+        <div class="field">
+          <label>Pipeline Weight (kg)</label>
+          <input id="direct_pipeline_kg" type="number" value="0" min="0" readonly style="background:#f1f5f9;cursor:not-allowed;"/>
+          <div class="hint">Auto from ladle capacity (+10%)</div>
         </div>
         <div class="field">
           <label>Ceramic Fibre Rolls</label>
-          <input id="direct_ceramic_rolls" type="number" value="0" min="0" placeholder="e.g. 9"/>
-          <div class="hint">Override ceramic rolls count (leave 0 to auto-derive)</div>
+          <input id="direct_ceramic_rolls" type="number" value="0" min="0" readonly style="background:#f1f5f9;cursor:not-allowed;"/>
+          <div class="hint">Auto from ladle capacity (1 roll = 14 kg)</div>
         </div>
       </div>
     </div>
@@ -1051,6 +1056,31 @@
 
 <script>
 const API = "";
+
+// Auto-fill MS Structure, Pipeline weight and Ceramic rolls from the
+// fabrication_ladle_mapping table whenever the ladle capacity changes.
+async function refreshLadleMapping() {
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v ?? 0); };
+  const tons = parseFloat(
+    document.getElementById("direct_ladle_tons")?.value ||
+    document.getElementById("ladle_tons")?.value || 0
+  );
+  if (!tons) return;
+  try {
+    const res = await fetch(`${API}/api/ladle-mapping?tons=${tons}&type=vertical`);
+    const data = await res.json();
+    setVal("direct_ms_structure_kg", data.fabrication_kg);
+    setVal("direct_pipeline_kg",     data.pipeline_kg);
+    setVal("direct_ceramic_rolls",   data.ceramic_rolls);
+  } catch (e) { /* leave zeros */ }
+}
+window.addEventListener("DOMContentLoaded", () => {
+  ["direct_ladle_tons", "ladle_tons"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", refreshLadleMapping);
+  });
+  setTimeout(refreshLadleMapping, 300);
+});
 let lastCalc = null;
 
 /* ── Navigation ── */

@@ -39,6 +39,7 @@ def build_hlph_df(
     pipeline_weight_kg: float = 1000.0,
     purging_line: str = "no",
     ms_structure_kg_override: float = 0.0,
+    ceramic_rolls_override: int = 0,
 ) -> pd.DataFrame:
     """
     Builds HLPH BOM DataFrame (automatic mode).
@@ -70,11 +71,14 @@ def build_hlph_df(
         _row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
-        _row("ENCON ITEMS", "CERAMIC FIBRE",
-             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
-             params["ceramic_rolls"],
-             unit_price_override=params.get("ceramic_rate", 0)),
     ]
+    cf_rolls = ceramic_rolls_override or params["ceramic_rolls"]
+    rows.append(_row(
+        "ENCON ITEMS", "CERAMIC FIBRE",
+        f'{cf_rolls} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+        cf_rolls,
+        unit_price_override=params.get("ceramic_rate", 0),
+    ))
 
     # ── TROLLEY MECHANISM (individual items from DB) ──────────────────────
     rows += [
@@ -399,11 +403,14 @@ def build_hlph_manual_df(
         _row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
-        _row("ENCON ITEMS", "CERAMIC FIBRE",
-             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
-             params["ceramic_rolls"],
-             unit_price_override=params.get("ceramic_rate", 0)),
     ]
+    cf_rolls = ceramic_rolls_override or params["ceramic_rolls"]
+    rows.append(_row(
+        "ENCON ITEMS", "CERAMIC FIBRE",
+        f'{cf_rolls} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+        cf_rolls,
+        unit_price_override=params.get("ceramic_rate", 0),
+    ))
 
     df = pd.DataFrame(
         rows,

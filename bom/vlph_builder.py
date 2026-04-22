@@ -190,18 +190,24 @@ def _get_cheapest_butterfly_valve(nb: int) -> float:
     return float(row[0]) if row else 0
 
 
+CERAMIC_FIBRE_KG_PER_ROLL = 14.0
+
+
 def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str) -> dict:
-    """Look up fabrication and pipeline weight for a given ladle capacity and
-    preheater type (vertical/horizontal) from the fabrication_ladle_mapping
-    table. Picks the row whose capacity is closest to the requested tons.
-    Returns {'fabrication_kg': float, 'pipeline_kg': float} or {} if no rows.
-    The 10%-added values are already stored in the table."""
-    import sqlite3
+    """Look up fabrication, pipeline and ceramic-fibre weight for a given ladle
+    capacity and preheater type (vertical/horizontal) from the
+    fabrication_ladle_mapping table. Picks the row whose capacity is closest
+    to the requested tons. Returns {} if no rows.
+
+    The stored weights already include the 10% margin. Ceramic rolls are
+    derived as ceil(ceramic_kg / 14) — 14 kg per roll, rounded up so a
+    partial roll always counts."""
+    import sqlite3, math
     if not ladle_tons or preheater_type not in ('vertical', 'horizontal'):
         return {}
     conn = sqlite3.connect(DB_PATH)
     rows = conn.execute(
-        "SELECT ladle_capacity_ton, fabrication_kg, pipeline_kg "
+        "SELECT ladle_capacity_ton, fabrication_kg, pipeline_kg, ceramic_kg "
         "FROM fabrication_ladle_mapping WHERE preheater_type = ?",
         (preheater_type,),
     ).fetchall()
@@ -209,9 +215,12 @@ def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str) -> dict:
     if not rows:
         return {}
     best = min(rows, key=lambda r: abs(float(r[0]) - float(ladle_tons)))
+    ceramic_kg = float(best[3])
     return {
         "fabrication_kg": round(float(best[1])),
         "pipeline_kg":    round(float(best[2])),
+        "ceramic_kg":     round(ceramic_kg, 2),
+        "ceramic_rolls":  int(math.ceil(ceramic_kg / CERAMIC_FIBRE_KG_PER_ROLL)),
     }
 
 
