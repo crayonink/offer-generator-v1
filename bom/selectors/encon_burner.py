@@ -63,6 +63,12 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         density = _get_fuel_density(fuel_type)           # kg/L, still needed for pump LPH
         density_unit = "kg/ltr"
         equivalent_lph = required_gas_flow_nm3hr / density  # kg/hr → l/hr (pump sizing)
+    elif category == "dual":
+        # Dual-fuel burner sized by total heat; density is fuel-specific and
+        # doesn't belong on the combined burner record.
+        density = 0
+        density_unit = ""
+        equivalent_lph = 0
     else:
         density = _get_fuel_density(fuel_type)           # kg/m3, display only
         density_unit = "kg/m³"
