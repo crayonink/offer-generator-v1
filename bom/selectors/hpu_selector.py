@@ -36,8 +36,8 @@ PU_VARIANT_PREFIX = {
     "Duplex 2": "PUDD",
 }
 
-# Heavy oils that use a standalone Pumping Unit (heating handled elsewhere).
-PUMPING_UNIT_ONLY_FUELS = {"lshs", "fo"}
+# Oils that use a standalone Pumping Unit (heating handled elsewhere).
+PUMPING_UNIT_ONLY_FUELS = {"ldo", "lshs", "fo"}
 
 
 def _hpu_kw_for_lph(required_lph: float) -> int:
