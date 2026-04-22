@@ -352,7 +352,7 @@ def _bfg_line_rows(media: str, equipment: dict,
     try:
         rj = select_rotary_joint(gas_pipe_nb)
     except ValueError:
-        rj = {"nb": gas_pipe_nb, "price": 0, "company": "THIRD PARTY"}
+        rj = {"nb": gas_pipe_nb, "price": 0, "company": "ENCON"}
 
     pg_vendor = pressure_gauge_vendor.upper()
     pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
@@ -388,7 +388,7 @@ def _bfg_line_rows(media: str, equipment: dict,
                      unit_price_override=pcv_price, make="DEMBLA"))
 
     rows.append(_row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
-                     unit_price_override=rj["price"], make="THIRD PARTY"))
+                     unit_price_override=rj["price"], make="ENCON"))
 
     if not base_only:
         needs_agr = (
@@ -465,7 +465,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     try:
         rj = select_rotary_joint(gas_pipe_nb)
     except ValueError:
-        rj = {"nb": gas_pipe_nb, "price": 0, "company": "THIRD PARTY"}
+        rj = {"nb": gas_pipe_nb, "price": 0, "company": "ENCON"}
 
     # Gate valve sized to gas pipe NB (L&T 113-8/IBR Class 150). Use next
     # bigger NB if the exact size isn't listed (65 NB and 125 NB are blank).
@@ -482,7 +482,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
         _row(media, "BUTTERFLY VALVE", f'{bfv["nb"]} NB', 1,
              unit_price_override=bfv["price"], make=bfv.get("make", "L&T")),
         _row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
-             unit_price_override=rj["price"], make=rj.get("company", "THIRD PARTY")),
+             unit_price_override=rj["price"], make=rj.get("company", "ENCON")),
     ]
 
     if not base_only:
@@ -778,7 +778,7 @@ def build_vlph_120t_df(
     rows += [
         _row("COMB AIR", "ROTARY JOINT",
              f'{equipment["rotary_joint"]["nb"]} NB', 1,
-             unit_price_override=equipment["rotary_joint"]["price"], make="THIRD PARTY"),
+             unit_price_override=equipment["rotary_joint"]["price"], make="ENCON"),
         _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1,
              unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
         _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1,
