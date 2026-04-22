@@ -529,13 +529,13 @@
         </div>
         <div class="field">
           <label>Pipeline Weight (kg)</label>
-          <input id="direct_pipeline_kg" type="number" value="0" min="0" readonly style="background:#f1f5f9;cursor:not-allowed;"/>
-          <div class="hint">Auto from ladle capacity (+10%)</div>
+          <input id="direct_pipeline_kg" type="number" value="0" min="0"/>
+          <div class="hint">Auto from ladle capacity — editable</div>
         </div>
         <div class="field">
           <label>Ceramic Fibre Rolls</label>
-          <input id="direct_ceramic_rolls" type="number" value="0" min="0" readonly style="background:#f1f5f9;cursor:not-allowed;"/>
-          <div class="hint">Auto from ladle capacity (1 roll = 14 kg)</div>
+          <input id="direct_ceramic_rolls" type="number" value="0" min="0"/>
+          <div class="hint">Auto from ladle capacity — editable (1 roll = 14 kg)</div>
         </div>
       </div>
     </div>
@@ -721,24 +721,9 @@
         </select>
       </div>
       <div class="field">
-        <label>Air-Gas Pipeline Weight</label>
-        <select id="pipeline_weight_kg">
-          <option value="700">700 kg</option>
-          <option value="800">800 kg</option>
-          <option value="900">900 kg</option>
-          <option value="1000" selected>1000 kg</option>
-          <option value="1100">1100 kg</option>
-          <option value="1200">1200 kg</option>
-          <option value="1300">1300 kg</option>
-          <option value="1400">1400 kg</option>
-          <option value="1500">1500 kg</option>
-          <option value="1600">1600 kg</option>
-          <option value="1700">1700 kg</option>
-          <option value="1800">1800 kg</option>
-          <option value="1900">1900 kg</option>
-          <option value="2000">2000 kg</option>
-        </select>
-        <div class="hint">Rs. 125/kg</div>
+        <label>Air-Gas Pipeline Weight (kg)</label>
+        <input id="pipeline_weight_kg" type="number" value="1000" min="0" step="1"/>
+        <div class="hint">Auto from ladle capacity — editable. Rs. 125/kg</div>
       </div>
     </div>
 
@@ -771,8 +756,8 @@
         </div>
         <div class="field">
           <label>Ceramic Fibre Rolls</label>
-          <input id="ceramic_rolls" type="number" value="0" min="0" step="1" readonly style="background:#f1f5f9;cursor:not-allowed;"/>
-          <div class="hint">Auto from ladle capacity (1 roll = 14 kg)</div>
+          <input id="ceramic_rolls" type="number" value="0" min="0" step="1"/>
+          <div class="hint">Auto from ladle capacity — editable (1 roll = 14 kg)</div>
         </div>
       </div>
     </div>
@@ -1084,6 +1069,7 @@ async function refreshLadleMapping() {
     setVal("direct_ceramic_rolls",   data.ceramic_rolls);
     setVal("ms_structure_kg",        data.fabrication_kg);
     setVal("ceramic_rolls",          data.ceramic_rolls);
+    setVal("pipeline_weight_kg",     data.pipeline_kg);
   } catch (e) { /* leave zeros */ }
 }
 // Debounce so mid-typing keystrokes (e.g. "15" before "150") don't race the
