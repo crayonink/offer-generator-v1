@@ -896,7 +896,7 @@
             <tr><td class="lbl">Calc. Firing Rate</td>    <td class="val" id="r2-cfr">—</td>      <td class="unit" id="r2-cfr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r2-efr">—</td>      <td class="unit" id="r2-efr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">Equiv. Firing Rate</td>   <td class="val" id="r2-kghr">—</td>     <td class="unit">kg/hr</td></tr>
-            <tr><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit" id="r2-density-unit">kg/ltr</td></tr>
+            <tr id="r2-density-row"><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit" id="r2-density-unit">kg/ltr</td></tr>
             <tr id="r2-lph-row"><td class="lbl">Firing Rate (LPH)</td>    <td class="val" id="r2-lph">—</td>      <td class="unit">ltr/hr</td></tr>
           </table>
         </div>
@@ -1427,8 +1427,8 @@ function renderResults(d) {
   document.getElementById("r-cfr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
   document.getElementById("r-efr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
   document.getElementById("r-kghr-row").style.display    = "";
-  document.getElementById("r-density-row").style.display = "";
-  // Firing Rate (LPH) is only meaningful for oil (pump flow).
+  // Density + LPH are oil-only displays; hide for gas.
+  document.getElementById("r-density-row").style.display = isOil ? "" : "none";
   document.getElementById("r-lph-row").style.display     = isOil ? "" : "none";
   if (isOil) {
     // Oil: firing rate is already kg/hr, density from DB
@@ -1479,7 +1479,9 @@ function renderResults(d) {
     set("r2-density-unit", c.fuel2_fuel_density_unit || "kg/ltr");
     set("r2-lph",     fmt(c.fuel2_equivalent_lph, 2));
     const r2lphRow = document.getElementById("r2-lph-row");
-    if (r2lphRow) r2lphRow.style.display = f2IsOil ? "" : "none";
+    const r2densityRow = document.getElementById("r2-density-row");
+    if (r2lphRow)     r2lphRow.style.display     = f2IsOil ? "" : "none";
+    if (r2densityRow) r2densityRow.style.display = f2IsOil ? "" : "none";
   } else {
     fuel2CalcSection.style.display = "none";
   }
