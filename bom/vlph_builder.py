@@ -721,10 +721,13 @@ def build_vlph_120t_df(
     num_burners: int = 1,
     ms_structure_kg_override: float = 0.0,
     ceramic_rolls_override: int = 0,
+    hood_type: str = "up_down",
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
     For dual fuel, equipment2 contains the second fuel's gas line equipment.
+    hood_type: 'up_down' (hydraulic) or 'swivel' (geared) — controls whether
+    HYDRAULIC POWER PACK & CYLINDER is included.
     """
 
     f1_label = FUEL_NAMES.get(fuel1_type, fuel1_type.upper())
@@ -923,6 +926,9 @@ def build_vlph_120t_df(
         STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
     if is_pid:
         STATIC_SKIP.add("TEMPERATURE TRANSMITTER")
+    # Swivelling hoods use a geared drive — no hydraulic power pack needed.
+    if hood_type == "swivel":
+        STATIC_SKIP.add("HYDRAULIC POWER PACK & CYLINDER")
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
             rows.append(_row(media, item, ref, qty))
@@ -1009,6 +1015,7 @@ def build_vlph_manual_df(
     pipeline_weight_kg: float = 1000.0,
     include_pilot: bool = True,
     pilot_line_fuel: str = "lpg",
+    hood_type: str = "up_down",
 ) -> pd.DataFrame:
     """
     Manual / simplified VLPH BOM — matches the Lloyds manual costing format.
@@ -1098,12 +1105,13 @@ def build_vlph_manual_df(
         ))
 
     rows += [
-        _row("ENCON ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "", 1),
         _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"]),
     ]
+    if hood_type != "swivel":
+        rows.insert(-1, _row("ENCON ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "", 1))
     if include_pilot:
         rows += [
             _row(

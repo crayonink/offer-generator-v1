@@ -487,6 +487,7 @@ class VLPHCalcRequest(BaseModel):
     num_burners: int = 1                         # Number of burners (tundish: splits firing rate, multiplies burner-line items)
     ms_structure_kg_override: float = 0.0        # Tundish: override MS structure weight used for fabrication cost
     ceramic_rolls_override: int = 0              # Tundish: override ceramic-fibre roll count
+    hood_type: str = "up_down"                   # "up_down" (hydraulic) or "swivel" (geared)
 
 
 class QuoteItem(BaseModel):
@@ -1161,6 +1162,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 pipeline_weight_kg=_pipeline_kg,
                 include_pilot=req.manual_pilot_burner == "yes",
                 pilot_line_fuel=req.pilot_line_fuel,
+                hood_type=req.hood_type,
             )
         else:
             bom_df = build_vlph_120t_df(
@@ -1182,6 +1184,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 num_burners=n_burners,
                 ms_structure_kg_override=_ms_override,
                 ceramic_rolls_override=_ceramic_rolls,
+                hood_type=req.hood_type,
             )
 
         # Split summary rows from detail rows

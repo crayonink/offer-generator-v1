@@ -1328,6 +1328,7 @@ async function calculate() {
       pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
       ms_structure_kg_override: parseFloat(document.getElementById("direct_ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
+      hood_type: document.getElementById("hood_movement")?.value || "up_down",
 
     };
   } else {
@@ -1359,6 +1360,7 @@ async function calculate() {
       pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
       ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
+      hood_type: document.getElementById("hood_movement")?.value || "up_down",
 
     };
   }
