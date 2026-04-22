@@ -488,6 +488,18 @@
       <button id="mode-direct" class="btn-grid-item" onclick="setInputMode('direct')" style="padding:10px 20px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text);cursor:pointer;font-size:.84rem;font-weight:600;">Direct Input (Known Burner Capacity)</button>
     </div>
 
+    <!-- Mechanical setup (applies to both modes) -->
+    <div class="fg fg-2" style="margin-bottom:20px;">
+      <div class="field">
+        <label>Movement of Hood <span class="req">*</span></label>
+        <select id="hood_movement" onchange="onHoodMovementChange()">
+          <option value="up_down" selected>Up and Down (hydraulic)</option>
+          <option value="swivel">Swivelling type (geared)</option>
+        </select>
+        <div class="hint">Up/Down uses a hydraulic power pack; swivelling uses a geared drive</div>
+      </div>
+    </div>
+
     <!-- Direct Input Mode -->
     <div id="direct-inputs" style="display:none;margin-bottom:24px;">
       <div class="fg fg-2" style="margin-bottom:16px">
@@ -1017,11 +1029,6 @@
             <td><input id="td-blower_capacity" type="text"/></td></tr>
         <tr id="td-pumping_unit-row"><td class="tech-lbl">Pumping Unit</td>
             <td><input id="td-pumping_unit" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Movement of Hood</td>
-            <td><select id="td-hood_movement" onchange="onHoodMovementChange()">
-              <option value="swivel">Swivelling type</option>
-              <option value="up_down">Up and Down</option>
-            </select></td></tr>
         <tr><td class="tech-lbl">Pilot Burner Fuel</td>
             <td><select id="td-pilot_gas_type" onchange="onPilotFuelChange()">
               <option value="LPG">LPG</option>
@@ -1718,7 +1725,6 @@ function fillTechDataTable() {
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
     "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
     "td-pumping_unit":         isOil ? `Flow Rate: ${(c.equivalent_lph||0).toFixed(0)} L/hr.` : "",
-    // td-hood_movement is a user-selected dropdown — don't auto-fill
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
 
@@ -1729,7 +1735,7 @@ function fillTechDataTable() {
 
   // Hydraulic power pack only applies to vertical up/down hood lift.
   // Swivel-type hood uses a geared drive, no power pack needed.
-  const hoodType = (document.getElementById("td-hood_movement")?.value || "up_down");
+  const hoodType = (document.getElementById("hood_movement")?.value || "up_down");
   const ppRow = document.getElementById("td-power_pack-row");
   if (ppRow) ppRow.style.display = (hoodType === "up_down") ? "" : "none";
 
@@ -1814,9 +1820,9 @@ function buildTechData() {
     pumping_unit:         get("td-pumping_unit"),
     hydraulic_motor_hp:   get("td-hydraulic_motor_hp"),
     max_electrical_load:  get("td-max_electrical_load"),
-    hood_type:            get("td-hood_movement"),   // 'swivel' or 'up_down'
+    hood_type:            document.getElementById("hood_movement")?.value || "up_down",
     pilot_gas_type:       get("td-pilot_gas_type") || "LPG",
-    hood_movement:        (get("td-hood_movement") === "up_down"
+    hood_movement:        ((document.getElementById("hood_movement")?.value || "up_down") === "up_down"
                             ? "Up and Down movement through hydraulic mechanism."
                             : "Vertical Swivelling through bearing mechanism."),
     ignition_method:      get("td-ignition"),
@@ -1835,7 +1841,7 @@ function onPilotFuelChange() {
 
 function onHoodMovementChange() {
   // Power pack only for vertical up/down hoods (swivel uses geared drive).
-  const hoodType = document.getElementById("td-hood_movement")?.value || "up_down";
+  const hoodType = document.getElementById("hood_movement")?.value || "up_down";
   const ppRow = document.getElementById("td-power_pack-row");
   if (ppRow) ppRow.style.display = (hoodType === "up_down") ? "" : "none";
 }
