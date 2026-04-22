@@ -901,7 +901,7 @@
             <tr><td class="lbl">+10% Firing Rate</td>     <td class="val" id="r2-efr">—</td>      <td class="unit" id="r2-efr-unit">Nm³/hr</td></tr>
             <tr><td class="lbl">Equiv. Firing Rate</td>   <td class="val" id="r2-kghr">—</td>     <td class="unit">kg/hr</td></tr>
             <tr><td class="lbl">Fuel Density</td>         <td class="val" id="r2-density">—</td>  <td class="unit" id="r2-density-unit">kg/ltr</td></tr>
-            <tr><td class="lbl">Firing Rate (LPH)</td>    <td class="val" id="r2-lph">—</td>      <td class="unit">ltr/hr</td></tr>
+            <tr id="r2-lph-row"><td class="lbl">Firing Rate (LPH)</td>    <td class="val" id="r2-lph">—</td>      <td class="unit">ltr/hr</td></tr>
           </table>
         </div>
       </div>
@@ -1434,7 +1434,8 @@ function renderResults(d) {
   document.getElementById("r-efr-unit").textContent = isOil ? "kg/hr" : "Nm³/hr";
   document.getElementById("r-kghr-row").style.display    = "";
   document.getElementById("r-density-row").style.display = "";
-  document.getElementById("r-lph-row").style.display     = "";
+  // Firing Rate (LPH) is only meaningful for oil (pump flow).
+  document.getElementById("r-lph-row").style.display     = isOil ? "" : "none";
   if (isOil) {
     // Oil: firing rate is already kg/hr, density from DB
     set("r-kghr", fmt(c.extra_firing_rate_nm3hr, 2));
@@ -1480,6 +1481,8 @@ function renderResults(d) {
     set("r2-density", c.fuel2_fuel_density);
     set("r2-density-unit", c.fuel2_fuel_density_unit || "kg/ltr");
     set("r2-lph",     fmt(c.fuel2_equivalent_lph, 2));
+    const r2lphRow = document.getElementById("r2-lph-row");
+    if (r2lphRow) r2lphRow.style.display = f2IsOil ? "" : "none";
   } else {
     fuel2CalcSection.style.display = "none";
   }
