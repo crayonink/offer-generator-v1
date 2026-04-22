@@ -208,19 +208,40 @@ def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str) -> dict:
     conn = sqlite3.connect(DB_PATH)
     rows = conn.execute(
         "SELECT ladle_capacity_ton, fabrication_kg, pipeline_kg, ceramic_kg "
-        "FROM fabrication_ladle_mapping WHERE preheater_type = ?",
+        "FROM fabrication_ladle_mapping WHERE preheater_type = ? "
+        "ORDER BY ladle_capacity_ton",
         (preheater_type,),
     ).fetchall()
     conn.close()
     if not rows:
         return {}
-    best = min(rows, key=lambda r: abs(float(r[0]) - float(ladle_tons)))
-    ceramic_kg = float(best[3])
+
+    # Pick the nearest-capacity row as the primary match.
+    best_idx = min(range(len(rows)), key=lambda i: abs(float(rows[i][0]) - float(ladle_tons)))
+    best = rows[best_idx]
+
+    # Per-column: if the chosen row's value is 0/None, walk UP the tiers until
+    # we find a row that does carry a value. This handles legacy-imported rows
+    # where pipeline_kg is 0 because the source had no pipeline data.
+    def _fill(col_idx: int) -> float:
+        v = rows[best_idx][col_idx]
+        if v and float(v) > 0:
+            return float(v)
+        for i in range(best_idx + 1, len(rows)):
+            v = rows[i][col_idx]
+            if v and float(v) > 0:
+                return float(v)
+        return 0.0
+
+    fabrication_kg = _fill(1)
+    pipeline_kg    = _fill(2)
+    ceramic_kg     = _fill(3)
+
     return {
-        "fabrication_kg": round(float(best[1])),
-        "pipeline_kg":    round(float(best[2])),
+        "fabrication_kg": round(fabrication_kg),
+        "pipeline_kg":    round(pipeline_kg),
         "ceramic_kg":     round(ceramic_kg, 2),
-        "ceramic_rolls":  int(math.ceil(ceramic_kg / CERAMIC_FIBRE_KG_PER_ROLL)),
+        "ceramic_rolls":  int(math.ceil(ceramic_kg / CERAMIC_FIBRE_KG_PER_ROLL)) if ceramic_kg else 0,
     }
 
 
