@@ -1200,7 +1200,7 @@ function onManualPilotChange() {
 const OIL_FUEL_SET = new Set(["hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"]);
 function cvUnit(fuelType) { return OIL_FUEL_SET.has(fuelType) ? "kcal/kg" : "kcal/Nm³"; }
 
-const PURGING_FUELS = new Set(["mg", "cog"]);
+const PURGING_FUELS = new Set(["mg", "cog", "bg"]);
 
 function onFuelChange() {
   const f1 = document.getElementById('fuel1_type').value;
