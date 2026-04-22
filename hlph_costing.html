@@ -1680,11 +1680,14 @@ function fillTechDataTable() {
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
 
-  // Pumping unit is oil-only (fuel-oil transfer pump). Hydraulic power pack
-  // drives the hood lift and is needed for gas and oil alike — always shown.
+  // Pumping unit is oil-only (fuel-oil transfer pump).
   const oilPresent = isOil || isDual;
   const puRow = document.getElementById("td-pumping_unit-row");
   if (puRow) puRow.style.display = oilPresent ? "" : "none";
+
+  // HLPH uses a geared motor on the trolley — no hydraulic power pack.
+  const ppRow = document.getElementById("td-power_pack-row");
+  if (ppRow) ppRow.style.display = "none";
 
   // Fuel 1 label
   const cv1Label = document.getElementById("td-cv1-label");

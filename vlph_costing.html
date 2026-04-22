@@ -1018,7 +1018,7 @@
         <tr id="td-pumping_unit-row"><td class="tech-lbl">Pumping Unit</td>
             <td><input id="td-pumping_unit" type="text"/></td></tr>
         <tr><td class="tech-lbl">Movement of Hood</td>
-            <td><select id="td-hood_movement">
+            <td><select id="td-hood_movement" onchange="onHoodMovementChange()">
               <option value="swivel">Swivelling type</option>
               <option value="up_down">Up and Down</option>
             </select></td></tr>
@@ -1722,11 +1722,16 @@ function fillTechDataTable() {
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
 
-  // Pumping unit is oil-only (fuel-oil transfer pump). Hydraulic power pack
-  // drives the hood lift and is needed for gas and oil alike — always shown.
+  // Pumping unit is oil-only (fuel-oil transfer pump).
   const oilPresent = isOil || isDual;
   const puRow = document.getElementById("td-pumping_unit-row");
   if (puRow) puRow.style.display = oilPresent ? "" : "none";
+
+  // Hydraulic power pack only applies to vertical up/down hood lift.
+  // Swivel-type hood uses a geared drive, no power pack needed.
+  const hoodType = (document.getElementById("td-hood_movement")?.value || "up_down");
+  const ppRow = document.getElementById("td-power_pack-row");
+  if (ppRow) ppRow.style.display = (hoodType === "up_down") ? "" : "none";
 
   // Fuel 1 label
   const cv1Label = document.getElementById("td-cv1-label");
@@ -1826,6 +1831,13 @@ function onPilotFuelChange() {
   const v = document.getElementById("td-pilot_gas_type").value;
   const ign = document.getElementById("td-ignition");
   if (ign) ign.value = `Automatic Through ${v} Fired Pilot Burner`;
+}
+
+function onHoodMovementChange() {
+  // Power pack only for vertical up/down hoods (swivel uses geared drive).
+  const hoodType = document.getElementById("td-hood_movement")?.value || "up_down";
+  const ppRow = document.getElementById("td-power_pack-row");
+  if (ppRow) ppRow.style.display = (hoodType === "up_down") ? "" : "none";
 }
 
 function togglePreview(url) {
