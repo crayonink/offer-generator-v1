@@ -15,7 +15,12 @@ SECTION_BY_CATEGORY = {
 
 
 def _get_fuel_density(fuel_type: str) -> float:
-    """Fetch fuel density (kg/litre) from component_price_master."""
+    """Fetch fuel density from component_price_master.
+
+    Units follow the DB convention: oil rows are kg/L, gas rows are kg/m3.
+    Raises ValueError if the row is missing — we never want to silently
+    fall back to a hardcoded default and corrupt downstream sizing math.
+    """
     key = f"FUEL DENSITY {fuel_type.upper()}"
     conn = sqlite3.connect("vlph.db")
     row = conn.execute(
@@ -23,9 +28,9 @@ def _get_fuel_density(fuel_type: str) -> float:
         (key,),
     ).fetchone()
     conn.close()
-    if row:
-        return float(row[0])
-    return 0.85  # fallback to LDO density
+    if row is None:
+        raise ValueError(f"No density row found for fuel '{fuel_type}' (key '{key}')")
+    return float(row[0])
 
 
 def _resolve_category(fuel_type: str) -> str:
@@ -49,8 +54,8 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     """
 
     # Convert flow to LPH for burner selection.
-    # Oil fuels: burner-calc gives kg/hr → divide by density to get l/hr.
-    # Gas fuels: Nm3/hr × CV ÷ 10500 = kg/hr, then ÷ 0.85 = l/hr.
+    # Oil fuels: burner-calc gives kg/hr → divide by own density to get l/hr.
+    # Gas fuels: Nm3/hr × CV ÷ 10500 = kg/hr, then ÷ LDO density (from DB) = l/hr.
     category = _resolve_category(fuel_type)
     if category == "oil":
         density = _get_fuel_density(fuel_type)           # kg/L
@@ -61,10 +66,9 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         density = _get_fuel_density(fuel_type)
         density_unit = "kg/m³"
         # Burner selection indexes by oil-equivalent LPH, so convert gas mass
-        # flow to an oil equivalent using LDO density from the DB (no hardcode).
+        # flow to an oil equivalent using LDO density from the DB.
         equivalent_kghr = required_gas_flow_nm3hr * fuel_cv / 10500
-        ldo_density = _get_fuel_density("ldo")
-        equivalent_lph = equivalent_kghr / ldo_density if ldo_density else 0
+        equivalent_lph = equivalent_kghr / _get_fuel_density("ldo")
 
     conn = sqlite3.connect("vlph.db")
     cursor = conn.cursor()
