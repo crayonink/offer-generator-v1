@@ -3303,8 +3303,46 @@ def pdf_quote(filename: str):
         import shutil
         shutil.copyfile(pdf_src, pdf_dst)
 
+    # Overlay 'Page X / Y' on each page — more reliable than hoping LibreOffice
+    # refreshes the PAGE/NUMPAGES fields inside the footer text box.
+    try:
+        _stamp_page_numbers(pdf_dst)
+    except Exception as e:
+        print(f"WARN: page-number overlay failed: {e}")
+
     return FileResponse(path=pdf_dst, filename=f"{base}.pdf",
         media_type="application/pdf")
+
+
+def _stamp_page_numbers(pdf_path: str):
+    """Overlay 'Page X / Y' at the bottom-right of every page."""
+    from pypdf import PdfReader, PdfWriter
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    import io
+
+    reader = PdfReader(pdf_path)
+    total = len(reader.pages)
+    writer = PdfWriter()
+
+    for i, page in enumerate(reader.pages, start=1):
+        # Build a single-page overlay with the label
+        box = page.mediabox
+        width  = float(box.width)
+        height = float(box.height)
+        packet = io.BytesIO()
+        c = canvas.Canvas(packet, pagesize=(width, height))
+        c.setFont("Helvetica-Bold", 10)
+        c.setFillColorRGB(0.10, 0.22, 0.36)   # dark navy
+        c.drawRightString(width - 36, 20, f"Page {i} / {total}")
+        c.save()
+        packet.seek(0)
+        stamp = PdfReader(packet).pages[0]
+        page.merge_page(stamp)
+        writer.add_page(page)
+
+    with open(pdf_path, "wb") as f:
+        writer.write(f)
 
 
 @app.get("/api/preview-quote/{filename}")

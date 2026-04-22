@@ -5,3 +5,5 @@ openpyxl
 python-multipart
 docxtpl
 mammoth
+pypdf
+reportlab
