@@ -1015,7 +1015,7 @@
             <td><input id="td-blower_size" type="text"/></td></tr>
         <tr><td class="tech-lbl">Blower Capacity / Motor Rating</td>
             <td><input id="td-blower_capacity" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Pumping Unit</td>
+        <tr id="td-pumping_unit-row"><td class="tech-lbl">Pumping Unit</td>
             <td><input id="td-pumping_unit" type="text"/></td></tr>
         <tr><td class="tech-lbl">Movement of Hood</td>
             <td><select id="td-hood_movement">
@@ -1029,7 +1029,7 @@
             </select></td></tr>
         <tr><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
             <td><input id="td-ignition" type="text" value="Automatic Through LPG Fired Pilot Burner"/></td></tr>
-        <tr><td class="tech-lbl">Motor recommended for Power Pack</td>
+        <tr id="td-power_pack-row"><td class="tech-lbl">Motor recommended for Power Pack</td>
             <td><input id="td-hydraulic_motor_hp" type="text" value="5 HP"/></td></tr>
         <tr><td class="tech-lbl">Maximum Electrical Load</td>
             <td><input id="td-max_electrical_load" type="text" placeholder="18 kW"/></td></tr>
@@ -1706,6 +1706,13 @@ function fillTechDataTable() {
     // td-hood_movement is a user-selected dropdown — don't auto-fill
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
+
+  // Pumping unit + hydraulic power pack motor are oil-only concepts — hide for pure gas.
+  const oilPresent = isOil || isDual;
+  const puRow = document.getElementById("td-pumping_unit-row");
+  const ppRow = document.getElementById("td-power_pack-row");
+  if (puRow) puRow.style.display = oilPresent ? "" : "none";
+  if (ppRow) ppRow.style.display = oilPresent ? "" : "none";
 
   // Fuel 1 label
   const cv1Label = document.getElementById("td-cv1-label");
