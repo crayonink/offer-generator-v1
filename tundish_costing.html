@@ -1062,10 +1062,13 @@ const API = "";
 // Tundish uses the 'vertical' mapping.
 async function refreshLadleMapping() {
   const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v ?? 0); };
-  const tons = parseFloat(
-    document.getElementById("direct_ladle_tons")?.value ||
-    document.getElementById("ladle_tons")?.value || 0
-  );
+  // Pick the ladle input from whichever mode is currently visible; direct
+  // mode keeps a default value while hidden, so we can't just read it first.
+  const directVisible = (document.getElementById("direct-inputs")?.style.display !== "none");
+  const src = directVisible
+    ? document.getElementById("direct_ladle_tons")
+    : document.getElementById("ladle_tons");
+  const tons = parseFloat(src?.value || 0);
   if (!tons) return;
   try {
     const res = await fetch(`${API}/api/ladle-mapping?tons=${tons}&type=vertical`);
@@ -1178,6 +1181,8 @@ function setInputMode(mode) {
     btnDirect.style.background = 'var(--navy)'; btnDirect.style.color = '#fff'; btnDirect.style.borderColor = 'var(--navy)';
     btnCalc.style.background = '#fff'; btnCalc.style.color = 'var(--text)'; btnCalc.style.borderColor = 'var(--border)';
   }
+  // Mode switch: refresh auto-filled ladle-mapping fields against the newly-visible ladle input.
+  if (typeof refreshLadleMapping === "function") refreshLadleMapping();
 }
 
 /* ── Control Mode Toggle ── */
