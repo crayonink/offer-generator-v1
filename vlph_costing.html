@@ -1062,14 +1062,14 @@ async function refreshLadleMapping() {
   const tons = parseFloat(src?.value || 0);
   if (!tons) return;
   try {
-    const res = await fetch(`${API}/api/ladle-mapping?tons=${tons}&type=vertical`);
+    const hood = document.getElementById("hood_movement")?.value || "swivel";
+    const res = await fetch(`${API}/api/ladle-mapping?tons=${tons}&type=vertical&hood_type=${encodeURIComponent(hood)}`);
     const data = await res.json();
+    // Pipeline weight is user-supplied — not auto-filled from mapping.
     setVal("direct_ms_structure_kg", data.fabrication_kg);
-    setVal("direct_pipeline_kg",     data.pipeline_kg);
     setVal("direct_ceramic_rolls",   data.ceramic_rolls);
     setVal("ms_structure_kg",        data.fabrication_kg);
     setVal("ceramic_rolls",          data.ceramic_rolls);
-    setVal("pipeline_weight_kg",     data.pipeline_kg);
   } catch (e) { /* leave zeros */ }
 }
 // Debounce so mid-typing keystrokes (e.g. "15" before "150") don't race the
@@ -1837,6 +1837,8 @@ function onHoodMovementChange() {
   const hoodType = document.getElementById("hood_movement")?.value || "up_down";
   const ppRow = document.getElementById("td-power_pack-row");
   if (ppRow) ppRow.style.display = (hoodType === "up_down") ? "" : "none";
+  // Swivelling vs Up-and-Down use different fabrication/ceramic tables.
+  if (typeof refreshLadleMapping === "function") refreshLadleMapping();
 }
 
 function togglePreview(url) {

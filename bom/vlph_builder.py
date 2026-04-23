@@ -193,11 +193,16 @@ def _get_cheapest_butterfly_valve(nb: int) -> float:
 CERAMIC_FIBRE_KG_PER_ROLL = 14.0
 
 
-def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str) -> dict:
+def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str,
+                              hood_type: str | None = None) -> dict:
     """Look up fabrication, pipeline and ceramic-fibre weight for a given ladle
     capacity and preheater type (vertical/horizontal) from the
     fabrication_ladle_mapping table. Picks the row whose capacity is closest
     to the requested tons. Returns {} if no rows.
+
+    hood_type applies only to vertical preheaters ('swivel' or 'up_down');
+    defaults to 'swivel' when unspecified. Horizontal rows carry an empty
+    hood_type and the parameter is ignored.
 
     The stored weights already include the 10% margin. Ceramic rolls are
     derived as ceil(ceramic_kg / 14) — 14 kg per roll, rounded up so a
@@ -205,13 +210,27 @@ def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str) -> dict:
     import sqlite3, math
     if not ladle_tons or preheater_type not in ('vertical', 'horizontal'):
         return {}
+    if preheater_type == 'vertical':
+        hood_filter = hood_type if hood_type in ('swivel', 'up_down') else 'swivel'
+    else:
+        hood_filter = ''
     conn = sqlite3.connect(DB_PATH)
     rows = conn.execute(
         "SELECT ladle_capacity_ton, fabrication_kg, pipeline_kg, ceramic_kg "
-        "FROM fabrication_ladle_mapping WHERE preheater_type = ? "
+        "FROM fabrication_ladle_mapping "
+        "WHERE preheater_type = ? AND hood_type = ? "
         "ORDER BY ladle_capacity_ton",
-        (preheater_type,),
+        (preheater_type, hood_filter),
     ).fetchall()
+    # Up-and-down vertical has sparse data (only 40 T today) — fall back to
+    # swivel rows if the up_down query yields nothing.
+    if not rows and preheater_type == 'vertical' and hood_filter == 'up_down':
+        rows = conn.execute(
+            "SELECT ladle_capacity_ton, fabrication_kg, pipeline_kg, ceramic_kg "
+            "FROM fabrication_ladle_mapping "
+            "WHERE preheater_type = 'vertical' AND hood_type = 'swivel' "
+            "ORDER BY ladle_capacity_ton"
+        ).fetchall()
     conn.close()
     if not rows:
         return {}
@@ -366,8 +385,8 @@ def _bfg_line_rows(media: str, equipment: dict,
       - Pressure gauge with TNV
       - Pressure switch low
       - Orifice plate + DPT (mass-flow measurement — PLC mode only)
-      - Pneumatic control valve (mass-flow regulation — skipped in PID, where
-        the AGR regulates the air-gas ratio directly)
+      - Pneumatic control valve (mass-flow regulation — skipped in PID and
+        manual, where the AGR regulates the air-gas ratio directly)
       - Rotary joint
       - AGR (only on PLC+AGR / PID / manual control)
     """
@@ -397,6 +416,7 @@ def _bfg_line_rows(media: str, equipment: dict,
 
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
     is_pid = control_mode == "automatic" and auto_control_type == "pid"
+    is_manual = control_mode == "manual"
 
     rows = [
         _row(media, "BUTTERFLY VALVE", f'{gas_pipe_nb} NB', 1,
@@ -419,8 +439,8 @@ def _bfg_line_rows(media: str, equipment: dict,
                  unit_price_override=_get_price_fuzzy("DPT (COG)"),
                  make="HONEYWELL"),
         ]
-    # PCV skipped in PID — AGR handles air-gas ratio regulation directly.
-    if not is_pid:
+    # PCV skipped in PID and manual — AGR handles air-gas ratio regulation.
+    if not is_pid and not is_manual:
         rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
                          unit_price_override=pcv_price, make="DEMBLA"))
 

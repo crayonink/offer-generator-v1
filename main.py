@@ -966,11 +966,13 @@ def update_pricelist_item(req: ItemUpdateRequest):
 
 
 @app.get("/api/ladle-mapping")
-def ladle_mapping(tons: float, type: str = "vertical"):
+def ladle_mapping(tons: float, type: str = "vertical", hood_type: str = ""):
     """Return auto-filled fabrication/pipeline/ceramic values for a ladle
-    capacity. The UI calls this to populate read-only form fields."""
+    capacity. The UI calls this to populate read-only form fields.
+    hood_type is used only for vertical ('swivel' or 'up_down'); defaults
+    to 'swivel' in the lookup if empty."""
     from bom.vlph_builder import lookup_ladle_fab_pipeline
-    return lookup_ladle_fab_pipeline(tons, type) or {}
+    return lookup_ladle_fab_pipeline(tons, type, hood_type or None) or {}
 
 
 @app.post("/api/vlph-calculate")
@@ -1140,14 +1142,14 @@ def vlph_calculate(req: VLPHCalcRequest):
                 auto_control_type=req.auto_control_type,
             )
 
-        # Auto-fill fabrication (ms_structure), pipeline weight AND ceramic-
-        # fibre rolls from the fabrication_ladle_mapping table (nearest ladle
-        # capacity for a vertical preheater). The mapping values win over
-        # user-entered overrides because the UI renders these fields as
-        # read-only once the mapping is available.
+        # Auto-fill fabrication (ms_structure) AND ceramic-fibre rolls from
+        # the fabrication_ladle_mapping table (nearest ladle capacity for the
+        # selected hood type). Pipeline weight is always user-supplied — the
+        # file leaves pipeline kg blank on most rows so an auto-fill would
+        # silently zero the user's input.
         from bom.vlph_builder import lookup_ladle_fab_pipeline
-        _mapped = lookup_ladle_fab_pipeline(req.ladle_tons, "vertical")
-        _pipeline_kg  = _mapped.get("pipeline_kg") if _mapped else req.pipeline_weight_kg
+        _mapped = lookup_ladle_fab_pipeline(req.ladle_tons, "vertical", req.hood_type)
+        _pipeline_kg  = req.pipeline_weight_kg
         _ms_override  = (_mapped.get("fabrication_kg") if _mapped else 0) or req.ms_structure_kg_override
         _ceramic_rolls = (_mapped.get("ceramic_rolls") if _mapped else 0) or req.ceramic_rolls_override
 
@@ -1541,12 +1543,12 @@ def hlph_calculate(req: VLPHCalcRequest):
                 control_mode=req.control_mode, auto_control_type=req.auto_control_type,
             )
 
-        # Auto-fill fabrication + pipeline weight + ceramic-fibre rolls from
-        # fabrication_ladle_mapping (nearest horizontal row). Mapping wins
-        # over user-supplied overrides since the UI shows these as read-only.
+        # Auto-fill fabrication + ceramic-fibre rolls from
+        # fabrication_ladle_mapping (nearest horizontal row). Pipeline weight
+        # is always user-supplied (file carries no horizontal pipeline data).
         from bom.vlph_builder import lookup_ladle_fab_pipeline
         _mapped_h = lookup_ladle_fab_pipeline(req.ladle_tons, "horizontal")
-        _pipeline_kg_h  = _mapped_h.get("pipeline_kg") if _mapped_h else req.pipeline_weight_kg
+        _pipeline_kg_h  = req.pipeline_weight_kg
         _ms_override_h  = (_mapped_h.get("fabrication_kg") if _mapped_h else 0) or req.ms_structure_kg_override
         _ceramic_rolls_h = (_mapped_h.get("ceramic_rolls") if _mapped_h else 0) or req.ceramic_rolls_override
 

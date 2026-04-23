@@ -1032,12 +1032,11 @@ async function refreshLadleMapping() {
   try {
     const res = await fetch(`${API}/api/ladle-mapping?tons=${tons}&type=horizontal`);
     const data = await res.json();
+    // Pipeline weight is user-supplied — not auto-filled from mapping.
     setVal("direct_ms_structure_kg", data.fabrication_kg);
-    setVal("direct_pipeline_kg",     data.pipeline_kg);
     setVal("direct_ceramic_rolls",   data.ceramic_rolls);
     setVal("ms_structure_kg",        data.fabrication_kg);
     setVal("ceramic_rolls",          data.ceramic_rolls);
-    setVal("pipeline_weight_kg",     data.pipeline_kg);
   } catch (e) { /* leave zeros */ }
 }
 // Debounce so mid-typing keystrokes (e.g. "15" before "150") don't race the
