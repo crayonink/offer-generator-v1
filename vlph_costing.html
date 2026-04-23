@@ -745,6 +745,14 @@
           Geared
         </label>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-top:10px;margin-bottom:0;">
+        <input type="checkbox" id="special_auto_ignition" style="width:auto;margin:0;"/>
+        Auto Ignition
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-top:10px;margin-bottom:0;">
+        <input type="checkbox" id="special_auto_controls" style="width:auto;margin:0;"/>
+        Auto Controls
+      </label>
     </div>
 
     <div id="calc-extras">
@@ -1336,6 +1344,8 @@ async function calculate() {
       ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
       special_swivelling: getSpecialSwivelling(),
+      special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
+      special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
 
     };
   } else {
@@ -1369,6 +1379,8 @@ async function calculate() {
       ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
       special_swivelling: getSpecialSwivelling(),
+      special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
+      special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
 
     };
   }

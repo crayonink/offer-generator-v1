@@ -489,6 +489,8 @@ class VLPHCalcRequest(BaseModel):
     ceramic_rolls_override: int = 0              # Tundish: override ceramic-fibre roll count
     hood_type: str = "up_down"                   # "up_down" (hydraulic) or "swivel" (geared)
     special_swivelling: str = ""                  # "" (not requested), "manual", or "geared" — Special Requirements panel
+    special_auto_ignition: bool = False            # Special Requirements: auto-ignition requested
+    special_auto_controls: bool = False            # Special Requirements: auto-controls requested
 
 
 class QuoteItem(BaseModel):
