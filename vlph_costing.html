@@ -703,14 +703,14 @@
           <option value="Duplex 2">Duplex-II (HPDD)</option>
         </select>
       </div>
-      <div class="field auto-only">
+      <div class="field pilot-gated">
         <label>Pilot Line Fuel</label>
         <select id="pilot_line_fuel">
           <option value="lpg" selected>LPG</option>
           <option value="ng">NG</option>
         </select>
       </div>
-      <div class="field auto-only">
+      <div class="field pilot-gated">
         <label>Pilot Burner</label>
         <select id="pilot_burner">
           <option value="lpg_10" selected>ENCON-PB LPG 10 KW (Rs. 11,000)</option>
@@ -746,7 +746,7 @@
         </label>
       </div>
       <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-top:10px;margin-bottom:0;">
-        <input type="checkbox" id="special_auto_ignition" style="width:auto;margin:0;"/>
+        <input type="checkbox" id="special_auto_ignition" onchange="updatePilotVisibility()" style="width:auto;margin:0;"/>
         Auto Ignition
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-top:10px;margin-bottom:0;">
@@ -1116,6 +1116,9 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
   setTimeout(refreshLadleMapping, 300);
+  // Pilot fields start hidden; updatePilotVisibility reveals them only when
+  // Automatic + Auto Ignition are both active.
+  if (typeof updatePilotVisibility === "function") updatePilotVisibility();
 });
 let lastCalc = null;
 
@@ -1224,6 +1227,8 @@ function onControlModeChange() {
   document.querySelectorAll('.auto-only').forEach(el => {
     el.style.display = mode === 'automatic' ? '' : 'none';
   });
+  // Pilot fields have their own rule (auto mode + auto-ignition ticked)
+  updatePilotVisibility();
   if (mode === 'manual') document.getElementById('purging-row').style.display = 'none';
   else onFuelChange();
 }
@@ -1879,6 +1884,17 @@ function onSpecialSwivellingChange() {
   const on = document.getElementById("special_swivelling_enabled")?.checked;
   const drive = document.getElementById("special_swivelling_drive");
   if (drive) drive.style.display = on ? "" : "none";
+}
+
+function updatePilotVisibility() {
+  // Pilot Line Fuel + Pilot Burner are shown only when Control Mode is
+  // Automatic AND the Auto Ignition special requirement is ticked.
+  const mode = document.getElementById("control_mode")?.value;
+  const autoIgn = !!document.getElementById("special_auto_ignition")?.checked;
+  const show = mode === "automatic" && autoIgn;
+  document.querySelectorAll(".pilot-gated").forEach(el => {
+    el.style.display = show ? "" : "none";
+  });
 }
 
 function getSpecialSwivelling() {
