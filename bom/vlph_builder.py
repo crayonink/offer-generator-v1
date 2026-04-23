@@ -303,6 +303,7 @@ def _cog_line_rows(media: str, equipment: dict,
             bfv = {"nb": gas_pipe_nb, "price": 0, "make": "L&T"}
 
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
+    is_pid = control_mode == "automatic" and auto_control_type == "pid"
     needs_agr = (
         control_mode == "manual"
         or (control_mode == "automatic" and auto_control_type in ("plc_agr", "pid"))
@@ -337,8 +338,10 @@ def _cog_line_rows(media: str, equipment: dict,
                      make="HONEYWELL"),
             ]
 
-        rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
-             unit_price_override=pcv_price, make="DEMBLA"))
+        # PCV skipped in PID — AGR handles air-gas ratio regulation directly.
+        if not is_pid:
+            rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+                 unit_price_override=pcv_price, make="DEMBLA"))
 
         if needs_agr:
             rows.append(_row(
@@ -363,7 +366,8 @@ def _bfg_line_rows(media: str, equipment: dict,
       - Pressure gauge with TNV
       - Pressure switch low
       - Orifice plate + DPT (mass-flow measurement — PLC mode only)
-      - Pneumatic control valve (mass-flow regulation — always)
+      - Pneumatic control valve (mass-flow regulation — skipped in PID, where
+        the AGR regulates the air-gas ratio directly)
       - Rotary joint
       - AGR (only on PLC+AGR / PID / manual control)
     """
@@ -392,6 +396,7 @@ def _bfg_line_rows(media: str, equipment: dict,
     _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
 
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
+    is_pid = control_mode == "automatic" and auto_control_type == "pid"
 
     rows = [
         _row(media, "BUTTERFLY VALVE", f'{gas_pipe_nb} NB', 1,
@@ -414,8 +419,10 @@ def _bfg_line_rows(media: str, equipment: dict,
                  unit_price_override=_get_price_fuzzy("DPT (COG)"),
                  make="HONEYWELL"),
         ]
-    rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
-                     unit_price_override=pcv_price, make="DEMBLA"))
+    # PCV skipped in PID — AGR handles air-gas ratio regulation directly.
+    if not is_pid:
+        rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+                         unit_price_override=pcv_price, make="DEMBLA"))
 
     rows.append(_row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
                      unit_price_override=rj["price"], make="ENCON"))
@@ -502,6 +509,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     gv_nb, gv_price = _get_gate_valve_price(gas_pipe_nb)
 
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
+    is_pid = control_mode == "automatic" and auto_control_type == "pid"
 
     rows = [
         _row(media, "GATE VALVE", f'{gv_nb} NB', 1,
@@ -528,8 +536,10 @@ def _mix_gas_line_rows(media: str, equipment: dict,
                      make="HONEYWELL"),
             ]
 
-        rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
-             unit_price_override=pcv_price, make=pcv_make))
+        # PCV skipped in PID — AGR handles air-gas ratio regulation directly.
+        if not is_pid:
+            rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+                 unit_price_override=pcv_price, make=pcv_make))
 
         needs_agr = (
             control_mode == "manual"
