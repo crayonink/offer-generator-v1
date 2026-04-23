@@ -277,6 +277,39 @@ def parse_hpu(xl, conn):
 
 
 # ─────────────────────────────────────────────────────────────────
+# 2b. pumping_unit_price  (derived from hpu_master, excl. heater/thermostat)
+# ─────────────────────────────────────────────────────────────────
+
+PUMPING_UNIT_MARGIN = 1.8
+
+def rebuild_pumping_unit_price(conn):
+    """
+    Repopulate pumping_unit_price from hpu_master.
+
+    cost       = SUM(hpu_master.amount) per (unit_kw, variant), excluding
+                 rows whose item name contains 'heater' or 'thermostat'
+                 (a pumping unit is an HPU without the heating element).
+    sell_price = cost × 1.8 (matches the HPU sheet's Excel markup).
+    """
+    c = conn.cursor()
+    c.execute("DELETE FROM pumping_unit_price")
+    rows = c.execute("""
+        SELECT unit_kw, variant, ROUND(SUM(amount), 2) AS cost
+        FROM hpu_master
+        WHERE LOWER(item) NOT LIKE '%heater%'
+          AND LOWER(item) NOT LIKE '%thermostat%'
+        GROUP BY unit_kw, variant
+    """).fetchall()
+    c.executemany(
+        "INSERT INTO pumping_unit_price (unit_kw, variant, cost, sell_price, margin_factor) "
+        "VALUES (?, ?, ?, ?, ?)",
+        [(kw, variant, cost, round(cost * PUMPING_UNIT_MARGIN, 2), PUMPING_UNIT_MARGIN)
+         for (kw, variant, cost) in rows],
+    )
+    return {"rows": len(rows)}
+
+
+# ─────────────────────────────────────────────────────────────────
 # 3. BURNER → burner_pricelist_master
 # ─────────────────────────────────────────────────────────────────
 
@@ -1865,6 +1898,7 @@ def parse_all(file_path: str, conn: sqlite3.Connection) -> dict:
     parsers = [
         ("component_price_master",    lambda: parse_rates(xl, conn)),
         ("hpu_master",                lambda: parse_hpu(xl, conn)),
+        ("pumping_unit_price",        lambda: rebuild_pumping_unit_price(conn)),
         ("burner_pricelist_master",   lambda: parse_burner(xl, conn)),
         ("blower_pricelist_master",   lambda: parse_blower(xl, conn)),
         ("horizontal_master",         lambda: parse_horizontal(xl, conn)),
