@@ -488,6 +488,7 @@ class VLPHCalcRequest(BaseModel):
     ms_structure_kg_override: float = 0.0        # Tundish: override MS structure weight used for fabrication cost
     ceramic_rolls_override: int = 0              # Tundish: override ceramic-fibre roll count
     hood_type: str = "up_down"                   # "up_down" (hydraulic) or "swivel" (geared)
+    special_swivelling: str = ""                  # "" (not requested), "manual", or "geared" — Special Requirements panel
 
 
 class QuoteItem(BaseModel):
