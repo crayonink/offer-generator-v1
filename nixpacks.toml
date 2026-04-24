@@ -1,6 +1,18 @@
 # Tell Railway's nixpacks builder to add LibreOffice so the /api/pdf-quote
 # endpoint can convert generated .docx offers to PDF with high fidelity.
-# default-jre is required — without Java, LibreOffice fails with
-# "failed to launch javaldx" and docx->pdf conversion aborts.
+#
+# Three LibreOffice-related packages are needed together:
+#   - libreoffice              : the office suite itself
+#   - libreoffice-java-common  : the bridge that lets LibreOffice use Java
+#   - default-jre-headless     : actual JRE (no GUI) for javaldx
+# Without the java-common bridge + JRE, soffice --convert-to pdf fails
+# with "Warning: failed to launch javaldx - java may not function correctly
+# Unspecified Application Error" and no PDF is produced.
 [phases.setup]
-aptPkgs = ["libreoffice", "default-jre", "fonts-dejavu", "fonts-liberation"]
+aptPkgs = [
+    "libreoffice",
+    "libreoffice-java-common",
+    "default-jre-headless",
+    "fonts-dejavu",
+    "fonts-liberation",
+]
