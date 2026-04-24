@@ -1924,7 +1924,7 @@ async function generateQuote() {
     // BOM items for the MAKE LIST table on the last page
     bom_items: (lastCalc.bom || [])
       .filter(r => r["ITEM NAME"] && r["ITEM NAME"] !== "BOUGHT OUT ITEMS" && r["ITEM NAME"] !== "ENCON ITEMS")
-      .map(r => ({ item: r["ITEM NAME"], make: r.MAKE || "ENCON" })),
+      .map(r => ({ item: r["ITEM NAME"], make: r.MAKE || "ENCON", media: r.MEDIA || "", ref: r.REFERENCE || "" })),
     // Technical data for template (pulled from lastCalc)
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,

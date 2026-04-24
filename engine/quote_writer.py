@@ -138,6 +138,43 @@ def _build_equipment_name(customer, quote_data):
     return customer.get("project_name") or ""
 
 
+def _control_system_sections(bom_items: list) -> dict:
+    """Group BOM rows by MEDIA into the three lists the offer doc renders
+    under Burner Control System and Temperature Control System.
+
+    Returns a dict with keys:
+      - gas_pipeline_items:  rows whose MEDIA ends with " LINE" and isn't the
+                             combustion-air, a pilot line or the purging line.
+                             Covers NG/COG/BFG/MIXED GAS/LDO/OIL/HSD, etc.
+      - air_pipeline_items:  rows with MEDIA == "COMB AIR".
+      - temp_control_items:  rows with MEDIA == "MISC ITEMS".
+
+    Each list item is {"item": ..., "ref": ...} for easy templating.
+    """
+    def _fmt(x):
+        ref = (x.get("ref") or "").strip()
+        return {"item": x.get("item", ""), "ref": ref}
+
+    gas, air, temp = [], [], []
+    for x in bom_items:
+        media = (x.get("media") or "").strip().upper()
+        item  = (x.get("item") or "").strip()
+        if not item:
+            continue
+        if media == "COMB AIR":
+            air.append(_fmt(x))
+        elif media == "MISC ITEMS":
+            temp.append(_fmt(x))
+        elif media.endswith(" LINE") and not media.endswith(" PILOT LINE") and media != "PURGING LINE":
+            gas.append(_fmt(x))
+        # BOUGHT OUT ITEMS, ENCON ITEMS etc. are intentionally ignored here.
+    return {
+        "gas_pipeline_items": gas,
+        "air_pipeline_items": air,
+        "temp_control_items": temp,
+    }
+
+
 def generate_quote_docx(quote_data: dict, output_path: str):
     customer = quote_data["customer"]
     sup_mech, sup_plc = _supervision_rates()
@@ -322,6 +359,9 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             for x in (customer.get("bom_items") or [])
             if x.get("item")
         ],
+        # Control-system sections driven by the BOM's MEDIA column.
+        # Each list is [{item, ref}, ...]; the template renders one bullet per entry.
+        **_control_system_sections(customer.get("bom_items") or []),
     }
 
     # Use tundish-specific template if the product type indicates tundish
