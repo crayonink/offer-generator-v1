@@ -3305,17 +3305,31 @@ def pdf_quote(filename: str):
     if not soffice:
         return {"error": "LibreOffice not installed on the server. Cannot convert to PDF."}
 
-    with tempfile.TemporaryDirectory() as out_dir:
+    with tempfile.TemporaryDirectory() as out_dir, \
+         tempfile.TemporaryDirectory() as profile_dir:
+        # LibreOffice needs a writable user-profile dir. In the default
+        # container it tries $HOME/.config/libreoffice, which may not be
+        # writable or may collide between concurrent requests. Point it at
+        # a per-request temp dir to get a clean, writable profile.
+        profile_uri = "file://" + profile_dir.replace(os.sep, "/")
         try:
             subprocess.run(
-                [soffice, "--headless", "--convert-to", "pdf",
-                 "--outdir", out_dir, docx_path],
-                check=True, capture_output=True, timeout=120,
+                [soffice,
+                 "--headless", "--norestore", "--nofirststartwizard",
+                 "--nologo", "--nolockcheck",
+                 f"-env:UserInstallation={profile_uri}",
+                 "--convert-to", "pdf",
+                 "--outdir", out_dir,
+                 docx_path],
+                check=True, capture_output=True, timeout=180,
+                env={**os.environ, "HOME": profile_dir},
             )
         except subprocess.CalledProcessError as e:
-            return {"error": f"LibreOffice conversion failed: {e.stderr.decode(errors='ignore')[:400]}"}
+            stderr = e.stderr.decode(errors='ignore')[:400]
+            stdout = e.stdout.decode(errors='ignore')[:200]
+            return {"error": f"LibreOffice conversion failed: {stderr or stdout or 'no output'}"}
         except subprocess.TimeoutExpired:
-            return {"error": "Conversion timed out after 120s"}
+            return {"error": "Conversion timed out after 180s"}
 
         base = os.path.splitext(filename)[0]
         pdf_src = os.path.join(out_dir, f"{base}.pdf")
