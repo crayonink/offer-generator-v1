@@ -337,7 +337,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Row 6 (vertical column) — hood mechanism
         "hood_scope_vertical": (
             "Swiveling mechanism through bearing with mechanical locking"
-            if (customer.get("hood_type") == "swivel")
+            if (customer.get("hood_type") in ("swivel", "swivel_manual", "swivel_geared"))
             else "Hydraulic Cylinder for lifting and Lowering of the system"
         ),
         # Control-mode flags drive {%p if is_manual %} / {%p if is_automatic %}
