@@ -1773,7 +1773,22 @@ async function generateQuote() {
   const btn = document.getElementById("quote-btn");
   btn.classList.add("loading"); btn.disabled = true;
 
-  const s = lastCalc.cost_summary;
+  // Recompute the grand total from the same inputs the banner uses so it
+  // always matches what's on screen — even if lastCalc.cost_summary.grand_total
+  // went stale between Calculate and Generate.
+  const _gtMarkup = parseFloat(document.getElementById("markup-factor")?.value) || 1.8;
+  const _gtBought = (window._boughtRaw !== undefined)
+        ? window._boughtRaw
+        : ((lastCalc.cost_summary && lastCalc.cost_summary.bought_out_total) || 0);
+  const _gtEncon  = (window._enconRaw !== undefined)
+        ? window._enconRaw
+        : ((lastCalc.cost_summary && lastCalc.cost_summary.encon_total) || 0);
+  const _freshGrand = _gtBought * _gtMarkup + _gtEncon;
+
+  const s = {
+    ...lastCalc.cost_summary,
+    grand_total: _freshGrand,
+  };
   const payload = {
     company_name:    company,
     company_address: str("c-address"),
