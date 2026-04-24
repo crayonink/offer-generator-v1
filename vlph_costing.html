@@ -745,14 +745,18 @@
           Geared
         </label>
       </div>
-      <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-top:10px;margin-bottom:0;">
-        <input type="checkbox" id="special_auto_ignition" onchange="updatePilotVisibility()" style="width:auto;margin:0;"/>
-        Auto Ignition
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-top:10px;margin-bottom:0;">
-        <input type="checkbox" id="special_auto_controls" style="width:auto;margin:0;"/>
-        Auto Controls
-      </label>
+      <div class="auto-only" style="margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;">
+          <input type="checkbox" id="special_auto_ignition" onchange="updatePilotVisibility()" style="width:auto;margin:0;"/>
+          Auto Ignition
+        </label>
+      </div>
+      <div class="auto-only" style="margin-top:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;">
+          <input type="checkbox" id="special_auto_controls" style="width:auto;margin:0;"/>
+          Auto Controls
+        </label>
+      </div>
     </div>
 
     <div id="calc-extras">
