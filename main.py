@@ -487,8 +487,7 @@ class VLPHCalcRequest(BaseModel):
     num_burners: int = 1                         # Number of burners (tundish: splits firing rate, multiplies burner-line items)
     ms_structure_kg_override: float = 0.0        # Tundish: override MS structure weight used for fabrication cost
     ceramic_rolls_override: int = 0              # Tundish: override ceramic-fibre roll count
-    hood_type: str = "up_down"                   # "up_down" (hydraulic) or "swivel" (geared)
-    special_swivelling: str = ""                  # "" (not requested), "manual", or "geared" — Special Requirements panel
+    hood_type: str = "up_down"                   # "up_down" | "swivel_manual" | "swivel_geared"
     special_auto_ignition: bool = False            # Special Requirements: auto-ignition requested
     special_auto_controls: bool = False            # Special Requirements: auto-controls requested
 

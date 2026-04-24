@@ -494,9 +494,10 @@
         <label>Movement of Hood <span class="req">*</span></label>
         <select id="hood_movement" onchange="onHoodMovementChange()">
           <option value="up_down" selected>Up and Down (hydraulic)</option>
-          <option value="swivel">Swivelling type</option>
+          <option value="swivel_manual">Swivelling — Manual</option>
+          <option value="swivel_geared">Swivelling — Geared</option>
         </select>
-        <div class="hint">Up/Down uses a hydraulic power pack; swivelling uses a geared drive</div>
+        <div class="hint">Up/Down uses a hydraulic power pack; Swivelling uses a manual or geared drive</div>
       </div>
     </div>
 
@@ -730,22 +731,7 @@
     <!-- Special Requirements -->
     <div id="special-requirements" style="margin-bottom:24px;padding:14px 16px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;">
       <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Special Requirements</div>
-      <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-bottom:0;">
-        <input type="checkbox" id="special_swivelling_enabled" onchange="onSpecialSwivellingChange()" style="width:auto;margin:0;"/>
-        Swivelling
-      </label>
-      <div id="special_swivelling_drive" style="display:none;margin-top:10px;margin-left:26px;">
-        <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;">Drive type</div>
-        <label style="display:inline-flex;align-items:center;gap:6px;margin-right:20px;font-weight:400;cursor:pointer;">
-          <input type="radio" name="special_swivelling_type" value="manual" checked style="width:auto;margin:0;"/>
-          Manual
-        </label>
-        <label style="display:inline-flex;align-items:center;gap:6px;font-weight:400;cursor:pointer;">
-          <input type="radio" name="special_swivelling_type" value="geared" style="width:auto;margin:0;"/>
-          Geared
-        </label>
-      </div>
-      <div class="auto-only" style="margin-top:10px;">
+      <div class="auto-only">
         <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;">
           <input type="checkbox" id="special_auto_ignition" onchange="updatePilotVisibility()" style="width:auto;margin:0;"/>
           Auto Ignition
@@ -1352,7 +1338,6 @@ async function calculate() {
       ms_structure_kg_override: parseFloat(document.getElementById("direct_ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
-      special_swivelling: getSpecialSwivelling(),
       special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
       special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
 
@@ -1387,7 +1372,6 @@ async function calculate() {
       ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
-      special_swivelling: getSpecialSwivelling(),
       special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
       special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
 
@@ -1876,18 +1860,12 @@ function onPilotFuelChange() {
 }
 
 function onHoodMovementChange() {
-  // Power pack only for vertical up/down hoods (swivel uses geared drive).
+  // Power pack only for up-and-down hoods — manual and geared swivel don't need it.
   const hoodType = document.getElementById("hood_movement")?.value || "up_down";
   const ppRow = document.getElementById("td-power_pack-row");
   if (ppRow) ppRow.style.display = (hoodType === "up_down") ? "" : "none";
-  // Swivelling vs Up-and-Down use different fabrication/ceramic tables.
+  // Each hood type maps to its own fabrication/ceramic table.
   if (typeof refreshLadleMapping === "function") refreshLadleMapping();
-}
-
-function onSpecialSwivellingChange() {
-  const on = document.getElementById("special_swivelling_enabled")?.checked;
-  const drive = document.getElementById("special_swivelling_drive");
-  if (drive) drive.style.display = on ? "" : "none";
 }
 
 function updatePilotVisibility() {
@@ -1899,13 +1877,6 @@ function updatePilotVisibility() {
   document.querySelectorAll(".pilot-gated").forEach(el => {
     el.style.display = show ? "" : "none";
   });
-}
-
-function getSpecialSwivelling() {
-  // Returns "" | "manual" | "geared"
-  const on = document.getElementById("special_swivelling_enabled")?.checked;
-  if (!on) return "";
-  return (document.querySelector('input[name="special_swivelling_type"]:checked')?.value) || "manual";
 }
 
 function togglePreview(url) {

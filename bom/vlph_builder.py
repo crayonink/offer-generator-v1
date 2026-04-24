@@ -193,6 +193,9 @@ def _get_cheapest_butterfly_valve(nb: int) -> float:
 CERAMIC_FIBRE_KG_PER_ROLL = 14.0
 
 
+_VALID_VERTICAL_HOODS = ('up_down', 'swivel_manual', 'swivel_geared')
+
+
 def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str,
                               hood_type: str | None = None) -> dict:
     """Look up fabrication, pipeline and ceramic-fibre weight for a given ladle
@@ -200,9 +203,14 @@ def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str,
     fabrication_ladle_mapping table. Picks the row whose capacity is closest
     to the requested tons. Returns {} if no rows.
 
-    hood_type applies only to vertical preheaters ('swivel' or 'up_down');
-    defaults to 'swivel' when unspecified. Horizontal rows carry an empty
+    hood_type applies only to vertical preheaters — one of 'up_down',
+    'swivel_manual', 'swivel_geared'. Defaults to 'swivel_manual' when the
+    value is missing or unrecognised. Horizontal rows carry an empty
     hood_type and the parameter is ignored.
+
+    Sparse-data fallback: swivel_geared currently has only one row (30 T);
+    if the requested (hood_type, tons) has no rows at all, fall back to
+    swivel_manual so the form still auto-fills something useful.
 
     The stored weights already include the 10% margin. Ceramic rolls are
     derived as ceil(ceramic_kg / 14) — 14 kg per roll, rounded up so a
@@ -211,7 +219,7 @@ def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str,
     if not ladle_tons or preheater_type not in ('vertical', 'horizontal'):
         return {}
     if preheater_type == 'vertical':
-        hood_filter = hood_type if hood_type in ('swivel', 'up_down') else 'swivel'
+        hood_filter = hood_type if hood_type in _VALID_VERTICAL_HOODS else 'swivel_manual'
     else:
         hood_filter = ''
     conn = sqlite3.connect(DB_PATH)
@@ -222,13 +230,13 @@ def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str,
         "ORDER BY ladle_capacity_ton",
         (preheater_type, hood_filter),
     ).fetchall()
-    # Up-and-down vertical has sparse data (only 40 T today) — fall back to
-    # swivel rows if the up_down query yields nothing.
-    if not rows and preheater_type == 'vertical' and hood_filter == 'up_down':
+    # Fall back to swivel_manual for vertical when the requested hood has no
+    # data (relevant for swivel_geared which starts with only one row).
+    if not rows and preheater_type == 'vertical' and hood_filter != 'swivel_manual':
         rows = conn.execute(
             "SELECT ladle_capacity_ton, fabrication_kg, pipeline_kg, ceramic_kg "
             "FROM fabrication_ladle_mapping "
-            "WHERE preheater_type = 'vertical' AND hood_type = 'swivel' "
+            "WHERE preheater_type = 'vertical' AND hood_type = 'swivel_manual' "
             "ORDER BY ladle_capacity_ton"
         ).fetchall()
     conn.close()
@@ -977,8 +985,9 @@ def build_vlph_120t_df(
         STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
     if is_pid:
         STATIC_SKIP.add("TEMPERATURE TRANSMITTER")
-    # Swivelling hoods use a geared drive — no hydraulic power pack needed.
-    if hood_type == "swivel":
+    # Swivelling hoods (manual or geared) don't use a hydraulic power pack —
+    # only the up-and-down hydraulic hood needs it.
+    if hood_type in ("swivel_manual", "swivel_geared", "swivel"):
         STATIC_SKIP.add("HYDRAULIC POWER PACK & CYLINDER")
     for media, item, ref, qty in static_items():
         if item not in STATIC_SKIP:
@@ -1161,7 +1170,7 @@ def build_vlph_manual_df(
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"]),
     ]
-    if hood_type != "swivel":
+    if hood_type not in ("swivel_manual", "swivel_geared", "swivel"):
         rows.insert(-1, _row("ENCON ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "", 1))
     if include_pilot:
         rows += [
