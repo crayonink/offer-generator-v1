@@ -559,7 +559,8 @@ class QuoteRequest(BaseModel):
     is_oil: Optional[bool] = False   # True for oil fuels — drives scope-of-supply rendering
     is_dual: Optional[bool] = False  # True for dual-fuel (gas + oil)
     control_mode: Optional[str] = "automatic"  # "manual" or "automatic" — drives scope text
-    bom_items: Optional[List[dict]] = []   # [{item, make}, ...] for the MAKE LIST table
+    auto_control_type: Optional[str] = "plc"   # "plc" | "plc_agr" | "pid" — drives PDF scope wording
+    bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
     gst_percent: float = 18
@@ -1780,6 +1781,7 @@ async def generate_quote(req: QuoteRequest):
                 "is_oil":              bool(req.is_oil),
                 "is_dual":             bool(req.is_dual),
                 "control_mode":        req.control_mode or "automatic",
+                "auto_control_type":   req.auto_control_type or "plc",
                 "bom_items":           req.bom_items or [],
             },
             "items": [item.dict() for item in req.items],

@@ -1849,6 +1849,7 @@ function buildTechData() {
     is_oil:               isOil,
     is_dual:              !!(lastCalc.calculations || {}).is_dual,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
+    auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
   };
 }
 
