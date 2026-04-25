@@ -1723,6 +1723,7 @@ async def generate_quote(req: QuoteRequest):
     try:
         from engine.quote_engine import calculate_quote
         from engine.quote_writer import generate_quote_docx
+        from engine.pdf_writer import generate_quote_pdf
 
         seq = next_quote_seq()
         form_data = {
@@ -1791,6 +1792,24 @@ async def generate_quote(req: QuoteRequest):
         filename = f"Quote_{quote_data['quote_no'].replace('/', '_')}.docx"
         output_path = os.path.join(QUOTES_FOLDER, filename)
         generate_quote_docx(quote_data, output_path)
+
+        # Also build a self-contained PDF directly with reportlab, so the
+        # Download PDF button serves a real PDF without needing LibreOffice.
+        pdf_path = os.path.splitext(output_path)[0] + ".pdf"
+        try:
+            generate_quote_pdf(quote_data, pdf_path)
+        except Exception as _pdf_err:
+            print(f"WARN: PDF generation failed for {filename}: {_pdf_err}")
+
+        # Persist the raw quote_data so the PDF can be regenerated later
+        # if the .pdf file gets wiped (e.g., container redeploy).
+        try:
+            import json as _json
+            json_path = os.path.splitext(output_path)[0] + ".json"
+            with open(json_path, "w", encoding="utf-8") as _jf:
+                _json.dump(quote_data, _jf, default=str)
+        except Exception as _json_err:
+            print(f"WARN: quote-data persist failed for {filename}: {_json_err}")
 
         # Persist to quotes_log so we can list/re-download past quotes later
         try:
@@ -3295,61 +3314,39 @@ def _soffice_binary():
 
 @app.get("/api/pdf-quote/{filename}")
 def pdf_quote(filename: str):
-    """Convert a generated .docx offer to PDF using LibreOffice headless."""
-    import subprocess, tempfile
-    docx_path = os.path.join(QUOTES_FOLDER, filename)
-    if not os.path.exists(docx_path):
-        return {"error": "File not found"}
+    """Serve the PDF version of a generated offer.
 
-    soffice = _soffice_binary()
-    if not soffice:
-        return {"error": "LibreOffice not installed on the server. Cannot convert to PDF."}
+    Each call to /api/generate-quote now writes both a .docx (Word
+    template) and a .pdf (built directly with reportlab) into
+    QUOTES_FOLDER. This endpoint just serves the pre-generated PDF
+    so the client doesn't need any docx->pdf conversion at request
+    time. If the PDF doesn't exist (older quote or generator error),
+    it builds it on demand from the docx-equivalent quote_data.
+    """
+    base = os.path.splitext(filename)[0]
+    pdf_dst = os.path.join(QUOTES_FOLDER, f"{base}.pdf")
 
-    with tempfile.TemporaryDirectory() as out_dir, \
-         tempfile.TemporaryDirectory() as profile_dir:
-        # LibreOffice needs a writable user-profile dir. In the default
-        # container it tries $HOME/.config/libreoffice, which may not be
-        # writable or may collide between concurrent requests. Point it at
-        # a per-request temp dir to get a clean, writable profile.
-        profile_uri = "file://" + profile_dir.replace(os.sep, "/")
+    if os.path.exists(pdf_dst):
+        return FileResponse(path=pdf_dst, filename=f"{base}.pdf",
+            media_type="application/pdf")
+
+    # Fallback: try to rebuild the PDF on-the-fly from any persisted quote
+    # JSON. Older quotes generated before the reportlab pipeline existed
+    # won't have this — those return a clear error.
+    json_path = os.path.join(QUOTES_FOLDER, f"{base}.json")
+    if os.path.exists(json_path):
         try:
-            subprocess.run(
-                [soffice,
-                 "--headless", "--norestore", "--nofirststartwizard",
-                 "--nologo", "--nolockcheck",
-                 f"-env:UserInstallation={profile_uri}",
-                 "--convert-to", "pdf",
-                 "--outdir", out_dir,
-                 docx_path],
-                check=True, capture_output=True, timeout=180,
-                env={**os.environ, "HOME": profile_dir},
-            )
-        except subprocess.CalledProcessError as e:
-            stderr = e.stderr.decode(errors='ignore')[:400]
-            stdout = e.stdout.decode(errors='ignore')[:200]
-            return {"error": f"LibreOffice conversion failed: {stderr or stdout or 'no output'}"}
-        except subprocess.TimeoutExpired:
-            return {"error": "Conversion timed out after 180s"}
+            import json as _json
+            from engine.pdf_writer import generate_quote_pdf
+            with open(json_path, encoding="utf-8") as f:
+                quote_data = _json.load(f)
+            generate_quote_pdf(quote_data, pdf_dst)
+            return FileResponse(path=pdf_dst, filename=f"{base}.pdf",
+                media_type="application/pdf")
+        except Exception as e:
+            return {"error": f"PDF build failed: {e}"}
 
-        base = os.path.splitext(filename)[0]
-        pdf_src = os.path.join(out_dir, f"{base}.pdf")
-        if not os.path.exists(pdf_src):
-            return {"error": "LibreOffice produced no PDF"}
-
-        # Copy the PDF into QUOTES_FOLDER so it can be served again without re-conversion
-        pdf_dst = os.path.join(QUOTES_FOLDER, f"{base}.pdf")
-        import shutil
-        shutil.copyfile(pdf_src, pdf_dst)
-
-    # Overlay 'Page X / Y' on each page — more reliable than hoping LibreOffice
-    # refreshes the PAGE/NUMPAGES fields inside the footer text box.
-    try:
-        _stamp_page_numbers(pdf_dst)
-    except Exception as e:
-        print(f"WARN: page-number overlay failed: {e}")
-
-    return FileResponse(path=pdf_dst, filename=f"{base}.pdf",
-        media_type="application/pdf")
+    return {"error": "PDF not available — regenerate the quote to produce it."}
 
 
 def _stamp_page_numbers(pdf_path: str):
