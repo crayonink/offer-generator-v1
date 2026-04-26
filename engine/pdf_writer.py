@@ -79,8 +79,12 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
     pilot_media = None
 
     def _clean(name: str) -> str:
-        n = name.strip()
-        n = re.sub(r"^(GAS\s+TRAIN)\s+.*$", r"\1", n, flags=re.IGNORECASE)
+        n = (name or "").strip()
+        # 'GAS TRAIN 500 NM3/Hr ...' -> 'GAS TRAIN'
+        n = re.sub(r"^(GAS\s+TRAIN)\b.*$", r"\1", n, flags=re.IGNORECASE)
+        # Strip trailing ' - <size/spec>' (e.g., '- 250 NB F150#',
+        # '- 80 NB', '- RANGE- 0-1600 mBAR'). Em/en dash too.
+        n = re.sub(r"\s+[\-–—]\s+.*$", "", n)
         return n.strip()
 
     def _add(bucket, key, entry):

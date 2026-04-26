@@ -172,6 +172,76 @@ def _build_equipment_name(customer, quote_data):
     return customer.get("project_name") or ""
 
 
+def _temp_control_items_for_mode(control_mode: str, auto_control_type: str) -> list:
+    """Return the static numbered list of Temperature Control System items
+    for the given control mode. Drives the {%p for x in temp_control_items %}
+    loop in the Word template (and the PDF builder). Replaces the previous
+    BOM-derived list so every mode has fixed, well-worded content."""
+    cm  = (control_mode or "automatic").lower()
+    act = (auto_control_type or "plc").lower()
+    if cm == "manual":
+        items = [
+            "Thermocouple with temperature transmitter",
+            "Air-Gas Ratio (AGR) regulator on the gas line",
+        ]
+    elif act == "pid":
+        items = [
+            "P.PID temperature controller",
+            "Ratio Controller",
+            "Thermocouple with temperature transmitter",
+            "Air-Gas Ratio (AGR) regulator on the gas line",
+        ]
+    elif act == "plc_agr":
+        items = [
+            "PLC with HMI",
+            "Thermocouple with temperature transmitter",
+            "Air-Gas Ratio (AGR) regulator on the gas line",
+        ]
+    else:
+        # Default: PLC
+        items = [
+            "PLC with HMI",
+            "Thermocouple with temperature transmitter",
+            "Orifice plate fitted with mass flow transmitter on gas line",
+            "Orifice plate fitted with differential pressure transmitter on air line",
+        ]
+    return [{"item": x, "ref": ""} for x in items]
+
+
+def _operational_sequence_text(control_mode: str, auto_control_type: str) -> str:
+    """Mode-specific wording for the OPERATIONAL SEQUENCE paragraph in the
+    offer document. Mirrored in pdf_writer.py."""
+    cm  = (control_mode or "automatic").lower()
+    act = (auto_control_type or "plc").lower()
+    if cm == "manual":
+        return ("The temperature of the ladle will be monitored manually through the "
+                "temperature indicator fitted on the panel. The operator will open / "
+                "close the air and gas control valves to maintain the desired "
+                "temperature profile of the ladle as per the heating schedule.")
+    if act == "pid":
+        return ("The temperature of the ladle will be controlled automatically through "
+                "a PID controller. The thermocouple fitted in the ladle will sense the "
+                "temperature and feed it to the PID controller. The PID controller will "
+                "modulate the air control valve via the Air-Gas Ratio regulator to "
+                "maintain the air/gas ratio as the temperature rises / falls to the "
+                "set values.")
+    if act == "plc_agr":
+        return ("The temperature of the ladle will be controlled automatically through "
+                "P.L.C. The thermocouple fitted in the ladle will sense the temperature "
+                "and signal the P.L.C. The P.L.C will modulate the air control valve "
+                "through the Air-Gas Ratio regulator and accordingly the gas flow will "
+                "be controlled to maintain the air/gas ratio as the temperature "
+                "decreases / increases to the set values.")
+    # Default: PLC
+    return ("The temperature of the ladle will be controlled automatically through "
+            "P.L.C. The thermocouple fitted in the ladle will sense the temperature "
+            "and will give signal to the P.L.C. The P.L.C will send a signal to the "
+            "control valve fitted on the airline; the air control valve will be "
+            "modulated and accordingly the gas flow will be controlled, maintaining "
+            "the mass-flow air/gas ratio as the temperature decreases / increases to "
+            "the set values.")
+
+
 def _control_system_sections(bom_items: list) -> dict:
     """Group BOM rows into the four lists the offer doc renders.
 
@@ -189,9 +259,21 @@ def _control_system_sections(bom_items: list) -> dict:
 
     Each list item is {"item": ..., "ref": ...} for easy templating.
     """
+    import re as _re
+    def _clean_name(name: str) -> str:
+        """Strip sizing / flow info baked into the item name itself, so the
+        offer never shows things like 'GAS TRAIN 500 NM3/Hr' or
+        'COMPENSATOR - 250 NB F150#' in the bullet list."""
+        n = (name or "").strip()
+        # 'GAS TRAIN 500 NM3/Hr ...' -> 'GAS TRAIN'
+        n = _re.sub(r"^(GAS\s+TRAIN)\b.*$", r"\1", n, flags=_re.IGNORECASE)
+        # Strip trailing ' - <anything>' (catches '- 250 NB F150#', '- 80 NB',
+        # '- RANGE- 0-1600 mBAR', etc.)
+        n = _re.sub(r"\s+[\-–—]\s+.*$", "", n)
+        return n.strip()
+
     def _fmt(x):
-        ref = (x.get("ref") or "").strip()
-        return {"item": x.get("item", ""), "ref": ref}
+        return {"item": _clean_name(x.get("item", "")), "ref": ""}
 
     gas, air, pilot, temp = [], [], [], []
     for x in bom_items:
@@ -415,6 +497,13 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Control-system sections driven by the BOM's MEDIA column.
         # Each list is [{item, ref}, ...]; the template renders one bullet per entry.
         **_control_system_sections(customer.get("bom_items") or []),
+        # Override temp_control_items with mode-specific static list (does NOT
+        # come from BOM). PLC, PLC+AGR, PID and Manual each get their own.
+        "temp_control_items": _temp_control_items_for_mode(
+            customer.get("control_mode"), customer.get("auto_control_type")),
+        # Mode-specific OPERATIONAL SEQUENCE paragraph wording.
+        "operational_sequence_text": _operational_sequence_text(
+            customer.get("control_mode"), customer.get("auto_control_type")),
     }
 
     # Use tundish-specific template if the product type indicates tundish
