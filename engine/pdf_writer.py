@@ -185,23 +185,28 @@ def _component_table(items, total_w_cm=10.0):
 def _make_list_table(make_list, st, total_w_cm=17.0):
     if not make_list:
         return None
-    data = [[Paragraph("<b>ITEM</b>", st["Body"]),
+    data = [[Paragraph("<b>S. No.</b>", st["Body"]),
+             Paragraph("<b>ITEM NAME</b>", st["Body"]),
              Paragraph("<b>MAKE</b>", st["Body"])]]
-    for x in make_list:
+    for i, x in enumerate(make_list, start=1):
         data.append([
+            Paragraph(str(i), st["Body"]),
             Paragraph(x.get("item", ""), st["Body"]),
             Paragraph(x.get("make", ""), st["Body"]),
         ])
-    item_w = total_w_cm * 0.7
-    make_w = total_w_cm * 0.3
-    t = Table(data, colWidths=[item_w * cm, make_w * cm], repeatRows=1)
+    sno_w  = total_w_cm * 0.10
+    item_w = total_w_cm * 0.55
+    make_w = total_w_cm * 0.35
+    t = Table(data, colWidths=[sno_w * cm, item_w * cm, make_w * cm], repeatRows=1)
     style = [
         ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (0, 0), (0, -1), "CENTER"),     # S.No column centered
+        ("ALIGN", (-1, 0), (-1, -1), "LEFT"),      # MAKE column left
         ("INNERGRID", (0, 0), (-1, -1), 0.4, BORDER),
         ("BOX", (0, 0), (-1, -1), 0.6, BORDER),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6),
         ("TOPPADDING", (0, 0), (-1, -1), 3),

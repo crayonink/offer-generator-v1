@@ -481,6 +481,11 @@ def _append_make_list(docx_path: str, items: list):
             n = n[:m.start()].rstrip()
         return n
 
+    # Detect column layout: 3-col table = ["S. No.", "ITEM", "MAKE"], 2-col = ["ITEM", "MAKE"]
+    header_cells = [c.text.strip().upper() for c in target_table.rows[0].cells]
+    has_serial = (len(header_cells) >= 3 and header_cells[0] in ("S. NO.", "S.NO.", "S NO", "SR. NO.", "SR.NO."))
+
+    serial = 0
     for entry in items:
         item = (entry.get("item") or "").strip()
         make = (entry.get("make") or "ENCON").strip() or "ENCON"
@@ -491,21 +496,26 @@ def _append_make_list(docx_path: str, items: list):
         if key in seen:
             continue
         seen.add(key)
+        serial += 1
 
         # Clone the header row so formatting matches, then overwrite text
         new_row = deepcopy(header_row._element)
-        # Clear text in each <w:t>
         for t in new_row.iter(qn("w:t")):
             t.text = ""
-        # Set first run text in cells 0 and 1
         cells = new_row.findall(qn("w:tc"))
-        if len(cells) >= 2:
-            for cell, text in ((cells[0], item), (cells[1], make)):
-                # find first <w:t> in first paragraph and set it
-                t_elements = list(cell.iter(qn("w:t")))
-                if t_elements:
-                    t_elements[0].text = text
-                    t_elements[0].set(qn("xml:space"), "preserve")
+
+        if has_serial and len(cells) >= 3:
+            fills = [(cells[0], str(serial)), (cells[1], item), (cells[2], make)]
+        elif len(cells) >= 2:
+            fills = [(cells[0], item), (cells[1], make)]
+        else:
+            fills = []
+
+        for cell, text in fills:
+            t_elements = list(cell.iter(qn("w:t")))
+            if t_elements:
+                t_elements[0].text = text
+                t_elements[0].set(qn("xml:space"), "preserve")
         target_table._element.append(new_row)
 
     doc.save(docx_path)
