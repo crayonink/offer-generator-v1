@@ -1881,15 +1881,18 @@ function updatePilotVisibility() {
 }
 
 function togglePreview(url) {
+  // Always (re)load the URL and show — earlier "toggle" behaviour swallowed
+  // clicks when the wrap was already visible from a previous quote, leaving
+  // the iframe pointing at the OLD offer. The X button on the wrap still
+  // handles closing.
   const wrap  = document.getElementById("offer-preview-wrap");
   const frame = document.getElementById("offer-preview-frame");
-  if (wrap.style.display === "none" || !wrap.style.display) {
-    frame.src = url;
-    wrap.style.display = "block";
-    wrap.scrollIntoView({ behavior: "smooth", block: "start" });
-  } else {
-    wrap.style.display = "none";
-  }
+  // Add a cache-buster so the iframe never serves a stale response when the
+  // backend regenerates a quote with the same filename.
+  const sep = url.includes("?") ? "&" : "?";
+  frame.src  = `${url}${sep}_t=${Date.now()}`;
+  wrap.style.display = "block";
+  wrap.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function generateQuote() {
