@@ -173,15 +173,19 @@ def _build_equipment_name(customer, quote_data):
 
 
 def _control_system_sections(bom_items: list) -> dict:
-    """Group BOM rows by MEDIA into the three lists the offer doc renders
-    under Burner Control System and Temperature Control System.
+    """Group BOM rows into the four lists the offer doc renders.
 
-    Returns a dict with keys:
-      - gas_pipeline_items:  rows whose MEDIA ends with " LINE" and isn't the
-                             combustion-air, a pilot line or the purging line.
-                             Covers NG/COG/BFG/MIXED GAS/LDO/OIL/HSD, etc.
-      - air_pipeline_items:  rows with MEDIA == "COMB AIR".
-      - temp_control_items:  rows with MEDIA == "MISC ITEMS".
+    Buckets:
+      - gas_pipeline_items   - main fuel-line rows
+                                 (NG/BFG/COG/MIXED GAS/LDO LINE etc.)
+      - air_pipeline_items   - combustion-air rows that AREN'T pilot/UV
+                                 accessories (those go to the pilot bucket).
+      - pilot_pipeline_items - dedicated pilot-line rows (LPG/NG PILOT LINE)
+                                 PLUS air-side accessories whose name ends
+                                 in "(Pilot Burner)" or "(UV LINE)" --
+                                 those belong with the pilot equipment, not
+                                 the main air line.
+      - temp_control_items   - rows with MEDIA == "MISC ITEMS".
 
     Each list item is {"item": ..., "ref": ...} for easy templating.
     """
@@ -189,23 +193,30 @@ def _control_system_sections(bom_items: list) -> dict:
         ref = (x.get("ref") or "").strip()
         return {"item": x.get("item", ""), "ref": ref}
 
-    gas, air, temp = [], [], []
+    gas, air, pilot, temp = [], [], [], []
     for x in bom_items:
         media = (x.get("media") or "").strip().upper()
         item  = (x.get("item") or "").strip()
         if not item:
             continue
-        if media == "COMB AIR":
+        upper          = item.upper()
+        is_pilot_named = "(PILOT BURNER)" in upper or "(UV LINE)" in upper
+        is_pilot_media = media.endswith(" PILOT LINE")
+
+        if is_pilot_named or is_pilot_media:
+            pilot.append(_fmt(x))
+        elif media == "COMB AIR":
             air.append(_fmt(x))
         elif media == "MISC ITEMS":
             temp.append(_fmt(x))
-        elif media.endswith(" LINE") and not media.endswith(" PILOT LINE") and media != "PURGING LINE":
+        elif media.endswith(" LINE") and media != "PURGING LINE":
             gas.append(_fmt(x))
-        # BOUGHT OUT ITEMS, ENCON ITEMS etc. are intentionally ignored here.
+        # BOUGHT OUT ITEMS, ENCON ITEMS, PURGING LINE etc. are ignored here.
     return {
-        "gas_pipeline_items": gas,
-        "air_pipeline_items": air,
-        "temp_control_items": temp,
+        "gas_pipeline_items":   gas,
+        "air_pipeline_items":   air,
+        "pilot_pipeline_items": pilot,
+        "temp_control_items":   temp,
     }
 
 
@@ -304,8 +315,14 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "pumping_unit":          customer.get("pumping_unit") or "",
         "hood_movement":         customer.get("hood_movement") or "Vertical Swiveling through bearing mechanism.",
         "hood_type":             customer.get("hood_type") or "up_down",
-        "pilot_gas_type":        customer.get("pilot_gas_type") or "LPG",
-        "ignition_method":       customer.get("ignition_method") or "Automatic Through LPG Fired Pilot Burner",
+        # Pilot fields are blanked when Auto Ignition is not selected so the
+        # tech-data post-processor (_strip_empty_tech_rows) drops the
+        # "Pilot Burner Fuel" and "Firing & Ignition of Burner" rows.
+        "pilot_gas_type":        (customer.get("pilot_gas_type") or "LPG")
+                                  if bool(customer.get("special_auto_ignition")) else "",
+        "ignition_method":       (customer.get("ignition_method")
+                                  or "Automatic Through LPG Fired Pilot Burner")
+                                  if bool(customer.get("special_auto_ignition")) else "",
         # Tundish-specific tech-data placeholders (pre-heating station)
         "fuel1_label":           _fuel_label(customer.get("fuel_name", "")),
         "fuel2_label":           _fuel_label2(customer.get("fuel_name", "")),
@@ -546,6 +563,8 @@ def _strip_empty_tech_rows(docx_path: str):
         "Movement of Hood",
         "Motor recommended for Power Pack", "Maximum Electrical Load",
         "Maximum Electrical Load Required",
+        # Auto-ignition-only rows (removed when special_auto_ignition is False)
+        "Pilot Burner Fuel", "Firing & Ignition of Burner",
     }
 
     for table in doc.tables:
