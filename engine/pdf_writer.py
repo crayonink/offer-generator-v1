@@ -99,11 +99,17 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
             continue
         media = (x.get("media") or "").strip().upper()
         entry = _clean(item)
-        if media == "COMB AIR":
-            _add(air, "air", entry)
-        elif media.endswith(" PILOT LINE"):
-            pilot_media = pilot_media or media
+        upper_item = item.upper()
+        # Items whose name marks them as pilot/UV accessories belong with
+        # the pilot equipment, never the main combustion air list -- even
+        # when their MEDIA tag is "COMB AIR".
+        is_pilot_named = "(PILOT BURNER)" in upper_item or "(UV LINE)" in upper_item
+        if media.endswith(" PILOT LINE") or is_pilot_named:
+            if media.endswith(" PILOT LINE"):
+                pilot_media = pilot_media or media
             _add(pilot, "pilot", entry)
+        elif media == "COMB AIR":
+            _add(air, "air", entry)
         elif media == "PURGING LINE":
             _add(purging, "purge", entry)
         elif media == "MISC ITEMS":
