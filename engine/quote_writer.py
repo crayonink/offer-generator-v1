@@ -302,6 +302,14 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "is_dual":               bool(customer.get("is_dual")),
         "is_oil":                bool(customer.get("is_oil")) and not bool(customer.get("is_dual")),
         "is_gas":                not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")),
+        # Product-type flags drive {%p if is_vertical %} / {%p if is_horizontal %}
+        # blocks that wrap the two scope-of-supply variants in the template.
+        # Derived from items[*].product_type — vertical wins by default for
+        # dual-product quotes (rare).
+        "is_vertical":   any("vertical"   in (it.get("product_type") or "").lower()
+                              for it in quote_data.get("items", [])),
+        "is_horizontal": any("horizontal" in (it.get("product_type") or "").lower()
+                              for it in quote_data.get("items", [])),
         # Label used in 'On the main ___ pipeline:' heading. Dual fuel keeps 'oil'
         # since the oil-line components (flow meter, manual ball valve, etc.) still apply.
         "fuel_line_label":       (
