@@ -1032,12 +1032,12 @@
             <td><input id="td-blower_capacity" type="text"/></td></tr>
         <tr id="td-pumping_unit-row"><td class="tech-lbl">Pumping Unit</td>
             <td><input id="td-pumping_unit" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Pilot Burner Fuel</td>
+        <tr id="td-pilot_gas_type-row"><td class="tech-lbl">Pilot Burner Fuel</td>
             <td><select id="td-pilot_gas_type" onchange="onPilotFuelChange()">
               <option value="LPG">LPG</option>
               <option value="NG">NG</option>
             </select></td></tr>
-        <tr><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
+        <tr id="td-ignition-row"><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
             <td><input id="td-ignition" type="text" value="Automatic Through LPG Fired Pilot Burner"/></td></tr>
         <tr id="td-power_pack-row"><td class="tech-lbl">Motor recommended for Power Pack</td>
             <td><input id="td-hydraulic_motor_hp" type="text" value="5 HP"/></td></tr>
@@ -1120,6 +1120,9 @@ function goStep(n) {
   document.getElementById("tab-" + n).classList.add("active");
   // When entering Step 4, pre-fill the editable tech-data table from the latest calc
   if (n === 4 && typeof fillTechDataTable === "function") fillTechDataTable();
+  // Also re-evaluate Auto Ignition gating so the Pilot Burner Fuel /
+  // Firing & Ignition rows hide if the checkbox is off.
+  if (n === 4 && typeof updatePilotVisibility === "function") updatePilotVisibility();
   window.scrollTo(0, 0);
 }
 
@@ -1872,13 +1875,20 @@ function onHoodMovementChange() {
 }
 
 function updatePilotVisibility() {
-  // Pilot Line Fuel + Pilot Burner are shown only when Control Mode is
-  // Automatic AND the Auto Ignition special requirement is ticked.
+  // Pilot Line Fuel + Pilot Burner (Step 2 dropdowns) AND the Pilot Burner
+  // Fuel / Firing & Ignition of Burner rows in the Step 4 tech-data table
+  // are shown only when Control Mode is Automatic AND Auto Ignition is ticked.
   const mode = document.getElementById("control_mode")?.value;
   const autoIgn = !!document.getElementById("special_auto_ignition")?.checked;
   const show = mode === "automatic" && autoIgn;
+  // .pilot-gated covers Step 2 dropdowns
   document.querySelectorAll(".pilot-gated").forEach(el => {
     el.style.display = show ? "" : "none";
+  });
+  // Step 4 tech-data rows
+  ["td-pilot_gas_type-row", "td-ignition-row"].forEach(id => {
+    const r = document.getElementById(id);
+    if (r) r.style.display = show ? "" : "none";
   });
 }
 
