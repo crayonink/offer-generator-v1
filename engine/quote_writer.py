@@ -6,6 +6,40 @@ TEMPLATE_PATH = os.path.join(BASE_DIR, "Offer_Template.docx")
 TUNDISH_TEMPLATE_PATH = os.path.join(BASE_DIR, "Tundish_Offer_Template.docx")
 
 
+# ── MAKE LIST (static) ────────────────────────────────────────────────────
+# Fixed vendor-make table that ships in every VLPH / HLPH offer. Per
+# business rule the list does not vary with the BOM contents.
+STATIC_MAKE_LIST = [
+    {"item": "MILD STEEL",                    "make": "SAIL, JINDAL"},
+    {"item": "PRESSURE GAUGE WITH TNV",       "make": "WIKA"},
+    {"item": "PRESSURE SWITCH",               "make": "MADAS"},
+    {"item": "BALL VALVE",                    "make": "AUDCO/ L&T/ LEADER"},
+    {"item": "PNEUMATIC CONTROL VALVE",       "make": "MADAS"},
+    {"item": "BUTTERFLY VALVE",               "make": "AUDCO/ L&T/ LEADER"},
+    {"item": "ROTARY JOINT",                  "make": "ENCON"},
+    {"item": "MIX GAS TRAIN",                 "make": "MADAS"},
+    {"item": "FLEXIBALE HOSE PIPE",           "make": "BIL/FLEXIBLE"},
+    {"item": "THERMOCOUPLE",                  "make": "TEMPSENS"},
+    {"item": "COMPENSATING LEAD",             "make": "TEMPSENS"},
+    {"item": "LIMIT SWITCHES",                "make": "BCH"},
+    {"item": "CONTROL PANEL",                 "make": "ENCON"},
+    {"item": "HYDRAULIC POWER PACK & CYLINDER", "make": "VARITECH"},
+    {"item": "TEMPERATURE TRANSMITTER",       "make": "HONEYWELL"},
+    {"item": "BURNER",                        "make": "ENCON"},
+    {"item": "PILOT BURNER",                  "make": "ENCON"},
+    {"item": "BLOWER",                        "make": "ENCON"},
+    {"item": "BEARING",                       "make": "FAG/SKF"},
+    {"item": "UV SENSOR",                     "make": "LINEAR"},
+    {"item": "IGNITION TRANSFORMER",          "make": "COFI/DANFOSS"},
+    {"item": "SEQUENCE CONTROLLER",           "make": "LINEAR"},
+    {"item": "MOTOR",                         "make": "ABB"},
+    {"item": "GEARBOX",                       "make": "POWERTEK"},
+    {"item": "P.PID",                         "make": "HONEYWELL"},
+    {"item": "RATIO CONTROLLER",              "make": "HONEYWELL"},
+    {"item": "AIR GAS RAGULATOR",             "make": "MADAS"},
+]
+
+
 # ── Indian-English number-to-words (lakh / crore system) ──────────────────
 _ONES = ("", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT",
          "NINE", "TEN", "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN",
@@ -352,21 +386,10 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # for temperature-control and control-panel scope sections.
         "is_manual":             customer.get("control_mode") == "manual",
         "is_automatic":          customer.get("control_mode") != "manual",
-        # BOM items list for the MAKE LIST table on the last page.
-        # Each entry: {"item": "ITEM NAME", "make": "VENDOR" or "ENCON"}.
-        # Pilot-burner rows are rewritten to match the selected pilot fuel
-        # (LPG vs NG) — the BOM itself always carries a single fixed entry.
-        "make_list":             [
-            {
-                "item": _rewrite_pilot_name(
-                    x.get("item", ""),
-                    (customer.get("pilot_gas_type") or "LPG").upper()
-                ),
-                "make": x.get("make") or "ENCON",
-            }
-            for x in (customer.get("bom_items") or [])
-            if x.get("item")
-        ],
+        # MAKE LIST is a fixed 27-row vendor table — same for vertical and
+        # horizontal preheaters. Per business rule it does NOT vary with
+        # the BOM contents.
+        "make_list":             STATIC_MAKE_LIST,
         # Control-system sections driven by the BOM's MEDIA column.
         # Each list is [{item, ref}, ...]; the template renders one bullet per entry.
         **_control_system_sections(customer.get("bom_items") or []),
