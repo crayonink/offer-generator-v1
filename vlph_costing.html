@@ -1850,6 +1850,8 @@ function buildTechData() {
     is_dual:              !!(lastCalc.calculations || {}).is_dual,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
     auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
+    special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
+    special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
   };
 }
 

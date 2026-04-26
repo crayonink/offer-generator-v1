@@ -243,6 +243,7 @@ def _prose_blocks(customer: dict, scope: dict, control_mode: str | None,
     fuel_name     = (customer.get("fuel_name") or "").strip() or "Mixed Gas"
     pilot_fuel    = (customer.get("pilot_gas_type") or "LPG").upper()
     is_oil        = bool(customer.get("is_oil"))
+    auto_ignition = bool(customer.get("special_auto_ignition"))
 
     # 1. Steel structure
     yield "STEEL STRUCTURE", (
@@ -346,13 +347,14 @@ def _prose_blocks(customer: dict, scope: dict, control_mode: str | None,
         "in the burner."
     )
 
-    # 5. Pilot burner
-    yield "PILOT BURNER", (
-        f"We shall be supplying one no. automatically {pilot_fuel} fired pilot "
-        "for ignition of main burner. The pilot burner will be equipped with "
-        "electrode assembly, flame sensor, ignition transformer and burner "
-        "control unit."
-    )
+    # 5. Pilot burner — only when Auto Ignition is requested
+    if auto_ignition:
+        yield "PILOT BURNER", (
+            f"We shall be supplying one no. automatically {pilot_fuel} fired pilot "
+            "for ignition of main burner. The pilot burner will be equipped with "
+            "electrode assembly, flame sensor, ignition transformer and burner "
+            "control unit."
+        )
 
     # 6. Combustion air blower
     yield "COMBUSTION AIR BLOWER", (
@@ -482,8 +484,9 @@ def generate_quote_pdf(quote_data: dict, output_path: str) -> None:
         if t: flow.append(t)
         flow.append(Spacer(1, 0.2 * cm))
 
-    # 4. Pilot line
-    if scope["pilot"]:
+    # 4. Pilot line — only when Auto Ignition is requested
+    auto_ignition = bool(customer.get("special_auto_ignition"))
+    if auto_ignition and scope["pilot"]:
         flow.append(Paragraph(scope["pilot_label"], st["H2"]))
         flow.append(Paragraph(
             "We shall be supplying a gas train for Pilot Burner, which will "

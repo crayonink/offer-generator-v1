@@ -386,6 +386,11 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # for temperature-control and control-panel scope sections.
         "is_manual":             customer.get("control_mode") == "manual",
         "is_automatic":          customer.get("control_mode") != "manual",
+        # Special Requirements flags — drive Pilot Burner sections in the
+        # template ({%p if special_auto_ignition %}). When auto-ignition is
+        # not requested, the entire pilot-burner + pilot-line scope is hidden.
+        "special_auto_ignition": bool(customer.get("special_auto_ignition")),
+        "special_auto_controls": bool(customer.get("special_auto_controls")),
         # MAKE LIST is a fixed 27-row vendor table — same for vertical and
         # horizontal preheaters. Per business rule it does NOT vary with
         # the BOM contents.

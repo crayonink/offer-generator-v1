@@ -560,6 +560,8 @@ class QuoteRequest(BaseModel):
     is_dual: Optional[bool] = False  # True for dual-fuel (gas + oil)
     control_mode: Optional[str] = "automatic"  # "manual" or "automatic" — drives scope text
     auto_control_type: Optional[str] = "plc"   # "plc" | "plc_agr" | "pid" — drives PDF scope wording
+    special_auto_ignition: Optional[bool] = False  # Special Requirements: drives pilot-burner sections
+    special_auto_controls:  Optional[bool] = False  # Special Requirements
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
@@ -1782,6 +1784,8 @@ async def generate_quote(req: QuoteRequest):
                 "is_dual":             bool(req.is_dual),
                 "control_mode":        req.control_mode or "automatic",
                 "auto_control_type":   req.auto_control_type or "plc",
+                "special_auto_ignition": bool(req.special_auto_ignition),
+                "special_auto_controls": bool(req.special_auto_controls),
                 "bom_items":           req.bom_items or [],
             },
             "items": [item.dict() for item in req.items],
