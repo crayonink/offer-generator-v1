@@ -218,13 +218,23 @@ def _hood_is_swivel(hood_type: str) -> bool:
     return (hood_type or "").lower() in ("swivel", "swivel_manual", "swivel_geared")
 
 
+def _product_kind(items):
+    """Return 'vlph' | 'hlph' | 'tundish' from the first item's product_type."""
+    pt = ((items[0].get("product_type") or "") if items else "").lower()
+    if "horizontal" in pt: return "hlph"
+    if "tundish"    in pt: return "tundish"
+    return "vlph"
+
+
 def _prose_blocks(customer: dict, scope: dict, control_mode: str | None,
-                  has_purging: bool):
+                  has_purging: bool, product_kind: str = "vlph"):
     """Return ordered list of (heading, body_text) tuples. Body can be a single
     string or a list of strings (multiple paragraphs).
     """
     hood_type     = (customer.get("hood_type") or "").lower()
     is_swivel     = _hood_is_swivel(hood_type)
+    is_swivel_geared = hood_type == "swivel_geared"
+    is_hlph       = product_kind == "hlph"
     fuel_name     = (customer.get("fuel_name") or "").strip() or "Mixed Gas"
     pilot_fuel    = (customer.get("pilot_gas_type") or "LPG").upper()
     is_oil        = bool(customer.get("is_oil"))
@@ -265,16 +275,36 @@ def _prose_blocks(customer: dict, scope: dict, control_mode: str | None,
             "fiber lining & its safety."
         )
 
-    # 3. Lifting & lowering mechanism
-    if is_swivel:
-        yield "LIFTING & LOWERING MECHANISM", (
+    # 3. Hood movement mechanism — varies by product (HLPH vs VLPH)
+    #    and by VLPH hood selection (up_down / swivel_manual / swivel_geared).
+    if is_hlph:
+        yield "HOOD MOVEMENT MECHANISM", (
+            "Movement of the Ladle hood shall be done through trolley drive & "
+            "geared motor mechanism. Our scope of supply shall include trolley "
+            "carrying all the above equipment, and burner firing hood driven by "
+            "Electro-mechanical drive (Geared Motor). The trolley will be "
+            "supported on 4 nos. of wheel bearing assembly. The maximum forward "
+            "and reverse of the trolley will be governed through Limit Switches. "
+            "The rail for trolley is in CLIENT Scope."
+        )
+    elif is_swivel_geared:
+        yield "HOOD MOVEMENT MECHANISM", (
+            "The hood will be raised and swivelled away from the ladle through "
+            "an electro-mechanical (geared motor) drive mounted on the structural "
+            "column. The maximum swivel of the hood will be governed through "
+            "Limit Switches. A mechanical locking arrangement will be provided "
+            "to prevent the hood from accidental movement during preheating."
+        )
+    elif is_swivel:
+        yield "HOOD MOVEMENT MECHANISM", (
             "The hood will be raised and swivelled away from the ladle through "
             "a manually operated swivelling mechanism mounted on the structural "
             "column. Mechanical locking arrangement will be provided to prevent "
             "the hood from accidental movement during preheating."
         )
     else:
-        yield "LIFTING & LOWERING MECHANISM", (
+        # VLPH up_down (hydraulic)
+        yield "HOOD MOVEMENT MECHANISM", (
             "The Lifting–lowering mechanism of the hood will be done by Hydraulic "
             "Cylinder & Power-Pack. The maximum lifting and lowering of the Hood "
             "will be governed through Limit Switches. An additional mechanical "
@@ -416,39 +446,13 @@ def generate_quote_pdf(quote_data: dict, output_path: str) -> None:
     if t: flow.append(t)
     flow.append(Spacer(1, 0.4 * cm))
 
-    # ── Technical Data ───────────────────────────────────────────────
-    flow.append(Paragraph("Technical Data", st["H1"]))
-    tech_rows = [
-        ("Ladle Type",         _ladle_type(items, customer)),
-        ("Ladle Capacity",     _fmt_with_unit(customer.get("ladle_tons"), "Ton")),
-        ("Ladle Dimensions",   customer.get("ladle_dim", "")),
-        ("Reference TS",       customer.get("ladle_drawing_no", "")),
-        ("Refractory Weight",  _fmt_with_unit(customer.get("refractory_weight_kg"), "Kg")),
-        ("Heating Schedule",   customer.get("heating_schedule", "")),
-        ("Heating Time",       customer.get("heating_time", "")),
-        ("Fuel",               customer.get("fuel_name", "")),
-        ("Calorific Value",    customer.get("fuel_cv", "")),
-        ("Firing Rate",        customer.get("fuel_consumption", "")),
-        ("Burner",             customer.get("burner_model", "")),
-        ("Burner Capacity",    customer.get("burner_capacity_range", "")),
-        ("Combustion Blower",  customer.get("blower_model", "")),
-        ("Blower Capacity",    customer.get("blower_capacity", "")),
-        ("Pumping Unit",       customer.get("pumping_unit", "")),
-        ("Hood Movement",      _hood_label(customer.get("hood_type"), customer.get("hood_movement"))),
-        ("Pilot Burner Fuel",  customer.get("pilot_gas_type", "")),
-        ("Ignition Method",    customer.get("ignition_method", "")),
-        ("Power Pack",         customer.get("hydraulic_motor_hp", "")),
-        ("Max Electrical Load", customer.get("max_electrical_load", "")),
-    ]
-    t = _kv_table(tech_rows, st)
-    if t: flow.append(t)
-
     # ── Scope of Supply ──────────────────────────────────────────────
     flow.append(Paragraph("Scope of Supply", st["H1"]))
     has_purging = bool(scope["purging"])
 
     # 1. Static prose blocks
-    for heading, body in _prose_blocks(customer, scope, control_mode, has_purging):
+    product_kind = _product_kind(items)
+    for heading, body in _prose_blocks(customer, scope, control_mode, has_purging, product_kind):
         flow.append(Paragraph(heading, st["H2"]))
         if isinstance(body, (list, tuple)):
             for para in body:
