@@ -204,8 +204,8 @@ def _flow_meter_scope_text(is_oil: bool, is_dual: bool) -> str:
 
 def _pipeline_scope_text(is_oil: bool, is_dual: bool) -> str:
     if is_oil or is_dual:
-        return "Interconnecting pipelines from Pumping unit & blower to burner"
-    return "Interconnecting pipelines from gas train & blower to burner"
+        return "Interconnecting pipelines from Pumping unit and blower to burner"
+    return "Interconnecting pipelines from gas train and blower to burner"
 
 
 def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool):
