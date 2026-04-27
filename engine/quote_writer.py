@@ -172,6 +172,49 @@ def _build_equipment_name(customer, quote_data):
     return customer.get("project_name") or ""
 
 
+# Oil fuels where the oil is pre-heated separately (no heating element in
+# the pumping unit). Anything else oil-based gets the heater (HSD, SKO, HDO,
+# CFO etc.).
+PUMPING_UNIT_ONLY_FUEL_NAMES = {"LDO", "FO", "FURNACE OIL", "LSHS"}
+
+
+def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool):
+    """Decide heading + intro + bullets for the oil-side pumping section.
+
+    Returns (heading, intro, bullets_list). Heading is empty when neither
+    is_oil nor is_dual is set, so the template can hide the section.
+    """
+    if not (is_oil or is_dual):
+        return "", "", []
+
+    name = (fuel_name or "").upper().strip()
+    pumping_only = any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES)
+    if pumping_only:
+        heading = "PUMPING UNIT"
+        intro = ("To supply fuel oil to the above burner at the requisite "
+                 "pressure, we will supply a Pumping Unit consisting of "
+                 "the following:")
+        bullets = [
+            "2 Nos. oil pumps each fitted with suitable electric motor.",
+            "1 No. each Duplex type coarse and fine filter for the cold and hot oil side respectively.",
+            "1 No. Pressure regulating valve.",
+            "1 No. Pressure gauge.",
+        ]
+    else:
+        heading = "HEATING & PUMPING UNIT"
+        intro = ("To supply fuel oil to the above burner at the requisite "
+                 "pressure and temperature, we will supply a complete Heating "
+                 "& Pumping Unit consisting of the following:")
+        bullets = [
+            "2 Nos. oil pumps each fitted with suitable electric motor.",
+            "1 No. each Duplex type coarse and fine filter for the cold and hot oil side respectively.",
+            "1 No. Pressure regulating valve.",
+            "1 No. each of Pressure gauge & Temperature gauge.",
+            "Electric heater with thermostat.",
+        ]
+    return heading, intro, bullets
+
+
 def _temp_control_items_for_mode(control_mode: str, auto_control_type: str) -> list:
     """Return the static numbered list of Temperature Control System items
     for the given control mode. Drives the {%p for x in temp_control_items %}
@@ -504,6 +547,17 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Mode-specific OPERATIONAL SEQUENCE paragraph wording.
         "operational_sequence_text": _operational_sequence_text(
             customer.get("control_mode"), customer.get("auto_control_type")),
+        # Pumping-unit section (heading flips between "PUMPING UNIT" and
+        # "HEATING & PUMPING UNIT" by fuel; only renders when is_oil/is_dual).
+        **(lambda h, i, b: {
+            "pumping_unit_heading": h,
+            "pumping_unit_intro":   i,
+            "pumping_unit_items":   [{"item": x} for x in b],
+        })(*_pumping_unit_block(
+            customer.get("fuel_name"),
+            bool(customer.get("is_oil")),
+            bool(customer.get("is_dual")),
+        )),
     }
 
     # Use tundish-specific template if the product type indicates tundish

@@ -191,11 +191,19 @@ def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, 
                                 bool(scope.get("purging")),
                                 product_kind=_product_kind(items_for_kind)))
 
+    # Pumping Unit block (oil/dual fuel only — heading varies by fuel type)
+    from engine.quote_writer import _pumping_unit_block
+    pu_heading, pu_intro, pu_bullets = _pumping_unit_block(
+        pretty_fuel, is_oil, False)
+
     return {
         "hood_label":      hood_label,
         "control_label":   ctrl_label,
         "fuel_label":      fuel_label,
         "prose_blocks":    prose,
+        "pu_heading":      pu_heading,
+        "pu_intro":        pu_intro,
+        "pu_bullets":      pu_bullets,
         "gas_items":       scope["gas_main"],
         "air_items":       scope["air"],
         "pilot_items":     scope["pilot"],
@@ -303,6 +311,13 @@ def _write_doc(variations: list, out_path: str):
         # Operational Sequence (mode-specific)
         doc.add_heading("OPERATIONAL SEQUENCE", level=2)
         doc.add_paragraph(v["op_seq_text"])
+
+        # Pumping Unit (oil/dual only — heading varies by fuel)
+        if v.get("pu_heading"):
+            doc.add_heading(v["pu_heading"], level=2)
+            doc.add_paragraph(v["pu_intro"])
+            for b in v["pu_bullets"]:
+                doc.add_paragraph(b, style="List Bullet")
 
     doc.save(out_path)
 

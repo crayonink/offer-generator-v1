@@ -565,6 +565,21 @@ def generate_quote_pdf(quote_data: dict, output_path: str) -> None:
     flow.append(Paragraph("OPERATIONAL SEQUENCE", st["H2"]))
     flow.append(Paragraph(_operational_sequence_text(control_mode, auto_control_type), st["Body"]))
 
+    # 7b. Pumping Unit (oil / dual fuel only — heading flips PUMPING UNIT vs
+    # HEATING & PUMPING UNIT by fuel type)
+    if bool(customer.get("is_oil")) or bool(customer.get("is_dual")):
+        from engine.quote_writer import _pumping_unit_block
+        pu_heading, pu_intro, pu_bullets = _pumping_unit_block(
+            customer.get("fuel_name"),
+            bool(customer.get("is_oil")),
+            bool(customer.get("is_dual")),
+        )
+        if pu_heading:
+            flow.append(Paragraph(pu_heading, st["H2"]))
+            flow.append(Paragraph(pu_intro, st["Body"]))
+            for b in pu_bullets:
+                flow.append(Paragraph(f"&bull; {b}", st["Bullet"]))
+
     # 8. Painting / Cabling / Pipeline
     flow.append(Paragraph("PAINTING", st["H2"]))
     flow.append(Paragraph(
