@@ -132,12 +132,27 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
     }
     main_label = main_label_map.get(main_media or "", "MAIN FUEL TRAIN")
 
+    # Intro paragraph wording differs by fuel category:
+    #   NG / LPG / RLNG  -> packaged MADAS gas-train assembly
+    #   COG / MG / BFG   -> field-assembled from discrete components
+    PACKAGED   = {"NG LINE", "LPG LINE", "RLNG LINE"}
+    DISCRETE   = {"COG LINE", "MIXED GAS LINE", "MIX GAS LINE", "BFG LINE"}
+    if main_media in PACKAGED:
+        main_intro = ("We will supply a packaged MADAS gas train for firing of "
+                      "the Burner, consisting of the following:")
+    elif main_media in DISCRETE:
+        main_intro = ("Gas train will be field-assembled from the following "
+                      "discrete components:")
+    else:
+        main_intro = ("Gas train will be supplied for firing of Burner, "
+                      "consisting of the following components:")
+
     pilot_fuel = (pilot_media or "").replace(" PILOT LINE", "").strip()
     pilot_label = f"{pilot_fuel} LINE FOR PILOT BURNER" if pilot_fuel else "PILOT LINE"
 
     return {
         "air": air,
-        "gas_main": gas_main, "gas_main_label": main_label,
+        "gas_main": gas_main, "gas_main_label": main_label, "gas_main_intro": main_intro,
         "pilot": pilot,       "pilot_label": pilot_label,
         "purging": purging,
         "temp": temp,
@@ -487,9 +502,7 @@ def generate_quote_pdf(quote_data: dict, output_path: str) -> None:
     # 3. Main fuel gas train
     if scope["gas_main"]:
         flow.append(Paragraph(scope["gas_main_label"], st["H2"]))
-        flow.append(Paragraph(
-            "Gas train will be supplied for firing of Burner consisting of the "
-            "following components:", st["Body"]))
+        flow.append(Paragraph(scope["gas_main_intro"], st["Body"]))
         t = _component_table(scope["gas_main"])
         if t: flow.append(t)
         flow.append(Spacer(1, 0.2 * cm))
