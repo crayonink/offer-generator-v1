@@ -316,11 +316,14 @@ def _operational_sequence_text(control_mode: str, auto_control_type: str) -> str
 
 
 def _control_system_sections(bom_items: list) -> dict:
-    """Group BOM rows into the four lists the offer doc renders.
+    """Group BOM rows into the lists the offer doc renders.
 
     Buckets:
-      - gas_pipeline_items   - main fuel-line rows
-                                 (NG/BFG/COG/MIXED GAS/LDO LINE etc.)
+      - gas_pipeline_items   - main fuel-line rows (combined; for single-fuel
+                                 offers, == fuel1_line_items).
+      - fuel1_line_items     - rows whose MEDIA matches fuel 1 (e.g. "NG LINE").
+      - fuel2_line_items     - rows whose MEDIA matches fuel 2 (e.g. "MG LINE")
+                                 -- empty for single-fuel offers.
       - air_pipeline_items   - combustion-air rows that AREN'T pilot/UV
                                  accessories (those go to the pilot bucket).
       - pilot_pipeline_items - dedicated pilot-line rows (LPG/NG PILOT LINE)
@@ -328,7 +331,11 @@ def _control_system_sections(bom_items: list) -> dict:
                                  in "(Pilot Burner)" or "(UV LINE)" --
                                  those belong with the pilot equipment, not
                                  the main air line.
+      - nitrogen_purging_items - rows with MEDIA == "PURGING LINE".
       - temp_control_items   - rows with MEDIA == "MISC ITEMS".
+
+    Fuel-line items are split by MEDIA value: the first distinct fuel-line
+    MEDIA seen goes to fuel1_line_items, the second to fuel2_line_items.
 
     Each list item is {"item": ..., "ref": ...} for easy templating.
     """
@@ -348,7 +355,8 @@ def _control_system_sections(bom_items: list) -> dict:
     def _fmt(x):
         return {"item": _clean_name(x.get("item", "")), "ref": ""}
 
-    gas, air, pilot, temp = [], [], [], []
+    gas, air, pilot, temp, fuel1, fuel2, purging = [], [], [], [], [], [], []
+    fuel1_media = None  # The first distinct fuel-line MEDIA we encounter.
     for x in bom_items:
         media = (x.get("media") or "").strip().upper()
         item  = (x.get("item") or "").strip()
@@ -364,14 +372,40 @@ def _control_system_sections(bom_items: list) -> dict:
             air.append(_fmt(x))
         elif media == "MISC ITEMS":
             temp.append(_fmt(x))
-        elif media.endswith(" LINE") and media != "PURGING LINE":
+        elif media == "PURGING LINE":
+            purging.append(_fmt(x))
+        elif media.endswith(" LINE"):
             gas.append(_fmt(x))
-        # BOUGHT OUT ITEMS, ENCON ITEMS, PURGING LINE etc. are ignored here.
+            if fuel1_media is None:
+                fuel1_media = media
+                fuel1.append(_fmt(x))
+            elif media == fuel1_media:
+                fuel1.append(_fmt(x))
+            else:
+                fuel2.append(_fmt(x))
+        # BOUGHT OUT ITEMS, ENCON ITEMS etc. are ignored here.
+
+    # Strip the trailing " LINE" suffix to surface the short fuel name (NG, MG, BG, COG, LDO...)
+    fuel1_label = fuel1_media[:-5] if fuel1_media and fuel1_media.endswith(" LINE") else (fuel1_media or "")
+    # The second fuel media is whichever we collected into fuel2; pick from any item.
+    fuel2_media = ""
+    for x in bom_items:
+        m = (x.get("media") or "").strip().upper()
+        if m.endswith(" LINE") and m != "PURGING LINE" and m != fuel1_media:
+            fuel2_media = m
+            break
+    fuel2_label = fuel2_media[:-5] if fuel2_media.endswith(" LINE") else fuel2_media
+
     return {
-        "gas_pipeline_items":   gas,
-        "air_pipeline_items":   air,
-        "pilot_pipeline_items": pilot,
-        "temp_control_items":   temp,
+        "gas_pipeline_items":     gas,
+        "fuel1_line_items":       fuel1,
+        "fuel2_line_items":       fuel2,
+        "fuel1_line_label":       fuel1_label,
+        "fuel2_line_label":       fuel2_label,
+        "air_pipeline_items":     air,
+        "pilot_pipeline_items":   pilot,
+        "nitrogen_purging_items": purging,
+        "temp_control_items":     temp,
     }
 
 
@@ -596,6 +630,8 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "make_list":             STATIC_MAKE_LIST,
         # Control-system sections driven by the BOM's MEDIA column.
         # Each list is [{item, ref}, ...]; the template renders one bullet per entry.
+        # For dual-fuel offers the fuel-line items are split into
+        # fuel1_line_items / fuel2_line_items by the BOM's MEDIA value.
         **_control_system_sections(customer.get("bom_items") or []),
         # Override temp_control_items with mode-specific static list (does NOT
         # come from BOM). PLC, PLC+AGR, PID and Manual each get their own.
