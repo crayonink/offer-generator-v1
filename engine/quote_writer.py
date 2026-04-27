@@ -107,7 +107,30 @@ def _supervision_rates() -> tuple:
         conn.close()
     except Exception:
         pass
-    return f"{rates['mech']:,.2f}", f"{rates['plc']:,.2f}"
+    return _format_inr(rates['mech']), _format_inr(rates['plc'])
+
+
+def _format_inr(amount) -> str:
+    """Format a number in Indian (lakh/crore) digit grouping: 12,34,567.89."""
+    try:
+        amount = float(amount or 0)
+    except (TypeError, ValueError):
+        return ""
+    neg = amount < 0
+    int_part, dec = f"{abs(amount):.2f}".split(".")
+    if len(int_part) <= 3:
+        head = int_part
+    else:
+        last3 = int_part[-3:]
+        rest  = int_part[:-3]
+        groups = []
+        while len(rest) > 2:
+            groups.insert(0, rest[-2:])
+            rest = rest[:-2]
+        if rest:
+            groups.insert(0, rest)
+        head = ",".join(groups) + "," + last3
+    return ("-" if neg else "") + head + "." + dec
 
 
 def _combine_dual(val1, val2) -> str:
@@ -465,10 +488,10 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "technical_phone":       customer.get("technical_phone", ""),
         "technical_email":       customer.get("technical_email", ""),
         # Pricing
-        "unit_price_vertical":   f"{unit_vertical:,.2f}",
-        "unit_price_horizontal": f"{unit_horizontal:,.2f}" if unit_horizontal else "N/A",
-        "total_price_vertical":  f"{total_vertical:,.2f}",
-        "total_price_horizontal": f"{total_horizontal:,.2f}" if total_horizontal else "N/A",
+        "unit_price_vertical":    _format_inr(unit_vertical),
+        "unit_price_horizontal":  _format_inr(unit_horizontal) if unit_horizontal else "N/A",
+        "total_price_vertical":   _format_inr(total_vertical),
+        "total_price_horizontal": _format_inr(total_horizontal) if total_horizontal else "N/A",
         "qty_label_vertical":    _qty_label(qty_v),
         "qty_label_horizontal":  _qty_label(qty_h),
         "total_in_words": (
