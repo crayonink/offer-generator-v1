@@ -379,17 +379,30 @@ def generate_quote_docx(quote_data: dict, output_path: str):
     customer = quote_data["customer"]
     sup_mech, sup_plc = _supervision_rates()
 
-    # Determine vertical vs horizontal price from items
-    total_vertical   = 0.0
-    total_horizontal = 0.0
+    # Determine vertical vs horizontal UNIT price from items (per-set sum).
+    unit_vertical   = 0.0
+    unit_horizontal = 0.0
     for item in quote_data.get("items", []):
         pt = (item.get("product_type") or "").lower()
         if "vertical" in pt:
-            total_vertical += item.get("total", 0)
+            unit_vertical += item.get("total", 0)
         elif "horizontal" in pt:
-            total_horizontal += item.get("total", 0)
+            unit_horizontal += item.get("total", 0)
         else:
-            total_vertical += item.get("total", 0)   # default to vertical
+            unit_vertical += item.get("total", 0)   # default to vertical
+
+    # Annexure III qty multipliers (Step-4 inputs); qty=0 means absent type.
+    qty_v = int(customer.get("vertical_qty") or 0)
+    qty_h = int(customer.get("horizontal_qty") or 0)
+    # If neither was specified, fall back to legacy behaviour (1 vertical set).
+    if qty_v == 0 and qty_h == 0:
+        qty_v = 1
+    total_vertical   = unit_vertical   * qty_v
+    total_horizontal = unit_horizontal * qty_h
+
+    def _qty_label(n: int) -> str:
+        if n <= 0: return ""
+        return f"{n:02d} {'Set' if n == 1 else 'Sets'}"
 
     # Map to template variable names (must match {{...}} in Offer_Template.docx)
     context = {
@@ -418,11 +431,15 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "technical_phone":       customer.get("technical_phone", ""),
         "technical_email":       customer.get("technical_email", ""),
         # Pricing
+        "unit_price_vertical":   f"{unit_vertical:,.2f}",
+        "unit_price_horizontal": f"{unit_horizontal:,.2f}" if unit_horizontal else "N/A",
         "total_price_vertical":  f"{total_vertical:,.2f}",
         "total_price_horizontal": f"{total_horizontal:,.2f}" if total_horizontal else "N/A",
+        "qty_label_vertical":    _qty_label(qty_v),
+        "qty_label_horizontal":  _qty_label(qty_h),
         "total_in_words": (
             customer.get("total_in_words")
-            or amount_in_words_indian(quote_data.get("grand_total", 0)) + " ONLY"
+            or amount_in_words_indian(total_vertical + total_horizontal) + " ONLY"
         ),
         "equipment_name": _build_equipment_name(customer, quote_data),
         # Supervision-charge rates (from component_price_master)
