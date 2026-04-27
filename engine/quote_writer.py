@@ -243,27 +243,27 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool):
     name = (fuel_name or "").upper().strip()
     pumping_only = any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES)
     if pumping_only:
-        heading = "PUMPING UNIT"
+        heading = "Pumping Unit"
         intro = ("To supply fuel oil to the above burner at the requisite "
-                 "pressure, we will supply a Pumping Unit consisting of "
-                 "the following:")
+                 "pressure, we will supply a suitable Pumping Unit type "
+                 "Duplex-2 comprising of the following:")
         bullets = [
             "2 Nos. oil pumps each fitted with suitable electric motor.",
-            "1 No. each Duplex type coarse and fine filter for the cold and hot oil side respectively.",
+            "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
             "1 No. Pressure gauge.",
         ]
     else:
-        heading = "HEATING & PUMPING UNIT"
-        intro = ("To supply fuel oil to the above burner at the requisite "
-                 "pressure and temperature, we will supply a complete Heating "
-                 "& Pumping Unit consisting of the following:")
+        heading = "Oil Heating and Pumping Unit"
+        intro = ("To supply fuel oil to the above burner at requisite "
+                 "pressure and temperature, we will supply a suitable "
+                 "heating & pumping unit type Duplex-2 comprising of the following:")
         bullets = [
             "2 Nos. oil pumps each fitted with suitable electric motor.",
-            "1 No. each Duplex type coarse and fine filter for the cold and hot oil side respectively.",
+            "2 No. electric Oil Preheater with thermostatic Control.",
+            "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
             "1 No. each of Pressure gauge & Temperature gauge.",
-            "Electric heater with thermostat.",
         ]
     return heading, intro, bullets
 
