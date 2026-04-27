@@ -475,6 +475,11 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             customer.get("burner_firing_rate")
             or customer.get("fuel_consumption", "")
         ),
+        # Just the kW value, with any 'Fuel name: ' prefix stripped — used in the
+        # ENCON Burner body line ("with a firing rate of 2,148 kW.").
+        "burner_kw": (
+            (customer.get("fuel_consumption") or "").split(":", 1)[-1].strip()
+        ),
         "blower_model":          customer.get("blower_model") or "",
         "blower_size":           customer.get("blower_size") or "",
         "blower_capacity":       customer.get("blower_capacity") or "",
