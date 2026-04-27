@@ -1010,6 +1010,8 @@
             <td><input id="td-heating_time" type="text"/></td></tr>
         <tr><td class="tech-lbl">No. of Burner</td>
             <td><input id="td-num_burner" type="text" value="1 No."/></td></tr>
+        <tr><td class="tech-lbl">No. of Units (Vertical)</td>
+            <td><input id="td-vertical_qty" type="number" min="1" value="1" style="width:80px"/></td></tr>
         <tr><td class="tech-lbl">Fuel</td>
             <td><input id="td-fuel_name" type="text"/></td></tr>
         <tr><td class="tech-lbl" id="td-cv1-label">Calorific Value of Fuel 1</td>
@@ -1855,6 +1857,7 @@ function buildTechData() {
     auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
     special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
     special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
+    vertical_qty:         parseInt(document.getElementById("td-vertical_qty")?.value) || 1,
   };
 }
 

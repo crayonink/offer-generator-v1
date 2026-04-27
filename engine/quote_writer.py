@@ -178,6 +178,36 @@ def _build_equipment_name(customer, quote_data):
 PUMPING_UNIT_ONLY_FUEL_NAMES = {"LDO", "FO", "FURNACE OIL", "LSHS"}
 
 
+# ─── Annexure I scope-of-supply dynamic strings ────────────────────────────
+def _ignition_scope_text(special_auto_ignition: bool, pilot_gas_type: str | None) -> str:
+    if not special_auto_ignition:
+        return "Manual ignition of the Burner"
+    pilot = (pilot_gas_type or "LPG").upper()
+    return f"Firing & Ignition of the Burner is Automatic through {pilot} fired Pilot Burner"
+
+
+def _temp_control_scope_text(control_mode: str | None, auto_control_type: str | None) -> str:
+    if (control_mode or "").lower() == "manual":
+        return "Manual temperature control"
+    act = (auto_control_type or "plc").lower()
+    if act == "plc":     return "Temperature Control System with PLC"
+    if act == "plc_agr": return "Temperature Control System with PLC + AGR"
+    if act == "pid":     return "Temperature Control System with PID Controller"
+    return "Temperature Control System"
+
+
+def _flow_meter_scope_text(is_oil: bool, is_dual: bool) -> str:
+    if is_oil or is_dual:
+        return "Flow meter and Control valve in Oil and Air line"
+    return "Control valve on Air line"
+
+
+def _pipeline_scope_text(is_oil: bool, is_dual: bool) -> str:
+    if is_oil or is_dual:
+        return "Interconnecting pipelines from Pumping unit & blower to burner"
+    return "Interconnecting pipelines from gas train & blower to burner"
+
+
 def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool):
     """Decide heading + intro + bullets for the oil-side pumping section.
 
@@ -547,6 +577,19 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Mode-specific OPERATIONAL SEQUENCE paragraph wording.
         "operational_sequence_text": _operational_sequence_text(
             customer.get("control_mode"), customer.get("auto_control_type")),
+        # Annexure I scope-of-supply dynamic strings
+        "ignition_scope_text":     _ignition_scope_text(
+            bool(customer.get("special_auto_ignition")),
+            customer.get("pilot_gas_type")),
+        "temp_control_scope_text": _temp_control_scope_text(
+            customer.get("control_mode"), customer.get("auto_control_type")),
+        "flow_meter_scope_text":   _flow_meter_scope_text(
+            bool(customer.get("is_oil")), bool(customer.get("is_dual"))),
+        "pipeline_scope_text":     _pipeline_scope_text(
+            bool(customer.get("is_oil")), bool(customer.get("is_dual"))),
+        # Annexure I section headers — qty is user-editable on Step 4
+        "vertical_qty":   customer.get("vertical_qty") or 1,
+        "horizontal_qty": customer.get("horizontal_qty") or 1,
         # Pumping-unit section (heading flips between "PUMPING UNIT" and
         # "HEATING & PUMPING UNIT" by fuel; only renders when is_oil/is_dual).
         **(lambda h, i, b: {

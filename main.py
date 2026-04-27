@@ -562,6 +562,8 @@ class QuoteRequest(BaseModel):
     auto_control_type: Optional[str] = "plc"   # "plc" | "plc_agr" | "pid" — drives PDF scope wording
     special_auto_ignition: Optional[bool] = False  # Special Requirements: drives pilot-burner sections
     special_auto_controls:  Optional[bool] = False  # Special Requirements
+    vertical_qty:   Optional[int] = 1   # Annexure I scope-of-supply header — Vertical units count
+    horizontal_qty: Optional[int] = 1   # Annexure I scope-of-supply header — Horizontal units count
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
@@ -1786,6 +1788,8 @@ async def generate_quote(req: QuoteRequest):
                 "auto_control_type":   req.auto_control_type or "plc",
                 "special_auto_ignition": bool(req.special_auto_ignition),
                 "special_auto_controls": bool(req.special_auto_controls),
+                "vertical_qty":        int(req.vertical_qty or 1),
+                "horizontal_qty":      int(req.horizontal_qty or 1),
                 "bom_items":           req.bom_items or [],
             },
             "items": [item.dict() for item in req.items],
