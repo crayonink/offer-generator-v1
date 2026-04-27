@@ -118,37 +118,50 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
             main_media = main_media or media
             _add(gas_main, "gas", entry)
 
-    # Friendly labels — keep both "BFG LINE" and "BG LINE" since the BOM
-    # uses the short FUEL_NAMES code "BG" (label="BG", media="BG LINE")
-    # for Blast Furnace Gas.
+    # Friendly labels for the gas/oil-train heading. Both short codes
+    # ("BG LINE", "MG LINE") and full names ("FURNACE OIL LINE") accepted.
     main_label_map = {
-        "MIXED GAS LINE": "MIX GAS TRAIN FOR MAIN BURNER",
-        "MIX GAS LINE":   "MIX GAS TRAIN FOR MAIN BURNER",
-        "MG LINE":        "MIX GAS TRAIN FOR MAIN BURNER",
-        "NG LINE":        "NATURAL GAS TRAIN FOR MAIN BURNER",
-        "LPG LINE":       "LPG GAS TRAIN FOR MAIN BURNER",
-        "RLNG LINE":      "RLNG GAS TRAIN FOR MAIN BURNER",
-        "BFG LINE":       "BFG TRAIN FOR MAIN BURNER",
-        "BG LINE":        "BFG TRAIN FOR MAIN BURNER",
-        "COG LINE":       "COG TRAIN FOR MAIN BURNER",
-        "LDO LINE":       "LDO LINE FOR MAIN BURNER",
-        "FO LINE":        "FO LINE FOR MAIN BURNER",
-        "OIL LINE":       "OIL LINE FOR MAIN BURNER",
+        # gas
+        "MIXED GAS LINE":  "MIX GAS TRAIN FOR MAIN BURNER",
+        "MIX GAS LINE":    "MIX GAS TRAIN FOR MAIN BURNER",
+        "MG LINE":         "MIX GAS TRAIN FOR MAIN BURNER",
+        "NG LINE":         "NATURAL GAS TRAIN FOR MAIN BURNER",
+        "LPG LINE":        "LPG GAS TRAIN FOR MAIN BURNER",
+        "RLNG LINE":       "RLNG GAS TRAIN FOR MAIN BURNER",
+        "BFG LINE":        "BFG TRAIN FOR MAIN BURNER",
+        "BG LINE":         "BFG TRAIN FOR MAIN BURNER",
+        "COG LINE":        "COG TRAIN FOR MAIN BURNER",
+        # oil
+        "LDO LINE":        "LDO LINE FOR MAIN BURNER",
+        "FO LINE":         "FURNACE OIL LINE FOR MAIN BURNER",
+        "FURNACE OIL LINE":"FURNACE OIL LINE FOR MAIN BURNER",
+        "LSHS LINE":       "LSHS LINE FOR MAIN BURNER",
+        "HSD LINE":        "HSD LINE FOR MAIN BURNER",
+        "SKO LINE":        "SKO LINE FOR MAIN BURNER",
+        "HDO LINE":        "HDO LINE FOR MAIN BURNER",
+        "CFO LINE":        "CFO LINE FOR MAIN BURNER",
+        "OIL LINE":        "OIL LINE FOR MAIN BURNER",
     }
     main_label = main_label_map.get(main_media or "", "MAIN FUEL TRAIN")
 
-    # Intro paragraph wording differs by fuel category:
-    #   NG / LPG / RLNG  -> packaged MADAS gas-train assembly
-    #   COG / MG / BFG   -> field-assembled from discrete components
-    PACKAGED   = {"NG LINE", "LPG LINE", "RLNG LINE"}
-    DISCRETE   = {"COG LINE", "MIXED GAS LINE", "MIX GAS LINE", "MG LINE",
-                  "BFG LINE", "BG LINE"}
+    # Intro paragraph wording — three categories:
+    #   NG / LPG / RLNG          -> packaged MADAS gas-train assembly
+    #   COG / Mixed Gas / BFG    -> field-assembled discrete components
+    #   LDO / FO / LSHS / HSD ...-> oil pipeline from pumping unit
+    PACKAGED  = {"NG LINE", "LPG LINE", "RLNG LINE"}
+    DISCRETE  = {"COG LINE", "MIXED GAS LINE", "MIX GAS LINE", "MG LINE",
+                 "BFG LINE", "BG LINE"}
+    OIL       = {"LDO LINE", "FO LINE", "FURNACE OIL LINE", "LSHS LINE",
+                 "HSD LINE", "SKO LINE", "HDO LINE", "CFO LINE", "OIL LINE"}
     if main_media in PACKAGED:
         main_intro = ("We will supply a packaged MADAS gas train for firing of "
                       "the Burner, consisting of the following:")
     elif main_media in DISCRETE:
         main_intro = ("Gas train will be field-assembled from the following "
                       "discrete components:")
+    elif main_media in OIL:
+        main_intro = ("Oil pipeline from the Heating & Pumping Unit to the "
+                      "Burner will consist of the following components:")
     else:
         main_intro = ("Gas train will be supplied for firing of Burner, "
                       "consisting of the following components:")

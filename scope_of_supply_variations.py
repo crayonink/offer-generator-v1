@@ -75,11 +75,19 @@ CONTROLS = [
 #   - BFG : discrete components with double-block shut-off
 # (label, fuel_type, fuel_cv kcal/Nm3) -- typical values, just for routing.
 FUELS = [
+    # Gas fuels (kcal/Nm3)
     ("NG",  "ng",  9000),
     ("COG", "cog", 4500),
     ("MG",  "mg",  2500),
     ("BFG", "bg",   900),
+    # Oil fuels (kcal/kg) — separate gas-train-vs-pumping-unit logic
+    ("LDO",  "ldo",  10300),
+    ("FO",   "fo",   10400),
+    ("LSHS", "lshs", 10500),
 ]
+
+# Oil fuel types — the script auto-detects these and sets is_oil=True
+OIL_FUEL_TYPES = {"ldo", "fo", "lshs", "hsd", "sko", "hdo", "cfo"}
 
 
 # ─────────────── HTTP ───────────────
@@ -150,13 +158,20 @@ def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, 
 
     # Pretty fuel name for the BURNER prose (e.g. "Natural Gas", "Coke Oven Gas")
     pretty_fuel = {
-        "ng":  "Natural Gas",
-        "lpg": "LPG",
-        "rlng":"RLNG",
-        "cog": "Coke Oven Gas",
-        "mg":  "Mixed Gas",
-        "bg":  "Blast Furnace Gas",
+        "ng":   "Natural Gas",
+        "lpg":  "LPG",
+        "rlng": "RLNG",
+        "cog":  "Coke Oven Gas",
+        "mg":   "Mixed Gas",
+        "bg":   "Blast Furnace Gas",
+        "ldo":  "LDO",
+        "fo":   "Furnace Oil",
+        "lshs": "LSHS",
+        "hsd":  "HSD",
+        "sko":  "SKO",
     }.get(fuel_type, fuel_label)
+
+    is_oil = fuel_type in OIL_FUEL_TYPES
 
     items_for_kind = [{"product_type": "Vertical Ladle Preheater"}]
     customer = dict(
@@ -165,7 +180,7 @@ def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, 
         auto_control_type=auto_control_type,
         fuel_name=pretty_fuel,
         pilot_gas_type=OTHER_INPUTS["pilot_line_fuel"].upper(),
-        is_oil=False,
+        is_oil=is_oil,
         is_dual=False,
         special_auto_ignition=OTHER_INPUTS["special_auto_ignition"],
         bom_items=bom_items,
