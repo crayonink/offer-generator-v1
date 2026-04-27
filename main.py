@@ -1790,6 +1790,7 @@ async def generate_quote(req: QuoteRequest):
                 "special_auto_controls": bool(req.special_auto_controls),
                 "vertical_qty":        int(req.vertical_qty or 1),
                 "horizontal_qty":      int(req.horizontal_qty or 1),
+                "nitrogen_purging":    (req.purging_line or "no").lower() == "yes",
                 "bom_items":           req.bom_items or [],
             },
             "items": [item.dict() for item in req.items],

@@ -580,6 +580,11 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # not requested, the entire pilot-burner + pilot-line scope is hidden.
         "special_auto_ignition": bool(customer.get("special_auto_ignition")),
         "special_auto_controls": bool(customer.get("special_auto_controls")),
+        # Nitrogen Purging block — only when user toggled "purging_line=yes" on Step 4.
+        "nitrogen_purging":      bool(customer.get("nitrogen_purging")),
+        # Raw control fields, exposed for inline Jinja in the Tech Specs table
+        "control_mode":          (customer.get("control_mode") or "automatic"),
+        "auto_control_type":     (customer.get("auto_control_type") or "plc"),
         # MAKE LIST is a fixed 27-row vendor table — same for vertical and
         # horizontal preheaters. Per business rule it does NOT vary with
         # the BOM contents.
