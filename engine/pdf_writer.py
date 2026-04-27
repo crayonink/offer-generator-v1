@@ -118,13 +118,18 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
             main_media = main_media or media
             _add(gas_main, "gas", entry)
 
-    # Friendly labels
+    # Friendly labels — keep both "BFG LINE" and "BG LINE" since the BOM
+    # uses the short FUEL_NAMES code "BG" (label="BG", media="BG LINE")
+    # for Blast Furnace Gas.
     main_label_map = {
         "MIXED GAS LINE": "MIX GAS TRAIN FOR MAIN BURNER",
         "MIX GAS LINE":   "MIX GAS TRAIN FOR MAIN BURNER",
+        "MG LINE":        "MIX GAS TRAIN FOR MAIN BURNER",
         "NG LINE":        "NATURAL GAS TRAIN FOR MAIN BURNER",
         "LPG LINE":       "LPG GAS TRAIN FOR MAIN BURNER",
+        "RLNG LINE":      "RLNG GAS TRAIN FOR MAIN BURNER",
         "BFG LINE":       "BFG TRAIN FOR MAIN BURNER",
+        "BG LINE":        "BFG TRAIN FOR MAIN BURNER",
         "COG LINE":       "COG TRAIN FOR MAIN BURNER",
         "LDO LINE":       "LDO LINE FOR MAIN BURNER",
         "FO LINE":        "FO LINE FOR MAIN BURNER",
@@ -136,7 +141,8 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
     #   NG / LPG / RLNG  -> packaged MADAS gas-train assembly
     #   COG / MG / BFG   -> field-assembled from discrete components
     PACKAGED   = {"NG LINE", "LPG LINE", "RLNG LINE"}
-    DISCRETE   = {"COG LINE", "MIXED GAS LINE", "MIX GAS LINE", "BFG LINE"}
+    DISCRETE   = {"COG LINE", "MIXED GAS LINE", "MIX GAS LINE", "MG LINE",
+                  "BFG LINE", "BG LINE"}
     if main_media in PACKAGED:
         main_intro = ("We will supply a packaged MADAS gas train for firing of "
                       "the Burner, consisting of the following:")

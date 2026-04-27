@@ -68,6 +68,19 @@ CONTROLS = [
     ("PID",            "automatic", "pid"),
 ]
 
+# Default fuel set covers both gas-train categories:
+#   - NG  : packaged MADAS gas-train (representative of NG / LPG / RLNG)
+#   - COG : discrete components, no rotary joint
+#   - MG  : discrete components with rotary joint
+#   - BFG : discrete components with double-block shut-off
+# (label, fuel_type, fuel_cv kcal/Nm3) -- typical values, just for routing.
+FUELS = [
+    ("NG",  "ng",  9000),
+    ("COG", "cog", 4500),
+    ("MG",  "mg",  2500),
+    ("BFG", "bg",   900),
+]
+
 
 # ─────────────── HTTP ───────────────
 def _ctx():
@@ -92,7 +105,8 @@ def _post_calc(base_url, payload):
 
 
 # ─────────────── Generate prose + lists for one variation ───────────────
-def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, auto_control_type):
+def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, auto_control_type,
+                     fuel_label="NG", fuel_type="ng", fuel_cv=9000):
     """Returns dict:
         prose_blocks    : [(heading, text), ...]
         gas_items       : [str, ...]
@@ -106,7 +120,10 @@ def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, 
     payload = dict(OTHER_INPUTS,
                    hood_type=hood_type,
                    control_mode=control_mode,
-                   auto_control_type=auto_control_type)
+                   auto_control_type=auto_control_type,
+                   fuel1_type=fuel_type,
+                   fuel1_cv=fuel_cv,
+                   fuel_cv=fuel_cv)
     data = _post_calc(base_url, payload)
     if "error" in data:
         return {"error": data["error"]}
@@ -131,12 +148,22 @@ def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, 
         _operational_sequence_text,
     )
 
+    # Pretty fuel name for the BURNER prose (e.g. "Natural Gas", "Coke Oven Gas")
+    pretty_fuel = {
+        "ng":  "Natural Gas",
+        "lpg": "LPG",
+        "rlng":"RLNG",
+        "cog": "Coke Oven Gas",
+        "mg":  "Mixed Gas",
+        "bg":  "Blast Furnace Gas",
+    }.get(fuel_type, fuel_label)
+
     items_for_kind = [{"product_type": "Vertical Ladle Preheater"}]
     customer = dict(
         hood_type=hood_type,
         control_mode=control_mode,
         auto_control_type=auto_control_type,
-        fuel_name="Natural Gas",
+        fuel_name=pretty_fuel,
         pilot_gas_type=OTHER_INPUTS["pilot_line_fuel"].upper(),
         is_oil=False,
         is_dual=False,
@@ -152,6 +179,7 @@ def _build_variation(base_url, hood_label, hood_type, ctrl_label, control_mode, 
     return {
         "hood_label":      hood_label,
         "control_label":   ctrl_label,
+        "fuel_label":      fuel_label,
         "prose_blocks":    prose,
         "gas_items":       scope["gas_main"],
         "air_items":       scope["air"],
@@ -184,12 +212,13 @@ def _write_doc(variations: list, out_path: str):
     r.bold = True
     r.font.size = Pt(18)
 
+    fuels_in_doc = sorted({v.get("fuel_label", "?") for v in variations if "error" not in v})
     sub = doc.add_paragraph()
     sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
     sr = sub.add_run(
         f"Ladle: {OTHER_INPUTS['ladle_tons']} T  |  "
         f"Ti->Tf: {OTHER_INPUTS['Ti']}->{OTHER_INPUTS['Tf']} C  |  "
-        f"Fuel: {OTHER_INPUTS['fuel1_type'].upper()}  |  "
+        f"Fuels: {', '.join(fuels_in_doc)}  |  "
         f"{len(variations)} combinations"
     )
     sr.italic = True
@@ -203,7 +232,9 @@ def _write_doc(variations: list, out_path: str):
             continue
 
         doc.add_page_break()
-        h = doc.add_heading(f"{v['hood_label']}  --  Temperature Control: {v['control_label']}", level=1)
+        h = doc.add_heading(
+            f"{v.get('fuel_label','?')}  |  {v['hood_label']}  |  Temperature Control: {v['control_label']}",
+            level=1)
 
         # Prose blocks (Steel Structure, Ladle Hood, Hood Movement, Burner, etc.)
         for heading, body in v["prose_blocks"]:
@@ -267,20 +298,24 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     print(f"Server: {base_url}")
-    total = len(HOODS) * len(CONTROLS)
+    total = len(HOODS) * len(CONTROLS) * len(FUELS)
     print(f"Generating {total} variations -> {OUTPUT_DIR}/{OUTPUT_FILE}")
 
     variations = []
-    for hood_label, hood_type in HOODS:
-        for ctrl_label, control_mode, auto_control_type in CONTROLS:
-            tag = f"{hood_label} / {ctrl_label}"
-            print(f"  [{len(variations)+1}/{total}] {tag} ...")
-            v = _build_variation(base_url,
-                                 hood_label, hood_type,
-                                 ctrl_label, control_mode, auto_control_type)
-            v.setdefault("hood_label", hood_label)
-            v.setdefault("control_label", ctrl_label)
-            variations.append(v)
+    for fuel_label, fuel_type, fuel_cv in FUELS:
+        for hood_label, hood_type in HOODS:
+            for ctrl_label, control_mode, auto_control_type in CONTROLS:
+                tag = f"{fuel_label} / {hood_label} / {ctrl_label}"
+                print(f"  [{len(variations)+1}/{total}] {tag} ...")
+                v = _build_variation(base_url,
+                                     hood_label, hood_type,
+                                     ctrl_label, control_mode, auto_control_type,
+                                     fuel_label=fuel_label, fuel_type=fuel_type,
+                                     fuel_cv=fuel_cv)
+                v.setdefault("hood_label", hood_label)
+                v.setdefault("control_label", ctrl_label)
+                v.setdefault("fuel_label", fuel_label)
+                variations.append(v)
 
     out_path = os.path.join(OUTPUT_DIR, OUTPUT_FILE)
     _write_doc(variations, out_path)
