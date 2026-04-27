@@ -1858,6 +1858,7 @@ function buildTechData() {
     special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
     special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
     vertical_qty:         parseInt(document.getElementById("td-vertical_qty")?.value) || 1,
+    purging_line:         (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
   };
 }
 

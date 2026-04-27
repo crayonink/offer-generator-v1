@@ -564,6 +564,7 @@ class QuoteRequest(BaseModel):
     special_auto_controls:  Optional[bool] = False  # Special Requirements
     vertical_qty:   Optional[int] = 1   # Annexure I scope-of-supply header — Vertical units count
     horizontal_qty: Optional[int] = 1   # Annexure I scope-of-supply header — Horizontal units count
+    purging_line:   Optional[str] = "no"   # "yes" | "no" — drives the Nitrogen Purging block in the offer
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
