@@ -565,6 +565,7 @@ class QuoteRequest(BaseModel):
     vertical_qty:   Optional[int] = 1   # Annexure I scope-of-supply header — Vertical units count
     horizontal_qty: Optional[int] = 1   # Annexure I scope-of-supply header — Horizontal units count
     purging_line:   Optional[str] = "no"   # "yes" | "no" — drives the Nitrogen Purging block in the offer
+    hpu_variant:    Optional[str] = "Duplex 1"   # "Simplex" | "Duplex 1" | "Duplex 2" — Pumping Unit type
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
@@ -1792,6 +1793,7 @@ async def generate_quote(req: QuoteRequest):
                 "vertical_qty":        int(req.vertical_qty or 1),
                 "horizontal_qty":      int(req.horizontal_qty or 1),
                 "nitrogen_purging":    (req.purging_line or "no").lower() == "yes",
+                "hpu_variant":         req.hpu_variant or "Duplex 1",
                 "bom_items":           req.bom_items or [],
             },
             "items": [item.dict() for item in req.items],

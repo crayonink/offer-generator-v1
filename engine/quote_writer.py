@@ -231,35 +231,38 @@ def _pipeline_scope_text(is_oil: bool, is_dual: bool) -> str:
     return "Interconnecting pipelines from gas train and blower to burner"
 
 
-def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool):
+def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
+                         hpu_variant: str = "Duplex 1"):
     """Decide heading + intro + bullets for the oil-side pumping section.
 
     Returns (heading, intro, bullets_list). Heading is empty when neither
     is_oil nor is_dual is set, so the template can hide the section.
+    The hpu_variant ("Simplex" / "Duplex 1" / "Duplex 2") flows into the
+    intro paragraph as the unit type.
     """
     if not (is_oil or is_dual):
         return "", "", []
+
+    variant = (hpu_variant or "Duplex 1").strip() or "Duplex 1"
 
     name = (fuel_name or "").upper().strip()
     pumping_only = any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES)
     if pumping_only:
         heading = "Pumping Unit"
-        intro = ("To supply fuel oil to the above burner at the requisite "
-                 "pressure, we will supply a suitable Pumping Unit type "
-                 "Duplex-2 comprising of the following:")
+        intro = (f"To supply fuel oil to the above burner at the requisite "
+                 f"pressure, we will supply a suitable Pumping Unit type "
+                 f"{variant} comprising of the following:")
         bullets = [
-            "2 Nos. oil pumps each fitted with suitable electric motor.",
             "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
             "1 No. Pressure gauge.",
         ]
     else:
         heading = "Oil Heating and Pumping Unit"
-        intro = ("To supply fuel oil to the above burner at requisite "
-                 "pressure and temperature, we will supply a suitable "
-                 "heating & pumping unit type Duplex-2 comprising of the following:")
+        intro = (f"To supply fuel oil to the above burner at requisite "
+                 f"pressure and temperature, we will supply a suitable "
+                 f"heating & pumping unit type {variant} comprising of the following:")
         bullets = [
-            "2 Nos. oil pumps each fitted with suitable electric motor.",
             "2 No. electric Oil Preheater with thermostatic Control.",
             "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
@@ -686,6 +689,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             customer.get("fuel_name"),
             bool(customer.get("is_oil")),
             bool(customer.get("is_dual")),
+            customer.get("hpu_variant") or "Duplex 1",
         )),
     }
 
