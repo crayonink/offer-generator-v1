@@ -269,14 +269,17 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
     pumping_only = any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES)
     if pumping_only:
         heading = "Pumping Unit"
-        # Pure-oil fuels never have the heater; describe pump arrangement only.
+        # Pure-oil fuels never have the heater. Duplex variants use a
+        # running/standby pump pair; Simplex uses a single pump.
         if variant_label == "Simplex":
-            pump_desc = "Pump with motor"
-        else:  # Duplex-I / Duplex-II
-            pump_desc = "Two pumps with motors in parallel"
-        intro = (f"To supply fuel oil to the above burner at the requisite "
-                 f"pressure, we will supply a suitable Pumping Unit type "
-                 f"{variant_label} ({pump_desc}) comprising of the following:")
+            intro = ("To supply fuel oil to the above burner at the requisite "
+                     "pressure, we will supply a Pumping Unit type Simplex "
+                     "with a single pump and motor.")
+        else:
+            intro = (f"To supply fuel oil to the above burner at the requisite "
+                     f"pressure, we will supply a Pumping Unit type "
+                     f"{variant_label} comprising two pumping units, where one "
+                     f"will be running and the other will be in standby.")
         bullets = [
             pump_bullet,
             "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
