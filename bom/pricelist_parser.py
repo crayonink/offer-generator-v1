@@ -53,6 +53,158 @@ def _find_sheet(xl, keyword):
     return None
 
 
+def _detect_rates_layout(df):
+    """Inspect the first few rows of the Rates sheet to figure out which
+    columns hold each group's item / latest-price / older-price / previous
+    cells.
+
+    Returns a dict with keys 'A' (Raw Material), 'B' (Bought Out),
+    'C' (ENCON Purchase). Each value is itself a dict:
+        item       - column index of the item-name column
+        price      - latest dated price column (e.g. 'Price 28.04.26')
+        price_old  - older priced column (fallback when 'price' cell empty)
+        prev       - 'previous price' column
+    """
+    import re as _re
+    head = df.iloc[:6] if len(df) >= 6 else df
+
+    def _cell(ri, ci):
+        try:
+            v = head.iloc[ri, ci]
+        except Exception:
+            return ""
+        if v is None:
+            return ""
+        try:
+            import math as _m
+            if isinstance(v, float) and _m.isnan(v):
+                return ""
+        except Exception:
+            pass
+        return str(v).strip()
+
+    ncols = head.shape[1]
+
+    # 1. Find Bought-Out and ENCON Purchase section anchors.
+    bo_col = None
+    enc_col = None
+    for ri in range(min(4, head.shape[0])):
+        for ci in range(ncols):
+            txt = _cell(ri, ci).lower()
+            if bo_col is None and "bought out items" in txt:
+                bo_col = ci
+            if enc_col is None and "encon purchase price" in txt:
+                enc_col = ci
+
+    # Fallback to the legacy hard-coded positions if the anchors aren't found.
+    if bo_col is None:
+        bo_col = 9
+    if enc_col is None:
+        enc_col = 15
+
+    # Sample data rows to disambiguate header vs data column when merged
+    # cells push the actual numeric data one column to the right of its
+    # header label.
+    def _has_num(ci, sample_rows=range(4, min(20, len(df)))):
+        for r in sample_rows:
+            try:
+                v = df.iloc[r, ci]
+            except Exception:
+                continue
+            try:
+                if v is None: continue
+                import math as _m
+                if isinstance(v, float) and _m.isnan(v):
+                    continue
+                float(str(v).replace(",", "").strip())
+                return True
+            except (TypeError, ValueError):
+                continue
+        return False
+
+    def _data_col_for(header_col, end_col):
+        """Given a column where a price header was found, return the column
+        that actually carries the numeric data (header itself or +1 if the
+        header sits on a merged cell)."""
+        if header_col is None:
+            return None
+        if _has_num(header_col):
+            return header_col
+        if header_col + 1 < end_col and _has_num(header_col + 1):
+            return header_col + 1
+        return header_col  # caller will treat empty cell as None
+
+    # 2. Within each section's column range, find dated-price + previous-price.
+    def _scan(start_col, end_col):
+        latest = None
+        older  = None
+        prev   = None
+        # Section item column: leftmost text in the section
+        item_col = start_col
+        for ri in range(min(4, head.shape[0])):
+            for ci in range(start_col, end_col):
+                txt = _cell(ri, ci)
+                low = txt.lower()
+                # Dated price column: 'Price 28.04.26' / 'Price 04.05.27' etc.
+                if _re.match(r'^price\s+\d', low):
+                    if latest is None or ci > latest:
+                        latest = ci
+                # Older priced column: 'Price 2025' / 'Price june 2025' /
+                # 'PRICE (Rs.) 2025'
+                elif "price" in low and ("2025" in low or "rs" in low or "june" in low):
+                    if older is None:
+                        older = ci
+                # Previous price column
+                elif "previous" in low and "price" in low:
+                    if prev is None:
+                        prev = ci
+        # Resolve header→data offset for each
+        latest = _data_col_for(latest, end_col)
+        older  = _data_col_for(older,  end_col)
+        prev   = _data_col_for(prev,   end_col)
+        return item_col, latest, older, prev
+
+    # Group A: cols 0 .. bo_col
+    a_item = 1
+    _, a_latest, a_older, a_prev = _scan(0, bo_col)
+    # Older fallback for Group A is col 2 (legacy 'Price june 2025')
+    if a_older is None:
+        a_older = 2
+    if a_prev is None:
+        a_prev = 3
+
+    # Group B: cols bo_col .. enc_col
+    b_item = bo_col
+    _, b_latest, b_older, b_prev = _scan(bo_col, enc_col)
+    if b_older is None:
+        b_older = bo_col + 1
+    if b_prev is None:
+        b_prev = bo_col + 3
+
+    # Group C: cols enc_col .. ncols. Item is the 'ITEM' header column inside.
+    c_item = None
+    for ri in range(min(4, head.shape[0])):
+        for ci in range(enc_col, ncols):
+            if _cell(ri, ci).strip().lower() == "item":
+                c_item = ci
+                break
+        if c_item is not None:
+            break
+    if c_item is None:
+        c_item = enc_col  # fallback
+    _, c_latest, c_older, c_prev = _scan(enc_col, ncols)
+    if c_older is None:
+        c_older = c_item + 4
+    if c_prev is None:
+        c_prev = c_item + 5
+
+    return {
+        "A": {"item": a_item, "price": a_latest, "price_old": a_older, "prev": a_prev},
+        "B": {"item": b_item, "price": b_latest, "price_old": b_older, "prev": b_prev},
+        "C": {"item": c_item, "price": c_latest, "price_old": c_older, "prev": c_prev},
+    }
+
+
 # ─────────────────────────────────────────────────────────────────
 # 1. RATES → component_price_master
 # ─────────────────────────────────────────────────────────────────
@@ -94,14 +246,30 @@ def parse_rates(xl, conn):
         s = s.replace('"', '')
         return s if len(s) >= 2 and not s.replace(".", "").replace(",", "").isdigit() else None
 
+    # Detect column layout dynamically so the parser handles both the old
+    # (Aug-2025) and new (Apr-2026) workbook variants. The new file shifted
+    # the Bought-Out + ENCON Purchase sections one column to the right and
+    # added a fresh dated price column (e.g. "Price 28.04.26") to each group.
+    layout = _detect_rates_layout(df)
+    g_a = layout["A"]
+    g_b = layout["B"]
+    g_c = layout["C"]
+
+    def _latest_price(row, primary_col, fallback_col):
+        """Return the dated/latest column when populated, else the older column."""
+        v = clean_num(row.iloc[primary_col]) if primary_col is not None and len(row) > primary_col else None
+        if v is not None:
+            return v
+        return clean_num(row.iloc[fallback_col]) if fallback_col is not None and len(row) > fallback_col else None
+
     rows = []  # tuples of (item, category, unit, price, prev, excel_row, excel_col)
     for pandas_idx, row in df.iterrows():
         excel_row = int(pandas_idx) + 1  # 1-based Excel row
 
-        # Group A: Raw Material — item col 1, price col 2 → Excel col C = 3
-        item  = clean_text(row.iloc[1] if len(row) > 1 else None)
-        price = clean_num(row.iloc[2]  if len(row) > 2 else None)
-        prev  = clean_num(row.iloc[3]  if len(row) > 3 else None)
+        # Group A: Raw Material
+        item  = clean_text(row.iloc[g_a["item"]] if len(row) > g_a["item"] else None)
+        price = _latest_price(row, g_a["price"], g_a["price_old"])
+        prev  = clean_num(row.iloc[g_a["prev"]] if g_a["prev"] is not None and len(row) > g_a["prev"] else None)
         if item and price and not is_header(item):
             # SS Pipe: compute price per metre from geometry formula
             # Skip raw "SS Pipe 304 60 X 3mm" rows — the "(per mtr)" computed row will be kept instead
@@ -110,21 +278,21 @@ def parse_rates(xl, conn):
             unit = "kg" if price <= 500 else "nos"
             if "per mtr" in item.lower() or "(per mtr)" in item.lower():
                 unit = "mtr"
-            rows.append((item, "Raw Material", unit, price, prev or price, excel_row, 3))
+            rows.append((item, "Raw Material", unit, price, prev or price, excel_row, g_a["price"] + 1))
 
-        # Group B: Bought Out — item col 9, price col 10 → Excel col K = 11
-        item  = clean_text(row.iloc[9]  if len(row) > 9  else None)
-        price = clean_num(row.iloc[10]  if len(row) > 10 else None)
-        prev  = clean_num(row.iloc[12]  if len(row) > 12 else None)
+        # Group B: Bought Out
+        item  = clean_text(row.iloc[g_b["item"]] if len(row) > g_b["item"] else None)
+        price = _latest_price(row, g_b["price"], g_b["price_old"])
+        prev  = clean_num(row.iloc[g_b["prev"]] if g_b["prev"] is not None and len(row) > g_b["prev"] else None)
         if item and price and not is_header(item):
-            rows.append((item, "Bought Out", "nos", price, prev or price, excel_row, 11))
+            rows.append((item, "Bought Out", "nos", price, prev or price, excel_row, g_b["price"] + 1))
 
-        # Group C: ENCON Purchase — item col 15, price col 19 → Excel col T = 20
-        item  = clean_text(row.iloc[15] if len(row) > 15 else None)
-        price = clean_num(row.iloc[19]  if len(row) > 19 else None)
-        prev  = clean_num(row.iloc[20]  if len(row) > 20 else None)
+        # Group C: ENCON Purchase
+        item  = clean_text(row.iloc[g_c["item"]] if len(row) > g_c["item"] else None)
+        price = _latest_price(row, g_c["price"], g_c["price_old"])
+        prev  = clean_num(row.iloc[g_c["prev"]] if g_c["prev"] is not None and len(row) > g_c["prev"] else None)
         if item and price and not is_header(item):
-            rows.append((item, "ENCON Purchase", "nos", price, prev or price, excel_row, 20))
+            rows.append((item, "ENCON Purchase", "nos", price, prev or price, excel_row, g_c["price"] + 1))
 
     if not rows:
         return {"error": "No price data found in Rates sheet"}
@@ -163,19 +331,27 @@ def parse_rates(xl, conn):
     for (db_item,) in conn.execute("SELECT item FROM component_price_master"):
         existing[_compact(db_item)] = db_item
 
+    # Manual upsert — the live table uses UNIQUE(item, company) (where the
+    # parsed rows always have company IS NULL), so INSERT OR REPLACE / ON
+    # CONFLICT(item) won't match. Try UPDATE first; INSERT only if it didn't
+    # touch a row.
     for item, category, unit, price, prev, excel_row, excel_col in rows:
         ck = _compact(item)
         # If a near-duplicate already exists in DB with a different exact name, use that name
         if ck in existing and existing[ck] != item:
             item = existing[ck]
-        conn.execute("""
-            INSERT INTO component_price_master (item, category, unit, price, previous_price, excel_row, excel_col)
-            VALUES (?,?,?,?,?,?,?)
-            ON CONFLICT(item) DO UPDATE SET
-                category=excluded.category, unit=excluded.unit,
-                price=excluded.price, previous_price=excluded.previous_price,
-                excel_row=excluded.excel_row, excel_col=excluded.excel_col
-        """, (item, category, unit, price, prev, excel_row, excel_col))
+        cur = conn.execute("""
+            UPDATE component_price_master
+            SET category=?, unit=?, price=?, previous_price=?,
+                excel_row=?, excel_col=?
+            WHERE item=? AND company IS NULL
+        """, (category, unit, price, prev, excel_row, excel_col, item))
+        if cur.rowcount == 0:
+            conn.execute("""
+                INSERT INTO component_price_master
+                  (item, category, unit, price, previous_price, excel_row, excel_col)
+                VALUES (?,?,?,?,?,?,?)
+            """, (item, category, unit, price, prev, excel_row, excel_col))
         existing[ck] = item
 
     return {"rows": len(rows)}
