@@ -1732,11 +1732,25 @@ function fillTechDataTable() {
   const f1Rate = +(c.extra_firing_rate_nm3hr || 0);
   const f1Unit = isOil ? "kg/hr" : "Nm3/hr";
   const fuelConsumption = `${f1Prefix}: ${f1Rate.toFixed(0)} ${f1Unit}`;
+  // Burner Capacity row rounds up to the next 100 — e.g. 1365 -> 1400.
+  const f1Cap = Math.ceil(f1Rate / 100) * 100;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
+  // For dual-fuel the Burner Capacity row shows both fuels rounded up;
+  // Single-fuel uses the fuel name as the prefix.
+  let burnerCap;
+  if (isDual) {
+    const _f2Rate = +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const _f2Type = (c.fuel2_type || "").toLowerCase();
+    const _f2Unit = OIL_FUEL_SET.has(_f2Type) ? "kg/hr" : "Nm3/hr";
+    const _f2Cap = Math.ceil(_f2Rate / 100) * 100;
+    burnerCap = `Fuel 1: ${f1Cap} ${f1Unit}\nFuel 2: ${_f2Cap} ${_f2Unit}`;
+  } else {
+    burnerCap = `${f1Prefix}: ${f1Cap} ${f1Unit}`;
+  }
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
     "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
@@ -1744,7 +1758,7 @@ function fillTechDataTable() {
     "td-fuel_name":            isDual ? `Fuel 1: ${f1Name} & Fuel 2: ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
-    "td-burner_capacity_range":fuelConsumption,
+    "td-burner_capacity_range":burnerCap,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
