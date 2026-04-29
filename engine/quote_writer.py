@@ -580,10 +580,13 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             customer.get("burner_firing_rate")
             or customer.get("fuel_consumption", "")
         ),
-        # Just the kW value, with any 'Fuel name: ' prefix stripped — used in the
-        # ENCON Burner body line ("with a firing rate of 2,148 kW.").
+        # Total kW for the ENCON Burner body line ("we will supply 1 No. of
+        # ENCON burner of 1,074 kW."). Prefer the pre-formatted value sent
+        # by the front-end (sums fuel-1 + fuel-2 firing rates); fall back to
+        # parsing fuel_consumption only if that field wasn't populated.
         "burner_kw": (
-            (customer.get("fuel_consumption") or "").split(":", 1)[-1].strip()
+            customer.get("burner_kw_value")
+            or (customer.get("fuel_consumption") or "").split(":", 1)[-1].strip()
         ),
         "blower_model":          customer.get("blower_model") or "",
         "blower_size":           customer.get("blower_size") or "",

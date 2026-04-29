@@ -1726,12 +1726,12 @@ function fillTechDataTable() {
   const isDualCheck = !!c.is_dual;
   // Prefix: for dual fuel use "Fuel 1:" / "Fuel 2:" so reader can match rates to fuels.
   const f1Prefix = isDualCheck ? "Fuel 1" : f1Name;
-  // Convert firing rate to kW: flow × CV / 860 (1 kW = 860 kcal/hr).
-  // For gas: rate_nm3hr × CV_kcal_per_nm3; for oil: rate_kg_per_hr × CV_kcal_per_kg.
+  // Firing rate expressed in the fuel's natural unit:
+  //   gas -> Nm3/hr   (extra_firing_rate_nm3hr is the gas flow)
+  //   oil -> kg/hr    (same field carries kg/hr for oil fuels)
   const f1Rate = +(c.extra_firing_rate_nm3hr || 0);
-  const f1CV   = +(c.fuel_cv || c.fuel1_cv || 0);
-  const f1KW   = f1Rate * f1CV / 860;
-  const fuelConsumption = `${f1Prefix}: ${f1KW.toFixed(0)} kW`;
+  const f1Unit = isOil ? "kg/hr" : "Nm3/hr";
+  const fuelConsumption = `${f1Prefix}: ${f1Rate.toFixed(0)} ${f1Unit}`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
@@ -1744,7 +1744,7 @@ function fillTechDataTable() {
     "td-fuel_name":            isDual ? `Fuel 1: ${f1Name} & Fuel 2: ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
-    "td-burner_capacity_range":`${f1Prefix}: ${f1KW.toFixed(0)} kW`,
+    "td-burner_capacity_range":fuelConsumption,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
@@ -1782,11 +1782,12 @@ function fillTechDataTable() {
     if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
     const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
-    // Fuel 2 firing rate in kW (same conversion as fuel 1)
+    // Fuel 2 firing rate — Nm3/hr for gas, kg/hr for oil.
     const f2Rate = +(c.fuel2_extra_firing_rate_nm3hr || 0);
-    const f2CV   = +(c.fuel2_cv || 0);
-    const f2KW   = f2Rate * f2CV / 860;
-    defaults["td-fuel2_consumption"] = `Fuel 2: ${f2KW.toFixed(0)} kW`;
+    const f2Type = (c.fuel2_type || "").toLowerCase();
+    const f2IsOil = OIL_FUEL_SET.has(f2Type);
+    const f2Unit = f2IsOil ? "kg/hr" : "Nm3/hr";
+    defaults["td-fuel2_consumption"] = `Fuel 2: ${f2Rate.toFixed(0)} ${f2Unit}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
@@ -1825,6 +1826,15 @@ function buildTechData() {
   // (backend returns fuel_density=0.85 for gas too — it's used internally for kg/hr -> L/hr conversion).
   const _c = (lastCalc && lastCalc.calculations) || {};
   const isOil = OIL_FUEL_SET.has((_c.fuel1_type || "").toLowerCase());
+  // Compute total kW for the burner-body line ("we will supply 1 No. of
+  // ENCON burner of {kW} kW.") — sum of fuel-1 + fuel-2 firing rates.
+  const _f1Rate = +(_c.extra_firing_rate_nm3hr || 0);
+  const _f1CV   = +(_c.fuel_cv || _c.fuel1_cv || 0);
+  const _f1KW   = _f1Rate * _f1CV / 860;
+  const _f2Rate = +(_c.fuel2_extra_firing_rate_nm3hr || 0);
+  const _f2CV   = +(_c.fuel2_cv || 0);
+  const _f2KW   = _f2Rate * _f2CV / 860;
+  const _totalKW = _f1KW + _f2KW;
   return {
     ladle_tons:           ladleTons,
     ladle_dim:            get("td-ladle_dim"),
@@ -1860,6 +1870,7 @@ function buildTechData() {
     vertical_qty:         parseInt(document.getElementById("td-vertical_qty")?.value) || 1,
     purging_line:         (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
     hpu_variant:          document.getElementById("hpu_variant")?.value || "Duplex 1",
+    burner_kw_value:      `${Math.round(_totalKW).toLocaleString("en-IN")} kW`,
   };
 }
 
