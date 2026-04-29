@@ -238,20 +238,39 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
     Returns (heading, intro, bullets_list). Heading is empty when neither
     is_oil nor is_dual is set, so the template can hide the section.
     The hpu_variant ("Simplex" / "Duplex 1" / "Duplex 2") flows into the
-    intro paragraph as the unit type.
+    intro paragraph as the unit type and drives the configuration
+    description sentence.
     """
     if not (is_oil or is_dual):
         return "", "", []
 
-    variant = (hpu_variant or "Duplex 1").strip() or "Duplex 1"
+    raw = (hpu_variant or "Duplex 1").strip().lower()
+    if "simplex" in raw or raw in ("hps", "s"):
+        variant_label = "Simplex"
+        # "HPS" is the heating-pumping (Single) prefix from the ENCON pricelist
+        config_desc = "Pump with motor and Single Heater"
+    elif "duplex 2" in raw or "duplex-2" in raw or "duplex ii" in raw or "hpdd" in raw or raw == "2":
+        variant_label = "Duplex-II"
+        config_desc = "Two pumps with motors and Two Heaters in parallel"
+    else:
+        # Default = Duplex 1 / Duplex-I
+        variant_label = "Duplex-I"
+        config_desc = "Two pumps with motors in parallel and Single Heater"
 
     name = (fuel_name or "").upper().strip()
     pumping_only = any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES)
     if pumping_only:
         heading = "Pumping Unit"
+        # Pure-oil fuels never have the heater; describe pump arrangement only.
+        if variant_label == "Simplex":
+            pump_desc = "Pump with motor"
+        elif variant_label == "Duplex-II":
+            pump_desc = "Two pumps with motors in parallel"
+        else:  # Duplex-I
+            pump_desc = "Two pumps with motors in parallel"
         intro = (f"To supply fuel oil to the above burner at the requisite "
                  f"pressure, we will supply a suitable Pumping Unit type "
-                 f"{variant} comprising of the following:")
+                 f"{variant_label} ({pump_desc}) comprising of the following:")
         bullets = [
             "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
@@ -261,12 +280,19 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
         heading = "Oil Heating and Pumping Unit"
         intro = (f"To supply fuel oil to the above burner at requisite "
                  f"pressure and temperature, we will supply a suitable "
-                 f"heating & pumping unit type {variant} comprising of the following:")
+                 f"heating and pumping unit type {variant_label} ({config_desc}) "
+                 f"comprising of the following:")
+        # The "2 Nos. electric Oil Preheater" bullet only applies when the
+        # variant ships two heaters; Simplex / Duplex-I have a single heater.
+        if variant_label == "Duplex-II":
+            heater_bullet = "2 Nos. electric Oil Preheater with thermostatic control."
+        else:
+            heater_bullet = "1 No. electric Oil Preheater with thermostatic control."
         bullets = [
-            "2 No. electric Oil Preheater with thermostatic Control.",
+            heater_bullet,
             "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
-            "1 No. each of Pressure gauge & Temperature gauge.",
+            "1 No. each of Pressure gauge and Temperature gauge.",
         ]
     return heading, intro, bullets
 
