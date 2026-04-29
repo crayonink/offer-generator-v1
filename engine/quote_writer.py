@@ -257,6 +257,14 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
         variant_label = "Duplex-I"
         config_desc = "Two pumps with motors in parallel and Single Heater"
 
+    # Pump count + bullet text varies with variant:
+    #   Simplex      -> 1 pump
+    #   Duplex-I/II  -> 2 pumps
+    if variant_label == "Simplex":
+        pump_bullet = "1 No. oil pump fitted with a suitable electric motor."
+    else:
+        pump_bullet = "2 Nos. oil pumps each fitted with a suitable electric motor."
+
     name = (fuel_name or "").upper().strip()
     pumping_only = any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES)
     if pumping_only:
@@ -264,14 +272,13 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
         # Pure-oil fuels never have the heater; describe pump arrangement only.
         if variant_label == "Simplex":
             pump_desc = "Pump with motor"
-        elif variant_label == "Duplex-II":
-            pump_desc = "Two pumps with motors in parallel"
-        else:  # Duplex-I
+        else:  # Duplex-I / Duplex-II
             pump_desc = "Two pumps with motors in parallel"
         intro = (f"To supply fuel oil to the above burner at the requisite "
                  f"pressure, we will supply a suitable Pumping Unit type "
                  f"{variant_label} ({pump_desc}) comprising of the following:")
         bullets = [
+            pump_bullet,
             "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
             "1 No. Pressure gauge.",
@@ -289,6 +296,7 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
         else:
             heater_bullet = "1 No. electric Oil Preheater with thermostatic control."
         bullets = [
+            pump_bullet,
             heater_bullet,
             "1 No. each of Duplex type coarse and fine filter for the cold and hot oil side respectively.",
             "1 No. Pressure regulating valve.",
