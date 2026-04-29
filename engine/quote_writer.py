@@ -429,7 +429,11 @@ def _control_system_sections(bom_items: list) -> dict:
         is_pilot_named = "(PILOT BURNER)" in upper or "(UV LINE)" in upper
         is_pilot_media = media.endswith(" PILOT LINE")
 
-        if is_pilot_named or is_pilot_media:
+        # Drop "(Pilot Burner)" / "(UV LINE)" tagged accessories entirely --
+        # the offer no longer surfaces them in any section.
+        if is_pilot_named:
+            continue
+        if is_pilot_media:
             pilot.append(_fmt(x))
         elif media == "COMB AIR":
             air.append(_fmt(x))
@@ -451,10 +455,14 @@ def _control_system_sections(bom_items: list) -> dict:
     # Strip the trailing " LINE" suffix to surface the short fuel name (NG, MG, BG, COG, LDO...)
     fuel1_label = fuel1_media[:-5] if fuel1_media and fuel1_media.endswith(" LINE") else (fuel1_media or "")
     # The second fuel media is whichever we collected into fuel2; pick from any item.
+    # Exclude PURGING LINE and any '<X> PILOT LINE' (those belong to the pilot bucket).
     fuel2_media = ""
     for x in bom_items:
         m = (x.get("media") or "").strip().upper()
-        if m.endswith(" LINE") and m != "PURGING LINE" and m != fuel1_media:
+        if (m.endswith(" LINE")
+                and m != "PURGING LINE"
+                and not m.endswith(" PILOT LINE")
+                and m != fuel1_media):
             fuel2_media = m
             break
     fuel2_label = fuel2_media[:-5] if fuel2_media.endswith(" LINE") else fuel2_media
