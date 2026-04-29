@@ -308,11 +308,17 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
     return heading, intro, bullets
 
 
-def _temp_control_items_for_mode(control_mode: str, auto_control_type: str) -> list:
+def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
+                                  is_dual_with_oil: bool = False) -> list:
     """Return the static numbered list of Temperature Control System items
     for the given control mode. Drives the {%p for x in temp_control_items %}
     loop in the Word template (and the PDF builder). Replaces the previous
-    BOM-derived list so every mode has fixed, well-worded content."""
+    BOM-derived list so every mode has fixed, well-worded content.
+
+    is_dual_with_oil: when True (dual-fuel offer with one oil + one gas
+    fuel) AND the mode already includes the gas-line AGR, an additional
+    'Air-Oil Ratio (AGR) regulator on the oil line' entry is appended.
+    """
     cm  = (control_mode or "automatic").lower()
     act = (auto_control_type or "plc").lower()
     if cm == "manual":
@@ -341,6 +347,12 @@ def _temp_control_items_for_mode(control_mode: str, auto_control_type: str) -> l
             "Orifice plate fitted with mass flow transmitter on gas line",
             "Orifice plate fitted with differential pressure transmitter on air line",
         ]
+
+    # For dual-fuel offers (one oil + one gas) where the gas line already
+    # carries an AGR, mirror it on the oil line.
+    if is_dual_with_oil and any("Air-Gas Ratio" in x for x in items):
+        items.append("Air-Oil Ratio (AGR) regulator on the oil line")
+
     return [{"item": x, "ref": ""} for x in items]
 
 
@@ -709,8 +721,20 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         **_control_system_sections(customer.get("bom_items") or []),
         # Override temp_control_items with mode-specific static list (does NOT
         # come from BOM). PLC, PLC+AGR, PID and Manual each get their own.
+        # Dual-fuel offers carrying both an oil and a gas component get an
+        # extra 'Air-Oil Ratio' entry alongside the existing 'Air-Gas Ratio'
+        # AGR row, but only when the chosen mode already uses an AGR.
         "temp_control_items": _temp_control_items_for_mode(
-            customer.get("control_mode"), customer.get("auto_control_type")),
+            customer.get("control_mode"),
+            customer.get("auto_control_type"),
+            is_dual_with_oil=(
+                bool(customer.get("is_dual"))
+                and any(
+                    tok in (customer.get("fuel_name") or "").upper()
+                    for tok in ("LDO", "FO", "HSD", "SKO", "HDO", "CFO", "LSHS", "FURNACE OIL")
+                )
+            ),
+        ),
         # Mode-specific OPERATIONAL SEQUENCE paragraph wording.
         "operational_sequence_text": _operational_sequence_text(
             customer.get("control_mode"), customer.get("auto_control_type")),
