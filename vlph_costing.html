@@ -1890,14 +1890,17 @@ function buildTechData() {
   const _c = (lastCalc && lastCalc.calculations) || {};
   const isOil = OIL_FUEL_SET.has((_c.fuel1_type || "").toLowerCase());
   // Compute total kW for the burner-body line ("we will supply 1 No. of
-  // ENCON burner of {kW} kW.") — sum of fuel-1 + fuel-2 firing rates.
+  // ENCON burner of {kW} kW.") — sum of fuel-1 + fuel-2 firing rates,
+  // rounded UP to the next multiple of 100 to match the design capacity
+  // (e.g. 1365 kW -> 1400 kW).
   const _f1Rate = +(_c.extra_firing_rate_nm3hr || 0);
   const _f1CV   = +(_c.fuel_cv || _c.fuel1_cv || 0);
   const _f1KW   = _f1Rate * _f1CV / 860;
   const _f2Rate = +(_c.fuel2_extra_firing_rate_nm3hr || 0);
   const _f2CV   = +(_c.fuel2_cv || 0);
   const _f2KW   = _f2Rate * _f2CV / 860;
-  const _totalKW = _f1KW + _f2KW;
+  const _rawKW   = _f1KW + _f2KW;
+  const _totalKW = Math.ceil(_rawKW / 100) * 100;
   return {
     ladle_tons:           ladleTons,
     ladle_dim:            get("td-ladle_dim"),
