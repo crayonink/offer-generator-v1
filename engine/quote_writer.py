@@ -479,40 +479,11 @@ def _control_system_sections(bom_items: list) -> dict:
             break
     fuel2_label = fuel2_media[:-5] if fuel2_media.endswith(" LINE") else fuel2_media
 
-    # Packaged 'Gas Train' (NG / LPG / RLNG) renders as its own heading
-    # block with the 10 internals as sub-bullets. To keep the bullet
-    # ordering predictable, strip GAS TRAIN out of the line list and surface
-    # it via separate has_*_gas_train / *_gas_train_items context vars.
-    PACKAGED_GAS_TRAIN_LINES = ("NG LINE", "LPG LINE", "RLNG LINE")
-    GAS_TRAIN_INTERNALS = [
-        "Inlet ball valve",
-        "Gas filter",
-        "Pressure regulator",
-        "Slam shut-off valve",
-        "Working solenoid valve",
-        "Safety relief valve",
-        "Pressure switch — low",
-        "Pressure switch — high",
-        "Pressure gauge with isolation cock",
-        "Outlet ball valve",
-    ]
-    INTERNALS_AS_DICTS = [{"item": x, "ref": ""} for x in GAS_TRAIN_INTERNALS]
-
-    def _strip_gas_train(items_list):
-        return [it for it in items_list if not it.get("item", "").strip().upper().startswith("GAS TRAIN")]
-
-    has_gas_train          = fuel1_media in PACKAGED_GAS_TRAIN_LINES
-    has_fuel2_gas_train    = fuel2_media in PACKAGED_GAS_TRAIN_LINES
-    gas_train_items        = INTERNALS_AS_DICTS if has_gas_train else []
-    fuel2_gas_train_items  = INTERNALS_AS_DICTS if has_fuel2_gas_train else []
-
-    if has_gas_train:
-        gas   = _strip_gas_train(gas)
-        fuel1 = _strip_gas_train(fuel1)
-    if has_fuel2_gas_train:
-        if not has_gas_train:
-            gas = _strip_gas_train(gas)
-        fuel2 = _strip_gas_train(fuel2)
+    # 'Gas Train' (NG / LPG / RLNG packaged) is left as a regular bullet
+    # in the line list for now. Heading-style rendering with internal
+    # components as sub-bullets is a future enhancement that needs
+    # template work too.
+    pass
 
     return {
         "gas_pipeline_items":     gas,
