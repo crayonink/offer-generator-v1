@@ -479,11 +479,38 @@ def _control_system_sections(bom_items: list) -> dict:
             break
     fuel2_label = fuel2_media[:-5] if fuel2_media.endswith(" LINE") else fuel2_media
 
-    # 'Gas Train' (NG / LPG / RLNG packaged) is left as a regular bullet
-    # in the line list for now. Heading-style rendering with internal
-    # components as sub-bullets is a future enhancement that needs
-    # template work too.
-    pass
+    # Packaged 'Gas Train' (NG / LPG / RLNG) keeps its top-level bullet but
+    # gains a list of sub_items so the template can render the 10 internal
+    # components as nested sub-bullets right under it.
+    PACKAGED_GAS_TRAIN_LINES = ("NG LINE", "LPG LINE", "RLNG LINE")
+    GAS_TRAIN_INTERNALS = [
+        "Gas Filter",
+        "Slam Shut-off Valve",
+        "Gas Pressure Regulator",
+        "Solenoid Valves",
+        "Pressure Switches",
+        "Pressure Gauges",
+        "Manual Isolation Valves",
+        "Vent Valve",
+    ]
+    INTERNALS_AS_DICTS = [{"item": x} for x in GAS_TRAIN_INTERNALS]
+
+    def _attach_sub_items(items_list, attach):
+        """For every GAS TRAIN entry in items_list, attach the gas-train
+        internals as its sub_items list. Other items get empty sub_items."""
+        for it in items_list:
+            it.setdefault("sub_items", [])
+            if attach and it.get("item", "").strip().upper().startswith("GAS TRAIN"):
+                it["sub_items"] = list(INTERNALS_AS_DICTS)
+
+    _attach_sub_items(gas,   fuel1_media in PACKAGED_GAS_TRAIN_LINES
+                              or fuel2_media in PACKAGED_GAS_TRAIN_LINES)
+    _attach_sub_items(fuel1, fuel1_media in PACKAGED_GAS_TRAIN_LINES)
+    _attach_sub_items(fuel2, fuel2_media in PACKAGED_GAS_TRAIN_LINES)
+    _attach_sub_items(air,            False)
+    _attach_sub_items(pilot,          False)
+    _attach_sub_items(temp,           False)
+    _attach_sub_items(purging,        False)
 
     return {
         "gas_pipeline_items":     gas,
