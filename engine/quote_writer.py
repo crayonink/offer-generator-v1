@@ -327,12 +327,21 @@ def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
             "Air-Gas Ratio (AGR) regulator on the gas line",
         ]
     elif act == "pid":
-        items = [
-            "P.PID temperature controller",
-            "Ratio Controller",
-            "Thermocouple with temperature transmitter",
-            "Air-Gas Ratio (AGR) regulator on the gas line",
-        ]
+        if is_dual_with_oil:
+            # Dual-fuel (oil + gas) PID systems carry a redundant PID pair and
+            # one ratio controller per fuel side.
+            items = [
+                "1 No. Thermocouple with temperature transmitter",
+                "2 Nos. PID Controllers (Main + Standby)",
+                "2 Nos. Ratio Controllers (Gas + Oil)",
+            ]
+        else:
+            items = [
+                "P.PID temperature controller",
+                "Ratio Controller",
+                "Thermocouple with temperature transmitter",
+                "Air-Gas Ratio (AGR) regulator on the gas line",
+            ]
     elif act == "plc_agr":
         items = [
             "PLC with HMI",
