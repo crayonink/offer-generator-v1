@@ -704,13 +704,8 @@
           <option value="Duplex 2">Duplex-II (HPDD)</option>
         </select>
       </div>
-      <div class="field pilot-gated">
-        <label>Pilot Line Fuel</label>
-        <select id="pilot_line_fuel">
-          <option value="lpg" selected>LPG</option>
-          <option value="ng">NG</option>
-        </select>
-      </div>
+      <!-- Pilot Line Fuel was a separate dropdown; now derived automatically
+           from the Pilot Burner selection (e.g. lpg_10 -> lpg, ng_100 -> ng). -->
       <div class="field pilot-gated">
         <label>Pilot Burner</label>
         <select id="pilot_burner">
@@ -1339,7 +1334,7 @@ async function calculate() {
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
-      pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
+      pilot_line_fuel: (document.getElementById("pilot_burner")?.value || "lpg_10").split("_")[0],
       ms_structure_kg_override: parseFloat(document.getElementById("direct_ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
@@ -1373,7 +1368,7 @@ async function calculate() {
       pipeline_weight_kg: parseFloat(document.getElementById("pipeline_weight_kg").value),
       purging_line: (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
       manual_pilot_burner: document.getElementById("manual_pilot_burner").value,
-      pilot_line_fuel: document.getElementById("pilot_line_fuel").value,
+      pilot_line_fuel: (document.getElementById("pilot_burner")?.value || "lpg_10").split("_")[0],
       ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
