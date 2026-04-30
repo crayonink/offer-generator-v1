@@ -1930,11 +1930,11 @@ function updatePilotVisibility() {
   document.querySelectorAll(".pilot-gated").forEach(el => {
     el.style.display = show ? "" : "none";
   });
-  // Step 4 tech-data rows
-  ["td-pilot_gas_type-row", "td-ignition-row"].forEach(id => {
-    const r = document.getElementById(id);
-    if (r) r.style.display = show ? "" : "none";
-  });
+  // Step 4 tech-data row: Firing & Ignition of Burner only.
+  // 'td-pilot_gas_type-row' is permanently hidden (its value is auto-set
+  // from the Step-2 Pilot Burner selection), so don't toggle it back on.
+  const ignRow = document.getElementById("td-ignition-row");
+  if (ignRow) ignRow.style.display = show ? "" : "none";
 }
 
 function togglePreview(url) {
