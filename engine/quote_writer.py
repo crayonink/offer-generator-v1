@@ -367,12 +367,17 @@ def _operational_sequence_text(control_mode: str, auto_control_type: str) -> str
                 "close the air and gas control valves to maintain the desired "
                 "temperature profile of the ladle as per the heating schedule.")
     if act == "pid":
-        return ("The temperature of the ladle will be controlled automatically through "
-                "a PID controller. The thermocouple fitted in the ladle will sense the "
-                "temperature and feed it to the PID controller. The PID controller will "
-                "modulate the air control valve via the Air-Gas Ratio regulator to "
-                "maintain the air/gas ratio as the temperature rises / falls to the "
-                "set values.")
+        return ("The ladle temperature shall be controlled in a closed-loop system "
+                "wherein a thermocouple installed in the ladle measures the temperature "
+                "and transmits the signal to the PID controller. The PID controller "
+                "compares this value with the setpoint and accordingly modulates the "
+                "fuel control valve (gas or oil, depending on the selected mode) to "
+                "regulate heat input to the burner. A ratio controller ensures that "
+                "the combustion air flow is proportionally adjusted with respect to "
+                "the fuel flow to maintain the correct air–fuel ratio (air–gas in gas "
+                "mode and air–oil in oil mode). This coordinated control of fuel and "
+                "air maintains efficient combustion and stabilizes the ladle "
+                "temperature at the desired set value.")
     if act == "plc_agr":
         return ("The temperature of the ladle will be controlled automatically through "
                 "P.L.C. The thermocouple fitted in the ladle will sense the temperature "
