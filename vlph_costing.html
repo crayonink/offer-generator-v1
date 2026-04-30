@@ -1265,6 +1265,20 @@ function onFuelChange() {
     document.getElementById('f1-ratio-name').textContent = FUEL_NAMES[f1];
     document.getElementById('f2-ratio-name').textContent = FUEL_NAMES[f2];
   }
+
+  // Auto-pick the matching Pilot Burner option from the main fuel:
+  //   COG -> cog_100   (only COG-100 in the dropdown)
+  //   NG / RLNG -> ng_10
+  //   LPG -> lpg_10
+  // Other fuels (MG / BFG / oil) keep the existing pilot selection.
+  const pbSel = document.getElementById('pilot_burner');
+  if (pbSel) {
+    const pbMap = { cog: 'cog_100', ng: 'ng_10', rlng: 'ng_10', lpg: 'lpg_10' };
+    const want = pbMap[f1];
+    if (want && pbSel.querySelector(`option[value="${want}"]`)) {
+      pbSel.value = want;
+    }
+  }
 }
 function updateBlendedCV() {
   // No-op: dual fuel uses separate lines, no blending needed.
