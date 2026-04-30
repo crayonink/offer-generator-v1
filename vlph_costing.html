@@ -1754,10 +1754,12 @@ function fillTechDataTable() {
   // (e.g. 'Natural Gas: 109 Nm3/hr' rather than 'Fuel 1: 109 Nm3/hr').
   const f1Prefix = f1Name;
   // Firing rate expressed in the fuel's natural unit:
-  //   gas -> Nm3/hr   (extra_firing_rate_nm3hr is the gas flow)
-  //   oil -> kg/hr    (same field carries kg/hr for oil fuels)
-  const f1Rate = +(c.extra_firing_rate_nm3hr || 0);
-  const f1Unit = isOil ? "kg/hr" : "Nm3/hr";
+  //   gas -> Nm3/hr  (extra_firing_rate_nm3hr is the gas flow)
+  //   oil -> L/hr    (use equivalent_lph; converted from kg/hr by the engine)
+  const f1Rate = isOil
+    ? +(c.equivalent_lph || 0)
+    : +(c.extra_firing_rate_nm3hr || 0);
+  const f1Unit = isOil ? "L/hr" : "Nm3/hr";
   const fuelConsumption = `${f1Prefix}: ${f1Rate.toFixed(0)} ${f1Unit}`;
   // Burner Capacity row rounds up to the next 100 — e.g. 1365 -> 1400.
   const f1Cap = Math.ceil(f1Rate / 100) * 100;
@@ -1768,12 +1770,15 @@ function fillTechDataTable() {
   const f2Name = c.fuel2_name || "Fuel 2";
   // For dual-fuel the Burner Capacity row shows both fuels rounded up,
   // labelled by their actual names with a line break between them.
-  // Single-fuel uses the fuel name as the prefix.
+  // Single-fuel uses the fuel name as the prefix. Oil shows L/hr.
   let burnerCap;
   if (isDual) {
-    const _f2Rate = +(c.fuel2_extra_firing_rate_nm3hr || 0);
     const _f2Type = (c.fuel2_type || "").toLowerCase();
-    const _f2Unit = OIL_FUEL_SET.has(_f2Type) ? "kg/hr" : "Nm3/hr";
+    const _f2IsOil = OIL_FUEL_SET.has(_f2Type);
+    const _f2Rate = _f2IsOil
+      ? +(c.fuel2_equivalent_lph || 0)
+      : +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const _f2Unit = _f2IsOil ? "L/hr" : "Nm3/hr";
     const _f2Cap = Math.ceil(_f2Rate / 100) * 100;
     burnerCap = `${f1Name}: ${f1Cap} ${f1Unit}\n${f2Name}: ${_f2Cap} ${_f2Unit}`;
   } else {
