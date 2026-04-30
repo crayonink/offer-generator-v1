@@ -328,12 +328,12 @@ def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
         ]
     elif act == "pid":
         if is_dual_with_oil:
-            # Dual-fuel (oil + gas) PID systems carry a redundant PID pair and
-            # one ratio controller per fuel side.
+            # Dual-fuel (oil + gas) PID systems carry one PID controller per
+            # fuel side and one ratio controller per fuel side.
             items = [
                 "1 No. Thermocouple with temperature transmitter",
-                "2 Nos. PID Controllers (Main + Standby)",
-                "2 Nos. Ratio Controllers (Gas + Oil)",
+                "2 Nos. PID Controllers (Oil + Gas)",
+                "2 Nos. Ratio Controllers (Oil + Gas)",
             ]
         else:
             items = [
