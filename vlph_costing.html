@@ -1266,18 +1266,28 @@ function onFuelChange() {
     document.getElementById('f2-ratio-name').textContent = FUEL_NAMES[f2];
   }
 
-  // Auto-pick the matching Pilot Burner option from the main fuel:
-  //   COG -> cog_100   (only COG-100 in the dropdown)
-  //   NG  -> ng_10
-  //   LPG -> lpg_10
-  // RLNG / MG / BFG / oil keep the existing pilot selection so the
-  // user can pick from all options manually.
+  // Filter the Pilot Burner dropdown by main fuel:
+  //   NG  -> show only ng_10 / ng_100
+  //   LPG -> show only lpg_10 / lpg_100
+  //   COG -> show only cog_100
+  // RLNG / MG / BFG / oil keep all 5 options.
+  // Selection falls back to the first visible option when the previous
+  // value is filtered out.
   const pbSel = document.getElementById('pilot_burner');
   if (pbSel) {
-    const pbMap = { cog: 'cog_100', ng: 'ng_10', lpg: 'lpg_10' };
-    const want = pbMap[f1];
-    if (want && pbSel.querySelector(`option[value="${want}"]`)) {
-      pbSel.value = want;
+    const fuelToPilotPrefix = { ng: 'ng', lpg: 'lpg', cog: 'cog' };
+    const filterPrefix = fuelToPilotPrefix[f1];  // undefined -> show all
+    let firstVisibleValue = null;
+    Array.from(pbSel.options).forEach(opt => {
+      const visible = !filterPrefix || opt.value.startsWith(filterPrefix + '_');
+      opt.hidden = !visible;
+      opt.disabled = !visible;
+      if (visible && firstVisibleValue === null) firstVisibleValue = opt.value;
+    });
+    // If current selection is now hidden, fall back to first visible.
+    const currentOpt = pbSel.options[pbSel.selectedIndex];
+    if (currentOpt && currentOpt.hidden && firstVisibleValue) {
+      pbSel.value = firstVisibleValue;
     }
   }
 }
