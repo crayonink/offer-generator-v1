@@ -1264,9 +1264,16 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "blower_hp":      equip1["blower"]["hp"],
                 "blower_airflow": equip1["blower"]["airflow_nm3hr"],
                 "ng_gas_train":   f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB',
+                # In dual-fuel offers the HPU may live on equip2 instead of
+                # equip1 (e.g. fuel 1 = NG gas, fuel 2 = LDO oil). Pick whichever
+                # side actually carries it so the Step-4 'Pumping Unit' row is
+                # populated regardless of which fuel slot the oil is in.
                 "hpu": (
-                    f'{equip1["hpu"]["model"]} — {equip1["hpu"]["unit_kw"]} KW {equip1["hpu"]["variant"]}'
-                    if equip1.get("hpu") else None
+                    (lambda h: f'{h["model"]} — {h["unit_kw"]} KW {h["variant"]}')(
+                        (equip1 or {}).get("hpu") or (equip2 or {}).get("hpu")
+                    )
+                    if ((equip1 or {}).get("hpu") or (equip2 or {}).get("hpu"))
+                    else None
                 ),
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),

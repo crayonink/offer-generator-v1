@@ -1019,7 +1019,7 @@
         <tr id="td-fr2-row" style="display:none"><td class="tech-lbl" id="td-fr2-label">Firing Rate for Fuel 2</td>
             <td><input id="td-fuel2_consumption" type="text"/></td></tr>
         <tr><td class="tech-lbl">Burner Capacity</td>
-            <td><input id="td-burner_capacity_range" type="text"/></td></tr>
+            <td><textarea id="td-burner_capacity_range" rows="2" style="width:100%;resize:vertical;"></textarea></td></tr>
         <tr><td class="tech-lbl">ENCON Burner</td>
             <td><input id="td-burner_model" type="text"/></td></tr>
         <tr><td class="tech-lbl">Combustion Air Blower</td>
@@ -1750,8 +1750,9 @@ function fillTechDataTable() {
   // (backend returns fuel_density=0.85 for gas too — it's used for kg/hr→l/hr conversion).
   const isOil  = OIL_FUEL_SET.has((c.fuel1_type || "").toLowerCase());
   const isDualCheck = !!c.is_dual;
-  // Prefix: for dual fuel use "Fuel 1:" / "Fuel 2:" so reader can match rates to fuels.
-  const f1Prefix = isDualCheck ? "Fuel 1" : f1Name;
+  // Use the actual fuel name as the prefix in both single and dual mode
+  // (e.g. 'Natural Gas: 109 Nm3/hr' rather than 'Fuel 1: 109 Nm3/hr').
+  const f1Prefix = f1Name;
   // Firing rate expressed in the fuel's natural unit:
   //   gas -> Nm3/hr   (extra_firing_rate_nm3hr is the gas flow)
   //   oil -> kg/hr    (same field carries kg/hr for oil fuels)
@@ -1765,7 +1766,8 @@ function fillTechDataTable() {
   const cfm = c.cfm ? Math.round(c.cfm) : '';
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
-  // For dual-fuel the Burner Capacity row shows both fuels rounded up;
+  // For dual-fuel the Burner Capacity row shows both fuels rounded up,
+  // labelled by their actual names with a line break between them.
   // Single-fuel uses the fuel name as the prefix.
   let burnerCap;
   if (isDual) {
@@ -1773,7 +1775,7 @@ function fillTechDataTable() {
     const _f2Type = (c.fuel2_type || "").toLowerCase();
     const _f2Unit = OIL_FUEL_SET.has(_f2Type) ? "kg/hr" : "Nm3/hr";
     const _f2Cap = Math.ceil(_f2Rate / 100) * 100;
-    burnerCap = `Fuel 1: ${f1Cap} ${f1Unit}\nFuel 2: ${_f2Cap} ${_f2Unit}`;
+    burnerCap = `${f1Name}: ${f1Cap} ${f1Unit}\n${f2Name}: ${_f2Cap} ${_f2Unit}`;
   } else {
     burnerCap = `${f1Prefix}: ${f1Cap} ${f1Unit}`;
   }
@@ -1838,12 +1840,12 @@ function fillTechDataTable() {
     if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
     const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
-    // Fuel 2 firing rate — Nm3/hr for gas, kg/hr for oil.
+    // Fuel 2 firing rate — Nm3/hr for gas, kg/hr for oil. Labelled by fuel name.
     const f2Rate = +(c.fuel2_extra_firing_rate_nm3hr || 0);
     const f2Type = (c.fuel2_type || "").toLowerCase();
     const f2IsOil = OIL_FUEL_SET.has(f2Type);
     const f2Unit = f2IsOil ? "kg/hr" : "Nm3/hr";
-    defaults["td-fuel2_consumption"] = `Fuel 2: ${f2Rate.toFixed(0)} ${f2Unit}`;
+    defaults["td-fuel2_consumption"] = `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
