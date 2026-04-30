@@ -1845,11 +1845,13 @@ function fillTechDataTable() {
     if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
     const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
-    // Fuel 2 firing rate — Nm3/hr for gas, kg/hr for oil. Labelled by fuel name.
-    const f2Rate = +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    // Fuel 2 firing rate — Nm3/hr for gas, L/hr for oil. Labelled by fuel name.
     const f2Type = (c.fuel2_type || "").toLowerCase();
     const f2IsOil = OIL_FUEL_SET.has(f2Type);
-    const f2Unit = f2IsOil ? "kg/hr" : "Nm3/hr";
+    const f2Rate = f2IsOil
+      ? +(c.fuel2_equivalent_lph || 0)
+      : +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const f2Unit = f2IsOil ? "L/hr" : "Nm3/hr";
     defaults["td-fuel2_consumption"] = `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
