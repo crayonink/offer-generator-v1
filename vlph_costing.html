@@ -1029,7 +1029,11 @@
             <td><input id="td-blower_capacity" type="text"/></td></tr>
         <tr id="td-pumping_unit-row" style="display:none"><td class="tech-lbl">Pumping Unit</td>
             <td><input id="td-pumping_unit" type="text"/></td></tr>
-        <tr id="td-pilot_gas_type-row"><td class="tech-lbl">Pilot Burner Fuel</td>
+        <!-- Pilot Burner Fuel row removed: derived from the Step-2 Pilot Burner
+             dropdown (lpg_*/ng_*/cog_*). td-pilot_gas_type select is hidden but
+             still present so onPilotFuelChange() and the Step-4 ignition row
+             keep working. -->
+        <tr id="td-pilot_gas_type-row" style="display:none"><td class="tech-lbl">Pilot Burner Fuel</td>
             <td><select id="td-pilot_gas_type" onchange="onPilotFuelChange()">
               <option value="LPG">LPG</option>
               <option value="NG">NG</option>
@@ -1758,7 +1762,13 @@ function fillTechDataTable() {
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
     "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
-    "td-pumping_unit":         isOil ? `Flow Rate: ${(c.equivalent_lph||0).toFixed(0)} L/hr.` : "",
+    // Pumping Unit row shows the HPU kW rating (e.g. '5 kW') for oil/dual offers.
+    // eq.hpu looks like 'MODEL — 5 KW Duplex 1'; pull out the '<n> KW' part.
+    "td-pumping_unit":         (() => {
+      if (!isOil && !isDual) return "";
+      const m = (eq.hpu || "").match(/(\d+(?:\.\d+)?)\s*KW/i);
+      return m ? `${m[1]} kW` : "";
+    })(),
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
 
@@ -1766,6 +1776,16 @@ function fillTechDataTable() {
   const oilPresent = isOil || isDual;
   const puRow = document.getElementById("td-pumping_unit-row");
   if (puRow) puRow.style.display = oilPresent ? "" : "none";
+
+  // Auto-fill the (hidden) Pilot Burner Fuel select from the Step-2
+  // Pilot Burner selection: 'lpg_10' -> 'LPG', 'ng_100' -> 'NG', etc.
+  const _pbVal = document.getElementById("pilot_burner")?.value || "";
+  const _pbPrefix = _pbVal.split("_")[0].toUpperCase();
+  const _pgEl = document.getElementById("td-pilot_gas_type");
+  if (_pgEl && _pbPrefix && (_pbPrefix === "LPG" || _pbPrefix === "NG")) {
+    _pgEl.value = _pbPrefix;
+    if (typeof onPilotFuelChange === "function") onPilotFuelChange();
+  }
 
   // Hydraulic power pack only applies to vertical up/down hood lift.
   // Swivel-type hood uses a geared drive, no power pack needed.
