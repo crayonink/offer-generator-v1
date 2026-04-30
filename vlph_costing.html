@@ -714,6 +714,7 @@
           <option value="lpg_100">ENCON-PB LPG 100 KW (Rs. 21,000)</option>
           <option value="ng_100">ENCON-PB NG 100 KW (Rs. 21,000)</option>
           <option value="cog_100">ENCON PB COG 100 KW (Rs. 32,000)</option>
+          <option value="mg_10">ENCON-PB MG 10 KW (Rs. 12,000)</option>
         </select>
       </div>
       <div class="field">
@@ -1267,15 +1268,16 @@ function onFuelChange() {
   }
 
   // Filter the Pilot Burner dropdown by main fuel:
-  //   NG  -> show only ng_10 / ng_100
-  //   LPG -> show only lpg_10 / lpg_100
-  //   COG -> show only cog_100
-  // RLNG / MG / BFG / oil keep all 5 options.
+  //   NG  -> only ng_10 / ng_100
+  //   LPG -> only lpg_10 / lpg_100
+  //   COG -> only cog_100
+  //   MG  -> only mg_10
+  // RLNG / BFG / oil keep all visible options.
   // Selection falls back to the first visible option when the previous
   // value is filtered out.
   const pbSel = document.getElementById('pilot_burner');
   if (pbSel) {
-    const fuelToPilotPrefix = { ng: 'ng', lpg: 'lpg', cog: 'cog' };
+    const fuelToPilotPrefix = { ng: 'ng', lpg: 'lpg', cog: 'cog', mg: 'mg' };
     const filterPrefix = fuelToPilotPrefix[f1];  // undefined -> show all
     let firstVisibleValue = null;
     Array.from(pbSel.options).forEach(opt => {

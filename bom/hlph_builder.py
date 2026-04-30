@@ -218,6 +218,7 @@ def build_hlph_df(
                 "lpg_100": "ENCON-PB LPG 100 KW",
                 "ng_100":  "ENCON-PB NG 100 KW",
                 "cog_100": "ENCON PB COG 100 KW",
+                "mg_10":   "ENCON-PB MG 10 KW",
             }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
             "", 1,
         ),
