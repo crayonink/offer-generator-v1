@@ -968,6 +968,20 @@
             <tr class="tot"><td><b>Grand Total</b></td>       <td id="s-grand">—</td></tr>
           </table>
         </div>
+
+        <!-- Cost Variations panel — runs the calc against every component /
+             vendor / variant swap so the user can see how each lever moves
+             the grand total. -->
+        <div style="margin-top:24px;padding:14px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:600;color:#9a3412;font-size:0.95rem;">Cost Variations</div>
+              <div style="font-size:0.82rem;color:#9a3412;opacity:0.8;">See how vendor swaps, HPU variants, hood movement, control mode, ignition and markup move the grand total — pick a lever to negotiate down toward a target price.</div>
+            </div>
+            <button class="btn-outline" id="cv-btn" onclick="loadCostVariations()" style="background:#fff;border-color:#fb923c;color:#9a3412;">Show Cost Variations</button>
+          </div>
+          <div id="cv-result" style="display:none;margin-top:14px;"></div>
+        </div>
       </div>
     </div>
 
@@ -1410,6 +1424,9 @@ async function calculate() {
   }
 
   try {
+    // Cache the request payload so the Cost Variations panel can replay
+    // the same inputs against /api/cost-variations.
+    window._lastCalcPayload = payload;
     const res = await fetch(`${API}/api/vlph-calculate`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
@@ -1729,6 +1746,72 @@ function recalcGrandTotal() {
   if (lastCalc && lastCalc.cost_summary) {
     lastCalc.cost_summary.grand_total = grand;
   }
+}
+
+/* ── Cost Variations: fetch every alt-axis cost from the backend ── */
+async function loadCostVariations() {
+  if (!window._lastCalcPayload) {
+    showError("error-box", "Run Step 2 calculation first.");
+    return;
+  }
+  const btn  = document.getElementById("cv-btn");
+  const out  = document.getElementById("cv-result");
+  btn.disabled = true; btn.textContent = "Computing variations...";
+  try {
+    const markup = parseFloat(document.getElementById("markup-factor")?.value) || 1.8;
+    const payload = { ...window._lastCalcPayload, markup };
+    const res = await fetch(`${API}/api/cost-variations`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    out.innerHTML = renderVariationsTable(data);
+    out.style.display = "block";
+  } catch (e) {
+    out.innerHTML = `<div style="color:#b91c1c;">Failed: ${e.message}</div>`;
+    out.style.display = "block";
+  } finally {
+    btn.disabled = false; btn.textContent = "Show Cost Variations";
+  }
+}
+
+function renderVariationsTable(data) {
+  const fmtINR = n => "₹ " + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+  const cur = data.current_total;
+  const rows = (data.variations || []).map(v => `
+    <tr>
+      <td style="padding:6px 10px;">${v.axis} <span style="color:#9a3412;font-weight:600;">→ ${v.value}</span></td>
+      <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;">${fmtINR(v.total)}</td>
+      <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;color:#15803d;">−${fmtINR(v.saves)}</td>
+    </tr>`).join("");
+
+  let combinedRow = "";
+  if (data.best_combined) {
+    const bc = data.best_combined;
+    const swapsList = bc.swaps.map(s => `${s.axis} → ${s.value}`).join("  •  ");
+    combinedRow = `
+      <tr style="background:#fef3c7;border-top:2px solid #f59e0b;">
+        <td style="padding:8px 10px;font-weight:600;">All best swaps combined<br><span style="font-weight:400;color:#78350f;font-size:0.82rem;">${swapsList}</span></td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${fmtINR(bc.total)}</td>
+        <td style="padding:8px 10px;text-align:right;font-weight:700;color:#15803d;font-variant-numeric:tabular-nums;">−${fmtINR(bc.saves)}</td>
+      </tr>`;
+  }
+
+  return `
+    <div style="font-size:0.85rem;color:#78350f;margin-bottom:6px;">
+      Current grand total at markup ${data.current_markup.toFixed(2)}× → <b>${fmtINR(cur)}</b>
+    </div>
+    <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #fed7aa;border-radius:8px;overflow:hidden;">
+      <thead>
+        <tr style="background:#fed7aa;color:#7c2d12;">
+          <th style="padding:8px 10px;text-align:left;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.4px;">Variation</th>
+          <th style="padding:8px 10px;text-align:right;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.4px;">Total</th>
+          <th style="padding:8px 10px;text-align:right;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.4px;">Saves</th>
+        </tr>
+      </thead>
+      <tbody>${rows || `<tr><td colspan="3" style="padding:10px;color:#7c2d12;">No cheaper alternatives found at the current configuration.</td></tr>`}${combinedRow}</tbody>
+    </table>`;
 }
 
 function recalcElectricalLoad() {

@@ -1315,6 +1315,206 @@ def vlph_calculate(req: VLPHCalcRequest):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# Cost Variations — runs the VLPH calc once per single-axis swap, applies
+# the user's markup factor, and also surfaces markup-only variations
+# (1.75 / 1.70 / 1.65 / 1.60) so the user can see total cost across every
+# realistic lever for negotiating a deal closer to a target price.
+# ──────────────────────────────────────────────────────────────────────────
+class CostVariationsRequest(VLPHCalcRequest):
+    markup: float = 1.80    # Frontend's bought-out markup multiplier.
+
+
+@app.post("/api/cost-variations")
+def cost_variations(req: CostVariationsRequest):
+    """Iterate over the variation axes (vendor swaps, hpu_variant, hood_type,
+    auto_control_type, control_mode, special_auto_ignition) plus markup
+    levels and return each alternative's GRAND TOTAL (= bought_out * markup
+    + encon_total).
+
+    Response shape:
+      {
+        "current_total":   <float>,
+        "current_markup":  <float>,
+        "variations":      [{axis, value, total, saves}, ...],
+        "best_combined":   {total, saves, swaps:[{axis,value}, ...]} | null
+      }
+    Variations that don't save money vs the baseline are dropped.
+    """
+    OIL_FUELS = {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
+    is_oil_offer = (
+        req.fuel1_type in OIL_FUELS
+        or (req.fuel2_type and req.fuel2_type in OIL_FUELS)
+    )
+
+    LABEL_MAP = {
+        "control_valve_vendor": {
+            "_axis": "Control Valve Vendor",
+            "dembla": "DEMBLA", "aira": "AIRA", "cair": "CAIR",
+        },
+        "shutoff_valve_vendor": {
+            "_axis": "Shutoff Valve Vendor",
+            "dembla": "DEMBLA", "aira": "AIRA", "cair": "CAIR",
+        },
+        "butterfly_valve_vendor": {
+            "_axis": "Butterfly Valve Vendor",
+            "lt_lever": "L&T Lever", "lt_gear": "L&T Gear",
+        },
+        "pressure_gauge_vendor": {
+            "_axis": "Pressure Gauge Vendor",
+            "baumer": "BAUMER", "hguru": "HGURU",
+        },
+        "hpu_variant": {
+            "_axis": "HPU Variant",
+            "Simplex": "Simplex", "Duplex 1": "Duplex-I", "Duplex 2": "Duplex-II",
+        },
+        "hood_type": {
+            "_axis": "Hood Movement",
+            "up_down": "Up/Down (hydraulic)",
+            "swivel_manual": "Manual Swivelling",
+            "swivel_geared": "Geared Swivelling",
+        },
+        "auto_control_type": {
+            "_axis": "Auto Control Type",
+            "plc": "PLC", "plc_agr": "PLC + AGR", "pid": "PID",
+        },
+        "control_mode": {
+            "_axis": "Control Mode",
+            "automatic": "Automatic", "manual": "Manual",
+        },
+        "special_auto_ignition": {
+            "_axis": "Auto Ignition",
+            True: "Auto Ignition ON", False: "Auto Ignition OFF",
+        },
+    }
+
+    axes = [
+        ("control_valve_vendor",   ["dembla", "aira", "cair"]),
+        ("shutoff_valve_vendor",   ["dembla", "aira", "cair"]),
+        ("butterfly_valve_vendor", ["lt_lever", "lt_gear"]),
+        ("pressure_gauge_vendor",  ["baumer", "hguru"]),
+        ("hood_type",              ["up_down", "swivel_manual", "swivel_geared"]),
+        ("special_auto_ignition",  [True, False]),
+    ]
+    if is_oil_offer:
+        axes.append(("hpu_variant", ["Simplex", "Duplex 1", "Duplex 2"]))
+    if req.control_mode == "automatic":
+        axes.append(("auto_control_type", ["plc", "plc_agr", "pid"]))
+    other_mode = "manual" if req.control_mode == "automatic" else "automatic"
+    axes.append(("control_mode", [other_mode]))
+
+    # Strip the markup field before passing to vlph_calculate so it round-trips
+    # cleanly through the existing VLPHCalcRequest schema.
+    def _to_calc_req(modified):
+        d = modified.dict()
+        d.pop("markup", None)
+        return VLPHCalcRequest(**d)
+
+    def _calc_costs(modified):
+        """Returns (bought_out, encon) for the given request, or None."""
+        try:
+            resp = vlph_calculate(_to_calc_req(modified))
+            cs = resp.get("cost_summary", {})
+            return (
+                float(cs.get("bought_out_total") or 0),
+                float(cs.get("encon_total") or 0),
+            )
+        except Exception:
+            return None
+
+    def _grand(bought, encon, markup):
+        return bought * markup + encon
+
+    base = _calc_costs(req)
+    if base is None:
+        return {"error": "Could not compute baseline cost"}
+    base_bought, base_encon = base
+    base_total = _grand(base_bought, base_encon, req.markup)
+    if base_total <= 0:
+        return {"error": "Baseline cost is zero — check inputs"}
+
+    variations = []
+    best_per_axis = {}  # field -> (alt, total) of cheapest swap on this axis
+
+    for field, alts in axes:
+        cur_value = getattr(req, field)
+        for alt in alts:
+            if alt == cur_value:
+                continue
+            modified = req.copy(update={field: alt})
+            costs = _calc_costs(modified)
+            if costs is None:
+                continue
+            total = _grand(costs[0], costs[1], req.markup)
+            saves = base_total - total
+            if saves <= 0:
+                continue
+            label = LABEL_MAP.get(field, {})
+            variations.append({
+                "axis":  label.get("_axis", field),
+                "value": label.get(alt, str(alt)),
+                "field": field,
+                "alt":   alt,
+                "total": round(total, 2),
+                "saves": round(saves, 2),
+            })
+            cur_best = best_per_axis.get(field)
+            if cur_best is None or total < cur_best[1]:
+                best_per_axis[field] = (alt, total)
+
+    # Markup-only variations — same BOM, different markup multiplier.
+    for mk in [1.75, 1.70, 1.65, 1.60]:
+        if abs(mk - req.markup) < 1e-6:
+            continue
+        total = _grand(base_bought, base_encon, mk)
+        saves = base_total - total
+        if saves <= 0:
+            continue
+        variations.append({
+            "axis":  "Markup",
+            "value": f"{mk:.2f}×",
+            "field": "markup",
+            "alt":   mk,
+            "total": round(total, 2),
+            "saves": round(saves, 2),
+        })
+
+    variations.sort(key=lambda r: r["saves"], reverse=True)
+
+    # Combined-best: cheapest alt for each axis applied at once + lowest markup.
+    best_combined = None
+    if best_per_axis or True:
+        update = {field: best for field, (best, _) in best_per_axis.items()}
+        combined_req = req.copy(update=update) if update else req
+        costs = _calc_costs(combined_req)
+        if costs is not None:
+            # Use the lowest markup option (1.60) as part of the most-aggressive combo.
+            lowest_markup = 1.60 if req.markup > 1.60 else req.markup
+            combined_total = _grand(costs[0], costs[1], lowest_markup)
+            if combined_total < base_total:
+                swaps = []
+                for field, (alt, _) in best_per_axis.items():
+                    label = LABEL_MAP.get(field, {})
+                    swaps.append({
+                        "axis":  label.get("_axis", field),
+                        "value": label.get(alt, str(alt)),
+                    })
+                if abs(lowest_markup - req.markup) > 1e-6:
+                    swaps.append({"axis": "Markup", "value": f"{lowest_markup:.2f}×"})
+                best_combined = {
+                    "total": round(combined_total, 2),
+                    "saves": round(base_total - combined_total, 2),
+                    "swaps": swaps,
+                }
+
+    return {
+        "current_total":  round(base_total, 2),
+        "current_markup": round(req.markup, 2),
+        "variations":     variations,
+        "best_combined":  best_combined,
+    }
+
+
 class RegenCalcRequest(BaseModel):
     material_weight_kg: float
     Ti: float
