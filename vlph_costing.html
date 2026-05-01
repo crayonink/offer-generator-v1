@@ -1761,28 +1761,28 @@ function fillTechDataTable() {
     : +(c.extra_firing_rate_nm3hr || 0);
   const f1Unit = isOil ? "L/hr" : "Nm3/hr";
   const fuelConsumption = `${f1Prefix}: ${f1Rate.toFixed(0)} ${f1Unit}`;
-  // Burner Capacity row is in kW (rate * CV / 860), rounded up to the
-  // next 100. Firing Rate row stays in the natural unit (Nm3/hr / L/hr).
-  const _f1CV_main = +(c.fuel_cv || c.fuel1_cv || 0);
-  // For oil, equivalent_lph uses CV per kg + density; extra_firing_rate_nm3hr
-  // already represents kg/hr for oil. Use that for the kW math.
-  const _f1KWbase = +(c.extra_firing_rate_nm3hr || 0) * _f1CV_main / 860;
-  const f1Cap = Math.ceil(_f1KWbase / 100) * 100;
+  // Burner Capacity row uses the same natural unit as Firing Rate
+  // (Nm3/hr for gas, L/hr for oil), rounded up to the next 100.
+  const f1Cap = Math.ceil(f1Rate / 100) * 100;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
-  // For dual-fuel the Burner Capacity row shows both fuels rounded up to
-  // the next 100 kW, labelled by their actual names with a line break.
+  // For dual-fuel the Burner Capacity row shows both fuels rounded up
+  // to the next 100, labelled by their actual names with a line break.
   let burnerCap;
   if (isDual) {
-    const _f2CV    = +(c.fuel2_cv || 0);
-    const _f2KWbase = +(c.fuel2_extra_firing_rate_nm3hr || 0) * _f2CV / 860;
-    const _f2Cap   = Math.ceil(_f2KWbase / 100) * 100;
-    burnerCap = `${f1Name}: ${f1Cap} kW\n${f2Name}: ${_f2Cap} kW`;
+    const _f2Type = (c.fuel2_type || "").toLowerCase();
+    const _f2IsOil = OIL_FUEL_SET.has(_f2Type);
+    const _f2Rate = _f2IsOil
+      ? +(c.fuel2_equivalent_lph || 0)
+      : +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const _f2Unit = _f2IsOil ? "L/hr" : "Nm3/hr";
+    const _f2Cap = Math.ceil(_f2Rate / 100) * 100;
+    burnerCap = `${f1Name}: ${f1Cap} ${f1Unit}\n${f2Name}: ${_f2Cap} ${_f2Unit}`;
   } else {
-    burnerCap = `${f1Prefix}: ${f1Cap} kW`;
+    burnerCap = `${f1Prefix}: ${f1Cap} ${f1Unit}`;
   }
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
