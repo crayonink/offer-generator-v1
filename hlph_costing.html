@@ -1732,15 +1732,34 @@ function fillTechDataTable() {
   // Detect oil by fuel type, NOT by presence of fuel_density
   // (backend returns fuel_density=0.85 for gas too — it's used for kg/hr→l/hr conversion).
   const isOil  = OIL_FUEL_SET.has((c.fuel1_type || "").toLowerCase());
-  const f1Rate = +(c.extra_firing_rate_nm3hr || 0);
-  const f1CV   = +(c.fuel1_cv || c.fuel_cv || 0);
-  const f1KW   = f1Rate * f1CV / 860;
-  const fuelConsumption = `${f1Name}: ${f1KW.toFixed(0)} kW`;
+  // Firing rate in the fuel's natural unit:
+  //   gas -> Nm³/hr, oil -> L/hr (engine already converts kg/hr -> equivalent_lph).
+  const f1Rate = isOil
+    ? +(c.equivalent_lph || 0)
+    : +(c.extra_firing_rate_nm3hr || 0);
+  const f1Unit = isOil ? "L/hr" : "Nm³/hr";
+  const fuelConsumption = `${f1Name}: ${f1Rate.toFixed(0)} ${f1Unit}`;
+  // Burner Capacity uses same natural unit, rounded UP to next 100.
+  const f1Cap = Math.ceil(f1Rate / 100) * 100;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
+  // Burner Capacity for dual fuel: both fuels rounded up, line-break separated.
+  let burnerCap;
+  if (isDual) {
+    const _f2Type = (c.fuel2_type || "").toLowerCase();
+    const _f2IsOil = OIL_FUEL_SET.has(_f2Type);
+    const _f2Rate = _f2IsOil
+      ? +(c.fuel2_equivalent_lph || 0)
+      : +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const _f2Unit = _f2IsOil ? "L/hr" : "Nm³/hr";
+    const _f2Cap = Math.ceil(_f2Rate / 100) * 100;
+    burnerCap = `${f1Name}: ${f1Cap} ${f1Unit}\n${f2Name}: ${_f2Cap} ${_f2Unit}`;
+  } else {
+    burnerCap = `${f1Name}: ${f1Cap} ${f1Unit}`;
+  }
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
     "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
@@ -1748,7 +1767,7 @@ function fillTechDataTable() {
     "td-fuel_name":            isDual ? `${f1Name} & ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
-    "td-burner_capacity_range":`${f1Name}: ${f1KW.toFixed(0)} kW`,
+    "td-burner_capacity_range":burnerCap,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
@@ -1785,10 +1804,14 @@ function fillTechDataTable() {
     if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
     const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
     defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
-    const f2Rate = c.fuel2_extra_firing_rate_nm3hr || 0;
-    const f2CV   = +(c.fuel2_cv || 0);
-    const f2KW   = f2Rate * f2CV / 860;
-    defaults["td-fuel2_consumption"] = `${f2Name}: ${f2KW.toFixed(0)} kW`;
+    // Fuel 2 firing rate in natural unit (Nm³/hr for gas, L/hr for oil).
+    const f2Type = (c.fuel2_type || "").toLowerCase();
+    const f2IsOil = OIL_FUEL_SET.has(f2Type);
+    const f2Rate = f2IsOil
+      ? +(c.fuel2_equivalent_lph || 0)
+      : +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const f2Unit = f2IsOil ? "L/hr" : "Nm³/hr";
+    defaults["td-fuel2_consumption"] = `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
