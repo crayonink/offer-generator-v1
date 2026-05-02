@@ -1855,7 +1855,15 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "blower_hp": equip1["blower"]["hp"],
                 "blower_airflow": equip1["blower"]["airflow_nm3hr"],
                 "ng_gas_train": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB' if equip1.get("ng_gas_train") else "",
-                "hpu": f'{equip1["hpu"]["model"]} — {equip1["hpu"]["unit_kw"]} KW' if equip1.get("hpu") else None,
+                # In dual-fuel offers the HPU may live on equip2 (e.g. fuel 1 NG
+                # + fuel 2 LDO). Pick whichever side actually carries it.
+                "hpu": (
+                    (lambda h: f'{h["model"]} — {h["unit_kw"]} KW {h.get("variant", "")}'.strip())(
+                        (equip1 or {}).get("hpu") or (equip2 or {}).get("hpu")
+                    )
+                    if ((equip1 or {}).get("hpu") or (equip2 or {}).get("hpu"))
+                    else None
+                ),
             },
             "bom": detail.to_dict(orient="records"),
             "cost_summary": {
@@ -1864,6 +1872,19 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "grand_total": round(grand_total, 2),
             },
         }
+
+        # Surface fuel-2 fields the front-end + offer pipeline rely on (mirrors
+        # the VLPH endpoint).
+        if is_dual and equip2 is not None:
+            resp["calculations"]["fuel2_type"] = req.fuel2_type
+            resp["calculations"]["fuel2_name"] = FUEL_NAMES.get(req.fuel2_type, req.fuel2_type)
+            resp["calculations"]["fuel2_cv"]   = req.fuel2_cv
+            resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(ng_flow2, 2)
+            resp["calculations"]["fuel2_equivalent_lph"] = round(
+                equip2["burner"].get("equivalent_lph", 0), 2
+            )
+            resp["calculations"]["fuel2_fuel_density"] = equip2["burner"].get("fuel_density", 0)
+
         return resp
     except Exception as e:
         import traceback
