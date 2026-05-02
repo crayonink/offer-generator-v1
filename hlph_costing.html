@@ -1739,26 +1739,25 @@ function fillTechDataTable() {
     : +(c.extra_firing_rate_nm3hr || 0);
   const f1Unit = isOil ? "L/hr" : "Nm³/hr";
   const fuelConsumption = `${f1Name}: ${f1Rate.toFixed(0)} ${f1Unit}`;
-  // Burner Capacity uses same natural unit, rounded UP to next 100.
-  const f1Cap = Math.ceil(f1Rate / 100) * 100;
+  // Burner Capacity in kW: rate * CV / 860, rounded UP to next 100.
+  // Firing Rate row stays in natural units (Nm³/hr / L/hr).
+  const _f1CV_main = +(c.fuel1_cv || c.fuel_cv || 0);
+  const _f1KWbase = +(c.extra_firing_rate_nm3hr || 0) * _f1CV_main / 860;
+  const f1Cap = Math.ceil(_f1KWbase / 100) * 100;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
-  // Burner Capacity for dual fuel: both fuels rounded up, line-break separated.
+  // Dual-fuel Burner Capacity: both fuels in kW, line-break separated.
   let burnerCap;
   if (isDual) {
-    const _f2Type = (c.fuel2_type || "").toLowerCase();
-    const _f2IsOil = OIL_FUEL_SET.has(_f2Type);
-    const _f2Rate = _f2IsOil
-      ? +(c.fuel2_equivalent_lph || 0)
-      : +(c.fuel2_extra_firing_rate_nm3hr || 0);
-    const _f2Unit = _f2IsOil ? "L/hr" : "Nm³/hr";
-    const _f2Cap = Math.ceil(_f2Rate / 100) * 100;
-    burnerCap = `${f1Name}: ${f1Cap} ${f1Unit}\n${f2Name}: ${_f2Cap} ${_f2Unit}`;
+    const _f2CV    = +(c.fuel2_cv || 0);
+    const _f2KWbase = +(c.fuel2_extra_firing_rate_nm3hr || 0) * _f2CV / 860;
+    const _f2Cap   = Math.ceil(_f2KWbase / 100) * 100;
+    burnerCap = `${f1Name}: ${f1Cap} kW\n${f2Name}: ${_f2Cap} kW`;
   } else {
-    burnerCap = `${f1Name}: ${f1Cap} ${f1Unit}`;
+    burnerCap = `${f1Name}: ${f1Cap} kW`;
   }
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
