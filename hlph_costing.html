@@ -1839,6 +1839,16 @@ function buildTechData() {
   // (backend returns fuel_density=0.85 for gas too).
   const _c = (lastCalc && lastCalc.calculations) || {};
   const isOil = OIL_FUEL_SET.has((_c.fuel1_type || "").toLowerCase());
+  // Compute total kW for the burner-body line + Tech Specs ENCON Burner row
+  // (sum of fuel-1 + fuel-2 firing rates, rounded UP to the next 100).
+  const _f1Rate = +(_c.extra_firing_rate_nm3hr || 0);
+  const _f1CV   = +(_c.fuel_cv || _c.fuel1_cv || 0);
+  const _f1KW   = _f1Rate * _f1CV / 860;
+  const _f2Rate = +(_c.fuel2_extra_firing_rate_nm3hr || 0);
+  const _f2CV   = +(_c.fuel2_cv || 0);
+  const _f2KW   = _f2Rate * _f2CV / 860;
+  const _rawKW   = _f1KW + _f2KW;
+  const _totalKW = Math.ceil(_rawKW / 100) * 100;
   return {
     ladle_tons:           ladleTons,
     ladle_dim:            get("td-ladle_dim"),
@@ -1864,6 +1874,7 @@ function buildTechData() {
     is_oil:               isOil,
     is_horizontal:        true,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
+    burner_kw_value:      `${Math.round(_totalKW).toLocaleString("en-IN")} kW`,
   };
 }
 
