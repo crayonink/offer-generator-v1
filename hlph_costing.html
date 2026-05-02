@@ -1789,7 +1789,13 @@ function fillTechDataTable() {
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
     "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
-    "td-pumping_unit":         isOil ? `Flow Rate: ${(c.equivalent_lph||0).toFixed(0)} L/hr.` : "",
+    // Pumping Unit row shows the HPU kW rating (e.g. '20 kW') for oil/dual
+    // offers. eq.hpu looks like 'PUD-20 — 20 KW Duplex 1'; pull out '<n> KW'.
+    "td-pumping_unit":         (() => {
+      if (!isOil && !isDual) return "";
+      const m = (eq.hpu || "").match(/(\d+(?:\.\d+)?)\s*KW/i);
+      return m ? `${m[1]} kW` : "";
+    })(),
     "td-hood_movement":        "Forward and Backward",
     "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
