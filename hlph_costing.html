@@ -1896,6 +1896,7 @@ function buildTechData() {
     hood_movement:        get("td-hood_movement"),
     ignition_method:      get("td-ignition"),
     is_oil:               isOil,
+    is_dual:              !!(lastCalc.calculations || {}).is_dual,
     is_horizontal:        true,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
     burner_kw_value:      `${Math.round(_totalKW).toLocaleString("en-IN")} kW`,
