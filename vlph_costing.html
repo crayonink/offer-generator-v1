@@ -744,8 +744,8 @@
     <div id="calc-extras">
       <div class="fg fg-1" style="margin-bottom:24px">
         <div class="field">
-          <label>Time Taken (hours) <span class="req">*</span></label>
-          <input id="time_taken_hr" type="number" value="2" step="0.5" min="0.5" placeholder="e.g. 2"/>
+          <label>Time Taken (mins) <span class="req">*</span></label>
+          <input id="time_taken_min" type="number" value="120" step="1" min="1" placeholder="e.g. 120"/>
           <div class="hint">Preheating cycle time</div>
         </div>
       </div>
@@ -864,7 +864,7 @@
             <tr><td class="lbl" id="r-cv-label">Fuel CV</td> <td class="val" id="r-cv">—</td>       <td class="unit" id="r-cv-unit">kcal/Nm³</td></tr>
             <tr class="ch"><td colspan="3">Calculation Results</td></tr>
             <tr id="row-avg"><td class="lbl">Avg. Temp Rise</td>       <td class="val" id="r-avg">—</td>      <td class="unit">°C</td></tr>
-            <tr id="row-time"><td class="lbl">Time Taken</td>           <td class="val" id="r-time">—</td>     <td class="unit">hr</td></tr>
+            <tr id="row-time"><td class="lbl">Time Taken</td>           <td class="val" id="r-time">—</td>     <td class="unit">min</td></tr>
             <tr id="row-fr-kcal"><td class="lbl">Refractory Heat</td>      <td class="val" id="r-fr-kcal">—</td>  <td class="unit">kcal</td></tr>
             <tr id="row-hl"><td class="lbl">Heat Load</td>            <td class="val" id="r-hl">—</td>       <td class="unit">kcal</td></tr>
             <tr id="row-fc"><td class="lbl">Fuel Consumption</td>     <td class="val" id="r-fc">—</td>       <td class="unit" id="r-fc-unit">Nm³</td></tr>
@@ -1397,7 +1397,7 @@ async function calculate() {
       fuel_cv: f1cv,
       fuel1_type: f1type, fuel1_cv: f1cv,
       fuel2_type: f2type, fuel2_cv: f2cv,
-      time_taken_hr: val("time_taken_hr"),
+      time_taken_hr: val("time_taken_min") / 60,
       refractory_heat_factor: val("refractory_heat_factor"),
       efficiency: val("efficiency"),
       ladle_tons: val("ladle_tons"),
@@ -1466,7 +1466,7 @@ function renderResults(d) {
   set("r-cv-label", (c.fuel1_name || "Fuel") + " CV");
   set("pipe1-title", (c.fuel1_name || "NG") + " Pipe Sizing");
   set("r-avg",     fmt(c.avg_temp_rise, 2));
-  set("r-time",    c.time_taken_hr);
+  set("r-time",    c.time_taken_hr ? Math.round(c.time_taken_hr * 60) : "");
   set("r-fr-kcal", fmt(c.firing_rate_kcal, 0));
   set("r-hl",      fmt(c.heat_load_kcal, 0));
   set("r-fc",      fmt(c.fuel_consumption_nm3, 2));
@@ -1870,7 +1870,7 @@ function fillTechDataTable() {
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
     "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
-    "td-heating_time":         `${c.time_taken_hr || ""} Hours`,
+    "td-heating_time":         c.time_taken_hr ? `${Math.round(c.time_taken_hr * 60)} Min.` : "",
     "td-fuel_name":            isDual ? `Fuel 1: ${f1Name} & Fuel 2: ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
