@@ -540,6 +540,22 @@ def generate_quote_docx(quote_data: dict, output_path: str):
     customer = quote_data["customer"]
     sup_mech, sup_plc = _supervision_rates()
 
+    # If the BOM carries any 'PILOT LINE' media items, the system has a
+    # pilot burner — auto-ignition is by definition automatic. We use this
+    # below to override special_auto_ignition so the user no longer has to
+    # tick a separate checkbox: a pilot burner in the calc implies it.
+    # The media tag also tells us which gas powers the pilot (LPG / NG /
+    # COG / etc.) so the tech-spec line and Annexure scope wording reflect
+    # the actual selection rather than a hardcoded 'LPG'.
+    _has_pilot_in_bom = False
+    _pilot_gas_from_bom = None
+    for it in (customer.get("bom_items") or []):
+        media = str(it.get("media", "")).strip().upper()
+        if media.endswith("PILOT LINE"):
+            _has_pilot_in_bom = True
+            _pilot_gas_from_bom = media[: -len("PILOT LINE")].strip() or None
+            break
+
     # Determine vertical vs horizontal UNIT price from items (per-set sum).
     unit_vertical   = 0.0
     unit_horizontal = 0.0
@@ -671,11 +687,12 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Pilot fields are blanked when Auto Ignition is not selected so the
         # tech-data post-processor (_strip_empty_tech_rows) drops the
         # "Pilot Burner Fuel" and "Firing & Ignition of Burner" rows.
-        "pilot_gas_type":        (customer.get("pilot_gas_type") or "LPG")
-                                  if bool(customer.get("special_auto_ignition")) else "",
-        "ignition_method":       (customer.get("ignition_method")
-                                  or "Automatic Through LPG Fired Pilot Burner")
-                                  if bool(customer.get("special_auto_ignition")) else "",
+        "pilot_gas_type":        (_pilot_gas_from_bom or customer.get("pilot_gas_type") or "LPG")
+                                  if (_has_pilot_in_bom or bool(customer.get("special_auto_ignition"))) else "",
+        "ignition_method":       (
+            f"Automatic Through {_pilot_gas_from_bom or customer.get('pilot_gas_type') or 'LPG'} Fired Pilot Burner"
+            if (_has_pilot_in_bom or bool(customer.get("special_auto_ignition")))
+            else ""),
         # Tundish-specific tech-data placeholders (pre-heating station)
         "fuel1_label":           _fuel_label(customer.get("fuel_name", "")),
         "fuel2_label":           _fuel_label2(customer.get("fuel_name", "")),
@@ -759,7 +776,10 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Special Requirements flags — drive Pilot Burner sections in the
         # template ({%p if special_auto_ignition %}). When auto-ignition is
         # not requested, the entire pilot-burner + pilot-line scope is hidden.
-        "special_auto_ignition": bool(customer.get("special_auto_ignition")),
+        # Derive auto-ignition from the BOM: if the calc included a pilot
+        # pipeline (any item with MEDIA ending in 'PILOT LINE'), the system
+        # has a pilot burner and is by definition auto-ignited.
+        "special_auto_ignition": _has_pilot_in_bom or bool(customer.get("special_auto_ignition")),
         "special_auto_controls": bool(customer.get("special_auto_controls")),
         # Nitrogen Purging block — only when user toggled "purging_line=yes" on Step 4.
         "nitrogen_purging":      bool(customer.get("nitrogen_purging")),
@@ -796,8 +816,8 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             customer.get("control_mode"), customer.get("auto_control_type")),
         # Annexure I scope-of-supply dynamic strings
         "ignition_scope_text":     _ignition_scope_text(
-            bool(customer.get("special_auto_ignition")),
-            customer.get("pilot_gas_type")),
+            _has_pilot_in_bom or bool(customer.get("special_auto_ignition")),
+            _pilot_gas_from_bom or customer.get("pilot_gas_type")),
         "temp_control_scope_text": _temp_control_scope_text(
             customer.get("control_mode"), customer.get("auto_control_type")),
         "flow_meter_scope_text":   _flow_meter_scope_text(
