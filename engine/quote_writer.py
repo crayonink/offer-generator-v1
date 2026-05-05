@@ -177,19 +177,34 @@ def _rewrite_pilot_name(item: str, pilot_gas: str) -> str:
     return f"ENCON-PB {pilot_gas} {rating}"
 
 
+def _fmt_int_if_whole(val):
+    """Render a numeric value without a trailing '.0' when it's a whole
+    number. 180.0 -> '180', 12.5 -> '12.5', '' / None -> ''."""
+    if val is None or val == "":
+        return ""
+    try:
+        f = float(val)
+    except (ValueError, TypeError):
+        return str(val)
+    if f.is_integer():
+        return str(int(f))
+    # Strip trailing zeros from a decimal — '12.50' -> '12.5'
+    return f"{f:g}"
+
+
 def _build_equipment_name(customer, quote_data):
     """Derive equipment name from items product_type or customer fields."""
     # Check items for product type
     for item in quote_data.get("items", []):
         pt = (item.get("product_type") or "").lower()
         if "tundish" in pt:
-            tons = customer.get("ladle_tons")
+            tons = _fmt_int_if_whole(customer.get("ladle_tons"))
             return f"Tundish Preheater – {tons} Ton" if tons else "Tundish Preheater"
         elif "horizontal" in pt:
-            tons = customer.get("ladle_tons")
+            tons = _fmt_int_if_whole(customer.get("ladle_tons"))
             return f"Horizontal Ladle Preheater – {tons} Ton" if tons else "Horizontal Ladle Preheater"
     # Default: Vertical Ladle Preheater
-    tons = customer.get("ladle_tons")
+    tons = _fmt_int_if_whole(customer.get("ladle_tons"))
     if tons:
         return f"Vertical Ladle Preheater – {tons} Ton"
     return customer.get("project_name") or ""
@@ -639,7 +654,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "valid_days":            quote_data.get("valid_days", 30),
         "items":                 quote_data.get("items", []),
         # Technical data (populates the Tech Data table in the template)
-        "ladle_tons":            customer.get("ladle_tons") or "",
+        "ladle_tons":            _fmt_int_if_whole(customer.get("ladle_tons")),
         "ladle_dim":             customer.get("ladle_dim") or "",
         "ladle_drawing_no":      customer.get("ladle_drawing_no") or "",
         "refractory_weight_kg":  customer.get("refractory_weight_kg") or "",

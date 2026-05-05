@@ -689,7 +689,12 @@ def _fmt_with_unit(val, unit):
 
 def _ladle_type(items, customer):
     pt = ((items[0].get("product_type") or "") if items else "").lower()
-    tons = customer.get("ladle_tons")
+    raw = customer.get("ladle_tons")
+    try:
+        f = float(raw) if raw not in (None, "") else None
+        tons = (str(int(f)) if f is not None and f.is_integer() else (f"{f:g}" if f is not None else ""))
+    except (ValueError, TypeError):
+        tons = str(raw) if raw else ""
     if "vertical" in pt:
         return f"Vertical Ladle Preheater – {tons} Ton" if tons else "Vertical Ladle Preheater"
     if "horizontal" in pt:
