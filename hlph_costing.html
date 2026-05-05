@@ -1024,7 +1024,7 @@
         <tr><td class="tech-lbl">Movement of Hood</td>
             <td><input id="td-hood_movement" type="text" value="Forward and Backward" readonly style="background:#f1f5f9;cursor:not-allowed;"/></td></tr>
         <tr><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
-            <td><input id="td-ignition" type="text" value="Automatic Through LPG Fired Pilot Burner"/></td></tr>
+            <td><input id="td-ignition" type="text"/></td></tr>
         <tr id="td-power_pack-row"><td class="tech-lbl">Motor recommended for Power Pack</td>
             <td><input id="td-hydraulic_motor_hp" type="text" value="5 HP"/></td></tr>
         <tr><td class="tech-lbl">Maximum Electrical Load</td>
@@ -1860,6 +1860,11 @@ function fillTechDataTable() {
     const el = document.getElementById(id);
     if (el && !el.value) el.value = val;
   });
+  // Force-refresh td-ignition every Calculate so it always tracks the
+  // current Pilot Burner / Pilot Line Fuel selection, even if the user
+  // already calculated once with a different pilot.
+  const ignEl = document.getElementById("td-ignition");
+  if (ignEl) ignEl.value = defaults["td-ignition"];
   recalcElectricalLoad();
   ["td-blower_size", "td-hydraulic_motor_hp"].forEach(id => {
     const el = document.getElementById(id);
