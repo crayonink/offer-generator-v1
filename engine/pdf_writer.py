@@ -423,7 +423,7 @@ def _temp_control_items(temp_bucket: list[str], control_mode: str | None,
         ]
         if (control_mode or "automatic") == "automatic" and (auto_control_type or "plc") == "plc":
             items += [
-                "Orifice plate fitted with mass flow transmitter on gas line",
+                "Orifice plate fitted with differential pressure transmitter on gas line",
                 "Orifice plate fitted with differential pressure transmitter on air line",
             ]
     return items

@@ -352,7 +352,7 @@ def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
         items = [
             "PLC with HMI",
             "Thermocouple with temperature transmitter",
-            "Orifice plate fitted with mass flow transmitter on gas line",
+            "Orifice plate fitted with differential pressure transmitter on gas line",
             "Orifice plate fitted with differential pressure transmitter on air line",
         ]
 
