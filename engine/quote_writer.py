@@ -513,7 +513,7 @@ def _control_system_sections(bom_items: list) -> dict:
     PACKAGED_GAS_TRAIN_LINES = ("NG LINE", "LPG LINE", "RLNG LINE")
     GAS_TRAIN_INTERNALS = [
         "Ball valve",
-        "Pressure gauge with manual cock",
+        "Pressure gauge with TNV",
         "Gas filter",
         "Slam shut-off valve",
         "Gas pressure regulator",
