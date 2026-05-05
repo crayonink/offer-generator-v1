@@ -1920,6 +1920,7 @@ function buildTechData() {
     is_dual:              !!(lastCalc.calculations || {}).is_dual,
     is_horizontal:        true,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
+    auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
     burner_kw_value:      `${Math.round(_totalKW).toLocaleString("en-IN")} kW`,
   };
 }
