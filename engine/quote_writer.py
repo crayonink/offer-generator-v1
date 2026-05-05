@@ -561,6 +561,18 @@ def generate_quote_docx(quote_data: dict, output_path: str):
     total_vertical   = unit_vertical   * qty_v
     total_horizontal = unit_horizontal * qty_h
 
+    # The Annexure III price-schedule table in Offer_Template.docx only has
+    # one equipment row and binds it to the *_vertical variables. For
+    # HLPH-only offers, pour the horizontal values into the vertical slots
+    # so the row renders the correct price instead of 0.00.
+    if unit_vertical == 0 and unit_horizontal > 0:
+        unit_vertical    = unit_horizontal
+        total_vertical   = total_horizontal
+        qty_v            = qty_h if qty_h > 0 else 1
+        unit_horizontal  = 0.0
+        total_horizontal = 0.0
+        qty_h            = 0
+
     def _qty_label(n: int) -> str:
         if n <= 0: return ""
         return f"{n:02d} {'Set' if n == 1 else 'Sets'}"
