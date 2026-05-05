@@ -503,8 +503,6 @@ def _control_system_sections(bom_items: list) -> dict:
         "Solenoid Valves",
         "Pressure Switches",
         "Pressure Gauges",
-        "Manual Isolation Valves",
-        "Vent Valve",
     ]
     INTERNALS_AS_DICTS = [{"item": x} for x in GAS_TRAIN_INTERNALS]
 
