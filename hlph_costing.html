@@ -1797,7 +1797,23 @@ function fillTechDataTable() {
       return m ? `${m[1]} kW` : "";
     })(),
     "td-hood_movement":        "Forward and Backward",
-    "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
+    "td-ignition":             (() => {
+      // Derive pilot fuel from the Pilot Burner / Pilot Line Fuel selectors
+      // (in manual mode the manual_pilot_burner=no path skips the line).
+      const ctrl = document.getElementById("control_mode")?.value || "automatic";
+      let key = "lpg";
+      if (ctrl === "manual") {
+        key = (document.getElementById("pilot_line_fuel")?.value || "lpg").toLowerCase();
+      } else {
+        const pb = (document.getElementById("pilot_burner")?.value || "").toLowerCase();
+        if (pb.startsWith("ng_")) key = "ng";
+        else if (pb.startsWith("cog_")) key = "cog";
+        else if (pb.startsWith("lpg_")) key = "lpg";
+        else key = (document.getElementById("pilot_line_fuel")?.value || "lpg").toLowerCase();
+      }
+      const label = { lpg: "LPG", ng: "NG", cog: "COG" }[key] || key.toUpperCase();
+      return `Automatic Through ${label} Fired Pilot Burner`;
+    })(),
   };
 
   // Pumping unit is oil-only (fuel-oil transfer pump).
