@@ -804,6 +804,14 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Raw control fields, exposed for inline Jinja in the Tech Specs table
         "control_mode":          (customer.get("control_mode") or "automatic"),
         "auto_control_type":     (customer.get("auto_control_type") or "plc"),
+        # Drives 'Pneumatic' vs 'Motorised' wording in the I&C and
+        # Temperature Control sections. Defaults to 'motorised' for oil
+        # offers (so legacy oil flows still get the right label) and
+        # 'pneumatic' otherwise; user-supplied selection wins.
+        "control_valve_type":    (
+            customer.get("control_valve_type")
+            or ("motorised" if bool(customer.get("is_oil")) else "pneumatic")
+        ),
         # MAKE LIST is a fixed 27-row vendor table — same for vertical and
         # horizontal preheaters. Per business rule it does NOT vary with
         # the BOM contents.
