@@ -512,12 +512,15 @@ def _control_system_sections(bom_items: list) -> dict:
     # components as nested sub-bullets right under it.
     PACKAGED_GAS_TRAIN_LINES = ("NG LINE", "LPG LINE", "RLNG LINE")
     GAS_TRAIN_INTERNALS = [
-        "Gas Filter",
-        "Slam Shut-off Valve",
-        "Gas Pressure Regulator",
-        "Solenoid Valves",
-        "Pressure Switches",
-        "Pressure Gauges",
+        "Ball valve",
+        "Pressure gauge with manual cock",
+        "Gas filter",
+        "Slam shut-off valve",
+        "Gas pressure regulator",
+        "Safety relief valve",
+        "Pressure Switch Low",
+        "Pressure Switch High",
+        "Solenoid valve",
     ]
     INTERNALS_AS_DICTS = [{"item": x} for x in GAS_TRAIN_INTERNALS]
 
