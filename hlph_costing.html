@@ -1007,6 +1007,8 @@
             <td><input id="td-heating_time" type="text"/></td></tr>
         <tr><td class="tech-lbl">No. of Burner</td>
             <td><input id="td-num_burner" type="text" value="1 No."/></td></tr>
+        <tr><td class="tech-lbl">No. of Units (Horizontal)</td>
+            <td><input id="td-horizontal_qty" type="number" min="1" value="1" style="width:80px"/></td></tr>
         <tr><td class="tech-lbl">Fuel</td>
             <td><input id="td-fuel_name" type="text"/></td></tr>
         <tr><td class="tech-lbl" id="td-cv1-label">Calorific Value of Fuel 1</td>
@@ -1930,6 +1932,7 @@ function buildTechData() {
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
     auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
     control_valve_type:   document.getElementById("control_valve_type")?.value || "pneumatic",
+    horizontal_qty:       parseInt(document.getElementById("td-horizontal_qty")?.value) || 1,
     burner_kw_value:      `${Math.round(_totalKW).toLocaleString("en-IN")} kW`,
   };
 }
