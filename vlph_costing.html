@@ -1282,30 +1282,15 @@ function onFuelChange() {
     document.getElementById('f2-ratio-name').textContent = FUEL_NAMES[f2];
   }
 
-  // Filter the Pilot Burner dropdown by main fuel:
-  //   NG  -> only ng_10 / ng_100
-  //   LPG -> only lpg_10 / lpg_100
-  //   COG -> only cog_100
-  //   MG  -> only mg_10
-  // RLNG / BFG / oil keep all visible options.
-  // Selection falls back to the first visible option when the previous
-  // value is filtered out.
+  // Pilot Burner dropdown shows all options regardless of main fuel —
+  // user picks the right pilot for their installation. Earlier this
+  // filtered by fuel prefix; that proved too restrictive.
   const pbSel = document.getElementById('pilot_burner');
   if (pbSel) {
-    const fuelToPilotPrefix = { ng: 'ng', lpg: 'lpg', cog: 'cog', mg: 'mg' };
-    const filterPrefix = fuelToPilotPrefix[f1];  // undefined -> show all
-    let firstVisibleValue = null;
     Array.from(pbSel.options).forEach(opt => {
-      const visible = !filterPrefix || opt.value.startsWith(filterPrefix + '_');
-      opt.hidden = !visible;
-      opt.disabled = !visible;
-      if (visible && firstVisibleValue === null) firstVisibleValue = opt.value;
+      opt.hidden = false;
+      opt.disabled = false;
     });
-    // If current selection is now hidden, fall back to first visible.
-    const currentOpt = pbSel.options[pbSel.selectedIndex];
-    if (currentOpt && currentOpt.hidden && firstVisibleValue) {
-      pbSel.value = firstVisibleValue;
-    }
   }
 }
 function updateBlendedCV() {
