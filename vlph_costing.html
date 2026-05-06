@@ -1877,7 +1877,7 @@ function fillTechDataTable() {
     "td-burner_capacity_range":burnerCap,
     "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
-    "td-blower_size":          `${eq.blower_hp || ""} HP @ 2900 RPM`,
+    "td-blower_size":          `${eq.blower_hp || ""} HP @ ${eq.blower_airflow || ""} Nm³/hr`,
     "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
     // Pumping Unit row shows the HPU kW rating (e.g. '5 kW') for oil/dual offers.
     // eq.hpu looks like 'MODEL — 5 KW Duplex 1'; pull out the '<n> KW' part.
