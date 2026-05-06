@@ -235,9 +235,9 @@ def build_hlph_df(
     # ── MISC ITEMS ────────────────────────────────────────────────────────
     STATIC_SKIP = {"CONTROL PANEL", "HYDRAULIC POWER PACK & CYLINDER"}
     if is_plc or is_plc_agr:
-        STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
+        STATIC_SKIP.update({"PPID", "RATIO CONTROLLER"})
     if is_pid:
-        # PID with AGR: P.PID stays (renamed to PID below) but Ratio Controller is dropped.
+        # PID with AGR: PPID stays (renamed to PID below) but Ratio Controller is dropped.
         STATIC_SKIP.update({"TEMPERATURE TRANSMITTER", "RATIO CONTROLLER"})
     if is_ppid_ratio:
         # P.PID with Ratio Controller: keep both as-is, drop temp transmitter (PID-style).
@@ -246,8 +246,8 @@ def build_hlph_df(
     for media, item, ref, qty in static_items():
         if item in STATIC_SKIP:
             continue
-        # PID with AGR mode renames P.PID -> PID in the BOM line.
-        if is_pid and item == "P.PID":
+        # PID with AGR mode renames PPID -> PID in the BOM line.
+        if is_pid and item == "PPID":
             item = "PID"
         rows.append(_row(media, item, ref, qty))
 

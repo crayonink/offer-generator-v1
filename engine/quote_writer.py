@@ -34,7 +34,7 @@ STATIC_MAKE_LIST = [
     {"item": "SEQUENCE CONTROLLER",           "make": "LINEAR"},
     {"item": "MOTOR",                         "make": "ABB"},
     {"item": "GEARBOX",                       "make": "POWERTEK"},
-    {"item": "P.PID",                         "make": "HONEYWELL"},
+    {"item": "PPID",                          "make": "HONEYWELL"},
     {"item": "RATIO CONTROLLER",              "make": "HONEYWELL"},
     {"item": "AIR GAS RAGULATOR",             "make": "MADAS"},
 ]

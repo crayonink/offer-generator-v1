@@ -9,7 +9,7 @@ def static_items():
         ("MISC ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "10 HP, Stroke 1500 mm", 1),
         ("MISC ITEMS", "CABLE FOR IGNITION TRANSFORMER", "", 20),
         ("MISC ITEMS", "TEMPERATURE TRANSMITTER", "", 1),
-        ("MISC ITEMS", "P.PID", "", 1),
+        ("MISC ITEMS", "PPID", "", 1),
         ("MISC ITEMS", "RATIO CONTROLLER", "", 1),
         
         
