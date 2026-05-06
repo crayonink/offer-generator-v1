@@ -228,9 +228,10 @@ def _temp_control_scope_text(control_mode: str | None, auto_control_type: str | 
     if (control_mode or "").lower() == "manual":
         return "Manual temperature control"
     act = (auto_control_type or "plc").lower()
-    if act == "plc":     return "Temperature Control System with PLC"
-    if act == "plc_agr": return "Temperature Control System with PLC + AGR"
-    if act == "pid":     return "Temperature Control System with PID Controller"
+    if act == "plc":         return "Temperature Control System with PLC"
+    if act == "plc_agr":     return "Temperature Control System with PLC + AGR"
+    if act == "pid":         return "Temperature Control System with PID Controller"
+    if act == "ppid_ratio":  return "Temperature Control System with P.PID and Ratio Controller"
     return "Temperature Control System"
 
 

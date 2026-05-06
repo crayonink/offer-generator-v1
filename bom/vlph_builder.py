@@ -798,6 +798,7 @@ def build_vlph_120t_df(
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
     is_plc_agr = control_mode == "automatic" and auto_control_type == "plc_agr"
     is_pid = control_mode == "automatic" and auto_control_type == "pid"
+    is_ppid_ratio = control_mode == "automatic" and auto_control_type == "ppid_ratio"
 
     # Air pipe NB — minimum 125 NB, or next bigger from pipe sizing
     air_nb = max(125, equipment["air_duct"]["nb"])
@@ -981,14 +982,22 @@ def build_vlph_120t_df(
     if is_plc or is_plc_agr:
         STATIC_SKIP.update({"P.PID", "RATIO CONTROLLER"})
     if is_pid:
+        # PID with AGR: P.PID stays (renamed to PID below) but Ratio Controller is dropped.
+        STATIC_SKIP.update({"TEMPERATURE TRANSMITTER", "RATIO CONTROLLER"})
+    if is_ppid_ratio:
+        # P.PID with Ratio Controller: keep both as-is, drop temp transmitter (PID-style).
         STATIC_SKIP.add("TEMPERATURE TRANSMITTER")
     # Swivelling hoods (manual or geared) don't use a hydraulic power pack —
     # only the up-and-down hydraulic hood needs it.
     if hood_type in ("swivel_manual", "swivel_geared", "swivel"):
         STATIC_SKIP.add("HYDRAULIC POWER PACK & CYLINDER")
     for media, item, ref, qty in static_items():
-        if item not in STATIC_SKIP:
-            rows.append(_row(media, item, ref, qty))
+        if item in STATIC_SKIP:
+            continue
+        # PID with AGR mode renames P.PID -> PID in the BOM line.
+        if is_pid and item == "P.PID":
+            item = "PID"
+        rows.append(_row(media, item, ref, qty))
 
     rows.append(_row("MISC ITEMS", "CONTROL PANEL", "", 1))
     rows.append(_row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "", 3, make="L&T"))
