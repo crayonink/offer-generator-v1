@@ -1796,7 +1796,7 @@ function fillTechDataTable() {
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
     "td-burner_capacity_range":burnerCap,
-    "td-burner_model":         isOil ? `Oil Fired ENCON IIP Film Burner` : (eq.burner_model || "ENCON Gas Burner"),
+    "td-burner_model":         isDual ? "ENCON Dual Burner" : (isOil ? "ENCON Film Burner" : "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ ${eq.blower_airflow || ""} Nm³/hr`,
     "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
