@@ -390,6 +390,7 @@ def _cog_line_rows(media: str, equipment: dict,
 def _bfg_line_rows(media: str, equipment: dict,
                    control_mode: str, auto_control_type: str,
                    pressure_gauge_vendor: str,
+                   control_valve_vendor: str = "dembla",
                    base_only: bool = False):
     """
     Blast Furnace Gas BOM — discrete components instead of a packaged gas train.
@@ -427,7 +428,10 @@ def _bfg_line_rows(media: str, equipment: dict,
 
     bfv_price = _get_cheapest_butterfly_valve(gas_pipe_nb)
     so_price  = _get_cheapest_shutoff_valve(gas_pipe_nb)
-    _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
+    _, pcv_price = _get_valve_price(cv_nb, "control", control_valve_vendor)
+    pcv_make = control_valve_vendor.upper() if control_valve_vendor else "DEMBLA"
+    pcv_display_name = ("MOTORIZED CONTROL VALVE" if control_valve_vendor == "cair"
+                        else "PNEUMATIC CONTROL VALVE")
 
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
     is_ppid_ratio = control_mode == "automatic" and auto_control_type == "ppid_ratio"
@@ -453,10 +457,10 @@ def _bfg_line_rows(media: str, equipment: dict,
                  unit_price_override=_get_price_fuzzy("DPT (COG)"),
                  make="HONEYWELL"),
         ]
-    # PCV is added only in PLC mode — AGR replaces it in PLC+AGR / PID / manual.
+    # PCV/MCV is added in PLC and P.PID modes — AGR replaces it in PLC+AGR / PID / manual.
     if is_plc or is_ppid_ratio:
-        rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
-                         unit_price_override=pcv_price, make="DEMBLA"))
+        rows.append(_row(media, pcv_display_name, f'{cv_nb} NB', 1,
+                         unit_price_override=pcv_price, make=pcv_make))
 
     rows.append(_row(media, "ROTARY JOINT", f'{rj["nb"]} NB', 1,
                      unit_price_override=rj["price"], make="ENCON"))
@@ -481,6 +485,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
                        pressure_gauge_vendor: str,
                        butterfly_valve_vendor: str = "lt_lever",
                        shutoff_valve_vendor: str = "aira",
+                       control_valve_vendor: str = "dembla",
                        base_only: bool = False):
     """
     Mix Gas BOM — discrete components instead of a packaged gas train.
@@ -514,10 +519,11 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     # Shut-off valve — vendor-selected, sized to gas pipe NB
     _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", shutoff_valve_vendor)
 
-    # Pneumatic control valve — always DEMBLA for Mix Gas (pneumatic only).
-    # When additional pneumatic vendors are added, expand this.
-    _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
-    pcv_make = "DEMBLA"
+    # Control valve — DEMBLA pneumatic by default, CAIR motorised when chosen.
+    _, pcv_price = _get_valve_price(cv_nb, "control", control_valve_vendor)
+    pcv_make = control_valve_vendor.upper() if control_valve_vendor else "DEMBLA"
+    pcv_display_name = ("MOTORIZED CONTROL VALVE" if control_valve_vendor == "cair"
+                        else "PNEUMATIC CONTROL VALVE")
 
     # Butterfly valve sized to gas pipe NB — follow user's vendor choice,
     # fall back from Lever to Gear if the requested NB is out of Lever range.
@@ -570,9 +576,9 @@ def _mix_gas_line_rows(media: str, equipment: dict,
                      make="HONEYWELL"),
             ]
 
-        # PCV is added only in PLC mode — AGR replaces it in PLC+AGR / PID / manual.
+        # PCV/MCV is added in PLC and P.PID modes — AGR replaces it in PLC+AGR / PID / manual.
         if is_plc or is_ppid_ratio:
-            rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
+            rows.append(_row(media, pcv_display_name, f'{cv_nb} NB', 1,
                  unit_price_override=pcv_price, make=pcv_make))
 
         needs_agr = (
@@ -606,6 +612,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         return _mix_gas_line_rows(
             media, equipment, control_mode, auto_control_type,
             pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor,
+            control_valve_vendor=control_valve_vendor,
             base_only=base_only,
         )
 
@@ -623,6 +630,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         return _bfg_line_rows(
             media, equipment, control_mode, auto_control_type,
             pressure_gauge_vendor,
+            control_valve_vendor=control_valve_vendor,
             base_only=base_only,
         )
 
