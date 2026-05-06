@@ -289,6 +289,7 @@ def _cog_line_rows(media: str, equipment: dict,
                    pressure_gauge_vendor: str,
                    butterfly_valve_vendor: str = "lt_lever",
                    shutoff_valve_vendor: str = "aira",
+                   control_valve_vendor: str = "dembla",
                    base_only: bool = False):
     """
     Coke Oven Gas BOM — discrete components, prices pulled from DB.
@@ -314,8 +315,13 @@ def _cog_line_rows(media: str, equipment: dict,
     # Shut off valve — vendor-selected, NB-scaled
     _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", shutoff_valve_vendor)
 
-    # Pneumatic control valve — DEMBLA, one pipe size smaller
-    _, pcv_price = _get_valve_price(cv_nb, "control", "dembla")
+    # Control valve — DEMBLA pneumatic by default, CAIR motorised when chosen.
+    # _get_valve_price returns either 'CONTROL VALVE NB' (DEMBLA/AIRA) or
+    # 'MOTORIZED CONTROL VALVE NB' (CAIR) based on the vendor.
+    _, pcv_price = _get_valve_price(cv_nb, "control", control_valve_vendor)
+    pcv_make = control_valve_vendor.upper() if control_valve_vendor else "DEMBLA"
+    pcv_display_name = ("MOTORIZED CONTROL VALVE" if control_valve_vendor == "cair"
+                        else "PNEUMATIC CONTROL VALVE")
 
     # Butterfly valve — follows user's L&T vendor choice
     try:
@@ -365,10 +371,11 @@ def _cog_line_rows(media: str, equipment: dict,
                      make="HONEYWELL"),
             ]
 
-        # PCV is added only in PLC mode — AGR replaces it in PLC+AGR / PID / manual.
+        # PCV/MCV is added in PLC and P.PID modes — AGR replaces it in PLC+AGR / PID / manual.
+        # Item name and make follow the user's control_valve_vendor choice.
         if is_plc or is_ppid_ratio:
-            rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
-                 unit_price_override=pcv_price, make="DEMBLA"))
+            rows.append(_row(media, pcv_display_name, f'{cv_nb} NB', 1,
+                 unit_price_override=pcv_price, make=pcv_make))
 
         if needs_agr:
             rows.append(_row(
@@ -607,6 +614,7 @@ def _fuel_line_rows(label: str, fuel_type: str, equipment: dict,
         return _cog_line_rows(
             media, equipment, control_mode, auto_control_type,
             pressure_gauge_vendor, butterfly_valve_vendor, shutoff_valve_vendor,
+            control_valve_vendor=control_valve_vendor,
             base_only=base_only,
         )
 
