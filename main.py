@@ -1161,8 +1161,9 @@ def vlph_calculate(req: VLPHCalcRequest):
         from bom.vlph_builder import lookup_ladle_fab_pipeline
         _mapped = lookup_ladle_fab_pipeline(req.ladle_tons, "vertical", req.hood_type)
         _pipeline_kg  = req.pipeline_weight_kg
-        _ms_override  = (_mapped.get("fabrication_kg") if _mapped else 0) or req.ms_structure_kg_override
-        _ceramic_rolls = (_mapped.get("ceramic_rolls") if _mapped else 0) or req.ceramic_rolls_override
+        # User-supplied override wins; fall back to DB-mapped value only when override is 0.
+        _ms_override  = req.ms_structure_kg_override or (_mapped.get("fabrication_kg") if _mapped else 0)
+        _ceramic_rolls = req.ceramic_rolls_override or (_mapped.get("ceramic_rolls") if _mapped else 0)
 
         # Air is CV-independent, so use fuel1 for air sizing
         if req.control_mode == "manual":
@@ -1769,8 +1770,9 @@ def hlph_calculate(req: VLPHCalcRequest):
         from bom.vlph_builder import lookup_ladle_fab_pipeline
         _mapped_h = lookup_ladle_fab_pipeline(req.ladle_tons, "horizontal")
         _pipeline_kg_h  = req.pipeline_weight_kg
-        _ms_override_h  = (_mapped_h.get("fabrication_kg") if _mapped_h else 0) or req.ms_structure_kg_override
-        _ceramic_rolls_h = (_mapped_h.get("ceramic_rolls") if _mapped_h else 0) or req.ceramic_rolls_override
+        # User-supplied override wins; fall back to DB-mapped value only when override is 0.
+        _ms_override_h  = req.ms_structure_kg_override or (_mapped_h.get("fabrication_kg") if _mapped_h else 0)
+        _ceramic_rolls_h = req.ceramic_rolls_override or (_mapped_h.get("ceramic_rolls") if _mapped_h else 0)
 
         if req.control_mode == "manual":
             bom_df = build_hlph_manual_df(

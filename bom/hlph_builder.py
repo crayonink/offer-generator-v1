@@ -253,7 +253,12 @@ def build_hlph_df(
 
     rows.append(_row("MISC ITEMS", "CONTROL PANEL", "", 1))
     rows.append(_row("MISC ITEMS", "INSTRUMENTS BALL VALVE", "", 3, make="L&T"))
-    if is_plc or is_plc_agr:
+    # PLC mode uses the higher-spec PLC WITH HMI (priced via 'PLC WITH HMI - PLC' row).
+    # PLC+AGR uses the cheaper one ('PLC WITH HMI' row). BOM line label stays the same.
+    if is_plc:
+        rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1,
+                         unit_price_override=_get_price_fuzzy("PLC WITH HMI - PLC")))
+    elif is_plc_agr:
         rows.append(_row("MISC ITEMS", "PLC WITH HMI", "", 1))
 
     df = pd.DataFrame(
