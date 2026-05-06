@@ -354,7 +354,7 @@ def _cog_line_rows(media: str, equipment: dict,
     if not base_only:
         rows.append(_row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"))
 
-        if is_plc:
+        if is_plc or is_ppid_ratio:
             rows += [
                 _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
                      unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
@@ -365,7 +365,7 @@ def _cog_line_rows(media: str, equipment: dict,
             ]
 
         # PCV is added only in PLC mode — AGR replaces it in PLC+AGR / PID / manual.
-        if is_plc:
+        if is_plc or is_ppid_ratio:
             rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
                  unit_price_override=pcv_price, make="DEMBLA"))
 
@@ -435,7 +435,7 @@ def _bfg_line_rows(media: str, equipment: dict,
 
     # Mass flow control elements — orifice + DPT only in PLC (flow-measurement
     # needed only when the PLC regulates the valve directly, no AGR).
-    if is_plc:
+    if is_plc or is_ppid_ratio:
         rows += [
             _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
                  unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
@@ -445,7 +445,7 @@ def _bfg_line_rows(media: str, equipment: dict,
                  make="HONEYWELL"),
         ]
     # PCV is added only in PLC mode — AGR replaces it in PLC+AGR / PID / manual.
-    if is_plc:
+    if is_plc or is_ppid_ratio:
         rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
                          unit_price_override=pcv_price, make="DEMBLA"))
 
@@ -550,7 +550,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
     if not base_only:
         rows.append(_row(media, "PRESSURE SWITCH LOW", "", 1, make="MADAS"))
 
-        if is_plc:
+        if is_plc or is_ppid_ratio:
             rows += [
                 _row(media, "ORIFICE PLATE", "", 1,
                      unit_price_override=_get_price_fuzzy("ORIFICE PLATE (Gas)"),
@@ -561,7 +561,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
             ]
 
         # PCV is added only in PLC mode — AGR replaces it in PLC+AGR / PID / manual.
-        if is_plc:
+        if is_plc or is_ppid_ratio:
             rows.append(_row(media, "PNEUMATIC CONTROL VALVE", f'{cv_nb} NB', 1,
                  unit_price_override=pcv_price, make=pcv_make))
 
@@ -814,7 +814,7 @@ def build_vlph_120t_df(
         _row("COMB AIR", "PRESSURE SWITCH LOW", '', 1, make="MADAS"),
     ]
     # PLC: air gets orifice plate + DPT + control valve
-    if is_plc:
+    if is_plc or is_ppid_ratio:
         op_nb, op_price = _get_orifice_price(air_nb)
         rows += [
             _row("COMB AIR", "ORIFICE PLATE", f'{op_nb} NB', 1,
