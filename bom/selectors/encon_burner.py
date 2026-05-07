@@ -45,18 +45,21 @@ def _resolve_category(fuel_type: str) -> str:
     return "gas"
 
 
-def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 10500, fuel_type: str = "gas", burner_pressure_wg: int = 24) -> dict:
+def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 10500, fuel_type: str = "gas", burner_pressure_wg: int = 24, fuel_subtype: str = "") -> dict:
     """
     Select ENCON Burner based on firing rate.
 
     fuel_type           : 'gas' (default), 'oil', or 'dual' — drives pricelist section.
+    fuel_subtype        : when fuel_type=='dual', the actual per-fuel sub-type
+                          (ng/sko/ldo/...) used purely for density display.
     burner_pressure_wg  : 24 or 36 (inches w.g.) — drives firing rate range lookup.
     """
 
     # Burner selection uses oil-equivalent LPH against the legacy LPH table:
     #   Oil  : kg/hr / own density         → L/hr
     #   Gas  : Nm3/hr × CV / 10500 / LDO ρ → oil-equivalent L/hr
-    #   Dual : sized on fuel1's flow via the caller (here 'dual' skips density).
+    #   Dual : sized on fuel1's flow via the caller. Density displayed for
+    #          the per-fuel sub-type so the offer's tech-spec doesn't show 0.
     category = _resolve_category(fuel_type)
 
     if category == "oil":
@@ -64,11 +67,23 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         density_unit = "kg/ltr"
         equivalent_lph = required_gas_flow_nm3hr / density  # kg/hr → L/hr
     elif category == "dual":
-        density = 0
-        density_unit = ""
         # Use LDO reference so dual-burner selection can still hit the LPH table.
         equivalent_kghr = required_gas_flow_nm3hr * fuel_cv / 10500
         equivalent_lph  = equivalent_kghr / _get_fuel_density("ldo")
+        # Display density of the actual fuel sub-type (kg/L for oil, kg/m3 for gas).
+        sub = (fuel_subtype or "").lower()
+        if sub in OIL_SUBTYPES:
+            try:
+                density = _get_fuel_density(sub); density_unit = "kg/ltr"
+            except Exception:
+                density = 0; density_unit = ""
+        elif sub in GAS_SUBTYPES:
+            try:
+                density = _get_fuel_density(sub); density_unit = "kg/m³"
+            except Exception:
+                density = 0; density_unit = ""
+        else:
+            density = 0; density_unit = ""
     else:
         density = _get_fuel_density(fuel_type)           # kg/m3 (gas), display only
         density_unit = "kg/m³"

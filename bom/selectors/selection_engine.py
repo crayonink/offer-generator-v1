@@ -46,6 +46,9 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
             fuel_cv=fuel_cv,
             fuel_type=burner_fuel_type,
             burner_pressure_wg=burner_pressure_wg,
+            # Pass the original per-fuel sub-type so the dual branch can
+            # still render the correct density in the offer's tech specs.
+            fuel_subtype=fuel_type,
         )
     except Exception:
         burner = {

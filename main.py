@@ -1883,6 +1883,15 @@ def hlph_calculate(req: VLPHCalcRequest):
             resp["calculations"]["fuel2_name"] = FUEL_NAMES.get(req.fuel2_type, req.fuel2_type)
             resp["calculations"]["fuel2_cv"]   = req.fuel2_cv
             resp["calculations"]["fuel2_extra_firing_rate_nm3hr"] = round(ng_flow2, 2)
+            # Calc-mode fields the front-end needs to render Fuel Consumption
+            # and Calc. Firing Rate in the result table. Direct mode falls
+            # back to deriving from ng_flow2 (the +10% extra rate).
+            resp["calculations"]["fuel2_consumption_nm3"] = (
+                round(br2.fuel_consumption_nm3, 2) if br2 else 0
+            )
+            resp["calculations"]["fuel2_firing_rate_nm3hr"] = (
+                round(br2.calculated_firing_rate_nm3hr, 2) if br2 else round(ng_flow2 / 1.1, 2)
+            )
             resp["calculations"]["fuel2_equivalent_lph"] = round(
                 equip2["burner"].get("equivalent_lph", 0), 2
             )
