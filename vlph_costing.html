@@ -1854,7 +1854,7 @@ function fillTechDataTable() {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
     "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
     "td-heating_time":         c.time_taken_hr ? `${Math.round(c.time_taken_hr * 60)} Min.` : "",
-    "td-fuel_name":            isDual ? `Fuel 1: ${f1Name} & Fuel 2: ${f2Name}` : f1Name,
+    "td-fuel_name":            isDual ? `${f1Name} and ${f2Name}` : f1Name,
     "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-fuel_consumption":     fuelConsumption,
     "td-burner_capacity_range":burnerCap,

@@ -1727,7 +1727,7 @@ function fillTechDataTable() {
 
   const defaults = {
     "td-num_burner":            `${nb} Nos.`,
-    "td-fuel_name":             isDual ? `${f1Name} & ${f2Name}` : f1Name,
+    "td-fuel_name":             isDual ? `${f1Name} and ${f2Name}` : f1Name,
     "td-fuel_cv":               `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-heating_schedule":      `${c.Tf || ""}°C`,
     "td-heating_time":          c.time_taken_hr ? `${c.time_taken_hr * 60} Min.` : "",
