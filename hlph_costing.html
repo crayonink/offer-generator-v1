@@ -700,7 +700,7 @@
           <option value="Duplex 2">Duplex-II (HPDD)</option>
         </select>
       </div>
-      <div class="field auto-only">
+      <div class="field auto-only pilot-gated">
         <label>Pilot Burner</label>
         <select id="pilot_burner">
           <option value="lpg_10" selected>ENCON-PB LPG 10 KW (Rs. 11,000)</option>
@@ -723,7 +723,7 @@
       <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Special Requirements</div>
       <div class="auto-only">
         <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;">
-          <input type="checkbox" id="special_auto_ignition" style="width:auto;margin:0;"/>
+          <input type="checkbox" id="special_auto_ignition" onchange="updatePilotVisibility()" style="width:auto;margin:0;"/>
           Auto Ignition
         </label>
       </div>
@@ -1102,6 +1102,9 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
   setTimeout(refreshLadleMapping, 300);
+  // Pilot Burner field starts hidden; only revealed when Auto Ignition
+  // is ticked under Special Requirements (and control mode is Automatic).
+  if (typeof updatePilotVisibility === "function") updatePilotVisibility();
 });
 let lastCalc = null;
 
@@ -1211,6 +1214,8 @@ function onControlModeChange() {
   });
   if (mode === 'manual') document.getElementById('purging-row').style.display = 'none';
   else onFuelChange();
+  // Pilot Burner visibility depends on both control mode and auto-ignition
+  if (typeof updatePilotVisibility === "function") updatePilotVisibility();
 }
 
 function onManualPilotChange() {
@@ -1931,6 +1936,17 @@ function buildTechData() {
 }
 
 /* ── Generate Quote ── */
+function updatePilotVisibility() {
+  // Pilot Burner dropdown is shown only when Control Mode is Automatic
+  // AND the Auto Ignition special-requirement is ticked.
+  const mode = document.getElementById("control_mode")?.value;
+  const autoIgn = !!document.getElementById("special_auto_ignition")?.checked;
+  const show = mode === "automatic" && autoIgn;
+  document.querySelectorAll(".pilot-gated").forEach(el => {
+    el.style.display = show ? "" : "none";
+  });
+}
+
 function togglePreview(url) {
   // (Re)load the URL into the inline iframe and reveal the wrap. The X
   // button on the wrap closes it. Cache-buster prevents the iframe from
