@@ -533,6 +533,19 @@ def _control_system_sections(bom_items: list) -> dict:
     ]
     INTERNALS_AS_DICTS = [{"item": x} for x in GAS_TRAIN_INTERNALS]
 
+    def _cv_name_from_items(items_list):
+        """Look at scope items and return the display label for the control
+        valve based on what the BOM emitted. Returns '' if no CV row."""
+        for it in items_list:
+            n = (it.get("item") or "").upper()
+            if "MOTORIZED CONTROL VALVE" in n or "MOTORISED CONTROL VALVE" in n:
+                return "Motorised control valve"
+            if "PNEUMATIC CONTROL VALVE" in n:
+                return "Pneumatic control valve"
+            if n.strip() == "CONTROL VALVE":
+                return "Control valve"
+        return ""
+
     def _attach_sub_items(items_list, attach):
         """For every GAS TRAIN entry in items_list, attach the gas-train
         internals as its sub_items list. Other items get empty sub_items.
@@ -565,6 +578,14 @@ def _control_system_sections(bom_items: list) -> dict:
         # (the global is_oil flag is forced False when is_dual is True).
         "fuel1_is_oil":           fuel1_label.lower() in {"hsd", "ldo", "fo", "lshs", "sko", "hdo", "cfo", "furnace oil"},
         "fuel2_is_oil":           fuel2_label.lower() in {"hsd", "ldo", "fo", "lshs", "sko", "hdo", "cfo", "furnace oil"},
+        # Derive the CV display name per line directly from the BOM. The
+        # BOM is authoritative — if it emits 'MOTORIZED CONTROL VALVE'
+        # (oil line / CAIR vendor) the offer reads 'Motorised control valve';
+        # 'PNEUMATIC CONTROL VALVE' -> 'Pneumatic control valve'. Empty
+        # string when the BOM has no CV row for that line.
+        "fuel1_cv_name":          _cv_name_from_items(fuel1),
+        "fuel2_cv_name":          _cv_name_from_items(fuel2),
+        "air_cv_name":            _cv_name_from_items(air),
         "air_pipeline_items":     air,
         "pilot_pipeline_items":   pilot,
         "nitrogen_purging_items": purging,
