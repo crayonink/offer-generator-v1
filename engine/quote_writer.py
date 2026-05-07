@@ -539,11 +539,11 @@ def _control_system_sections(bom_items: list) -> dict:
         for it in items_list:
             n = (it.get("item") or "").upper()
             if "MOTORIZED CONTROL VALVE" in n or "MOTORISED CONTROL VALVE" in n:
-                return "Motorised control valve"
+                return "MOTORISED CONTROL VALVE"
             if "PNEUMATIC CONTROL VALVE" in n:
-                return "Pneumatic control valve"
+                return "PNEUMATIC CONTROL VALVE"
             if n.strip() == "CONTROL VALVE":
-                return "Control valve"
+                return "CONTROL VALVE"
         return ""
 
     def _attach_sub_items(items_list, attach):
