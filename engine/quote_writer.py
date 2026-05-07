@@ -528,10 +528,14 @@ def _control_system_sections(bom_items: list) -> dict:
 
     def _attach_sub_items(items_list, attach):
         """For every GAS TRAIN entry in items_list, attach the gas-train
-        internals as its sub_items list. Other items get empty sub_items."""
+        internals as its sub_items list. Other items get empty sub_items.
+
+        The BOM prefixes the gas-train name with the fuel for LPG/RLNG
+        ('LPG GAS TRAIN ...', 'RLNG GAS TRAIN ...'), so we substring-match
+        rather than startswith to catch all variants."""
         for it in items_list:
             it.setdefault("sub_items", [])
-            if attach and it.get("item", "").strip().upper().startswith("GAS TRAIN"):
+            if attach and "GAS TRAIN" in it.get("item", "").strip().upper():
                 it["sub_items"] = list(INTERNALS_AS_DICTS)
 
     _attach_sub_items(gas,   fuel1_media in PACKAGED_GAS_TRAIN_LINES
