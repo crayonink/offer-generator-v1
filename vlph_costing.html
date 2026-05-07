@@ -734,12 +734,6 @@
           Auto Ignition
         </label>
       </div>
-      <div class="auto-only" style="margin-top:10px;">
-        <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;">
-          <input type="checkbox" id="special_auto_controls" style="width:auto;margin:0;"/>
-          Auto Controls
-        </label>
-      </div>
     </div>
 
     <div id="calc-extras">
@@ -1370,7 +1364,6 @@ async function calculate() {
       ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
       special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
-      special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
 
     };
   } else {
@@ -1404,7 +1397,6 @@ async function calculate() {
       ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
       hood_type: document.getElementById("hood_movement")?.value || "up_down",
       special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
-      special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
 
     };
   }
@@ -2000,7 +1992,6 @@ function buildTechData() {
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
     auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
     special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
-    special_auto_controls: !!document.getElementById("special_auto_controls")?.checked,
     vertical_qty:         parseInt(document.getElementById("td-vertical_qty")?.value) || 1,
     purging_line:         (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
     hpu_variant:          document.getElementById("hpu_variant")?.value || "Duplex 1",
