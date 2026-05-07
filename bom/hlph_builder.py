@@ -108,7 +108,7 @@ def build_hlph_df(
                  unit_price_override=op_price, make="ENCON"),
             _row("COMB AIR", "DPT", '', 1, make="HONEYWELL"),
         ]
-    if is_plc or is_plc_agr or is_pid:
+    if is_plc or is_plc_agr or is_pid or is_ppid_ratio:
         from calculations.pipes import STANDARD_PIPE_NB
         from bom.vlph_builder import _get_valve_price
         try:

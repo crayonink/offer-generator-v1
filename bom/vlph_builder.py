@@ -840,9 +840,10 @@ def build_vlph_120t_df(
                  unit_price_override=op_price, make="ENCON"),
             _row("COMB AIR", "DPT", '', 1, make="HONEYWELL"),
         ]
-    # PLC, PLC+AGR, PID: air gets control valve (vendor-selected).
-    # Control valve NB is one pipe size smaller than the air pipe NB.
-    if is_plc or is_plc_agr or is_pid:
+    # PLC / PLC+AGR / PID / P.PID with Ratio Controller: air gets control
+    # valve (vendor-selected). Control valve NB is one pipe size smaller
+    # than the air pipe NB.
+    if is_plc or is_plc_agr or is_pid or is_ppid_ratio:
         from calculations.pipes import STANDARD_PIPE_NB
         try:
             cv_nb = STANDARD_PIPE_NB[max(0, STANDARD_PIPE_NB.index(air_nb) - 1)]
