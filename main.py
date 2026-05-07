@@ -1763,6 +1763,14 @@ def hlph_calculate(req: VLPHCalcRequest):
                 shutoff_valve_vendor=req.shutoff_valve_vendor,
                 control_mode=req.control_mode, auto_control_type=req.auto_control_type,
             )
+            # Pipe sizing for fuel-2 — needed by the front-end calc-result
+            # panel ('Fuel-2 line size: gas flow / pipe NB'). Without this
+            # the JS reads undefined and renders 'NaN Nm3/hr / undefined NB'.
+            pipes2 = calculate_pipe_sizes(PipeInputs(
+                ng_flow_nm3hr=ng_flow2, air_flow_nm3hr=air_flow2,
+            ))
+        else:
+            pipes2 = None
 
         # Auto-fill fabrication + ceramic-fibre rolls from
         # fabrication_ladle_mapping (nearest horizontal row). Pipeline weight
@@ -1896,6 +1904,31 @@ def hlph_calculate(req: VLPHCalcRequest):
                 equip2["burner"].get("equivalent_lph", 0), 2
             )
             resp["calculations"]["fuel2_fuel_density"] = equip2["burner"].get("fuel_density", 0)
+            # Pipe-line size info for the Client Data Summary card. For oil
+            # fuel-2 we use the oil pipe NB (sized from LPH); for gas we use
+            # the standard pipe NB from calculate_pipe_sizes.
+            f2_is_oil = req.fuel2_type in OIL_FUELS
+            f2_oil_lph = (equip2["burner"].get("equivalent_lph", 0) if f2_is_oil else 0)
+            f2_oil_nb = select_oil_pipe_nb(f2_oil_lph) if f2_is_oil else 0
+            resp["pipes"]["fuel2_label"]  = FUEL_NAMES.get(req.fuel2_type, "Fuel 2")
+            resp["pipes"]["fuel2_flow"]   = round(ng_flow2, 2)
+            resp["pipes"]["fuel2_is_oil"] = f2_is_oil
+            resp["pipes"]["fuel2_oil_lph"] = round(f2_oil_lph, 2) if f2_is_oil else None
+            if pipes2 is not None:
+                resp["pipes"]["fuel2_dia_mm"] = (
+                    round(pipes2.ng_pipe_inner_dia_mm, 2) if not f2_is_oil else f2_oil_nb
+                )
+                resp["pipes"]["fuel2_nb"] = (
+                    pipes2.ng_pipe_nb if not f2_is_oil else f2_oil_nb
+                )
+            if not f2_is_oil and equip2.get("ng_gas_train"):
+                resp["pipes"]["fuel2_gas_train_flow"] = round(
+                    equip2["ng_gas_train"]["max_flow"], 0
+                )
+                resp["pipes"]["fuel2_gas_train_model"] = (
+                    f'{equip2["ng_gas_train"]["inlet_nb"]} x '
+                    f'{equip2["ng_gas_train"]["outlet_nb"]}'
+                )
 
         return resp
     except Exception as e:
