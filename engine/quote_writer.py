@@ -560,6 +560,11 @@ def _control_system_sections(bom_items: list) -> dict:
         "fuel2_line_items":       fuel2,
         "fuel1_line_label":       fuel1_label,
         "fuel2_line_label":       fuel2_label,
+        # Per-fuel oil flags so the template's I&C section can route each
+        # fuel-line block through the right oil/gas branch independently
+        # (the global is_oil flag is forced False when is_dual is True).
+        "fuel1_is_oil":           fuel1_label.lower() in {"hsd", "ldo", "fo", "lshs", "sko", "hdo", "cfo", "furnace oil"},
+        "fuel2_is_oil":           fuel2_label.lower() in {"hsd", "ldo", "fo", "lshs", "sko", "hdo", "cfo", "furnace oil"},
         "air_pipeline_items":     air,
         "pilot_pipeline_items":   pilot,
         "nitrogen_purging_items": purging,
