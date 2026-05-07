@@ -143,18 +143,25 @@ def _combine_dual(val1, val2) -> str:
     return v1
 
 
+def _split_dual_fuel(fuel_name: str) -> tuple[str, str]:
+    """Return (fuel1_name, fuel2_name). Handles both legacy '&' and new
+    ' and ' separators ('Natural Gas and Kerosene' or 'NG & MG')."""
+    s = (fuel_name or "").strip()
+    for sep in (" and ", "&"):
+        if sep in s:
+            a, b = s.split(sep, 1)
+            return a.strip(), b.strip()
+    return s, ""
+
+
 def _fuel_label(fuel_name: str) -> str:
-    """Extract the first fuel name from 'NG & MG' or 'Natural Gas & Furnace Oil'."""
-    if "&" in fuel_name:
-        return fuel_name.split("&")[0].strip()
-    return fuel_name.strip()
+    """Extract the first fuel name."""
+    return _split_dual_fuel(fuel_name)[0]
 
 
 def _fuel_label2(fuel_name: str) -> str:
-    """Extract the second fuel name from 'NG & MG'."""
-    if "&" in fuel_name:
-        return fuel_name.split("&")[1].strip()
-    return ""
+    """Extract the second fuel name (empty if single-fuel)."""
+    return _split_dual_fuel(fuel_name)[1]
 
 
 import re as _re_pilot
