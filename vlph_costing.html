@@ -636,6 +636,14 @@
         </select>
         <div class="hint">PLC = PLC with HMI; PLC+AGR = PLC with Air-Gas Ratio; PID with AGR = PID controller + AGR; P.PID with Ratio Controller = Honeywell P.PID + Ratio Controller</div>
       </div>
+      <div class="field">
+        <label>Control Valve Type</label>
+        <select id="control_valve_type">
+          <option value="pneumatic" selected>Pneumatic</option>
+          <option value="motorised">Motorised</option>
+        </select>
+        <div class="hint">Drives the wording in I&C and Temperature Control sections of the offer</div>
+      </div>
     </div>
 
     <!-- Manual BOM Inputs (shown only when control_mode = manual) -->
@@ -1991,6 +1999,7 @@ function buildTechData() {
     is_dual:              !!(lastCalc.calculations || {}).is_dual,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
     auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
+    control_valve_type:   document.getElementById("control_valve_type")?.value || "pneumatic",
     special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
     vertical_qty:         parseInt(document.getElementById("td-vertical_qty")?.value) || 1,
     purging_line:         (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
