@@ -1199,6 +1199,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 ms_structure_kg_override=_ms_override,
                 ceramic_rolls_override=_ceramic_rolls,
                 hood_type=req.hood_type,
+                special_auto_ignition=req.special_auto_ignition,
             )
 
         # Split summary rows from detail rows
@@ -1807,6 +1808,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 purging_line=req.purging_line,
                 ms_structure_kg_override=_ms_override_h,
                 ceramic_rolls_override=_ceramic_rolls_h,
+                special_auto_ignition=req.special_auto_ignition,
             )
 
         detail = bom_df[bom_df["MEDIA"] != ""].copy()

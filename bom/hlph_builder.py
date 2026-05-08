@@ -40,6 +40,7 @@ def build_hlph_df(
     purging_line: str = "no",
     ms_structure_kg_override: float = 0.0,
     ceramic_rolls_override: int = 0,
+    special_auto_ignition: bool = False,
 ) -> pd.DataFrame:
     """
     Builds HLPH BOM DataFrame (automatic mode).
@@ -128,19 +129,21 @@ def build_hlph_df(
             f'{bfv["nb"]} NB',
             1, unit_price_override=bfv["price"], make=bfv.get("make", "L&T"),
         ))
-    # No ROTARY JOINT for HLPH
-    rows += [
-        _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1,
-             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-        _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1,
-             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
-        _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)",
-             f'{_get_flexible_hose_price(20)[0]} NB, 1500mm', 1,
-             unit_price_override=_get_flexible_hose_price(20)[1], make="BENGAL IND."),
-        _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)",
-             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
-             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
-    ]
+    # No ROTARY JOINT for HLPH. Pilot/UV ancillaries on the air line only
+    # when Auto Ignition is selected.
+    if special_auto_ignition:
+        rows += [
+            _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+            _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+            _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)",
+                 f'{_get_flexible_hose_price(20)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(20)[1], make="BENGAL IND."),
+            _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)",
+                 f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
+        ]
 
     # ── FUEL 1 LINE ──────────────────────────────────────────────────────
     rows += _fuel_line_rows(f1_label, fuel1_type, equipment, control_mode,
@@ -167,34 +170,36 @@ def build_hlph_df(
         ]
 
     # ── PILOT LINE ────────────────────────────────────────────────────────
-    pl_media = f"{pilot_line_fuel.upper()} PILOT LINE"
-    rows += [
-        _row(pl_media, "BALL VALVE", "20 NB", 1,
-             unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
-        _row(pl_media, pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
-        _row(pl_media, "BALL VALVE", "15 NB", 1,
-             unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
-        _row(pl_media, "SOLENOID VALVE", "15 NB", 1,
-             unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
-    ]
-    reg_nb_request = 20
-    try:
-        reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
-        rows.append(_row(
-            pl_media, "PRESSURE REGULATING VALVE",
-            f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
-            1, unit_price_override=reg["price"], make="MADAS",
-        ))
-    except ValueError:
-        rows.append(_row(
-            pl_media, "PRESSURE REGULATING VALVE",
-            f'{reg_nb_request} NB', 1, make="MADAS",
-        ))
-    rows += [
-        _row(pl_media, "FLEXIBLE HOSE",
-             f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
-             unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
-    ]
+    # Only emitted when Auto Ignition is selected.
+    if special_auto_ignition:
+        pl_media = f"{pilot_line_fuel.upper()} PILOT LINE"
+        rows += [
+            _row(pl_media, "BALL VALVE", "20 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+            _row(pl_media, pg_item, '', 1, unit_price_override=pg_price, make=pg_vendor),
+            _row(pl_media, "BALL VALVE", "15 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+            _row(pl_media, "SOLENOID VALVE", "15 NB", 1,
+                 unit_price_override=_get_cheapest_solenoid_valve(15), make="MADAS"),
+        ]
+        reg_nb_request = 20
+        try:
+            reg = select_gas_regulator(reg_nb_request, category="Standard 5 Bar")
+            rows.append(_row(
+                pl_media, "PRESSURE REGULATING VALVE",
+                f'{reg["nb"]} NB, P2={reg["p2_range"]} ({reg["part_code"]})',
+                1, unit_price_override=reg["price"], make="MADAS",
+            ))
+        except ValueError:
+            rows.append(_row(
+                pl_media, "PRESSURE REGULATING VALVE",
+                f'{reg_nb_request} NB', 1, make="MADAS",
+            ))
+        rows += [
+            _row(pl_media, "FLEXIBLE HOSE",
+                 f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
+        ]
 
     # ── ENCON ITEMS ───────────────────────────────────────────────────────
     burner_desc = "ENCON DUAL FUEL Burner" if is_dual else equipment["burner"]["model"]
@@ -206,22 +211,26 @@ def build_hlph_df(
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"]),
-        _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
-        _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
-        _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
-        _row(
-            "ENCON ITEMS",
-            {
-                "lpg_10":  "ENCON-PB-LPG-10KW",
-                "ng_10":   "ENCON-PB NG 10 KW",
-                "lpg_100": "ENCON-PB LPG 100 KW",
-                "ng_100":  "ENCON-PB NG 100 KW",
-                "cog_100": "ENCON PB COG 100 KW",
-                "mg_10":   "ENCON-PB MG 10 KW",
-            }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-            "", 1,
-        ),
     ]
+    # Pilot ignition equipment — only when Auto Ignition is selected.
+    if special_auto_ignition:
+        rows += [
+            _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
+            _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
+            _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
+            _row(
+                "ENCON ITEMS",
+                {
+                    "lpg_10":  "ENCON-PB-LPG-10KW",
+                    "ng_10":   "ENCON-PB NG 10 KW",
+                    "lpg_100": "ENCON-PB LPG 100 KW",
+                    "ng_100":  "ENCON-PB NG 100 KW",
+                    "cog_100": "ENCON PB COG 100 KW",
+                    "mg_10":   "ENCON-PB MG 10 KW",
+                }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
+                "", 1,
+            ),
+        ]
 
     # HPU — for oil fuels
     hpu = equipment.get("hpu")
