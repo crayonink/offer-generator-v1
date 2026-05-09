@@ -1073,6 +1073,7 @@ function scheduleLadleMappingRefresh() {
   clearTimeout(_ladleRefreshTimer);
   _ladleRefreshTimer = setTimeout(refreshLadleMapping, 350);
 }
+let _autoRefSeq = "001";
 function _personInitials(name) {
   return (name || "").trim().split(/\s+/).filter(Boolean)
     .map(p => p[0].toUpperCase()).join("");
@@ -1082,7 +1083,15 @@ function updateAutoRef() {
   const ref  = document.getElementById("c-ref");
   if (!ref) return;
   const yy = String(new Date().getFullYear()).slice(-2);
-  ref.value = `ET${yy}-XXX-${_personInitials(tech ? tech.value : "")}`;
+  ref.value = `ET${yy}-${_autoRefSeq}-${_personInitials(tech ? tech.value : "")}`;
+}
+async function fetchAutoRefSeq() {
+  try {
+    const r = await fetch("/api/next-quote-ref");
+    const j = await r.json();
+    if (j && j.seq) _autoRefSeq = j.seq;
+  } catch (e) { /* keep default */ }
+  updateAutoRef();
 }
 window.addEventListener("DOMContentLoaded", () => {
   ["direct_ladle_tons", "ladle_tons"].forEach(id => {
@@ -1095,7 +1104,7 @@ window.addEventListener("DOMContentLoaded", () => {
   setTimeout(refreshLadleMapping, 300);
   const techEl = document.getElementById("c-technical");
   if (techEl) techEl.addEventListener("input", updateAutoRef);
-  updateAutoRef();
+  fetchAutoRefSeq();
 });
 let lastCalc = null;
 

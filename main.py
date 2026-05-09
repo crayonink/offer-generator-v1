@@ -44,6 +44,15 @@ def next_quote_seq():
     return str(n).zfill(3)
 
 
+def peek_quote_seq() -> str:
+    """Return the sequence the next generate-quote call WILL receive,
+    without consuming it. Used by the form to preview the auto ref."""
+    if os.path.exists(COUNTER_FILE):
+        with open(COUNTER_FILE) as f:
+            return str(int(f.read().strip()) + 1).zfill(3)
+    return "001"
+
+
 def _person_initials(name: str) -> str:
     """First letter of each whitespace-separated word, uppercased.
     'Jyotirmoy Rabha' -> 'JR'. Returns '' for empty input."""
@@ -2288,6 +2297,14 @@ def snsf_brf_calculate(req: SNSFBRFCalcRequest):
     except Exception as e:
         import traceback
         return {"error": str(e), "detail": traceback.format_exc()}
+
+
+@app.get("/api/next-quote-ref")
+def api_next_quote_ref(technical_person: str = ""):
+    """Preview the auto-generated enquiry ref for the form.
+    Reads (does not consume) the next sequence number."""
+    seq = peek_quote_seq()
+    return {"seq": seq, "ref": build_enquiry_ref(seq, technical_person)}
 
 
 @app.post("/api/generate-quote")
