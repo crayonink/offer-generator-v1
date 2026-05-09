@@ -1,127 +1,73 @@
-"""Google Drive uploader for generated offer files (OAuth flow).
+"""Google Drive uploader for generated offer files.
 
-Uses an OAuth refresh token captured by /auth/drive/login one-time
-sign-in (process@encon.in). The refresh token lives in vlph.db's
-oauth_tokens table so it survives redeploys.
+Uploads each docx + pdf into a product-specific subfolder of the
+ENCON Offers Drive (owner: process@encon.in).
 
-Routing:
-  Vertical / Horizontal Ladle Preheater  -> GOOGLE_DRIVE_FOLDER_LADLE_ID
-  Tundish                                 -> GOOGLE_DRIVE_FOLDER_TUNDISH_ID
-  Other product types                     -> GOOGLE_DRIVE_FOLDER_DEFAULT_ID
+Auth is via a Service Account JSON pasted into Railway env var
+GOOGLE_SERVICE_ACCOUNT_JSON. The target subfolder for VLPH/HLPH
+offers is set via GOOGLE_DRIVE_FOLDER_LADLE_ID. Other product
+types fall back to GOOGLE_DRIVE_FOLDER_DEFAULT_ID (the parent
+folder) if set; otherwise upload is skipped silently.
 
-Env vars required for OAuth:
-  GOOGLE_OAUTH_CLIENT_ID
-  GOOGLE_OAUTH_CLIENT_SECRET
-  GOOGLE_OAUTH_REDIRECT_URI    (e.g. https://automation.encon.co.in/auth/drive/callback)
-
-Failures are logged and swallowed — Drive being unreachable should
-never break offer generation.
+Failures are logged and swallowed — Drive being unreachable
+should never break offer generation.
 """
 
 from __future__ import annotations
 
+import json
 import os
-import sqlite3
 import threading
 import traceback
 from typing import Optional
 
 
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-_DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "vlph.db"
-)
-_TOKEN_KEY = "drive_refresh_token"
 
-# Cached Drive service. Cleared whenever the stored refresh token changes.
+# Cached Drive service so we don't rebuild credentials on every upload.
 _service = None
-
-
-def _ensure_token_table():
-    conn = sqlite3.connect(_DB_PATH)
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS oauth_tokens "
-        "(key TEXT PRIMARY KEY, value TEXT)"
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_refresh_token() -> Optional[str]:
-    _ensure_token_table()
-    conn = sqlite3.connect(_DB_PATH)
-    row = conn.execute(
-        "SELECT value FROM oauth_tokens WHERE key=?", (_TOKEN_KEY,)
-    ).fetchone()
-    conn.close()
-    return row[0] if row else None
-
-
-def save_refresh_token(token: str) -> None:
-    """Persist the refresh token. Drops the cached Drive service so the
-    next upload picks up the new credentials."""
-    global _service
-    _ensure_token_table()
-    conn = sqlite3.connect(_DB_PATH)
-    conn.execute(
-        "INSERT INTO oauth_tokens (key, value) VALUES (?, ?) "
-        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        (_TOKEN_KEY, token),
-    )
-    conn.commit()
-    conn.close()
-    _service = None
-
-
-def is_authorized() -> bool:
-    """Quick check used by the UI to show 'Connect Drive' vs 'Connected'."""
-    return bool(get_refresh_token())
+_service_error: Optional[str] = None
 
 
 def _get_service():
-    """Build a Google Drive v3 service from the saved refresh token.
-    Returns None when not yet authorised or env vars are missing."""
-    global _service
-    if _service is not None:
+    """Build a Google Drive v3 service from GOOGLE_SERVICE_ACCOUNT_JSON.
+    Returns None when credentials aren't configured or fail to load."""
+    global _service, _service_error
+    if _service is not None or _service_error is not None:
         return _service
 
-    refresh_token = get_refresh_token()
-    if not refresh_token:
-        return None
-
-    client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
-    client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
-    if not client_id or not client_secret:
-        print("WARN: drive_uploader missing GOOGLE_OAUTH_CLIENT_ID / SECRET env vars")
+    raw = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    if not raw:
+        _service_error = "GOOGLE_SERVICE_ACCOUNT_JSON not set"
         return None
 
     try:
-        from google.oauth2.credentials import Credentials
+        info = json.loads(raw)
+        from google.oauth2 import service_account
         from googleapiclient.discovery import build
 
-        creds = Credentials(
-            token=None,
-            refresh_token=refresh_token,
-            token_uri="https://oauth2.googleapis.com/token",
-            client_id=client_id,
-            client_secret=client_secret,
-            scopes=_SCOPES,
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=_SCOPES,
         )
         _service = build("drive", "v3", credentials=creds, cache_discovery=False)
         return _service
     except Exception as e:
-        print(f"WARN: drive_uploader auth failed: {e}")
-        traceback.print_exc()
+        _service_error = f"Drive auth failed: {e}"
+        print(f"WARN: drive_uploader auth: {_service_error}")
         return None
 
 
 def _folder_id_for_product(product_type: str) -> Optional[str]:
-    """Map a product_type string to the Drive folder ID it belongs in."""
+    """Map a product_type string to the Drive folder ID it belongs in.
+    Returns None if no folder is configured for this kind of offer
+    (caller should skip the upload in that case)."""
     pt = (product_type or "").lower()
     if "vertical" in pt or "horizontal" in pt or "ladle" in pt:
         return os.environ.get("GOOGLE_DRIVE_FOLDER_LADLE_ID", "").strip() or None
     if "tundish" in pt:
         return os.environ.get("GOOGLE_DRIVE_FOLDER_TUNDISH_ID", "").strip() or None
+    # Fallback for BTF / SNSF BRF / Regen / unknown — use the parent folder
+    # if configured. Otherwise skip the upload.
     return os.environ.get("GOOGLE_DRIVE_FOLDER_DEFAULT_ID", "").strip() or None
 
 
@@ -129,7 +75,7 @@ def upload_offer(local_path: str, filename: str, product_type: str) -> Optional[
     """Upload one offer file to the appropriate Drive folder.
 
     Returns the Drive web view link on success, or None if the upload
-    was skipped (no auth / no folder configured) or failed."""
+    was skipped (no credentials / no folder configured) or failed."""
     if not os.path.exists(local_path):
         return None
 
@@ -164,7 +110,9 @@ def upload_offer(local_path: str, filename: str, product_type: str) -> Optional[
 
 
 def upload_offer_async(local_path: str, filename: str, product_type: str) -> None:
-    """Fire-and-forget upload on a background thread."""
+    """Fire-and-forget upload on a background thread. Caller doesn't
+    wait for the result; the API response stays fast even when Drive
+    is slow."""
     t = threading.Thread(
         target=upload_offer,
         args=(local_path, filename, product_type),
