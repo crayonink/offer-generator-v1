@@ -429,8 +429,8 @@
     <div class="sec-label">Enquiry</div>
     <div class="fg fg-3">
       <div class="field">
-        <label>Enquiry / Ref No.</label>
-        <input id="c-ref" type="text" value="ENQ-TEST-001" placeholder="ENQ-2025-001"/>
+        <label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
+        <input id="c-ref" type="text" readonly style="background:#f1f5f9;color:#475569" placeholder="ET26-XXX-JR"/>
       </div>
       <div class="field" style="grid-column: span 2">
         <label>Subject</label>
@@ -1116,6 +1116,17 @@ function scheduleLadleMappingRefresh() {
   clearTimeout(_ladleRefreshTimer);
   _ladleRefreshTimer = setTimeout(refreshLadleMapping, 350);
 }
+function _personInitials(name) {
+  return (name || "").trim().split(/\s+/).filter(Boolean)
+    .map(p => p[0].toUpperCase()).join("");
+}
+function updateAutoRef() {
+  const tech = document.getElementById("c-technical");
+  const ref  = document.getElementById("c-ref");
+  if (!ref) return;
+  const yy = String(new Date().getFullYear()).slice(-2);
+  ref.value = `ET${yy}-XXX-${_personInitials(tech ? tech.value : "")}`;
+}
 window.addEventListener("DOMContentLoaded", () => {
   ["direct_ladle_tons", "ladle_tons"].forEach(id => {
     const el = document.getElementById(id);
@@ -1128,6 +1139,9 @@ window.addEventListener("DOMContentLoaded", () => {
   // Pilot fields start hidden; updatePilotVisibility reveals them only when
   // Automatic + Auto Ignition are both active.
   if (typeof updatePilotVisibility === "function") updatePilotVisibility();
+  const techEl = document.getElementById("c-technical");
+  if (techEl) techEl.addEventListener("input", updateAutoRef);
+  updateAutoRef();
 });
 let lastCalc = null;
 

@@ -43,6 +43,21 @@ def next_quote_seq():
         f.write(str(n))
     return str(n).zfill(3)
 
+
+def _person_initials(name: str) -> str:
+    """First letter of each whitespace-separated word, uppercased.
+    'Jyotirmoy Rabha' -> 'JR'. Returns '' for empty input."""
+    parts = [p for p in (name or "").strip().split() if p]
+    return "".join(p[0].upper() for p in parts)
+
+
+def build_enquiry_ref(seq: str, technical_person: str,
+                      year: Optional[int] = None) -> str:
+    """ET{YY}-{seq}-{initials}, e.g. ET26-001-JR for FY2026/Jyotirmoy Rabha."""
+    from datetime import datetime as _dt
+    yy = f"{(year or _dt.now().year) % 100:02d}"
+    return f"ET{yy}-{seq}-{_person_initials(technical_person)}"
+
 def ensure_log_table():
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""CREATE TABLE IF NOT EXISTS table_update_log (
@@ -2283,6 +2298,10 @@ async def generate_quote(req: QuoteRequest):
         from engine.pdf_writer import generate_quote_pdf
 
         seq = next_quote_seq()
+        # Auto-generate enquiry reference: ET{YY}-{seq}-{initials}.
+        # Overrides whatever the form sent so the reference always follows
+        # the canonical ENCON pattern (ET26-001-JR for FY2026/Jyotirmoy Rabha).
+        auto_ref = build_enquiry_ref(seq, req.technical_person or "")
         form_data = {
             "quote_seq": seq,
             "customer": {
@@ -2296,9 +2315,9 @@ async def generate_quote(req: QuoteRequest):
                 "email":           req.email,
                 "project_name":    req.project_name,
                 "subject":         req.subject or req.project_name,
-                "ref_no":          req.ref_no,
-                "your_ref":        req.your_ref or req.ref_no,
-                "enquiry_ref":     req.enquiry_ref or req.ref_no,
+                "ref_no":          auto_ref,
+                "your_ref":        auto_ref,
+                "enquiry_ref":     auto_ref,
                 "marketing_person": req.marketing_person,
                 "marketing_phone": req.marketing_phone,
                 "marketing_email": req.marketing_email,
