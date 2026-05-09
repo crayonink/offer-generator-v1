@@ -60,12 +60,26 @@ def _person_initials(name: str) -> str:
     return "".join(p[0].upper() for p in parts)
 
 
+_LOCATION_CODES = {
+    "goa":       "GOA",
+    "vadodara":  "VDD",
+    "faridabad": "FDD",
+}
+
+
+def _location_code(location: str) -> str:
+    return _LOCATION_CODES.get((location or "").strip().lower(), "")
+
+
 def build_enquiry_ref(seq: str, technical_person: str,
+                      location: str = "",
                       year: Optional[int] = None) -> str:
-    """ET{YY}-{seq}-{initials}, e.g. ET26-001-JR for FY2026/Jyotirmoy Rabha."""
+    """ET{YY}-{seq}-{initials}[-{loc}], e.g. ET26-001-JR-GOA."""
     from datetime import datetime as _dt
     yy = f"{(year or _dt.now().year) % 100:02d}"
-    return f"ET{yy}-{seq}-{_person_initials(technical_person)}"
+    base = f"ET{yy}-{seq}-{_person_initials(technical_person)}"
+    loc = _location_code(location)
+    return f"{base}-{loc}" if loc else base
 
 def ensure_log_table():
     conn = sqlite3.connect(DB_PATH)
@@ -691,6 +705,7 @@ class QuoteRequest(BaseModel):
     purging_line:    Optional[str] = "no"   # "yes" | "no" — drives the Nitrogen Purging block in the offer
     hpu_variant:     Optional[str] = "Duplex 1"   # "Simplex" | "Duplex 1" | "Duplex 2" — Pumping Unit type
     burner_kw_value: Optional[str] = ""   # Pre-formatted total kW for the ENCON burner body line
+    location:        Optional[str] = ""   # "Goa" | "Vadodara" | "Faridabad" — appended to enquiry ref
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
@@ -2300,11 +2315,11 @@ def snsf_brf_calculate(req: SNSFBRFCalcRequest):
 
 
 @app.get("/api/next-quote-ref")
-def api_next_quote_ref(technical_person: str = ""):
+def api_next_quote_ref(technical_person: str = "", location: str = ""):
     """Preview the auto-generated enquiry ref for the form.
     Reads (does not consume) the next sequence number."""
     seq = peek_quote_seq()
-    return {"seq": seq, "ref": build_enquiry_ref(seq, technical_person)}
+    return {"seq": seq, "ref": build_enquiry_ref(seq, technical_person, location)}
 
 
 @app.post("/api/generate-quote")
@@ -2318,7 +2333,7 @@ async def generate_quote(req: QuoteRequest):
         # Auto-generate enquiry reference: ET{YY}-{seq}-{initials}.
         # Overrides whatever the form sent so the reference always follows
         # the canonical ENCON pattern (ET26-001-JR for FY2026/Jyotirmoy Rabha).
-        auto_ref = build_enquiry_ref(seq, req.technical_person or "")
+        auto_ref = build_enquiry_ref(seq, req.technical_person or "", req.location or "")
         form_data = {
             "quote_seq": seq,
             "customer": {

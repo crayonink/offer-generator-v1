@@ -427,10 +427,19 @@
     </div>
 
     <div class="sec-label">Enquiry</div>
-    <div class="fg fg-3">
+    <div class="fg fg-4">
       <div class="field">
         <label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
         <input id="c-ref" type="text" readonly style="background:#f1f5f9;color:#475569" placeholder="ET26-XXX-JR"/>
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <select id="c-location">
+          <option value="">— Select —</option>
+          <option value="Goa">Goa</option>
+          <option value="Vadodara">Vadodara</option>
+          <option value="Faridabad">Faridabad</option>
+        </select>
       </div>
       <div class="field" style="grid-column: span 2">
         <label>Subject</label>
@@ -1094,16 +1103,23 @@ function scheduleLadleMappingRefresh() {
   _ladleRefreshTimer = setTimeout(refreshLadleMapping, 350);
 }
 let _autoRefSeq = "001";
+const _LOC_CODES = { goa: "GOA", vadodara: "VDD", faridabad: "FDD" };
 function _personInitials(name) {
   return (name || "").trim().split(/\s+/).filter(Boolean)
     .map(p => p[0].toUpperCase()).join("");
 }
+function _locationCode(loc) {
+  return _LOC_CODES[(loc || "").trim().toLowerCase()] || "";
+}
 function updateAutoRef() {
   const tech = document.getElementById("c-technical");
+  const loc  = document.getElementById("c-location");
   const ref  = document.getElementById("c-ref");
   if (!ref) return;
-  const yy = String(new Date().getFullYear()).slice(-2);
-  ref.value = `ET${yy}-${_autoRefSeq}-${_personInitials(tech ? tech.value : "")}`;
+  const yy   = String(new Date().getFullYear()).slice(-2);
+  const ini  = _personInitials(tech ? tech.value : "");
+  const code = _locationCode(loc ? loc.value : "");
+  ref.value  = `ET${yy}-${_autoRefSeq}-${ini}` + (code ? `-${code}` : "");
 }
 async function fetchAutoRefSeq() {
   try {
@@ -1127,6 +1143,8 @@ window.addEventListener("DOMContentLoaded", () => {
   if (typeof updatePilotVisibility === "function") updatePilotVisibility();
   const techEl = document.getElementById("c-technical");
   if (techEl) techEl.addEventListener("input", updateAutoRef);
+  const locEl = document.getElementById("c-location");
+  if (locEl) locEl.addEventListener("change", updateAutoRef);
   fetchAutoRefSeq();
 });
 let lastCalc = null;
@@ -2028,6 +2046,7 @@ async function generateQuote() {
     technical_person:str("c-technical"),
     technical_email: str("c-technical-email"),
     technical_phone: str("c-technical-phone"),
+    location:        str("c-location"),
     bom_items: (lastCalc.bom || [])
       .filter(r => r["ITEM NAME"] && r["ITEM NAME"] !== "BOUGHT OUT ITEMS" && r["ITEM NAME"] !== "ENCON ITEMS")
       .map(r => ({ item: r["ITEM NAME"], make: r.MAKE || "ENCON", media: r.MEDIA || "", ref: r.REFERENCE || "" })),
