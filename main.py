@@ -234,6 +234,105 @@ def root():
         return HTMLResponse(content=f.read())
 
 
+# ── Google Drive OAuth ────────────────────────────────────────────────────
+# One-time browser sign-in by an encon.in user (process@encon.in is the
+# intended account). The captured refresh token is stored in vlph.db and
+# used by drive_uploader for every subsequent offer upload.
+
+@app.get("/auth/drive/login")
+def drive_oauth_login():
+    """Redirect the user to Google's OAuth consent screen."""
+    from fastapi.responses import RedirectResponse
+    client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+    redirect_uri = os.environ.get("GOOGLE_OAUTH_REDIRECT_URI", "").strip()
+    if not client_id or not redirect_uri:
+        return HTMLResponse(
+            "<h3>Drive OAuth not configured</h3>"
+            "<p>Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_REDIRECT_URI in Railway env vars.</p>",
+            status_code=500,
+        )
+    from urllib.parse import urlencode
+    params = {
+        "client_id":     client_id,
+        "redirect_uri":  redirect_uri,
+        "response_type": "code",
+        "scope":         "https://www.googleapis.com/auth/drive.file",
+        "access_type":   "offline",   # required to get a refresh token
+        "prompt":        "consent",   # forces refresh-token reissue every time
+        "include_granted_scopes": "true",
+    }
+    return RedirectResponse(
+        f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    )
+
+
+@app.get("/auth/drive/callback")
+def drive_oauth_callback(code: str = "", error: str = ""):
+    """Handle Google's redirect: exchange the authorisation code for a
+    refresh token and persist it. Then show a small confirmation page."""
+    if error:
+        return HTMLResponse(
+            f"<h3>Drive auth failed</h3><p>{error}</p>", status_code=400
+        )
+    if not code:
+        return HTMLResponse(
+            "<h3>Drive auth failed</h3><p>No code returned by Google.</p>",
+            status_code=400,
+        )
+    client_id     = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
+    redirect_uri  = os.environ.get("GOOGLE_OAUTH_REDIRECT_URI", "").strip()
+    if not (client_id and client_secret and redirect_uri):
+        return HTMLResponse(
+            "<h3>Drive OAuth not configured</h3>"
+            "<p>Missing CLIENT_ID / CLIENT_SECRET / REDIRECT_URI env vars.</p>",
+            status_code=500,
+        )
+    import urllib.request, urllib.parse, json as _json
+    body = urllib.parse.urlencode({
+        "code":          code,
+        "client_id":     client_id,
+        "client_secret": client_secret,
+        "redirect_uri":  redirect_uri,
+        "grant_type":    "authorization_code",
+    }).encode()
+    try:
+        with urllib.request.urlopen(
+            "https://oauth2.googleapis.com/token", data=body, timeout=15
+        ) as resp:
+            token_data = _json.loads(resp.read().decode())
+    except Exception as e:
+        return HTMLResponse(
+            f"<h3>Token exchange failed</h3><pre>{e}</pre>", status_code=500
+        )
+    refresh_token = token_data.get("refresh_token")
+    if not refresh_token:
+        return HTMLResponse(
+            "<h3>No refresh token returned</h3>"
+            "<p>Try /auth/drive/login again. Make sure 'prompt=consent' is set "
+            "(it should be — but if Google has already issued a refresh token "
+            "to this client and account, it skips it). You may need to revoke "
+            "access at https://myaccount.google.com/permissions and retry.</p>"
+            f"<pre>{_json.dumps(token_data, indent=2)}</pre>",
+            status_code=500,
+        )
+    from engine.drive_uploader import save_refresh_token
+    save_refresh_token(refresh_token)
+    return HTMLResponse(
+        "<h3 style='color:green'>Google Drive connected ✓</h3>"
+        "<p>The offer generator will now upload every new HLPH/VLPH "
+        "offer (docx + pdf) to the Ladle folder automatically.</p>"
+        "<p>You can close this tab.</p>"
+    )
+
+
+@app.get("/auth/drive/status")
+def drive_oauth_status():
+    """JSON endpoint the dashboard can poll to show 'Connected' vs not."""
+    from engine.drive_uploader import is_authorized
+    return {"authorized": is_authorized()}
+
+
 @app.get("/api/last-pricebook-update")
 def last_pricebook_update():
     try:
