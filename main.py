@@ -2278,6 +2278,18 @@ async def generate_quote(req: QuoteRequest):
         except Exception as _json_err:
             print(f"WARN: quote-data persist failed for {filename}: {_json_err}")
 
+        # Mirror the docx + pdf to Google Drive (process@encon.in) in a
+        # background thread. Drive credentials live in env vars; failures
+        # are logged but never break offer generation.
+        try:
+            from engine.drive_uploader import upload_offer_async
+            _product = (req.items[0].product_type if req.items else "")
+            upload_offer_async(output_path, filename, _product)
+            pdf_filename = f"{os.path.splitext(filename)[0]}.pdf"
+            upload_offer_async(pdf_path, pdf_filename, _product)
+        except Exception as _drv_err:
+            print(f"WARN: drive upload kickoff failed: {_drv_err}")
+
         # Persist to quotes_log so we can list/re-download past quotes later
         try:
             conn = sqlite3.connect(DB_PATH)

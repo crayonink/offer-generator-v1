@@ -7,3 +7,5 @@ docxtpl
 mammoth
 pypdf
 reportlab
+google-api-python-client
+google-auth
