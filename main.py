@@ -2359,11 +2359,14 @@ async def generate_quote(req: QuoteRequest):
         output_path = os.path.join(QUOTES_FOLDER, filename)
         generate_quote_docx(quote_data, output_path)
 
-        # Also build a self-contained PDF directly with reportlab, so the
-        # Download PDF button serves a real PDF without needing LibreOffice.
+        # Build the PDF as a faithful render of the .docx via LibreOffice
+        # so the PDF and Word offer are visually identical. Fall back to the
+        # reportlab generator only if LibreOffice is missing or fails (e.g.
+        # local Windows dev box without LibreOffice installed).
         pdf_path = os.path.splitext(output_path)[0] + ".pdf"
         try:
-            generate_quote_pdf(quote_data, pdf_path)
+            if not _docx_to_pdf(output_path, pdf_path):
+                generate_quote_pdf(quote_data, pdf_path)
         except Exception as _pdf_err:
             print(f"WARN: PDF generation failed for {filename}: {_pdf_err}")
 
@@ -3890,6 +3893,54 @@ def _soffice_binary():
     return None
 
 
+def _docx_to_pdf(docx_path: str, pdf_path: str) -> bool:
+    """Convert docx -> pdf via LibreOffice headless. Returns True on success.
+
+    Each invocation gets its own UserInstallation profile so concurrent
+    requests don't collide on the shared lock file.
+    """
+    soffice = _soffice_binary()
+    if not soffice:
+        return False
+
+    import subprocess
+    import tempfile
+    import shutil as _sh
+
+    out_dir = os.path.dirname(pdf_path) or "."
+    profile_dir = tempfile.mkdtemp(prefix="lo_profile_")
+    try:
+        proc = subprocess.run(
+            [
+                soffice,
+                "--headless",
+                "--norestore",
+                "--nolockcheck",
+                f"-env:UserInstallation=file://{profile_dir}",
+                "--convert-to", "pdf",
+                "--outdir", out_dir,
+                docx_path,
+            ],
+            capture_output=True, text=True, timeout=120,
+        )
+        if proc.returncode != 0:
+            print(f"WARN: soffice convert failed (rc={proc.returncode}): "
+                  f"stdout={proc.stdout!r} stderr={proc.stderr!r}")
+            return False
+
+        produced = os.path.join(
+            out_dir, os.path.splitext(os.path.basename(docx_path))[0] + ".pdf"
+        )
+        if produced != pdf_path and os.path.exists(produced):
+            _sh.move(produced, pdf_path)
+        return os.path.exists(pdf_path)
+    except Exception as e:
+        print(f"WARN: soffice convert exception: {e}")
+        return False
+    finally:
+        _sh.rmtree(profile_dir, ignore_errors=True)
+
+
 @app.get("/api/pdf-quote/{filename}")
 def pdf_quote(filename: str):
     """Serve the PDF version of a generated offer.
@@ -3908,9 +3959,15 @@ def pdf_quote(filename: str):
         return FileResponse(path=pdf_dst, filename=f"{base}.pdf",
             media_type="application/pdf")
 
-    # Fallback: try to rebuild the PDF on-the-fly from any persisted quote
-    # JSON. Older quotes generated before the reportlab pipeline existed
-    # won't have this — those return a clear error.
+    # Prefer reconverting the existing .docx via LibreOffice so the PDF is
+    # a faithful copy of the Word offer.
+    docx_path = os.path.join(QUOTES_FOLDER, f"{base}.docx")
+    if os.path.exists(docx_path):
+        if _docx_to_pdf(docx_path, pdf_dst):
+            return FileResponse(path=pdf_dst, filename=f"{base}.pdf",
+                media_type="application/pdf")
+
+    # Last-resort fallback: rebuild from persisted quote JSON via reportlab.
     json_path = os.path.join(QUOTES_FOLDER, f"{base}.json")
     if os.path.exists(json_path):
         try:
