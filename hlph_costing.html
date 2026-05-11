@@ -1844,23 +1844,29 @@ function fillTechDataTable() {
   const _f1CV_main = +(c.fuel1_cv || c.fuel_cv || 0);
   const _f1KWbase = +(c.extra_firing_rate_nm3hr || 0) * _f1CV_main / 860;
   const f1Cap = Math.ceil(_f1KWbase / 100) * 100;
-  // Max firing rate the selected burner can actually do, scaled by
-  // (rated kW / required kW). Lets the client see how much headroom
-  // the burner has in this fuel.
-  const f1MaxRate = (_f1KWbase > 0) ? Math.ceil(f1Rate * (f1Cap / _f1KWbase)) : f1Rate;
+  // Max firing rate the SELECTED BURNER MODEL can actually deliver per its
+  // spec (from burner_selection_master). For gas: max_kcal_hr / CV. For
+  // oil: max LPH directly from the spec. Falls back to current rate if
+  // spec values aren't available.
+  const _burnerMaxKcal = +(eq.burner_max_kcal_hr || 0);
+  const _burnerMaxLph  = +(eq.burner_max_lph || 0);
+  let f1MaxRate;
+  if (isOil) {
+    f1MaxRate = _burnerMaxLph > 0 ? Math.round(_burnerMaxLph) : f1Rate;
+  } else {
+    f1MaxRate = (_burnerMaxKcal > 0 && _f1CV_main > 0)
+      ? Math.round(_burnerMaxKcal / _f1CV_main)
+      : f1Rate;
+  }
   const fuelConsumption = `${f1Name}: ${f1Rate.toFixed(0)} ${f1Unit} (Max: ${f1MaxRate} ${f1Unit})`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
-  // Max CFM = blower's rated CFM (scale current required CFM by
-  // rated_air / required_air). Mirrors the (Max: ...) treatment we do
-  // for Firing Rate so the client sees how much air-flow headroom the
-  // selected blower has.
-  const _requiredAir = +(c.air_qty_nm3hr || 0);
-  const _ratedAir    = +(eq.blower_airflow || 0);
-  const maxCfm = (cfm && _requiredAir > 0 && _ratedAir > 0)
-    ? Math.ceil(c.cfm * (_ratedAir / _requiredAir))
-    : cfm;
+  // Max CFM = the selected blower's rated CFM straight from blower_master.
+  // (Was previously a scaled estimate from required-air vs rated-air —
+  // now uses the spec value directly.)
+  const _ratedCfm = +(eq.blower_cfm || 0);
+  const maxCfm = _ratedCfm > 0 ? Math.round(_ratedCfm) : cfm;
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
   // Burner Capacity: a single kW figure (the burner has one rated kW
@@ -1940,10 +1946,17 @@ function fillTechDataTable() {
       ? +(c.fuel2_equivalent_lph || 0)
       : +(c.fuel2_extra_firing_rate_nm3hr || 0);
     const f2Unit = f2IsOil ? "L/hr" : "Nm³/hr";
-    // Burner is shared in dual fuel — use f1Cap (rated kW) as the
-    // burner's capacity for the fuel-2 max-rate scaling too.
-    const _f2KWbaseLocal = +(c.fuel2_extra_firing_rate_nm3hr || 0) * +(c.fuel2_cv || 0) / 860;
-    const f2MaxRate = (_f2KWbaseLocal > 0) ? Math.ceil(f2Rate * (f1Cap / _f2KWbaseLocal)) : f2Rate;
+    // Dual-fuel uses ONE burner (shared between fuels). Use the selected
+    // burner model's rated max from spec, converted per fuel-2 CV / LPH.
+    let f2MaxRate;
+    if (f2IsOil) {
+      f2MaxRate = _burnerMaxLph > 0 ? Math.round(_burnerMaxLph) : f2Rate;
+    } else {
+      const _f2CV = +(c.fuel2_cv || 0);
+      f2MaxRate = (_burnerMaxKcal > 0 && _f2CV > 0)
+        ? Math.round(_burnerMaxKcal / _f2CV)
+        : f2Rate;
+    }
     defaults["td-fuel2_consumption"] = `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit} (Max: ${f2MaxRate} ${f2Unit})`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";

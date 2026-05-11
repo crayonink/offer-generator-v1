@@ -1413,9 +1413,12 @@ def vlph_calculate(req: VLPHCalcRequest):
             },
             "equipment": {
                 "burner_model":   equip1["burner"]["model"],
+                "burner_max_kcal_hr": equip1["burner"].get("max_firing_kcal_hr", 0),
+                "burner_max_lph":     equip1["burner"].get("max_firing_lph", 0),
                 "blower_model":   equip1["blower"]["model"],
                 "blower_hp":      equip1["blower"]["hp"],
                 "blower_airflow": equip1["blower"]["airflow_nm3hr"],
+                "blower_cfm":     equip1["blower"].get("cfm", 0),
                 "ng_gas_train":   f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB',
                 # In dual-fuel offers the HPU may live on equip2 instead of
                 # equip1 (e.g. fuel 1 = NG gas, fuel 2 = LDO oil). Pick whichever
@@ -2014,9 +2017,12 @@ def hlph_calculate(req: VLPHCalcRequest):
             },
             "equipment": {
                 "burner_model": equip1["burner"]["model"],
+                "burner_max_kcal_hr": equip1["burner"].get("max_firing_kcal_hr", 0),
+                "burner_max_lph":     equip1["burner"].get("max_firing_lph", 0),
                 "blower_model": equip1["blower"]["model"],
                 "blower_hp": equip1["blower"]["hp"],
                 "blower_airflow": equip1["blower"]["airflow_nm3hr"],
+                "blower_cfm":   equip1["blower"].get("cfm", 0),
                 "ng_gas_train": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB' if equip1.get("ng_gas_train") else "",
                 # In dual-fuel offers the HPU may live on equip2 (e.g. fuel 1 NG
                 # + fuel 2 LDO). Pick whichever side actually carries it.

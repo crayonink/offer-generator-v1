@@ -98,7 +98,7 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
     #    Pick the smallest model whose max range covers the requirement.
     # -------------------------------------------------
     cursor.execute("""
-        SELECT model
+        SELECT model, max_firing_lph, max_firing_kcal_hr
         FROM burner_selection_master
         WHERE pressure_wg = ?
           AND ? BETWEEN min_firing_lph AND max_firing_lph
@@ -161,4 +161,10 @@ def select_encon_mg_burner(required_gas_flow_nm3hr: float, fuel_cv: float = 1050
         "price": price_row[0],
         "fuel_type": fuel_type,
         "burner_pressure_wg": burner_pressure_wg,
+        # Rated maximums from burner_selection_master — used by the offer
+        # to show the burner model's actual ceiling (not just the rounded-
+        # up kW). max_firing_lph is in oil-equivalent LPH at the chosen
+        # pressure; max_firing_kcal_hr is the absolute heat ceiling.
+        "max_firing_lph":     float(row[1]) if row[1] is not None else 0.0,
+        "max_firing_kcal_hr": float(row[2]) if row[2] is not None else 0.0,
     }
