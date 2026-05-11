@@ -974,12 +974,10 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         )),
     }
 
-    # Use tundish-specific template if the product type indicates tundish
-    is_tundish = any(
-        "tundish" in (item.get("product_type") or "").lower()
-        for item in quote_data.get("items", [])
-    )
-    template = TUNDISH_TEMPLATE_PATH if is_tundish and os.path.exists(TUNDISH_TEMPLATE_PATH) else TEMPLATE_PATH
+    # All products (Vertical, Horizontal, Tundish) now render from the
+    # same Offer_Template.docx so they share hood / HPU / scope-of-supply
+    # content. The old Tundish_Offer_Template.docx is no longer used.
+    template = TEMPLATE_PATH
     buffer = generate_word_offer(template, context)
     with open(output_path, "wb") as f:
         f.write(buffer.read())
