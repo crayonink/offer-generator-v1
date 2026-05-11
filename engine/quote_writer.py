@@ -462,6 +462,11 @@ def _control_system_sections(bom_items: list) -> dict:
         # Strip trailing ' - <anything>' (catches '- 250 NB F150#', '- 80 NB',
         # '- RANGE- 0-1600 mBAR', etc.)
         n = _re.sub(r"\s+[\-–—]\s+.*$", "", n)
+        # Collapse 'MOTORISED/MOTORIZED/PNEUMATIC CONTROL VALVE' -> 'CONTROL
+        # VALVE'. The variant is an internal procurement detail; the offer
+        # should read 'CONTROL VALVE' generically.
+        n = _re.sub(r"^(MOTORI[SZ]ED|PNEUMATIC)\s+CONTROL\s+VALVE$",
+                    "CONTROL VALVE", n, flags=_re.IGNORECASE)
         return n.strip()
 
     def _fmt(x):
@@ -534,15 +539,12 @@ def _control_system_sections(bom_items: list) -> dict:
     INTERNALS_AS_DICTS = [{"item": x} for x in GAS_TRAIN_INTERNALS]
 
     def _cv_name_from_items(items_list):
-        """Look at scope items and return the display label for the control
-        valve based on what the BOM emitted. Returns '' if no CV row."""
+        """Return a generic 'CONTROL VALVE' label whenever the BOM contains
+        any control-valve row, regardless of variant (motorised / pneumatic).
+        Empty string when no CV row is present."""
         for it in items_list:
             n = (it.get("item") or "").upper()
-            if "MOTORIZED CONTROL VALVE" in n or "MOTORISED CONTROL VALVE" in n:
-                return "MOTORISED CONTROL VALVE"
-            if "PNEUMATIC CONTROL VALVE" in n:
-                return "PNEUMATIC CONTROL VALVE"
-            if n.strip() == "CONTROL VALVE":
+            if "CONTROL VALVE" in n:
                 return "CONTROL VALVE"
         return ""
 
