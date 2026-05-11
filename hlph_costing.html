@@ -1130,7 +1130,7 @@ function scheduleLadleMappingRefresh() {
   _ladleRefreshTimer = setTimeout(refreshLadleMapping, 350);
 }
 let _autoRefSeq = "001";
-const _LOC_CODES = { goa: "GOA", vadodara: "VDD", faridabad: "FDD" };
+const _LOC_CODES = { goa: "GOA", vadodara: "VDD", faridabad: "FBD" };
 function _personInitials(name) {
   return (name || "").trim().split(/\s+/).filter(Boolean)
     .map(p => p[0].toUpperCase()).join("");

@@ -72,7 +72,7 @@ def _person_initials(name: str) -> str:
 _LOCATION_CODES = {
     "goa":       "GOA",
     "vadodara":  "VDD",
-    "faridabad": "FDD",
+    "faridabad": "FBD",
 }
 
 
