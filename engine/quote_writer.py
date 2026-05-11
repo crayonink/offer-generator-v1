@@ -333,7 +333,8 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
 
 
 def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
-                                  is_dual_with_oil: bool = False) -> list:
+                                  is_dual_with_oil: bool = False,
+                                  is_oil: bool = False) -> list:
     """Return the static numbered list of Temperature Control System items
     for the given control mode. Drives the {%p for x in temp_control_items %}
     loop in the Word template (and the PDF builder). Replaces the previous
@@ -342,6 +343,10 @@ def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
     is_dual_with_oil: when True (dual-fuel offer with one oil + one gas
     fuel) AND the mode already includes the gas-line AGR, an additional
     'Air-Oil Ratio (AGR) regulator on the oil line' entry is appended.
+
+    Control-valve bullets are also appended at the end based on mode:
+      - PID                : 'Control valve on air line' (only)
+      - everything else    : air + fuel; for dual oil+gas: air + gas + oil
     """
     cm  = (control_mode or "automatic").lower()
     act = (auto_control_type or "plc").lower()
@@ -382,6 +387,19 @@ def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
     # carries an AGR, mirror it on the oil line.
     if is_dual_with_oil and any("Air-Gas Ratio" in x for x in items):
         items.append("Air-Oil Ratio (AGR) regulator on the oil line")
+
+    # Control-valve bullets.
+    items.append("Control valve on air line")
+    if act != "pid" or cm == "manual":
+        # Non-PID (and manual) modes get a fuel control valve bullet too.
+        # Dual fuel mixing oil with gas surfaces BOTH fuel CVs separately.
+        if is_dual_with_oil:
+            items.append("Control valve on gas line")
+            items.append("Control valve on oil line")
+        elif is_oil:
+            items.append("Control valve on oil line")
+        else:
+            items.append("Control valve on gas line")
 
     return [{"item": x, "ref": ""} for x in items]
 
@@ -875,6 +893,7 @@ def generate_quote_docx(quote_data: dict, output_path: str):
                     for tok in ("LDO", "FO", "HSD", "SKO", "HDO", "CFO", "LSHS", "FURNACE OIL")
                 )
             ),
+            is_oil=bool(customer.get("is_oil")),
         ),
         # Mode-specific OPERATIONAL SEQUENCE paragraph wording.
         "operational_sequence_text": _operational_sequence_text(
