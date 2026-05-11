@@ -378,7 +378,16 @@
     <div class="fg fg-3">
       <div class="field">
         <label>Full Name <span class="req">*</span></label>
-        <input id="c-name" type="text" value="Ashish Gupta" placeholder="Mr. / Ms. Full Name"/>
+        <div style="display:flex; gap:6px">
+          <select id="c-salutation" style="flex:0 0 80px">
+            <option value="">—</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-name" type="text" value="Ashish Gupta" placeholder="Full Name" style="flex:1"/>
+        </div>
       </div>
       <div class="field">
         <label>Email Address <span class="req">*</span></label>
@@ -449,11 +458,29 @@
     <div class="fg fg-2">
       <div class="field">
         <label>Marketing Person</label>
-        <input id="c-marketing" type="text" value="Shikha Sharma" placeholder="ENCON sales/marketing rep handling this enquiry"/>
+        <div style="display:flex; gap:6px">
+          <select id="c-marketing-salutation" style="flex:0 0 80px">
+            <option value="">—</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-marketing" type="text" value="Shikha Sharma" placeholder="ENCON sales/marketing rep" style="flex:1"/>
+        </div>
       </div>
       <div class="field">
         <label>Technical Person</label>
-        <input id="c-technical" type="text" value="Jyotirmoy Rabha" placeholder="ENCON technical contact for this enquiry"/>
+        <div style="display:flex; gap:6px">
+          <select id="c-technical-salutation" style="flex:0 0 80px">
+            <option value="">—</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-technical" type="text" value="Jyotirmoy Rabha" placeholder="ENCON technical contact" style="flex:1"/>
+        </div>
       </div>
     </div>
     <div class="fg fg-4">
@@ -2145,6 +2172,9 @@ async function generateQuote() {
     technical_email: str("c-technical-email"),
     technical_phone: str("c-technical-phone"),
     location:        str("c-location"),
+    poc_salutation:       str("c-salutation"),
+    marketing_salutation: str("c-marketing-salutation"),
+    technical_salutation: str("c-technical-salutation"),
     // BOM items for the MAKE LIST table on the last page
     bom_items: (lastCalc.bom || [])
       .filter(r => r["ITEM NAME"] && r["ITEM NAME"] !== "BOUGHT OUT ITEMS" && r["ITEM NAME"] !== "ENCON ITEMS")

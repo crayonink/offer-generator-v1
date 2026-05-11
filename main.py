@@ -53,6 +53,15 @@ def peek_quote_seq() -> str:
     return "001"
 
 
+def _with_salutation(salutation: str, name: str) -> str:
+    """Return 'Mr. Ashish Gupta' if both supplied; else whichever is present."""
+    s = (salutation or "").strip()
+    n = (name or "").strip()
+    if s and n:
+        return f"{s} {n}"
+    return n or s
+
+
 def _person_initials(name: str) -> str:
     """First letter of each whitespace-separated word, uppercased.
     'Jyotirmoy Rabha' -> 'JR'. Returns '' for empty input."""
@@ -706,6 +715,9 @@ class QuoteRequest(BaseModel):
     hpu_variant:     Optional[str] = "Duplex 1"   # "Simplex" | "Duplex 1" | "Duplex 2" — Pumping Unit type
     burner_kw_value: Optional[str] = ""   # Pre-formatted total kW for the ENCON burner body line
     location:        Optional[str] = ""   # "Goa" | "Vadodara" | "Faridabad" — appended to enquiry ref
+    poc_salutation:        Optional[str] = ""   # "Mr." | "Mrs." | "Miss" | "Dr." — prefixed to poc_name in offer
+    marketing_salutation:  Optional[str] = ""
+    technical_salutation:  Optional[str] = ""
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
@@ -2341,7 +2353,7 @@ async def generate_quote(req: QuoteRequest):
                 "company_city":    req.company_city,
                 "company_state":   req.company_state,
                 "address":         ", ".join(filter(None, [req.company_address, req.company_city, req.company_state, req.company_pin])),
-                "poc_name":        req.poc_name,
+                "poc_name":        _with_salutation(req.poc_salutation, req.poc_name),
                 "poc_designation": req.poc_designation,
                 "mobile_no":       req.mobile_no,
                 "email":           req.email,
@@ -2350,10 +2362,10 @@ async def generate_quote(req: QuoteRequest):
                 "ref_no":          auto_ref,
                 "your_ref":        auto_ref,
                 "enquiry_ref":     auto_ref,
-                "marketing_person": req.marketing_person,
+                "marketing_person": _with_salutation(req.marketing_salutation, req.marketing_person),
                 "marketing_phone": req.marketing_phone,
                 "marketing_email": req.marketing_email,
-                "technical_person": req.technical_person,
+                "technical_person": _with_salutation(req.technical_salutation, req.technical_person),
                 "technical_phone": req.technical_phone,
                 "technical_email": req.technical_email,
                 "gstin":           req.company_gstin,
