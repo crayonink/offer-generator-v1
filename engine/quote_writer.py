@@ -1011,8 +1011,9 @@ def _append_make_list(docx_path: str, items: list):
     target_table = None
     for t in doc.tables:
         if len(t.rows) >= 1 and len(t.rows[0].cells) >= 2:
-            cells = [c.text.strip() for c in t.rows[0].cells]
-            # Detect both 2-col ("ITEM","MAKE") and 3-col ("S. No.","ITEM","MAKE") layouts
+            cells = [c.text.strip().upper() for c in t.rows[0].cells]
+            # Detect both 2-col ("ITEM","MAKE") and 3-col ("S. No.","ITEM","MAKE") layouts.
+            # Match case-insensitively — template header is 'Item' / 'Make'.
             if cells[:2] == ["ITEM", "MAKE"] or cells[1:3] == ["ITEM", "MAKE"]:
                 target_table = t
                 break
