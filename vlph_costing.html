@@ -1902,21 +1902,13 @@ function fillTechDataTable() {
   const _f1CV_main = +(c.fuel1_cv || c.fuel_cv || 0);
   const _f1KWbase = +(c.extra_firing_rate_nm3hr || 0) * _f1CV_main / 860;
   const f1Cap = Math.ceil(_f1KWbase / 100) * 100;
-  // Max firing rate the SELECTED BURNER MODEL can actually deliver per its
-  // spec (from burner_selection_master). For gas: max_kcal_hr / CV. For
-  // oil: max LPH directly from the spec. Falls back to current rate if
-  // spec values aren't available.
-  const _burnerMaxKcal = +(eq.burner_max_kcal_hr || 0);
-  const _burnerMaxLph  = +(eq.burner_max_lph || 0);
-  let f1MaxRate;
-  if (isOil) {
-    f1MaxRate = _burnerMaxLph > 0 ? Math.round(_burnerMaxLph) : f1Rate;
-  } else {
-    f1MaxRate = (_burnerMaxKcal > 0 && _f1CV_main > 0)
-      ? Math.round(_burnerMaxKcal / _f1CV_main)
-      : f1Rate;
-  }
-  const fuelConsumption = `${f1Prefix}: ${f1Rate.toFixed(0)} ${f1Unit} (Max: ${f1MaxRate} ${f1Unit})`;
+  // Display firing rate rounded UP to the next 10. (Gas: hide Max.
+  // Oil: show '(Max: ...)' using the burner model's rated max LPH.)
+  const _burnerMaxLph = +(eq.burner_max_lph || 0);
+  const f1RateDisplay = Math.ceil(f1Rate / 10) * 10;
+  const fuelConsumption = isOil && _burnerMaxLph > 0
+    ? `${f1Prefix}: ${f1RateDisplay} ${f1Unit} (Max: ${Math.round(_burnerMaxLph)} ${f1Unit})`
+    : `${f1Prefix}: ${f1RateDisplay} ${f1Unit}`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
@@ -2007,18 +1999,11 @@ function fillTechDataTable() {
       ? +(c.fuel2_equivalent_lph || 0)
       : +(c.fuel2_extra_firing_rate_nm3hr || 0);
     const f2Unit = f2IsOil ? "L/hr" : "Nm³/hr";
-    // Dual-fuel uses ONE burner (shared between fuels). Use the selected
-    // burner model's rated max from spec, converted per fuel-2 CV / LPH.
-    let f2MaxRate;
-    if (f2IsOil) {
-      f2MaxRate = _burnerMaxLph > 0 ? Math.round(_burnerMaxLph) : f2Rate;
-    } else {
-      const _f2CV = +(c.fuel2_cv || 0);
-      f2MaxRate = (_burnerMaxKcal > 0 && _f2CV > 0)
-        ? Math.round(_burnerMaxKcal / _f2CV)
-        : f2Rate;
-    }
-    defaults["td-fuel2_consumption"] = `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit} (Max: ${f2MaxRate} ${f2Unit})`;
+    const f2RateDisplay = Math.ceil(f2Rate / 10) * 10;
+    // Gas hides Max; oil shows '(Max: <burner rated LPH>)'.
+    defaults["td-fuel2_consumption"] = f2IsOil && _burnerMaxLph > 0
+      ? `${f2Name}: ${f2RateDisplay} ${f2Unit} (Max: ${Math.round(_burnerMaxLph)} ${f2Unit})`
+      : `${f2Name}: ${f2RateDisplay} ${f2Unit}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
