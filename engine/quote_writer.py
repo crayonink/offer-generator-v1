@@ -1076,10 +1076,22 @@ def _append_make_list(docx_path: str, items: list):
         seen.add(key)
         serial += 1
 
-        # Clone the header row so formatting matches, then overwrite text
+        # Clone the header row so formatting matches, then overwrite text.
+        # The header has an orange background and white-bold text styling;
+        # strip those overrides from the clone so data rows render with the
+        # default (white background, black regular text).
         new_row = deepcopy(header_row._element)
         for t in new_row.iter(qn("w:t")):
             t.text = ""
+        # Remove cell shading (<w:shd>) so the orange background is gone.
+        for shd in new_row.iter(qn("w:shd")):
+            shd.getparent().remove(shd)
+        # Strip color/bold overrides in the cloned runs so text falls back
+        # to body styling (black, non-bold).
+        for rpr in new_row.iter(qn("w:rPr")):
+            for tag in ("w:color", "w:b", "w:bCs"):
+                for el in rpr.findall(qn(tag)):
+                    rpr.remove(el)
         cells = new_row.findall(qn("w:tc"))
 
         if has_serial and len(cells) >= 3:
