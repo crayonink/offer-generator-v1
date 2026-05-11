@@ -338,16 +338,18 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
 def _cv_bullets_for_offer(control_mode: str, auto_control_type: str,
                           is_oil: bool, is_dual_with_oil: bool) -> list:
     """Build the Temperature Control System control-valve bullets per spec:
-      - PID         : single 'CONTROL VALVE ON AIR LINE'
-      - All others  : air + fuel CV (gas/oil/both for dual oil+gas)
+      - PID and PLC+AGR   : single 'CONTROL VALVE ON AIR LINE'
+                            (the AGR / PID modulates fuel via the air valve,
+                            so no separate fuel CV is needed)
+      - All other modes   : air + fuel CV (gas/oil/both for dual oil+gas)
     Returns a list of UPPERCASE bullet strings; the offer renders them
     inside a {%p for cv in cv_bullets %} loop.
     """
     cm  = (control_mode or "automatic").lower()
     act = (auto_control_type or "plc").lower()
     bullets = ["CONTROL VALVE ON AIR LINE"]
-    pid_only = (cm != "manual" and act == "pid")
-    if not pid_only:
+    air_only = (cm != "manual" and act in ("pid", "plc_agr"))
+    if not air_only:
         if is_dual_with_oil:
             bullets.append("CONTROL VALVE ON GAS LINE")
             bullets.append("CONTROL VALVE ON OIL LINE")
