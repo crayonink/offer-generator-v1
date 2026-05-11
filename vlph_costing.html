@@ -1910,6 +1910,15 @@ function fillTechDataTable() {
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
+  // Max CFM = blower's rated CFM (scale current required CFM by
+  // rated_air / required_air). Mirrors the (Max: ...) treatment we do
+  // for Firing Rate so the client sees how much air-flow headroom the
+  // selected blower has.
+  const _requiredAir = +(c.air_qty_nm3hr || 0);
+  const _ratedAir    = +(eq.blower_airflow || 0);
+  const maxCfm = (cfm && _requiredAir > 0 && _ratedAir > 0)
+    ? Math.ceil(c.cfm * (_ratedAir / _requiredAir))
+    : cfm;
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
   // Burner Capacity: a single kW figure (the burner has one rated kW
@@ -1935,7 +1944,7 @@ function fillTechDataTable() {
     "td-burner_model":         isDual ? "ENCON Dual Burner" : (isOil ? "ENCON Film Burner" : "ENCON Gas Burner"),
     "td-blower_model":         `${eq.blower_model || ""}`,
     "td-blower_size":          `${eq.blower_hp || ""} HP @ ${eq.blower_airflow || ""} Nm³/hr`,
-    "td-blower_capacity":      cfm ? `${cfm} CFM@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
+    "td-blower_capacity":      cfm ? `${cfm} CFM (Max: ${maxCfm} CFM)@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
     // Pumping Unit row shows the HPU kW rating (e.g. '5 kW') for oil/dual offers.
     // eq.hpu looks like 'MODEL — 5 KW Duplex 1'; pull out the '<n> KW' part.
     "td-pumping_unit":         (() => {
