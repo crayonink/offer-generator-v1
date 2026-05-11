@@ -895,6 +895,12 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             ),
             is_oil=bool(customer.get("is_oil")),
         ),
+        # True when the BOM ships a 'PLC WITH HMI' (any variant) row, so
+        # the offer's Electrical Control Panel bullet reads 'PLC ... and HMI'.
+        "has_plc_with_hmi": any(
+            "PLC WITH HMI" in ((row.get("item") or "").upper())
+            for row in (customer.get("bom_items") or [])
+        ),
         # Mode-specific OPERATIONAL SEQUENCE paragraph wording.
         "operational_sequence_text": _operational_sequence_text(
             customer.get("control_mode"), customer.get("auto_control_type")),
