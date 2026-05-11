@@ -1138,6 +1138,9 @@ def _strip_empty_tech_rows(docx_path: str):
         "Movement of Hood",
         "Motor recommended for Power Pack", "Maximum Electrical Load",
         "Maximum Electrical Load Required",
+        # Tundish-only rows — auto-stripped on VLPH/HLPH offers where empty
+        "Max Fuel Consumption per cycle",
+        "Max Fuel Consumption per cycle (Fuel 2)",
         # Auto-ignition-only rows (removed when special_auto_ignition is False)
         "Pilot Burner Fuel", "Firing & Ignition of Burner",
     }
