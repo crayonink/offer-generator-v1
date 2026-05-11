@@ -1839,12 +1839,16 @@ function fillTechDataTable() {
     ? +(c.equivalent_lph || 0)
     : +(c.extra_firing_rate_nm3hr || 0);
   const f1Unit = isOil ? "L/hr" : "Nm³/hr";
-  const fuelConsumption = `${f1Name}: ${f1Rate.toFixed(0)} ${f1Unit}`;
   // Burner Capacity in kW: rate * CV / 860, rounded UP to next 100.
   // Firing Rate row stays in natural units (Nm³/hr / L/hr).
   const _f1CV_main = +(c.fuel1_cv || c.fuel_cv || 0);
   const _f1KWbase = +(c.extra_firing_rate_nm3hr || 0) * _f1CV_main / 860;
   const f1Cap = Math.ceil(_f1KWbase / 100) * 100;
+  // Max firing rate the selected burner can actually do, scaled by
+  // (rated kW / required kW). Lets the client see how much headroom
+  // the burner has in this fuel.
+  const f1MaxRate = (_f1KWbase > 0) ? Math.ceil(f1Rate * (f1Cap / _f1KWbase)) : f1Rate;
+  const fuelConsumption = `${f1Name}: ${f1Rate.toFixed(0)} ${f1Unit} (Max: ${f1MaxRate} ${f1Unit})`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
@@ -1927,7 +1931,11 @@ function fillTechDataTable() {
       ? +(c.fuel2_equivalent_lph || 0)
       : +(c.fuel2_extra_firing_rate_nm3hr || 0);
     const f2Unit = f2IsOil ? "L/hr" : "Nm³/hr";
-    defaults["td-fuel2_consumption"] = `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit}`;
+    // Burner is shared in dual fuel — use f1Cap (rated kW) as the
+    // burner's capacity for the fuel-2 max-rate scaling too.
+    const _f2KWbaseLocal = +(c.fuel2_extra_firing_rate_nm3hr || 0) * +(c.fuel2_cv || 0) / 860;
+    const f2MaxRate = (_f2KWbaseLocal > 0) ? Math.ceil(f2Rate * (f1Cap / _f2KWbaseLocal)) : f2Rate;
+    defaults["td-fuel2_consumption"] = `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit} (Max: ${f2MaxRate} ${f2Unit})`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
