@@ -59,6 +59,11 @@ def _row(media: str, item: str, ref: str, qty, unit_price_override=None, make=No
 
     if make is None:
         make = _get_company(item)
+    # Default empty makes to ENCON — most blank rows are ENCON-built items
+    # (shaft, fabrication, AIR-GAS PIPELINE, blower etc.) that the DB has no
+    # vendor entry for. Vendor items pass an explicit make and are unaffected.
+    if not (make or "").strip():
+        make = "ENCON"
 
     return (media, item, ref, qty, make, unit_price, unit_price * qty)
 
