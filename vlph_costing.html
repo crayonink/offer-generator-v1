@@ -1902,13 +1902,13 @@ function fillTechDataTable() {
   const _f1CV_main = +(c.fuel1_cv || c.fuel_cv || 0);
   const _f1KWbase = +(c.extra_firing_rate_nm3hr || 0) * _f1CV_main / 860;
   const f1Cap = Math.ceil(_f1KWbase / 100) * 100;
-  // Display firing rate rounded UP to the next 10. (Gas: hide Max.
-  // Oil: show '(Max: ...)' using the burner model's rated max LPH.)
+  // Gas : rate rounded UP to next 10, no '(Max: ...)' suffix.
+  // Oil : actual rate (not rounded) + '(Max: ...)' from the burner
+  //       model's rated max LPH.
   const _burnerMaxLph = +(eq.burner_max_lph || 0);
-  const f1RateDisplay = Math.ceil(f1Rate / 10) * 10;
-  const fuelConsumption = isOil && _burnerMaxLph > 0
-    ? `${f1Prefix}: ${f1RateDisplay} ${f1Unit} (Max: ${Math.round(_burnerMaxLph)} ${f1Unit})`
-    : `${f1Prefix}: ${f1RateDisplay} ${f1Unit}`;
+  const fuelConsumption = isOil
+    ? `${f1Prefix}: ${f1Rate.toFixed(0)} ${f1Unit}` + (_burnerMaxLph > 0 ? ` (Max: ${Math.round(_burnerMaxLph)} ${f1Unit})` : '')
+    : `${f1Prefix}: ${Math.ceil(f1Rate / 10) * 10} ${f1Unit}`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
@@ -1999,11 +1999,10 @@ function fillTechDataTable() {
       ? +(c.fuel2_equivalent_lph || 0)
       : +(c.fuel2_extra_firing_rate_nm3hr || 0);
     const f2Unit = f2IsOil ? "L/hr" : "Nm³/hr";
-    const f2RateDisplay = Math.ceil(f2Rate / 10) * 10;
-    // Gas hides Max; oil shows '(Max: <burner rated LPH>)'.
-    defaults["td-fuel2_consumption"] = f2IsOil && _burnerMaxLph > 0
-      ? `${f2Name}: ${f2RateDisplay} ${f2Unit} (Max: ${Math.round(_burnerMaxLph)} ${f2Unit})`
-      : `${f2Name}: ${f2RateDisplay} ${f2Unit}`;
+    // Gas: rounded UP to next 10, no Max. Oil: actual rate + Max.
+    defaults["td-fuel2_consumption"] = f2IsOil
+      ? `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit}` + (_burnerMaxLph > 0 ? ` (Max: ${Math.round(_burnerMaxLph)} ${f2Unit})` : '')
+      : `${f2Name}: ${Math.ceil(f2Rate / 10) * 10} ${f2Unit}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
