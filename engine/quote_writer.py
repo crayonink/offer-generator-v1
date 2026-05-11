@@ -1094,6 +1094,13 @@ def _append_make_list(docx_path: str, items: list):
             for tag in ("w:color", "w:b", "w:bCs"):
                 for el in rpr.findall(qn(tag)):
                     rpr.remove(el)
+        # Drop <w:tblHeader/> from cloned rows — only the original first row
+        # should be marked as a repeating header. Leaving it on every data
+        # row makes Word/LibreOffice treat the whole table as a header
+        # block and push it to a new page instead of splitting across pages.
+        for trPr in new_row.iter(qn("w:trPr")):
+            for el in trPr.findall(qn("w:tblHeader")):
+                trPr.remove(el)
         cells = new_row.findall(qn("w:tc"))
 
         if has_serial and len(cells) >= 3:
