@@ -11,7 +11,7 @@ TUNDISH_TEMPLATE_PATH = os.path.join(BASE_DIR, "Tundish_Offer_Template.docx")
 # business rule the list does not vary with the BOM contents.
 STATIC_MAKE_LIST = [
     {"item": "MILD STEEL",                    "make": "SAIL, JINDAL"},
-    {"item": "PRESSURE GAUGE WITH TNV",       "make": "WIKA"},
+    {"item": "PRESSURE GAUGE WITH TNV",       "make": "HGURU / BAUMER"},
     {"item": "PRESSURE SWITCH",               "make": "MADAS"},
     {"item": "BALL VALVE",                    "make": "AUDCO/ L&T/ LEADER"},
     {"item": "PNEUMATIC CONTROL VALVE",       "make": "MADAS"},
