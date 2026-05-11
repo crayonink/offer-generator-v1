@@ -1908,15 +1908,17 @@ function fillTechDataTable() {
   const cfm = c.cfm ? Math.round(c.cfm) : '';
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
-  // Dual-fuel Burner Capacity: both fuels in kW, line-break separated.
+  // Burner Capacity: a single kW figure (the burner has one rated kW
+  // regardless of which fuel it's firing — for dual fuel we use the
+  // larger of the two computed values to be safe).
   let burnerCap;
   if (isDual) {
     const _f2CV     = +(c.fuel2_cv || 0);
     const _f2KWbase = +(c.fuel2_extra_firing_rate_nm3hr || 0) * _f2CV / 860;
     const _f2Cap    = Math.ceil(_f2KWbase / 100) * 100;
-    burnerCap = `${f1Name}: ${f1Cap} kW\n${f2Name}: ${_f2Cap} kW`;
+    burnerCap = `${Math.max(f1Cap, _f2Cap)} kW`;
   } else {
-    burnerCap = `${f1Prefix}: ${f1Cap} kW`;
+    burnerCap = `${f1Cap} kW`;
   }
   const defaults = {
     "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
