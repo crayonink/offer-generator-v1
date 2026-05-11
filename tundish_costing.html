@@ -1040,6 +1040,8 @@
       <tbody>
         <tr><td class="tech-lbl">No. Of Burners</td>
             <td><input id="td-num_burner" type="text" value="3 Nos."/></td></tr>
+        <tr><td class="tech-lbl">Refractory Weight</td>
+            <td><input id="td-refractory_weight_kg" type="text" placeholder="e.g. 21,500 Kg"/></td></tr>
         <tr><td class="tech-lbl">Fuel</td>
             <td><input id="td-fuel_name" type="text"/></td></tr>
         <tr><td class="tech-lbl" id="td-cv1-label">Calorific Value Of Fuel 1</td>
@@ -1811,8 +1813,10 @@ function fillTechDataTable() {
   const f1MaxConsumption = Math.round(f1KWtotal);
   const f1Unit = "kW";
 
+  const _rw = +(document.getElementById("refractory_weight")?.value || 0);
   const defaults = {
     "td-num_burner":            `${nb} Nos.`,
+    "td-refractory_weight_kg":  _rw ? `${_rw.toLocaleString("en-IN")} Kg` : "",
     "td-fuel_name":             isDual ? `${f1Name} and ${f2Name}` : f1Name,
     "td-fuel_cv":               `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
     "td-heating_schedule":      `${c.Tf || ""}°C`,
@@ -1887,6 +1891,7 @@ function buildTechData() {
   const isOil = OIL_FUEL_SET.has((_c.fuel1_type || "").toLowerCase());
   return {
     ladle_tons:           ladleTons,
+    refractory_weight_kg: get("td-refractory_weight_kg"),
     heating_schedule:     get("td-heating_schedule"),
     heating_time:         get("td-heating_time"),
     fuel_name:            get("td-fuel_name"),
