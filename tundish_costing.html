@@ -1790,10 +1790,12 @@ function fillTechDataTable() {
   const cfm = c.cfm ? Math.round(c.cfm) : '';
   // Prefer the latest Step-2 input value so the Tech Data table stays
   // in sync even if Calculate wasn't re-clicked after the user changed
-  // the burner count. Fall back to the calc result, then 1.
-  const _nbInput = +(document.getElementById("direct_num_burners")?.value)
-                 || +(document.getElementById("num_burners")?.value)
-                 || 0;
+  // the burner count. Read from whichever field is active for the
+  // currently-selected input mode (calc vs direct). Fall back to the
+  // calc result, then 1.
+  const _nbField = (typeof inputMode !== "undefined" && inputMode === "direct")
+                   ? "direct_num_burners" : "num_burners";
+  const _nbInput = +(document.getElementById(_nbField)?.value) || 0;
   const nb = _nbInput || c.num_burners || 1;
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
