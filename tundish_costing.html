@@ -766,14 +766,14 @@
           <option value="Duplex 2">Duplex-II (HPDD)</option>
         </select>
       </div>
-      <div class="field">
+      <div class="field pilot-gated" style="display:none">
         <label>Pilot Line Fuel</label>
         <select id="pilot_line_fuel">
           <option value="lpg" selected>LPG</option>
           <option value="ng">NG</option>
         </select>
       </div>
-      <div class="field">
+      <div class="field pilot-gated" style="display:none">
         <label>Pilot Burner</label>
         <select id="pilot_burner">
           <option value="lpg_10" selected>ENCON-PB LPG 10 KW (Rs. 11,000)</option>
@@ -781,6 +781,7 @@
           <option value="lpg_100">ENCON-PB LPG 100 KW (Rs. 21,000)</option>
           <option value="ng_100">ENCON-PB NG 100 KW (Rs. 21,000)</option>
           <option value="cog_100">ENCON PB COG 100 KW (Rs. 32,000)</option>
+          <option value="mg_10">ENCON-PB MG 10 KW (Rs. 12,000)</option>
         </select>
       </div>
       <div class="field">
@@ -815,6 +816,17 @@
           <input id="efficiency" type="number" value="0.52" step="0.01"/>
           <div class="hint">default 0.52</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Special Requirements -->
+    <div id="special-requirements" style="margin-bottom:24px;padding:14px 16px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;">
+      <div style="font-size:0.82rem;font-weight:600;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">Special Requirements</div>
+      <div class="auto-only">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin:0;">
+          <input type="checkbox" id="special_auto_ignition" onchange="updatePilotVisibility()" style="width:auto;margin:0;"/>
+          Auto Ignition
+        </label>
       </div>
     </div>
 
@@ -1963,6 +1975,18 @@ function onPilotFuelChange() {
   const v = document.getElementById("td-pilot_gas_type").value;
   const ign = document.getElementById("td-ignition");
   if (ign) ign.value = `Automatic Through ${v} Fired Pilot Burner`;
+}
+
+function updatePilotVisibility() {
+  // Pilot Line Fuel + Pilot Burner (Step-2 dropdowns) AND the Step-4
+  // 'Firing & Ignition of Burner' row are shown only when Auto Ignition
+  // is ticked. Mirrors VLPH/HLPH behaviour.
+  const autoIgn = !!document.getElementById("special_auto_ignition")?.checked;
+  document.querySelectorAll(".pilot-gated").forEach(el => {
+    el.style.display = autoIgn ? "" : "none";
+  });
+  const ignRow = document.getElementById("td-ignition-row");
+  if (ignRow) ignRow.style.display = autoIgn ? "" : "none";
 }
 
 /* ── Generate Quote ── */
