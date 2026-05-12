@@ -205,7 +205,7 @@ def build_hlph_df(
     burner_desc = "ENCON DUAL FUEL Burner" if is_dual else equipment["burner"]["model"]
     rows += [
         _row("ENCON ITEMS", burner_desc,
-             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             f'GAS FLOW: {__import__("math").ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr',
              1, unit_price_override=equipment["burner"]["price"]),
         _row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
@@ -377,7 +377,7 @@ def build_hlph_manual_df(
     # ── IN-HOUSE / ENCON ITEMS ────────────────────────────────────────────
     rows += [
         _row("ENCON ITEMS", equipment["burner"]["model"],
-             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             f'GAS FLOW: {__import__("math").ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr',
              1, unit_price_override=equipment["burner"]["price"]),
         _row("ENCON ITEMS", "FABRICATION",
              f'{params["ms_structure_kg"]} KG',

@@ -859,7 +859,7 @@ def build_vlph_120t_df(
         vendor_label = control_valve_vendor.upper()
         rows.append(_row(
             "COMB AIR", "CONTROL VALVE",
-            f'{cv_nb} NB, FLOW - {equipment["motorized_control_valve"]["flow_nm3hr"]} Nm3/hr',
+            f'{cv_nb} NB',
             1, unit_price_override=cv_price, make=vendor_label,
         ))
         # Butterfly valve (L&T) — sized to air pipe NB
@@ -951,7 +951,8 @@ def build_vlph_120t_df(
         )
     else:
         burner_desc = equipment["burner"]["model"]
-        burner_ref = f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr'
+        import math as _m
+        burner_ref = f'GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
     rows += [
         _row("ENCON ITEMS", burner_desc,
              burner_ref,
@@ -1193,7 +1194,7 @@ def build_vlph_manual_df(
     # ── IN-HOUSE / ENCON ITEMS ────────────────────────────────────────────
     rows += [
         _row("ENCON ITEMS", equipment["burner"]["model"],
-             f'GAS FLOW: {equipment["burner"]["input_nm3hr"]} Nm3/hr',
+             f'GAS FLOW: {__import__("math").ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr',
              1, unit_price_override=equipment["burner"]["price"]),
         _row("ENCON ITEMS", "FABRICATION",
              f'{params["ms_structure_kg"]} KG',
