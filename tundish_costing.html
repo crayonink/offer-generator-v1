@@ -1788,7 +1788,13 @@ function fillTechDataTable() {
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
-  const nb = c.num_burners || 1;
+  // Prefer the latest Step-2 input value so the Tech Data table stays
+  // in sync even if Calculate wasn't re-clicked after the user changed
+  // the burner count. Fall back to the calc result, then 1.
+  const _nbInput = +(document.getElementById("direct_num_burners")?.value)
+                 || +(document.getElementById("num_burners")?.value)
+                 || 0;
+  const nb = _nbInput || c.num_burners || 1;
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
 
