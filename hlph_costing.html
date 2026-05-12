@@ -1400,6 +1400,7 @@ async function calculate() {
       pilot_line_fuel: (document.getElementById("pilot_burner")?.value || "lpg_10").split("_")[0],
       ms_structure_kg_override: parseFloat(document.getElementById("direct_ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
+      special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
 
     };
   } else {
@@ -1431,6 +1432,7 @@ async function calculate() {
       pilot_line_fuel: (document.getElementById("pilot_burner")?.value || "lpg_10").split("_")[0],
       ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
+      special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
 
     };
   }
