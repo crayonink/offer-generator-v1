@@ -1876,7 +1876,10 @@ function fillTechDataTable() {
   }
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
-    if (el && !el.value) el.value = val;
+    // Overwrite whenever fillTechDataTable runs (e.g. after Calculate +
+    // entering Step 4). The previous '!el.value' check meant HTML
+    // defaults like 'value="3 Nos."' blocked the update forever.
+    if (el && val) el.value = val;
   });
   recalcElectricalLoad();
   ["td-blower_size", "td-hydraulic_motor_hp"].forEach(id => {
