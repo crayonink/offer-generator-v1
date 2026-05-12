@@ -1788,15 +1788,14 @@ function fillTechDataTable() {
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
-  // Prefer the latest Step-2 input value so the Tech Data table stays
-  // in sync even if Calculate wasn't re-clicked after the user changed
-  // the burner count. Read from whichever field is active for the
-  // currently-selected input mode (calc vs direct). Fall back to the
-  // calc result, then 1.
-  const _nbField = (typeof inputMode !== "undefined" && inputMode === "direct")
-                   ? "direct_num_burners" : "num_burners";
-  const _nbInput = +(document.getElementById(_nbField)?.value) || 0;
-  const nb = _nbInput || c.num_burners || 1;
+  // Resolve the burner count from the LARGEST of: calc-mode input,
+  // direct-mode input, last calc result. Whichever the user actually
+  // typed (5) will win over the unused field's default (1).
+  const _v1 = +(document.getElementById("num_burners")?.value) || 0;
+  const _v2 = +(document.getElementById("direct_num_burners")?.value) || 0;
+  const _vCalc = +(c.num_burners) || 0;
+  const nb = Math.max(_v1, _v2, _vCalc) || 1;
+  console.log("[fillTechDataTable] num_burners:", _v1, "direct_num_burners:", _v2, "c.num_burners:", _vCalc, "-> nb:", nb);
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
 
