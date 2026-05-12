@@ -1788,14 +1788,15 @@ function fillTechDataTable() {
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
   const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
-  // Resolve the burner count from the LARGEST of: calc-mode input,
-  // direct-mode input, last calc result. Whichever the user actually
-  // typed (5) will win over the unused field's default (1).
-  const _v1 = +(document.getElementById("num_burners")?.value) || 0;
-  const _v2 = +(document.getElementById("direct_num_burners")?.value) || 0;
-  const _vCalc = +(c.num_burners) || 0;
-  const nb = Math.max(_v1, _v2, _vCalc) || 1;
-  console.log("[fillTechDataTable] num_burners:", _v1, "direct_num_burners:", _v2, "c.num_burners:", _vCalc, "-> nb:", nb);
+  // Resolve burner count from whichever Step-2 input is currently
+  // visible (direct mode vs calc mode). Mirrors the refreshLadleMapping
+  // pattern. Fall back to the calc result, then 1.
+  const _directVisible = (document.getElementById("direct-inputs")?.style.display !== "none");
+  const _nbSrc = _directVisible
+    ? document.getElementById("direct_num_burners")
+    : document.getElementById("num_burners");
+  const _nbInput = +(_nbSrc?.value) || 0;
+  const nb = _nbInput || c.num_burners || 1;
   const isDual = c.is_dual;
   const f2Name = c.fuel2_name || "Fuel 2";
 
