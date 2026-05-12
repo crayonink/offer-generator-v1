@@ -367,8 +367,9 @@ def drive_oauth_callback(code: str = "", error: str = ""):
     save_refresh_token(refresh_token)
     return HTMLResponse(
         "<h3 style='color:green'>Google Drive connected ✓</h3>"
-        "<p>The offer generator will now upload every new HLPH/VLPH "
-        "offer (docx + pdf) to the Ladle folder automatically.</p>"
+        "<p>The offer generator will now upload every new offer (docx + pdf) "
+        "automatically: VLPH/HLPH offers go to the Ladle folder, Tundish "
+        "offers go to the Tundish folder.</p>"
         "<p>You can close this tab.</p>"
     )
 
