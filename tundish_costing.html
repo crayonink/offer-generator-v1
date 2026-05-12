@@ -1949,18 +1949,18 @@ function buildTechData() {
   const _f2KW   = _f2Rate * _f2CV / 860;
   // Burner fires ONE fuel at a time even in dual fuel; the burner body
   // line should reflect that single firing capacity, not the sum.
+  // Use the ROUNDED total (next 100 kW) — same value shown in the
+  // 'Burner Capacity' row — then divide across burners. For 1720 kW
+  // raw / 3 burners: rounded total 1800 -> 600 kW per burner (not 573).
   const _rawKW   = Math.max(_f1KW, _f2KW);
-  // Tundish: divide by burner count so the offer reads
-  // 'N Nos. ENCON Burner with a firing rate of <per-burner kW>'.
-  // VLPH/HLPH always have a single burner -> per-burner = total.
+  const _roundedTotal = Math.ceil(_rawKW / 100) * 100;
   const _directVisibleBT = (document.getElementById("direct-inputs")?.style.display !== "none");
   const _nbCount = parseInt(
     (_directVisibleBT
       ? document.getElementById("direct_num_burners")?.value
       : document.getElementById("num_burners")?.value) || "1"
   ) || 1;
-  const _perBurnerKW = _rawKW / _nbCount;
-  const _totalKW = Math.round(_perBurnerKW);
+  const _totalKW = Math.round(_roundedTotal / _nbCount);
   return {
     ladle_tons:           ladleTons,
     ladle_dim:            get("td-ladle_dim"),
