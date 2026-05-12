@@ -1662,7 +1662,9 @@ function renderResults(d) {
   set("cd-blower", fmt(eq.blower_airflow, 0) + " Nm³/hr — " + eq.blower_model);
   set("cd-cfm", fmt(c.cfm, 0) + " CFM");
   set("cd-hp", fmt(c.blower_hp_calc, 1) + " HP");
-  set("cd-air-flow", fmt(p.air_flow, 0) + " Nm³/hr");
+  // Show the SELECTED blower's rated airflow — that's what the air pipe
+  // NB is sized for (not the application's required flow).
+  set("cd-air-flow", fmt(eq.blower_airflow, 0) + " Nm³/hr");
   set("cd-air-nb", p.air_nb + " NB");
   if (isOil) {
     set("cd-fuel1-pipe-label", "Oil Line Size");
