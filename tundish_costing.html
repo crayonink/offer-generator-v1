@@ -1660,15 +1660,26 @@ function renderResults(d) {
   set("p-air-d",   p.air_dia_mm);
   set("p-air-nb",  p.air_nb + " NB");
 
-  document.getElementById("bom-body").innerHTML = d.bom.map(r => `<tr>
-    <td>${badge(r.MEDIA)}</td>
-    <td style="font-weight:500">${r["ITEM NAME"]}</td>
-    <td style="color:var(--muted);font-size:0.77rem">${r.REFERENCE||""}</td>
-    <td class="r">${r.QTY}</td>
-    <td style="font-size:0.77rem;color:var(--navy)">${r.MAKE||""}</td>
-    <td class="r">₹ ${fmt(r["UNIT PRICE"],0)}</td>
-    <td class="r" style="font-weight:600">₹ ${fmt(r.TOTAL,0)}</td>
-  </tr>`).join("");
+  // Subtotal-row names that should NOT have an editable qty
+  const _SUBTOTAL_NAMES = new Set(["BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]);
+  document.getElementById("bom-body").innerHTML = d.bom.map((r, idx) => {
+    const itemName = r["ITEM NAME"] || "";
+    const isSubtotal = _SUBTOTAL_NAMES.has(itemName);
+    const qtyCell = isSubtotal
+      ? `<td class="r">${r.QTY || ""}</td>`
+      : `<td class="r"><input type="number" min="0" step="1" value="${+r.QTY || 0}"
+            data-bom-idx="${idx}" oninput="onBomQtyChange(${idx}, this.value)"
+            style="width:60px;text-align:right;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:inherit;"/></td>`;
+    return `<tr>
+      <td>${badge(r.MEDIA)}</td>
+      <td style="font-weight:500">${itemName}</td>
+      <td style="color:var(--muted);font-size:0.77rem">${r.REFERENCE||""}</td>
+      ${qtyCell}
+      <td style="font-size:0.77rem;color:var(--navy)">${r.MAKE||""}</td>
+      <td class="r">₹ ${fmt(r["UNIT PRICE"],0)}</td>
+      <td class="r" id="bom-total-${idx}" style="font-weight:600">₹ ${fmt(r.TOTAL,0)}</td>
+    </tr>`;
+  }).join("");
 
   const s = d.cost_summary;
   set("s-bought", "₹ " + fmt(s.bought_out_total, 0));
@@ -1791,6 +1802,37 @@ function recalcGrandTotal() {
   if (lastCalc && lastCalc.cost_summary) {
     lastCalc.cost_summary.grand_total = grand;
   }
+}
+
+// Called when a BOM Qty input is edited. Recompute that row's TOTAL,
+// then re-derive Bought Out / ENCON subtotals + Grand Total.
+const _ENCON_MEDIA = new Set(["ENCON ITEMS", "MISC ITEMS"]);
+const _SUBTOTAL_ITEM_NAMES = new Set(["BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]);
+function onBomQtyChange(idx, newQtyStr) {
+  if (!lastCalc || !lastCalc.bom) return;
+  const row = lastCalc.bom[idx];
+  if (!row) return;
+  const newQty = parseFloat(newQtyStr) || 0;
+  const unit   = +row["UNIT PRICE"] || 0;
+  row.QTY = newQty;
+  row.TOTAL = unit * newQty;
+  const cell = document.getElementById(`bom-total-${idx}`);
+  if (cell) cell.textContent = "₹ " + fmt(row.TOTAL, 0);
+  // Re-derive subtotals from the (now mutated) bom array.
+  let bought = 0, encon = 0;
+  for (const r of lastCalc.bom) {
+    if (_SUBTOTAL_ITEM_NAMES.has(r["ITEM NAME"] || "")) continue;
+    const t = +r.TOTAL || 0;
+    if (_ENCON_MEDIA.has((r.MEDIA || "").toUpperCase())) encon += t;
+    else                                                 bought += t;
+  }
+  window._boughtRaw = bought;
+  window._enconRaw  = encon;
+  set("s-bought", "₹ " + fmt(bought, 0));
+  set("s-encon",  "₹ " + fmt(encon, 0));
+  set("banner-bought", "₹ " + fmt(bought, 0));
+  set("banner-encon",  "₹ " + fmt(encon, 0));
+  recalcGrandTotal();
 }
 
 function recalcElectricalLoad() {
