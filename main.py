@@ -1181,10 +1181,6 @@ def vlph_calculate(req: VLPHCalcRequest):
             ng_flow = br1.extra_firing_rate_nm3hr
             air_flow = br1.air_qty_nm3hr
 
-        pipes1 = calculate_pipe_sizes(PipeInputs(
-            ng_flow_nm3hr=ng_flow,
-            air_flow_nm3hr=air_flow,
-        ))
         # --- Fuel 2 calculation (if dual fuel) ---
         is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
 
@@ -1214,6 +1210,14 @@ def vlph_calculate(req: VLPHCalcRequest):
                 ))
                 air_flow2_pre = br2_pre.air_qty_nm3hr
             blower_air_flow = max(air_flow, air_flow2_pre)
+
+        # Now that blower_air_flow is known, size the gas pipe for fuel 1
+        # but the air pipe for the larger of the two fuels — there's only
+        # ONE combustion-air pipeline regardless of which fuel is firing.
+        pipes1 = calculate_pipe_sizes(PipeInputs(
+            ng_flow_nm3hr=ng_flow,
+            air_flow_nm3hr=blower_air_flow,
+        ))
 
         # Pre-compute fuel2 oil LPH for blower CFM sizing in dual-fuel
         f2_oil_lph_for_blower = 0
@@ -1846,8 +1850,6 @@ def hlph_calculate(req: VLPHCalcRequest):
             ng_flow = br.extra_firing_rate_nm3hr
             air_flow = br.air_qty_nm3hr
 
-        pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow))
-
         burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
 
         # Dual fuel: blower sized for max(air1, air2)
@@ -1866,6 +1868,10 @@ def hlph_calculate(req: VLPHCalcRequest):
                 ))
                 air_flow2_pre = br2_pre.air_qty_nm3hr
             blower_air_flow = max(air_flow, air_flow2_pre)
+
+        # Gas pipe sized for fuel 1; air pipe sized for the larger of the
+        # two fuels (single shared combustion-air line).
+        pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=blower_air_flow))
 
         # Pre-compute fuel2 oil LPH for dual-fuel blower CFM
         f2_oil_lph_for_blower = 0
