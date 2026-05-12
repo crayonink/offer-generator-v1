@@ -131,15 +131,20 @@ def upload_offer(local_path: str, filename: str, product_type: str) -> Optional[
     Returns the Drive web view link on success, or None if the upload
     was skipped (no auth / no folder configured) or failed."""
     if not os.path.exists(local_path):
+        print(f"WARN: drive upload skipped - file not found: {local_path}")
         return None
 
     folder_id = _folder_id_for_product(product_type)
     if not folder_id:
+        print(f"WARN: drive upload skipped - no folder configured for product_type={product_type!r}")
         return None
 
     service = _get_service()
     if service is None:
+        print(f"WARN: drive upload skipped - service unavailable (not authorised or missing client creds)")
         return None
+
+    print(f"INFO: drive upload starting - filename={filename!r} product_type={product_type!r} folder_id={folder_id[:8]}...")
 
     try:
         from googleapiclient.http import MediaFileUpload
