@@ -1038,40 +1038,49 @@
     </p>
     <table class="tech-data-table" id="tech-data-table" style="width:100%;border-collapse:collapse;margin-bottom:28px;">
       <tbody>
-        <tr><td class="tech-lbl">No. Of Burners</td>
-            <td><input id="td-num_burner" type="text" value="3 Nos."/></td></tr>
+        <tr><td class="tech-lbl">Ladle Dimensions</td>
+            <td><input id="td-ladle_dim" type="text" placeholder="Top Dia: ~2950 mm, Height: 3600 mm"/></td></tr>
+        <tr><td class="tech-lbl">Drawing No.</td>
+            <td><input id="td-ladle_drawing_no" type="text" placeholder="21031.02.00.000"/></td></tr>
         <tr><td class="tech-lbl">Refractory Weight</td>
-            <td><input id="td-refractory_weight_kg" type="text" placeholder="e.g. 21,500 Kg"/></td></tr>
+            <td><input id="td-refractory_weight_kg" type="text" placeholder="15,410 Kg"/></td></tr>
+        <tr><td class="tech-lbl">Heating Temperature</td>
+            <td><input id="td-heating_schedule" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Heating Time</td>
+            <td><input id="td-heating_time" type="text"/></td></tr>
+        <tr><td class="tech-lbl">No. of Burner</td>
+            <td><input id="td-num_burner" type="text" value="1 No."/></td></tr>
         <tr><td class="tech-lbl">Fuel</td>
             <td><input id="td-fuel_name" type="text"/></td></tr>
-        <tr><td class="tech-lbl" id="td-cv1-label">Calorific Value Of Fuel 1</td>
+        <tr><td class="tech-lbl" id="td-cv1-label">Calorific Value of Fuel 1</td>
             <td><input id="td-fuel_cv" type="text"/></td></tr>
-        <tr id="td-cv2-row"><td class="tech-lbl" id="td-cv2-label">Calorific Value Of Fuel 2</td>
+        <tr id="td-cv2-row" style="display:none"><td class="tech-lbl" id="td-cv2-label">Calorific Value of Fuel 2</td>
             <td><input id="td-fuel2_cv" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Maximum Temperature</td>
-            <td><input id="td-heating_schedule" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Pre-heating Cycle Time</td>
-            <td><input id="td-heating_time" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Ignition of Burners</td>
-            <td><input id="td-ignition" type="text" value="Through NG fired Pilot Burner"/></td></tr>
-        <tr><td class="tech-lbl">Lifting &amp; lowering</td>
-            <td><input id="td-hood_movement" type="text" value="With Hydraulic cylinder & Power pack"/></td></tr>
-        <tr><td class="tech-lbl" id="td-fr1-label">Firing Rate for Fuel 1</td>
+        <tr><td class="tech-lbl" id="td-fr1-label">Firing Rate</td>
             <td><input id="td-fuel_consumption" type="text"/></td></tr>
-        <tr><td class="tech-lbl" id="td-maxfc1-label">Max Fuel Consumption per cycle (Fuel 1)</td>
-            <td><input id="td-max_fuel_consumption1" type="text"/></td></tr>
-        <tr id="td-fr2-row"><td class="tech-lbl" id="td-fr2-label">Firing Rate for Fuel 2</td>
+        <tr id="td-fr2-row" style="display:none"><td class="tech-lbl" id="td-fr2-label">Firing Rate for Fuel 2</td>
             <td><input id="td-fuel2_consumption" type="text"/></td></tr>
-        <tr id="td-maxfc2-row"><td class="tech-lbl" id="td-maxfc2-label">Max Fuel Consumption per cycle (Fuel 2)</td>
-            <td><input id="td-max_fuel_consumption2" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Burner Model</td>
+        <tr><td class="tech-lbl">Burner Capacity</td>
+            <td><textarea id="td-burner_capacity_range" rows="2" style="width:100%;resize:vertical;"></textarea></td></tr>
+        <tr><td class="tech-lbl">ENCON Burner</td>
             <td><input id="td-burner_model" type="text"/></td></tr>
         <tr><td class="tech-lbl">Combustion Air Blower</td>
-            <td><input id="td-blower_model" type="text" value="Centrifugal type"/></td></tr>
+            <td><input id="td-blower_model" type="text"/></td></tr>
         <tr><td class="tech-lbl">Blower Size</td>
+            <td><input id="td-blower_size" type="text"/></td></tr>
+        <tr><td class="tech-lbl">Blower Capacity / Motor Rating</td>
             <td><input id="td-blower_capacity" type="text"/></td></tr>
-        <tr><td class="tech-lbl">Motor for Power Pack</td>
-            <td><input id="td-hydraulic_motor_hp" type="text" value="10 HP"/></td></tr>
+        <tr id="td-pumping_unit-row" style="display:none"><td class="tech-lbl">Pumping Unit</td>
+            <td><input id="td-pumping_unit" type="text"/></td></tr>
+        <tr id="td-pilot_gas_type-row" style="display:none"><td class="tech-lbl">Pilot Burner Fuel</td>
+            <td><select id="td-pilot_gas_type" onchange="onPilotFuelChange()">
+              <option value="LPG">LPG</option>
+              <option value="NG">NG</option>
+            </select></td></tr>
+        <tr id="td-ignition-row"><td class="tech-lbl">Firing &amp; Ignition of Burner</td>
+            <td><input id="td-ignition" type="text" value="Automatic Through LPG Fired Pilot Burner"/></td></tr>
+        <tr id="td-power_pack-row"><td class="tech-lbl">Motor recommended for Power Pack</td>
+            <td><input id="td-hydraulic_motor_hp" type="text" value="5 HP"/></td></tr>
         <tr><td class="tech-lbl">Maximum Electrical Load</td>
             <td><input id="td-max_electrical_load" type="text" placeholder="18 kW"/></td></tr>
       </tbody>
@@ -1771,115 +1780,120 @@ function fillTechDataTable() {
   const c  = lastCalc.calculations || {};
   const eq = lastCalc.equipment    || {};
   const f1Name = (c.fuel1_name || "Fuel");
-  // Detect oil by fuel type, NOT by presence of fuel_density
-  // (backend returns fuel_density=0.85 for gas too).
   const isOil  = OIL_FUEL_SET.has((c.fuel1_type || "").toLowerCase());
-  let fuelConsumption;
-  if (isOil) {
-    const lph = c.equivalent_lph;
-    if (lph !== undefined && lph !== null && lph > 0) {
-      fuelConsumption = `${(+lph).toFixed(2)} Lit/hr of ${f1Name}`;
-    } else {
-      fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} kg/hr of ${f1Name}`;
-    }
-  } else {
-    fuelConsumption = `${(c.extra_firing_rate_nm3hr || 0).toFixed(2)} Nm³/hr of ${f1Name}`;
-  }
+  const f1Prefix = f1Name;
+  const f1Rate = isOil
+    ? +(c.equivalent_lph || 0)
+    : +(c.extra_firing_rate_nm3hr || 0);
+  const f1Unit = isOil ? "L/hr" : "Nm³/hr";
+  const _f1CV_main = +(c.fuel1_cv || c.fuel_cv || 0);
+  const _f1KWbase = +(c.extra_firing_rate_nm3hr || 0) * _f1CV_main / 860;
+  const f1Cap = Math.ceil(_f1KWbase / 100) * 100;
+  const _burnerMaxLph = +(eq.burner_max_lph || 0);
+  const fuelConsumption = isOil
+    ? `${f1Prefix}: ${f1Rate.toFixed(0)} ${f1Unit}` + (_burnerMaxLph > 0 ? ` (Max: ${Math.round(_burnerMaxLph)} ${f1Unit})` : '')
+    : `${f1Prefix}: ${Math.ceil(f1Rate / 10) * 10} ${f1Unit}`;
   const cvUnit = isOil ? "kcal/kg" : "kcal/Nm³";
-  const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') : '';
+  const blowerPressure = eq.blower_model ? eq.blower_model.match(/\d+\//)?.[0]?.replace('/','') + '"' : '';
   const cfm = c.cfm ? Math.round(c.cfm) : '';
-  // Resolve burner count from whichever Step-2 input is currently
-  // visible (direct mode vs calc mode). Mirrors the refreshLadleMapping
-  // pattern. Fall back to the calc result, then 1.
+  const _ratedCfm = +(eq.blower_cfm || 0);
+  const maxCfm = _ratedCfm > 0 ? Math.round(_ratedCfm) : cfm;
+  const isDual = c.is_dual;
+  const f2Name = c.fuel2_name || "Fuel 2";
+  let burnerCap;
+  if (isDual) {
+    const _f2CV     = +(c.fuel2_cv || 0);
+    const _f2KWbase = +(c.fuel2_extra_firing_rate_nm3hr || 0) * _f2CV / 860;
+    const _f2Cap    = Math.ceil(_f2KWbase / 100) * 100;
+    burnerCap = `${Math.max(f1Cap, _f2Cap)} kW`;
+  } else {
+    burnerCap = `${f1Cap} kW`;
+  }
+  // Burner count from the visible Step-2 input (direct vs calc).
   const _directVisible = (document.getElementById("direct-inputs")?.style.display !== "none");
   const _nbSrc = _directVisible
     ? document.getElementById("direct_num_burners")
     : document.getElementById("num_burners");
   const _nbInput = +(_nbSrc?.value) || 0;
   const nb = _nbInput || c.num_burners || 1;
-  const isDual = c.is_dual;
-  const f2Name = c.fuel2_name || "Fuel 2";
-
-  // Per-fuel oil detection
-  const OIL_SET = new Set(["hsd","ldo","hdo","fo","sko","cfo","lshs"]);
-  const f1Type = document.getElementById("fuel1_type").value;
-  const f2Type = document.getElementById("fuel2_type").value;
-  const f1IsOil = OIL_SET.has(f1Type);
-  const f2IsOil = OIL_SET.has(f2Type);
-
-  // Fuel 1: per-burner firing rate (always kW) + max consumption
-  const f1CVval = +(c.fuel_cv || c.fuel1_cv || 0);
-  const f1RateTotal = f1IsOil
-    ? (+(c.equivalent_lph || 0))                     // L/hr (for reference only)
-    : (+(c.extra_firing_rate_nm3hr || 0));           // Nm³/hr
-  // kW always = (flow × CV) / 860 — works for gas (Nm³/hr × kcal/Nm³) and oil (kg/hr × kcal/kg)
-  const f1MassFlow = f1IsOil
-    ? (+(c.extra_firing_rate_nm3hr || 0))            // for oil this field carries kg/hr
-    : (+(c.extra_firing_rate_nm3hr || 0));           // for gas Nm³/hr
-  const f1KWtotal   = f1MassFlow * f1CVval / 860;
-  const f1PerBurner = (f1KWtotal / nb).toFixed(0);
-  const f1MaxConsumption = Math.round(f1KWtotal);
-  const f1Unit = "kW";
-
-  const _rw = +(document.getElementById("refractory_weight")?.value || 0);
   const defaults = {
-    "td-num_burner":            `${nb} Nos.`,
-    "td-refractory_weight_kg":  _rw ? `${_rw.toLocaleString("en-IN")} Kg` : "",
-    "td-fuel_name":             isDual ? `${f1Name} and ${f2Name}` : f1Name,
-    "td-fuel_cv":               `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
-    "td-heating_schedule":      `${c.Tf || ""}°C`,
-    "td-heating_time":          c.time_taken_hr ? `${c.time_taken_hr * 60} Min.` : "",
-    "td-fuel_consumption":      `${f1PerBurner} ${f1Unit} per burner`,
-    "td-max_fuel_consumption1": `${f1MaxConsumption} ${f1Unit}`,
-    "td-burner_model":          eq.burner_model || "Encon dual fuel burner",
-    "td-blower_capacity":       cfm ? `${eq.blower_hp || ''} HP/${blowerPressure || ''}" WC, ${eq.blower_airflow ? Math.round(eq.blower_airflow) : ''} Nm3/hr, ${cfm} CFM` : "",
+    "td-refractory_weight_kg": `${(c.refractory_weight || 0).toLocaleString("en-IN")} Kg`,
+    "td-heating_schedule":     `${c.Ti || ""}°C to ${c.Tf || ""}°C`,
+    "td-heating_time":         c.time_taken_hr ? `${Math.round(c.time_taken_hr * 60)} Min.` : "",
+    "td-num_burner":           `${nb} ${nb > 1 ? "Nos." : "No."}`,
+    "td-fuel_name":            isDual ? `${f1Name} and ${f2Name}` : f1Name,
+    "td-fuel_cv":              `${c.fuel_cv || c.fuel1_cv || ""} ${cvUnit}`,
+    "td-fuel_consumption":     fuelConsumption,
+    "td-burner_capacity_range":burnerCap,
+    "td-burner_model":         isDual ? "ENCON Dual Burner" : (isOil ? "ENCON Film Burner" : "ENCON Gas Burner"),
+    "td-blower_model":         `${eq.blower_model || ""}`,
+    "td-blower_size":          `${eq.blower_hp || ""} HP @ ${eq.blower_airflow || ""} Nm³/hr`,
+    "td-blower_capacity":      cfm ? `${cfm} CFM (Max: ${maxCfm} CFM)@ ${blowerPressure || ''} WC, ${eq.blower_hp || ''} HP` : "",
+    "td-pumping_unit":         (() => {
+      if (!isOil && !isDual) return "";
+      const m = (eq.hpu || "").match(/(\d+(?:\.\d+)?)\s*KW/i);
+      return m ? `${m[1]} kW` : "";
+    })(),
+    "td-ignition":             "Automatic Through LPG Fired Pilot Burner",
   };
 
-  // Fuel 1 CV label
+  // Pumping unit is oil-only.
+  const oilPresent = isOil || isDual;
+  const puRow = document.getElementById("td-pumping_unit-row");
+  if (puRow) puRow.style.display = oilPresent ? "" : "none";
+
+  // Auto-fill the (hidden) Pilot Burner Fuel select from the Step-2
+  // Pilot Burner selection.
+  const _pbVal = document.getElementById("pilot_burner")?.value || "";
+  const _pbPrefix = _pbVal.split("_")[0].toUpperCase();
+  const _pgEl = document.getElementById("td-pilot_gas_type");
+  if (_pgEl && _pbPrefix && (_pbPrefix === "LPG" || _pbPrefix === "NG")) {
+    _pgEl.value = _pbPrefix;
+    if (typeof onPilotFuelChange === "function") onPilotFuelChange();
+  }
+
+  // Fuel 1 label
   const cv1Label = document.getElementById("td-cv1-label");
-  if (cv1Label) cv1Label.textContent = `Calorific Value Of ${f1Name}`;
+  if (cv1Label) cv1Label.textContent = `Calorific Value of ${f1Name}`;
   const fr1Label = document.getElementById("td-fr1-label");
   if (fr1Label) fr1Label.textContent = `Firing Rate for ${f1Name}`;
-  const mfc1Label = document.getElementById("td-maxfc1-label");
-  if (mfc1Label) mfc1Label.textContent = `Max Fuel Consumptions per cycle`;
 
-  // Fuel 2 — show/hide rows and populate
+  // Fuel 2 — show/hide and populate
   const cv2Row = document.getElementById("td-cv2-row");
   const fr2Row = document.getElementById("td-fr2-row");
-  const mfc2Row = document.getElementById("td-maxfc2-row");
   if (isDual) {
     if (cv2Row) cv2Row.style.display = "";
     if (fr2Row) fr2Row.style.display = "";
-    if (mfc2Row) mfc2Row.style.display = "";
     const cv2Label = document.getElementById("td-cv2-label");
-    if (cv2Label) cv2Label.textContent = `Calorific Value Of ${f2Name}`;
+    if (cv2Label) cv2Label.textContent = `Calorific Value of ${f2Name}`;
     const fr2Label = document.getElementById("td-fr2-label");
     if (fr2Label) fr2Label.textContent = `Firing Rate for ${f2Name}`;
-    const mfc2Label = document.getElementById("td-maxfc2-label");
-    if (mfc2Label) mfc2Label.textContent = `Max Fuel Consumptions per cycle`;
-    // Fuel 2 values
-    const f2cv = c.fuel2_cv || c.fuel2_fuel_cv || "";
-    const f2cvUnit = f2IsOil ? "kcal/kg" : "kcal/Nm³";
-    defaults["td-fuel2_cv"] = `${f2cv} ${f2cvUnit}`;
-
-    const f2CVval    = +(c.fuel2_cv || 0);
-    const f2MassFlow = +(c.fuel2_extra_firing_rate_nm3hr || 0);
-    const f2KWtotal  = f2MassFlow * f2CVval / 860;
-    const f2PerBurner     = (f2KWtotal / nb).toFixed(0);
-    const f2MaxConsumption = Math.round(f2KWtotal);
-    defaults["td-fuel2_consumption"]     = `${f2PerBurner} kW per burner`;
-    defaults["td-max_fuel_consumption2"] = `${f2MaxConsumption} kW`;
+    const f2cvUnit = (c.fuel2_fuel_density) ? "kcal/kg" : "kcal/Nm³";
+    defaults["td-fuel2_cv"] = `${c.fuel2_cv || ""} ${f2cvUnit}`;
+    const f2Type = (c.fuel2_type || "").toLowerCase();
+    const f2IsOil = OIL_FUEL_SET.has(f2Type);
+    const f2Rate = f2IsOil
+      ? +(c.fuel2_equivalent_lph || 0)
+      : +(c.fuel2_extra_firing_rate_nm3hr || 0);
+    const f2Unit = f2IsOil ? "L/hr" : "Nm³/hr";
+    defaults["td-fuel2_consumption"] = f2IsOil
+      ? `${f2Name}: ${f2Rate.toFixed(0)} ${f2Unit}` + (_burnerMaxLph > 0 ? ` (Max: ${Math.round(_burnerMaxLph)} ${f2Unit})` : '')
+      : `${f2Name}: ${Math.ceil(f2Rate / 10) * 10} ${f2Unit}`;
   } else {
     if (cv2Row) cv2Row.style.display = "none";
     if (fr2Row) fr2Row.style.display = "none";
-    if (mfc2Row) mfc2Row.style.display = "none";
   }
+
+  // Fields that must always reflect the latest calc (never stale).
+  const AUTO_FIELDS = new Set([
+    "td-fuel_name", "td-fuel_cv", "td-fuel_consumption",
+    "td-burner_capacity_range", "td-fuel2_cv", "td-fuel2_consumption",
+    "td-num_burner",
+  ]);
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
-    // Overwrite whenever fillTechDataTable runs (e.g. after Calculate +
-    // entering Step 4). The previous '!el.value' check meant HTML
-    // defaults like 'value="3 Nos."' blocked the update forever.
-    if (el && val) el.value = val;
+    if (!el) return;
+    if (AUTO_FIELDS.has(id) || !el.value) el.value = val;
   });
   recalcElectricalLoad();
   ["td-blower_size", "td-hydraulic_motor_hp"].forEach(id => {
@@ -1896,33 +1910,59 @@ function buildTechData() {
   const ladleTons = parseFloat(document.getElementById("ladle_tons")?.value)
                  || parseFloat(document.getElementById("direct_ladle_tons")?.value)
                  || 0;
-  // Detect oil by fuel type, NOT by presence of fuel_density
-  // (backend returns fuel_density=0.85 for gas too).
   const _c = (lastCalc && lastCalc.calculations) || {};
   const isOil = OIL_FUEL_SET.has((_c.fuel1_type || "").toLowerCase());
+  // Total kW for the burner-body line (sum of fuel-1 + fuel-2, rounded
+  // UP to next 100).
+  const _f1Rate = +(_c.extra_firing_rate_nm3hr || 0);
+  const _f1CV   = +(_c.fuel_cv || _c.fuel1_cv || 0);
+  const _f1KW   = _f1Rate * _f1CV / 860;
+  const _f2Rate = +(_c.fuel2_extra_firing_rate_nm3hr || 0);
+  const _f2CV   = +(_c.fuel2_cv || 0);
+  const _f2KW   = _f2Rate * _f2CV / 860;
+  const _rawKW   = _f1KW + _f2KW;
+  const _totalKW = Math.ceil(_rawKW / 100) * 100;
   return {
     ladle_tons:           ladleTons,
+    ladle_dim:            get("td-ladle_dim"),
+    ladle_drawing_no:     get("td-ladle_drawing_no"),
     refractory_weight_kg: get("td-refractory_weight_kg"),
     heating_schedule:     get("td-heating_schedule"),
     heating_time:         get("td-heating_time"),
+    num_burners:          get("td-num_burner"),
     fuel_name:            get("td-fuel_name"),
     fuel_cv:              get("td-fuel_cv"),
     fuel2_cv:             get("td-fuel2_cv"),
     fuel_consumption:     get("td-fuel_consumption"),
-    max_fuel_consumption1:get("td-max_fuel_consumption1"),
     fuel2_consumption:    get("td-fuel2_consumption"),
-    max_fuel_consumption2:get("td-max_fuel_consumption2"),
-    num_burners:          get("td-num_burner"),
+    burner_capacity_range:get("td-burner_capacity_range"),
     burner_model:         get("td-burner_model"),
     blower_model:         get("td-blower_model"),
+    blower_size:          get("td-blower_size"),
     blower_capacity:      get("td-blower_capacity"),
+    pumping_unit:         get("td-pumping_unit"),
     hydraulic_motor_hp:   get("td-hydraulic_motor_hp"),
     max_electrical_load:  get("td-max_electrical_load"),
+    hood_type:            "up_down",
+    pilot_gas_type:       get("td-pilot_gas_type") || "LPG",
+    hood_movement:        "Up and Down movement through hydraulic mechanism.",
     ignition_method:      get("td-ignition"),
-    hood_movement:        get("td-hood_movement"),
     is_oil:               isOil,
+    is_dual:              !!(lastCalc.calculations || {}).is_dual,
     control_mode:         document.getElementById("control_mode")?.value || "automatic",
+    auto_control_type:    document.getElementById("auto_control_type")?.value || "plc",
+    control_valve_type:   "pneumatic",
+    special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
+    purging_line:         (document.querySelector('input[name="purging_line"]:checked') || {value: "no"}).value,
+    hpu_variant:          document.getElementById("hpu_variant")?.value || "Duplex 1",
+    burner_kw_value:      `${Math.round(_totalKW).toLocaleString("en-IN")} kW`,
   };
+}
+
+function onPilotFuelChange() {
+  const v = document.getElementById("td-pilot_gas_type").value;
+  const ign = document.getElementById("td-ignition");
+  if (ign) ign.value = `Automatic Through ${v} Fired Pilot Burner`;
 }
 
 /* ── Generate Quote ── */
