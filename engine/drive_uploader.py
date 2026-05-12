@@ -48,6 +48,11 @@ def _ensure_token_table():
 
 
 def get_refresh_token() -> Optional[str]:
+    # Prefer an env-var token (survives Railway redeploys, which wipe vlph.db).
+    # Fall back to the vlph.db oauth_tokens table for local dev.
+    env_token = os.environ.get("GOOGLE_DRIVE_REFRESH_TOKEN", "").strip()
+    if env_token:
+        return env_token
     _ensure_token_table()
     conn = sqlite3.connect(_DB_PATH)
     row = conn.execute(

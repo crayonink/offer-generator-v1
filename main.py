@@ -365,12 +365,25 @@ def drive_oauth_callback(code: str = "", error: str = ""):
         )
     from engine.drive_uploader import save_refresh_token
     save_refresh_token(refresh_token)
+    # Show the refresh token so the user can persist it as a Railway env
+    # var (vlph.db on Railway gets wiped on every redeploy — env vars
+    # survive). Once GOOGLE_DRIVE_REFRESH_TOKEN is set the uploader reads
+    # from the env var first and never has to re-auth.
     return HTMLResponse(
+        "<div style='font-family:Calibri,Arial,sans-serif;max-width:780px;margin:24px auto;padding:24px;'>"
         "<h3 style='color:green'>Google Drive connected ✓</h3>"
-        "<p>The offer generator will now upload every new offer (docx + pdf) "
-        "automatically: VLPH/HLPH offers go to the Ladle folder, Tundish "
-        "offers go to the Tundish folder.</p>"
-        "<p>You can close this tab.</p>"
+        "<p>The offer generator will now upload every new offer (docx + pdf): "
+        "VLPH/HLPH go to the Ladle folder, Tundish to the Tundish folder.</p>"
+        "<div style='background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:14px;margin:18px 0;'>"
+        "<b>Important — make it permanent:</b><br/>"
+        "On Railway redeploys the local token gets wiped. To keep auth alive "
+        "across deploys, copy the refresh token below and set it as a Railway "
+        "env var named <code>GOOGLE_DRIVE_REFRESH_TOKEN</code>.<br/>"
+        f"<textarea readonly style='width:100%;height:60px;margin-top:10px;font-family:monospace;font-size:12px;'>{refresh_token}</textarea>"
+        "<p style='font-size:0.85rem;color:#7c2d12;margin-top:8px;'>Treat this like a password. Don't paste it in chat or commit it to git.</p>"
+        "</div>"
+        "<p>You can close this tab once the env var is saved.</p>"
+        "</div>"
     )
 
 
