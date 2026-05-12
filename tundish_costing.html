@@ -1410,6 +1410,7 @@ async function calculate() {
       num_burners: parseInt(document.getElementById("direct_num_burners").value) || 1,
       ms_structure_kg_override: parseFloat(document.getElementById("direct_ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("direct_ceramic_rolls").value) || 0,
+      special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
 
     };
   } else {
@@ -1442,6 +1443,7 @@ async function calculate() {
       num_burners: parseInt(document.getElementById("num_burners").value) || 1,
       ms_structure_kg_override: parseFloat(document.getElementById("ms_structure_kg").value) || 0,
       ceramic_rolls_override: parseInt(document.getElementById("ceramic_rolls").value) || 0,
+      special_auto_ignition: !!document.getElementById("special_auto_ignition")?.checked,
 
     };
   }
