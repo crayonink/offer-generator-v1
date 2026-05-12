@@ -2019,22 +2019,12 @@ async function generateQuote() {
     poc_salutation:       str("c-salutation"),
     marketing_salutation: str("c-marketing-salutation"),
     technical_salutation: str("c-technical-salutation"),
-    // Mirror VLPH/HLPH-style fields so the unified template renders
-    // hood-with-arm, hood-movement (hydraulic up/down), HPU/PU and the
-    // mode-specific Temperature Control / Operational Sequence sections.
-    hood_type:          "up_down",
-    hood_movement:      str("td-hood_movement"),
-    control_mode:       document.getElementById("control_mode")?.value || "automatic",
-    auto_control_type:  document.getElementById("auto_control_type")?.value || "plc",
-    control_valve_type: "pneumatic",
-    is_oil:             !!(lastCalc?.calculations?.fuel1_type
-                          && (OIL_FUEL_SET || new Set(["ldo","fo","hsd","sko","lshs","cfo","hdo"]))
-                            .has((lastCalc.calculations.fuel1_type || "").toLowerCase())
-                          && !lastCalc?.calculations?.is_dual),
-    is_dual:            !!(lastCalc?.calculations?.is_dual),
-    hpu_variant:        document.getElementById("hpu_variant")?.value || "Duplex 1",
-    purging_line:       (document.querySelector('input[name="purging_line"]:checked') || {value:"no"}).value,
-    special_auto_ignition: document.getElementById("special_auto_ignition")?.checked || false,
+    // hood_type / hood_movement / control_mode / auto_control_type /
+    // control_valve_type / is_oil / is_dual / hpu_variant / purging_line /
+    // special_auto_ignition all come from buildTechData() below — no need
+    // to set them twice (the old explicit lines referenced td-hood_movement
+    // which doesn't exist anymore after the VLPH tech-data copy, causing
+    // 'Cannot read properties of null' on click).
     bom_items: (lastCalc.bom || [])
       .filter(r => r["ITEM NAME"] && r["ITEM NAME"] !== "BOUGHT OUT ITEMS" && r["ITEM NAME"] !== "ENCON ITEMS")
       .map(r => ({ item: r["ITEM NAME"], make: r.MAKE || "ENCON" })),
