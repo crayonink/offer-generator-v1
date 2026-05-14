@@ -990,6 +990,15 @@
             </tr>
             <tr><td>ENCON Items</td>                          <td id="s-encon">—</td></tr>
             <tr class="tot"><td><b>Grand Total</b></td>       <td id="s-grand">—</td></tr>
+            <tr>
+              <td>Packaging &amp; Forwarding <input id="pf-pct" type="number" value="5" step="0.5" min="0" style="width:55px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font:inherit;text-align:center;" oninput="recalcGrandTotal()"/>%</td>
+              <td id="s-pf">—</td>
+            </tr>
+            <tr>
+              <td>Designing <input id="design-pct" type="number" value="5" step="0.5" min="0" style="width:55px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font:inherit;text-align:center;" oninput="recalcGrandTotal()"/>%</td>
+              <td id="s-design">—</td>
+            </tr>
+            <tr class="tot"><td><b>Final Total</b></td>       <td id="s-final">—</td></tr>
           </table>
         </div>
 
@@ -1851,8 +1860,20 @@ function recalcGrandTotal() {
   set("s-bought-marked", "₹ " + fmt(boughtMarked, 0));
   set("s-grand", "₹ " + fmt(grand, 0));
   set("banner-total", "₹ " + fmt(grand, 0));
+  // Packaging & Forwarding + Designing — % of grand total, editable.
+  const pfPct     = parseFloat(document.getElementById("pf-pct")?.value)     || 0;
+  const designPct = parseFloat(document.getElementById("design-pct")?.value) || 0;
+  const pfAmt     = grand * pfPct     / 100;
+  const designAmt = grand * designPct / 100;
+  const finalTot  = grand + pfAmt + designAmt;
+  set("s-pf",     "₹ " + fmt(pfAmt, 0));
+  set("s-design", "₹ " + fmt(designAmt, 0));
+  set("s-final",  "₹ " + fmt(finalTot, 0));
   if (lastCalc && lastCalc.cost_summary) {
     lastCalc.cost_summary.grand_total = grand;
+    lastCalc.cost_summary.pf_amount = pfAmt;
+    lastCalc.cost_summary.design_amount = designAmt;
+    lastCalc.cost_summary.final_total = finalTot;
   }
 }
 
