@@ -1113,6 +1113,41 @@
     <!-- Hidden commercial-term default (validity only) -->
     <input type="hidden" id="q-valid" value="30"/>
 
+    <!-- ── ANNEXURE IV — TERMS & CONDITIONS (editable per offer) ── -->
+    <div class="step-heading" style="margin-top:32px">Terms &amp; Conditions (Annexure IV)</div>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:14px;">
+      These values appear verbatim in Annexure IV of the generated offer. Edit as needed.
+    </p>
+    <table class="tech-data-table" id="tnc-table" style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+      <tbody>
+        <tr><td class="tech-lbl" style="width:30%">Prices</td>
+            <td><input id="tnc_prices" type="text" value="Ex-Works Bhagola, Dist. Palwal, Haryana — unpacked."/></td></tr>
+        <tr><td class="tech-lbl">Delivery</td>
+            <td><textarea id="tnc_delivery" rows="2" style="width:100%;resize:vertical;">10 – 12 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later.</textarea></td></tr>
+        <tr><td class="tech-lbl">GST</td>
+            <td><input id="tnc_gst" type="text" value="18% extra."/></td></tr>
+        <tr><td class="tech-lbl">HSN Code</td>
+            <td><input id="tnc_hsn_code" type="text" value="84541000"/></td></tr>
+        <tr><td class="tech-lbl">PAN / GST No.</td>
+            <td><input id="tnc_pan_gst" type="text" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
+        <tr><td class="tech-lbl">Terms of Payment</td>
+            <td><textarea id="tnc_payment_terms" rows="2" style="width:100%;resize:vertical;">30% advance with the purchase order
+70% against proforma invoice prior to dispatch</textarea></td></tr>
+        <tr><td class="tech-lbl">Packing &amp; Forwarding</td>
+            <td><input id="tnc_packing_forwarding" type="text" value="4% and 2% respectively."/></td></tr>
+        <tr><td class="tech-lbl">Freight Charges</td>
+            <td><input id="tnc_freight" type="text" value="In client's scope."/></td></tr>
+        <tr><td class="tech-lbl">Transit Insurance</td>
+            <td><input id="tnc_transit_insurance" type="text" value="To be arranged by the client."/></td></tr>
+        <tr><td class="tech-lbl">Validity</td>
+            <td><input id="tnc_validity" type="text" value="45 days from the date of our offer."/></td></tr>
+        <tr><td class="tech-lbl">Inspection</td>
+            <td><textarea id="tnc_inspection" rows="2" style="width:100%;resize:vertical;">If required, materials can be inspected at our works before dispatch, at the client's cost.</textarea></td></tr>
+        <tr><td class="tech-lbl">Guarantee</td>
+            <td><textarea id="tnc_guarantee" rows="2" style="width:100%;resize:vertical;">Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier.</textarea></td></tr>
+      </tbody>
+    </table>
+
     <div class="alert-error" id="quote-error"></div>
 
     <div class="action-row">
@@ -2104,6 +2139,19 @@ async function generateQuote() {
     bom_items: (lastCalc.bom || [])
       .filter(r => r["ITEM NAME"] && r["ITEM NAME"] !== "BOUGHT OUT ITEMS" && r["ITEM NAME"] !== "ENCON ITEMS")
       .map(r => ({ item: r["ITEM NAME"], make: r.MAKE || "ENCON", media: r.MEDIA || "", ref: r.REFERENCE || "" })),
+    // Annexure IV — Terms & Conditions (user-edited on Step 4).
+    tnc_prices:             str("tnc_prices"),
+    tnc_delivery:           str("tnc_delivery"),
+    tnc_gst:                str("tnc_gst"),
+    tnc_hsn_code:           str("tnc_hsn_code"),
+    tnc_pan_gst:            str("tnc_pan_gst"),
+    tnc_payment_terms:      str("tnc_payment_terms"),
+    tnc_packing_forwarding: str("tnc_packing_forwarding"),
+    tnc_freight:            str("tnc_freight"),
+    tnc_transit_insurance:  str("tnc_transit_insurance"),
+    tnc_validity:           str("tnc_validity"),
+    tnc_inspection:         str("tnc_inspection"),
+    tnc_guarantee:          str("tnc_guarantee"),
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
     items: [{

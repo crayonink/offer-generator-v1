@@ -960,6 +960,19 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Annexure I section headers — qty is user-editable on Step 4
         "vertical_qty":   customer.get("vertical_qty") or 1,
         "horizontal_qty": customer.get("horizontal_qty") or 1,
+        # Annexure IV — Terms & Conditions (editable on Step 4 of the form)
+        "tnc_prices":             customer.get("tnc_prices") or "",
+        "tnc_delivery":           customer.get("tnc_delivery") or "",
+        "tnc_gst":                customer.get("tnc_gst") or "",
+        "tnc_hsn_code":           customer.get("tnc_hsn_code") or "",
+        "tnc_pan_gst":            customer.get("tnc_pan_gst") or "",
+        "tnc_payment_terms":      customer.get("tnc_payment_terms") or "",
+        "tnc_packing_forwarding": customer.get("tnc_packing_forwarding") or "",
+        "tnc_freight":            customer.get("tnc_freight") or "",
+        "tnc_transit_insurance":  customer.get("tnc_transit_insurance") or "",
+        "tnc_validity":           customer.get("tnc_validity") or "",
+        "tnc_inspection":         customer.get("tnc_inspection") or "",
+        "tnc_guarantee":          customer.get("tnc_guarantee") or "",
         # Pumping-unit section (heading flips between "PUMPING UNIT" and
         # "HEATING & PUMPING UNIT" by fuel; only renders when is_oil/is_dual).
         **(lambda h, i, b: {

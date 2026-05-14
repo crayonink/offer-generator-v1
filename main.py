@@ -732,6 +732,19 @@ class QuoteRequest(BaseModel):
     poc_salutation:        Optional[str] = ""   # "Mr." | "Mrs." | "Miss" | "Dr." — prefixed to poc_name in offer
     marketing_salutation:  Optional[str] = ""
     technical_salutation:  Optional[str] = ""
+    # Editable Annexure IV — Terms & Conditions
+    tnc_prices:               Optional[str] = "Ex-Works Bhagola, Dist. Palwal, Haryana — unpacked."
+    tnc_delivery:             Optional[str] = "10 – 12 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later."
+    tnc_gst:                  Optional[str] = "18% extra."
+    tnc_hsn_code:             Optional[str] = "84541000"
+    tnc_pan_gst:              Optional[str] = "PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"
+    tnc_payment_terms:        Optional[str] = "30% advance with the purchase order\n70% against proforma invoice prior to dispatch"
+    tnc_packing_forwarding:   Optional[str] = "4% and 2% respectively."
+    tnc_freight:              Optional[str] = "In client's scope."
+    tnc_transit_insurance:    Optional[str] = "To be arranged by the client."
+    tnc_validity:             Optional[str] = "45 days from the date of our offer."
+    tnc_inspection:           Optional[str] = "If required, materials can be inspected at our works before dispatch, at the client's cost."
+    tnc_guarantee:            Optional[str] = "Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier."
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
@@ -2441,6 +2454,19 @@ async def generate_quote(req: QuoteRequest):
                 "hpu_variant":         req.hpu_variant or "Duplex 1",
                 "burner_kw_value":     req.burner_kw_value or "",
                 "bom_items":           req.bom_items or [],
+                # Annexure IV — Terms & Conditions (editable per offer)
+                "tnc_prices":             req.tnc_prices or "",
+                "tnc_delivery":           req.tnc_delivery or "",
+                "tnc_gst":                req.tnc_gst or "",
+                "tnc_hsn_code":           req.tnc_hsn_code or "",
+                "tnc_pan_gst":            req.tnc_pan_gst or "",
+                "tnc_payment_terms":      req.tnc_payment_terms or "",
+                "tnc_packing_forwarding": req.tnc_packing_forwarding or "",
+                "tnc_freight":            req.tnc_freight or "",
+                "tnc_transit_insurance":  req.tnc_transit_insurance or "",
+                "tnc_validity":           req.tnc_validity or "",
+                "tnc_inspection":         req.tnc_inspection or "",
+                "tnc_guarantee":          req.tnc_guarantee or "",
             },
             "items": [item.dict() for item in req.items],
             "gst_percent": req.gst_percent,
