@@ -743,8 +743,8 @@ class QuoteRequest(BaseModel):
     tnc_freight:              Optional[str] = "In client's scope."
     tnc_transit_insurance:    Optional[str] = "To be arranged by the client."
     tnc_validity:             Optional[str] = "45 days from the date of our offer."
-    tnc_inspection:           Optional[str] = "If required, materials can be inspected at our works before dispatch, at the client's cost."
-    tnc_guarantee:            Optional[str] = "Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier."
+    tnc_inspection:           Optional[str] = "If required, materials can be inspected at our works before dispatch, at the client's cost and with prior intimation."
+    tnc_guarantee:            Optional[str] = "Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier — against any manufacturing defects or poor workmanship."
     bom_items: Optional[List[dict]] = []   # [{item, make, media, ref}, ...] for offer scope + MAKE LIST
     # Items & commercial
     items: List[QuoteItem]
