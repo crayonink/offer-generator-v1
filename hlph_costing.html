@@ -998,6 +998,14 @@
               <td>Designing <input id="design-pct" type="number" value="5" step="0.5" min="0" style="width:55px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font:inherit;text-align:center;" oninput="recalcGrandTotal()"/>%</td>
               <td id="s-design">—</td>
             </tr>
+            <tr>
+              <td>Negotiation <input id="negotiation-pct" type="number" value="0" step="0.5" min="0" max="10" style="width:55px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font:inherit;text-align:center;" oninput="recalcGrandTotal()"/>%</td>
+              <td id="s-negotiation">—</td>
+            </tr>
+            <tr>
+              <td>Transport <input id="transport-amt" type="number" value="0" step="1000" min="0" style="width:90px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font:inherit;text-align:right;" oninput="recalcGrandTotal()"/> ₹</td>
+              <td id="s-transport">—</td>
+            </tr>
             <tr class="tot"><td><b>Final Total</b></td>       <td id="s-final">—</td></tr>
           </table>
         </div>
@@ -1860,19 +1868,27 @@ function recalcGrandTotal() {
   set("s-bought-marked", "₹ " + fmt(boughtMarked, 0));
   set("s-grand", "₹ " + fmt(grand, 0));
   set("banner-total", "₹ " + fmt(grand, 0));
-  // Packaging & Forwarding + Designing — % of grand total, editable.
-  const pfPct     = parseFloat(document.getElementById("pf-pct")?.value)     || 0;
-  const designPct = parseFloat(document.getElementById("design-pct")?.value) || 0;
+  // Packaging & Forwarding + Designing (% of Grand Total), Negotiation
+  // (% of Grand Total, subtracted = discount), Transport (flat ₹).
+  const pfPct     = parseFloat(document.getElementById("pf-pct")?.value)         || 0;
+  const designPct = parseFloat(document.getElementById("design-pct")?.value)     || 0;
+  const negPct    = parseFloat(document.getElementById("negotiation-pct")?.value) || 0;
+  const transAmt  = parseFloat(document.getElementById("transport-amt")?.value)   || 0;
   const pfAmt     = grand * pfPct     / 100;
   const designAmt = grand * designPct / 100;
-  const finalTot  = grand + pfAmt + designAmt;
-  set("s-pf",     "₹ " + fmt(pfAmt, 0));
-  set("s-design", "₹ " + fmt(designAmt, 0));
-  set("s-final",  "₹ " + fmt(finalTot, 0));
+  const negAmt    = grand * negPct    / 100;
+  const finalTot  = grand + pfAmt + designAmt - negAmt + transAmt;
+  set("s-pf",          "₹ " + fmt(pfAmt, 0));
+  set("s-design",      "₹ " + fmt(designAmt, 0));
+  set("s-negotiation", "− ₹ " + fmt(negAmt, 0));
+  set("s-transport",   "₹ " + fmt(transAmt, 0));
+  set("s-final",       "₹ " + fmt(finalTot, 0));
   if (lastCalc && lastCalc.cost_summary) {
     lastCalc.cost_summary.grand_total = grand;
     lastCalc.cost_summary.pf_amount = pfAmt;
     lastCalc.cost_summary.design_amount = designAmt;
+    lastCalc.cost_summary.negotiation_amount = negAmt;
+    lastCalc.cost_summary.transport_amount = transAmt;
     lastCalc.cost_summary.final_total = finalTot;
   }
 }
