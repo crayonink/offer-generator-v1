@@ -1029,6 +1029,21 @@
     <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;">
       Auto-filled from your calculation. Edit any value before generating — edits are used in the Word offer.
     </p>
+    <style>
+      #tech-data-table { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+      #tech-data-table td { padding:10px 12px; vertical-align:middle; border-top:1px solid var(--border); }
+      #tech-data-table tr:first-child td { border-top:none; }
+      #tech-data-table td.tech-lbl { width:30%; background:#f8fafc; font-weight:600; color:var(--text); }
+      #tech-data-table input, #tech-data-table select, #tech-data-table textarea {
+        width:100%; box-sizing:border-box; padding:8px 10px;
+        border:1px solid var(--border); border-radius:6px;
+        font-family:inherit; font-size:0.9rem; color:var(--text); background:#fff;
+      }
+      #tech-data-table textarea { resize:vertical; line-height:1.4; min-height:48px; }
+      #tech-data-table input:focus, #tech-data-table select:focus, #tech-data-table textarea:focus {
+        outline:none; border-color:var(--navy); box-shadow:0 0 0 2px rgba(31,58,95,0.12);
+      }
+    </style>
     <table class="tech-data-table" id="tech-data-table" style="width:100%;border-collapse:collapse;margin-bottom:28px;">
       <tbody>
         <tr><td class="tech-lbl">Ladle Dimensions</td>
