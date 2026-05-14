@@ -1113,17 +1113,26 @@
             <td><textarea id="tnc_payment_terms" rows="2" style="width:100%;resize:vertical;">30% advance with the purchase order
 70% against proforma invoice prior to dispatch</textarea></td></tr>
         <tr><td class="tech-lbl">Packing &amp; Forwarding</td>
-            <td><input id="tnc_packing_forwarding" type="text" value="4% and 2% respectively."/></td></tr>
+            <td><select id="tnc_packing_forwarding">
+              <option value="4% and 2% respectively." selected>4% and 2% respectively.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
         <tr><td class="tech-lbl">Freight Charges</td>
-            <td><input id="tnc_freight" type="text" value="In client's scope."/></td></tr>
+            <td><select id="tnc_freight">
+              <option value="In client's scope." selected>In client's scope.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
         <tr><td class="tech-lbl">Transit Insurance</td>
-            <td><input id="tnc_transit_insurance" type="text" value="To be arranged by the client."/></td></tr>
+            <td><select id="tnc_transit_insurance">
+              <option value="To be arranged by the client." selected>To be arranged by the client.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
         <tr><td class="tech-lbl">Validity</td>
             <td><input id="tnc_validity" type="text" value="45 days from the date of our offer."/></td></tr>
         <tr><td class="tech-lbl">Inspection</td>
-            <td><textarea id="tnc_inspection" rows="2" style="width:100%;resize:vertical;">If required, materials can be inspected at our works before dispatch, at the client's cost.</textarea></td></tr>
+            <td><input id="tnc_inspection" type="text" value="At ENCON works on prior intimation, at buyer's cost."/></td></tr>
         <tr><td class="tech-lbl">Guarantee</td>
-            <td><textarea id="tnc_guarantee" rows="2" style="width:100%;resize:vertical;">Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier.</textarea></td></tr>
+            <td><input id="tnc_guarantee" type="text" value="12 months from commissioning or 18 months from dispatch, whichever is earlier."/></td></tr>
       </tbody>
     </table>
 
