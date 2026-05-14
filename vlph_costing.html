@@ -1926,7 +1926,8 @@ function recalcGrandTotal() {
   const pfAmt     = grand * pfPct     / 100;
   const designAmt = grand * designPct / 100;
   const negAmt    = grand * negPct    / 100;
-  const finalTot  = grand + pfAmt + designAmt + negAmt + transAmt;
+  // Round Final Total to the nearest ₹1000 (commercial cleanliness).
+  const finalTot  = Math.round((grand + pfAmt + designAmt + negAmt + transAmt) / 1000) * 1000;
   set("s-pf",          "₹ " + fmt(pfAmt, 0));
   set("s-design",      "₹ " + fmt(designAmt, 0));
   set("s-negotiation", "₹ " + fmt(negAmt, 0));
@@ -2339,11 +2340,11 @@ async function generateQuote() {
   const _designPct = parseFloat(document.getElementById("design-pct")?.value)      || 0;
   const _negPct    = parseFloat(document.getElementById("negotiation-pct")?.value) || 0;
   const _transAmt  = parseFloat(document.getElementById("transport-amt")?.value)   || 0;
-  const _freshFinal = _freshGrand
+  const _freshFinal = Math.round((_freshGrand
     + (_freshGrand * _pfPct     / 100)
     + (_freshGrand * _designPct / 100)
     + (_freshGrand * _negPct    / 100)
-    + _transAmt;
+    + _transAmt) / 1000) * 1000;
 
   const s = {
     ...lastCalc.cost_summary,
