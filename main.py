@@ -733,7 +733,7 @@ class QuoteRequest(BaseModel):
     marketing_salutation:  Optional[str] = ""
     technical_salutation:  Optional[str] = ""
     # Editable Annexure IV — Terms & Conditions
-    tnc_prices:               Optional[str] = "Ex-Works Bhagola, Dist. Palwal, Haryana — unpacked."
+    tnc_prices:               Optional[str] = "EX Bhagola (Ex-Works)"
     tnc_delivery:             Optional[str] = "10 – 12 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later."
     tnc_gst:                  Optional[str] = "18% extra."
     tnc_hsn_code:             Optional[str] = "84541000"
