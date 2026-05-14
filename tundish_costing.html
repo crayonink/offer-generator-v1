@@ -1129,7 +1129,14 @@
         <tr><td class="tech-lbl">Delivery</td>
             <td><textarea id="tnc_delivery" rows="2" style="width:100%;resize:vertical;">10 – 12 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later.</textarea></td></tr>
         <tr><td class="tech-lbl">GST</td>
-            <td><input id="tnc_gst" type="text" value="18% extra."/></td></tr>
+            <td><select id="tnc_gst">
+              <option value="18% extra." selected>18% extra.</option>
+              <option value="28% extra.">28% extra.</option>
+              <option value="12% extra.">12% extra.</option>
+              <option value="5% extra.">5% extra.</option>
+              <option value="Inclusive">Inclusive</option>
+              <option value="Exempt">Exempt</option>
+            </select></td></tr>
         <tr><td class="tech-lbl">HSN Code</td>
             <td><input id="tnc_hsn_code" type="text" value="84541000"/></td></tr>
         <tr><td class="tech-lbl">PAN / GST No.</td>
