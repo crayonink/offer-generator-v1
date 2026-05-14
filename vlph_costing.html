@@ -2334,10 +2334,21 @@ async function generateQuote() {
         ? window._enconRaw
         : ((lastCalc.cost_summary && lastCalc.cost_summary.encon_total) || 0);
   const _freshGrand = _gtBought * _gtMarkup + _gtEncon;
+  // Re-derive Final Total live too (P&F + Designing − Negotiation + Transport).
+  const _pfPct     = parseFloat(document.getElementById("pf-pct")?.value)          || 0;
+  const _designPct = parseFloat(document.getElementById("design-pct")?.value)      || 0;
+  const _negPct    = parseFloat(document.getElementById("negotiation-pct")?.value) || 0;
+  const _transAmt  = parseFloat(document.getElementById("transport-amt")?.value)   || 0;
+  const _freshFinal = _freshGrand
+    + (_freshGrand * _pfPct     / 100)
+    + (_freshGrand * _designPct / 100)
+    - (_freshGrand * _negPct    / 100)
+    + _transAmt;
 
   const s = {
     ...lastCalc.cost_summary,
     grand_total: _freshGrand,
+    final_total: _freshFinal,
   };
   const payload = {
     company_name:    company,
@@ -2388,8 +2399,9 @@ async function generateQuote() {
       model:        "VLPH (As per Calculation)",
       description:  "Vertical Ladle Preheater complete with Combustion Equipment",
       qty:          1,
-      unit_price:   s.grand_total,
-      total:        s.grand_total,
+      // Final Total = Grand + P&F + Designing − Negotiation + Transport.
+      unit_price:   (s.final_total ?? s.grand_total),
+      total:        (s.final_total ?? s.grand_total),
     }],
   };
 

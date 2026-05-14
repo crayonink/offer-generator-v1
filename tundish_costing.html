@@ -2253,8 +2253,10 @@ async function generateQuote() {
       model:        "Tundish (As per Calculation)",
       description:  "Tundish Preheater complete with Combustion Equipment",
       qty:          1,
-      unit_price:   s.grand_total,
-      total:        s.grand_total,
+      // Final Total = Grand + P&F + Designing − Negotiation + Transport.
+      // Falls back to grand_total if cost_summary hasn't been hydrated yet.
+      unit_price:   (s.final_total ?? s.grand_total),
+      total:        (s.final_total ?? s.grand_total),
     }],
   };
 
