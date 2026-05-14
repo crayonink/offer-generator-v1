@@ -83,12 +83,23 @@ def _location_code(location: str) -> str:
 def build_enquiry_ref(seq: str, technical_person: str,
                       location: str = "",
                       year: Optional[int] = None) -> str:
-    """ET{YY}-{seq}-{initials}[-{loc}], e.g. ET26-001-JR-GOA."""
+    """ENCON.04026.{seq}/{LOC}/{initials} DT.{DD/MM/YYYY}.
+
+    The '04026' segment is ENCON's fixed code (applies to ladle and
+    tundish offers alike). Location code (GOA/VDD/FBD) and the
+    technical-person initials get omitted only when missing.
+    """
     from datetime import datetime as _dt
-    yy = f"{(year or _dt.now().year) % 100:02d}"
-    base = f"ET{yy}-{seq}-{_person_initials(technical_person)}"
+    today = _dt.now()
+    ini = _person_initials(technical_person)
     loc = _location_code(location)
-    return f"{base}-{loc}" if loc else base
+    # Assemble the slash segment: include only the parts we have.
+    parts = [seq]
+    if loc: parts.append(loc)
+    if ini: parts.append(ini)
+    body = "/".join(parts)
+    date_str = today.strftime("%d/%m/%Y")
+    return f"ENCON.04026.{body} DT.{date_str}"
 
 def ensure_log_table():
     conn = sqlite3.connect(DB_PATH)

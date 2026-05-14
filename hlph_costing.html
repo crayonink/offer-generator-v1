@@ -439,7 +439,7 @@
     <div class="fg fg-4">
       <div class="field">
         <label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
-        <input id="c-ref" type="text" readonly style="background:#f1f5f9;color:#475569" placeholder="ET26-XXX-JR"/>
+        <input id="c-ref" type="text" readonly style="background:#f1f5f9;color:#475569" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/>
       </div>
       <div class="field">
         <label>Location</label>
@@ -1214,10 +1214,17 @@ function updateAutoRef() {
   const loc  = document.getElementById("c-location");
   const ref  = document.getElementById("c-ref");
   if (!ref) return;
-  const yy   = String(new Date().getFullYear()).slice(-2);
   const ini  = _personInitials(tech ? tech.value : "");
   const code = _locationCode(loc ? loc.value : "");
-  ref.value  = `ET${yy}-${_autoRefSeq}-${ini}` + (code ? `-${code}` : "");
+  const parts = [_autoRefSeq];
+  if (code) parts.push(code);
+  if (ini)  parts.push(ini);
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  ref.value = `ENCON.04026.${parts.join("/")} DT.${dd}/${mm}/${yyyy}`;
+  // (yy variable above retained for any legacy callers but unused now)
 }
 async function fetchAutoRefSeq() {
   try {
