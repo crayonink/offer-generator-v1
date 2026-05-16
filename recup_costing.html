@@ -178,6 +178,7 @@
   <div class="step-tabs">
     <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Inputs</div>
     <div class="step-tab disabled"  id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Results &amp; BOM</div>
+    <div class="step-tab disabled"  id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Generate Offer</div>
   </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
@@ -394,8 +395,212 @@
       </div>
       <div class="summary-row final"><span>Final Total</span><span id="s-final">&#8377; 0</span></div>
     </div>
+
+    <div style="display:flex; justify-content:flex-end; margin-top: 22px;">
+      <button class="btn-primary" onclick="goStep(3)">Continue to Generate Offer &rarr;</button>
+    </div>
   </div><!-- /resultsBody -->
   </div><!-- /panel-2 -->
+
+  <!-- ══ STEP 3 — Generate Offer ══ -->
+  <div class="step-panel" id="panel-3">
+  <div class="hero">
+    <h1>Generate Offer</h1>
+    <p>Customer details, application, and Annexure IV terms &amp; conditions. The Final Total carried over from Step 2 is the price that goes on the offer.</p>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+    <button class="btn-back" onclick="goStep(2)">&larr; Back to Results</button>
+  </div>
+
+  <!-- ── Customer / Project ── -->
+  <div class="section">
+    <div class="section-title">Customer &amp; Project</div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Salutation</label>
+        <select id="o-salutation">
+          <option value="">—</option>
+          <option value="Mr.">Mr.</option>
+          <option value="Mrs.">Mrs.</option>
+          <option value="Miss">Miss</option>
+          <option value="Dr.">Dr.</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>POC Name</label>
+        <input id="o-poc-name" type="text" value="Ashish Gupta"/>
+      </div>
+      <div class="field">
+        <label>Designation</label>
+        <input id="o-poc-desg" type="text" value="Purchase Manager"/>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Company Name</label>
+        <input id="o-company" type="text" value="Test Steel Pvt Ltd"/>
+      </div>
+      <div class="field">
+        <label>Company Address</label>
+        <input id="o-address" type="text" value="Plot 123, Industrial Estate, Mumbai"/>
+      </div>
+    </div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Email</label>
+        <input id="o-email" type="email" value="buyer@teststeel.com"/>
+      </div>
+      <div class="field">
+        <label>Mobile</label>
+        <input id="o-mobile" type="tel" value="+91 98765 43210"/>
+      </div>
+      <div class="field">
+        <label>Project Name</label>
+        <input id="o-project" type="text" value="Recuperator for 50 TPH Furnace"/>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Application (goes on price line)</label>
+        <input id="o-application" type="text" value="50 TPH Furnace"/>
+        <div class="hint">Renders as "Recuperator for &lt;application&gt;"</div>
+      </div>
+      <div class="field">
+        <label>Client Enquiry Ref / Date</label>
+        <input id="o-client-enq" type="text" value="Mail enquiry, 05/08/2025"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Marketing Person ── -->
+  <div class="section">
+    <div class="section-title">Marketing Person (ENCON)</div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Name</label>
+        <input id="o-mk-name" type="text" value="Jagdeep Singh"/>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input id="o-mk-email" type="email" value="operations@encon.co.in"/>
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input id="o-mk-phone" type="tel" value="+91 7428488633"/>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Technical Person (for ref initials)</label>
+        <input id="o-tech-person" type="text" value="Jagdeep Singh"/>
+        <div class="hint">First letter of each word becomes the initials in OUR REF.</div>
+      </div>
+      <div class="field">
+        <label>Location Code</label>
+        <select id="o-location">
+          <option value="FBD">FBD — Faridabad</option>
+          <option value="GOA">GOA — Goa</option>
+          <option value="VDD">VDD — Vadodara</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Annexure IV ── -->
+  <div class="section">
+    <div class="section-title">Annexure IV — Terms &amp; Conditions</div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Prices</label>
+        <select id="tnc_prices">
+          <option>Ex Works Bhagola, Dist: Palwal, Haryana</option>
+          <option>FOR Destination</option>
+          <option>FOB</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>GST</label>
+        <select id="tnc_gst">
+          <option>@18 % will be charged Extra.</option>
+          <option>@12 % will be charged Extra.</option>
+          <option>@5 % will be charged Extra.</option>
+          <option>Inclusive of GST</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Delivery</label>
+        <input id="tnc_delivery" type="text" value="16-20 weeks from PO + advance + drawing approval, whichever is later."/>
+      </div>
+      <div class="field">
+        <label>Validity</label>
+        <input id="tnc_validity" type="text" value="45 days from the date of our offer"/>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>HSN Code</label>
+        <input id="tnc_hsn_code" type="text" value="84541000"/>
+      </div>
+      <div class="field">
+        <label>PAN / GST No.</label>
+        <input id="tnc_pan_gst" type="text" value="AAACE0327M / 06AAACE0327M1ZV"/>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Payment Terms</label>
+        <input id="tnc_payment_terms" type="text" value="30 % advance with PO, 70 % against Performa invoice prior to dispatch"/>
+      </div>
+      <div class="field">
+        <label>Packing &amp; Forwarding</label>
+        <select id="tnc_packing_forwarding">
+          <option>4% Extra</option>
+          <option>5% Extra</option>
+          <option>Inclusive</option>
+          <option>In Encon's Scope</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Freight</label>
+        <select id="tnc_freight">
+          <option>In client's Scope</option>
+          <option>In Encon's Scope</option>
+          <option>FOR Destination — at actuals</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Transit Insurance</label>
+        <select id="tnc_transit_insurance">
+          <option>To be arranged by the client.</option>
+          <option>In Encon's Scope</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg fg-1">
+      <div class="field">
+        <label>Inspection</label>
+        <input id="tnc_inspection" type="text" value="If required, materials can be inspected at our works before dispatch at your cost, with prior intimation."/>
+      </div>
+    </div>
+    <div class="fg fg-1">
+      <div class="field">
+        <label>Guarantee</label>
+        <input id="tnc_guarantee" type="text" value="18 months from the date of dispatch or 12 months from the date of commissioning, whichever is earlier, against any manufacturing defects or poor workmanship."/>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px; margin-top:8px; align-items:center;">
+    <button class="btn-primary" id="genBtn" onclick="generateOffer()">Generate Offer</button>
+    <span id="genErr" class="err"></span>
+    <span id="genOk" style="color:var(--green); font-size:0.86rem; font-weight:600;"></span>
+  </div>
+  <div id="dlLinks" style="margin-top:18px;"></div>
+  </div><!-- /panel-3 -->
 </div>
 
 <script>
@@ -407,15 +612,16 @@ const num = id => parseFloat($(id).value) || 0;
 const intv = id => parseInt($(id).value) || 0;
 
 function goStep(n) {
-  if (n === 2 && !lastCalc) return; // can't open results before calc
-  for (let i = 1; i <= 2; i++) {
+  if ((n === 2 || n === 3) && !lastCalc) return; // need calc first
+  for (let i = 1; i <= 3; i++) {
     $("panel-" + i).classList.toggle("active", i === n);
     $("tab-" + i).classList.toggle("active", i === n);
   }
-  // Mark step 1 as done once results exist
   if (lastCalc) {
     $("tab-1").classList.toggle("done", n !== 1);
     $("tab-2").classList.remove("disabled");
+    $("tab-3").classList.remove("disabled");
+    $("tab-2").classList.toggle("done", n === 3);
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -537,6 +743,79 @@ function recalc() {
   $("s-grand").textContent  = fmt(grand);
   $("s-sale").textContent   = fmt(sale);
   $("s-final").textContent  = fmt(finalRounded);
+
+  // Stash for the offer generator
+  lastCalc._final_total = finalRounded;
+  lastCalc._grand_total = grand;
+}
+
+async function generateOffer() {
+  $("genErr").textContent = "";
+  $("genOk").textContent = "";
+  $("dlLinks").innerHTML = "";
+  if (!lastCalc) { $("genErr").textContent = "Run Calculate first."; return; }
+
+  $("genBtn").disabled = true;
+  $("genBtn").textContent = "Generating…";
+
+  const payload = {
+    // Customer / project
+    salutation:        $("o-salutation").value,
+    poc_name:          $("o-poc-name").value,
+    poc_designation:   $("o-poc-desg").value,
+    company_name:      $("o-company").value,
+    company_address:   $("o-address").value,
+    email:             $("o-email").value,
+    mobile_no:         $("o-mobile").value,
+    project_name:      $("o-project").value,
+    application:       $("o-application").value,
+    client_enq_ref:    $("o-client-enq").value,
+    // Marketing / ref
+    marketing_person:  $("o-mk-name").value,
+    marketing_email:   $("o-mk-email").value,
+    marketing_phone:   $("o-mk-phone").value,
+    technical_person:  $("o-tech-person").value,
+    location:          $("o-location").value,
+    // T&C
+    tnc_prices:             $("tnc_prices").value,
+    tnc_delivery:           $("tnc_delivery").value,
+    tnc_gst:                $("tnc_gst").value,
+    tnc_hsn_code:           $("tnc_hsn_code").value,
+    tnc_pan_gst:            $("tnc_pan_gst").value,
+    tnc_payment_terms:      $("tnc_payment_terms").value,
+    tnc_packing_forwarding: $("tnc_packing_forwarding").value,
+    tnc_freight:            $("tnc_freight").value,
+    tnc_transit_insurance:  $("tnc_transit_insurance").value,
+    tnc_validity:           $("tnc_validity").value,
+    tnc_inspection:         $("tnc_inspection").value,
+    tnc_guarantee:          $("tnc_guarantee").value,
+    // Recup calc results
+    calculations:  lastCalc.calculations,
+    final_total:   lastCalc._final_total,
+    grand_total:   lastCalc._grand_total,
+    qty:           1,
+  };
+  try {
+    const res = await fetch("/api/generate-recup-quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.error) { $("genErr").textContent = data.error; return; }
+    $("genOk").textContent = "Offer generated.";
+    const fn = data.filename;
+    let html = `<a class="btn-primary" style="text-decoration:none; display:inline-block;" href="/api/download-quote/${encodeURIComponent(fn)}">Download DOCX</a>`;
+    if (data.pdf_filename) {
+      html += ` <a class="btn-primary" style="text-decoration:none; display:inline-block; margin-left:8px;" href="/api/pdf-quote/${encodeURIComponent(data.pdf_filename)}">Download PDF</a>`;
+    }
+    $("dlLinks").innerHTML = html;
+  } catch (e) {
+    $("genErr").textContent = e.message || "Network error";
+  } finally {
+    $("genBtn").disabled = false;
+    $("genBtn").textContent = "Generate Offer";
+  }
 }
 </script>
 </body>

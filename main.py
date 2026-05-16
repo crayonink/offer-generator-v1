@@ -2473,9 +2473,154 @@ def recup_calculate(req: RecupCalcRequest):
                 "weight_hot_bank_kg":   results.weight_hot_bank_kg,
                 "weight_cold_bank_kg":  results.weight_cold_bank_kg,
                 "weight_total_pipes_kg": results.weight_total_pipes_kg,
+                # Echo of inputs — the offer template needs these for the
+                # Designing Parameters table (flue/air conditions are
+                # process inputs, not derived values).
+                "flue_flow_nm3hr":      req.flue_flow_nm3hr,
+                "flue_temp_in_C":       req.flue_temp_in_C,
+                "flue_temp_out_C":      req.flue_temp_out_C,
+                "air_volume_nm3hr":     req.air_volume_nm3hr,
+                "air_temp_in_C":        req.air_temp_in_C,
+                "air_temp_out_C":       req.air_temp_out_C,
+                "pipe_dia_mm":          req.pipe_dia_mm,
+                "pipe_thick_mm":        req.pipe_thick_mm,
+                "pipe_length_m_per_bank": req.pipe_length_m_per_bank,
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": summary,
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+class RecupQuoteRequest(BaseModel):
+    # Customer / project
+    salutation:      str = ""
+    poc_name:        str = ""
+    poc_designation: str = ""
+    company_name:    str = ""
+    company_address: str = ""
+    email:           str = ""
+    mobile_no:       str = ""
+    project_name:    str = ""
+    application:     str = ""
+    client_enq_ref:  str = ""
+    # Marketing / ref
+    marketing_person: str = ""
+    marketing_email:  str = ""
+    marketing_phone:  str = ""
+    technical_person: str = ""
+    location:         str = "FBD"
+    # T&C
+    tnc_prices:             str = ""
+    tnc_delivery:           str = ""
+    tnc_gst:                str = ""
+    tnc_hsn_code:           str = ""
+    tnc_pan_gst:            str = ""
+    tnc_payment_terms:      str = ""
+    tnc_packing_forwarding: str = ""
+    tnc_freight:            str = ""
+    tnc_transit_insurance:  str = ""
+    tnc_validity:           str = ""
+    tnc_inspection:         str = ""
+    tnc_guarantee:          str = ""
+    # Recup calc payload
+    calculations: dict = {}
+    final_total:  float = 0.0
+    grand_total:  float = 0.0
+    qty:          int = 1
+
+
+@app.post("/api/generate-recup-quote")
+def generate_recup_quote(req: RecupQuoteRequest):
+    """Render Recup_Offer_Template.docx with payload data, save to
+    quotes/, and optionally convert to PDF."""
+    try:
+        from datetime import datetime as _dt
+        from docxtpl import DocxTemplate
+        from engine.quote_writer import amount_in_words_indian, _format_inr
+
+        seq = next_quote_seq()
+        full_ref = build_enquiry_ref(seq, req.technical_person or "", req.location or "")
+        # Split full ref (e.g. "ENCON.04026.050/FBD/JS DT.16/05/2026")
+        # into the short part and the date.
+        short_ref = full_ref.split(" DT.")[0]
+        date_str = full_ref.split(" DT.")[-1] if " DT." in full_ref else _dt.now().strftime("%d/%m/%Y")
+
+        c = req.calculations or {}
+        unit_price = float(req.final_total or 0)
+        qty = max(1, int(req.qty or 1))
+        total_price = unit_price * qty
+
+        ctx = {
+            "project_name":     req.project_name or "Recuperator",
+            "subject":          f"Offer for Recuperator — {req.application}" if req.application else "Offer for Recuperator",
+            "application":      req.application or "Furnace",
+            "company_name":     req.company_name,
+            "company_address":  req.company_address,
+            "email":            req.email,
+            "mobile_no":        req.mobile_no,
+            "poc_name":         _with_salutation(req.salutation, req.poc_name),
+            "client_enq_ref":   req.client_enq_ref,
+            "enquiry_ref":      full_ref,
+            "enquiry_ref_short": short_ref,
+            "enquiry_date_str":  date_str,
+            "marketing_person": req.marketing_person,
+            "marketing_email":  req.marketing_email,
+            "marketing_phone":  req.marketing_phone,
+            # Designing parameters table
+            "flue_flow_nm3hr":  f"{c.get('flue_flow_nm3hr', 0):,.0f}" if c.get('flue_flow_nm3hr') else "",
+            "flue_temp_in_C":   f"{int(round(c.get('flue_temp_in_C', 0)))}" if c.get('flue_temp_in_C') else "",
+            "flue_temp_out_C":  f"{int(round(c.get('flue_temp_out_C', 0)))}" if c.get('flue_temp_out_C') else "",
+            "air_volume_nm3hr": f"{c.get('air_volume_nm3hr', 0):,.0f}" if c.get('air_volume_nm3hr') else "",
+            "air_temp_in_C":    f"{int(round(c.get('air_temp_in_C', 0)))}" if c.get('air_temp_in_C') else "",
+            "air_temp_out_C":   f"{int(round(c.get('air_temp_out_C', 0)))}" if c.get('air_temp_out_C') else "",
+            "surface_area_m2":  f"{c.get('surface_area_m2', 0):.2f}",
+            "pipe_dia_mm":      f"{c.get('pipe_dia_mm', 48.3):.1f}" if c.get('pipe_dia_mm') else "48.3",
+            "pipe_length_m":    f"{c.get('pipe_length_m_per_bank', 0.63):.2f}" if c.get('pipe_length_m_per_bank') else "0.63",
+            "pipe_thick_mm":    f"{c.get('pipe_thick_mm', 2.77):.2f}" if c.get('pipe_thick_mm') else "2.77",
+            # Price schedule
+            "recup_qty":           f"{qty:02d} No.",
+            "recup_unit_price":    _format_inr(unit_price),
+            "recup_total_price":   _format_inr(total_price),
+            "recup_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
+            # T&C
+            "tnc_prices":             req.tnc_prices,
+            "tnc_delivery":           req.tnc_delivery,
+            "tnc_gst":                req.tnc_gst,
+            "tnc_hsn_code":           req.tnc_hsn_code,
+            "tnc_pan_gst":            req.tnc_pan_gst,
+            "tnc_payment_terms":      req.tnc_payment_terms,
+            "tnc_packing_forwarding": req.tnc_packing_forwarding,
+            "tnc_freight":            req.tnc_freight,
+            "tnc_transit_insurance":  req.tnc_transit_insurance,
+            "tnc_validity":           req.tnc_validity,
+            "tnc_inspection":         req.tnc_inspection,
+            "tnc_guarantee":          req.tnc_guarantee,
+        }
+
+        tpl_path = os.path.join(BASE_DIR, "Recup_Offer_Template.docx")
+        tpl = DocxTemplate(tpl_path)
+        tpl.render(ctx)
+
+        # Save with a safe, sequenced filename
+        safe_company = "".join(ch for ch in (req.company_name or "Client") if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        docx_name = f"Recup_Offer_{safe_company}_{seq}.docx"
+        docx_path = os.path.join(QUOTES_FOLDER, docx_name)
+        tpl.save(docx_path)
+
+        # PDF (best effort — LibreOffice may not be present locally)
+        pdf_name = docx_name.replace(".docx", ".pdf")
+        pdf_path = os.path.join(QUOTES_FOLDER, pdf_name)
+        pdf_ok = _docx_to_pdf(docx_path, pdf_path)
+
+        return {
+            "filename":     docx_name,
+            "pdf_filename": pdf_name if pdf_ok else None,
+            "enquiry_ref":  full_ref,
+            "final_total":  unit_price,
+            "total_price":  total_price,
         }
     except Exception as e:
         import traceback
