@@ -2504,6 +2504,7 @@ class RecupQuoteRequest(BaseModel):
     email:           str = ""
     mobile_no:       str = ""
     project_name:    str = ""
+    subject:         str = ""
     application:     str = ""
     client_enq_ref:  str = ""
     # Marketing / ref
@@ -2554,8 +2555,8 @@ def generate_recup_quote(req: RecupQuoteRequest):
         total_price = unit_price * qty
 
         ctx = {
-            "project_name":     req.project_name or "Recuperator",
-            "subject":          f"Offer for Recuperator — {req.application}" if req.application else "Offer for Recuperator",
+            "project_name":     req.project_name or (f"Recuperator for {req.application}" if req.application else "Recuperator"),
+            "subject":          req.subject or (f"Offer for Recuperator — {req.application}" if req.application else "Offer for Recuperator"),
             "application":      req.application or "Furnace",
             "company_name":     req.company_name,
             "company_address":  req.company_address,

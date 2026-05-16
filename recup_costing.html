@@ -76,10 +76,23 @@
     }
     .btn-back:hover { color: var(--navy); border-color: var(--navy); background: #fff; }
 
-    .page { max-width: 920px; margin: 0 auto; padding: 48px 24px 80px; }
-    .hero { margin-bottom: 36px; }
+    .page { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
+    .hero { margin-bottom: 40px; }
     .hero h1 { font-size: 2.4rem; font-weight: 900; line-height: 1.15; letter-spacing: -.04em; }
     .hero p  { font-size: 0.95rem; color: var(--muted); margin-top: 10px; font-weight: 400; }
+
+    .step-heading { font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1.5px solid var(--border); }
+    .sec-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 20px 0 10px; }
+    .action-row { margin-top: 32px; display: flex; gap: 12px; }
+
+    .field label .req { color: var(--red); }
+    .field textarea {
+      padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-size: 0.88rem; color: var(--text); background: var(--bg);
+      outline: none; font-family: inherit; resize: vertical; min-height: 72px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .field textarea:focus { border-color: var(--navy); background: #fff; box-shadow: 0 0 0 3px rgba(26,58,92,.07); }
 
     .section { margin-bottom: 28px; }
     .section-title {
@@ -107,13 +120,17 @@
     .field .hint { font-size: 0.7rem; color: #9ca3af; }
 
     .btn-primary {
-      background: var(--navy); color: #fff; border: none; padding: 12px 26px;
-      border-radius: 9px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
-      font-family: inherit; transition: background .15s, transform .05s;
+      flex: 1; padding: 14px 24px;
+      background: linear-gradient(135deg, var(--navy) 0%, #1e4a7a 100%);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 0.92rem; font-weight: 700; cursor: pointer; font-family: inherit;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 2px 10px rgba(26,58,92,.32), 0 1px 2px rgba(0,0,0,.08);
+      transition: all .2s;
     }
-    .btn-primary:hover { background: var(--navy2); }
-    .btn-primary:active { transform: translateY(1px); }
-    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+    .btn-primary:hover    { background: linear-gradient(135deg, var(--navy2) 0%, var(--navy) 100%); box-shadow: 0 6px 20px rgba(26,58,92,.42); transform: translateY(-1px); }
+    .btn-primary:active   { transform: translateY(0); box-shadow: 0 2px 6px rgba(26,58,92,.25); }
+    .btn-primary:disabled { background: #94a3b8; box-shadow: none; cursor: not-allowed; transform: none; opacity: .85; }
 
     /* Results grid */
     .results { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 22px; }
@@ -176,9 +193,10 @@
     ENCON
   </div>
   <div class="step-tabs">
-    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Inputs</div>
-    <div class="step-tab disabled"  id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Results &amp; BOM</div>
-    <div class="step-tab disabled"  id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Generate Offer</div>
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Customer Details</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Parameters</div>
+    <div class="step-tab disabled" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Results &amp; BOM</div>
+    <div class="step-tab disabled" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Generate Offer</div>
   </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
@@ -195,12 +213,144 @@
 
 <div class="page">
 
-  <!-- ══ STEP 1 — Inputs ══ -->
+  <!-- ══ STEP 1 — Customer Details ══ -->
   <div class="step-panel active" id="panel-1">
-  <div class="hero">
-    <h1>Recuperator Costing</h1>
-    <p>USK Exports model. Sizing follows the standard LMTD chain &mdash; energy &rarr; air heat &rarr; surface area &rarr; pipe count &rarr; BOM.</p>
-  </div>
+    <div class="hero">
+      <h1>Recuperator Offer Generator</h1>
+      <p>USK Exports model. Sizes the recuperator from process inputs, then builds a priced BOM and a fully-rendered offer.</p>
+    </div>
+    <div class="step-heading">Step 1 &mdash; Customer &amp; Enquiry Details</div>
+
+    <div class="sec-label">Contact Person</div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Full Name <span class="req">*</span></label>
+        <div style="display:flex; gap:6px">
+          <select id="c-salutation" style="flex:0 0 80px">
+            <option value="">—</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-name" type="text" value="Soumen Bose" placeholder="Full Name" style="flex:1"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Email Address <span class="req">*</span></label>
+        <input id="c-email" type="email" value="soumenbose@realgroup.org" placeholder="name@company.com"/>
+      </div>
+      <div class="field">
+        <label>Phone / Mobile <span class="req">*</span></label>
+        <input id="c-phone" type="tel" value="+91 9229339029" placeholder="+91 98765 43210"/>
+      </div>
+    </div>
+
+    <div class="sec-label">Company</div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Company Name <span class="req">*</span></label>
+        <input id="c-company" type="text" value="Real Ispat &amp; Power Ltd." placeholder="ABC Steel Ltd"/>
+      </div>
+      <div class="field">
+        <label>Designation / Department</label>
+        <input id="c-designation" type="text" value="Purchase Manager" placeholder="Purchase Manager"/>
+      </div>
+    </div>
+    <div class="fg fg-1">
+      <div class="field">
+        <label>Address</label>
+        <textarea id="c-address" placeholder="Street, Area, City, State">Urla Road, Raipur (C.G)</textarea>
+      </div>
+    </div>
+
+    <div class="sec-label">Enquiry</div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
+        <input id="c-ref" type="text" readonly style="background:#f1f5f9;color:#475569" placeholder="ENCON.04026.XXX/FBD/JS DT.DD/MM/YYYY"/>
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <select id="c-location" onchange="refreshRef()">
+          <option value="">— Select —</option>
+          <option value="Goa">Goa</option>
+          <option value="Vadodara">Vadodara</option>
+          <option value="Faridabad" selected>Faridabad</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Client Enquiry Ref</label>
+        <input id="c-client-enq" type="text" value="Mail enquiry, 05/08/2025" placeholder="Mail enquiry, DD/MM/YYYY"/>
+      </div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Subject</label>
+        <input id="c-subject" type="text" value="Offer for Recuperator" placeholder="Offer for Recuperator"/>
+      </div>
+      <div class="field">
+        <label>Application <span style="color:#94a3b8;font-weight:400">(on price line)</span></label>
+        <input id="c-application" type="text" value="50 TPH Furnace" placeholder="50 TPH Furnace"/>
+      </div>
+    </div>
+
+    <div class="sec-label">ENCON Contacts</div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Marketing Person</label>
+        <div style="display:flex; gap:6px">
+          <select id="c-marketing-salutation" style="flex:0 0 80px">
+            <option value="">—</option>
+            <option value="Mr." selected>Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-marketing" type="text" value="Jagdeep Singh" placeholder="Sales/marketing rep" style="flex:1"/>
+        </div>
+      </div>
+      <div class="field">
+        <label>Technical Person <small style="color:#94a3b8;font-weight:400">(initials in ref)</small></label>
+        <div style="display:flex; gap:6px">
+          <select id="c-technical-salutation" style="flex:0 0 80px">
+            <option value="">—</option>
+            <option value="Mr." selected>Mr.</option>
+            <option value="Mrs.">Mrs.</option>
+            <option value="Miss">Miss</option>
+            <option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-technical" type="text" value="Jagdeep Singh" placeholder="Technical contact" oninput="refreshRef()" style="flex:1"/>
+        </div>
+      </div>
+    </div>
+    <div class="fg fg-4">
+      <div class="field">
+        <label>Marketing Email</label>
+        <input id="c-marketing-email" type="email" value="operations@encon.co.in"/>
+      </div>
+      <div class="field">
+        <label>Marketing Phone</label>
+        <input id="c-marketing-phone" type="text" value="+91 7428488633"/>
+      </div>
+      <div class="field">
+        <label>Technical Email</label>
+        <input id="c-technical-email" type="email" value="operations@encon.co.in"/>
+      </div>
+      <div class="field">
+        <label>Technical Phone</label>
+        <input id="c-technical-phone" type="text" value="+91 7428488633"/>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-primary" onclick="goStep(2)"><span>Next Step</span><span>&rarr;</span></button>
+    </div>
+  </div><!-- /panel-1 -->
+
+  <!-- ══ STEP 2 — Parameters ══ -->
+  <div class="step-panel" id="panel-2">
+  <div class="step-heading">Step 2 &mdash; Recuperator Parameters</div>
 
   <!-- ── Process parameters ── -->
   <div class="section">
@@ -327,17 +477,14 @@
     <button class="btn-primary" id="calcBtn" onclick="calculate()">Calculate &rarr;</button>
     <span id="calcErr" class="err"></span>
   </div>
-  </div><!-- /panel-1 -->
+  </div><!-- /panel-2 -->
 
-  <!-- ══ STEP 2 — Results & BOM ══ -->
-  <div class="step-panel" id="panel-2">
-  <div class="hero">
-    <h1>Results &amp; BOM</h1>
-    <p>Sized output, editable bill of materials, and final cost roll-up. Adjust quantities or markup percentages and the Final Total recalculates live.</p>
-  </div>
+  <!-- ══ STEP 3 — Results & BOM ══ -->
+  <div class="step-panel" id="panel-3">
+  <div class="step-heading">Step 3 &mdash; Results &amp; BOM</div>
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-    <button class="btn-back" onclick="goStep(1)">&larr; Back to Inputs</button>
-    <button class="btn-primary" onclick="calculate()">Recalculate</button>
+    <button class="btn-back" onclick="goStep(2)">&larr; Back to Parameters</button>
+    <button class="btn-primary" style="flex:0 0 auto;" onclick="calculate()">Recalculate</button>
   </div>
   <div id="resultsBody">
     <div class="section-title">Sized Output</div>
@@ -397,113 +544,16 @@
     </div>
 
     <div style="display:flex; justify-content:flex-end; margin-top: 22px;">
-      <button class="btn-primary" onclick="goStep(3)">Continue to Generate Offer &rarr;</button>
+      <button class="btn-primary" style="flex:0 0 auto;" onclick="goStep(4)">Continue to Generate Offer &rarr;</button>
     </div>
   </div><!-- /resultsBody -->
-  </div><!-- /panel-2 -->
+  </div><!-- /panel-3 -->
 
-  <!-- ══ STEP 3 — Generate Offer ══ -->
-  <div class="step-panel" id="panel-3">
-  <div class="hero">
-    <h1>Generate Offer</h1>
-    <p>Customer details, application, and Annexure IV terms &amp; conditions. The Final Total carried over from Step 2 is the price that goes on the offer.</p>
-  </div>
+  <!-- ══ STEP 4 — Generate Offer ══ -->
+  <div class="step-panel" id="panel-4">
+  <div class="step-heading">Step 4 &mdash; Generate Offer</div>
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-    <button class="btn-back" onclick="goStep(2)">&larr; Back to Results</button>
-  </div>
-
-  <!-- ── Customer / Project ── -->
-  <div class="section">
-    <div class="section-title">Customer &amp; Project</div>
-    <div class="fg fg-3">
-      <div class="field">
-        <label>Salutation</label>
-        <select id="o-salutation">
-          <option value="">—</option>
-          <option value="Mr.">Mr.</option>
-          <option value="Mrs.">Mrs.</option>
-          <option value="Miss">Miss</option>
-          <option value="Dr.">Dr.</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>POC Name</label>
-        <input id="o-poc-name" type="text" value="Ashish Gupta"/>
-      </div>
-      <div class="field">
-        <label>Designation</label>
-        <input id="o-poc-desg" type="text" value="Purchase Manager"/>
-      </div>
-    </div>
-    <div class="fg fg-2">
-      <div class="field">
-        <label>Company Name</label>
-        <input id="o-company" type="text" value="Test Steel Pvt Ltd"/>
-      </div>
-      <div class="field">
-        <label>Company Address</label>
-        <input id="o-address" type="text" value="Plot 123, Industrial Estate, Mumbai"/>
-      </div>
-    </div>
-    <div class="fg fg-3">
-      <div class="field">
-        <label>Email</label>
-        <input id="o-email" type="email" value="buyer@teststeel.com"/>
-      </div>
-      <div class="field">
-        <label>Mobile</label>
-        <input id="o-mobile" type="tel" value="+91 98765 43210"/>
-      </div>
-      <div class="field">
-        <label>Project Name</label>
-        <input id="o-project" type="text" value="Recuperator for 50 TPH Furnace"/>
-      </div>
-    </div>
-    <div class="fg fg-2">
-      <div class="field">
-        <label>Application (goes on price line)</label>
-        <input id="o-application" type="text" value="50 TPH Furnace"/>
-        <div class="hint">Renders as "Recuperator for &lt;application&gt;"</div>
-      </div>
-      <div class="field">
-        <label>Client Enquiry Ref / Date</label>
-        <input id="o-client-enq" type="text" value="Mail enquiry, 05/08/2025"/>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Marketing Person ── -->
-  <div class="section">
-    <div class="section-title">Marketing Person (ENCON)</div>
-    <div class="fg fg-3">
-      <div class="field">
-        <label>Name</label>
-        <input id="o-mk-name" type="text" value="Jagdeep Singh"/>
-      </div>
-      <div class="field">
-        <label>Email</label>
-        <input id="o-mk-email" type="email" value="operations@encon.co.in"/>
-      </div>
-      <div class="field">
-        <label>Phone</label>
-        <input id="o-mk-phone" type="tel" value="+91 7428488633"/>
-      </div>
-    </div>
-    <div class="fg fg-2">
-      <div class="field">
-        <label>Technical Person (for ref initials)</label>
-        <input id="o-tech-person" type="text" value="Jagdeep Singh"/>
-        <div class="hint">First letter of each word becomes the initials in OUR REF.</div>
-      </div>
-      <div class="field">
-        <label>Location Code</label>
-        <select id="o-location">
-          <option value="FBD">FBD — Faridabad</option>
-          <option value="GOA">GOA — Goa</option>
-          <option value="VDD">VDD — Vadodara</option>
-        </select>
-      </div>
-    </div>
+    <button class="btn-back" onclick="goStep(3)">&larr; Back to Results</button>
   </div>
 
   <!-- ── Annexure IV ── -->
@@ -600,7 +650,7 @@
     <span id="genOk" style="color:var(--green); font-size:0.86rem; font-weight:600;"></span>
   </div>
   <div id="dlLinks" style="margin-top:18px;"></div>
-  </div><!-- /panel-3 -->
+  </div><!-- /panel-4 -->
 </div>
 
 <script>
@@ -612,19 +662,33 @@ const num = id => parseFloat($(id).value) || 0;
 const intv = id => parseInt($(id).value) || 0;
 
 function goStep(n) {
-  if ((n === 2 || n === 3) && !lastCalc) return; // need calc first
-  for (let i = 1; i <= 3; i++) {
+  if ((n === 3 || n === 4) && !lastCalc) return; // need calc first
+  for (let i = 1; i <= 4; i++) {
     $("panel-" + i).classList.toggle("active", i === n);
     $("tab-" + i).classList.toggle("active", i === n);
   }
+  // Mark earlier tabs as 'done'
+  $("tab-1").classList.toggle("done", n > 1);
+  $("tab-2").classList.toggle("done", n > 2);
   if (lastCalc) {
-    $("tab-1").classList.toggle("done", n !== 1);
-    $("tab-2").classList.remove("disabled");
     $("tab-3").classList.remove("disabled");
-    $("tab-2").classList.toggle("done", n === 3);
+    $("tab-4").classList.remove("disabled");
+    $("tab-3").classList.toggle("done", n > 3);
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+
+// Preview the auto enquiry-ref by hitting the lightweight peek endpoint.
+async function refreshRef() {
+  const tech = $("c-technical").value || "";
+  const loc  = $("c-location").value || "";
+  try {
+    const res = await fetch(`/api/next-quote-ref?technical_person=${encodeURIComponent(tech)}&location=${encodeURIComponent(loc)}`);
+    const data = await res.json();
+    if (data && data.ref) $("c-ref").value = data.ref;
+  } catch (e) { /* silent */ }
+}
+window.addEventListener("DOMContentLoaded", refreshRef);
 
 async function calculate() {
   $("calcErr").textContent = "";
@@ -666,7 +730,7 @@ async function calculate() {
     }
     lastCalc = data;
     renderResults();
-    goStep(2);
+    goStep(3);
   } catch (e) {
     $("calcErr").textContent = e.message || "Network error";
   } finally {
@@ -758,24 +822,27 @@ async function generateOffer() {
   $("genBtn").disabled = true;
   $("genBtn").textContent = "Generating…";
 
+  const application = $("c-application").value || "";
+  const subject     = $("c-subject").value || "Offer for Recuperator";
   const payload = {
-    // Customer / project
-    salutation:        $("o-salutation").value,
-    poc_name:          $("o-poc-name").value,
-    poc_designation:   $("o-poc-desg").value,
-    company_name:      $("o-company").value,
-    company_address:   $("o-address").value,
-    email:             $("o-email").value,
-    mobile_no:         $("o-mobile").value,
-    project_name:      $("o-project").value,
-    application:       $("o-application").value,
-    client_enq_ref:    $("o-client-enq").value,
-    // Marketing / ref
-    marketing_person:  $("o-mk-name").value,
-    marketing_email:   $("o-mk-email").value,
-    marketing_phone:   $("o-mk-phone").value,
-    technical_person:  $("o-tech-person").value,
-    location:          $("o-location").value,
+    // Customer / project (from Step 1)
+    salutation:        $("c-salutation").value,
+    poc_name:          $("c-name").value,
+    poc_designation:   $("c-designation").value,
+    company_name:      $("c-company").value,
+    company_address:   $("c-address").value,
+    email:             $("c-email").value,
+    mobile_no:         $("c-phone").value,
+    project_name:      application ? `Recuperator for ${application}` : subject,
+    subject:           subject,
+    application:       application,
+    client_enq_ref:    $("c-client-enq").value,
+    // Marketing / ref (from Step 1)
+    marketing_person:  $("c-marketing").value,
+    marketing_email:   $("c-marketing-email").value,
+    marketing_phone:   $("c-marketing-phone").value,
+    technical_person:  $("c-technical").value,
+    location:          $("c-location").value,
     // T&C
     tnc_prices:             $("tnc_prices").value,
     tnc_delivery:           $("tnc_delivery").value,
