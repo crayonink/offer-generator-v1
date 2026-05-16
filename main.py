@@ -2381,6 +2381,107 @@ def snsf_brf_calculate(req: SNSFBRFCalcRequest):
         return {"error": str(e), "detail": traceback.format_exc()}
 
 
+# ── Recuperator (USK Exports model) ─────────────────────────────────────────
+
+@app.get("/recup", response_class=HTMLResponse)
+def recup_costing_form():
+    html_path = os.path.join(BASE_DIR, "recup_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+class RecupCalcRequest(BaseModel):
+    # Process parameters
+    connected_power_kw: float = 1500.0
+    fuel_cv_kcal_nm3:   float = 21000.0
+    # Flue gas
+    flue_flow_nm3hr:    float = 1811.0
+    flue_mass_kghr:     float = 2174.0
+    flue_temp_in_C:     float = 800.0
+    flue_temp_out_C:    float = 421.0
+    cp_flue_kcal_kgC:   float = 0.23
+    # Combustion air
+    air_volume_nm3hr:   float = 1750.0
+    air_temp_in_C:      float = 35.0
+    air_temp_out_C:     float = 400.0
+    cp_air_kcal_kgC:    float = 0.247
+    # Geometry / overrides
+    heat_transfer_coef: float = 30.0
+    pipe_dia_mm:        float = 48.3
+    pipe_thick_mm:      float = 2.77
+    pipe_kg_per_m:      float = 3.16
+    pipe_length_m_per_bank: float = 0.63
+    bank_length_mm:     float = 696.1
+    bank_width_mm:      float = 615.8
+    bank_gap_mm:        float = 150.0
+    pipes_in_row:       int = 0
+    pipes_in_column:    int = 0
+
+
+@app.post("/api/recup-calculate")
+def recup_calculate(req: RecupCalcRequest):
+    try:
+        from calculations.recup import RecupInputs, calculate_recup
+        from bom.recup_builder import build_recup_df, recup_summary, _load_rates
+
+        results = calculate_recup(RecupInputs(
+            connected_power_kw=req.connected_power_kw,
+            fuel_cv_kcal_nm3=req.fuel_cv_kcal_nm3,
+            flue_flow_nm3hr=req.flue_flow_nm3hr,
+            flue_mass_kghr=req.flue_mass_kghr,
+            flue_temp_in_C=req.flue_temp_in_C,
+            flue_temp_out_C=req.flue_temp_out_C,
+            cp_flue_kcal_kgC=req.cp_flue_kcal_kgC,
+            air_volume_nm3hr=req.air_volume_nm3hr,
+            air_temp_in_C=req.air_temp_in_C,
+            air_temp_out_C=req.air_temp_out_C,
+            cp_air_kcal_kgC=req.cp_air_kcal_kgC,
+            heat_transfer_coef=req.heat_transfer_coef,
+            pipe_dia_mm=req.pipe_dia_mm,
+            pipe_thick_mm=req.pipe_thick_mm,
+            pipe_kg_per_m=req.pipe_kg_per_m,
+            pipe_length_m_per_bank=req.pipe_length_m_per_bank,
+            bank_length_mm=req.bank_length_mm,
+            bank_width_mm=req.bank_width_mm,
+            bank_gap_mm=req.bank_gap_mm,
+            pipes_in_row=req.pipes_in_row,
+            pipes_in_column=req.pipes_in_column,
+        ))
+
+        rates = _load_rates()
+        df = build_recup_df(results, rates)
+        summary = recup_summary(results, rates)
+
+        detail = df[df["MEDIA"] != ""].copy()
+
+        return {
+            "calculations": {
+                "connected_power_kw":   req.connected_power_kw,
+                "fuel_cv_kcal_nm3":     req.fuel_cv_kcal_nm3,
+                "energy_kcal_hr":       results.energy_kcal_hr,
+                "fuel_flow_nm3hr":      results.fuel_flow_nm3hr,
+                "air_mass_kg_hr":       results.air_mass_kg_hr,
+                "heat_required_kcal":   results.heat_required_kcal,
+                "lmtd_C":               results.lmtd_C,
+                "lmtd_corrected_C":     results.lmtd_corrected_C,
+                "surface_area_m2":      results.surface_area_m2,
+                "pipes_total_raw":      results.pipes_total_raw,
+                "pipes_total":          results.pipes_total,
+                "pipes_in_row":         results.pipes_in_row,
+                "pipes_in_column":      results.pipes_in_column,
+                "weight_per_pipe_kg":   results.weight_per_pipe_kg,
+                "weight_hot_bank_kg":   results.weight_hot_bank_kg,
+                "weight_cold_bank_kg":  results.weight_cold_bank_kg,
+                "weight_total_pipes_kg": results.weight_total_pipes_kg,
+            },
+            "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
+            "cost_summary": summary,
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
 @app.get("/api/next-quote-ref")
 def api_next_quote_ref(technical_person: str = "", location: str = ""):
     """Preview the auto-generated enquiry ref for the form.
