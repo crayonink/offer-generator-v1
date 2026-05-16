@@ -47,6 +47,35 @@
     .topnav-links a:hover  { background: #f1f5f9; color: var(--navy); border-color: var(--border); }
     .topnav-links a.active { background: var(--navy); color: #fff; font-weight: 600; border-color: var(--navy); }
 
+    .step-tabs { display: flex; margin-right: 16px; }
+    .step-tab {
+      padding: 0 18px; height: 56px; font-size: 0.82rem; font-weight: 500;
+      color: #94a3b8; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .step-tab.active { color: var(--navy); border-bottom-color: var(--navy); font-weight: 600; }
+    .step-tab.done   { color: var(--green); }
+    .step-tab.disabled { color: #cbd5e1; cursor: not-allowed; pointer-events: none; }
+    .tab-n {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      font-size: 0.68rem; font-weight: 700;
+      background: #e5e7eb; color: #94a3b8; transition: all .15s;
+    }
+    .step-tab.active .tab-n { background: var(--navy); color: #fff; }
+    .step-tab.done .tab-n   { background: var(--green); color: #fff; }
+
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .btn-back {
+      background: transparent; color: var(--muted); border: 1.5px solid var(--border);
+      padding: 10px 20px; border-radius: 9px; font-size: 0.86rem; font-weight: 500;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .btn-back:hover { color: var(--navy); border-color: var(--navy); background: #fff; }
+
     .page { max-width: 920px; margin: 0 auto; padding: 48px 24px 80px; }
     .hero { margin-bottom: 36px; }
     .hero h1 { font-size: 2.4rem; font-weight: 900; line-height: 1.15; letter-spacing: -.04em; }
@@ -146,6 +175,10 @@
     <div class="brand-mark">EN</div>
     ENCON
   </div>
+  <div class="step-tabs">
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Inputs</div>
+    <div class="step-tab disabled"  id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Results &amp; BOM</div>
+  </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
     <a href="/hlph">HLPH</a>
@@ -160,6 +193,9 @@
 </nav>
 
 <div class="page">
+
+  <!-- ══ STEP 1 — Inputs ══ -->
+  <div class="step-panel active" id="panel-1">
   <div class="hero">
     <h1>Recuperator Costing</h1>
     <p>USK Exports model. Sizing follows the standard LMTD chain &mdash; energy &rarr; air heat &rarr; surface area &rarr; pipe count &rarr; BOM.</p>
@@ -286,13 +322,23 @@
     </div>
   </div>
 
-  <div style="display:flex; gap:12px; margin-top:8px;">
-    <button class="btn-primary" id="calcBtn" onclick="calculate()">Calculate</button>
+  <div style="display:flex; gap:12px; margin-top:8px; align-items:center;">
+    <button class="btn-primary" id="calcBtn" onclick="calculate()">Calculate &rarr;</button>
     <span id="calcErr" class="err"></span>
   </div>
+  </div><!-- /panel-1 -->
 
-  <!-- ── Results panel ── -->
-  <div id="resultsPanel" class="hide" style="margin-top: 36px;">
+  <!-- ══ STEP 2 — Results & BOM ══ -->
+  <div class="step-panel" id="panel-2">
+  <div class="hero">
+    <h1>Results &amp; BOM</h1>
+    <p>Sized output, editable bill of materials, and final cost roll-up. Adjust quantities or markup percentages and the Final Total recalculates live.</p>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+    <button class="btn-back" onclick="goStep(1)">&larr; Back to Inputs</button>
+    <button class="btn-primary" onclick="calculate()">Recalculate</button>
+  </div>
+  <div id="resultsBody">
     <div class="section-title">Sized Output</div>
     <div class="results">
       <div class="stat"><div class="l">Energy</div><div class="v"><span id="r-energy">0</span><span class="u">kcal/hr</span></div></div>
@@ -348,7 +394,8 @@
       </div>
       <div class="summary-row final"><span>Final Total</span><span id="s-final">&#8377; 0</span></div>
     </div>
-  </div>
+  </div><!-- /resultsBody -->
+  </div><!-- /panel-2 -->
 </div>
 
 <script>
@@ -358,6 +405,20 @@ const $ = id => document.getElementById(id);
 const fmt = n => "₹ " + Math.round(n).toLocaleString("en-IN");
 const num = id => parseFloat($(id).value) || 0;
 const intv = id => parseInt($(id).value) || 0;
+
+function goStep(n) {
+  if (n === 2 && !lastCalc) return; // can't open results before calc
+  for (let i = 1; i <= 2; i++) {
+    $("panel-" + i).classList.toggle("active", i === n);
+    $("tab-" + i).classList.toggle("active", i === n);
+  }
+  // Mark step 1 as done once results exist
+  if (lastCalc) {
+    $("tab-1").classList.toggle("done", n !== 1);
+    $("tab-2").classList.remove("disabled");
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 async function calculate() {
   $("calcErr").textContent = "";
@@ -399,17 +460,17 @@ async function calculate() {
     }
     lastCalc = data;
     renderResults();
+    goStep(2);
   } catch (e) {
     $("calcErr").textContent = e.message || "Network error";
   } finally {
     $("calcBtn").disabled = false;
-    $("calcBtn").textContent = "Calculate";
+    $("calcBtn").textContent = "Calculate →";
   }
 }
 
 function renderResults() {
   const d = lastCalc;
-  $("resultsPanel").classList.remove("hide");
 
   const c = d.calculations;
   $("r-energy").textContent = Math.round(c.energy_kcal_hr).toLocaleString("en-IN");
