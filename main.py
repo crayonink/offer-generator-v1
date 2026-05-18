@@ -1164,6 +1164,148 @@ def update_pricelist_item(req: ItemUpdateRequest):
         return {"success": False, "error": str(e)}
 
 
+# ── Vendor / component price tables + Recup rate constants ──────────────
+# Surfaces vendor pricelists (Cair / Dembla / L&T / regulator / orifice /
+# hose / gas-train / etc.) and the standalone recup_rates table so they can
+# be inspected and edited from /pricelist without raw SQL.
+
+VENDOR_TABLES: dict[str, dict] = {
+    # name -> { label, key, numeric_cols }
+    # `key` is the column tuple identifying a row for edits.
+    # `numeric_cols` are the cells that can be inline-edited.
+    "cair_motorized_valve_master":  {"label": "Cair MOV",         "key": ["id"], "numeric_cols": ["list_price", "discount_pct", "net_price"]},
+    "dembla_valve_master":          {"label": "Dembla CV",        "key": ["id"], "numeric_cols": ["list_price", "discount_pct", "net_price"]},
+    "lt_ball_valve_master":         {"label": "L&T Ball Valve",   "key": ["cat_no"], "numeric_cols": ["nb_15","nb_20","nb_25","nb_32","nb_40","nb_50","nb_65","nb_80","nb_100","nb_125","nb_150","nb_200","nb_250","nb_300","nb_350","nb_400","nb_450","nb_500","nb_600"]},
+    "lt_butterfly_valve_master":    {"label": "L&T Butterfly",    "key": ["id"], "numeric_cols": ["price"]},
+    "gas_regulator_master":         {"label": "Gas Regulator",    "key": ["id"], "numeric_cols": ["list_price"]},
+    "orifice_plate_master":         {"label": "Orifice Plate",    "key": ["nb"], "numeric_cols": ["flanges_price", "plate_price", "fasteners_price", "total_price"]},
+    "compensator_master":           {"label": "Compensator",      "key": ["nb"], "numeric_cols": ["price"]},
+    "flexible_hose_master":         {"label": "Flexible Hose",    "key": ["id"], "numeric_cols": ["price"]},
+    "gas_train_master":             {"label": "Gas Train",        "key": ["sr_no"], "numeric_cols": ["price_inr"]},
+    "motorized_valve_master":       {"label": "Motorized Valve",  "key": ["nb"], "numeric_cols": ["price"]},
+    "solenoidvalve_component_master": {"label": "Solenoid Valve", "key": ["id"], "numeric_cols": ["list_price"]},
+}
+
+
+class VendorCellUpdate(BaseModel):
+    table: str
+    key_values: dict           # { key_col: value, ... }  identifies the row
+    column: str                # the numeric column being edited
+    new_value: float
+
+
+class RecupRateUpdate(BaseModel):
+    key: str
+    value: float
+
+
+@app.get("/api/pricelist/vendor-tables")
+def get_vendor_tables():
+    """Return all vendor / component price tables as
+    { name: { label, columns, key, numeric_cols, rows } }."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        out = {}
+        for table, meta in VENDOR_TABLES.items():
+            try:
+                cols = [r[1] for r in conn.execute(f'PRAGMA table_info("{table}")').fetchall()]
+                if not cols:
+                    out[table] = {"label": meta["label"], "error": "table missing"}
+                    continue
+                rows = conn.execute(f'SELECT * FROM "{table}"').fetchall()
+                out[table] = {
+                    "label":        meta["label"],
+                    "columns":      cols,
+                    "key":          meta["key"],
+                    "numeric_cols": meta["numeric_cols"],
+                    "rows":         [dict(zip(cols, r)) for r in rows],
+                }
+            except Exception as inner:
+                out[table] = {"label": meta["label"], "error": str(inner)}
+        conn.close()
+        return out
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.put("/api/pricelist/vendor-cell")
+def update_vendor_cell(req: VendorCellUpdate):
+    """Update one numeric cell in a whitelisted vendor table."""
+    if req.table not in VENDOR_TABLES:
+        return {"success": False, "error": f"Table '{req.table}' not editable here"}
+    meta = VENDOR_TABLES[req.table]
+    if req.column not in meta["numeric_cols"]:
+        return {"success": False, "error": f"Column '{req.column}' not editable"}
+    key_cols = meta["key"]
+    if set(req.key_values.keys()) != set(key_cols):
+        return {"success": False, "error": f"Expected key cols {key_cols}, got {list(req.key_values.keys())}"}
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        where = " AND ".join(f'"{k}"=?' for k in key_cols)
+        params = [req.new_value] + [req.key_values[k] for k in key_cols]
+        cur = conn.execute(
+            f'UPDATE "{req.table}" SET "{req.column}"=? WHERE {where}', params
+        )
+        # For Cair / Dembla: when list_price or discount_pct changes, recompute net_price.
+        if req.column in ("list_price", "discount_pct") and req.table in ("cair_motorized_valve_master", "dembla_valve_master"):
+            row = conn.execute(
+                f'SELECT list_price, discount_pct FROM "{req.table}" WHERE {where}',
+                [req.key_values[k] for k in key_cols]
+            ).fetchone()
+            if row and row[0] is not None and row[1] is not None:
+                net = round(float(row[0]) * (1 - float(row[1]) / 100.0), 2)
+                conn.execute(
+                    f'UPDATE "{req.table}" SET net_price=? WHERE {where}',
+                    [net] + [req.key_values[k] for k in key_cols]
+                )
+        conn.commit()
+        # Read back the affected row so the client can refresh derived cells.
+        all_cols = [r[1] for r in conn.execute(f'PRAGMA table_info("{req.table}")').fetchall()]
+        row = conn.execute(
+            f'SELECT * FROM "{req.table}" WHERE {where}',
+            [req.key_values[k] for k in key_cols]
+        ).fetchone()
+        conn.close()
+        return {
+            "success":      True,
+            "rows_changed": cur.rowcount,
+            "row":          dict(zip(all_cols, row)) if row else None,
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/pricelist/recup-rates")
+def get_recup_rates():
+    """Return every key/value in recup_rates (with unit + notes)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cols = [r[1] for r in conn.execute('PRAGMA table_info("recup_rates")').fetchall()]
+        rows = conn.execute('SELECT * FROM recup_rates ORDER BY key').fetchall()
+        conn.close()
+        return [dict(zip(cols, r)) for r in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.put("/api/pricelist/recup-rate")
+def update_recup_rate(req: RecupRateUpdate):
+    """Update a single key in recup_rates."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.execute(
+            "UPDATE recup_rates SET value=? WHERE key=?", (req.value, req.key)
+        )
+        if cur.rowcount == 0:
+            conn.close()
+            return {"success": False, "error": f"Key '{req.key}' not found"}
+        conn.commit()
+        conn.close()
+        return {"success": True, "key": req.key, "value": req.value}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.get("/api/ladle-mapping")
 def ladle_mapping(tons: float, type: str = "vertical", hood_type: str = ""):
     """Return auto-filled fabrication/pipeline/ceramic values for a ladle

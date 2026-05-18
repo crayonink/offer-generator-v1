@@ -466,6 +466,8 @@
   <div class="tab"        data-sheet="rad-heat"     onclick="switchTab('rad-heat')">Rad Heat</div>
   <div class="tab"        data-sheet="gail"         onclick="switchTab('gail')">GAIL Gas Burner</div>
   <div class="tab"        data-sheet="rotary-joint" onclick="switchTab('rotary-joint')">Rotary Joint</div>
+  <div class="tab"        data-sheet="vendor"        onclick="switchTab('vendor')">Vendor Valves</div>
+  <div class="tab"        data-sheet="recup-rates"   onclick="switchTab('recup-rates')">Recup Rates</div>
   <div class="tab"        data-sheet="hlph"         onclick="switchTab('hlph')">Horizontal</div>
   <div class="tab"        data-sheet="vlph"         onclick="switchTab('vlph')">Vertical</div>
   <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
@@ -485,6 +487,8 @@
   <div class="sheet-panel"        id="sheet-rad-heat">    <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-rotary-joint"><div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-vendor">       <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-recup-rates">  <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading&hellip;</div></div>
@@ -554,14 +558,18 @@ async function loadAll() {
   icon.classList.add('spin');
   setStatus('Fetching data...');
   try {
-    const [summary, rates, stock] = await Promise.all([
+    const [summary, rates, stock, vendor, recupRates] = await Promise.all([
       fetch('/api/pricelist-summary').then(r => r.json()),
       fetch('/api/pricelist/rates').then(r => r.json()),
       fetch('/api/stock-rates').then(r => r.json()),
+      fetch('/api/pricelist/vendor-tables').then(r => r.json()),
+      fetch('/api/pricelist/recup-rates').then(r => r.json()),
     ]);
     DATA.summary = summary;
     DATA.rates = rates;
     DATA.stock = stock;
+    DATA.vendor = vendor;
+    DATA.recupRates = recupRates;
     renderAll();
     setStatus('Loaded', `${Array.isArray(rates) ? rates.length : 0} rate entries`);
   } catch (e) {
@@ -583,6 +591,8 @@ function renderAll() {
   renderRadHeat(s.rad_heat || {models:[],spares:[]}, s.rad_heat_tata || {models:[],spares:[]});
   renderGail(s.gail_gas_burner || []);
   renderRotaryJoint(s.rotary_joint || []);
+  renderVendorValves(DATA.vendor || {});
+  renderRecupRates(DATA.recupRates || []);
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
   renderBurnerPivot('burner-prices', s.burners || {});
@@ -2133,6 +2143,169 @@ function renderRegenCosting(payload) {
   }
 
   render();
+}
+
+// ── Vendor Valves tab ──────────────────────────────────────────────────────
+// Renders all 11 vendor / component price tables. Each table gets a sub-pill;
+// clicking a pill swaps in that table's rows. The active table's numeric
+// columns are inline-editable; saving issues PUT /api/pricelist/vendor-cell.
+let _vendorActive = null;
+
+function renderVendorValves(vendor) {
+  const el = document.getElementById('sheet-vendor');
+  if (!el) return;
+  const names = Object.keys(vendor || {}).filter(n => vendor[n] && !vendor[n].error);
+  if (!names.length) { el.innerHTML = emptyMsg('No vendor pricelists.'); return; }
+  if (!_vendorActive || !names.includes(_vendorActive)) _vendorActive = names[0];
+
+  const subPills = names.map(n => {
+    const info = vendor[n];
+    const cls = n === _vendorActive ? 'kw-tab kw-tab-active' : 'kw-tab';
+    return `<button class="${cls}" onclick="setVendorActive('${n}')">${esc(info.label || n)} <span style="opacity:.55;font-weight:500">${info.rows.length}</span></button>`;
+  }).join('');
+
+  const info = vendor[_vendorActive];
+  const cols = info.columns;
+  const keyCols = new Set(info.key);
+  const numCols = new Set(info.numeric_cols);
+
+  const head = cols.map(c => `<th>${esc(c)}</th>`).join('');
+  const body = info.rows.map((row, ri) => {
+    const cells = cols.map(c => {
+      const v = row[c];
+      if (numCols.has(c)) {
+        // Editable numeric cell with the table + key + col baked in.
+        const keyJson = esc(JSON.stringify(Object.fromEntries(info.key.map(k => [k, row[k]]))));
+        return `<td class="editable" data-table="${esc(_vendorActive)}" data-keys='${keyJson}' data-col="${esc(c)}" onclick="editVendorCell(this)">${v == null ? '' : fmt(v)}</td>`;
+      }
+      const isKey = keyCols.has(c);
+      const isNum = typeof v === 'number';
+      return `<td class="${isNum ? 'num-cell' : ''}${isKey ? ' item-cell' : ''}" title="${esc(c)}">${v == null ? '' : (isNum ? fmt(v) : esc(v))}</td>`;
+    }).join('');
+    return `<tr><td class="rn">${ri+1}</td>${cells}</tr>`;
+  }).join('');
+
+  el.innerHTML =
+    `<div class="kw-selector">${subPills}</div>` +
+    `<div class="xl-wrap"><table class="xl-table">` +
+    `<thead><tr><th class="rn">#</th>${head}</tr></thead>` +
+    `<tbody>${body}</tbody></table></div>`;
+}
+
+function setVendorActive(name) {
+  _vendorActive = name;
+  renderVendorValves(DATA.vendor || {});
+}
+
+function editVendorCell(td) {
+  if (td.classList.contains('editing')) return;
+  const original = td.textContent.trim();
+  td.classList.add('editing');
+  td.innerHTML = `<input type="number" step="any" value="${original.replace(/[^\d.\-]/g,'')}" />`;
+  const inp = td.querySelector('input');
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = async (commit) => {
+    if (done) return; done = true;
+    if (!commit) { td.classList.remove('editing'); td.textContent = original; return; }
+    const raw = inp.value.trim();
+    const val = parseFloat(raw);
+    if (raw === '' || isNaN(val)) { td.classList.remove('editing'); td.textContent = original; return; }
+    const table = td.dataset.table;
+    const keys  = JSON.parse(td.dataset.keys);
+    const col   = td.dataset.col;
+    try {
+      const res = await fetch('/api/pricelist/vendor-cell', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ table, key_values: keys, column: col, new_value: val }),
+      }).then(r => r.json());
+      if (!res.success) { alert('Save failed: ' + (res.error || 'unknown')); td.classList.remove('editing'); td.textContent = original; return; }
+      td.classList.remove('editing');
+      td.classList.add('saved');
+      td.textContent = fmt(val);
+      setTimeout(() => td.classList.remove('saved'), 1300);
+      // If the table has a derived column (net_price), patch the row in DATA so future renders reflect it.
+      if (res.row && DATA.vendor && DATA.vendor[table]) {
+        const tableRows = DATA.vendor[table].rows;
+        const key = DATA.vendor[table].key;
+        const idx = tableRows.findIndex(r => key.every(k => r[k] === keys[k]));
+        if (idx >= 0) tableRows[idx] = res.row;
+      }
+      // Re-render so derived cells (net_price) update visibly.
+      if (col === 'list_price' || col === 'discount_pct') renderVendorValves(DATA.vendor || {});
+    } catch (e) {
+      alert('Network error: ' + e.message);
+      td.classList.remove('editing'); td.textContent = original;
+    }
+  };
+  inp.addEventListener('blur', () => finish(true));
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  inp.blur();
+    if (e.key === 'Escape') finish(false);
+  });
+}
+
+// ── Recup Rates tab ─────────────────────────────────────────────────────────
+// The standalone recup_rates table — MS_PER_KG, MARKUP_*, labor flats, etc.
+// 24 key/value rows with units and notes. Click value to edit.
+function renderRecupRates(rates) {
+  const el = document.getElementById('sheet-recup-rates');
+  if (!el) return;
+  if (!Array.isArray(rates) || !rates.length) { el.innerHTML = emptyMsg('No recup rates.'); return; }
+  const body = rates.map((r, i) => `
+    <tr>
+      <td class="rn">${i+1}</td>
+      <td class="item-cell" title="${esc(r.key)}"><code style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${esc(r.key)}</code></td>
+      <td class="editable" data-key="${esc(r.key)}" onclick="editRecupRate(this)">${r.value == null ? '' : fmt(r.value)}</td>
+      <td style="color:var(--muted);font-size:.78rem">${esc(r.unit || '')}</td>
+      <td style="color:var(--muted);font-size:.78rem">${esc(r.notes || '')}</td>
+    </tr>`).join('');
+  el.innerHTML =
+    `<div class="section-label">Recuperator &mdash; standalone rate constants</div>` +
+    `<div class="xl-wrap"><table class="xl-table">` +
+    `<thead><tr><th class="rn">#</th><th class="item-th">Key</th><th>Value</th><th>Unit</th><th>Notes</th></tr></thead>` +
+    `<tbody>${body}</tbody></table></div>`;
+}
+
+function editRecupRate(td) {
+  if (td.classList.contains('editing')) return;
+  const original = td.textContent.trim();
+  const key = td.dataset.key;
+  td.classList.add('editing');
+  td.innerHTML = `<input type="number" step="any" value="${original.replace(/[^\d.\-]/g,'')}" />`;
+  const inp = td.querySelector('input');
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = async (commit) => {
+    if (done) return; done = true;
+    if (!commit) { td.classList.remove('editing'); td.textContent = original; return; }
+    const val = parseFloat(inp.value);
+    if (isNaN(val)) { td.classList.remove('editing'); td.textContent = original; return; }
+    try {
+      const res = await fetch('/api/pricelist/recup-rate', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ key, value: val }),
+      }).then(r => r.json());
+      if (!res.success) { alert('Save failed: ' + (res.error || 'unknown')); td.classList.remove('editing'); td.textContent = original; return; }
+      td.classList.remove('editing');
+      td.classList.add('saved');
+      td.textContent = fmt(val);
+      setTimeout(() => td.classList.remove('saved'), 1300);
+      // Patch in-memory cache too.
+      if (Array.isArray(DATA.recupRates)) {
+        const row = DATA.recupRates.find(r => r.key === key);
+        if (row) row.value = val;
+      }
+    } catch (e) {
+      alert('Network error: ' + e.message);
+      td.classList.remove('editing'); td.textContent = original;
+    }
+  };
+  inp.addEventListener('blur', () => finish(true));
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  inp.blur();
+    if (e.key === 'Escape') finish(false);
+  });
 }
 
 // ── Search / filter across every sheet ──────────────────────────────────────
