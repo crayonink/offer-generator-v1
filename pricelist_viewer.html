@@ -80,16 +80,20 @@
     .spin { animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── HERO STRIP (title + chip stats) ─────────────────────── */
+    /* ── HERO STRIP (title + search + chip stats) ─────────────── */
     .hero {
       padding: 22px 28px 18px; flex-shrink: 0;
       display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
       border-bottom: 1px solid var(--border2);
       background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
     }
+    .hero-text { flex-shrink: 0; }
     .hero-text h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.025em; color: var(--text); }
     .hero-text p  { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
-    .hero-chips { display: flex; gap: 10px; }
+    .hero-chips {
+      display: flex; gap: 10px; align-items: center; flex: 1;
+      justify-content: flex-end; flex-wrap: wrap; min-width: 0;
+    }
     .chip {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 6px 12px; border-radius: 20px;
@@ -99,6 +103,70 @@
     }
     .chip .l { color: var(--muted); font-weight: 500; margin-right: 4px; }
     .chip .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(5,150,105,.18); }
+    .chip.match { background: #eff6ff; border-color: #bfdbfe; color: var(--navy); }
+    .chip.match .l { color: #1e3a8a; }
+
+    /* ── SEARCH BAR ──────────────────────────────────────────── */
+    .search-wrap {
+      position: relative; display: flex; align-items: center;
+      flex: 1; min-width: 260px; max-width: 480px;
+    }
+    .search-wrap svg.s-ico {
+      position: absolute; left: 12px; width: 14px; height: 14px;
+      stroke: var(--muted); fill: none; stroke-width: 2.2; stroke-linecap: round; pointer-events: none;
+    }
+    .search-input {
+      width: 100%; padding: 9px 36px 9px 36px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; font: inherit; font-size: 0.84rem; color: var(--text);
+      outline: none; transition: border-color .15s, background .15s, box-shadow .15s;
+      font-family: inherit;
+    }
+    .search-input::placeholder { color: #94a3b8; }
+    .search-input:focus { border-color: var(--navy); background: #fff; box-shadow: 0 0 0 3px rgba(26,58,92,.08); }
+    .search-clear {
+      position: absolute; right: 10px; width: 20px; height: 20px;
+      border-radius: 50%; border: none; background: var(--border2);
+      color: var(--muted); cursor: pointer; display: none;
+      align-items: center; justify-content: center; font: inherit; font-size: 12px;
+    }
+    .search-clear:hover { background: var(--border); color: var(--text); }
+    .search-wrap.has-q .search-clear { display: flex; }
+    .search-kbd {
+      position: absolute; right: 10px; display: flex; gap: 3px; pointer-events: none;
+    }
+    .search-kbd kbd {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.66rem;
+      background: var(--border2); color: var(--muted);
+      padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);
+    }
+    .search-wrap.has-q .search-kbd,
+    .search-wrap:focus-within .search-kbd { display: none; }
+
+    /* tab badge + dim state when no matches */
+    .tab .tab-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 18px; height: 18px; padding: 0 5px; margin-left: 7px;
+      border-radius: 9px; background: rgba(15,23,42,.08); color: var(--muted);
+      font-size: 0.66rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .tab.active .tab-count { background: rgba(255,255,255,.22); color: #fff; }
+    .tab.empty-match { opacity: .42; }
+    .tab.empty-match .tab-count { background: var(--border2); color: #cbd5e1; }
+    .tab.active.empty-match { opacity: 1; }
+
+    /* filtered row + container hiding */
+    tr.row-filtered { display: none; }
+    .all-filtered { display: none !important; }
+
+    /* search empty-state inside a sheet panel */
+    .search-empty {
+      padding: 60px 24px; text-align: center; color: var(--muted);
+      font-size: 0.88rem; background: #fff; border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
+    .search-empty strong { color: var(--text); font-weight: 600; }
 
     /* ── PILL TAB BAR (above content) ────────────────────────── */
     .pillbar {
@@ -375,8 +443,14 @@
     <p>Editable rates &mdash; changes cascade across every BOM table on save.</p>
   </div>
   <div class="hero-chips">
+    <div class="search-wrap" id="search-wrap">
+      <svg class="s-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search-input" class="search-input" type="search" placeholder="Search every sheet — items, models, descriptions&hellip;" autocomplete="off"/>
+      <div class="search-kbd"><kbd>/</kbd></div>
+      <button class="search-clear" id="search-clear" type="button" title="Clear (Esc)" onclick="clearSearch()">&times;</button>
+    </div>
     <span class="chip"><span class="pulse"></span><span class="l">Live</span>vlph.db</span>
-    <span class="chip"><span class="l">Editable</span>click any tinted cell</span>
+    <span class="chip match" id="search-summary" style="display:none;"><span class="l">Found</span><span id="search-summary-val">0 matches</span></span>
   </div>
 </div>
 
@@ -2060,6 +2134,155 @@ function renderRegenCosting(payload) {
 
   render();
 }
+
+// ── Search / filter across every sheet ──────────────────────────────────────
+// Pure client-side filter. Walks every tbody tr in every .sheet-panel and
+// hides rows whose item-text doesn't include the query. Per-tab badges show
+// match counts so the user can jump to the tab with hits. Re-runs whenever
+// .sheet-area's DOM mutates (cascade re-renders) so filtered state persists.
+let _currentQuery = '';
+
+function _rowItemText(tr) {
+  // Prefer the freeze-pane item cell. Fall back to the leftmost non-row-number
+  // text cell. Excludes numeric / editable / amount / gap cells.
+  const item = tr.querySelector('.item-cell');
+  if (item) return item.textContent;
+  const cells = tr.querySelectorAll('td');
+  for (const td of cells) {
+    if (td.classList.contains('rn') || td.classList.contains('num-cell') ||
+        td.classList.contains('editable') || td.classList.contains('amount-cell') ||
+        td.classList.contains('gap-td')) continue;
+    if (td.textContent.trim()) return td.textContent;
+  }
+  return tr.textContent;
+}
+
+function applyFilter() {
+  const q = _currentQuery.toLowerCase();
+  const counters = {};
+  document.querySelectorAll('.sheet-panel').forEach(panel => {
+    const sheetId = panel.id.replace(/^sheet-/, '');
+    let visible = 0;
+    panel.querySelectorAll('tbody tr').forEach(tr => {
+      // Section / header rows always visible — they're navigation context, not data.
+      if (tr.classList.contains('section-hdr') || tr.classList.contains('sec-hdr') ||
+          tr.classList.contains('hdr2') || !tr.querySelector('td')) {
+        tr.classList.remove('row-filtered');
+        return;
+      }
+      if (!q) { tr.classList.remove('row-filtered'); visible++; return; }
+      const match = _rowItemText(tr).toLowerCase().includes(q);
+      tr.classList.toggle('row-filtered', !match);
+      if (match) visible++;
+    });
+    counters[sheetId] = visible;
+
+    // Hide table wrappers (and their section-label / kw-selector caps) whose
+    // every data row is filtered out — avoids a stack of empty cards.
+    panel.querySelectorAll('.xl-wrap, .ro-wrap').forEach(wrap => {
+      const hasVisible = !!wrap.querySelector('tbody tr:not(.row-filtered) td:not(.rn)');
+      const empty = !!q && !hasVisible;
+      wrap.classList.toggle('all-filtered', empty);
+      let prev = wrap.previousElementSibling;
+      while (prev && (prev.classList.contains('section-label') || prev.classList.contains('kw-selector'))) {
+        prev.classList.toggle('all-filtered', empty);
+        prev = prev.previousElementSibling;
+      }
+    });
+    panel.querySelectorAll('.model-block').forEach(block => {
+      const hasVisible = !!block.querySelector('.xl-wrap:not(.all-filtered), .ro-wrap:not(.all-filtered)');
+      block.classList.toggle('all-filtered', !!q && !hasVisible);
+    });
+
+    // Per-panel empty-state strip (only when this is the active panel)
+    let empty = panel.querySelector('.search-empty');
+    if (q && visible === 0 && panel.classList.contains('active')) {
+      if (!empty) {
+        empty = document.createElement('div');
+        empty.className = 'search-empty';
+        empty.innerHTML = 'No matches in this sheet for &ldquo;<strong></strong>&rdquo;.';
+        panel.appendChild(empty);
+      }
+      empty.querySelector('strong').textContent = _currentQuery;
+    } else if (empty) {
+      empty.remove();
+    }
+  });
+
+  // Tab badges + dim state when zero hits
+  document.querySelectorAll('.tab').forEach(t => {
+    const sheetId = t.dataset.sheet;
+    let badge = t.querySelector('.tab-count');
+    if (!q) { if (badge) badge.remove(); t.classList.remove('empty-match'); return; }
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'tab-count';
+      t.appendChild(badge);
+    }
+    const n = counters[sheetId] || 0;
+    badge.textContent = n;
+    t.classList.toggle('empty-match', n === 0);
+  });
+
+  // Hero summary chip
+  const summary = document.getElementById('search-summary');
+  const summaryVal = document.getElementById('search-summary-val');
+  if (summary && summaryVal) {
+    if (!q) { summary.style.display = 'none'; }
+    else {
+      const total = Object.values(counters).reduce((a, b) => a + b, 0);
+      const hitSheets = Object.values(counters).filter(n => n > 0).length;
+      summaryVal.textContent = `${total} match${total === 1 ? '' : 'es'} in ${hitSheets} sheet${hitSheets === 1 ? '' : 's'}`;
+      summary.style.display = '';
+    }
+  }
+}
+
+function _onSearchInput(e) {
+  _currentQuery = (e.target.value || '').trim();
+  document.getElementById('search-wrap').classList.toggle('has-q', !!_currentQuery);
+  applyFilter();
+}
+
+function clearSearch() {
+  const inp = document.getElementById('search-input');
+  inp.value = '';
+  _currentQuery = '';
+  document.getElementById('search-wrap').classList.remove('has-q');
+  applyFilter();
+  inp.focus();
+}
+
+// Wire input, hotkey ("/" focus, ESC clear), and observer.
+(function initSearch() {
+  const inp = document.getElementById('search-input');
+  if (!inp) return;
+  let timer = null;
+  inp.addEventListener('input', e => {
+    clearTimeout(timer);
+    timer = setTimeout(() => _onSearchInput(e), 120);
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && inp.value) { e.preventDefault(); clearSearch(); }
+  });
+  document.addEventListener('keydown', e => {
+    // Don't hijack typing in inputs / contenteditable cells
+    const t = e.target;
+    const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    if (e.key === '/' && !inField) { e.preventDefault(); inp.focus(); inp.select(); }
+  });
+
+  // The sheet area mutates whenever loadAll() / cascade-save re-renders a
+  // panel. Re-apply the filter after each batch of changes.
+  const area = document.getElementById('sheet-area');
+  if (area) {
+    let pending = null;
+    new MutationObserver(() => {
+      clearTimeout(pending);
+      pending = setTimeout(applyFilter, 60);
+    }).observe(area, { childList: true, subtree: true });
+  }
+})();
 
 // ── Init ────────────────────────────────────────────────────────────────────
 loadAll();
