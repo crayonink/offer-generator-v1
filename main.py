@@ -1170,20 +1170,21 @@ def update_pricelist_item(req: ItemUpdateRequest):
 # be inspected and edited from /pricelist without raw SQL.
 
 VENDOR_TABLES: dict[str, dict] = {
-    # name -> { label, key, numeric_cols }
-    # `key` is the column tuple identifying a row for edits.
-    # `numeric_cols` are the cells that can be inline-edited.
-    "cair_motorized_valve_master":  {"label": "Cair MOV",         "key": ["id"], "numeric_cols": ["list_price", "discount_pct", "net_price"]},
-    "dembla_valve_master":          {"label": "Dembla CV",        "key": ["id"], "numeric_cols": ["list_price", "discount_pct", "net_price"]},
-    "lt_ball_valve_master":         {"label": "L&T Ball Valve",   "key": ["cat_no"], "numeric_cols": ["nb_15","nb_20","nb_25","nb_32","nb_40","nb_50","nb_65","nb_80","nb_100","nb_125","nb_150","nb_200","nb_250","nb_300","nb_350","nb_400","nb_450","nb_500","nb_600"]},
-    "lt_butterfly_valve_master":    {"label": "L&T Butterfly",    "key": ["id"], "numeric_cols": ["price"]},
-    "gas_regulator_master":         {"label": "Gas Regulator",    "key": ["id"], "numeric_cols": ["list_price"]},
-    "orifice_plate_master":         {"label": "Orifice Plate",    "key": ["nb"], "numeric_cols": ["flanges_price", "plate_price", "fasteners_price", "total_price"]},
-    "compensator_master":           {"label": "Compensator",      "key": ["nb"], "numeric_cols": ["price"]},
-    "flexible_hose_master":         {"label": "Flexible Hose",    "key": ["id"], "numeric_cols": ["price"]},
-    "gas_train_master":             {"label": "Gas Train",        "key": ["sr_no"], "numeric_cols": ["price_inr"]},
-    "motorized_valve_master":       {"label": "Motorized Valve",  "key": ["nb"], "numeric_cols": ["price"]},
-    "solenoidvalve_component_master": {"label": "Solenoid Valve", "key": ["id"], "numeric_cols": ["list_price"]},
+    # name -> { label, key, numeric_cols, order_by }
+    # `order_by` is a SQL fragment (no semicolons) used to sort the rows
+    # in ascending order. Falls back to the natural key when not provided.
+    "aira_valve_master":            {"label": "AIRA",             "key": ["id"], "numeric_cols": ["list_price", "discount_pct", "net_price"], "order_by": "valve_type, nb"},
+    "cair_motorized_valve_master":  {"label": "Cair MOV",         "key": ["id"], "numeric_cols": ["list_price", "discount_pct", "net_price"], "order_by": "valve_type, nb"},
+    "dembla_valve_master":          {"label": "Dembla CV",        "key": ["id"], "numeric_cols": ["list_price", "discount_pct", "net_price"], "order_by": "valve_type, nb"},
+    "lt_ball_valve_master":         {"label": "L&T Ball Valve",   "key": ["cat_no"], "numeric_cols": ["nb_15","nb_20","nb_25","nb_32","nb_40","nb_50","nb_65","nb_80","nb_100","nb_125","nb_150","nb_200","nb_250","nb_300","nb_350","nb_400","nb_450","nb_500","nb_600"], "order_by": "cat_no"},
+    "lt_butterfly_valve_master":    {"label": "L&T Butterfly",    "key": ["id"], "numeric_cols": ["price"], "order_by": "operation, nb"},
+    "gas_regulator_master":         {"label": "Gas Regulator",    "key": ["id"], "numeric_cols": ["list_price"], "order_by": "category, nb"},
+    "orifice_plate_master":         {"label": "Orifice Plate",    "key": ["nb"], "numeric_cols": ["flanges_price", "plate_price", "fasteners_price", "total_price"], "order_by": "nb"},
+    "compensator_master":           {"label": "Compensator",      "key": ["nb"], "numeric_cols": ["price"], "order_by": "nb"},
+    "flexible_hose_master":         {"label": "Flexible Hose",    "key": ["id"], "numeric_cols": ["price"], "order_by": "dn, length_mm"},
+    "gas_train_master":             {"label": "Gas Train",        "key": ["sr_no"], "numeric_cols": ["price_inr"], "order_by": "sr_no"},
+    "motorized_valve_master":       {"label": "Motorized Valve",  "key": ["nb"], "numeric_cols": ["price"], "order_by": "nb"},
+    "solenoidvalve_component_master": {"label": "Solenoid Valve", "key": ["id"], "numeric_cols": ["list_price"], "order_by": "section, size, description"},
 }
 
 
@@ -1212,7 +1213,8 @@ def get_vendor_tables():
                 if not cols:
                     out[table] = {"label": meta["label"], "error": "table missing"}
                     continue
-                rows = conn.execute(f'SELECT * FROM "{table}"').fetchall()
+                order_clause = f' ORDER BY {meta["order_by"]}' if meta.get("order_by") else ''
+                rows = conn.execute(f'SELECT * FROM "{table}"{order_clause}').fetchall()
                 out[table] = {
                     "label":        meta["label"],
                     "columns":      cols,
