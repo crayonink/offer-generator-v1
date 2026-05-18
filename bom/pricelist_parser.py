@@ -262,6 +262,11 @@ def parse_rates(xl, conn):
             return v
         return clean_num(row.iloc[fallback_col]) if fallback_col is not None and len(row) > fallback_col else None
 
+    def _excel_col_of(group):
+        """1-based Excel column of whichever price column the value came from."""
+        col = group["price"] if group["price"] is not None else group["price_old"]
+        return (col or 0) + 1
+
     rows = []  # tuples of (item, category, unit, price, prev, excel_row, excel_col)
     for pandas_idx, row in df.iterrows():
         excel_row = int(pandas_idx) + 1  # 1-based Excel row
@@ -278,21 +283,21 @@ def parse_rates(xl, conn):
             unit = "kg" if price <= 500 else "nos"
             if "per mtr" in item.lower() or "(per mtr)" in item.lower():
                 unit = "mtr"
-            rows.append((item, "Raw Material", unit, price, prev or price, excel_row, g_a["price"] + 1))
+            rows.append((item, "Raw Material", unit, price, prev or price, excel_row, _excel_col_of(g_a)))
 
         # Group B: Bought Out
         item  = clean_text(row.iloc[g_b["item"]] if len(row) > g_b["item"] else None)
         price = _latest_price(row, g_b["price"], g_b["price_old"])
         prev  = clean_num(row.iloc[g_b["prev"]] if g_b["prev"] is not None and len(row) > g_b["prev"] else None)
         if item and price and not is_header(item):
-            rows.append((item, "Bought Out", "nos", price, prev or price, excel_row, g_b["price"] + 1))
+            rows.append((item, "Bought Out", "nos", price, prev or price, excel_row, _excel_col_of(g_b)))
 
         # Group C: ENCON Purchase
         item  = clean_text(row.iloc[g_c["item"]] if len(row) > g_c["item"] else None)
         price = _latest_price(row, g_c["price"], g_c["price_old"])
         prev  = clean_num(row.iloc[g_c["prev"]] if g_c["prev"] is not None and len(row) > g_c["prev"] else None)
         if item and price and not is_header(item):
-            rows.append((item, "ENCON Purchase", "nos", price, prev or price, excel_row, g_c["price"] + 1))
+            rows.append((item, "ENCON Purchase", "nos", price, prev or price, excel_row, _excel_col_of(g_c)))
 
     if not rows:
         return {"error": "No price data found in Rates sheet"}
