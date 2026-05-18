@@ -1501,11 +1501,38 @@ function renderLPH(sheetId, data) {
 
 // ── Burner Pivot table ───────────────────────────────────────────────────────
 const BURNER_GROUPS = [
-  { label: 'Oil Film Burners',     filter: k => k.includes('FILM') || (k.includes('DUAL') && k.includes('FUEL')) || (k.includes('SPARES') && !k.includes('HIGH VELOCITY')) },
+  { label: 'Oil Film Burners',     filter: k => (k.includes('FILM') || (k.includes('DUAL') && k.includes('FUEL'))) && !k.includes('SPARES') },
   { label: 'Gas Burners',          filter: k => k.includes('GAS') && !k.includes('HIGH VELOCITY') && !k.includes('PILOT') },
   { label: 'High Velocity Burners',filter: k => k.includes('HIGH VELOCITY') },
   { label: 'Pilot Burners',        filter: k => k.includes('PILOT') },
+  // Spares always render last so the main burner sizing tables stay near
+  // the top of the panel and the spares table is at the bottom.
+  { label: 'Spares',               filter: k => k.includes('SPARES') },
 ];
+
+// Pretty-print verbose Excel section titles into short tab-style headings.
+//   "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES" → "Gas Burner"
+//   "PRICE LIST FOR HIGH VELOCITY GAS BURNERS"                   → "High Velocity Gas Burner"
+//   "PRICE LIST FOR PILOT BURNER BURNERS"                        → "Pilot Burner"
+function prettifyBurnerSection(sec) {
+  let s = String(sec || '').trim();
+  s = s.replace(/^PRICE\s+(FOR\s+VARIOUS\s+SIZES\s+OF|LIST\s+FOR)\s+/i, '');
+  // Strip the redundant "Spares Of" prefix — the parent group is already
+  // labelled "Spares", so this section just needs to name the burner type.
+  s = s.replace(/^SPARES\s+OF\s+/i, '');
+  s = s.replace(/\bENCON\b/gi, '');
+  s = s.replace(/\s*&\s*ACCESSORIES\s*$/i, '');
+  s = s.replace(/\bBURNERS\b/gi, 'Burner');
+  s = s.replace(/'/g, '');
+  s = s.replace(/\bIIP\b/gi, 'IIP');
+  // Collapse "Pilot Burner Burner" -> "Pilot Burner" (the source had it doubled)
+  s = s.replace(/\bBurner\s+Burner\b/gi, 'Burner');
+  s = s.replace(/\s+/g, ' ').trim();
+  // Title-case while preserving acronyms (IIP, etc.)
+  s = s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
+  s = s.replace(/\bIip\b/g, 'IIP');
+  return s || sec;
+}
 
 function renderBurnerPivot(sheetId, burners) {
   const el = document.getElementById(`sheet-${sheetId}`);
@@ -1520,7 +1547,7 @@ function renderBurnerPivot(sheetId, burners) {
       const sizes = Object.keys(sizeMap).sort();
       const comps = [...new Set(sizes.flatMap(s => Object.keys(sizeMap[s])))].sort();
       return `<div class="model-block">
-        <div class="section-label">${esc(sec)}</div>
+        <div class="section-label">${esc(prettifyBurnerSection(sec))}</div>
         <div class="ro-wrap"><table class="ro-table" style="min-width:auto;">
           <thead><tr>
             <th class="rn"></th>
