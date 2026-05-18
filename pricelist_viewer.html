@@ -3,261 +3,436 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ENCON — Pricelist WorkBook</title>
+  <title>ENCON — Pricelist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    html,body{height:100%;overflow:hidden;}
-    body{font-family:'Calibri',Calibri,sans-serif;font-size:12px;background:#f0f0f0;color:#000;display:flex;flex-direction:column;}
-
-    /* ── APP HEADER ── */
-    .app-header{background:#1a3a5c;padding:0 20px;flex-shrink:0;display:flex;align-items:center;height:44px;gap:10px;}
-    .brand{display:flex;align-items:center;gap:7px;text-decoration:none;}
-    .brand-logo{width:24px;height:24px;background:#059669;border-radius:5px;display:flex;align-items:center;justify-content:center;}
-    .brand-logo svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
-    .brand-name{font-size:.82rem;font-weight:700;color:#fff;letter-spacing:-.3px;}
-    .sep{color:rgba(255,255,255,.25);margin:0 3px;}
-    .page-title{font-size:.75rem;color:rgba(255,255,255,.5);font-weight:500;}
-    .app-nav{margin-left:auto;display:flex;gap:1px;}
-    .app-nav a{font-size:.7rem;color:rgba(255,255,255,.45);text-decoration:none;padding:4px 8px;border-radius:4px;font-weight:500;transition:all .15s;}
-    .app-nav a:hover{color:#fff;background:rgba(255,255,255,.08);}
-    .app-nav a.active{color:#fff;background:rgba(255,255,255,.12);}
-    .btn-refresh{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:5px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.18);font-size:.7rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;margin-left:8px;}
-    .btn-refresh:hover{background:rgba(255,255,255,.18);}
-    .btn-refresh svg{width:11px;height:11px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;}
-    .spin{animation:spin .8s linear infinite;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-
-    /* ── EXCEL RIBBON (title bar) ── */
-    .xl-ribbon{background:#217346;padding:0 20px;height:36px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
-    .xl-ribbon-title{font-size:.82rem;font-weight:700;color:#fff;letter-spacing:.01em;}
-    .xl-ribbon-sub{font-size:.68rem;color:rgba(255,255,255,.55);}
-
-    /* ── FORMULA BAR ── */
-    .formula-bar{background:#fff;border-bottom:1px solid #C8C8C8;height:26px;display:flex;align-items:center;flex-shrink:0;padding:0;}
-    .name-box{width:80px;min-width:80px;border-right:1px solid #C8C8C8;padding:0 8px;font-size:11px;color:#333;font-family:Calibri,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:100%;display:flex;align-items:center;}
-    .fx-sep{width:1px;background:#C8C8C8;height:100%;}
-    .fx-label{padding:0 8px;font-size:11px;color:#888;font-style:italic;border-right:1px solid #C8C8C8;height:100%;display:flex;align-items:center;}
-    .formula-val{padding:0 10px;font-size:11px;color:#1a1a1a;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:100%;display:flex;align-items:center;}
-
-    /* ── SHEET AREA (middle, scrollable) ── */
-    .sheet-area{flex:1;overflow-y:auto;overflow-x:hidden;background:#F2F2F2;padding:12px 16px 4px;}
-    .sheet-panel{display:none;}
-    .sheet-panel.active{display:block;}
-    .model-block{margin-bottom:18px;}
-
-    /* ── EXCEL GRID ── */
-    .xl-wrap{overflow:auto;border:1px solid #C8C8C8;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);}
-    .xl-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;white-space:nowrap;}
-
-    /* column headers */
-    .xl-table th{background:#F2F2F2;border:1px solid #D4D4D4;padding:3px 8px;font-weight:700;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
-    .xl-table th.top-header{background:#1F4E79;color:#fff;border-color:#163859;font-size:11px;letter-spacing:.03em;}
-    .xl-table th.gap-th{background:#fff;border:none;min-width:12px;width:12px;padding:0;}
-    .xl-table tr.hdr2 th{background:#D6E4F7;top:24px;color:#1F4E79;font-size:11px;}
-
-    /* row number column */
-    .xl-table .rn{background:#F2F2F2;border:1px solid #D4D4D4;text-align:center;color:#666;min-width:30px;width:30px;position:sticky;left:0;z-index:4;font-size:10px;}
-    .xl-table th.rn{z-index:7;top:0;}
-    .xl-table tr.hdr2 th.rn{top:24px;}
-
-    /* sticky item column with freeze-pane shadow */
-    .xl-table .item-cell{min-width:220px;max-width:360px;white-space:normal;position:sticky;left:30px;background:#fff;z-index:3;border-right:2px solid #AEAEAE !important;box-shadow:3px 0 5px rgba(0,0,0,.08);}
-    .xl-table th.item-th{position:sticky;left:30px;z-index:6;text-align:left;border-right:2px solid #AEAEAE !important;box-shadow:3px 0 5px rgba(0,0,0,.08);}
-
-    /* data cells */
-    .xl-table td{border:1px solid #D4D4D4;padding:2px 8px;color:#000;height:20px;}
-    .xl-table tbody tr:nth-child(even) td:not(.gap-td){background:#F9FBFF;}
-    .xl-table tbody tr:hover td:not(.gap-td){background:#DDEEFF;}
-
-    .xl-table .gap-td{background:#E0E0E0;border:none;min-width:12px;width:12px;padding:0;}
-    .xl-table .num-cell{text-align:right;min-width:90px;}
-
-    /* editable = yellow like Excel */
-    .editable{background:#FFFF99;cursor:cell;text-align:right;min-width:80px;}
-    .editable:hover{background:#FFEE44;outline:1px dashed #AAAA00;}
-    .editable.editing{background:#fff;outline:2px solid #1565C0;padding:0;z-index:10;position:relative;}
-    .editable.saved{background:#C6EFCE !important;transition:background .8s;}
-
-    /* amount = light gray computed */
-    .amount-cell{text-align:right;background:#F2F2F2;min-width:100px;color:#1a1a1a;}
-
-    /* total / selling rows */
-    .total-row td:not(.gap-td){background:#FCE4D6;font-weight:700;border-top:2px solid #C55A11;}
-    .selling-row td:not(.gap-td){background:#E2EFDA;font-weight:700;color:#375623;border-top:1px solid #70AD47;}
-
-    /* section header rows */
-    .xl-table .section-hdr td{background:#BDD7EE;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-top:2px solid #2E75B6;color:#1F3864;}
-
-    /* ── READONLY TABLES ── */
-    .ro-wrap{overflow:auto;border:1px solid #C8C8C8;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08);}
-    .ro-table{border-collapse:collapse;font-family:Calibri,sans-serif;font-size:12px;width:100%;white-space:nowrap;}
-    .ro-table th{background:#F2F2F2;border:1px solid #D4D4D4;padding:3px 10px;font-weight:700;text-align:center;position:sticky;top:0;z-index:5;color:#000;}
-    .ro-table td{border:1px solid #D4D4D4;padding:2px 10px;}
-    .ro-table tbody tr:nth-child(even) td{background:#F9FBFF;}
-    .ro-table tbody tr:hover td{background:#DDEEFF;}
-    .ro-table .rn{background:#F2F2F2;border:1px solid #D4D4D4;text-align:center;color:#666;min-width:30px;position:sticky;left:0;z-index:4;font-size:10px;}
-    .ro-table .sec-hdr td{background:#BDD7EE;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-top:2px solid #2E75B6;color:#1F3864;}
-
-    /* section label strip (Rad Heat / Burners) */
-    .section-label{font-size:.75rem;font-weight:700;color:#1F3864;background:#D6E4F7;border:1px solid #9DC3E6;border-bottom:none;padding:5px 10px;letter-spacing:.02em;}
-
-    /* ── HPU KW selector ── */
-    .kw-selector{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;background:#F2F2F2;border-bottom:1px solid #D0D7DE;}
-    .kw-tab{padding:3px 10px;font-size:12px;font-family:Calibri,sans-serif;border:1px solid #BFBFBF;background:#fff;cursor:pointer;border-radius:3px;color:#333;}
-    .kw-tab:hover{background:#E8F0FB;}
-    .kw-tab-active{background:#217346 !important;color:#fff !important;border-color:#217346 !important;font-weight:700;}
-
-    /* ── EMPTY STATE ── */
-    .empty-msg{padding:40px;text-align:center;color:#999;font-size:.85rem;}
-
-    /* ── BOTTOM EXCEL TABS ── */
-    .xl-tabs-outer{background:#D9D9D9;border-top:1px solid #AEAEAE;height:30px;display:flex;align-items:flex-end;flex-shrink:0;padding:0 4px 0 8px;overflow:hidden;}
-    .xl-tabs-scroll{display:flex;align-items:flex-end;overflow-x:auto;flex:1;scrollbar-width:none;gap:2px;}
-    .xl-tabs-scroll::-webkit-scrollbar{display:none;}
-    .tab{height:24px;padding:0 13px;font-size:11px;font-weight:500;color:#333;background:#C0C0C0;border:1px solid #AEAEAE;border-bottom:none;border-radius:3px 3px 0 0;cursor:pointer;display:flex;align-items:center;white-space:nowrap;transition:background .1s;font-family:Calibri,sans-serif;}
-    .tab:hover{background:#D4D4D4;}
-    .tab.active{background:#fff;color:#217346;font-weight:700;height:27px;border-color:#AEAEAE;}
-
-    /* ── STATUS BAR ── */
-    .status-bar{background:#217346;color:#fff;font-size:.68rem;padding:3px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
-    #status-msg{font-weight:600;}
-
-    /* ── CASCADE OVERLAY ── */
-    #cascade-overlay{display:none;position:fixed;inset:0;background:rgba(10,30,60,.78);z-index:9999;flex-direction:column;align-items:center;justify-content:center;color:white;}
-    #cascade-overlay.show{display:flex;}
-    .cascade-spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.25);border-top:4px solid #34d399;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px;}
-
-    /* ── MOBILE ── */
-    @media(max-width:640px){
-      .app-header{padding:0 10px;height:40px;}
-      .sep,.page-title,.app-nav{display:none;}
-      .xl-ribbon{height:30px;padding:0 10px;}
-      .xl-ribbon-sub{display:none;}
-      .formula-bar{height:22px;}
-      .name-box{width:60px;font-size:10px;}
-      .formula-val{font-size:10px;}
-      .sheet-area{padding:8px 6px 4px;}
-      .model-block{margin-bottom:12px;}
-      .section-label{font-size:.68rem;padding:3px 7px;}
-      .xl-table{font-size:11px;}
-      .xl-table th{padding:2px 4px;font-size:10px;}
-      .xl-table td{padding:1px 4px;height:17px;}
-      .xl-table .rn{min-width:22px;width:22px;}
-      .xl-table .item-cell{min-width:120px;left:22px;}
-      .xl-table th.item-th{left:22px;}
-      .editable{min-width:58px;}
-      .amount-cell{min-width:70px;}
-      .ro-table{font-size:11px;}
-      .ro-table th,.ro-table td{padding:2px 5px;}
-      .xl-tabs-outer{height:26px;}
-      .tab{height:20px;font-size:10px;padding:0 8px;}
-      .tab.active{height:23px;}
-      .status-bar{padding:2px 10px;}
-      #status-rows{display:none;}
+    :root {
+      --navy:    #1a3a5c;
+      --navy2:   #0f2744;
+      --accent:  #0ea5e9;
+      --green:   #059669;
+      --red:     #dc2626;
+      --amber:   #d97706;
+      --border:  #e5e7eb;
+      --border2: #f1f5f9;
+      --text:    #0f172a;
+      --muted:   #64748b;
+      --bg:      #f8fafc;
+      --surface: #ffffff;
+      --tint:    #eff6ff;
     }
-    @media(min-width:641px) and (max-width:1024px){
-      .app-header{padding:0 14px;}
-      .sheet-area{padding:10px 12px 4px;}
-      .xl-table{font-size:11.5px;}
-      .xl-table .item-cell{min-width:180px;}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif; font-size: 14px;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── TOP HEADER ─────────────────────────────────────────── */
+    .topnav {
+      background: #fff; border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 0 var(--border), 0 4px 20px rgba(0,0,0,.04);
+      display: flex; align-items: center; padding: 0 28px;
+      height: 60px; flex-shrink: 0; gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .brand-mark {
+      width: 32px; height: 32px; background: var(--navy); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 0.72rem; font-weight: 900; letter-spacing: -.2px;
+      box-shadow: 0 2px 8px rgba(26,58,92,.32);
+    }
+    .brand-name { font-size: 0.95rem; font-weight: 800; color: var(--text); letter-spacing: -.35px; }
+
+    .crumb {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; color: var(--muted); margin-left: 4px;
+    }
+    .crumb .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
+    .crumb .here { color: var(--text); font-weight: 600; }
+
+    .topnav-links { margin-left: auto; display: flex; gap: 4px; align-items: center; }
+    .topnav-links a {
+      font-size: 0.78rem; color: var(--muted); text-decoration: none;
+      padding: 6px 14px; border-radius: 20px; transition: all .15s; font-weight: 500;
+      border: 1px solid transparent;
+    }
+    .topnav-links a:hover  { background: #f1f5f9; color: var(--navy); border-color: var(--border); }
+    .topnav-links a.active { background: var(--navy); color: #fff; font-weight: 600; border-color: var(--navy); }
+
+    .topnav-actions { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
+    .iconbtn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 14px; border-radius: 9px;
+      background: var(--surface); color: var(--text);
+      border: 1.5px solid var(--border); font: inherit; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+    }
+    .iconbtn:hover { border-color: var(--navy); background: #f8fafc; color: var(--navy); }
+    .iconbtn.success { background: #ecfdf5; color: var(--green); border-color: #a7f3d0; }
+    .iconbtn.success:hover { background: #d1fae5; border-color: var(--green); }
+    .iconbtn.warn { background: #fff7ed; color: var(--amber); border-color: #fed7aa; }
+    .iconbtn.warn:hover { background: #fed7aa; border-color: var(--amber); }
+    .iconbtn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .spin { animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── HERO STRIP (title + chip stats) ─────────────────────── */
+    .hero {
+      padding: 22px 28px 18px; flex-shrink: 0;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+      border-bottom: 1px solid var(--border2);
+      background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+    }
+    .hero-text h1 { font-size: 1.5rem; font-weight: 800; letter-spacing: -.025em; color: var(--text); }
+    .hero-text p  { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+    .hero-chips { display: flex; gap: 10px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 0.74rem; font-weight: 600; color: var(--text);
+      box-shadow: 0 1px 2px rgba(0,0,0,.03);
+    }
+    .chip .l { color: var(--muted); font-weight: 500; margin-right: 4px; }
+    .chip .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(5,150,105,.18); }
+
+    /* ── PILL TAB BAR (above content) ────────────────────────── */
+    .pillbar {
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: 10px 28px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 6px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .pillbar::-webkit-scrollbar { display: none; }
+    .tab {
+      padding: 7px 14px; border-radius: 8px; cursor: pointer;
+      font-size: 0.8rem; font-weight: 500; color: var(--muted);
+      background: transparent; border: 1px solid transparent;
+      white-space: nowrap; transition: all .15s; user-select: none;
+      font-family: inherit;
+    }
+    .tab:hover { color: var(--text); background: #f1f5f9; }
+    .tab.active {
+      background: var(--navy); color: #fff; font-weight: 600;
+      border-color: var(--navy); box-shadow: 0 2px 8px rgba(26,58,92,.22);
+    }
+
+    /* ── SHEET AREA (middle, scrollable) ─────────────────────── */
+    .sheet-area {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      background: var(--bg); padding: 22px 28px 16px;
+    }
+    .sheet-panel { display: none; }
+    .sheet-panel.active { display: block; }
+    .model-block { margin-bottom: 22px; }
+    .empty-msg { padding: 60px; text-align: center; color: #94a3b8; font-size: 0.88rem; }
+
+    /* Section label strip (e.g. Rad Heat / Burners). Modern card cap. */
+    .section-label {
+      font-size: 0.74rem; font-weight: 700; color: var(--navy);
+      background: #fff; border: 1px solid var(--border); border-bottom: none;
+      padding: 11px 16px; letter-spacing: .04em; text-transform: uppercase;
+      border-radius: 12px 12px 0 0;
+    }
+
+    /* ── DATA TABLES (xl-* hooks preserved for JS) ───────────── */
+    .xl-wrap, .ro-wrap {
+      overflow: auto; border: 1px solid var(--border);
+      background: var(--surface); border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 4px 16px rgba(15,23,42,.04);
+    }
+    .section-label + .xl-wrap,
+    .section-label + .ro-wrap { border-radius: 0 0 12px 12px; border-top: none; }
+    .xl-table, .ro-table {
+      border-collapse: separate; border-spacing: 0;
+      font-family: inherit; font-size: 0.82rem;
+      width: 100%; white-space: nowrap;
+    }
+
+    /* Top header row */
+    .xl-table th, .ro-table th {
+      background: #f8fafc; border-bottom: 1px solid var(--border);
+      padding: 10px 12px; font-weight: 700; text-align: center;
+      position: sticky; top: 0; z-index: 5;
+      color: var(--text); font-size: 0.72rem; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .xl-table th.top-header {
+      background: linear-gradient(135deg, var(--navy) 0%, #1e4a7a 100%);
+      color: #fff; border-color: var(--navy);
+      font-size: 0.76rem; letter-spacing: .04em;
+    }
+    .xl-table th.gap-th { background: transparent; border: none; min-width: 14px; width: 14px; padding: 0; }
+    .xl-table tr.hdr2 th { background: #eff6ff; top: 38px; color: var(--navy); font-size: 0.7rem; }
+
+    /* Row number column */
+    .xl-table .rn, .ro-table .rn {
+      background: #f8fafc; border-right: 1px solid var(--border);
+      text-align: center; color: #94a3b8; min-width: 36px; width: 36px;
+      position: sticky; left: 0; z-index: 4;
+      font-size: 0.7rem; font-variant-numeric: tabular-nums;
+      font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    }
+    .xl-table th.rn, .ro-table th.rn { z-index: 7; top: 0; border-bottom: 1px solid var(--border); }
+    .xl-table tr.hdr2 th.rn { top: 38px; }
+
+    /* Sticky item column (freeze pane) */
+    .xl-table .item-cell {
+      min-width: 240px; max-width: 380px; white-space: normal;
+      position: sticky; left: 36px; background: var(--surface); z-index: 3;
+      border-right: 1px solid var(--border) !important;
+      box-shadow: 4px 0 12px -6px rgba(15,23,42,.12);
+      font-weight: 500; color: var(--text);
+    }
+    .xl-table th.item-th {
+      position: sticky; left: 36px; z-index: 6; text-align: left;
+      border-right: 1px solid var(--border) !important;
+      box-shadow: 4px 0 12px -6px rgba(15,23,42,.12);
+    }
+
+    /* Data cells */
+    .xl-table td, .ro-table td {
+      border-bottom: 1px solid var(--border2);
+      padding: 8px 12px; color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .xl-table tbody tr:hover td:not(.gap-td),
+    .ro-table tbody tr:hover td { background: #f8fafc; }
+    .xl-table tbody tr:hover .item-cell { background: #f1f5f9; }
+    .xl-table .gap-td { background: transparent; border: none; min-width: 14px; width: 14px; padding: 0; }
+    .xl-table .num-cell, .ro-table td.num-cell { text-align: right; min-width: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+
+    /* Editable cells — modern accent rather than spreadsheet yellow */
+    .editable {
+      background: var(--tint); cursor: pointer; text-align: right;
+      min-width: 90px; position: relative; transition: background .12s;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 500;
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .editable:hover { background: #dbeafe; }
+    .editable.editing {
+      background: #fff; padding: 0; z-index: 10; position: relative;
+      box-shadow: inset 0 0 0 2px var(--accent), 0 4px 12px rgba(14,165,233,.18);
+    }
+    .editable.saved {
+      background: #d1fae5 !important;
+      box-shadow: inset 3px 0 0 var(--green);
+      transition: background .9s, box-shadow .9s;
+    }
+    .editable input {
+      width: 100%; height: 100%; padding: 6px 10px;
+      border: none; outline: none; background: transparent;
+      font: inherit; text-align: right; color: var(--text);
+    }
+
+    /* Computed amount cell */
+    .amount-cell {
+      text-align: right; background: #f8fafc; min-width: 110px;
+      color: var(--text); font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem; font-weight: 600;
+    }
+
+    /* Totals & selling rows */
+    .total-row td:not(.gap-td) {
+      background: #fff7ed; font-weight: 700;
+      border-top: 1.5px solid var(--amber); color: #7c2d12;
+    }
+    .selling-row td:not(.gap-td) {
+      background: #ecfdf5; font-weight: 700;
+      border-top: 1.5px solid var(--green); color: #064e3b;
+    }
+
+    /* Section header rows (within a table) */
+    .xl-table .section-hdr td, .ro-table .sec-hdr td {
+      background: var(--navy); color: #fff;
+      font-weight: 700; font-size: 0.72rem;
+      letter-spacing: .06em; text-transform: uppercase;
+      border-top: none; padding: 9px 12px;
+    }
+
+    /* HPU KW selector (top of HPU sheet) */
+    .kw-selector {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 12px 14px; background: #fff;
+      border: 1px solid var(--border); border-bottom: none;
+      border-radius: 12px 12px 0 0;
+    }
+    .kw-tab {
+      padding: 6px 14px; font-size: 0.78rem; font-family: inherit;
+      border: 1.5px solid var(--border); background: var(--bg);
+      cursor: pointer; border-radius: 8px; color: var(--muted);
+      font-weight: 500; transition: all .15s;
+    }
+    .kw-tab:hover { color: var(--navy); border-color: var(--navy); background: #fff; }
+    .kw-tab-active {
+      background: var(--navy) !important; color: #fff !important;
+      border-color: var(--navy) !important; font-weight: 600;
+      box-shadow: 0 2px 6px rgba(26,58,92,.22);
+    }
+    .kw-selector + .xl-wrap, .kw-selector + .ro-wrap { border-radius: 0 0 12px 12px; border-top: none; }
+
+    /* ── SLIM STATUS FOOTER ──────────────────────────────────── */
+    .footer {
+      background: #fff; border-top: 1px solid var(--border);
+      padding: 0 28px; height: 36px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 18px;
+      font-size: 0.74rem; color: var(--muted);
+    }
+    .footer .group { display: flex; align-items: center; gap: 8px; }
+    .footer .lbl  { color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; font-size: 0.66rem; }
+    .footer .val  {
+      color: var(--text); font-weight: 600;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+      max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .footer #status-msg { color: var(--text); font-weight: 600; }
+    .footer #status-rows { color: var(--muted); font-weight: 500; }
+    .footer .spacer { margin-left: auto; }
+
+    /* ── CASCADE OVERLAY ─────────────────────────────────────── */
+    #cascade-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15,23,42,.55); backdrop-filter: blur(6px);
+      z-index: 9999; flex-direction: column; align-items: center; justify-content: center;
+      color: #fff;
+    }
+    #cascade-overlay.show { display: flex; }
+    .cascade-card {
+      background: #fff; color: var(--text); padding: 28px 36px;
+      border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.4);
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+      min-width: 320px;
+    }
+    .cascade-spinner {
+      width: 38px; height: 38px;
+      border: 3px solid var(--border); border-top-color: var(--navy);
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    .cascade-title { font-size: 0.95rem; font-weight: 700; }
+    .cascade-sub   { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .topnav { padding: 0 14px; gap: 10px; }
+      .crumb, .topnav-links { display: none; }
+      .topnav-actions { margin-left: auto; }
+      .iconbtn span.lbl { display: none; }
+      .hero { padding: 16px 14px 12px; flex-direction: column; align-items: flex-start; gap: 10px; }
+      .hero-chips { width: 100%; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+      .pillbar { padding: 8px 14px; }
+      .sheet-area { padding: 14px 12px; }
+      .footer { padding: 0 14px; gap: 12px; }
+      .footer .lbl { display: none; }
+      .footer .val { max-width: 140px; }
     }
   </style>
 </head>
 <body>
 
-<!-- App Header -->
-<div class="app-header">
+<!-- Top header -->
+<nav class="topnav">
   <a class="brand" href="/">
-    <div class="brand-logo"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <div class="brand-mark">EN</div>
     <span class="brand-name">ENCON</span>
   </a>
-  <span class="sep">/</span>
-  <span class="page-title">Pricelist WorkBook</span>
-  <nav class="app-nav">
+  <div class="crumb">
+    <span class="dot"></span>
+    <span class="here">Pricelist</span>
+  </div>
+  <div class="topnav-links">
     <a href="/">Dashboard</a>
-    <a href="/viewer">DB Viewer</a>
+    <a href="/costing">VLPH</a>
+    <a href="/hlph">HLPH</a>
+    <a href="/tundish">Tundish</a>
+    <a href="/recup">Recup</a>
     <a href="/pricelist" class="active">Pricelist</a>
-    <a href="/costing">VLPH Costing</a>
-  </nav>
-  <button class="btn-refresh" onclick="loadAll()">
-    <svg id="refresh-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-    Refresh
-  </button>
-  <button class="btn-refresh" style="background:rgba(40,167,69,.25);border-color:rgba(40,167,69,.5);" onclick="syncStockToPricelist()">
-    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-    Sync Stock Rates
-  </button>
-  <label class="btn-refresh" style="background:rgba(255,193,7,.2);border-color:rgba(255,193,7,.5);cursor:pointer;" title="Upload a new Stock*.xlsx file">
-    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    Upload Stock
-    <input type="file" accept=".xlsx" style="display:none;" onchange="uploadStockFile(this)">
-  </label>
-</div>
+    <a href="/viewer">DB Viewer</a>
+  </div>
+  <div class="topnav-actions">
+    <button class="iconbtn" onclick="loadAll()">
+      <svg id="refresh-icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      <span class="lbl">Refresh</span>
+    </button>
+    <button class="iconbtn success" onclick="syncStockToPricelist()">
+      <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      <span class="lbl">Sync Stock</span>
+    </button>
+    <label class="iconbtn warn" title="Upload a new Stock*.xlsx file">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="lbl">Upload Stock</span>
+      <input type="file" accept=".xlsx" style="display:none;" onchange="uploadStockFile(this)">
+    </label>
+  </div>
+</nav>
 
-<!-- Excel Ribbon strip -->
-<div class="xl-ribbon">
-  <span class="xl-ribbon-title">Pricelist WorkBook</span>
-  <span class="xl-ribbon-sub">Yellow cells are editable — click to change rate</span>
-</div>
-
-<!-- Formula Bar -->
-<div class="formula-bar">
-  <div class="name-box" id="name-box">—</div>
-  <div class="fx-label">fx</div>
-  <div class="formula-val" id="formula-val">Select a cell</div>
-</div>
-
-<!-- Sheet Content Area -->
-<div class="sheet-area" id="sheet-area">
-  <div class="sheet-panel active" id="sheet-rates">      <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-hpu">         <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-oil-parts">   <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-hv-parts">    <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-gas-parts">   <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-blowers">     <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-recuperator"> <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-rad-heat">    <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-rotary-joint"><div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-stock-rates">   <div class="empty-msg">Loading...</div></div>
-  <div class="sheet-panel"        id="sheet-regen-costing"> <div class="empty-msg">Loading...</div></div>
-</div>
-
-<!-- Bottom Excel-style Sheet Tabs -->
-<div class="xl-tabs-outer">
-  <div class="xl-tabs-scroll" id="tabs-bar">
-    <div class="tab active" data-sheet="rates"      onclick="switchTab('rates')">Rates</div>
-    <div class="tab"        data-sheet="hpu"         onclick="switchTab('hpu')">HPU</div>
-    <div class="tab"        data-sheet="oil-parts"   onclick="switchTab('oil-parts')">Oil Burner</div>
-    <div class="tab"        data-sheet="hv-parts"    onclick="switchTab('hv-parts')">HV Oil Burner</div>
-    <div class="tab"        data-sheet="gas-parts"   onclick="switchTab('gas-parts')">Gas Burner</div>
-    <div class="tab"        data-sheet="blowers"     onclick="switchTab('blowers')">Blower</div>
-    <div class="tab"        data-sheet="recuperator" onclick="switchTab('recuperator')">Recuperator</div>
-    <div class="tab"        data-sheet="rad-heat"    onclick="switchTab('rad-heat')">Rad Heat</div>
-    <div class="tab"        data-sheet="gail"        onclick="switchTab('gail')">GAIL Gas Burner</div>
-    <div class="tab"        data-sheet="rotary-joint" onclick="switchTab('rotary-joint')">Rotary Joint</div>
-    <div class="tab"        data-sheet="hlph"        onclick="switchTab('hlph')">Horizontal</div>
-    <div class="tab"        data-sheet="vlph"        onclick="switchTab('vlph')">Vertical</div>
-    <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
-    <div class="tab"        data-sheet="stock-rates"   onclick="switchTab('stock-rates')">Stock Rates</div>
-    <div class="tab"        data-sheet="regen-costing" onclick="switchTab('regen-costing')">Regen Costing</div>
+<!-- Hero strip -->
+<div class="hero">
+  <div class="hero-text">
+    <h1>Pricelist</h1>
+    <p>Editable rates &mdash; changes cascade across every BOM table on save.</p>
+  </div>
+  <div class="hero-chips">
+    <span class="chip"><span class="pulse"></span><span class="l">Live</span>vlph.db</span>
+    <span class="chip"><span class="l">Editable</span>click any tinted cell</span>
   </div>
 </div>
 
-<!-- Status Bar -->
-<div class="status-bar">
-  <span id="status-msg">Ready</span>
-  <span id="status-rows"></span>
+<!-- Pill tab bar -->
+<div class="pillbar" id="tabs-bar">
+  <div class="tab active" data-sheet="rates"        onclick="switchTab('rates')">Rates</div>
+  <div class="tab"        data-sheet="hpu"          onclick="switchTab('hpu')">HPU</div>
+  <div class="tab"        data-sheet="oil-parts"    onclick="switchTab('oil-parts')">Oil Burner</div>
+  <div class="tab"        data-sheet="hv-parts"     onclick="switchTab('hv-parts')">HV Oil Burner</div>
+  <div class="tab"        data-sheet="gas-parts"    onclick="switchTab('gas-parts')">Gas Burner</div>
+  <div class="tab"        data-sheet="blowers"      onclick="switchTab('blowers')">Blower</div>
+  <div class="tab"        data-sheet="recuperator"  onclick="switchTab('recuperator')">Recuperator</div>
+  <div class="tab"        data-sheet="rad-heat"     onclick="switchTab('rad-heat')">Rad Heat</div>
+  <div class="tab"        data-sheet="gail"         onclick="switchTab('gail')">GAIL Gas Burner</div>
+  <div class="tab"        data-sheet="rotary-joint" onclick="switchTab('rotary-joint')">Rotary Joint</div>
+  <div class="tab"        data-sheet="hlph"         onclick="switchTab('hlph')">Horizontal</div>
+  <div class="tab"        data-sheet="vlph"         onclick="switchTab('vlph')">Vertical</div>
+  <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
+  <div class="tab"        data-sheet="stock-rates"   onclick="switchTab('stock-rates')">Stock Rates</div>
+  <div class="tab"        data-sheet="regen-costing" onclick="switchTab('regen-costing')">Regen Costing</div>
 </div>
 
-<!-- Cascade Overlay -->
+<!-- Sheet content area -->
+<div class="sheet-area" id="sheet-area">
+  <div class="sheet-panel active" id="sheet-rates">       <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-hpu">         <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-oil-parts">   <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-hv-parts">    <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-gas-parts">   <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-blowers">     <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-recuperator"> <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-rad-heat">    <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-rotary-joint"><div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-stock-rates">   <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-regen-costing"> <div class="empty-msg">Loading&hellip;</div></div>
+</div>
+
+<!-- Slim status footer (also surfaces selected-cell info) -->
+<div class="footer">
+  <div class="group"><span id="status-msg">Ready</span></div>
+  <div class="group"><span id="status-rows"></span></div>
+  <div class="group spacer"><span class="lbl">Cell</span><span class="val" id="name-box">&mdash;</span></div>
+  <div class="group"><span class="lbl">Value</span><span class="val" id="formula-val">Select a cell</span></div>
+</div>
+
+<!-- Cascade overlay -->
 <div id="cascade-overlay">
-  <div class="cascade-spinner"></div>
-  <div style="font-size:1rem;font-weight:600;">Recalculating all prices...</div>
-  <div style="font-size:.78rem;opacity:.6;margin-top:8px;">Cascading rate changes across all product tables</div>
+  <div class="cascade-card">
+    <div class="cascade-spinner"></div>
+    <div class="cascade-title">Recalculating prices&hellip;</div>
+    <div class="cascade-sub">Cascading rate changes across all product tables</div>
+  </div>
 </div>
 
 <script>
