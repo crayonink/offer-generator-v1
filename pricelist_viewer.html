@@ -160,6 +160,13 @@
     tr.row-filtered { display: none; }
     .all-filtered { display: none !important; }
 
+    /* Vendor Valves: every sub-pill's table lives in the DOM so search can
+       see all rows. Only the active sub-pill is visible by default; when a
+       search query is active (body.searching) every sub-pill table reveals
+       so matches across vendors show up. */
+    #sheet-vendor .vendor-other { display: none; }
+    body.searching #sheet-vendor .vendor-other { display: block; margin-top: 18px; }
+
     /* search empty-state inside a sheet panel */
     .search-empty {
       padding: 60px 24px; text-align: center; color: var(--muted);
@@ -2164,32 +2171,39 @@ function renderVendorValves(vendor) {
     return `<button class="${cls}" onclick="setVendorActive('${n}')">${esc(info.label || n)} <span style="opacity:.55;font-weight:500">${info.rows.length}</span></button>`;
   }).join('');
 
-  const info = vendor[_vendorActive];
-  const cols = info.columns;
-  const keyCols = new Set(info.key);
-  const numCols = new Set(info.numeric_cols);
-
-  const head = cols.map(c => `<th>${esc(c)}</th>`).join('');
-  const body = info.rows.map((row, ri) => {
-    const cells = cols.map(c => {
-      const v = row[c];
-      if (numCols.has(c)) {
-        // Editable numeric cell with the table + key + col baked in.
-        const keyJson = esc(JSON.stringify(Object.fromEntries(info.key.map(k => [k, row[k]]))));
-        return `<td class="editable" data-table="${esc(_vendorActive)}" data-keys='${keyJson}' data-col="${esc(c)}" onclick="editVendorCell(this)">${v == null ? '' : fmt(v)}</td>`;
-      }
-      const isKey = keyCols.has(c);
-      const isNum = typeof v === 'number';
-      return `<td class="${isNum ? 'num-cell' : ''}${isKey ? ' item-cell' : ''}" title="${esc(c)}">${v == null ? '' : (isNum ? fmt(v) : esc(v))}</td>`;
+  // Render EVERY sub-pill's table — but only the active one is visible by
+  // default. Non-active tables carry .vendor-other; the search code reveals
+  // them via body.searching so a query for "DEMBLA" finds rows even when
+  // the user is sitting on the CAIR sub-pill.
+  const tables = names.map(name => {
+    const info = vendor[name];
+    const cols = info.columns;
+    const keyCols = new Set(info.key);
+    const numCols = new Set(info.numeric_cols);
+    const head = cols.map(c => `<th>${esc(c)}</th>`).join('');
+    const body = info.rows.map((row, ri) => {
+      const cells = cols.map(c => {
+        const v = row[c];
+        if (numCols.has(c)) {
+          const keyJson = esc(JSON.stringify(Object.fromEntries(info.key.map(k => [k, row[k]]))));
+          return `<td class="editable" data-table="${esc(name)}" data-keys='${keyJson}' data-col="${esc(c)}" onclick="editVendorCell(this)">${v == null ? '' : fmt(v)}</td>`;
+        }
+        const isKey = keyCols.has(c);
+        const isNum = typeof v === 'number';
+        return `<td class="${isNum ? 'num-cell' : ''}${isKey ? ' item-cell' : ''}" title="${esc(c)}">${v == null ? '' : (isNum ? fmt(v) : esc(v))}</td>`;
+      }).join('');
+      return `<tr><td class="rn">${ri+1}</td>${cells}</tr>`;
     }).join('');
-    return `<tr><td class="rn">${ri+1}</td>${cells}</tr>`;
+    const isActive = name === _vendorActive;
+    const blockClass = 'vendor-block' + (isActive ? ' vendor-active' : ' vendor-other');
+    const headerLabel = isActive ? '' :
+      `<div class="section-label">${esc(info.label || name)} &mdash; ${info.rows.length} rows</div>`;
+    return `<div class="${blockClass}" data-vendor="${esc(name)}">${headerLabel}<div class="xl-wrap"><table class="xl-table">` +
+           `<thead><tr><th class="rn">#</th>${head}</tr></thead>` +
+           `<tbody>${body}</tbody></table></div></div>`;
   }).join('');
 
-  el.innerHTML =
-    `<div class="kw-selector">${subPills}</div>` +
-    `<div class="xl-wrap"><table class="xl-table">` +
-    `<thead><tr><th class="rn">#</th>${head}</tr></thead>` +
-    `<tbody>${body}</tbody></table></div>`;
+  el.innerHTML = `<div class="kw-selector">${subPills}</div>${tables}`;
 }
 
 function setVendorActive(name) {
@@ -2316,22 +2330,23 @@ function editRecupRate(td) {
 let _currentQuery = '';
 
 function _rowItemText(tr) {
-  // Prefer the freeze-pane item cell. Fall back to the leftmost non-row-number
-  // text cell. Excludes numeric / editable / amount / gap cells.
-  const item = tr.querySelector('.item-cell');
-  if (item) return item.textContent;
-  const cells = tr.querySelectorAll('td');
-  for (const td of cells) {
-    if (td.classList.contains('rn') || td.classList.contains('num-cell') ||
-        td.classList.contains('editable') || td.classList.contains('amount-cell') ||
-        td.classList.contains('gap-td')) continue;
-    if (td.textContent.trim()) return td.textContent;
-  }
-  return tr.textContent;
+  // Search the whole row's text, minus the row-number / gap cells. This
+  // lets "DEMBLA" match the Company column, "MADAS" match the supplier
+  // column, etc. — not just the item name. Numeric cells come along
+  // for the ride; that's fine because real-world queries are textual.
+  let txt = '';
+  tr.querySelectorAll('td').forEach(td => {
+    if (td.classList.contains('rn') || td.classList.contains('gap-td')) return;
+    txt += ' ' + td.textContent;
+  });
+  return txt;
 }
 
 function applyFilter() {
   const q = _currentQuery.toLowerCase();
+  // body.searching reveals every Vendor Valves sub-pill so cross-vendor
+  // matches show up (e.g. searching "DEMBLA" while parked on the CAIR pill).
+  document.body.classList.toggle('searching', !!q);
   const counters = {};
   document.querySelectorAll('.sheet-panel').forEach(panel => {
     const sheetId = panel.id.replace(/^sheet-/, '');
