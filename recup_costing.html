@@ -352,22 +352,6 @@
   <div class="step-panel" id="panel-2">
   <div class="step-heading">Step 2 &mdash; Recuperator Parameters</div>
 
-  <!-- ── Process parameters ── -->
-  <div class="section">
-    <div class="section-title">Process Parameters</div>
-    <div class="fg fg-2">
-      <div class="field">
-        <label>Connected Power (kW)</label>
-        <input id="connected_power_kw" type="number" step="any" value="1500"/>
-      </div>
-      <div class="field">
-        <label>Fuel CV (kcal/Nm&sup3;)</label>
-        <input id="fuel_cv_kcal_nm3" type="number" step="any" value="21000"/>
-        <div class="hint">e.g. LPG &asymp; 21000, NG &asymp; 8500</div>
-      </div>
-    </div>
-  </div>
-
   <!-- ── Flue gas ── -->
   <div class="section">
     <div class="section-title">Flue Gas</div>
@@ -489,8 +473,6 @@
   <div id="resultsBody">
     <div class="section-title">Sized Output</div>
     <div class="results">
-      <div class="stat"><div class="l">Energy</div><div class="v"><span id="r-energy">0</span><span class="u">kcal/hr</span></div></div>
-      <div class="stat"><div class="l">Fuel Flow</div><div class="v"><span id="r-fuel">0</span><span class="u">Nm&sup3;/hr</span></div></div>
       <div class="stat"><div class="l">Heat Required</div><div class="v"><span id="r-heat">0</span><span class="u">kcal/hr</span></div></div>
       <div class="stat"><div class="l">LMTD (corrected)</div><div class="v"><span id="r-lmtd">0</span><span class="u">&deg;C</span></div></div>
       <div class="stat"><div class="l">Surface Area</div><div class="v"><span id="r-area">0</span><span class="u">m&sup2;</span></div></div>
@@ -695,8 +677,6 @@ async function calculate() {
   $("calcBtn").disabled = true;
   $("calcBtn").textContent = "Calculating…";
   const payload = {
-    connected_power_kw: num("connected_power_kw"),
-    fuel_cv_kcal_nm3:   num("fuel_cv_kcal_nm3"),
     flue_flow_nm3hr:    num("flue_flow_nm3hr"),
     flue_mass_kghr:     num("flue_mass_kghr"),
     flue_temp_in_C:     num("flue_temp_in_C"),
@@ -743,8 +723,6 @@ function renderResults() {
   const d = lastCalc;
 
   const c = d.calculations;
-  $("r-energy").textContent = Math.round(c.energy_kcal_hr).toLocaleString("en-IN");
-  $("r-fuel").textContent   = c.fuel_flow_nm3hr.toFixed(2);
   $("r-heat").textContent   = Math.round(c.heat_required_kcal).toLocaleString("en-IN");
   $("r-lmtd").textContent   = c.lmtd_corrected_C.toFixed(2);
   $("r-area").textContent   = c.surface_area_m2.toFixed(2);
