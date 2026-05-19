@@ -713,12 +713,32 @@ function syncRawPipesPreview() {
   const area  = (lmtd > 0 && htc > 0) ? Q / (lmtd * htc) : 0;
   const pipesRaw = area / (3.14 * (dia / 1000) * (lenM + 0.1));
 
-  // Auto path: rows=14, cols=ceil(raw/14), per Excel E20/E21 convention.
-  const rows = 14;
-  const cols = Math.max(1, Math.ceil(pipesRaw / rows));
+  // Mirror of _best_grid() in calculations/recup.py — find rows x cols
+  // that balances aspect skew + waste, with cols forced even.
+  const target = Math.max(1, Math.ceil(pipesRaw));
+  const [rows, cols] = bestGrid(target);
 
   $("pipes_raw_preview").textContent  = pipesRaw.toFixed(2);
   $("pipes_grid_preview").textContent = `${rows} × ${cols} = ${rows * cols}`;
+}
+
+function bestGrid(n) {
+  if (n <= 0) return [14, 2];
+  const s  = Math.floor(Math.sqrt(n));
+  const lo = Math.max(2, s - 8);
+  const hi = s + 8;
+  let best = null;
+  for (let rows = lo; rows <= hi; rows++) {
+    let cols = Math.max(2, Math.ceil(n / rows));
+    if (cols % 2) cols += 1;
+    const waste     = rows * cols - n;
+    const aspectPct = (Math.max(rows, cols) - Math.min(rows, cols)) / Math.min(rows, cols);
+    const wastePct  = waste / n;
+    // Primary score = aspect + 3 * waste_pct; tie-break toward rows=14.
+    const score = aspectPct + 3 * wastePct + Math.abs(rows - 14) * 0.0001;
+    if (best === null || score < best.score) best = { score, rows, cols };
+  }
+  return [best.rows, best.cols];
 }
 
 window.addEventListener("DOMContentLoaded", () => {

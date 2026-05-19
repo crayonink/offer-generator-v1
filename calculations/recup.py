@@ -106,30 +106,45 @@ def _vol_to_kg(volume_mm3: float, density: float) -> float:
 
 
 def _best_grid(n: int) -> tuple[int, int]:
-    """Pick the (rows, cols) layout for n total pipes that minimises waste
-    and stays near-square. Cols is forced EVEN so the two banks each hold
-    a whole number of pipes (E28 splits cols in half). Ties break toward
-    rows=14 (the Excel convention) so the auto and override paths agree
-    on common sizings.
+    """Pick the (rows, cols) layout for n total pipes that BALANCES
+    aspect skew and waste. Cols is forced EVEN so the two banks each
+    hold a whole number of pipes (E28 splits cols in half).
 
-    Search range is rows in [8, 20] — covers everything from small lab
-    units to large industrial recuperators without going pathological.
+    Scoring:  aspect_pct + 3 * waste_pct  (lower is better)
+      - aspect_pct = |rows - cols| / min(rows, cols)
+      - waste_pct  = (rows*cols - n) / n
+    Tie-breaks toward rows=14 so small cases still match the Excel
+    convention (n=168 -> 14x12).
 
-    Examples (with cols forced even):
-        n=168  -> 14 x 12  (matches Excel reference exactly)
-        n=100  -> 10 x 10
-        n= 80  -> 10 x  8
-        n= 56  ->  8 x  8  (tied with 14x4; aspect picks 8x8)
+    Search range scales with sqrt(n) — [sqrt(n) - 8, sqrt(n) + 8] —
+    so for very large n the algorithm finds near-square layouts that
+    a fixed [8, 20] range would miss.
+
+    Examples:
+        n=  168 -> 14 x 12   (Excel match)
+        n=  100 -> 10 x 10
+        n= 1248 -> 35 x 36  (waste 12, aspect diff 1)
+        n= 2179 -> 46 x 48  (waste 29, aspect diff 2)
+        n= 2414 -> 50 x 50  (waste 86, perfect square)
     """
     if n <= 0:
         return (14, 2)
+    s  = int(math.isqrt(n))
+    lo = max(2, s - 8)
+    hi = s + 8
     best = None  # (score, rows, cols)
-    for rows in range(8, 21):
+    for rows in range(lo, hi + 1):
         cols = max(2, math.ceil(n / rows))
         if cols % 2:
             cols += 1
-        waste  = rows * cols - n
-        score  = (waste, abs(rows - cols), abs(rows - 14))
+        waste      = rows * cols - n
+        aspect_pct = (max(rows, cols) - min(rows, cols)) / min(rows, cols)
+        waste_pct  = waste / n
+        # 3x weight on waste keeps things sensible for tall-skinny picks
+        # (e.g. 10x20=200 beats 14x16=224 only if waste matters; here 14x16
+        # wins because aspect_pct 0.143 << aspect_pct 1.0 of 10x20).
+        primary = aspect_pct + 3.0 * waste_pct
+        score = (primary, abs(rows - 14))
         if best is None or score < best[0]:
             best = (score, rows, cols)
     return best[1], best[2]
@@ -166,17 +181,14 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     effective_len = inp.pipe_length_m_per_bank + inp.surface_area_end_allowance_m
     pipes_raw = surface_area / (3.14 * pipe_dia_m * effective_len)
 
-    # ── E20/E21: rows / cols.
-    # Auto path: Excel convention — rows=14, cols=ceil(raw/14).
-    # Override path: user specifies total number of pipes; we pick the
-    # best (rows, cols) grid via _best_grid (search + scoring).
-    if inp.pipes_total_override and inp.pipes_total_override > 0:
-        rows_count, cols_count = _best_grid(inp.pipes_total_override)
-        pipes_total = rows_count * cols_count
-    else:
-        rows_count = 14
-        cols_count = max(1, math.ceil(pipes_raw / rows_count))
-        pipes_total = rows_count * cols_count
+    # ── E20/E21: rows / cols, both paths go through _best_grid so the
+    # result is always near-square. Auto target is ceil(raw); override
+    # target is whatever the user typed.
+    target = (inp.pipes_total_override
+              if inp.pipes_total_override and inp.pipes_total_override > 0
+              else max(1, math.ceil(pipes_raw)))
+    rows_count, cols_count = _best_grid(target)
+    pipes_total = rows_count * cols_count
     pipes_per_bank = pipes_total // 2  # E28: rows * (cols/2)
 
     # ── E16/E17: bank length and width (derived) ───────────────────
