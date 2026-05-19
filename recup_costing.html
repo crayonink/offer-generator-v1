@@ -437,14 +437,11 @@
         <div class="hint">Bank Length and Width are now derived from the rows/columns grid.</div>
       </div>
     </div>
-    <div class="fg fg-2">
+    <div class="fg fg-1">
       <div class="field">
-        <label>Pipes / Row (override; 0 = auto 14)</label>
-        <input id="pipes_in_row" type="number" step="1" value="0"/>
-      </div>
-      <div class="field">
-        <label>Pipes / Column (override; 0 = auto)</label>
-        <input id="pipes_in_column" type="number" step="1" value="0"/>
+        <label>Number of Recuperator Pipes (override; 0 = auto)</label>
+        <input id="pipes_total_override" type="number" step="1" value="0"/>
+        <div class="hint">Set a total to override the auto sizing. The best near-square rows &times; cols grid is picked automatically (cols always even so banks split evenly).</div>
       </div>
     </div>
   </div>
@@ -688,9 +685,8 @@ async function calculate() {
     pipe_kg_per_m:      num("pipe_kg_per_m"),
     pipe_length_m_per_bank: num("pipe_length_m_per_bank"),
     bank_gap_mm:        num("bank_gap_mm"),
-    pipes_in_row:       intv("pipes_in_row"),
-    pipes_in_column:    intv("pipes_in_column"),
-    tube_material:      $("tube_material").value,
+    pipes_total_override: intv("pipes_total_override"),
+    tube_material:        $("tube_material").value,
   };
   try {
     const res = await fetch("/api/recup-calculate", {

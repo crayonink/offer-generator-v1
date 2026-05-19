@@ -61,9 +61,10 @@ class RecupInputs:
     surface_area_end_allowance_m: float = 0.1  # the "+0.1" in E19 denominator
     lmtd_factor:          float = 0.9          # E14 trailing factor
     flue_density_factor:  float = 1.2          # kg/Nm3 — the *1.2 in E4 and E13
-    # ── Grid override (0 -> auto rows=14, cols=ceil(raw/14)) ────────
-    pipes_in_row:         int = 0              # E20
-    pipes_in_column:      int = 0              # E21
+    # ── Total-pipes override (0 -> auto: rows=14, cols=ceil(raw/14)).
+    #     When > 0, we honour the user's total and re-derive the grid as
+    #     rows=14, cols=ceil(total/14).
+    pipes_total_override: int = 0
     # ── Tube material (cost-only; "SS" or "MS"; same kg/m default) ──
     tube_material:        str = "SS"
 
@@ -104,6 +105,36 @@ def _vol_to_kg(volume_mm3: float, density: float) -> float:
     return volume_mm3 * (density / 1_000_000_000)
 
 
+def _best_grid(n: int) -> tuple[int, int]:
+    """Pick the (rows, cols) layout for n total pipes that minimises waste
+    and stays near-square. Cols is forced EVEN so the two banks each hold
+    a whole number of pipes (E28 splits cols in half). Ties break toward
+    rows=14 (the Excel convention) so the auto and override paths agree
+    on common sizings.
+
+    Search range is rows in [8, 20] — covers everything from small lab
+    units to large industrial recuperators without going pathological.
+
+    Examples (with cols forced even):
+        n=168  -> 14 x 12  (matches Excel reference exactly)
+        n=100  -> 10 x 10
+        n= 80  -> 10 x  8
+        n= 56  ->  8 x  8  (tied with 14x4; aspect picks 8x8)
+    """
+    if n <= 0:
+        return (14, 2)
+    best = None  # (score, rows, cols)
+    for rows in range(8, 21):
+        cols = max(2, math.ceil(n / rows))
+        if cols % 2:
+            cols += 1
+        waste  = rows * cols - n
+        score  = (waste, abs(rows - cols), abs(rows - 14))
+        if best is None or score < best[0]:
+            best = (score, rows, cols)
+    return best[1], best[2]
+
+
 def calculate_recup(inp: RecupInputs) -> RecupResults:
     # ── E4: flue mass = flow * 1.2 ──────────────────────────────────
     flue_mass = inp.flue_flow_nm3hr * inp.flue_density_factor
@@ -135,14 +166,17 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     effective_len = inp.pipe_length_m_per_bank + inp.surface_area_end_allowance_m
     pipes_raw = surface_area / (3.14 * pipe_dia_m * effective_len)
 
-    # ── E20/E21: 14 rows by default; cols = ceil(raw / rows) ───────
-    if inp.pipes_in_row > 0 and inp.pipes_in_column > 0:
-        rows_count = inp.pipes_in_row
-        cols_count = inp.pipes_in_column
+    # ── E20/E21: rows / cols.
+    # Auto path: Excel convention — rows=14, cols=ceil(raw/14).
+    # Override path: user specifies total number of pipes; we pick the
+    # best (rows, cols) grid via _best_grid (search + scoring).
+    if inp.pipes_total_override and inp.pipes_total_override > 0:
+        rows_count, cols_count = _best_grid(inp.pipes_total_override)
+        pipes_total = rows_count * cols_count
     else:
         rows_count = 14
         cols_count = max(1, math.ceil(pipes_raw / rows_count))
-    pipes_total = rows_count * cols_count
+        pipes_total = rows_count * cols_count
     pipes_per_bank = pipes_total // 2  # E28: rows * (cols/2)
 
     # ── E16/E17: bank length and width (derived) ───────────────────

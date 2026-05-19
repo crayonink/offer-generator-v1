@@ -2551,9 +2551,8 @@ class RecupCalcRequest(BaseModel):
     pipe_kg_per_m:      float = 3.16
     pipe_length_m_per_bank: float = 0.63
     bank_gap_mm:        float = 150.0
-    pipes_in_row:       int = 0
-    pipes_in_column:    int = 0
-    tube_material:      str = "SS"   # "SS" (Rs 250/kg) or "MS" (Rs 70/kg)
+    pipes_total_override: int = 0    # 0 = auto-derive from surface area
+    tube_material:        str = "SS" # "SS" (Rs 250/kg) or "MS" (Rs 70/kg)
 
 
 @app.post("/api/recup-calculate")
@@ -2576,8 +2575,7 @@ def recup_calculate(req: RecupCalcRequest):
             pipe_kg_per_m=req.pipe_kg_per_m,
             pipe_length_m_per_bank=req.pipe_length_m_per_bank,
             bank_gap_mm=req.bank_gap_mm,
-            pipes_in_row=req.pipes_in_row,
-            pipes_in_column=req.pipes_in_column,
+            pipes_total_override=req.pipes_total_override,
             tube_material=req.tube_material,
         ))
 
