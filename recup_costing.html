@@ -352,6 +352,55 @@
   <div class="step-panel" id="panel-2">
   <div class="step-heading">Step 2 &mdash; Recuperator Parameters</div>
 
+  <!-- ── Connected Process (Excel right-side mirror) ── -->
+  <!-- Inputs feed a derived chain that auto-fills the Flue Gas Flow below. -->
+  <div class="section">
+    <div class="section-title">Connected Process</div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Connected Power (kW)</label>
+        <input id="cp_power_kw" type="number" step="any" value="1500" oninput="syncConnectedChain()"/>
+      </div>
+      <div class="field">
+        <label>Fuel</label>
+        <select id="cp_fuel" onchange="onFuelChange()">
+          <option value="NG"   data-cv="8600">NG (8600 kcal/Nm³)</option>
+          <option value="LPG"  data-cv="21000">LPG (21,000 kcal/Nm³)</option>
+          <option value="PNG"  data-cv="8500">PNG (8500 kcal/Nm³)</option>
+          <option value="COG"  data-cv="4200">COG (4200 kcal/Nm³)</option>
+          <option value="BFG"  data-cv="900">BFG (900 kcal/Nm³)</option>
+          <option value="OTHER">Other (custom CV)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Cv (kcal/Nm&sup3;)</label>
+        <input id="cp_cv" type="number" step="any" value="8600" oninput="syncConnectedChain()"/>
+      </div>
+    </div>
+    <div class="fg fg-4">
+      <div class="field">
+        <label>Energy <small style="color:#94a3b8;font-weight:400">(= kW &times; 860)</small></label>
+        <input id="cp_energy" type="text" readonly value="12,90,000" style="background:#f1f5f9;color:#475569;cursor:not-allowed;"/>
+        <div class="hint">kcal/hr</div>
+      </div>
+      <div class="field">
+        <label>Fuel Flow <small style="color:#94a3b8;font-weight:400">(= Energy / CV)</small></label>
+        <input id="cp_fuel_flow" type="text" readonly value="150.00" style="background:#f1f5f9;color:#475569;cursor:not-allowed;"/>
+        <div class="hint">Nm³/hr</div>
+      </div>
+      <div class="field">
+        <label>Combustion Air <small style="color:#94a3b8;font-weight:400">(= Energy &times; 118/100000)</small></label>
+        <input id="cp_comb_air" type="text" readonly value="1,522.20" style="background:#f1f5f9;color:#475569;cursor:not-allowed;"/>
+        <div class="hint">Nm³/hr</div>
+      </div>
+      <div class="field">
+        <label>Flue Gas Flow <small style="color:#94a3b8;font-weight:400">(= Fuel + Air)</small></label>
+        <input id="cp_flue_flow" type="text" readonly value="1,672.20" style="background:#ecfdf5;color:#065f46;font-weight:600;cursor:not-allowed;"/>
+        <div class="hint">flows into Flue Gas section below &darr;</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Flue gas ── -->
   <div class="section">
     <div class="section-title">Flue Gas</div>
@@ -672,6 +721,45 @@ function syncFlueMass() {
   $("flue_mass_kghr").value = (flow * 1.2).toFixed(2);
 }
 window.addEventListener("DOMContentLoaded", syncFlueMass);
+
+// Connected Process chain — mirrors the Excel right-side derivation
+// (Connected Power -> Energy -> Fuel Flow -> Combustion Air Required ->
+//  reference Flue Gas Flow) PLUS the Excel's E3 formula which feeds
+// sizing: E3 = user combustion air input (E9) + fuel flow (I7).
+//
+// "Combustion Air" shown here is the DERIVED requirement (I8, ~1522).
+// "Flue Gas Flow" shown here is the E3 value that actually drives the
+// heat-balance — user's air input + fuel flow — so the calculator below
+// always uses the right number.
+function syncConnectedChain() {
+  const power   = parseFloat($("cp_power_kw").value) || 0;
+  const cv      = parseFloat($("cp_cv").value) || 0;
+  const userAir = parseFloat($("air_volume_nm3hr").value) || 0;
+  const energy   = power * 860;
+  const fuelFlow = cv > 0 ? energy / cv : 0;
+  const combAir  = energy * 118 / 100000;   // I8 — derived requirement
+  const flueGas  = userAir + fuelFlow;      // E3 — used for sizing
+  const fmt = n => n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  $("cp_energy").value    = fmt(energy);
+  $("cp_fuel_flow").value = fmt(fuelFlow);
+  $("cp_comb_air").value  = fmt(combAir);
+  $("cp_flue_flow").value = fmt(flueGas);
+  // Push E3 into the Flue Gas section + re-sync mass.
+  $("flue_flow_nm3hr").value = flueGas.toFixed(2);
+  syncFlueMass();
+}
+function onFuelChange() {
+  const sel = $("cp_fuel");
+  const cv  = sel.selectedOptions[0].dataset.cv;
+  if (cv) $("cp_cv").value = cv;
+  syncConnectedChain();
+}
+window.addEventListener("DOMContentLoaded", syncConnectedChain);
+// Re-run when the user's combustion-air volume changes (E3 depends on it).
+window.addEventListener("DOMContentLoaded", () => {
+  const el = $("air_volume_nm3hr");
+  if (el) el.addEventListener("input", syncConnectedChain);
+});
 
 async function calculate() {
   $("calcErr").textContent = "";
