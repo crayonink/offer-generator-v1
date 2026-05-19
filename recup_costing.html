@@ -508,7 +508,7 @@
          background:#f8fafc; border:1px dashed var(--border); border-radius:8px;
          font-size:0.78rem; color:var(--muted);">
       <strong style="color:var(--text)" id="bom-hidden-amt">&#8377; 0</strong>
-      auto-costed items (SS304/MS tubes, thermocouple, MS combustion air inlet assembly)
+      auto-costed items (SS304/MS tubes, MS combustion air inlet assembly)
       &mdash; included in totals but not shown above.
     </div>
 
@@ -837,10 +837,10 @@ function renderResults() {
   $("r-totwt").textContent   = c.weight_total_pipes_kg.toFixed(1);
 
   // Rows whose cost is fully driven by upstream sizing (heat balance,
-  // MS weight chain, fixed misc) — hidden from the BOM display so the
-  // table shows only the human-tunable line items. Their cost still
-  // flows into Grand Total / Final; surfaced via the chip below.
-  const HIDDEN = [/^Thermocouple/i, /ERW Tube/i, /^MS Combustion Air Inlet Assembly/i];
+  // MS weight chain) — hidden from the BOM display so the table shows
+  // only the human-tunable line items. Their cost still flows into
+  // Grand Total / Final; surfaced via the chip below.
+  const HIDDEN = [/ERW Tube/i, /^MS Combustion Air Inlet Assembly/i];
   const isHidden = name => HIDDEN.some(p => p.test(name || ""));
 
   let hiddenTotal = 0;
