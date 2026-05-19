@@ -2553,6 +2553,7 @@ class RecupCalcRequest(BaseModel):
     bank_gap_mm:        float = 150.0
     pipes_in_row:       int = 0
     pipes_in_column:    int = 0
+    tube_material:      str = "SS"   # "SS" (Rs 250/kg) or "MS" (Rs 70/kg)
 
 
 @app.post("/api/recup-calculate")
@@ -2577,6 +2578,7 @@ def recup_calculate(req: RecupCalcRequest):
             bank_gap_mm=req.bank_gap_mm,
             pipes_in_row=req.pipes_in_row,
             pipes_in_column=req.pipes_in_column,
+            tube_material=req.tube_material,
         ))
 
         rates = _load_rates()
@@ -2608,6 +2610,7 @@ def recup_calculate(req: RecupCalcRequest):
                 "ms_hot_outlet_duct_kg": results.ms_hot_outlet_duct_kg,
                 "ms_pipe_holding_kg":   results.ms_pipe_holding_kg,
                 "ms_bottom_box_kg":     results.ms_bottom_box_kg,
+                "tube_material":        results.tube_material,
                 # Echo of inputs — the offer template needs these for the
                 # Designing Parameters table (flue/air conditions are
                 # process inputs, not derived values).

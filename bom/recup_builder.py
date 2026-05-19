@@ -72,8 +72,19 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
         return float(rates.get(key, default))
 
     ms_per_kg     = r('MS_PER_KG',         60.0)
-    ss304_per_kg  = r('SS304_TUBE_PER_KG', 220.0)
     flanges_kg    = r('FLANGES_KG',        100.0)
+    # Tube material switch — SS304 ERW or MS ERW. Rate + label follow the
+    # user's choice in RecupResults.tube_material; rates live in recup_rates
+    # so they can be retuned from the /pricelist Recup Rates tab.
+    tube_mat = (getattr(results, 'tube_material', 'SS') or 'SS').upper()
+    if tube_mat == 'MS':
+        tube_rate  = r('MS_TUBE_PER_KG',    70.0)
+        tube_label = 'MS ERW Tube'
+        tube_spec  = 'MS ERW'
+    else:
+        tube_rate  = r('SS304_TUBE_PER_KG', 250.0)
+        tube_label = 'SS304 ERW Tube'
+        tube_spec  = 'SS304 ERW'
     side_hood_kg  = r('SIDE_HOOD_MS_KG',   1500.0)
     side_hood_fab = r('SIDE_HOOD_COST',    50000.0)
     thermo_cost   = r('THERMOCOUPLE_TT',   8000.0)
@@ -98,17 +109,17 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
                  1, "TEMPSENS", thermo_cost, thermo_cost))
 
     # ── ENCON — Tubes (F40 broken into hot + cold) ─────────────────────
-    hot_total  = round(results.weight_hot_bank_kg  * ss304_per_kg, 2)
-    cold_total = round(results.weight_cold_bank_kg * ss304_per_kg, 2)
+    hot_total  = round(results.weight_hot_bank_kg  * tube_rate, 2)
+    cold_total = round(results.weight_cold_bank_kg * tube_rate, 2)
     rows.append((
-        "ENCON ITEMS", "SS304 ERW Tube — Hot Bank",
-        f"{results.weight_hot_bank_kg:.2f} kg @ Rs.{ss304_per_kg:.0f}/kg",
+        "ENCON ITEMS", f"{tube_label} — Hot Bank",
+        f"{results.weight_hot_bank_kg:.2f} kg @ Rs.{tube_rate:.0f}/kg",
         n_per_bank, "ENCON",
         round(hot_total / n_per_bank, 2), hot_total,
     ))
     rows.append((
-        "ENCON ITEMS", "SS304 ERW Tube — Cold Bank",
-        f"{results.weight_cold_bank_kg:.2f} kg @ Rs.{ss304_per_kg:.0f}/kg",
+        "ENCON ITEMS", f"{tube_label} — Cold Bank",
+        f"{results.weight_cold_bank_kg:.2f} kg @ Rs.{tube_rate:.0f}/kg",
         n_per_bank, "ENCON",
         round(cold_total / n_per_bank, 2), cold_total,
     ))

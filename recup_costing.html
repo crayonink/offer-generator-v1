@@ -403,7 +403,20 @@
   <!-- ── Geometry ── -->
   <div class="section">
     <div class="section-title">Pipe &amp; Bank Geometry</div>
-    <div class="fg fg-4">
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Tube Material</label>
+        <select id="tube_material">
+          <option value="SS" selected>Stainless Steel (SS304) &mdash; Rs.250/kg</option>
+          <option value="MS">Mild Steel (MS) &mdash; Rs.70/kg</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Bank Pipe Len (m)</label>
+        <input id="pipe_length_m_per_bank" type="number" step="any" value="0.63"/>
+      </div>
+    </div>
+    <div class="fg fg-3">
       <div class="field">
         <label>Pipe OD (mm)</label>
         <input id="pipe_dia_mm" type="number" step="any" value="48.3"/>
@@ -415,10 +428,6 @@
       <div class="field">
         <label>Pipe (kg/m)</label>
         <input id="pipe_kg_per_m" type="number" step="any" value="3.16"/>
-      </div>
-      <div class="field">
-        <label>Bank Pipe Len (m)</label>
-        <input id="pipe_length_m_per_bank" type="number" step="any" value="0.63"/>
       </div>
     </div>
     <div class="fg fg-1">
@@ -681,6 +690,7 @@ async function calculate() {
     bank_gap_mm:        num("bank_gap_mm"),
     pipes_in_row:       intv("pipes_in_row"),
     pipes_in_column:    intv("pipes_in_column"),
+    tube_material:      $("tube_material").value,
   };
   try {
     const res = await fetch("/api/recup-calculate", {
