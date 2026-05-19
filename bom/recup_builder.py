@@ -130,7 +130,7 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     # the additional forming / welding charge.
     rows.append((
         "ENCON ITEMS", "MS Side Hood (2 Nos) — Fabrication",
-        f"{int(side_hood_kg)} kg material rolled into Combustion Air Inlet Assy",
+        "Forming + welding charge",
         2, "ENCON", round(side_hood_fab / 2, 2), side_hood_fab,
     ))
 
@@ -167,7 +167,7 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
         cost = round(length_m * kg_per_m * ms_per_kg, 2)
         rows.append((
             "ENCON ITEMS", name,
-            f"{length_m:g} m x {kg_per_m:g} kg/m @ Rs.{ms_per_kg:.0f}/kg",
+            f"{length_m:g} m × {kg_per_m:g} kg/m",
             1, "ENCON", cost, cost,
         ))
 
@@ -177,17 +177,17 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     holefab = round(n_total * holes_per_pipe * hole_fab_per_hole, 2)
     rows.append((
         "ENCON ITEMS", "Pipe Bending",
-        f"({rows_count} rows + {cols_count} cols) x Rs.{bending_per_unit:.0f}",
+        f"{rows_count} + {cols_count} lines",
         1, "ENCON", bending, bending,
     ))
     rows.append((
         "ENCON ITEMS", "Welding Rods",
-        f"{rods_per_pipe} rods/pipe x {n_total} pipes x Rs.{welding_per_rod:.0f}/rod",
+        f"{n_total * rods_per_pipe:,} rods",
         1, "ENCON", welding, welding,
     ))
     rows.append((
         "ENCON ITEMS", "Hole Fabrication",
-        f"{holes_per_pipe} holes/pipe x {n_total} pipes x Rs.{hole_fab_per_hole:.0f}/hole",
+        f"{n_total * holes_per_pipe:,} holes",
         1, "ENCON", holefab, holefab,
     ))
 
