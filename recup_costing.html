@@ -504,6 +504,13 @@
         <tbody id="bom-body"></tbody>
       </table>
     </div>
+    <div id="bom-hidden-chip" style="display:none; margin-top:8px; padding:8px 12px;
+         background:#f8fafc; border:1px dashed var(--border); border-radius:8px;
+         font-size:0.78rem; color:var(--muted);">
+      <strong style="color:var(--text)" id="bom-hidden-amt">&#8377; 0</strong>
+      auto-costed items (SS304/MS tubes, thermocouple, MS combustion air inlet assembly)
+      &mdash; included in totals but not shown above.
+    </div>
 
     <!-- ── Cost summary ── -->
     <div class="summary">
@@ -829,17 +836,36 @@ function renderResults() {
   $("r-cold").textContent    = c.weight_cold_bank_kg.toFixed(1);
   $("r-totwt").textContent   = c.weight_total_pipes_kg.toFixed(1);
 
-  $("bom-body").innerHTML = d.bom.map((r, idx) => `
+  // Rows whose cost is fully driven by upstream sizing (heat balance,
+  // MS weight chain, fixed misc) — hidden from the BOM display so the
+  // table shows only the human-tunable line items. Their cost still
+  // flows into Grand Total / Final; surfaced via the chip below.
+  const HIDDEN = [/^Thermocouple/i, /ERW Tube/i, /^MS Combustion Air Inlet Assembly/i];
+  const isHidden = name => HIDDEN.some(p => p.test(name || ""));
+
+  let hiddenTotal = 0;
+  $("bom-body").innerHTML = d.bom.map((r, idx) => {
+    if (isHidden(r["ITEM NAME"])) { hiddenTotal += (r.TOTAL || 0); return ""; }
+    return `
     <tr>
       <td>${r.MEDIA || ""}</td>
       <td>${r["ITEM NAME"]}</td>
       <td>${r.REFERENCE || ""}</td>
       <td class="r"><input class="qty" type="number" step="1" value="${r.QTY}" data-idx="${idx}" oninput="onQty(this)"/></td>
       <td>${r.MAKE || ""}</td>
-      <td class="r">₹ ${Math.round(r["UNIT PRICE"]).toLocaleString("en-IN")}</td>
+      <td class="r"><input class="qty" type="number" step="any" value="${Math.round(r["UNIT PRICE"])}" data-idx="${idx}" oninput="onUnitPrice(this)" style="min-width:90px"/></td>
       <td class="r" id="bom-tot-${idx}">₹ ${Math.round(r.TOTAL).toLocaleString("en-IN")}</td>
-    </tr>
-  `).join("");
+    </tr>`;
+  }).join("");
+
+  // Hidden-items chip
+  const chip = $("bom-hidden-chip");
+  if (hiddenTotal > 0) {
+    chip.style.display = "";
+    $("bom-hidden-amt").textContent = "+ ₹ " + Math.round(hiddenTotal).toLocaleString("en-IN");
+  } else {
+    chip.style.display = "none";
+  }
 
   // Seed conversion from server (DB-driven default)
   $("s-conv").value   = d.cost_summary.markup_conversion;
@@ -852,6 +878,15 @@ function onQty(input) {
   const idx = +input.dataset.idx;
   const r = lastCalc.bom[idx];
   r.QTY = parseFloat(input.value) || 0;
+  r.TOTAL = r.QTY * r["UNIT PRICE"];
+  $("bom-tot-" + idx).textContent = "₹ " + Math.round(r.TOTAL).toLocaleString("en-IN");
+  recalc();
+}
+
+function onUnitPrice(input) {
+  const idx = +input.dataset.idx;
+  const r = lastCalc.bom[idx];
+  r["UNIT PRICE"] = parseFloat(input.value) || 0;
   r.TOTAL = r.QTY * r["UNIT PRICE"];
   $("bom-tot-" + idx).textContent = "₹ " + Math.round(r.TOTAL).toLocaleString("en-IN");
   recalc();
