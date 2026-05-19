@@ -412,8 +412,21 @@
         </select>
       </div>
       <div class="field">
-        <label>Bank Pipe Len (m)</label>
-        <input id="pipe_length_m_per_bank" type="number" step="any" value="0.63"/>
+        <label>Bank Pipe Length (m)</label>
+        <div style="display:flex; gap:6px">
+          <select id="pipe_length_preset" onchange="onPipeLengthPreset()" style="flex:0 0 130px">
+            <option value="0.50">0.50 m</option>
+            <option value="0.55">0.55 m</option>
+            <option value="0.63" selected>0.63 m (default)</option>
+            <option value="0.75">0.75 m</option>
+            <option value="1.00">1.00 m</option>
+            <option value="1.18">1.18 m</option>
+            <option value="1.50">1.50 m</option>
+            <option value="custom">Custom &hellip;</option>
+          </select>
+          <input id="pipe_length_m_per_bank" type="number" step="any" value="0.63" style="flex:1"/>
+        </div>
+        <div class="hint">Pick a standard length or type a custom value.</div>
       </div>
     </div>
     <div class="fg fg-3">
@@ -716,6 +729,27 @@ window.addEventListener("DOMContentLoaded", () => {
     if (el) el.addEventListener("input", syncRawPipesPreview);
   }
   syncRawPipesPreview();
+});
+
+// Standard pipe-length preset dropdown. Selecting a value writes it into the
+// length input; typing a non-preset value flips the dropdown to "Custom".
+function onPipeLengthPreset() {
+  const sel = $("pipe_length_preset");
+  const inp = $("pipe_length_m_per_bank");
+  if (sel.value !== "custom") {
+    inp.value = sel.value;
+    syncRawPipesPreview();
+  }
+}
+window.addEventListener("DOMContentLoaded", () => {
+  const inp = $("pipe_length_m_per_bank");
+  const sel = $("pipe_length_preset");
+  if (!inp || !sel) return;
+  inp.addEventListener("input", () => {
+    const val = inp.value;
+    const presets = Array.from(sel.options).map(o => o.value);
+    sel.value = presets.includes(val) ? val : "custom";
+  });
 });
 
 async function calculate() {
