@@ -2535,14 +2535,9 @@ def recup_costing_form():
 
 
 class RecupCalcRequest(BaseModel):
-    # Process parameters
-    connected_power_kw: float = 1500.0
-    fuel_cv_kcal_nm3:   float = 21000.0
-    # Flue gas
-    flue_flow_nm3hr:    float = 1811.0
-    flue_mass_kghr:     float = 2174.0
+    # Flue gas (only flow + inlet temp are inputs; mass and final temp are derived)
+    flue_flow_nm3hr:    float = 1900.0
     flue_temp_in_C:     float = 800.0
-    flue_temp_out_C:    float = 421.0
     cp_flue_kcal_kgC:   float = 0.23
     # Combustion air
     air_volume_nm3hr:   float = 1750.0
@@ -2555,8 +2550,6 @@ class RecupCalcRequest(BaseModel):
     pipe_thick_mm:      float = 2.77
     pipe_kg_per_m:      float = 3.16
     pipe_length_m_per_bank: float = 0.63
-    bank_length_mm:     float = 696.1
-    bank_width_mm:      float = 615.8
     bank_gap_mm:        float = 150.0
     pipes_in_row:       int = 0
     pipes_in_column:    int = 0
@@ -2569,12 +2562,8 @@ def recup_calculate(req: RecupCalcRequest):
         from bom.recup_builder import build_recup_df, recup_summary, _load_rates
 
         results = calculate_recup(RecupInputs(
-            connected_power_kw=req.connected_power_kw,
-            fuel_cv_kcal_nm3=req.fuel_cv_kcal_nm3,
             flue_flow_nm3hr=req.flue_flow_nm3hr,
-            flue_mass_kghr=req.flue_mass_kghr,
             flue_temp_in_C=req.flue_temp_in_C,
-            flue_temp_out_C=req.flue_temp_out_C,
             cp_flue_kcal_kgC=req.cp_flue_kcal_kgC,
             air_volume_nm3hr=req.air_volume_nm3hr,
             air_temp_in_C=req.air_temp_in_C,
@@ -2585,8 +2574,6 @@ def recup_calculate(req: RecupCalcRequest):
             pipe_thick_mm=req.pipe_thick_mm,
             pipe_kg_per_m=req.pipe_kg_per_m,
             pipe_length_m_per_bank=req.pipe_length_m_per_bank,
-            bank_length_mm=req.bank_length_mm,
-            bank_width_mm=req.bank_width_mm,
             bank_gap_mm=req.bank_gap_mm,
             pipes_in_row=req.pipes_in_row,
             pipes_in_column=req.pipes_in_column,
@@ -2600,29 +2587,32 @@ def recup_calculate(req: RecupCalcRequest):
 
         return {
             "calculations": {
-                "connected_power_kw":   req.connected_power_kw,
-                "fuel_cv_kcal_nm3":     req.fuel_cv_kcal_nm3,
-                "energy_kcal_hr":       results.energy_kcal_hr,
-                "fuel_flow_nm3hr":      results.fuel_flow_nm3hr,
-                "air_mass_kg_hr":       results.air_mass_kg_hr,
+                "flue_mass_kghr":       results.flue_mass_kghr,
                 "heat_required_kcal":   results.heat_required_kcal,
+                "flue_temp_out_C":      results.flue_temp_out_C,
                 "lmtd_C":               results.lmtd_C,
-                "lmtd_corrected_C":     results.lmtd_corrected_C,
                 "surface_area_m2":      results.surface_area_m2,
                 "pipes_total_raw":      results.pipes_total_raw,
                 "pipes_total":          results.pipes_total,
                 "pipes_in_row":         results.pipes_in_row,
                 "pipes_in_column":      results.pipes_in_column,
+                "pipes_per_bank":       results.pipes_per_bank,
+                "bank_length_mm":       results.bank_length_mm,
+                "bank_width_mm":        results.bank_width_mm,
                 "weight_per_pipe_kg":   results.weight_per_pipe_kg,
                 "weight_hot_bank_kg":   results.weight_hot_bank_kg,
                 "weight_cold_bank_kg":  results.weight_cold_bank_kg,
                 "weight_total_pipes_kg": results.weight_total_pipes_kg,
+                "ms_outer_shell_kg":    results.ms_outer_shell_kg,
+                "ms_air_inlet_duct_kg": results.ms_air_inlet_duct_kg,
+                "ms_hot_outlet_duct_kg": results.ms_hot_outlet_duct_kg,
+                "ms_pipe_holding_kg":   results.ms_pipe_holding_kg,
+                "ms_bottom_box_kg":     results.ms_bottom_box_kg,
                 # Echo of inputs — the offer template needs these for the
                 # Designing Parameters table (flue/air conditions are
                 # process inputs, not derived values).
                 "flue_flow_nm3hr":      req.flue_flow_nm3hr,
                 "flue_temp_in_C":       req.flue_temp_in_C,
-                "flue_temp_out_C":      req.flue_temp_out_C,
                 "air_volume_nm3hr":     req.air_volume_nm3hr,
                 "air_temp_in_C":        req.air_temp_in_C,
                 "air_temp_out_C":       req.air_temp_out_C,

@@ -1,26 +1,36 @@
-"""Recuperator sizing + costing (USK Exports model).
+"""Recuperator sizing + costing — exact port of the 'Recuperator for
+Hardening' Excel sheet (Recuperator_Excel.xlsx, 19/05/2026).
 
-Pure-logic module — no DB, no Flask. Mirrors the formulas in the
-'Recuperator for Hardening' sheet from USK Exports_Recuperator_19.08.2025
-so the web calculator produces the same numbers the engineer's
-spreadsheet does.
+Every numeric step here mirrors a specific cell in that workbook:
 
-Heat-transfer chain:
-  1. Energy = connected_power_kw * 860         (kcal/hr)
-  2. Fuel flow = Energy / CV                    (Nm³/hr)
-  3. Combustion-air = fuel-specific × fuel flow (Nm³/hr — input or derived)
-  4. Heat in preheated air = mass_air × Cp_air × dT_air (kcal/hr)
-  5. Flue mass flow (mass_air ≈ same as combustion air mass + flue makeup
-     — Excel uses ~1.2 × air for LPG combustion products; we let user
-     supply mass_flue if they want)
-  6. Final flue temp = Ti_flue - Q / (m_flue × Cp_flue)
-  7. LMTD = ((Ti_flue - Tf_air) - (Tf_flue - Ti_air)) /
-            ln((Ti_flue - Tf_air) / (Tf_flue - Ti_air))
-  8. LMTD_corrected = LMTD / 1.2 (convective)
-  9. Surface area = Q / (U × LMTD_corrected)
- 10. Pipe count = Area / (π × dia × pipe_length)
- 11. Round pipe count up to next row × column grid; each bank carries
-     the same pipe count (hot bank + cold bank).
+  E3  Total Flue Gas Nm3/hr        -> user input (flue_flow_nm3hr)
+  E4  Total Mass kg/hr             -> E3 * 1.2                  (auto)
+  E5  Cp Flue                      -> 0.23                      (const)
+  E6  Inlet Flue Temp              -> user input
+  E7  Final Flue Temp              -> E6 - (E13 / (E4*E5))      *derived*
+  E8  Heat Transfer Coef           -> 30 kcal/m2-C              (configurable)
+  E9  Combustion Air Vol           -> user input
+  E10 Initial Air Temp             -> user input
+  E11 Final Air Temp               -> user input
+  E12 Cp Air                       -> 0.247
+  E13 Q required                   -> (E9*1.2) * E12 * (E11-E10)
+  E14 LMTD                         -> ((dT1-dT2)/ln(dT1/dT2)) * 0.9
+  E15 Surface Area                 -> E13 / (E14 * E8)
+  E16 Bank Length mm               -> (((rows-1)/2)*32) + ((rows/2)*dia) + 150
+  E17 Bank Width  mm               -> ((cols/2)*48.3) + (((cols-1)/2)*32) + 150
+  E18 Bank Gap                     -> 150 mm
+  E19 Pipes raw                    -> E15 / (pi * (dia/1000) * (length + 0.1))
+  E20 Rows                         -> 14 (default, overridable)
+  E21 Cols                         -> ceil(E19 / rows)
+  G21 Total Pipes                  -> rows * cols  (split half/half across both banks)
+  E24 Length per pipe              -> 0.55 + 0.08 = 0.63 m
+  E26 Pipe kg/m                    -> 3.16
+  E27 Weight per pipe              -> 3.16 * 0.63 = 1.9908 kg
+  E28 Hot Bank total kg            -> per_pipe * (rows * cols / 2)
+  E35 Cold Bank total kg           -> same as E28
+
+MS structural weights (E41..E45) are derived from bank geometry instead
+of the previous flat constants, so they auto-scale with pipe count.
 """
 from __future__ import annotations
 
@@ -30,119 +40,159 @@ from dataclasses import dataclass
 
 @dataclass
 class RecupInputs:
-    # Process parameters
-    connected_power_kw: float
-    fuel_cv_kcal_nm3:   float            # e.g. 21000 for LPG
-    # Flue gas
-    flue_flow_nm3hr:      float          # e.g. 1811 — derived in spreadsheet; let user override
-    flue_mass_kghr:       float          # e.g. 2174 — derived in spreadsheet
-    flue_temp_in_C:       float          # 800
-    flue_temp_out_C:      float          # 421 (target — Excel solves for this)
-    cp_flue_kcal_kgC:     float = 0.23
-    # Combustion air to be preheated
-    air_volume_nm3hr:     float = 1750.0
-    air_temp_in_C:        float = 35.0
-    air_temp_out_C:       float = 400.0
-    cp_air_kcal_kgC:      float = 0.247
-    # Recuperator geometry
-    heat_transfer_coef:   float = 30.0   # kcal/m²-°C
-    pipe_dia_mm:          float = 48.3
-    pipe_thick_mm:        float = 2.77
-    pipe_kg_per_m:        float = 3.16
-    pipe_length_m_per_bank:float = 0.63
-    bank_length_mm:       float = 696.1
-    bank_width_mm:        float = 615.8
-    bank_gap_mm:          float = 150.0
-    # Forced row/column override (set 0 for auto-derive)
-    pipes_in_row:         int = 0
-    pipes_in_column:      int = 0
+    # ── Flue gas (inputs) ───────────────────────────────────────────
+    flue_flow_nm3hr:      float = 1900.0       # E3
+    flue_temp_in_C:       float = 800.0        # E6
+    cp_flue_kcal_kgC:     float = 0.23         # E5
+    # ── Combustion air to be preheated (inputs) ─────────────────────
+    air_volume_nm3hr:     float = 1750.0       # E9
+    air_temp_in_C:        float = 35.0         # E10
+    air_temp_out_C:       float = 400.0        # E11
+    cp_air_kcal_kgC:      float = 0.247        # E12
+    # ── Geometry constants (rarely changed) ─────────────────────────
+    heat_transfer_coef:   float = 30.0         # E8 kcal/m2-C
+    pipe_dia_mm:          float = 48.3         # E23
+    pipe_thick_mm:        float = 2.77         # E25
+    pipe_kg_per_m:        float = 3.16         # E26
+    pipe_length_m_per_bank: float = 0.63       # E24 = 0.55 + 0.08
+    bank_gap_mm:          float = 150.0        # E18
+    pipe_pitch_mm:        float = 32.0         # spacing between adjacent pipes
+    end_margin_mm:        float = 150.0        # margin on each side
+    surface_area_end_allowance_m: float = 0.1  # the "+0.1" in E19 denominator
+    lmtd_factor:          float = 0.9          # E14 trailing factor
+    flue_density_factor:  float = 1.2          # kg/Nm3 — the *1.2 in E4 and E13
+    # ── Grid override (0 -> auto rows=14, cols=ceil(raw/14)) ────────
+    pipes_in_row:         int = 0              # E20
+    pipes_in_column:      int = 0              # E21
 
 
 @dataclass
 class RecupResults:
-    # Energy
-    energy_kcal_hr:        float
-    fuel_flow_nm3hr:       float
-    # Air heat
-    air_mass_kg_hr:        float
-    heat_required_kcal:    float
-    # LMTD / area
-    lmtd_C:                float
-    lmtd_corrected_C:      float
-    surface_area_m2:       float
-    # Pipe count
-    pipes_total_raw:       float          # math result before rounding
-    pipes_total:           int            # rows x cols
-    pipes_in_row:          int
-    pipes_in_column:       int
-    # Pipe weights (each bank gets the same count)
-    weight_per_pipe_kg:    float
-    weight_hot_bank_kg:    float
-    weight_cold_bank_kg:   float
-    weight_total_pipes_kg: float
+    # Energy / heat balance
+    flue_mass_kghr:        float    # E4
+    heat_required_kcal:    float    # E13
+    flue_temp_out_C:       float    # E7
+    lmtd_C:                float    # E14 (already with the 0.9 correction)
+    surface_area_m2:       float    # E15
+    # Pipe geometry
+    pipes_total_raw:       float    # E19
+    pipes_total:           int      # G21
+    pipes_in_row:          int      # E20
+    pipes_in_column:       int      # E21
+    pipes_per_bank:        int      # G21 / 2
+    bank_length_mm:        float    # E16
+    bank_width_mm:         float    # E17
+    weight_per_pipe_kg:    float    # E27
+    weight_hot_bank_kg:    float    # E28
+    weight_cold_bank_kg:   float    # E35
+    weight_total_pipes_kg: float    # E28 + E35
+    # MS structural weights (E41..E45) — auto-derived from bank geometry
+    ms_outer_shell_kg:     float    # E41
+    ms_air_inlet_duct_kg:  float    # E42
+    ms_hot_outlet_duct_kg: float    # E43
+    ms_pipe_holding_kg:    float    # E44
+    ms_bottom_box_kg:      float    # E45
+
+
+def _vol_to_kg(volume_mm3: float, density: float) -> float:
+    """Excel uses density/1e9 (kg/mm3). Mirror that exactly."""
+    return volume_mm3 * (density / 1_000_000_000)
 
 
 def calculate_recup(inp: RecupInputs) -> RecupResults:
-    if inp.connected_power_kw <= 0 or inp.fuel_cv_kcal_nm3 <= 0:
-        raise ValueError("connected_power_kw and fuel_cv must be > 0")
+    # ── E4: flue mass = flow * 1.2 ──────────────────────────────────
+    flue_mass = inp.flue_flow_nm3hr * inp.flue_density_factor
 
-    energy_kcal_hr = inp.connected_power_kw * 860.0
-    fuel_flow_nm3hr = energy_kcal_hr / inp.fuel_cv_kcal_nm3
-
-    # Heat needed to preheat the combustion air.
-    # mass_air (kg/hr) = volume_nm3hr × 1.293 (kg/Nm³ at STP)
-    air_mass_kg_hr = inp.air_volume_nm3hr * 1.293
+    # ── E13: heat to preheat combustion air ────────────────────────
+    air_mass = inp.air_volume_nm3hr * inp.flue_density_factor
     dT_air = inp.air_temp_out_C - inp.air_temp_in_C
-    heat_required = air_mass_kg_hr * inp.cp_air_kcal_kgC * dT_air
+    heat_required = air_mass * inp.cp_air_kcal_kgC * dT_air
 
-    # LMTD (counter-flow): hot-in vs cold-out at one end, hot-out vs cold-in at the other.
-    dT1 = inp.flue_temp_in_C  - inp.air_temp_out_C   # 800 - 400 = 400
-    dT2 = inp.flue_temp_out_C - inp.air_temp_in_C    # 421 - 35  = 386
+    # ── E7: derive final flue temp from heat balance ───────────────
+    flue_temp_out = inp.flue_temp_in_C - (heat_required / (flue_mass * inp.cp_flue_kcal_kgC))
+
+    # ── E14: LMTD with the 0.9 factor (per Excel cell formula) ─────
+    dT1 = inp.flue_temp_in_C - inp.air_temp_out_C
+    dT2 = flue_temp_out      - inp.air_temp_in_C
     if dT1 <= 0 or dT2 <= 0 or dT1 == dT2:
-        # Degenerate / parallel flow fallback
-        lmtd = (dT1 + dT2) / 2.0 if dT1 + dT2 > 0 else 1.0
+        lmtd_raw = (dT1 + dT2) / 2.0 if (dT1 + dT2) > 0 else 1.0
     else:
-        lmtd = (dT1 - dT2) / math.log(dT1 / dT2)
-    # USK sheet divides by 1.2 for convective type.
-    lmtd_corrected = lmtd / 1.2
+        lmtd_raw = (dT1 - dT2) / math.log(dT1 / dT2)
+    lmtd = lmtd_raw * inp.lmtd_factor
 
-    # Surface area required.
-    surface_area_m2 = heat_required / (inp.heat_transfer_coef * lmtd_corrected)
+    # ── E15: surface area ──────────────────────────────────────────
+    surface_area = heat_required / (lmtd * inp.heat_transfer_coef)
 
-    # Pipe count: surface area / (π × outer_dia × length_per_pipe)
+    # ── E19: raw pipe count ────────────────────────────────────────
+    # Excel cells write the literal 3.14, not math.pi — keep that so the
+    # row/col grid matches the spreadsheet to the last digit.
     pipe_dia_m = inp.pipe_dia_mm / 1000.0
-    pipe_total_length_per_pipe = inp.pipe_length_m_per_bank * 2  # hot + cold bank in series
-    pipes_total_raw = surface_area_m2 / (math.pi * pipe_dia_m * pipe_total_length_per_pipe)
+    effective_len = inp.pipe_length_m_per_bank + inp.surface_area_end_allowance_m
+    pipes_raw = surface_area / (3.14 * pipe_dia_m * effective_len)
 
-    # Row x column rounding: ceil to a 14×N grid (Excel uses 14 per row).
+    # ── E20/E21: 14 rows by default; cols = ceil(raw / rows) ───────
     if inp.pipes_in_row > 0 and inp.pipes_in_column > 0:
         rows_count = inp.pipes_in_row
         cols_count = inp.pipes_in_column
     else:
-        rows_count = 14   # matches Excel example
-        cols_count = max(1, math.ceil(pipes_total_raw / rows_count))
+        rows_count = 14
+        cols_count = max(1, math.ceil(pipes_raw / rows_count))
     pipes_total = rows_count * cols_count
+    pipes_per_bank = pipes_total // 2  # E28: rows * (cols/2)
 
-    # Pipe weights
+    # ── E16/E17: bank length and width (derived) ───────────────────
+    bank_length_mm = (((rows_count - 1) / 2) * inp.pipe_pitch_mm) \
+                     + ((rows_count / 2) * inp.pipe_dia_mm) \
+                     + inp.end_margin_mm
+    bank_width_mm  = ((cols_count / 2) * 48.3) \
+                     + (((cols_count - 1) / 2) * inp.pipe_pitch_mm) \
+                     + inp.end_margin_mm
+
+    # ── E27/E28: pipe weights ──────────────────────────────────────
     weight_per_pipe = inp.pipe_kg_per_m * inp.pipe_length_m_per_bank
-    weight_hot_bank = weight_per_pipe * pipes_total
-    weight_cold_bank = weight_per_pipe * pipes_total
-    weight_total_pipes = weight_hot_bank + weight_cold_bank
+    weight_hot_bank  = weight_per_pipe * pipes_per_bank
+    weight_cold_bank = weight_per_pipe * pipes_per_bank
+    weight_total = weight_hot_bank + weight_cold_bank
+
+    # ── MS structural weights (E41..E45) — exact Excel formulas ───
+    ms_outer_shell = _vol_to_kg(
+        ((2 * bank_length_mm) + 100) * (inp.pipe_length_m_per_bank * 1000) * 5,
+        8650,
+    ) * 2
+    # Excel: (3.14*700*800*5) — literal 3.14, not math.pi.
+    duct_volume = (3.14 * 700 * 800 * 5) \
+                  + 2 * ((200 * bank_length_mm * 5 * 2) + (bank_width_mm * 200 * 5 * 2))
+    ms_air_inlet = _vol_to_kg(duct_volume, 7850)
+    ms_hot_outlet = _vol_to_kg(duct_volume, 8650)
+    ms_pipe_holding = _vol_to_kg(
+        ((bank_length_mm * 2) + inp.bank_gap_mm) * bank_width_mm * 16 * 4,
+        8650,
+    )
+    box_volume = (((bank_length_mm * 2 + 250) * 600 * 5 * 2)
+                  + (bank_width_mm * 600 * 2 * 5)
+                  + ((bank_length_mm * 2 + 250) * bank_width_mm * 5))
+    ms_bottom_box = _vol_to_kg(box_volume, 8650)
 
     return RecupResults(
-        energy_kcal_hr=round(energy_kcal_hr, 2),
-        fuel_flow_nm3hr=round(fuel_flow_nm3hr, 2),
-        air_mass_kg_hr=round(air_mass_kg_hr, 2),
-        heat_required_kcal=round(heat_required, 2),
-        lmtd_C=round(lmtd, 2),
-        lmtd_corrected_C=round(lmtd_corrected, 2),
-        surface_area_m2=round(surface_area_m2, 2),
-        pipes_total_raw=round(pipes_total_raw, 2),
-        pipes_total=pipes_total,
-        pipes_in_row=rows_count,
-        pipes_in_column=cols_count,
-        weight_per_pipe_kg=round(weight_per_pipe, 4),
-        weight_hot_bank_kg=round(weight_hot_bank, 2),
-        weight_cold_bank_kg=round(weight_cold_bank, 2),
-        weight_total_pipes_kg=round(weight_total_pipes, 2),
+        flue_mass_kghr        = round(flue_mass, 2),
+        heat_required_kcal    = round(heat_required, 2),
+        flue_temp_out_C       = round(flue_temp_out, 2),
+        lmtd_C                = round(lmtd, 2),
+        surface_area_m2       = round(surface_area, 4),
+        pipes_total_raw       = round(pipes_raw, 2),
+        pipes_total           = pipes_total,
+        pipes_in_row          = rows_count,
+        pipes_in_column       = cols_count,
+        pipes_per_bank        = pipes_per_bank,
+        bank_length_mm        = round(bank_length_mm, 2),
+        bank_width_mm         = round(bank_width_mm, 2),
+        weight_per_pipe_kg    = round(weight_per_pipe, 4),
+        weight_hot_bank_kg    = round(weight_hot_bank, 2),
+        weight_cold_bank_kg   = round(weight_cold_bank, 2),
+        weight_total_pipes_kg = round(weight_total, 2),
+        ms_outer_shell_kg     = round(ms_outer_shell, 2),
+        ms_air_inlet_duct_kg  = round(ms_air_inlet, 2),
+        ms_hot_outlet_duct_kg = round(ms_hot_outlet, 2),
+        ms_pipe_holding_kg    = round(ms_pipe_holding, 2),
+        ms_bottom_box_kg      = round(ms_bottom_box, 2),
     )

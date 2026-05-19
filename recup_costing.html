@@ -358,25 +358,22 @@
     <div class="fg fg-3">
       <div class="field">
         <label>Flow (Nm&sup3;/hr)</label>
-        <input id="flue_flow_nm3hr" type="number" step="any" value="1811" oninput="syncFlueMass()"/>
+        <input id="flue_flow_nm3hr" type="number" step="any" value="1900" oninput="syncFlueMass()"/>
       </div>
       <div class="field">
         <label>Mass (kg/hr) <small style="color:#94a3b8;font-weight:400">(= Flow &times; 1.2)</small></label>
-        <input id="flue_mass_kghr" type="number" step="any" value="2173.2" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;"/>
+        <input id="flue_mass_kghr" type="number" step="any" value="2280" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;"/>
       </div>
       <div class="field">
         <label>Cp (kcal/kg&deg;C)</label>
         <input id="cp_flue_kcal_kgC" type="number" step="any" value="0.23"/>
       </div>
     </div>
-    <div class="fg fg-2">
+    <div class="fg fg-1">
       <div class="field">
         <label>Inlet Temp (&deg;C)</label>
         <input id="flue_temp_in_C" type="number" step="any" value="800"/>
-      </div>
-      <div class="field">
-        <label>Outlet Temp (&deg;C)</label>
-        <input id="flue_temp_out_C" type="number" step="any" value="421"/>
+        <div class="hint">Outlet temp is now derived from the heat balance &mdash; see Step&nbsp;3.</div>
       </div>
     </div>
   </div>
@@ -431,18 +428,11 @@
         <input id="pipe_length_m_per_bank" type="number" step="any" value="0.63"/>
       </div>
     </div>
-    <div class="fg fg-3">
-      <div class="field">
-        <label>Bank Length (mm)</label>
-        <input id="bank_length_mm" type="number" step="any" value="696.1"/>
-      </div>
-      <div class="field">
-        <label>Bank Width (mm)</label>
-        <input id="bank_width_mm" type="number" step="any" value="615.8"/>
-      </div>
+    <div class="fg fg-1">
       <div class="field">
         <label>Bank Gap (mm)</label>
         <input id="bank_gap_mm" type="number" step="any" value="150"/>
+        <div class="hint">Bank Length and Width are now derived from the rows/columns grid.</div>
       </div>
     </div>
     <div class="fg fg-2">
@@ -474,9 +464,11 @@
     <div class="section-title">Sized Output</div>
     <div class="results">
       <div class="stat"><div class="l">Heat Required</div><div class="v"><span id="r-heat">0</span><span class="u">kcal/hr</span></div></div>
-      <div class="stat"><div class="l">LMTD (corrected)</div><div class="v"><span id="r-lmtd">0</span><span class="u">&deg;C</span></div></div>
+      <div class="stat"><div class="l">Final Flue Temp <span style="color:#94a3b8">(derived)</span></div><div class="v"><span id="r-fout">0</span><span class="u">&deg;C</span></div></div>
+      <div class="stat"><div class="l">LMTD</div><div class="v"><span id="r-lmtd">0</span><span class="u">&deg;C</span></div></div>
       <div class="stat"><div class="l">Surface Area</div><div class="v"><span id="r-area">0</span><span class="u">m&sup2;</span></div></div>
       <div class="stat"><div class="l">Pipes (rows &times; cols)</div><div class="v"><span id="r-pipes">0</span></div></div>
+      <div class="stat"><div class="l">Pipes per Bank</div><div class="v"><span id="r-perbank">0</span></div></div>
       <div class="stat"><div class="l">Hot Bank Wt</div><div class="v"><span id="r-hot">0</span><span class="u">kg</span></div></div>
       <div class="stat"><div class="l">Cold Bank Wt</div><div class="v"><span id="r-cold">0</span><span class="u">kg</span></div></div>
       <div class="stat"><div class="l">Total Pipe Wt</div><div class="v"><span id="r-totwt">0</span><span class="u">kg</span></div></div>
@@ -687,9 +679,7 @@ async function calculate() {
   $("calcBtn").textContent = "Calculating…";
   const payload = {
     flue_flow_nm3hr:    num("flue_flow_nm3hr"),
-    flue_mass_kghr:     num("flue_mass_kghr"),
     flue_temp_in_C:     num("flue_temp_in_C"),
-    flue_temp_out_C:    num("flue_temp_out_C"),
     cp_flue_kcal_kgC:   num("cp_flue_kcal_kgC"),
     air_volume_nm3hr:   num("air_volume_nm3hr"),
     air_temp_in_C:      num("air_temp_in_C"),
@@ -700,8 +690,6 @@ async function calculate() {
     pipe_thick_mm:      num("pipe_thick_mm"),
     pipe_kg_per_m:      num("pipe_kg_per_m"),
     pipe_length_m_per_bank: num("pipe_length_m_per_bank"),
-    bank_length_mm:     num("bank_length_mm"),
-    bank_width_mm:      num("bank_width_mm"),
     bank_gap_mm:        num("bank_gap_mm"),
     pipes_in_row:       intv("pipes_in_row"),
     pipes_in_column:    intv("pipes_in_column"),
@@ -732,13 +720,15 @@ function renderResults() {
   const d = lastCalc;
 
   const c = d.calculations;
-  $("r-heat").textContent   = Math.round(c.heat_required_kcal).toLocaleString("en-IN");
-  $("r-lmtd").textContent   = c.lmtd_corrected_C.toFixed(2);
-  $("r-area").textContent   = c.surface_area_m2.toFixed(2);
-  $("r-pipes").textContent  = c.pipes_in_row + " × " + c.pipes_in_column + " = " + c.pipes_total;
-  $("r-hot").textContent    = c.weight_hot_bank_kg.toFixed(1);
-  $("r-cold").textContent   = c.weight_cold_bank_kg.toFixed(1);
-  $("r-totwt").textContent  = c.weight_total_pipes_kg.toFixed(1);
+  $("r-heat").textContent    = Math.round(c.heat_required_kcal).toLocaleString("en-IN");
+  $("r-fout").textContent    = c.flue_temp_out_C.toFixed(2);
+  $("r-lmtd").textContent    = c.lmtd_C.toFixed(2);
+  $("r-area").textContent    = c.surface_area_m2.toFixed(2);
+  $("r-pipes").textContent   = c.pipes_in_row + " × " + c.pipes_in_column + " = " + c.pipes_total;
+  $("r-perbank").textContent = c.pipes_per_bank;
+  $("r-hot").textContent     = c.weight_hot_bank_kg.toFixed(1);
+  $("r-cold").textContent    = c.weight_cold_bank_kg.toFixed(1);
+  $("r-totwt").textContent   = c.weight_total_pipes_kg.toFixed(1);
 
   $("bom-body").innerHTML = d.bom.map((r, idx) => `
     <tr>

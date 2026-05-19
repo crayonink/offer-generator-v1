@@ -1,13 +1,31 @@
-"""Recuperator BOM builder (USK Exports model).
+"""Recuperator BOM builder — costing structure ported from the
+Recuperator_Excel.xlsx 'Recuperator for Hardening' sheet.
 
-Takes the sized RecupResults from calculations/recup.py and assembles a
-priced bill of materials. Rates live in vlph.db.recup_rates so they can
-be tuned without a code push.
+Excel cost lines (F40..F64) and how they map here:
 
-Returns a pandas DataFrame in the same shape as the other builders so
-the existing /api/generate-quote pipeline can re-use it:
-    columns = [MEDIA, ITEM NAME, REFERENCE, QTY, MAKE, UNIT PRICE, TOTAL]
-With BOUGHT OUT ITEMS, ENCON ITEMS, GRAND TOTAL summary rows.
+  F40  Price of All the pipes      = E28*F37 + E35*F38             -> SS304 hot + cold rows
+  F48  Cost for MS Side hood 2 nos = flat Rs 50,000                -> 'MS Side Hood (Fabrication)' row
+  F49  Cost of MS Combustion Air Inlet
+        = (E41+E42+E43+E44+E45+E46+E47) * MS_rate                  -> 'MS Combustion Air Inlet Assembly' row
+       (includes outer shell, ducts, holding plate, bottom box,
+        machining flanges, AND the 1500 kg side hood weight)
+  F50  MS Channel 150x75x10    = 10 m * 17 kg/m * MS_rate          -> MS Channel row
+  F51  MS Angle 65x25          = 25 m * 8.8 kg/m * MS_rate         -> MS Angle row
+  F52  MS Angle 75x10          = 9 m * 10 kg/m * MS_rate           -> MS Angle row
+  F53  MS Angle 50x15          = 4.5 m * 15 kg/m * MS_rate         -> MS Angle row
+  F55  Bending of Pipes        = (rows + cols) * 350               -> Pipe Bending row
+  F56  Welding Rod             = rows * cols * 4 * 8               -> Welding Rods row
+  F57  Hole Fabrication        = (rows * cols) * 2 * 100           -> Hole Fabrication row
+  F58  Thermocouple with tt    = flat Rs 8000                      -> Thermocouple (MISC ITEMS) row
+
+  F60  Sale  = F59 * 1.8 (conversion)
+  F62  Designing  = F61 * 0.1
+  F63  Negotiation = F61 * 0.1
+  F64  Final = F61 + F62 + F63  (additive, not compound)
+
+All formulas use rates that live in vlph.db.recup_rates so they can be
+retuned from the /pricelist UI without a code push. Items not present
+in recup_rates fall back to the Excel defaults.
 """
 from __future__ import annotations
 
@@ -23,6 +41,16 @@ from calculations.recup import RecupInputs, RecupResults, calculate_recup
 
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _DB_PATH = os.path.join(_BASE_DIR, "vlph.db")
+
+# Stock-metal items used in the recuperator support frame. Each entry is
+# (length_m, kg_per_m, item_name) — Excel cells F50..F53 hardcode these
+# numbers, so we mirror them as constants here.
+_STOCK_STEEL = [
+    (10.0,  17.0, "MS Channel 150 x 75 x 10"),
+    (25.0,   8.8, "MS Angle 65 x 25"),
+    ( 9.0,  10.0, "MS Angle 75 x 10"),
+    ( 4.5,  15.0, "MS Angle 50 x 15"),
+]
 
 
 def _load_rates() -> dict:
@@ -43,107 +71,130 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     def r(key: str, default: float = 0.0) -> float:
         return float(rates.get(key, default))
 
-    # MS structural weights — Excel uses fabrication estimates derived from
-    # geometry. We surface them as fixed kg figures for now (matches the
-    # 19.08.2025 sheet values for the 1500 kW example).
-    ms_outer_shell_kg     = 81.32
-    ms_air_inlet_duct_kg  = 110.21
-    ms_hot_outlet_duct_kg = 121.44
-    ms_pipe_holding_kg    = 525.75
-    ms_bottom_box_kg      = 160.93
-    flanges_kg            = r('FLANGES_KG', 100.0)
-    side_hood_kg          = r('SIDE_HOOD_MS_KG', 1500.0)
-
-    ms_per_kg     = r('MS_PER_KG', 60.0)
+    ms_per_kg     = r('MS_PER_KG',         60.0)
     ss304_per_kg  = r('SS304_TUBE_PER_KG', 220.0)
-    welding_pp    = r('WELDING_PER_PIPE', 32.0)
-    bending_flat  = r('BENDING_FLAT', 9100.0)
-    hole_fab      = r('HOLE_FABRICATION', 33600.0)
-    thermo        = r('THERMOCOUPLE_TT', 8000.0)
+    flanges_kg    = r('FLANGES_KG',        100.0)
+    side_hood_kg  = r('SIDE_HOOD_MS_KG',   1500.0)
+    side_hood_fab = r('SIDE_HOOD_COST',    50000.0)
+    thermo_cost   = r('THERMOCOUPLE_TT',   8000.0)
+
+    # Excel uses literal constants for bending / welding / hole-fab rates.
+    bending_per_unit = r('BENDING_PER_UNIT', 350.0)   # F55 multiplier
+    rods_per_pipe    = int(r('RODS_PER_PIPE', 4))     # F56
+    welding_per_rod  = r('WELDING_PER_ROD', 8.0)      # F56
+    holes_per_pipe   = int(r('HOLES_PER_PIPE', 2))    # F57
+    hole_fab_per_hole = r('HOLE_FAB_PER_HOLE', 100.0)  # F57
+
+    rows_count = results.pipes_in_row
+    cols_count = results.pipes_in_column
+    n_total    = results.pipes_total
+    n_per_bank = max(1, results.pipes_per_bank)
 
     rows: list[tuple] = []
 
     # ── BOUGHT OUT ITEMS ────────────────────────────────────────────────
-    rows.append(("MISC ITEMS", "Thermocouple with TT", "R Type", 1, "TEMPSENS", thermo, thermo))
+    # F58: Thermocouple with TT — flat Rs 8000
+    rows.append(("MISC ITEMS", "Thermocouple with TT", "R Type",
+                 1, "TEMPSENS", thermo_cost, thermo_cost))
 
-    # ── ENCON ITEMS — Tubes ─────────────────────────────────────────────
-    hot_cost  = round(results.weight_hot_bank_kg  * ss304_per_kg)
-    cold_cost = round(results.weight_cold_bank_kg * ss304_per_kg)
+    # ── ENCON — Tubes (F40 broken into hot + cold) ─────────────────────
+    hot_total  = round(results.weight_hot_bank_kg  * ss304_per_kg, 2)
+    cold_total = round(results.weight_cold_bank_kg * ss304_per_kg, 2)
     rows.append((
         "ENCON ITEMS", "SS304 ERW Tube — Hot Bank",
-        f"{results.weight_hot_bank_kg:.0f} kg @ Rs.{ss304_per_kg:.0f}/kg",
-        results.pipes_total, "ENCON", round(hot_cost / max(1, results.pipes_total)), hot_cost,
+        f"{results.weight_hot_bank_kg:.2f} kg @ Rs.{ss304_per_kg:.0f}/kg",
+        n_per_bank, "ENCON",
+        round(hot_total / n_per_bank, 2), hot_total,
     ))
     rows.append((
         "ENCON ITEMS", "SS304 ERW Tube — Cold Bank",
-        f"{results.weight_cold_bank_kg:.0f} kg @ Rs.{ss304_per_kg:.0f}/kg",
-        results.pipes_total, "ENCON", round(cold_cost / max(1, results.pipes_total)), cold_cost,
+        f"{results.weight_cold_bank_kg:.2f} kg @ Rs.{ss304_per_kg:.0f}/kg",
+        n_per_bank, "ENCON",
+        round(cold_total / n_per_bank, 2), cold_total,
     ))
 
-    # ── ENCON ITEMS — MS fabrication ────────────────────────────────────
-    def _ms_row(name: str, kg: float):
-        cost = round(kg * ms_per_kg)
-        rows.append(("ENCON ITEMS", name, f"{kg:.1f} kg @ Rs.{ms_per_kg:.0f}/kg",
-                     1, "ENCON", cost, cost))
+    # ── ENCON — MS Side Hood fabrication (F48, flat Rs 50,000) ─────────
+    # The 1500 kg of side hood material is rolled into F49 below; F48 is
+    # the additional forming / welding charge.
+    rows.append((
+        "ENCON ITEMS", "MS Side Hood (2 Nos) — Fabrication",
+        f"{int(side_hood_kg)} kg material rolled into Combustion Air Inlet Assy",
+        2, "ENCON", round(side_hood_fab / 2, 2), side_hood_fab,
+    ))
 
-    _ms_row("MS Outer Shell",         ms_outer_shell_kg)
-    _ms_row("MS Combustion Air Inlet Duct", ms_air_inlet_duct_kg)
-    _ms_row("MS Hot Air Outlet Duct", ms_hot_outlet_duct_kg)
-    _ms_row("Pipe Holding Plate",     ms_pipe_holding_kg)
-    _ms_row("MS Bottom Box",          ms_bottom_box_kg)
-    _ms_row("Machining Flanges",      flanges_kg)
+    # ── ENCON — MS Combustion Air Inlet Assembly (F49) ─────────────────
+    # F49 = (E41+E42+E43+E44+E45+E46+E47) * MS_rate
+    # E41..E45 come from the calc (geometry-derived); E46/E47 are
+    # constants from recup_rates (flanges_kg, side_hood_kg).
+    ms_total_kg = (
+        results.ms_outer_shell_kg
+        + results.ms_air_inlet_duct_kg
+        + results.ms_hot_outlet_duct_kg
+        + results.ms_pipe_holding_kg
+        + results.ms_bottom_box_kg
+        + flanges_kg
+        + side_hood_kg
+    )
+    cai_cost = round(ms_total_kg * ms_per_kg, 2)
+    rows.append((
+        "ENCON ITEMS", "MS Combustion Air Inlet Assembly",
+        f"{ms_total_kg:.2f} kg @ Rs.{ms_per_kg:.0f}/kg "
+        f"(shell {results.ms_outer_shell_kg:.0f} + inlet {results.ms_air_inlet_duct_kg:.0f} "
+        f"+ outlet {results.ms_hot_outlet_duct_kg:.0f} + holding {results.ms_pipe_holding_kg:.0f} "
+        f"+ box {results.ms_bottom_box_kg:.0f} + flanges {flanges_kg:.0f} + hood {side_hood_kg:.0f})",
+        1, "ENCON", cai_cost, cai_cost,
+    ))
 
-    # Side hoods – flat cost per spec
-    side_hood_cost = round(r('SIDE_HOOD_COST', 50000.0))
-    rows.append(("ENCON ITEMS", "MS Side Hood (2 Nos)",
-                 f"{side_hood_kg:.0f} kg total", 2, "ENCON",
-                 round(side_hood_cost / 2), side_hood_cost))
+    # ── ENCON — Stock structural metal (F50..F53) ──────────────────────
+    for length_m, kg_per_m, name in _STOCK_STEEL:
+        cost = round(length_m * kg_per_m * ms_per_kg, 2)
+        rows.append((
+            "ENCON ITEMS", name,
+            f"{length_m:g} m x {kg_per_m:g} kg/m @ Rs.{ms_per_kg:.0f}/kg",
+            1, "ENCON", cost, cost,
+        ))
 
-    # Combustion air inlet assembly – flat cost
-    cai_cost = round(r('COMBUSTION_AIR_INLET', 155978.7))
-    rows.append(("ENCON ITEMS", "MS Combustion Air Inlet Assembly",
-                 "Fabricated", 1, "ENCON", cai_cost, cai_cost))
-
-    # Structural channels / angles – flat cost each (per metre stock)
-    for key, name in (
-        ('MS_CHANNEL_150x75x10', 'MS Channel 150 x 75 x 10'),
-        ('MS_ANGLE_65x25',       'MS Angle 65 x 25'),
-        ('MS_ANGLE_75x10',       'MS Angle 75 x 10'),
-        ('MS_ANGLE_50x15',       'MS Angle 50 x 15'),
-    ):
-        cost = round(r(key))
-        rows.append(("ENCON ITEMS", name, "per metre stock", 1, "ENCON", cost, cost))
-
-    # Labour
-    welding_cost = round(welding_pp * results.pipes_total)
-    rows.append(("ENCON ITEMS", "Welding Rods",
-                 f"4 rods/pipe x {results.pipes_total} pipes @ Rs.{welding_pp:.0f}/pipe",
-                 1, "ENCON", welding_cost, welding_cost))
-    rows.append(("ENCON ITEMS", "Pipe Bending",
-                 "Flat — all pipes", 1, "ENCON",
-                 round(bending_flat), round(bending_flat)))
-    rows.append(("ENCON ITEMS", "Hole Fabrication", "Labour", 1, "ENCON",
-                 round(hole_fab), round(hole_fab)))
+    # ── ENCON — Labour / fabrication (F55, F56, F57) ──────────────────
+    bending = round((rows_count + cols_count) * bending_per_unit, 2)
+    welding = round(n_total * rods_per_pipe * welding_per_rod, 2)
+    holefab = round(n_total * holes_per_pipe * hole_fab_per_hole, 2)
+    rows.append((
+        "ENCON ITEMS", "Pipe Bending",
+        f"({rows_count} rows + {cols_count} cols) x Rs.{bending_per_unit:.0f}",
+        1, "ENCON", bending, bending,
+    ))
+    rows.append((
+        "ENCON ITEMS", "Welding Rods",
+        f"{rods_per_pipe} rods/pipe x {n_total} pipes x Rs.{welding_per_rod:.0f}/rod",
+        1, "ENCON", welding, welding,
+    ))
+    rows.append((
+        "ENCON ITEMS", "Hole Fabrication",
+        f"{holes_per_pipe} holes/pipe x {n_total} pipes x Rs.{hole_fab_per_hole:.0f}/hole",
+        1, "ENCON", holefab, holefab,
+    ))
 
     df = pd.DataFrame(rows, columns=["MEDIA", "ITEM NAME", "REFERENCE", "QTY",
                                       "MAKE", "UNIT PRICE", "TOTAL"])
 
-    # Summary rows
+    # ── Summary rows ───────────────────────────────────────────────────
     bought_total = float(df.loc[df["MEDIA"] != "ENCON ITEMS", "TOTAL"].sum())
     encon_total  = float(df.loc[df["MEDIA"] == "ENCON ITEMS", "TOTAL"].sum())
 
     summary = pd.DataFrame([
-        ["", "BOUGHT OUT ITEMS", "", "", "", "", bought_total],
-        ["", "ENCON ITEMS",      "", "", "", "", encon_total],
-        ["", "GRAND TOTAL",      "", "", "", "", bought_total + encon_total],
+        ["", "BOUGHT OUT ITEMS", "", "", "", "", round(bought_total, 2)],
+        ["", "ENCON ITEMS",      "", "", "", "", round(encon_total,  2)],
+        ["", "GRAND TOTAL",      "", "", "", "", round(bought_total + encon_total, 2)],
     ], columns=df.columns)
     return pd.concat([df, summary], ignore_index=True)
 
 
 def recup_summary(results: RecupResults, rates: Optional[dict] = None) -> dict:
-    """Return the 4-line cost summary the form needs (bought / encon /
-    grand / final) — Final = grand × conversion × (1 + designing) × (1 + negotiation).
-    Note: caller can override any of these on the Step-3 panel."""
+    """4-line cost summary using Excel's additive markup chain:
+        Sale  = Grand * Conversion
+        Final = Sale * (1 + Designing + Negotiation)
+    (matches F60..F64 in the Excel — NOT compound). The Step-3 panel
+    overrides any of these per quote."""
     if rates is None:
         rates = _load_rates()
     df = build_recup_df(results, rates)
@@ -154,7 +205,7 @@ def recup_summary(results: RecupResults, rates: Optional[dict] = None) -> dict:
     desg   = float(rates.get('MARKUP_DESIGNING', 0.10))
     nego   = float(rates.get('MARKUP_NEGOTIATION', 0.10))
     sale   = grand * conv
-    final  = sale * (1 + desg) * (1 + nego)
+    final  = sale * (1 + desg + nego)   # additive (Excel F64 = F61+F62+F63)
     return {
         'bought_out_total': round(bought, 2),
         'encon_total':      round(encon, 2),
