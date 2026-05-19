@@ -75,18 +75,17 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     ms_per_kg     = r('MS_PER_KG',         60.0)   # raw stock metal (channels/angles)
     ms_fab_per_kg = r('MS_FABRICATION_PER_KG', 70.0)  # fabricated MS (CAI assembly)
     flanges_kg    = r('FLANGES_KG',        100.0)
-    # Tube material switch — SS304 ERW or MS ERW. Rate + label follow the
-    # user's choice in RecupResults.tube_material; rates live in recup_rates
-    # so they can be retuned from the /pricelist Recup Rates tab.
-    tube_mat = (getattr(results, 'tube_material', 'SS') or 'SS').upper()
-    if tube_mat == 'MS':
-        tube_rate  = r('MS_TUBE_PER_KG',    70.0)
-        tube_label = 'MS ERW Tube'
-        tube_spec  = 'MS ERW'
-    else:
-        tube_rate  = r('SS304_TUBE_PER_KG', 250.0)
-        tube_label = 'SS304 ERW Tube'
-        tube_spec  = 'SS304 ERW'
+    # Tube material per bank — SS304 ERW or MS ERW. Rates live in
+    # recup_rates so they can be retuned from /pricelist > Recup Rates.
+    ss_rate = r('SS304_TUBE_PER_KG', 250.0)
+    ms_rate = r('MS_TUBE_PER_KG',     70.0)
+    def _tube(mat):
+        m = (mat or 'SS').upper()
+        if m == 'MS':
+            return ms_rate, 'MS ERW Tube'
+        return ss_rate, 'SS304 ERW Tube'
+    hot_rate,  hot_label  = _tube(getattr(results, 'hot_bank_material',  'SS'))
+    cold_rate, cold_label = _tube(getattr(results, 'cold_bank_material', 'SS'))
     # Side hood weight is now a per-quote input on RecupResults — falls
     # back to the recup_rates default if results doesn't carry one.
     side_hood_kg  = float(getattr(results, 'side_hood_kg', 0)
@@ -113,18 +112,19 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     rows.append(("MISC ITEMS", "Thermocouple with TT", "R Type",
                  1, "TEMPSENS", thermo_cost, thermo_cost))
 
-    # ── ENCON — Tubes (F40 broken into hot + cold) ─────────────────────
-    hot_total  = round(results.weight_hot_bank_kg  * tube_rate, 2)
-    cold_total = round(results.weight_cold_bank_kg * tube_rate, 2)
+    # ── ENCON — Tubes (F40 broken into hot + cold; each bank can be
+    # SS or MS independently — see RecupResults.hot/cold_bank_material).
+    hot_total  = round(results.weight_hot_bank_kg  * hot_rate,  2)
+    cold_total = round(results.weight_cold_bank_kg * cold_rate, 2)
     rows.append((
-        "ENCON ITEMS", f"{tube_label} — Hot Bank",
-        f"{results.weight_hot_bank_kg:.2f} kg @ Rs.{tube_rate:.0f}/kg",
+        "ENCON ITEMS", f"{hot_label} — Hot Bank",
+        f"{results.weight_hot_bank_kg:.2f} kg @ Rs.{hot_rate:.0f}/kg",
         n_per_bank, "ENCON",
         round(hot_total / n_per_bank, 2), hot_total,
     ))
     rows.append((
-        "ENCON ITEMS", f"{tube_label} — Cold Bank",
-        f"{results.weight_cold_bank_kg:.2f} kg @ Rs.{tube_rate:.0f}/kg",
+        "ENCON ITEMS", f"{cold_label} — Cold Bank",
+        f"{results.weight_cold_bank_kg:.2f} kg @ Rs.{cold_rate:.0f}/kg",
         n_per_bank, "ENCON",
         round(cold_total / n_per_bank, 2), cold_total,
     ))
@@ -151,13 +151,19 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
         + flanges_kg
         + side_hood_kg
     )
-    cai_cost = round(ms_total_kg * ms_fab_per_kg, 2)
+    cai_override = float(getattr(results, 'cai_price_override', 0) or 0)
+    if cai_override > 0:
+        cai_cost = round(cai_override, 2)
+        cai_ref  = f"User override (auto: {ms_total_kg:.0f} kg x Rs.{ms_fab_per_kg:.0f}/kg = Rs.{ms_total_kg*ms_fab_per_kg:,.0f})"
+    else:
+        cai_cost = round(ms_total_kg * ms_fab_per_kg, 2)
+        cai_ref  = (f"{ms_total_kg:.2f} kg @ Rs.{ms_fab_per_kg:.0f}/kg "
+                    f"(shell {results.ms_outer_shell_kg:.0f} + inlet {results.ms_air_inlet_duct_kg:.0f} "
+                    f"+ outlet {results.ms_hot_outlet_duct_kg:.0f} + holding {results.ms_pipe_holding_kg:.0f} "
+                    f"+ box {results.ms_bottom_box_kg:.0f} + flanges {flanges_kg:.0f} + hood {side_hood_kg:.0f})")
     rows.append((
         "ENCON ITEMS", "MS Combustion Air Inlet Assembly",
-        f"{ms_total_kg:.2f} kg @ Rs.{ms_fab_per_kg:.0f}/kg "
-        f"(shell {results.ms_outer_shell_kg:.0f} + inlet {results.ms_air_inlet_duct_kg:.0f} "
-        f"+ outlet {results.ms_hot_outlet_duct_kg:.0f} + holding {results.ms_pipe_holding_kg:.0f} "
-        f"+ box {results.ms_bottom_box_kg:.0f} + flanges {flanges_kg:.0f} + hood {side_hood_kg:.0f})",
+        cai_ref,
         1, "ENCON", cai_cost, cai_cost,
     ))
 

@@ -65,12 +65,16 @@ class RecupInputs:
     #     When > 0, we honour the user's total and re-derive the grid as
     #     rows=14, cols=ceil(total/14).
     pipes_total_override: int = 0
-    # ── Tube material (cost-only; "SS" or "MS"; same kg/m default) ──
-    tube_material:        str = "SS"
-    # ── MS Side Hood weight (kg). Default 1500. Editable per quote so
-    # the engineer can scale it for non-standard hood designs. Flows
-    # into the MS Combustion Air Inlet Assembly cost via the BOM.
+    # ── Tube material per bank (cost-only; "SS" or "MS"). Hot and Cold
+    # can be different — common in hardening furnaces where one bank
+    # sees hotter flue gas and is upgraded to SS.
+    hot_bank_material:    str = "SS"
+    cold_bank_material:   str = "SS"
+    # ── MS Side Hood weight (kg). Default 1500. Editable per quote.
     side_hood_kg:         float = 1500.0
+    # ── MS Combustion Air Inlet Assembly price override (Rs). When > 0
+    # the BOM uses this flat value instead of (sum_MS_kg * MS_fab_rate).
+    cai_price_override:   float = 0.0
 
 
 @dataclass
@@ -99,11 +103,13 @@ class RecupResults:
     ms_hot_outlet_duct_kg: float    # E43
     ms_pipe_holding_kg:    float    # E44
     ms_bottom_box_kg:      float    # E45
-    # Echo of the user's tube material choice ("SS" / "MS") so the BOM
-    # builder downstream knows which rate (and label) to use.
-    tube_material:         str = "SS"
-    # Echo of the user's side hood weight (kg) for the BOM builder.
+    # Echo of the user's per-bank tube material so the BOM builder
+    # downstream picks the right rate + label per bank.
+    hot_bank_material:     str = "SS"
+    cold_bank_material:    str = "SS"
+    # Echo of the user's side hood weight + CAI override.
     side_hood_kg:          float = 1500.0
+    cai_price_override:    float = 0.0
 
 
 def _vol_to_kg(volume_mm3: float, density: float) -> float:
@@ -252,6 +258,8 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
         ms_hot_outlet_duct_kg = round(ms_hot_outlet, 2),
         ms_pipe_holding_kg    = round(ms_pipe_holding, 2),
         ms_bottom_box_kg      = round(ms_bottom_box, 2),
-        tube_material         = (inp.tube_material or "SS").upper(),
+        hot_bank_material     = (inp.hot_bank_material or "SS").upper(),
+        cold_bank_material    = (inp.cold_bank_material or "SS").upper(),
         side_hood_kg          = float(inp.side_hood_kg) if inp.side_hood_kg > 0 else 1500.0,
+        cai_price_override    = float(inp.cai_price_override or 0),
     )

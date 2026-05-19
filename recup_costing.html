@@ -403,12 +403,19 @@
   <!-- ── Geometry ── -->
   <div class="section">
     <div class="section-title">Pipe &amp; Bank Geometry</div>
-    <div class="fg fg-2">
+    <div class="fg fg-3">
       <div class="field">
-        <label>Tube Material</label>
-        <select id="tube_material">
-          <option value="SS" selected>Stainless Steel (SS304) &mdash; Rs.250/kg</option>
-          <option value="MS">Mild Steel (MS) &mdash; Rs.70/kg</option>
+        <label>Hot Bank Material</label>
+        <select id="hot_bank_material">
+          <option value="SS" selected>SS304 &mdash; Rs.250/kg</option>
+          <option value="MS">MS &mdash; Rs.70/kg</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Cold Bank Material</label>
+        <select id="cold_bank_material">
+          <option value="SS" selected>SS304 &mdash; Rs.250/kg</option>
+          <option value="MS">MS &mdash; Rs.70/kg</option>
         </select>
       </div>
       <div class="field">
@@ -443,16 +450,21 @@
         <input id="pipe_kg_per_m" type="number" step="any" value="3.16"/>
       </div>
     </div>
-    <div class="fg fg-2">
+    <div class="fg fg-3">
       <div class="field">
         <label>Bank Gap (mm)</label>
         <input id="bank_gap_mm" type="number" step="any" value="150"/>
-        <div class="hint">Bank Length and Width are now derived from the rows/columns grid.</div>
+        <div class="hint">Bank Length and Width are derived from the rows/cols grid.</div>
       </div>
       <div class="field">
         <label>MS Side Hood Weight (kg)</label>
         <input id="side_hood_kg" type="number" step="any" value="1500"/>
-        <div class="hint">Flows into the MS Combustion Air Inlet Assembly cost.</div>
+        <div class="hint">Flows into the CAI Assembly cost.</div>
+      </div>
+      <div class="field">
+        <label>CAI Assembly Price (&#8377;)</label>
+        <input id="cai_price_override" type="number" step="any" value="0"/>
+        <div class="hint">0 = auto-derive (sum MS kg &times; &#8377;70/kg). Type a value to override.</div>
       </div>
     </div>
     <div class="fg fg-1">
@@ -803,8 +815,10 @@ async function calculate() {
     pipe_length_m_per_bank: num("pipe_length_m_per_bank"),
     bank_gap_mm:        num("bank_gap_mm"),
     pipes_total_override: intv("pipes_total_override"),
-    tube_material:        $("tube_material").value,
+    hot_bank_material:    $("hot_bank_material").value,
+    cold_bank_material:   $("cold_bank_material").value,
     side_hood_kg:         num("side_hood_kg"),
+    cai_price_override:   num("cai_price_override"),
   };
   try {
     const res = await fetch("/api/recup-calculate", {
