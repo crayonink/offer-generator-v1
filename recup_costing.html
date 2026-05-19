@@ -441,7 +441,12 @@
       <div class="field">
         <label>Number of Recuperator Pipes (override; 0 = auto)</label>
         <input id="pipes_total_override" type="number" step="1" value="0"/>
-        <div class="hint">Set a total to override the auto sizing. The best near-square rows &times; cols grid is picked automatically (cols always even so banks split evenly).</div>
+        <div class="hint">Auto sizing derives
+          <strong style="color:#065f46" id="pipes_raw_preview">157.56</strong>
+          raw pipes &rarr;
+          <strong style="color:#065f46" id="pipes_grid_preview">14 &times; 12 = 168</strong>
+          from the heat balance. Leave at 0 to use this, or type your own total.
+        </div>
       </div>
     </div>
   </div>
@@ -666,6 +671,52 @@ window.addEventListener("DOMContentLoaded", refreshRef);
 // Step 2 takes only direct user inputs — every derived quantity (flue mass,
 // final flue temp, energy chain, MS weights, etc.) is computed server-side
 // during /api/recup-calculate and surfaced on Step 3.
+//
+// One exception: the auto-sized pipe count gets a live preview under the
+// Number-of-Pipes override, so the engineer can eyeball what auto would
+// produce before deciding whether to override. The chain mirrors the
+// backend cell-for-cell (Excel E13 -> E7 -> E14 -> E15 -> E19 -> grid).
+function syncRawPipesPreview() {
+  const flow   = parseFloat($("flue_flow_nm3hr").value)  || 0;
+  const inT    = parseFloat($("flue_temp_in_C").value)   || 0;
+  const cpFlue = parseFloat($("cp_flue_kcal_kgC").value) || 0.23;
+  const airV   = parseFloat($("air_volume_nm3hr").value) || 0;
+  const airIn  = parseFloat($("air_temp_in_C").value)    || 0;
+  const airOut = parseFloat($("air_temp_out_C").value)   || 0;
+  const cpAir  = parseFloat($("cp_air_kcal_kgC").value)  || 0.247;
+  const htc    = parseFloat($("heat_transfer_coef").value) || 30;
+  const dia    = parseFloat($("pipe_dia_mm").value)      || 48.3;
+  const lenM   = parseFloat($("pipe_length_m_per_bank").value) || 0.63;
+
+  const mFlue = flow * 1.2;
+  const Q     = (airV * 1.2) * cpAir * (airOut - airIn);
+  const outT  = mFlue > 0 && cpFlue > 0 ? inT - (Q / (mFlue * cpFlue)) : 0;
+  const dT1   = inT - airOut;
+  const dT2   = outT - airIn;
+  let lmtdRaw;
+  if (dT1 <= 0 || dT2 <= 0 || dT1 === dT2) lmtdRaw = (dT1 + dT2 > 0) ? (dT1 + dT2) / 2 : 1;
+  else lmtdRaw = (dT1 - dT2) / Math.log(dT1 / dT2);
+  const lmtd  = lmtdRaw * 0.9;
+  const area  = (lmtd > 0 && htc > 0) ? Q / (lmtd * htc) : 0;
+  const pipesRaw = area / (3.14 * (dia / 1000) * (lenM + 0.1));
+
+  // Auto path: rows=14, cols=ceil(raw/14), per Excel E20/E21 convention.
+  const rows = 14;
+  const cols = Math.max(1, Math.ceil(pipesRaw / rows));
+
+  $("pipes_raw_preview").textContent  = pipesRaw.toFixed(2);
+  $("pipes_grid_preview").textContent = `${rows} × ${cols} = ${rows * cols}`;
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  for (const id of ["flue_flow_nm3hr","flue_temp_in_C","cp_flue_kcal_kgC",
+                    "air_volume_nm3hr","air_temp_in_C","air_temp_out_C","cp_air_kcal_kgC",
+                    "heat_transfer_coef","pipe_dia_mm","pipe_length_m_per_bank"]) {
+    const el = $(id);
+    if (el) el.addEventListener("input", syncRawPipesPreview);
+  }
+  syncRawPipesPreview();
+});
 
 async function calculate() {
   $("calcErr").textContent = "";
