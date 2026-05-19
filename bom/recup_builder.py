@@ -72,7 +72,8 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     def r(key: str, default: float = 0.0) -> float:
         return float(rates.get(key, default))
 
-    ms_per_kg     = r('MS_PER_KG',         60.0)
+    ms_per_kg     = r('MS_PER_KG',         60.0)   # raw stock metal (channels/angles)
+    ms_fab_per_kg = r('MS_FABRICATION_PER_KG', 70.0)  # fabricated MS (CAI assembly)
     flanges_kg    = r('FLANGES_KG',        100.0)
     # Tube material switch — SS304 ERW or MS ERW. Rate + label follow the
     # user's choice in RecupResults.tube_material; rates live in recup_rates
@@ -150,10 +151,10 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
         + flanges_kg
         + side_hood_kg
     )
-    cai_cost = round(ms_total_kg * ms_per_kg, 2)
+    cai_cost = round(ms_total_kg * ms_fab_per_kg, 2)
     rows.append((
         "ENCON ITEMS", "MS Combustion Air Inlet Assembly",
-        f"{ms_total_kg:.2f} kg @ Rs.{ms_per_kg:.0f}/kg "
+        f"{ms_total_kg:.2f} kg @ Rs.{ms_fab_per_kg:.0f}/kg "
         f"(shell {results.ms_outer_shell_kg:.0f} + inlet {results.ms_air_inlet_duct_kg:.0f} "
         f"+ outlet {results.ms_hot_outlet_duct_kg:.0f} + holding {results.ms_pipe_holding_kg:.0f} "
         f"+ box {results.ms_bottom_box_kg:.0f} + flanges {flanges_kg:.0f} + hood {side_hood_kg:.0f})",
