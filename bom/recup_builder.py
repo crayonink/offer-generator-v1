@@ -43,13 +43,14 @@ _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _DB_PATH = os.path.join(_BASE_DIR, "vlph.db")
 
 # Stock-metal items used in the recuperator support frame. Each entry is
-# (length_m, kg_per_m, item_name) — Excel cells F50..F53 hardcode these
-# numbers, so we mirror them as constants here.
-_STOCK_STEEL = [
-    (10.0,  17.0, "MS Channel 150 x 75 x 10"),
-    (25.0,   8.8, "MS Angle 65 x 25"),
-    ( 9.0,  10.0, "MS Angle 75 x 10"),
-    ( 4.5,  15.0, "MS Angle 50 x 15"),
+# (display_name, length_rate_key, kg_per_m_rate_key). Both numbers live in
+# recup_rates so a planner can re-spec the support frame from /pricelist
+# without touching code.
+_STOCK_STEEL_SPECS = [
+    ("MS Channel 150 x 75 x 10", "STOCK_CHANNEL_150x75x10_LEN_M", "STOCK_CHANNEL_150x75x10_KG_M"),
+    ("MS Angle 65 x 25",         "STOCK_ANGLE_65x25_LEN_M",       "STOCK_ANGLE_65x25_KG_M"),
+    ("MS Angle 75 x 10",         "STOCK_ANGLE_75x10_LEN_M",       "STOCK_ANGLE_75x10_KG_M"),
+    ("MS Angle 50 x 15",         "STOCK_ANGLE_50x15_LEN_M",       "STOCK_ANGLE_50x15_KG_M"),
 ]
 
 
@@ -156,8 +157,13 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
         1, "ENCON", cai_cost, cai_cost,
     ))
 
-    # ── ENCON — Stock structural metal (F50..F53) ──────────────────────
-    for length_m, kg_per_m, name in _STOCK_STEEL:
+    # ── ENCON — Stock structural metal (F50..F53). Length + kg/m for each
+    # item come from recup_rates so the spec is editable from /pricelist.
+    for name, len_key, kgm_key in _STOCK_STEEL_SPECS:
+        length_m = r(len_key)
+        kg_per_m = r(kgm_key)
+        if length_m <= 0 or kg_per_m <= 0:
+            continue
         cost = round(length_m * kg_per_m * ms_per_kg, 2)
         rows.append((
             "ENCON ITEMS", name,
