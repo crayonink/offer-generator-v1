@@ -421,8 +421,10 @@
     <div class="fg fg-1">
       <div class="field">
         <label>Inlet Temp (&deg;C)</label>
-        <input id="flue_temp_in_C" type="number" step="any" value="800"/>
-        <div class="hint">Outlet temp is now derived from the heat balance &mdash; see Step&nbsp;3.</div>
+        <input id="flue_temp_in_C" type="number" step="any" value="800" oninput="syncDerivedOutletTemp()"/>
+        <div class="hint">Outlet temp (derived from heat balance) &rarr;
+          <strong style="color:#065f46" id="flue_temp_out_preview">438.97 &deg;C</strong>
+        </div>
       </div>
     </div>
   </div>
@@ -755,10 +757,35 @@ function onFuelChange() {
   syncConnectedChain();
 }
 window.addEventListener("DOMContentLoaded", syncConnectedChain);
-// Re-run when the user's combustion-air volume changes (E3 depends on it).
+
+// Final Flue Temp is derived (Excel E7 = Ti - Q / (m_flue * Cp_flue)).
+// Compute it client-side too so the hint under Inlet Temp updates live as
+// the user edits any field on the heat-balance chain — no need to click
+// Calculate just to see what direction outlet is moving.
+function syncDerivedOutletTemp() {
+  const flow   = parseFloat($("flue_flow_nm3hr").value)  || 0;
+  const inT    = parseFloat($("flue_temp_in_C").value)   || 0;
+  const cpFlue = parseFloat($("cp_flue_kcal_kgC").value) || 0.23;
+  const airV   = parseFloat($("air_volume_nm3hr").value) || 0;
+  const airIn  = parseFloat($("air_temp_in_C").value)    || 0;
+  const airOut = parseFloat($("air_temp_out_C").value)   || 0;
+  const cpAir  = parseFloat($("cp_air_kcal_kgC").value)  || 0.247;
+  const mFlue  = flow * 1.2;
+  const Q      = (airV * 1.2) * cpAir * (airOut - airIn);
+  const outT   = mFlue > 0 && cpFlue > 0 ? inT - (Q / (mFlue * cpFlue)) : 0;
+  $("flue_temp_out_preview").textContent = outT.toFixed(2) + " °C";
+}
 window.addEventListener("DOMContentLoaded", () => {
-  const el = $("air_volume_nm3hr");
-  if (el) el.addEventListener("input", syncConnectedChain);
+  // Re-run E3 chain when user's combustion-air volume changes
+  const air = $("air_volume_nm3hr");
+  if (air) air.addEventListener("input", syncConnectedChain);
+  // Live outlet-temp preview when any heat-balance field changes
+  for (const id of ["flue_flow_nm3hr","cp_flue_kcal_kgC",
+                    "air_volume_nm3hr","air_temp_in_C","air_temp_out_C","cp_air_kcal_kgC"]) {
+    const el = $(id);
+    if (el) el.addEventListener("input", syncDerivedOutletTemp);
+  }
+  syncDerivedOutletTemp();
 });
 
 async function calculate() {
