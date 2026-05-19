@@ -2553,6 +2553,7 @@ class RecupCalcRequest(BaseModel):
     bank_gap_mm:        float = 150.0
     pipes_total_override: int = 0    # 0 = auto-derive from surface area
     tube_material:        str = "SS" # "SS" (Rs 250/kg) or "MS" (Rs 70/kg)
+    side_hood_kg:         float = 1500.0  # MS side hood weight (editable per quote)
 
 
 @app.post("/api/recup-calculate")
@@ -2577,6 +2578,7 @@ def recup_calculate(req: RecupCalcRequest):
             bank_gap_mm=req.bank_gap_mm,
             pipes_total_override=req.pipes_total_override,
             tube_material=req.tube_material,
+            side_hood_kg=req.side_hood_kg,
         ))
 
         rates = _load_rates()

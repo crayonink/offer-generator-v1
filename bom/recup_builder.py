@@ -86,7 +86,10 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
         tube_rate  = r('SS304_TUBE_PER_KG', 250.0)
         tube_label = 'SS304 ERW Tube'
         tube_spec  = 'SS304 ERW'
-    side_hood_kg  = r('SIDE_HOOD_MS_KG',   1500.0)
+    # Side hood weight is now a per-quote input on RecupResults — falls
+    # back to the recup_rates default if results doesn't carry one.
+    side_hood_kg  = float(getattr(results, 'side_hood_kg', 0)
+                          or r('SIDE_HOOD_MS_KG', 1500.0))
     side_hood_fab = r('SIDE_HOOD_COST',    50000.0)
     thermo_cost   = r('THERMOCOUPLE_TT',   8000.0)
 

@@ -67,6 +67,10 @@ class RecupInputs:
     pipes_total_override: int = 0
     # ── Tube material (cost-only; "SS" or "MS"; same kg/m default) ──
     tube_material:        str = "SS"
+    # ── MS Side Hood weight (kg). Default 1500. Editable per quote so
+    # the engineer can scale it for non-standard hood designs. Flows
+    # into the MS Combustion Air Inlet Assembly cost via the BOM.
+    side_hood_kg:         float = 1500.0
 
 
 @dataclass
@@ -98,6 +102,8 @@ class RecupResults:
     # Echo of the user's tube material choice ("SS" / "MS") so the BOM
     # builder downstream knows which rate (and label) to use.
     tube_material:         str = "SS"
+    # Echo of the user's side hood weight (kg) for the BOM builder.
+    side_hood_kg:          float = 1500.0
 
 
 def _vol_to_kg(volume_mm3: float, density: float) -> float:
@@ -247,4 +253,5 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
         ms_pipe_holding_kg    = round(ms_pipe_holding, 2),
         ms_bottom_box_kg      = round(ms_bottom_box, 2),
         tube_material         = (inp.tube_material or "SS").upper(),
+        side_hood_kg          = float(inp.side_hood_kg) if inp.side_hood_kg > 0 else 1500.0,
     )
