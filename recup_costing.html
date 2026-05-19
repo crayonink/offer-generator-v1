@@ -462,9 +462,9 @@
         <div class="hint">Flows into the CAI Assembly cost.</div>
       </div>
       <div class="field">
-        <label>CAI Assembly Price (&#8377;)</label>
-        <input id="cai_price_override" type="number" step="any" value="0"/>
-        <div class="hint">0 = auto-derive (sum MS kg &times; &#8377;70/kg). Type a value to override.</div>
+        <label>CAI Assembly Rate (&#8377;/kg)</label>
+        <input id="cai_rate_override" type="number" step="any" value="0"/>
+        <div class="hint">0 = use default &#8377;70/kg. Type a per-kg rate to override.</div>
       </div>
     </div>
     <div class="fg fg-1">
@@ -818,7 +818,7 @@ async function calculate() {
     hot_bank_material:    $("hot_bank_material").value,
     cold_bank_material:   $("cold_bank_material").value,
     side_hood_kg:         num("side_hood_kg"),
-    cai_price_override:   num("cai_price_override"),
+    cai_rate_override:    num("cai_rate_override"),
   };
   try {
     const res = await fetch("/api/recup-calculate", {

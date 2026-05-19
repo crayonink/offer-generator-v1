@@ -2555,7 +2555,7 @@ class RecupCalcRequest(BaseModel):
     hot_bank_material:    str = "SS" # "SS" (Rs 250/kg) or "MS" (Rs 70/kg)
     cold_bank_material:   str = "SS" # can differ from hot bank
     side_hood_kg:         float = 1500.0   # MS side hood weight
-    cai_price_override:   float = 0.0      # CAI Assembly price override; 0 = auto-derive
+    cai_rate_override:    float = 0.0      # CAI Assembly Rs/kg override; 0 = use DB default
 
 
 @app.post("/api/recup-calculate")
@@ -2582,7 +2582,7 @@ def recup_calculate(req: RecupCalcRequest):
             hot_bank_material=req.hot_bank_material,
             cold_bank_material=req.cold_bank_material,
             side_hood_kg=req.side_hood_kg,
-            cai_price_override=req.cai_price_override,
+            cai_rate_override=req.cai_rate_override,
         ))
 
         rates = _load_rates()
@@ -2616,7 +2616,7 @@ def recup_calculate(req: RecupCalcRequest):
                 "ms_bottom_box_kg":     results.ms_bottom_box_kg,
                 "hot_bank_material":    results.hot_bank_material,
                 "cold_bank_material":   results.cold_bank_material,
-                "cai_price_override":   results.cai_price_override,
+                "cai_rate_override":    results.cai_rate_override,
                 # Echo of inputs — the offer template needs these for the
                 # Designing Parameters table (flue/air conditions are
                 # process inputs, not derived values).

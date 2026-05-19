@@ -72,9 +72,10 @@ class RecupInputs:
     cold_bank_material:   str = "SS"
     # ── MS Side Hood weight (kg). Default 1500. Editable per quote.
     side_hood_kg:         float = 1500.0
-    # ── MS Combustion Air Inlet Assembly price override (Rs). When > 0
-    # the BOM uses this flat value instead of (sum_MS_kg * MS_fab_rate).
-    cai_price_override:   float = 0.0
+    # ── MS Combustion Air Inlet Assembly per-kg rate override (Rs/kg).
+    # When > 0 the BOM bills sum_MS_kg * cai_rate_override instead of
+    # the recup_rates default (MS_FABRICATION_PER_KG, Rs 70/kg).
+    cai_rate_override:    float = 0.0
 
 
 @dataclass
@@ -107,9 +108,9 @@ class RecupResults:
     # downstream picks the right rate + label per bank.
     hot_bank_material:     str = "SS"
     cold_bank_material:    str = "SS"
-    # Echo of the user's side hood weight + CAI override.
+    # Echo of the user's side hood weight + CAI rate override.
     side_hood_kg:          float = 1500.0
-    cai_price_override:    float = 0.0
+    cai_rate_override:     float = 0.0
 
 
 def _vol_to_kg(volume_mm3: float, density: float) -> float:
@@ -261,5 +262,5 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
         hot_bank_material     = (inp.hot_bank_material or "SS").upper(),
         cold_bank_material    = (inp.cold_bank_material or "SS").upper(),
         side_hood_kg          = float(inp.side_hood_kg) if inp.side_hood_kg > 0 else 1500.0,
-        cai_price_override    = float(inp.cai_price_override or 0),
+        cai_rate_override     = float(inp.cai_rate_override or 0),
     )

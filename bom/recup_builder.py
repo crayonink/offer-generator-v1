@@ -151,16 +151,14 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
         + flanges_kg
         + side_hood_kg
     )
-    cai_override = float(getattr(results, 'cai_price_override', 0) or 0)
-    if cai_override > 0:
-        cai_cost = round(cai_override, 2)
-        cai_ref  = f"User override (auto: {ms_total_kg:.0f} kg x Rs.{ms_fab_per_kg:.0f}/kg = Rs.{ms_total_kg*ms_fab_per_kg:,.0f})"
-    else:
-        cai_cost = round(ms_total_kg * ms_fab_per_kg, 2)
-        cai_ref  = (f"{ms_total_kg:.2f} kg @ Rs.{ms_fab_per_kg:.0f}/kg "
-                    f"(shell {results.ms_outer_shell_kg:.0f} + inlet {results.ms_air_inlet_duct_kg:.0f} "
-                    f"+ outlet {results.ms_hot_outlet_duct_kg:.0f} + holding {results.ms_pipe_holding_kg:.0f} "
-                    f"+ box {results.ms_bottom_box_kg:.0f} + flanges {flanges_kg:.0f} + hood {side_hood_kg:.0f})")
+    # CAI per-kg rate: user override (Rs/kg) wins, else the DB default.
+    cai_rate_override = float(getattr(results, 'cai_rate_override', 0) or 0)
+    cai_rate = cai_rate_override if cai_rate_override > 0 else ms_fab_per_kg
+    cai_cost = round(ms_total_kg * cai_rate, 2)
+    cai_ref  = (f"{ms_total_kg:.2f} kg @ Rs.{cai_rate:.0f}/kg "
+                f"(shell {results.ms_outer_shell_kg:.0f} + inlet {results.ms_air_inlet_duct_kg:.0f} "
+                f"+ outlet {results.ms_hot_outlet_duct_kg:.0f} + holding {results.ms_pipe_holding_kg:.0f} "
+                f"+ box {results.ms_bottom_box_kg:.0f} + flanges {flanges_kg:.0f} + hood {side_hood_kg:.0f})")
     rows.append((
         "ENCON ITEMS", "MS Combustion Air Inlet Assembly",
         cai_ref,
