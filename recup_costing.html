@@ -358,11 +358,11 @@
     <div class="fg fg-3">
       <div class="field">
         <label>Flow (Nm&sup3;/hr)</label>
-        <input id="flue_flow_nm3hr" type="number" step="any" value="1811"/>
+        <input id="flue_flow_nm3hr" type="number" step="any" value="1811" oninput="syncFlueMass()"/>
       </div>
       <div class="field">
-        <label>Mass (kg/hr)</label>
-        <input id="flue_mass_kghr" type="number" step="any" value="2174"/>
+        <label>Mass (kg/hr) <small style="color:#94a3b8;font-weight:400">(= Flow &times; 1.2)</small></label>
+        <input id="flue_mass_kghr" type="number" step="any" value="2173.2" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;"/>
       </div>
       <div class="field">
         <label>Cp (kcal/kg&deg;C)</label>
@@ -671,6 +671,15 @@ async function refreshRef() {
   } catch (e) { /* silent */ }
 }
 window.addEventListener("DOMContentLoaded", refreshRef);
+
+// Flue mass is derived: kg/hr = Nm3/hr * 1.2 (typical combustion-product
+// density at the recuperator hot end). Keep it in sync whenever flow changes
+// and seed it once on first paint so the read-only field is never stale.
+function syncFlueMass() {
+  const flow = parseFloat($("flue_flow_nm3hr").value) || 0;
+  $("flue_mass_kghr").value = (flow * 1.2).toFixed(2);
+}
+window.addEventListener("DOMContentLoaded", syncFlueMass);
 
 async function calculate() {
   $("calcErr").textContent = "";
