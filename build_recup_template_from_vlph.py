@@ -100,6 +100,34 @@ _DESIGNING_PARAMS = [
     ('Pipe Wall Thickness',       '{{ pipe_thick_mm }} mm'),
 ]
 
+# ── Annexure V — Reference List (recup-specific clients) ───────────────────
+# Pulled from the ENCON recuperator offer (separate page-V layout the
+# user supplied). Format is (S.No., Client, Application). All entries
+# are Recuperator deliveries so the Application column is uniform.
+_RECUP_CLIENTS = [
+    "Jordan Steel, Jordan",
+    "Utility Alloys Pvt. Ltd., Coimbatore",
+    "CUMI Refractories, Chennai",
+    "Sunflag Iron & Steel Company Ltd., Maharashtra",
+    "Tata Steel Ltd, Boisar, MH",
+    "Modern Steel Ltd, Mandi Gobindgarh",
+    "Raj Shree Udyog, Mandi Gobindgarh",
+    "Dhiman Iron & Steel Industries, Mandi Gobindgarh",
+    "Bharat Ispat Udyog Pvt. Ltd., Mandi Gobindgarh",
+    "Tameer Steel Factory Company Ltd., Saudi Arabia",
+    "Premier Rolling Mills, Kenya",
+    "Gulf Steel Industries, Abu Dhabi",
+    "GTB Columbo Corporation, Sri Lanka",
+    "Divine Alloys & Power Company Ltd., Jamshedpur",
+    "Maadi Steel, Egypt",
+    "Steel Rolling Mills Ltd., Uganda",
+    "Star Wire, Faridabad",
+    "Sadhu Forging Ltd., Faridabad",
+    "Hindustan Udyog Ltd., Kolkata",
+    "Steel Makers Ltd., Kenya",
+]
+
+
 # ── Annexure I — Scope of Supply (recup) ────────────────────────────────────
 _RECUP_SCOPE_ITEMS = [
     'Recuperator (Hot & Cold Bank) with tube plate, tubes, and supporting frame',
@@ -319,6 +347,63 @@ def _delete_vlph_scope_body(doc: Document) -> None:
                 t.text = 'RECUPERATOR (Waste Heat Recovery System)'
 
 
+def _replace_reference_list(doc: Document) -> None:
+    """Replace the Annexure V Reference List (50-row ladle-preheater
+    table) with the 20-row recup client list. The table header
+    (S. No. | Client | Application) is preserved. Application column
+    is set to 'Recuperator' for every entry.
+
+    Also rewrites the intro paragraph above the table from the
+    'ladle preheating systems' line to a recup equivalent."""
+    # 1. Find the reference list table by header signature.
+    table = None
+    for t in doc.tables:
+        head = [c.text.strip() for c in t.rows[0].cells] if t.rows else []
+        if (len(head) >= 3 and head[0].upper() == 'S. NO.'
+                and head[1].upper() == 'CLIENT' and 'APPLICATION' in head[2].upper()):
+            table = t
+            break
+    if table is None:
+        print('Reference List table not found — skipping replace.')
+        return
+
+    tbl_xml = table._element
+    # Strip rows 1+; keep the header row.
+    for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
+        tbl_xml.remove(tr)
+
+    # Add recup client rows.
+    for idx, client in enumerate(_RECUP_CLIENTS, start=1):
+        row = table.add_row()
+        row.cells[0].text = str(idx)
+        row.cells[1].text = client
+        row.cells[2].text = 'Recuperator'
+
+    # 2. Rewrite the intro paragraph above the table. VLPH had:
+    #   'ENCON has supplied ladle preheating systems to leading steel
+    #    and casting houses across India and overseas. A representative
+    #    list is below:'
+    # Recup intro per the user's screenshot:
+    #   'We have supplied Recuperators to various clients, some of
+    #    them are listed below:'
+    for p in doc.paragraphs:
+        if 'ladle preheating systems' in p.text.lower():
+            # Replace the entire paragraph text.
+            for run in p.runs:
+                run.text = ''
+            if p.runs:
+                p.runs[0].text = (
+                    'We have supplied Recuperators to various clients, '
+                    'some of them are listed below:'
+                )
+            else:
+                p.add_run(
+                    'We have supplied Recuperators to various clients, '
+                    'some of them are listed below:'
+                )
+            break
+
+
 def _rebuild_price_schedule(doc: Document) -> None:
     """Find the 3-row Price Schedule (target by 'ITEM DESCRIPTION' header)
     and expand into single/full toggled rows + supervision + summary."""
@@ -440,6 +525,9 @@ def main() -> None:
 
     # 5. Rebuild the Price Schedule (Annexure III) for single/full toggle.
     _rebuild_price_schedule(doc)
+
+    # 6. Replace Annexure V Reference List with recup-specific clients.
+    _replace_reference_list(doc)
 
     doc.save(TARGET)
     print(f'Saved -> {TARGET}')
