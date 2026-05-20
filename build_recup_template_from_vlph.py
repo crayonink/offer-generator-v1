@@ -315,13 +315,9 @@ def _delete_vlph_scope_body(doc: Document) -> None:
 
     # The 3D-image block is inserted separately (between MoC and
     # Designing Params) by _insert_3d_images_before(). Keep this
-    # post-Designing-Params block focused on text only.
+    # post-Designing-Params block to OPERATION-only text — the
+    # Scope of Supply belongs in Annexure I, not Tech Specs.
     recup_body = [
-        _para('SCOPE OF SUPPLY', bold=True),
-        _para('Our scope of supply will cover design, engineering, '
-              'manufacturing, supply, and supervision for erection & '
-              'commissioning of the proposed Recuperator (Waste Heat '
-              'Recovery System).'),
         _para('OPERATION', bold=True),
         _para('The Recuperator is a heat-recovery exchanger that uses '
               'the hot flue gases leaving the furnace to preheat the '
