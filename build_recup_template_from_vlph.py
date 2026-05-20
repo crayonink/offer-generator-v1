@@ -521,8 +521,29 @@ def _inject_scope_of_supply_paragraph(doc: Document) -> None:
 
 def _remove_annexure_vi(doc: Document) -> None:
     """Strip Annexure VI — Make List from the cloned VLPH template.
-    Removes: the 'ANNEXURE VI — MAKE LIST' heading paragraph, the
-    intro paragraph below it, and the empty make-list table itself."""
+    Removes:
+      * The 'ANNEXURE VI — MAKE LIST' heading paragraph
+      * The intro paragraph below it
+      * The empty make-list table
+      * The 'Annexure VI | Make List | Attached' row from the LIST OF
+        ANNEXURES table on the cover page (T2)
+    """
+    # ── Part A: strip the Annexure VI row from LIST OF ANNEXURES ──────
+    for t in doc.tables:
+        if not t.rows or len(t.rows[0].cells) < 2:
+            continue
+        head = [c.text.strip().upper() for c in t.rows[0].cells]
+        # Match the 3-col List of Annexures header
+        if 'ANNEXURE NO.' in head[0]:
+            tbl_xml = t._element
+            for tr in list(tbl_xml.findall(qn('w:tr'))):
+                row_txt = ''.join(x.text or '' for x in tr.iter(qn('w:t'))).upper()
+                # 'ANNEXURE VI' but NOT 'ANNEXURE V ' (don't match Annexure V row)
+                if 'ANNEXURE VI' in row_txt and 'MAKE' in row_txt:
+                    tbl_xml.remove(tr)
+            break
+
+    # ── Part B: strip the body section (heading + intro + table) ─────
     body = doc.element.body
     elements = list(body)
 

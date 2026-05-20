@@ -121,12 +121,18 @@ def _get_service():
 
 
 def _folder_id_for_product(product_type: str) -> Optional[str]:
-    """Map a product_type string to the Drive folder ID it belongs in."""
+    """Map a product_type string to the Drive folder ID it belongs in.
+    Env vars take precedence over the hard-coded fallback below."""
     pt = (product_type or "").lower()
     if "vertical" in pt or "horizontal" in pt or "ladle" in pt:
         return os.environ.get("GOOGLE_DRIVE_FOLDER_LADLE_ID", "").strip() or None
     if "tundish" in pt:
         return os.environ.get("GOOGLE_DRIVE_FOLDER_TUNDISH_ID", "").strip() or None
+    if "recup" in pt:
+        # User-supplied recuperator offers folder. Env var override
+        # available via GOOGLE_DRIVE_FOLDER_RECUP_ID.
+        return (os.environ.get("GOOGLE_DRIVE_FOLDER_RECUP_ID", "").strip()
+                or "1i4wbS9JpSJfC5fJLSgPEv-z1_Dm9Jr2v-")
     return os.environ.get("GOOGLE_DRIVE_FOLDER_DEFAULT_ID", "").strip() or None
 
 

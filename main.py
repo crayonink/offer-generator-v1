@@ -2899,6 +2899,18 @@ def generate_recup_quote(req: RecupQuoteRequest):
         pdf_path = os.path.join(QUOTES_FOLDER, pdf_name)
         pdf_ok = _docx_to_pdf(docx_path, pdf_path)
 
+        # Mirror docx + pdf to Google Drive (recup-specific folder) in a
+        # background thread. product_type='recuperator' triggers the
+        # recup routing in drive_uploader._folder_id_for_product.
+        # Failures are logged but never break offer generation.
+        try:
+            from engine.drive_uploader import upload_offer_async
+            upload_offer_async(docx_path, docx_name, "recuperator")
+            if pdf_ok:
+                upload_offer_async(pdf_path, pdf_name, "recuperator")
+        except Exception as _drv_err:
+            print(f"WARN: drive upload kickoff failed: {_drv_err}")
+
         return {
             "filename":     docx_name,
             "pdf_filename": pdf_name if pdf_ok else None,
