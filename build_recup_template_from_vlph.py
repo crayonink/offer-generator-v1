@@ -404,6 +404,207 @@ def _replace_reference_list(doc: Document) -> None:
             break
 
 
+def _inject_scope_of_supply_paragraph(doc: Document) -> None:
+    """Rewrite Annexure I — Scope of Supply with the recup-specific
+    intro paragraph + 'RECUPERATOR (Waste Heat Recovery System)'
+    sub-heading + descriptive paragraph that the user supplied.
+
+    Final order in Annexure I:
+      1. 'ANNEXURE I — SCOPE OF SUPPLY' heading        (unchanged)
+      2. Intro:  'The Scope of supply will cover Design,
+                  manufacturing and supply of the recuperator
+                  as per the specifications provided by the
+                  client mentioned below.'
+      3. (blank spacer)
+      4. 'RECUPERATOR (Waste Heat Recovery System)'   (bold + underline)
+      5. Descriptive paragraph (recup operation)
+      6. (blank spacer)
+      7. T7 Scope of Supply table                     (unchanged)
+    """
+    body = doc.element.body
+    elements = list(body)
+
+    # 1. Locate the 'ANNEXURE I' heading.
+    heading_idx = None
+    for i, el in enumerate(elements):
+        if el.tag.split('}')[-1] != 'p':
+            continue
+        txt = ''.join(t.text or '' for t in el.iter(qn('w:t'))).strip()
+        if 'ANNEXURE I' in txt.upper() and 'SCOPE OF SUPPLY' in txt.upper():
+            heading_idx = i
+            break
+    if heading_idx is None:
+        print('Annexure I heading not found — skipping scope-intro injection.')
+        return
+
+    # 2. Find the intro paragraph immediately after the heading.
+    intro_p = None
+    for j in range(heading_idx + 1, len(elements)):
+        if elements[j].tag.split('}')[-1] == 'p':
+            intro_p = elements[j]
+            break
+    if intro_p is None:
+        return
+
+    # Idempotency: if the intro already starts with our recup text, skip.
+    intro_txt = ''.join(t.text or '' for t in intro_p.iter(qn('w:t'))).strip()
+    if intro_txt.startswith('The Scope of supply will cover Design, manufacturing'):
+        return
+
+    # 3. Replace the intro text.
+    NEW_INTRO = (
+        'The Scope of supply will cover Design, manufacturing and supply '
+        'of the recuperator as per the specifications provided by the '
+        'client mentioned below.'
+    )
+    # Wipe all <w:t> elements inside intro_p, then set the first to our text.
+    t_els = list(intro_p.iter(qn('w:t')))
+    for t in t_els:
+        t.text = ''
+    if t_els:
+        t_els[0].text = NEW_INTRO
+    else:
+        # No runs at all — synthesize one.
+        r = OxmlElement('w:r')
+        t = OxmlElement('w:t'); t.text = NEW_INTRO; r.append(t)
+        intro_p.append(r)
+
+    # 4. Insert blank + RECUPERATOR heading + descriptive paragraph
+    #    + blank spacer, AFTER intro_p (so they sit between intro and
+    #    the Scope of Supply table).
+    def _para(text: str = '', *, bold: bool = False, underline: bool = False) -> OxmlElement:
+        p = OxmlElement('w:p')
+        if text:
+            r = OxmlElement('w:r')
+            if bold or underline:
+                rPr = OxmlElement('w:rPr')
+                if bold:
+                    rPr.append(OxmlElement('w:b'))
+                if underline:
+                    u = OxmlElement('w:u')
+                    u.set(qn('w:val'), 'single')
+                    rPr.append(u)
+                r.append(rPr)
+            t = OxmlElement('w:t')
+            t.text = text
+            t.set(qn('xml:space'), 'preserve')
+            r.append(t)
+            p.append(r)
+        return p
+
+    DESCRIPTION = (
+        'The furnace will be provided with a waste heat recovery '
+        'Recuperator for suitable capacity, which will preheat the '
+        'combustion air to a temperature of about (300-350) °C, which '
+        'in turn decreases fuel consumption. Recuperator will be of '
+        'Convective type having two passes for air and single pass for '
+        'flue gas. The flue gas will pass over the bank while air '
+        'passes through the tubes. The tubes for hot Bank (CS Boiler '
+        'Grade) and cold Bank (CS Boiler Grade). The outer body of the '
+        'recuperator shall be fabricated from MS plates of suitable '
+        'thickness so that it may sustain thermal stresses developed '
+        'during its work. The recuperator will be installed above the '
+        'ground.'
+    )
+
+    # addnext goes immediately after intro_p. Insert in reverse order
+    # so the final sequence is: intro_p, spacer, recup-head, desc, spacer2.
+    nodes_in_order = [
+        _para(),                                                  # spacer
+        _para('RECUPERATOR (Waste Heat Recovery System)',
+              bold=True, underline=True),
+        _para(DESCRIPTION),
+        _para(),                                                  # spacer
+    ]
+    for el in reversed(nodes_in_order):
+        intro_p.addnext(el)
+
+
+def _remove_annexure_vi(doc: Document) -> None:
+    """Strip Annexure VI — Make List from the cloned VLPH template.
+    Removes: the 'ANNEXURE VI — MAKE LIST' heading paragraph, the
+    intro paragraph below it, and the empty make-list table itself."""
+    body = doc.element.body
+    elements = list(body)
+
+    heading_idx = None
+    for i, el in enumerate(elements):
+        if el.tag.split('}')[-1] != 'p':
+            continue
+        txt = ''.join(t.text or '' for t in el.iter(qn('w:t'))).strip()
+        if 'ANNEXURE VI' in txt.upper() and 'MAKE' in txt.upper():
+            heading_idx = i
+            break
+    if heading_idx is None:
+        return  # idempotent — already removed
+
+    # Remove the heading + everything after it up to (and including)
+    # the first table we encounter (the make-list table). Then stop.
+    i = heading_idx
+    removed_table = False
+    while i < len(elements):
+        el = elements[i]
+        tag = el.tag.split('}')[-1]
+        if tag == 'sectPr':
+            break  # don't remove the doc's section properties
+        body.remove(el)
+        if tag == 'tbl':
+            removed_table = True
+            # Remove one trailing blank paragraph too (if present) for clean spacing.
+            if i + 1 < len(elements) and elements[i+1].tag.split('}')[-1] == 'p':
+                nxt_txt = ''.join(t.text or '' for t in elements[i+1].iter(qn('w:t'))).strip()
+                if not nxt_txt:
+                    body.remove(elements[i+1])
+            break
+        i += 1
+    print(f'Removed Annexure VI (table removed={removed_table})')
+
+
+def _make_supervision_conditional(doc: Document) -> None:
+    """Wrap the Supervision sub-table (the 3-row 'Mechanical / PLC /
+    Note' table immediately below the Price Schedule) with
+    {%tr if supervision_include %} ... {%tr endif %} control rows so
+    Step 4's checkbox actually hides the sub-table when unchecked."""
+    # Target by content: the supervision sub-table starts with
+    # 'Supervision Charges for Erection' in the first cell.
+    target = None
+    for t in doc.tables:
+        if not t.rows or not t.rows[0].cells:
+            continue
+        head = t.rows[0].cells[0].text.strip()
+        if head.startswith('Supervision Charges for Erection'):
+            target = t
+            break
+    if target is None:
+        print('Supervision sub-table not found — skipping wrap.')
+        return
+
+    tbl_xml = target._element
+    rows = list(tbl_xml.findall(qn('w:tr')))
+    # Idempotency: if first row is already a control row, skip.
+    first_text = ''.join(t.text or '' for t in rows[0].iter(qn('w:t'))).strip()
+    if first_text.startswith('{%tr'):
+        return
+
+    # Add two new rows (will become control rows) — these stick at the
+    # end, then we move them to wrap the existing rows.
+    opener = target.add_row()
+    opener.cells[0].text = '{%tr if supervision_include %}'
+    closer = target.add_row()
+    closer.cells[0].text = '{%tr endif %}'
+
+    # Move opener BEFORE the first existing row, closer AFTER the last
+    # existing data row (i.e. before the newly appended opener/closer).
+    opener_xml = opener._element
+    closer_xml = closer._element
+    tbl_xml.remove(opener_xml)
+    tbl_xml.remove(closer_xml)
+    # Insert opener before the first original row.
+    rows[0].addprevious(opener_xml)
+    # Append closer at the end (which is after the original last row).
+    tbl_xml.append(closer_xml)
+
+
 def _rebuild_price_schedule(doc: Document) -> None:
     """Find the 3-row Price Schedule (target by 'ITEM DESCRIPTION' header)
     and expand into single/full toggled rows + supervision + summary."""
@@ -436,10 +637,17 @@ def _rebuild_price_schedule(doc: Document) -> None:
                     for run in p.runs:
                         run.bold = True
 
+    # Layout matches the VLPH default Annexure III: header + item row(s)
+    # + TOTAL row. Single mode = one item (default). Full mode = iterate
+    # over bom_rows. No amount-in-words footer — the standalone
+    # Supervision sub-table (Mechanical / PLC / Note) lives separately
+    # in the template body just below this table.
+
     # ── style: single ─────────────────────────────────────────────────
     add("{%tr if price_schedule_style == 'single' %}", "", "", "", "")
     add("1.", "Recuperator for {{ application }}",
         "{{ recup_qty }}", "{{ recup_unit_price }}", "{{ recup_total_price }}")
+    add("", "TOTAL", "", "", "{{ grand_total }}", bold=True)
     add("{%tr endif %}", "", "", "", "")
 
     # ── style: full ────────────────────────────────────────────────────
@@ -448,25 +656,8 @@ def _rebuild_price_schedule(doc: Document) -> None:
     add("{{ r.sno }}", "{{ r.item }}", "{{ r.qty }}",
         "{{ r.unit_price }}", "{{ r.total }}")
     add("{%tr endfor %}", "", "", "", "")
-    add("{%tr if supervision_include %}", "", "", "", "")
-    add("", "Supervision Charges for Erection & Commissioning "
-        "(Erection by Client, Supervision by ENCON)", "",
-        "{{ supervision_rate }}", "{{ supervision_note }}")
+    add("", "TOTAL", "", "", "{{ grand_total }}", bold=True)
     add("{%tr endif %}", "", "", "", "")
-    add("", "Bought-out Items Total", "", "", "{{ bought_out_total }}")
-    add("", "ENCON Items Total",      "", "", "{{ encon_total }}")
-    add("", "GRAND TOTAL",            "", "", "{{ grand_total }}", bold=True)
-    add("{%tr endif %}", "", "", "", "")
-
-    # Footer: amount-in-words spanning 4 cells
-    footer = table.add_row()
-    f = footer.cells
-    merged = f[0].merge(f[1]).merge(f[2]).merge(f[3])
-    merged.text = '{{ grand_total_in_words }}'
-    f[4].text = '{{ grand_total }}'
-    for p in merged.paragraphs:
-        for run in p.runs:
-            run.bold = True
 
 
 def main() -> None:
@@ -526,8 +717,18 @@ def main() -> None:
     # 5. Rebuild the Price Schedule (Annexure III) for single/full toggle.
     _rebuild_price_schedule(doc)
 
+    # 5b. Wrap Supervision sub-table with {%tr if supervision_include %}
+    #     so the Step-4 checkbox can hide it when unchecked.
+    _make_supervision_conditional(doc)
+
+    # 5c. Inject the RECUPERATOR descriptive paragraph into Annexure I.
+    _inject_scope_of_supply_paragraph(doc)
+
     # 6. Replace Annexure V Reference List with recup-specific clients.
     _replace_reference_list(doc)
+
+    # 7. Remove Annexure VI Make List (not applicable for recup).
+    _remove_annexure_vi(doc)
 
     doc.save(TARGET)
     print(f'Saved -> {TARGET}')
