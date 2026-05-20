@@ -2655,7 +2655,12 @@ class RecupQuoteRequest(BaseModel):
     marketing_email:  str = ""
     marketing_phone:  str = ""
     technical_person: str = ""
+    technical_phone:  str = ""
+    technical_email:  str = ""
     location:         str = "FBD"
+    # Supervision charges (VLPH-style supervision table in Annexure III)
+    supervision_mech: str = ""
+    supervision_plc:  str = ""
     # T&C
     tnc_prices:             str = ""
     tnc_delivery:           str = ""
@@ -2788,11 +2793,15 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "project_name":     req.project_name or (f"Recuperator for {req.application}" if req.application else "Recuperator"),
             "subject":          req.subject or (f"Offer for Recuperator — {req.application}" if req.application else "Offer for Recuperator"),
             "application":      req.application or "Furnace",
+            # VLPH-style top-of-document equipment name (renders on cover
+            # page + 'About the Equipment' section + Annexure I banner).
+            "equipment_name":   f"Recuperator for {req.application}" if req.application else "Recuperator",
             "company_name":     req.company_name,
             "company_address":  req.company_address,
             "email":            req.email,
             "mobile_no":        req.mobile_no,
             "poc_name":         _with_salutation(req.salutation, req.poc_name),
+            "poc_designation":  req.poc_designation or "",
             "client_enq_ref":   req.client_enq_ref,
             "enquiry_ref":      full_ref,
             "enquiry_ref_short": short_ref,
@@ -2800,6 +2809,15 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "marketing_person": req.marketing_person,
             "marketing_email":  req.marketing_email,
             "marketing_phone":  req.marketing_phone,
+            # Technical person (cover-letter signature in VLPH layout)
+            "technical_person": req.technical_person or req.marketing_person,
+            "technical_phone":  req.technical_phone  or req.marketing_phone,
+            "technical_email":  req.technical_email  or req.marketing_email,
+            # Supervision charges - VLPH renders these in a small sub-table
+            # right after the Price Schedule. For recup we expose mech +
+            # plc lines (PLC line may stay blank if not in scope).
+            "supervision_mech": req.supervision_mech or "",
+            "supervision_plc":  req.supervision_plc  or "",
             # Designing parameters table
             "flue_flow_nm3hr":  f"{c.get('flue_flow_nm3hr', 0):,.0f}" if c.get('flue_flow_nm3hr') else "",
             "flue_temp_in_C":   f"{int(round(c.get('flue_temp_in_C', 0)))}" if c.get('flue_temp_in_C') else "",
