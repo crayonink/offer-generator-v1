@@ -659,6 +659,20 @@
     </div>
   </div>
 
+  <!-- ── Optional Price Schedule additions ── -->
+  <div class="section">
+    <div class="section-title">Price Schedule &mdash; Optional Additions</div>
+    <div class="fg fg-1">
+      <div class="field">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input id="o-supervision" type="checkbox" style="width:16px; height:16px"/>
+          <span>Include Supervision Charges row in the Price Schedule</span>
+        </label>
+        <div class="hint">Adds a "Supervision Charges for Erection &amp; Commissioning" row (Rs 10,500 / Man / Day + To-and-Fro fare + Boarding &amp; Lodging). Use when erection is in client scope but ENCON supervises.</div>
+      </div>
+    </div>
+  </div>
+
   <div style="display:flex; gap:12px; margin-top:8px; align-items:center;">
     <button class="btn-primary" id="genBtn" onclick="generateOffer()">Generate Offer</button>
     <span id="genErr" class="err"></span>
