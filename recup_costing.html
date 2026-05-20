@@ -989,9 +989,11 @@ async function generateOffer() {
     tnc_guarantee:          $("tnc_guarantee").value,
     // Recup calc results
     calculations:  lastCalc.calculations,
+    bom:           lastCalc.bom,          // includes any user-edited unit prices / qtys
     final_total:   lastCalc._final_total,
     grand_total:   lastCalc._grand_total,
     qty:           1,
+    supervision_include: !!($("o-supervision") && $("o-supervision").checked),
   };
   try {
     const res = await fetch("/api/generate-recup-quote", {

@@ -99,11 +99,15 @@ def _make_row(table, kind: str, label: str | None, value: str | None):
 
 def add_material_of_construction(doc: Document) -> None:
     """Add Material of Construction rows to the top of Table 4 (the
-    existing Recuperator Designing Parameters table)."""
-    # Table 4 is the Designing Parameters table (header r0 = 'Recuperator
-    # Designing Parameters as per the data provided by Client').
+    existing Recuperator Designing Parameters table). Idempotent."""
     target_table = doc.tables[4]
     tbl_xml = target_table._element
+
+    # Idempotency: if first row already says 'Material of Construction'
+    # we've already patched this template.
+    if target_table.rows and 'Material of Construction' in target_table.rows[0].cells[0].text:
+        print("Material of Construction rows already present — skipping.")
+        return
 
     # Build the rows at the end of the table first (because python-docx
     # only knows how to .add_row at the end), then move them to the top
@@ -128,6 +132,69 @@ def add_material_of_construction(doc: Document) -> None:
         first_existing_row.addprevious(tr)
 
 
+def rebuild_price_schedule(doc: Document) -> None:
+    """Rebuild Table 5 (Annexure III Price Schedule) as a docxtpl
+    iterable row over `bom_rows` + optional supervision row + summary
+    totals + amount-in-words footer.
+
+    Idempotent: if the iterable marker already exists, skip."""
+    table = doc.tables[5]
+    tbl_xml = table._element
+    # Strip every existing row except the header (row 0) so a re-run
+    # cleanly regenerates the iterable + supervision + summary block.
+    for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
+        tbl_xml.remove(tr)
+
+    def add_row(c1: str, c2: str, c3: str, c4: str, c5: str, *, bold_total: bool = False):
+        r = table.add_row()
+        cells = r.cells
+        cells[0].text = c1
+        cells[1].text = c2
+        cells[2].text = c3
+        cells[3].text = c4
+        cells[4].text = c5
+        if bold_total:
+            for cell in cells:
+                for p in cell.paragraphs:
+                    for run in p.runs:
+                        run.bold = True
+
+    # 1. Iterable row over bom_rows.
+    #    docxtpl pattern: opener row (removed) + content row (repeated) +
+    #    closer row (removed). All three are added; only the content row
+    #    actually shows on the rendered doc — once per item in bom_rows.
+    add_row("{%tr for r in bom_rows %}", "", "", "", "")           # opener
+    add_row("{{ r.sno }}", "{{ r.item }}", "{{ r.qty }}",
+            "{{ r.unit_price }}", "{{ r.total }}")                  # content
+    add_row("{%tr endfor %}", "", "", "", "")                      # closer
+
+    # 2. Optional supervision-charges row — same opener/content/closer
+    #    pattern using {%tr if … %} / {%tr endif %}.
+    add_row("{%tr if supervision_include %}", "", "", "", "")
+    add_row("", "Supervision Charges for Erection & Commissioning "
+            "(Erection by Client, Supervision by ENCON)", "",
+            "{{ supervision_rate }}", "{{ supervision_note }}")
+    add_row("{%tr endif %}", "", "", "", "")
+
+    # 3. Summary rows (always shown). Use plain Jinja vars — they are
+    #    populated by the backend.
+    add_row("", "Bought-out Items Total", "", "", "{{ bought_out_total }}")
+    add_row("", "ENCON Items Total",      "", "", "{{ encon_total }}")
+    add_row("", "GRAND TOTAL",            "", "", "{{ grand_total }}", bold_total=True)
+
+    # 4. Amount-in-words footer — merge the first 4 cells into one so
+    #    the long text doesn't repeat across the row. Last cell keeps
+    #    the numeric grand total.
+    footer = table.add_row()
+    f_cells = footer.cells
+    merged = f_cells[0].merge(f_cells[1]).merge(f_cells[2]).merge(f_cells[3])
+    merged.text = "{{ grand_total_in_words }}"
+    f_cells[4].text = "{{ grand_total }}"
+    for p in merged.paragraphs:
+        for run in p.runs:
+            run.bold = True
+
+
 def main() -> None:
     if not os.path.exists(TEMPLATE_PATH):
         raise SystemExit(f"missing: {TEMPLATE_PATH}")
@@ -137,6 +204,9 @@ def main() -> None:
 
     add_material_of_construction(doc)
     print(f"Added {len(_MOC_ROWS)} Material of Construction rows above Designing Parameters")
+
+    rebuild_price_schedule(doc)
+    print("Annexure III Price Schedule rebuilt as iterable + supervision + summary")
 
     doc.save(TEMPLATE_PATH)
     print(f"Saved -> {TEMPLATE_PATH}")

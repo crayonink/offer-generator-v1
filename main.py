@@ -2671,9 +2671,14 @@ class RecupQuoteRequest(BaseModel):
     tnc_guarantee:          str = ""
     # Recup calc payload
     calculations: dict = {}
+    bom:          list = []        # the full BOM detail rows for the price schedule
     final_total:  float = 0.0
     grand_total:  float = 0.0
     qty:          int = 1
+    # Supervision charges row (optional — Viraj-style)
+    supervision_include: bool = False
+    supervision_rate:    str = "Rs. 10,500 / Man / Day"
+    supervision_note:    str = "Plus: To and Fro fare from Delhi to Site, Boarding and Lodging, Local Conveyance, Medical assistance"
 
 
 def _material_of_construction(hot_mat: str, cold_mat: str, pipe_dia_mm: float = 48.3) -> dict:
@@ -2697,6 +2702,56 @@ def _material_of_construction(hot_mat: str, cold_mat: str, pipe_dia_mm: float = 
         "hot_tube_material":        hot_tube,
         "cold_tube_plate_material": cold_plate,
         "cold_tube_material":       cold_tube,
+    }
+
+
+def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
+                        supervision_rate: str, supervision_note: str) -> dict:
+    """Translate the calculator's BOM detail (12 line items + 3 summary
+    rows) into the placeholders the offer's Price Schedule needs:
+      - bom_rows               iterable list of {sno,item,qty,unit_price,total}
+      - bought_out_total       formatted ₹
+      - encon_total            formatted ₹
+      - grand_total            formatted ₹
+      - grand_total_in_words   Indian-English words
+      - supervision_*          row content (only rendered when flag is on)
+    Summary rows from the BOM dataframe (MEDIA == '') are skipped here;
+    we recompute totals from the line items so user-edited unit prices
+    on Step 3 propagate to the offer.
+    """
+    from engine.quote_writer import amount_in_words_indian as _words, _format_inr
+
+    rows = []
+    bought_out = 0.0
+    encon      = 0.0
+    for r in bom or []:
+        media = (r.get("MEDIA") or "").strip()
+        if not media:
+            continue  # skip the BOUGHT OUT / ENCON / GRAND TOTAL summary rows
+        total = float(r.get("TOTAL") or 0)
+        unit  = float(r.get("UNIT PRICE") or 0)
+        qty   = r.get("QTY") or 1
+        rows.append({
+            "sno":        len(rows) + 1,
+            "item":       r.get("ITEM NAME", ""),
+            "qty":        qty,
+            "unit_price": _format_inr(unit),
+            "total":      _format_inr(total),
+        })
+        if media == "ENCON ITEMS":
+            encon += total
+        else:
+            bought_out += total
+    grand = bought_out + encon
+    return {
+        "bom_rows":            rows,
+        "bought_out_total":    _format_inr(bought_out),
+        "encon_total":         _format_inr(encon),
+        "grand_total":         _format_inr(grand),
+        "grand_total_in_words": f"INR. {_words(grand)} ONLY.",
+        "supervision_include": bool(supervision_include),
+        "supervision_rate":    supervision_rate or "",
+        "supervision_note":    supervision_note or "",
     }
 
 
@@ -2753,11 +2808,17 @@ def generate_recup_quote(req: RecupQuoteRequest):
             **_material_of_construction(c.get('hot_bank_material'),
                                         c.get('cold_bank_material'),
                                         c.get('pipe_dia_mm', 48.3)),
-            # Price schedule
+            # Price schedule (legacy single-line placeholders — kept for
+            # backwards compatibility in case any text still references them)
             "recup_qty":           f"{qty:02d} No.",
             "recup_unit_price":    _format_inr(unit_price),
             "recup_total_price":   _format_inr(total_price),
             "recup_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
+            # Full-BOM iterable price schedule (Annexure III)
+            **_bom_rows_for_offer(req.bom or [],
+                                  supervision_include=req.supervision_include,
+                                  supervision_rate=req.supervision_rate,
+                                  supervision_note=req.supervision_note),
             # T&C
             "tnc_prices":             req.tnc_prices,
             "tnc_delivery":           req.tnc_delivery,
