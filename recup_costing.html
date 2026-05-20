@@ -659,16 +659,24 @@
     </div>
   </div>
 
-  <!-- ── Optional Price Schedule additions ── -->
+  <!-- ── Price Schedule style ── -->
   <div class="section">
-    <div class="section-title">Price Schedule &mdash; Optional Additions</div>
-    <div class="fg fg-1">
+    <div class="section-title">Price Schedule Style</div>
+    <div class="fg fg-2">
       <div class="field">
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <label>Layout</label>
+        <select id="o-price-style">
+          <option value="single" selected>Single-line (like Vertical / Real Ispat) &mdash; one row + amount in words</option>
+          <option value="full">Full BOM (like Viraj) &mdash; every line item + totals</option>
+        </select>
+        <div class="hint">Single-line is the default and matches the Vertical Ladle Preheater offer style.</div>
+      </div>
+      <div class="field">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:24px;">
           <input id="o-supervision" type="checkbox" style="width:16px; height:16px"/>
-          <span>Include Supervision Charges row in the Price Schedule</span>
+          <span>Include Supervision Charges row</span>
         </label>
-        <div class="hint">Adds a "Supervision Charges for Erection &amp; Commissioning" row (Rs 10,500 / Man / Day + To-and-Fro fare + Boarding &amp; Lodging). Use when erection is in client scope but ENCON supervises.</div>
+        <div class="hint">Only used when Full BOM layout is selected. Adds Rs 10,500 / Man / Day + To-and-Fro fare + Boarding &amp; Lodging.</div>
       </div>
     </div>
   </div>
@@ -1008,6 +1016,7 @@ async function generateOffer() {
     grand_total:   lastCalc._grand_total,
     qty:           1,
     supervision_include: !!($("o-supervision") && $("o-supervision").checked),
+    price_schedule_style: ($("o-price-style") && $("o-price-style").value) || "single",
   };
   try {
     const res = await fetch("/api/generate-recup-quote", {

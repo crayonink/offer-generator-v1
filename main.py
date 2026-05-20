@@ -2675,7 +2675,10 @@ class RecupQuoteRequest(BaseModel):
     final_total:  float = 0.0
     grand_total:  float = 0.0
     qty:          int = 1
-    # Supervision charges row (optional — Viraj-style)
+    # Price schedule style — "single" (VLPH-like, one row + amount in words)
+    # or "full" (Viraj-like, every BOM line + supervision + totals)
+    price_schedule_style: str = "single"
+    # Supervision charges row (optional — only meaningful in 'full' style)
     supervision_include: bool = False
     supervision_rate:    str = "Rs. 10,500 / Man / Day"
     supervision_note:    str = "Plus: To and Fro fare from Delhi to Site, Boarding and Lodging, Local Conveyance, Medical assistance"
@@ -2706,7 +2709,9 @@ def _material_of_construction(hot_mat: str, cold_mat: str, pipe_dia_mm: float = 
 
 
 def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
-                        supervision_rate: str, supervision_note: str) -> dict:
+                        supervision_rate: str, supervision_note: str,
+                        single_line_total: float = 0.0,
+                        single_line_mode: bool = False) -> dict:
     """Translate the calculator's BOM detail (12 line items + 3 summary
     rows) into the placeholders the offer's Price Schedule needs:
       - bom_rows               iterable list of {sno,item,qty,unit_price,total}
@@ -2743,12 +2748,15 @@ def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
         else:
             bought_out += total
     grand = bought_out + encon
+    # In single-line mode the footer should show the FINAL price (the one
+    # rendered in the lone Price Schedule row), not the raw BOM sum.
+    footer_total = single_line_total if single_line_mode else grand
     return {
         "bom_rows":            rows,
         "bought_out_total":    _format_inr(bought_out),
         "encon_total":         _format_inr(encon),
-        "grand_total":         _format_inr(grand),
-        "grand_total_in_words": f"INR. {_words(grand)} ONLY.",
+        "grand_total":         _format_inr(footer_total),
+        "grand_total_in_words": f"INR. {_words(footer_total)} ONLY.",
         "supervision_include": bool(supervision_include),
         "supervision_rate":    supervision_rate or "",
         "supervision_note":    supervision_note or "",
@@ -2814,11 +2822,15 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "recup_unit_price":    _format_inr(unit_price),
             "recup_total_price":   _format_inr(total_price),
             "recup_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
-            # Full-BOM iterable price schedule (Annexure III)
+            # Price-schedule mode flag (template branches on this)
+            "price_schedule_style": (req.price_schedule_style or "single").lower(),
+            # Full-BOM iterable price schedule (Annexure III, 'full' mode)
             **_bom_rows_for_offer(req.bom or [],
                                   supervision_include=req.supervision_include,
                                   supervision_rate=req.supervision_rate,
-                                  supervision_note=req.supervision_note),
+                                  supervision_note=req.supervision_note,
+                                  single_line_total=total_price,
+                                  single_line_mode=(req.price_schedule_style or 'single').lower() == 'single'),
             # T&C
             "tnc_prices":             req.tnc_prices,
             "tnc_delivery":           req.tnc_delivery,
@@ -2852,6 +2864,10 @@ def generate_recup_quote(req: RecupQuoteRequest):
         return {
             "filename":     docx_name,
             "pdf_filename": pdf_name if pdf_ok else None,
+            "download_url": f"/api/download-quote/{docx_name}",
+            "pdf_url":      f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
+            "preview_url":  f"/api/preview-quote/{pdf_name}" if pdf_ok else None,
+            "quote_no":     full_ref,
             "enquiry_ref":  full_ref,
             "final_total":  unit_price,
             "total_price":  total_price,

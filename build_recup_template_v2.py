@@ -227,28 +227,35 @@ def rebuild_price_schedule(doc: Document) -> None:
                     for run in p.runs:
                         run.bold = True
 
-    # 1. Iterable row over bom_rows.
-    #    docxtpl pattern: opener row (removed) + content row (repeated) +
-    #    closer row (removed). All three are added; only the content row
-    #    actually shows on the rendered doc — once per item in bom_rows.
-    add_row("{%tr for r in bom_rows %}", "", "", "", "")           # opener
-    add_row("{{ r.sno }}", "{{ r.item }}", "{{ r.qty }}",
-            "{{ r.unit_price }}", "{{ r.total }}")                  # content
-    add_row("{%tr endfor %}", "", "", "", "")                      # closer
+    # ── Style: 'single' ─────────────────────────────────────────────
+    # Real Ispat-style single-line price (e.g. "Recuperator for 50 TPH
+    # Furnace — 01 No. — 28,12,000.00"). Toggled by
+    # price_schedule_style == 'single'.
+    add_row("{%tr if price_schedule_style == 'single' %}", "", "", "", "")
+    add_row("1.", "Recuperator for {{ application }}",
+            "{{ recup_qty }}", "{{ recup_unit_price }}", "{{ recup_total_price }}")
+    add_row("{%tr endif %}", "", "", "", "")
 
-    # 2. Optional supervision-charges row — same opener/content/closer
-    #    pattern using {%tr if … %} / {%tr endif %}.
+    # ── Style: 'full' (default) ─────────────────────────────────────
+    # Full BOM line-item table — iterates each row in bom_rows.
+    add_row("{%tr if price_schedule_style == 'full' %}", "", "", "", "")
+    add_row("{%tr for r in bom_rows %}", "", "", "", "")
+    add_row("{{ r.sno }}", "{{ r.item }}", "{{ r.qty }}",
+            "{{ r.unit_price }}", "{{ r.total }}")
+    add_row("{%tr endfor %}", "", "", "", "")
+
+    # Optional supervision-charges row (only meaningful in full mode).
     add_row("{%tr if supervision_include %}", "", "", "", "")
     add_row("", "Supervision Charges for Erection & Commissioning "
             "(Erection by Client, Supervision by ENCON)", "",
             "{{ supervision_rate }}", "{{ supervision_note }}")
     add_row("{%tr endif %}", "", "", "", "")
 
-    # 3. Summary rows (always shown). Use plain Jinja vars — they are
-    #    populated by the backend.
+    # Summary rows (full mode only).
     add_row("", "Bought-out Items Total", "", "", "{{ bought_out_total }}")
     add_row("", "ENCON Items Total",      "", "", "{{ encon_total }}")
     add_row("", "GRAND TOTAL",            "", "", "{{ grand_total }}", bold_total=True)
+    add_row("{%tr endif %}", "", "", "", "")  # end 'full' block
 
     # 4. Amount-in-words footer — merge the first 4 cells into one so
     #    the long text doesn't repeat across the row. Last cell keeps
