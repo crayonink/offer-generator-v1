@@ -2771,7 +2771,12 @@ def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
 @app.post("/api/generate-recup-quote")
 def generate_recup_quote(req: RecupQuoteRequest):
     """Render Recup_Offer_Template.docx with payload data, save to
-    quotes/, and optionally convert to PDF."""
+    quotes/, and optionally convert to PDF.
+
+    Template note: as of 2026-05-20 the recup template is cloned from
+    the VLPH offer template (Offer_Template.docx) via
+    build_recup_template_from_vlph.py — see that script for the
+    layout (cover, Annexures, MoC + 3D images + Designing Params)."""
     try:
         from datetime import datetime as _dt
         from docxtpl import DocxTemplate
