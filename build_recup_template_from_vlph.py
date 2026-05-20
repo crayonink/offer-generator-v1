@@ -321,7 +321,7 @@ def _delete_vlph_scope_body(doc: Document) -> None:
         _para('Our scope of supply will cover design, engineering, '
               'manufacturing, supply, and supervision for erection & '
               'commissioning of the proposed Recuperator (Waste Heat '
-              'Recovery System) for {{ application }}.'),
+              'Recovery System).'),
         _para('OPERATION', bold=True),
         _para('The Recuperator is a heat-recovery exchanger that uses '
               'the hot flue gases leaving the furnace to preheat the '
