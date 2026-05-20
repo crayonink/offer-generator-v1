@@ -179,6 +179,39 @@ def _insert_moc_table_before(designing_table) -> None:
         _make_moc_row(moc_table, kind, label, value)
 
 
+def _insert_3d_images_before(designing_table) -> None:
+    """Insert '3D Image of the Proposed Recuperator' heading + three
+    image placeholders immediately before the Designing Parameters
+    table (so they appear between the MoC table and the Designing
+    Params table — i.e. right BEFORE the client-given parameters)."""
+    anchor = designing_table._element
+
+    def _para(text: str = '', bold: bool = False) -> OxmlElement:
+        p = OxmlElement('w:p')
+        if text:
+            r = OxmlElement('w:r')
+            if bold:
+                rPr = OxmlElement('w:rPr')
+                b = OxmlElement('w:b'); rPr.append(b); r.append(rPr)
+            t = OxmlElement('w:t')
+            t.text = text
+            r.append(t)
+            p.append(r)
+        return p
+
+    image_block = [
+        _para('3D Image of the Proposed Recuperator', bold=True),
+        _para('{{ image_recup_side }}'),
+        _para(),
+        _para('{{ image_recup_front }}'),
+        _para(),
+        _para('{{ image_recup_top }}'),
+        _para(),
+    ]
+    for el in image_block:
+        anchor.addprevious(el)
+
+
 def _replace_scope_table_with_recup(table) -> None:
     """Replace the Annexure I 12-row Scope of Supply rows with recup
     components. The first row (header) stays untouched.
@@ -252,6 +285,9 @@ def _delete_vlph_scope_body(doc: Document) -> None:
             p.append(r)
         return p
 
+    # The 3D-image block is inserted separately (between MoC and
+    # Designing Params) by _insert_3d_images_before(). Keep this
+    # post-Designing-Params block focused on text only.
     recup_body = [
         _para('SCOPE OF SUPPLY', bold=True),
         _para('Our scope of supply will cover design, engineering, '
@@ -270,13 +306,6 @@ def _delete_vlph_scope_body(doc: Document) -> None:
               'in the Material of Construction sub-table above. '
               'Designing parameters and process flows are listed in '
               'the Recuperator Designing Parameters table.'),
-        _para('3D Image of the Proposed Recuperator', bold=True),
-        _para('{{ image_recup_side }}'),
-        _para(),
-        _para('{{ image_recup_front }}'),
-        _para(),
-        _para('{{ image_recup_top }}'),
-        _para(),
     ]
     # addprevious inserts BEFORE the anchor — iterate in normal order so
     # the first item lands earliest in the document.
@@ -382,6 +411,11 @@ def main() -> None:
     # 3. Insert Material of Construction sub-table BEFORE the
     #    Designing Parameters table.
     _insert_moc_table_before(designing_table)
+
+    # 3b. Insert 3D image heading + placeholders between the MoC table
+    #     and the Designing Parameters table (so the diagrams appear
+    #     right before the client-given parameters).
+    _insert_3d_images_before(designing_table)
 
     # 4. Replace Annexure I scope table content with recup items.
     #    After step 3, MoC took position 5 and Designing Params is now
