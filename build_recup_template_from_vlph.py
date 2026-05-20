@@ -493,18 +493,17 @@ def _inject_scope_of_supply_paragraph(doc: Document) -> None:
         return p
 
     DESCRIPTION = (
-        'The furnace will be provided with a waste heat recovery '
-        'Recuperator for suitable capacity, which will preheat the '
-        'combustion air to a temperature of about {{ air_temp_out_C }} '
-        '°C, which in turn decreases fuel consumption. Recuperator '
-        'will be of Convective type having two passes for air and '
-        'single pass for flue gas. The flue gas will pass over the '
-        'bank while air passes through the tubes. The tubes are '
-        'provided for hot Bank and cold Bank. The outer body of '
-        'the recuperator shall be fabricated from MS '
-        'plates of suitable thickness so that it may sustain thermal '
-        'stresses developed during its work. The recuperator will be '
-        'installed above the ground.'
+        'A waste heat recovery Recuperator of suitable capacity will '
+        'be provided, which will preheat the combustion air to a '
+        'temperature of about {{ air_temp_out_C }} °C, which in turn '
+        'decreases fuel consumption. Recuperator will be of '
+        'Convective type having two passes for air and single pass '
+        'for flue gas. The flue gas will pass over the bank while '
+        'air passes through the tubes. The tubes are provided for '
+        'hot Bank and cold Bank. The outer body of the recuperator '
+        'shall be fabricated from MS plates of suitable thickness '
+        'so that it may sustain thermal stresses developed during '
+        'its work. The recuperator will be installed above the ground.'
     )
 
     # addnext goes immediately after intro_p. Insert in reverse order
