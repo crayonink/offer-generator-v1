@@ -2848,6 +2848,21 @@ def generate_recup_quote(req: RecupQuoteRequest):
 
         tpl_path = os.path.join(BASE_DIR, "Recup_Offer_Template.docx")
         tpl = DocxTemplate(tpl_path)
+
+        # 3D recuperator images (Annexure I) — embed only if the JPEGs are
+        # present in static/recup/. Missing files render as blank paragraphs
+        # rather than crashing the whole offer.
+        from docxtpl import InlineImage
+        from docx.shared import Mm
+        _img_dir = os.path.join(BASE_DIR, "static", "recup")
+        for key, fname, width_mm in (
+            ("image_recup_side",  "recup_3d_side.jpeg",  120),
+            ("image_recup_front", "recup_3d_front.jpeg", 120),
+            ("image_recup_top",   "recup_3d_top.jpeg",   120),
+        ):
+            fpath = os.path.join(_img_dir, fname)
+            ctx[key] = InlineImage(tpl, fpath, width=Mm(width_mm)) if os.path.exists(fpath) else ""
+
         tpl.render(ctx)
 
         # Save with a safe, sequenced filename

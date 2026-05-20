@@ -133,6 +133,68 @@ def add_material_of_construction(doc: Document) -> None:
         first_existing_row.addprevious(tr)
 
 
+def add_3d_image_placeholders(doc: Document) -> None:
+    """Insert '3D Image of the Proposed Recuperator' heading + three
+    docxtpl image placeholders right after the Designing Parameters
+    table. Backend supplies the actual InlineImage objects.
+
+    Idempotent: skip if the heading paragraph already exists."""
+    HEADING = "3D Image of the Proposed Recuperator"
+    for p in doc.paragraphs:
+        if HEADING in p.text:
+            print("3D image placeholders already present — skipping.")
+            return
+
+    # Locate the Designing Parameters table by content.
+    designing_tbl = None
+    for t in doc.tables:
+        if (t.rows and len(t.rows[0].cells) >= 1
+                and "Recuperator Designing Parameters" in t.rows[0].cells[0].text):
+            designing_tbl = t
+            break
+    if designing_tbl is None:
+        print("Designing Parameters table not found — can't anchor 3D images.")
+        return
+
+    body = doc.element.body
+    anchor = designing_tbl._element  # we'll insert AFTER this element
+    # Build the new XML in reverse order (because addnext inserts directly
+    # after the anchor each time, so the last addnext appears first).
+    nodes = []
+
+    def _para(text: str = "", bold: bool = False) -> OxmlElement:
+        p = OxmlElement('w:p')
+        if text:
+            r = OxmlElement('w:r')
+            if bold:
+                rPr = OxmlElement('w:rPr')
+                b = OxmlElement('w:b'); rPr.append(b); r.append(rPr)
+            t = OxmlElement('w:t')
+            t.text = text
+            r.append(t)
+            p.append(r)
+        return p
+
+    # In rendered order:
+    #   spacer | heading | side image | spacer | front image | spacer | top image
+    rendered_order = [
+        _para(),                              # spacer
+        _para(HEADING, bold=True),            # heading
+        _para("{{ image_recup_side }}"),      # side view (twin U-bank)
+        _para(),
+        _para("{{ image_recup_front }}"),     # front view (vertical tubes)
+        _para(),
+        _para("{{ image_recup_top }}"),       # top view (circular plates)
+        _para(),                              # trailing spacer
+    ]
+    # addnext goes one at a time AFTER anchor; reverse so first item ends
+    # up immediately after anchor.
+    for el in reversed(rendered_order):
+        anchor.addnext(el)
+
+    print(f"Added 3D image heading + 3 placeholders after Designing Parameters")
+
+
 def split_material_of_construction(doc: Document) -> None:
     """Split Table 4 (which currently contains MoC rows 0..N followed by
     Designing Parameters rows N..end) into TWO separate tables, with an
@@ -284,6 +346,8 @@ def main() -> None:
 
     rebuild_price_schedule(doc)
     print("Annexure III Price Schedule rebuilt as iterable + supervision + summary")
+
+    add_3d_image_placeholders(doc)
 
     doc.save(TEMPLATE_PATH)
     print(f"Saved -> {TEMPLATE_PATH}")
