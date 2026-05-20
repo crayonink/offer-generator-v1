@@ -33,6 +33,7 @@ import os
 from copy import deepcopy
 
 from docx import Document
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
 TEMPLATE_PATH = "Recup_Offer_Template.docx"
@@ -132,13 +133,80 @@ def add_material_of_construction(doc: Document) -> None:
         first_existing_row.addprevious(tr)
 
 
-def rebuild_price_schedule(doc: Document) -> None:
-    """Rebuild Table 5 (Annexure III Price Schedule) as a docxtpl
-    iterable row over `bom_rows` + optional supervision row + summary
-    totals + amount-in-words footer.
+def split_material_of_construction(doc: Document) -> None:
+    """Split Table 4 (which currently contains MoC rows 0..N followed by
+    Designing Parameters rows N..end) into TWO separate tables, with an
+    empty paragraph between them.
 
-    Idempotent: if the iterable marker already exists, skip."""
-    table = doc.tables[5]
+    After this:
+      doc.tables[4] = Material of Construction (was rows 0..N of old T4)
+      doc.tables[5] = Designing Parameters    (was rows N..end of old T4)
+      doc.tables[6] = Price Schedule          (was doc.tables[5])
+
+    Idempotent: skip if a separate Designing Parameters table already
+    exists (i.e. there's already a table whose first row says
+    'Recuperator Designing Parameters')."""
+    designing_banner = "Recuperator Designing Parameters"
+    for ti, t in enumerate(doc.tables):
+        if t.rows and designing_banner in t.rows[0].cells[0].text and ti != 4:
+            # already split (the banner sits as the first row of a non-T4)
+            print(f"Already split — Designing Parameters lives in Table {ti}.")
+            return
+
+    table4 = doc.tables[4]
+    tbl4_xml = table4._element
+
+    # Walk rows and find the split point: the row whose first cell says
+    # 'Recuperator Designing Parameters'.
+    rows = list(tbl4_xml.findall(qn('w:tr')))
+    split_idx = None
+    for i, tr in enumerate(rows):
+        cell_text = ''.join(t.text or '' for t in tr.iter(qn('w:t')))
+        if designing_banner in cell_text:
+            split_idx = i
+            break
+    if split_idx is None:
+        print("No Designing Parameters banner found inside Table 4 — nothing to split.")
+        return
+
+    # Clone the whole table, then in the CLONE keep only rows from split_idx
+    # onward (Designing Params). In the ORIGINAL, drop those same rows.
+    new_tbl = deepcopy(tbl4_xml)
+    new_rows = list(new_tbl.findall(qn('w:tr')))
+    for i, tr in enumerate(new_rows):
+        if i < split_idx:
+            new_tbl.remove(tr)
+    for i, tr in enumerate(rows):
+        if i >= split_idx:
+            tbl4_xml.remove(tr)
+
+    # Insert an empty paragraph + the new table right after the (now MoC-only)
+    # Table 4.
+    sep_p = OxmlElement('w:p')
+    tbl4_xml.addnext(new_tbl)
+    tbl4_xml.addnext(sep_p)
+    print(f"Split done: Table 4 = {split_idx} MoC rows; new Table 5 = "
+          f"{len(rows) - split_idx} Designing Params rows.")
+
+
+def rebuild_price_schedule(doc: Document) -> None:
+    """Rebuild the Price Schedule table as a docxtpl iterable row over
+    `bom_rows` + optional supervision row + summary totals +
+    amount-in-words footer.
+
+    Target by CONTENT (find the table whose header row contains
+    'ITEM DESCRIPTION') so the function still works after the MoC split
+    shuffles table indices."""
+    table = None
+    for t in doc.tables:
+        if not t.rows or len(t.rows[0].cells) < 2:
+            continue
+        if 'ITEM DESCRIPTION' in t.rows[0].cells[1].text.upper():
+            table = t
+            break
+    if table is None:
+        print("Price Schedule table not found — skipping rebuild.")
+        return
     tbl_xml = table._element
     # Strip every existing row except the header (row 0) so a re-run
     # cleanly regenerates the iterable + supervision + summary block.
@@ -204,6 +272,8 @@ def main() -> None:
 
     add_material_of_construction(doc)
     print(f"Added {len(_MOC_ROWS)} Material of Construction rows above Designing Parameters")
+
+    split_material_of_construction(doc)
 
     rebuild_price_schedule(doc)
     print("Annexure III Price Schedule rebuilt as iterable + supervision + summary")
