@@ -689,7 +689,7 @@ def _rebuild_price_schedule(doc: Document) -> None:
 
     # ── style: single ─────────────────────────────────────────────────
     add("{%tr if price_schedule_style == 'single' %}", "", "", "", "")
-    add("1.", "Recuperator for {{ application }}",
+    add("1.", "Recuperator",
         "{{ recup_qty }}", "{{ recup_unit_price }}", "{{ recup_total_price }}")
     add("", "TOTAL", "", "", "{{ grand_total }}", bold=True)
     add("{%tr endif %}", "", "", "", "")
