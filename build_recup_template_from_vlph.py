@@ -253,10 +253,10 @@ def _replace_scope_table_with_recup(table) -> None:
     # Drop rows 1+ (keep the 'S. No. | Item Description' header)
     for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
         tbl_xml.remove(tr)
-    # Add equipment banner row (merged across both cols)
+    # Banner row (merged across both cols) — short label only
     banner = table.add_row()
     banner.cells[0].merge(banner.cells[1])
-    banner.cells[0].text = '{{ equipment_name }}  —  {{ recup_qty }}'
+    banner.cells[0].text = 'Recuperator'
     for p in banner.cells[0].paragraphs:
         for r in p.runs:
             r.bold = True
@@ -495,16 +495,16 @@ def _inject_scope_of_supply_paragraph(doc: Document) -> None:
     DESCRIPTION = (
         'The furnace will be provided with a waste heat recovery '
         'Recuperator for suitable capacity, which will preheat the '
-        'combustion air to a temperature of about (300-350) °C, which '
-        'in turn decreases fuel consumption. Recuperator will be of '
-        'Convective type having two passes for air and single pass for '
-        'flue gas. The flue gas will pass over the bank while air '
-        'passes through the tubes. The tubes for hot Bank (CS Boiler '
-        'Grade) and cold Bank (CS Boiler Grade). The outer body of the '
-        'recuperator shall be fabricated from MS plates of suitable '
-        'thickness so that it may sustain thermal stresses developed '
-        'during its work. The recuperator will be installed above the '
-        'ground.'
+        'combustion air to a temperature of about {{ air_temp_out_C }} '
+        '°C, which in turn decreases fuel consumption. Recuperator '
+        'will be of Convective type having two passes for air and '
+        'single pass for flue gas. The flue gas will pass over the '
+        'bank while air passes through the tubes. The tubes are '
+        'provided for hot Bank and cold Bank. The outer body of '
+        'the recuperator shall be fabricated from MS '
+        'plates of suitable thickness so that it may sustain thermal '
+        'stresses developed during its work. The recuperator will be '
+        'installed above the ground.'
     )
 
     # addnext goes immediately after intro_p. Insert in reverse order
