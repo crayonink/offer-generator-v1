@@ -50,6 +50,8 @@ from copy import deepcopy
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Cm
+from docx.enum.table import WD_ROW_HEIGHT_RULE
 
 SOURCE = "Offer_Template.docx"
 TARGET = "Recup_Offer_Template.docx"
@@ -85,8 +87,6 @@ _MOC_ROWS = [
 
 # ── Recup Designing Parameters layout (replaces VLPH's 24-row spec) ────────
 _DESIGNING_PARAMS = [
-    ('Equipment',                 '{{ equipment_name }}'),
-    ('Application',               '{{ application }}'),
     ('No. of Units',              '{{ recup_qty }}'),
     ('Flue Gas Flow',             '{{ flue_flow_nm3hr }} Nm³/hr'),
     ('Flue Gas Temperature (In)', '{{ flue_temp_in_C }} °C'),
@@ -560,49 +560,93 @@ def _remove_annexure_vi(doc: Document) -> None:
     print(f'Removed Annexure VI (table removed={removed_table})')
 
 
-def _make_supervision_conditional(doc: Document) -> None:
-    """Wrap the Supervision sub-table (the 3-row 'Mechanical / PLC /
-    Note' table immediately below the Price Schedule) with
-    {%tr if supervision_include %} ... {%tr endif %} control rows so
-    Step 4's checkbox actually hides the sub-table when unchecked."""
-    # Target by content: the supervision sub-table starts with
-    # 'Supervision Charges for Erection' in the first cell.
+def _pad_table_rows(doc: Document, min_height_cm: float = 0.75) -> None:
+    """Give the Price Schedule and Supervision sub-table a generous
+    minimum row height so the printed offer doesn't look cramped.
+    Control rows ({%tr if%}, {%tr endif%}, {%tr for%}, etc.) are
+    intentionally NOT padded — they get stripped at render time and
+    leaving them at default height keeps the source template compact."""
+    targets = []
+    for t in doc.tables:
+        if not t.rows or len(t.rows[0].cells) < 2:
+            continue
+        head_l = t.rows[0].cells[0].text.strip().upper()
+        head_r = t.rows[0].cells[1].text.strip().upper() if len(t.rows[0].cells) > 1 else ''
+        # Price Schedule (header row contains 'ITEM DESCRIPTION')
+        if 'ITEM DESCRIPTION' in head_r:
+            targets.append(t)
+        # Supervision sub-table (either VLPH 'Supervision Charges' or
+        # our wrapped '{%tr if supervision_include %}' opener)
+        elif t.rows[0].cells[0].text.strip().startswith('Supervision Charges'):
+            targets.append(t)
+        elif t.rows[0].cells[0].text.strip().startswith('{%tr if supervision_include'):
+            targets.append(t)
+
+    height = Cm(min_height_cm)
+    for tbl in targets:
+        for row in tbl.rows:
+            first_cell_text = row.cells[0].text.strip() if row.cells else ''
+            # Skip control rows so they collapse at render time.
+            if first_cell_text.startswith('{%tr') or first_cell_text.startswith('{%p'):
+                continue
+            row.height = height
+            row.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
+
+
+def _rebuild_supervision_subtable(doc: Document) -> None:
+    """Replace the Supervision sub-table with a single supervision
+    row + Note row, wrapped with {%tr if supervision_include %}.
+
+    Final layout (4 source rows, 2 rendered when supervision_include
+    is true, 0 rendered when false):
+      r0: {%tr if supervision_include %}
+      r1: 'Supervision Charges for Erection and Commissioning'
+          | '{{ supervision_rate }}'
+      r2: Note row (merged across both columns)
+      r3: {%tr endif %}
+    """
     target = None
     for t in doc.tables:
         if not t.rows or not t.rows[0].cells:
             continue
         head = t.rows[0].cells[0].text.strip()
-        if head.startswith('Supervision Charges for Erection'):
+        # The VLPH original starts with 'Supervision Charges for
+        # Erection' on row 0. Our previously-wrapped version starts
+        # with '{%tr if supervision_include %}'. Match either so this
+        # function is idempotent on a re-run.
+        if head.startswith('Supervision Charges for Erection') or head.startswith('{%tr'):
             target = t
             break
     if target is None:
-        print('Supervision sub-table not found — skipping wrap.')
+        print('Supervision sub-table not found — skipping rebuild.')
         return
 
     tbl_xml = target._element
-    rows = list(tbl_xml.findall(qn('w:tr')))
-    # Idempotency: if first row is already a control row, skip.
-    first_text = ''.join(t.text or '' for t in rows[0].iter(qn('w:t'))).strip()
-    if first_text.startswith('{%tr'):
-        return
+    # Strip every existing row — we'll add a fresh 4-row layout.
+    for tr in list(tbl_xml.findall(qn('w:tr'))):
+        tbl_xml.remove(tr)
 
-    # Add two new rows (will become control rows) — these stick at the
-    # end, then we move them to wrap the existing rows.
+    NOTE_TEXT = ('Note: To-and-fro fare from Delhi to site, plus boarding, '
+                 'lodging, local conveyance, and medical assistance if '
+                 'required.')
+
+    # r0: opener control row
     opener = target.add_row()
     opener.cells[0].text = '{%tr if supervision_include %}'
+
+    # r1: supervision rate row
+    rate_row = target.add_row()
+    rate_row.cells[0].text = 'Supervision Charges for Erection and Commissioning'
+    rate_row.cells[1].text = '{{ supervision_rate }}'
+
+    # r2: note row (merged)
+    note_row = target.add_row()
+    note_row.cells[0].merge(note_row.cells[1])
+    note_row.cells[0].text = NOTE_TEXT
+
+    # r3: closer control row
     closer = target.add_row()
     closer.cells[0].text = '{%tr endif %}'
-
-    # Move opener BEFORE the first existing row, closer AFTER the last
-    # existing data row (i.e. before the newly appended opener/closer).
-    opener_xml = opener._element
-    closer_xml = closer._element
-    tbl_xml.remove(opener_xml)
-    tbl_xml.remove(closer_xml)
-    # Insert opener before the first original row.
-    rows[0].addprevious(opener_xml)
-    # Append closer at the end (which is after the original last row).
-    tbl_xml.append(closer_xml)
 
 
 def _rebuild_price_schedule(doc: Document) -> None:
@@ -717,9 +761,10 @@ def main() -> None:
     # 5. Rebuild the Price Schedule (Annexure III) for single/full toggle.
     _rebuild_price_schedule(doc)
 
-    # 5b. Wrap Supervision sub-table with {%tr if supervision_include %}
-    #     so the Step-4 checkbox can hide it when unchecked.
-    _make_supervision_conditional(doc)
+    # 5b. Rebuild Supervision sub-table to a single 'Supervision Charges
+    #     for Erection and Commissioning' row + Note row, wrapped with
+    #     {%tr if supervision_include %} for the Step-4 checkbox.
+    _rebuild_supervision_subtable(doc)
 
     # 5c. Inject the RECUPERATOR descriptive paragraph into Annexure I.
     _inject_scope_of_supply_paragraph(doc)
@@ -729,6 +774,10 @@ def main() -> None:
 
     # 7. Remove Annexure VI Make List (not applicable for recup).
     _remove_annexure_vi(doc)
+
+    # 8. Give Price Schedule + Supervision rows more vertical room so
+    #    the printed offer doesn't look cramped.
+    _pad_table_rows(doc, min_height_cm=0.75)
 
     doc.save(TARGET)
     print(f'Saved -> {TARGET}')

@@ -659,39 +659,6 @@
     </div>
   </div>
 
-  <!-- ── Price Schedule style + Supervision charges ── -->
-  <div class="section">
-    <div class="section-title">Price Schedule</div>
-    <div class="fg fg-2">
-      <div class="field">
-        <label>Layout</label>
-        <select id="o-price-style">
-          <option value="single" selected>Single-line &mdash; one item row + TOTAL</option>
-          <option value="full">Full BOM &mdash; every line item + TOTAL</option>
-        </select>
-        <div class="hint">Single-line matches the Vertical Ladle Preheater offer style.</div>
-      </div>
-      <div class="field">
-        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:24px;">
-          <input id="o-supervision" type="checkbox" style="width:16px; height:16px" checked/>
-          <span>Show Supervision Charges sub-table</span>
-        </label>
-        <div class="hint">Renders the Mechanical / PLC sub-table + Note below the Price Schedule.</div>
-      </div>
-    </div>
-    <div class="fg fg-2" id="supv-amounts">
-      <div class="field">
-        <label>Supervision (Mechanical) — INR</label>
-        <input id="o-supv-mech" type="text" value="12,500.00"/>
-        <div class="hint">Total mechanical supervision charges (lump sum).</div>
-      </div>
-      <div class="field">
-        <label>Supervision (PLC &amp; Instrumentation) — INR</label>
-        <input id="o-supv-plc" type="text" value="15,000.00"/>
-        <div class="hint">Total PLC &amp; instrumentation supervision charges.</div>
-      </div>
-    </div>
-  </div>
 
   <div style="display:flex; gap:12px; margin-top:8px; align-items:center;">
     <button class="btn-primary" id="genBtn" onclick="generateOffer()">Generate Offer</button>
@@ -1027,10 +994,11 @@ async function generateOffer() {
     final_total:   lastCalc._final_total,
     grand_total:   lastCalc._grand_total,
     qty:           1,
-    supervision_include: !!($("o-supervision") && $("o-supervision").checked),
-    supervision_mech:    ($("o-supv-mech") && $("o-supv-mech").value.trim()) || "",
-    supervision_plc:     ($("o-supv-plc")  && $("o-supv-plc").value.trim())  || "",
-    price_schedule_style: ($("o-price-style") && $("o-price-style").value) || "single",
+    // Hard-coded defaults — the Price Schedule UI section was removed
+    // since these never need to change per-offer.
+    supervision_include:  true,
+    supervision_rate:     "Rs. 10,500 per Man per Day",
+    price_schedule_style: "single",
   };
   try {
     const res = await fetch("/api/generate-recup-quote", {
