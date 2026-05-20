@@ -2676,6 +2676,30 @@ class RecupQuoteRequest(BaseModel):
     qty:          int = 1
 
 
+def _material_of_construction(hot_mat: str, cold_mat: str, pipe_dia_mm: float = 48.3) -> dict:
+    """Translate Step-2's Hot/Cold tube-material picks into the four
+    placeholders the Material of Construction table in Annexure I needs.
+    SS -> 'SS-316' (typical hot-bank grade), MS -> 'Mild Steel (CS)'.
+    The Tube line carries the bend/straight + size + schedule spec."""
+    def block(mat: str | None, bend: bool):
+        m = (mat or "SS").upper()
+        if m == "MS":
+            plate = "Mild Steel (CS)"
+            tube  = f"CS, ERW {'Bended' if bend else 'Straight'} pipes, OD: {pipe_dia_mm}, Schedule-40"
+        else:
+            plate = "SS-316"
+            tube  = f"SS-316 {'Bended' if bend else 'Straight'}, ERW pipes, OD: {pipe_dia_mm}, Schedule-40"
+        return plate, tube
+    hot_plate, hot_tube   = block(hot_mat,  bend=True)   # hot bank is bent (for expansion)
+    cold_plate, cold_tube = block(cold_mat, bend=False)  # cold bank is straight
+    return {
+        "hot_tube_plate_material":  hot_plate,
+        "hot_tube_material":        hot_tube,
+        "cold_tube_plate_material": cold_plate,
+        "cold_tube_material":       cold_tube,
+    }
+
+
 @app.post("/api/generate-recup-quote")
 def generate_recup_quote(req: RecupQuoteRequest):
     """Render Recup_Offer_Template.docx with payload data, save to
@@ -2724,6 +2748,11 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "pipe_dia_mm":      f"{c.get('pipe_dia_mm', 48.3):.1f}" if c.get('pipe_dia_mm') else "48.3",
             "pipe_length_m":    f"{c.get('pipe_length_m_per_bank', 0.63):.2f}" if c.get('pipe_length_m_per_bank') else "0.63",
             "pipe_thick_mm":    f"{c.get('pipe_thick_mm', 2.77):.2f}" if c.get('pipe_thick_mm') else "2.77",
+            # Material of Construction (Annexure I — auto-derived from
+            # the engineer's Hot/Cold material picks on Step 2).
+            **_material_of_construction(c.get('hot_bank_material'),
+                                        c.get('cold_bank_material'),
+                                        c.get('pipe_dia_mm', 48.3)),
             # Price schedule
             "recup_qty":           f"{qty:02d} No.",
             "recup_unit_price":    _format_inr(unit_price),
