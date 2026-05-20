@@ -573,6 +573,17 @@
 
   <!-- ── Annexure IV ── -->
   <div class="section">
+    <div class="section-title">Order Quantity</div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>No. of Units</label>
+        <input id="o-qty" type="number" min="1" step="1" value="1"/>
+        <div class="hint">Multiplies the unit price into the Annexure III total. Designing Parameters &quot;No. of Units&quot; row reflects this too.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Annexure IV — Terms &amp; Conditions</div>
     <div class="fg fg-2">
       <div class="field">
@@ -993,7 +1004,7 @@ async function generateOffer() {
     bom:           lastCalc.bom,          // includes any user-edited unit prices / qtys
     final_total:   lastCalc._final_total,
     grand_total:   lastCalc._grand_total,
-    qty:           1,
+    qty:           Math.max(1, parseInt(($("o-qty") && $("o-qty").value) || "1", 10)),
     // Hard-coded defaults — the Price Schedule UI section was removed
     // since these never need to change per-offer.
     supervision_include:  true,
