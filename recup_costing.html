@@ -284,14 +284,10 @@
         <input id="c-client-enq" type="text" value="Mail enquiry, 05/08/2025" placeholder="Mail enquiry, DD/MM/YYYY"/>
       </div>
     </div>
-    <div class="fg fg-2">
+    <div class="fg fg-1">
       <div class="field">
         <label>Subject</label>
         <input id="c-subject" type="text" value="Offer for Recuperator" placeholder="Offer for Recuperator"/>
-      </div>
-      <div class="field">
-        <label>Application <span style="color:#94a3b8;font-weight:400">(on price line)</span></label>
-        <input id="c-application" type="text" value="50 TPH Furnace" placeholder="50 TPH Furnace"/>
       </div>
     </div>
 
@@ -965,7 +961,6 @@ async function generateOffer() {
   $("genBtn").disabled = true;
   $("genBtn").textContent = "Generating…";
 
-  const application = $("c-application").value || "";
   const subject     = $("c-subject").value || "Offer for Recuperator";
   const payload = {
     // Customer / project (from Step 1)
@@ -978,7 +973,7 @@ async function generateOffer() {
     mobile_no:         $("c-phone").value,
     project_name:      "Recuperator",
     subject:           subject,
-    application:       application,
+    application:       "",
     client_enq_ref:    $("c-client-enq").value,
     // Marketing / ref (from Step 1)
     marketing_person:  $("c-marketing").value,
