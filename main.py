@@ -2904,7 +2904,10 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "pdf_filename": pdf_name if pdf_ok else None,
             "download_url": f"/api/download-quote/{docx_name}",
             "pdf_url":      f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
-            "preview_url":  f"/api/preview-quote/{pdf_name}" if pdf_ok else None,
+            # Preview endpoint converts DOCX -> HTML via mammoth, so it
+            # always uses the docx filename (works whether PDF rendered
+            # or not).
+            "preview_url":  f"/api/preview-quote/{docx_name}",
             "quote_no":     full_ref,
             "enquiry_ref":  full_ref,
             "final_total":  unit_price,
