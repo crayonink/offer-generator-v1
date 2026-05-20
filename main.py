@@ -2830,6 +2830,14 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "air_volume_nm3hr": f"{c.get('air_volume_nm3hr', 0):,.0f}" if c.get('air_volume_nm3hr') else "",
             "air_temp_in_C":    f"{int(round(c.get('air_temp_in_C', 0)))}" if c.get('air_temp_in_C') else "",
             "air_temp_out_C":   f"{int(round(c.get('air_temp_out_C', 0)))}" if c.get('air_temp_out_C') else "",
+            # Marketing-friendly rounded-up version of the air outlet
+            # temperature: ceil to the next multiple of 50 °C. Used in
+            # the Annexure I description paragraph (e.g. an exact
+            # value of 412 °C reads as 'about 450 °C').
+            "air_temp_out_C_rounded": (
+                f"{int(((c.get('air_temp_out_C', 0) + 49.999) // 50) * 50)}"
+                if c.get('air_temp_out_C') else ""
+            ),
             "surface_area_m2":  f"{c.get('surface_area_m2', 0):.2f}",
             "pipe_dia_mm":      f"{c.get('pipe_dia_mm', 48.3):.1f}" if c.get('pipe_dia_mm') else "48.3",
             "pipe_length_m":    f"{c.get('pipe_length_m_per_bank', 0.63):.2f}" if c.get('pipe_length_m_per_bank') else "0.63",

@@ -491,7 +491,7 @@ def _inject_scope_of_supply_paragraph(doc: Document) -> None:
     DESCRIPTION = (
         'A waste heat recovery Recuperator of suitable capacity will '
         'be provided, which will preheat the combustion air to a '
-        'temperature of about {{ air_temp_out_C }} °C, which in turn '
+        'temperature of about {{ air_temp_out_C_rounded }} °C, which in turn '
         'decreases fuel consumption. Recuperator will be of '
         'Convective type having two passes for air and single pass '
         'for flue gas. The flue gas will pass over the bank while '
