@@ -1003,11 +1003,13 @@ def get_pricelist_rates():
     try:
         conn = sqlite3.connect(DB_PATH)
         rows = conn.execute(
-            "SELECT rowid, item, category, price, previous_price, updated_at, company FROM component_price_master ORDER BY category, item"
+            "SELECT rowid, item, category, price, previous_price, updated_at, company, specification "
+            "FROM component_price_master ORDER BY category, item"
         ).fetchall()
         conn.close()
         return [{"rowid": r[0], "item": r[1], "category": r[2],
-                 "price": r[3], "previous_price": r[4], "updated_at": r[5], "company": r[6]} for r in rows]
+                 "price": r[3], "previous_price": r[4], "updated_at": r[5],
+                 "company": r[6], "specification": r[7]} for r in rows]
     except Exception as e:
         return {"error": str(e)}
 
