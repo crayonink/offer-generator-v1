@@ -690,6 +690,26 @@ function attachEditHandlers(container, table) {
   });
 }
 
+// ── Shared helper: split a free-text item label into name / size / model ────
+// Used by Rates (and any tab that shows raw item names where the size like
+// '100 NB' and a model code (specification) are baked into the string).
+// Returns {name, size, model}. Empty strings if a part can't be inferred.
+function splitItem(item, specification) {
+  const spec = specification || '';
+  let name = item || '';
+  if (spec && name.endsWith(' ' + spec)) {
+    name = name.slice(0, -1 - spec.length);
+  }
+  let size = '';
+  const m = name.match(/\b(\d+)\s*NB\b/i);
+  if (m) {
+    // Strip leading zeros: '050' -> '50', '065' -> '65'.
+    size = parseInt(m[1], 10) + ' NB';
+    name = name.replace(m[0], '').replace(/\s+/g, ' ').trim();
+  }
+  return { name, size, model: spec };
+}
+
 // ── RATES sheet ─────────────────────────────────────────────────────────────
 function renderRates(data) {
   const el = document.getElementById('sheet-rates');
@@ -725,24 +745,13 @@ function renderRates(data) {
         ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%' : '—';
       const cs = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
       const updatedAt = r.updated_at || '—';
-      // Split the item display into three parts:
-      //  - shortName : item name with model + 'NN NB' size stripped
-      //  - size      : 'NN NB' if found anywhere in the item text
-      //  - catCell   : the model code (specification) if present, else the category
-      // data-item still uses the FULL r.item string so inline edits +
-      // BOM lookups stay consistent with the DB.
-      const spec  = r.specification || '';
-      let shortName = r.item;
-      if (spec && shortName.endsWith(' ' + spec)) {
-        shortName = shortName.slice(0, -1 - spec.length);
-      }
-      let size = '';
-      const sizeMatch = shortName.match(/\b(\d+)\s*NB\b/i);
-      if (sizeMatch) {
-        size = sizeMatch[1] + ' NB';
-        shortName = shortName.replace(sizeMatch[0], '').replace(/\s+/g, ' ').trim();
-      }
-      const catCell = spec || r.category || '';
+      // Split the item display into name / size / model. data-item
+      // still uses the FULL r.item string so inline edits + BOM
+      // lookups stay consistent with the DB.
+      const parts = splitItem(r.item, r.specification);
+      const shortName = parts.name;
+      const size      = parts.size;
+      const catCell   = parts.model || r.category || '';
       html += `<tr>
         <td class="rn">${rowNum}</td>
         <td class="item-cell">${esc(shortName)}</td>
@@ -1609,9 +1618,14 @@ function renderStockRates(data) {
     </tr>`];
     const itemRows = (sec.items || []).map(item => {
       rowNum++;
+      // Same name / size split as Rates. Stock items don't carry a
+      // separate specification field, so just pass an empty spec —
+      // the helper will still strip 'NN NB' into the size column.
+      const parts = splitItem(item.name, '');
       return `<tr>
         <td class="rn">${rowNum}</td>
-        <td class="item-cell">${esc(item.name)}</td>
+        <td class="item-cell">${esc(parts.name)}</td>
+        <td style="text-align:center;font-weight:600;color:#1a3a5c;">${esc(parts.size)}</td>
         <td class="num-cell" style="font-weight:600;color:#1a5276;">₹&nbsp;${item.rate != null ? fmt(item.rate) : '—'}</td>
       </tr>`;
     });
@@ -1623,6 +1637,7 @@ function renderStockRates(data) {
       <tr>
         <th class="rn top-header">#</th>
         <th class="item-th top-header" style="text-align:left;">Item Name</th>
+        <th class="top-header" style="min-width:80px;">Size</th>
         <th class="top-header" style="min-width:120px;">Rate (₹)</th>
       </tr>
     </thead>
