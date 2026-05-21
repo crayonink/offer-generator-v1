@@ -129,10 +129,11 @@ def _folder_id_for_product(product_type: str) -> Optional[str]:
     if "tundish" in pt:
         return os.environ.get("GOOGLE_DRIVE_FOLDER_TUNDISH_ID", "").strip() or None
     if "recup" in pt:
-        # User-supplied recuperator offers folder. Env var override
-        # available via GOOGLE_DRIVE_FOLDER_RECUP_ID.
+        # User-supplied recuperator offers folder
+        # (OFFERS > 2026 > Recuperator). Env var override available
+        # via GOOGLE_DRIVE_FOLDER_RECUP_ID.
         return (os.environ.get("GOOGLE_DRIVE_FOLDER_RECUP_ID", "").strip()
-                or "1i4wbS9JpSJfC5fJLSgPEv-z1_Dm9Jr2v-")
+                or "1i4wbS9JpSJfC5fJLSgPEv-z1_Dm9Jr2v")
     return os.environ.get("GOOGLE_DRIVE_FOLDER_DEFAULT_ID", "").strip() or None
 
 
