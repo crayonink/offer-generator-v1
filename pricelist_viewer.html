@@ -701,11 +701,19 @@ function splitItem(item, specification) {
     name = name.slice(0, -1 - spec.length);
   }
   let size = '';
-  const m = name.match(/\b(\d+)\s*NB\b/i);
+  // NB (nominal bore) first — most common
+  let m = name.match(/\b(\d+)\s*NB\b/i);
   if (m) {
     // Strip leading zeros: '050' -> '50', '065' -> '65'.
     size = parseInt(m[1], 10) + ' NB';
     name = name.replace(m[0], '').replace(/\s+/g, ' ').trim();
+  } else {
+    // Inch sizes: 2.5", 4", 6", 1/2", 3/4"
+    m = name.match(/(\d+(?:\.\d+)?|\d+\/\d+)\s*"/);
+    if (m) {
+      size = m[1] + '"';
+      name = name.replace(m[0], '').replace(/\s+/g, ' ').trim();
+    }
   }
   // Strip sequence numbers like '#01', '#12' — they're DB-row distinctions
   // already captured by size/model/price; cluttering the display.
