@@ -926,9 +926,11 @@ function renderPartsTabbed(sheetId, sections, table) {
     let rowNum = 0;
     (sec.items || []).forEach(it => {
       rowNum++;
+      const parts = splitItem(it.particular || '', '');
       rows += `<tr>
         <td class="rn">${rowNum}</td>
-        <td class="item-cell">${esc(it.particular||'')}</td>
+        <td class="item-cell">${esc(parts.name)}</td>
+        <td style="text-align:center;font-weight:600;color:#1a3a5c;">${esc(parts.size)}</td>
         <td class="num-cell">${it.qty??''}</td>
         <td style="text-align:center;">${esc(it.unit||'')}</td>
         <td class="editable" data-rowid="${it.rowid}" data-field="rate">${fmt(it.rate)}</td>
@@ -937,16 +939,17 @@ function renderPartsTabbed(sheetId, sections, table) {
     });
     rows += `<tr class="total-row">
       <td class="rn"></td><td class="item-cell">FABRICATION COST</td>
-      <td></td><td></td><td></td><td class="num-cell">${fmt(sec.fabrication_cost)}</td>
+      <td></td><td></td><td></td><td></td><td class="num-cell">${fmt(sec.fabrication_cost)}</td>
     </tr>`;
     rows += `<tr class="selling-row">
       <td class="rn"></td><td class="item-cell">SELLING PRICE ×1.25</td>
-      <td></td><td></td><td></td><td class="num-cell">${fmt(sec.selling_price)}</td>
+      <td></td><td></td><td></td><td></td><td class="num-cell">${fmt(sec.selling_price)}</td>
     </tr>`;
     return `<div class="xl-wrap"><table class="xl-table">
       <thead><tr>
         <th class="rn"></th>
-        <th class="item-th" style="min-width:260px;">PARTICULARS</th>
+        <th class="item-th" style="min-width:230px;">PARTICULARS</th>
+        <th style="min-width:70px;">SIZE</th>
         <th style="min-width:65px;">QTY</th>
         <th style="min-width:50px;">UNIT</th>
         <th style="min-width:88px;">RATE</th>
@@ -980,9 +983,11 @@ function renderPartsColumns(sheetId, sections, table) {
     var rows = '';
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
+      var parts = splitItem(it.particular || '', '');
       rows += '<tr>'
         + '<td class="rn">' + (i + 1) + '</td>'
-        + '<td class="item-cell">' + esc(it.particular || '') + '</td>'
+        + '<td class="item-cell">' + esc(parts.name) + '</td>'
+        + '<td style="text-align:center;font-weight:600;color:#1a3a5c;">' + esc(parts.size) + '</td>'
         + '<td class="num-cell">' + (it.qty != null ? it.qty : '') + '</td>'
         + '<td style="text-align:center;">' + esc(it.unit || '') + '</td>'
         + '<td class="editable" data-rowid="' + it.rowid + '" data-field="rate">' + fmt(it.rate) + '</td>'
@@ -991,12 +996,12 @@ function renderPartsColumns(sheetId, sections, table) {
     }
     rows += '<tr class="total-row">'
       + '<td class="rn"></td><td class="item-cell">FABRICATION COST</td>'
-      + '<td></td><td></td><td></td>'
+      + '<td></td><td></td><td></td><td></td>'
       + '<td class="num-cell">' + fmt(sec.fabrication_cost) + '</td>'
       + '</tr>';
     rows += '<tr class="selling-row">'
       + '<td class="rn"></td><td class="item-cell">SELLING PRICE \u00d71.25</td>'
-      + '<td></td><td></td><td></td>'
+      + '<td></td><td></td><td></td><td></td>'
       + '<td class="num-cell">' + fmt(sec.selling_price) + '</td>'
       + '</tr>';
 
@@ -1005,7 +1010,8 @@ function renderPartsColumns(sheetId, sections, table) {
       + '<div class="xl-wrap"><table class="xl-table">'
       + '<thead><tr>'
       + '<th class="rn"></th>'
-      + '<th class="item-th" style="min-width:195px;">PARTICULARS</th>'
+      + '<th class="item-th" style="min-width:170px;">PARTICULARS</th>'
+      + '<th style="min-width:60px;">SIZE</th>'
       + '<th style="min-width:52px;">QTY</th>'
       + '<th style="min-width:42px;">UNIT</th>'
       + '<th style="min-width:78px;">RATE</th>'
