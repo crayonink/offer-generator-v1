@@ -706,7 +706,8 @@ function renderRates(data) {
   <div class="xl-wrap"><table class="xl-table" id="rates-table" style="min-width:800px;">
     <thead><tr>
       <th class="rn"></th>
-      <th class="item-th" style="min-width:300px;">Item</th>
+      <th class="item-th" style="min-width:260px;">Item</th>
+      <th style="min-width:80px;">Size</th>
       <th style="min-width:130px;">Model / Cat.</th>
       <th style="min-width:140px;">Company</th>
       <th style="min-width:120px;">Price (₹)</th>
@@ -716,7 +717,7 @@ function renderRates(data) {
     </tr></thead><tbody>`;
 
   Object.keys(cats).sort().forEach(cat => {
-    html += `<tr class="section-hdr"><td class="rn"></td><td colspan="7">${esc(cat)}</td></tr>`;
+    html += `<tr class="section-hdr"><td class="rn"></td><td colspan="8">${esc(cat)}</td></tr>`;
     cats[cat].forEach(r => {
       if (!r.item) return;
       rowNum++;
@@ -724,20 +725,28 @@ function renderRates(data) {
         ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%' : '—';
       const cs = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
       const updatedAt = r.updated_at || '—';
-      // If the row carries a separate model code (specification), pull
-      // it out of the item display and show it in the Category column —
-      // less noisy than 'BALL VALVE 100 NB #01 L1RF1C' + a redundant
-      // 'Ball Valve' category. data-item still uses the full string so
-      // edits / BOM lookups stay consistent with the DB.
+      // Split the item display into three parts:
+      //  - shortName : item name with model + 'NN NB' size stripped
+      //  - size      : 'NN NB' if found anywhere in the item text
+      //  - catCell   : the model code (specification) if present, else the category
+      // data-item still uses the FULL r.item string so inline edits +
+      // BOM lookups stay consistent with the DB.
       const spec  = r.specification || '';
       let shortName = r.item;
       if (spec && shortName.endsWith(' ' + spec)) {
         shortName = shortName.slice(0, -1 - spec.length);
       }
+      let size = '';
+      const sizeMatch = shortName.match(/\b(\d+)\s*NB\b/i);
+      if (sizeMatch) {
+        size = sizeMatch[1] + ' NB';
+        shortName = shortName.replace(sizeMatch[0], '').replace(/\s+/g, ' ').trim();
+      }
       const catCell = spec || r.category || '';
       html += `<tr>
         <td class="rn">${rowNum}</td>
         <td class="item-cell">${esc(shortName)}</td>
+        <td style="text-align:center;font-weight:600;color:#1a3a5c;">${esc(size)}</td>
         <td style="text-align:center;font-family:monospace;font-size:11px;color:#1a5276;">${esc(catCell)}</td>
         <td class="editable rates-company" data-item="${esc(r.item)}" style="color:#1a5276;">${esc(r.company||'')}</td>
         <td class="editable rates-price" data-item="${esc(r.item)}" data-field="price">${fmt(r.price)}</td>
