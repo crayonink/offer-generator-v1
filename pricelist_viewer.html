@@ -707,6 +707,9 @@ function splitItem(item, specification) {
     size = parseInt(m[1], 10) + ' NB';
     name = name.replace(m[0], '').replace(/\s+/g, ' ').trim();
   }
+  // Strip sequence numbers like '#01', '#12' — they're DB-row distinctions
+  // already captured by size/model/price; cluttering the display.
+  name = name.replace(/\s*#\d+\b/g, '').replace(/\s+/g, ' ').trim();
   return { name, size, model: spec };
 }
 
