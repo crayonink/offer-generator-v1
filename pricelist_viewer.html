@@ -267,6 +267,9 @@
       border-right: 1px solid var(--border) !important;
       box-shadow: 4px 0 12px -6px rgba(15,23,42,.12);
     }
+    /* Rates table uses heavily-abbreviated names (<=10 chars), so the
+       sticky item column can be much narrower than the global default. */
+    #rates-table .item-cell, #rates-table th.item-th { min-width: 110px; max-width: 160px; }
 
     /* Data cells */
     .xl-table td, .ro-table td {
@@ -755,6 +758,114 @@ function splitItem(item, specification) {
   return { name, size, model };
 }
 
+// ── Curated abbreviation map: shortens names to <=10 chars for the Rates
+// item column. Patterns are tried top-down — put more specific matches
+// (e.g. 'with OPSO', 'Pmax = 5 Bar') above their generic siblings. If no
+// pattern matches and the name is still over 10 chars, it gets clipped
+// with an ellipsis. Original name is preserved as a hover tooltip.
+const NAME_SHORTS = [
+  [/^GAS PRESSURE REGULATORS?\s*with\s*OPSO.*$/i,                              'GR+OPSO'],
+  [/^GAS PRESSURE REGULATORS?.*Pmax\s*=\s*(\d+)\s*Bar.*$/i, (_, b) => 'Gas Reg ' + b + 'b'],
+  [/^GAS PRESSURE REGULATORS?.*$/i,                                            'Gas Reg'],
+  [/^GAS PRESSURE SWITCHES?.*$/i,                                              'GPS'],
+  [/^GAS FILTERS?.*$/i,                                                        'Gas Filt'],
+  [/^SLAM SHUT OFF VALVES?\s*\(Reinforced.*$/i,                                'SSOV Rein'],
+  [/^SLAM SHUT OFF VALVES?\s*\(pilot.*$/i,                                     'SSOV Pil'],
+  [/^SLAM SHUT OFF VALVES?.*$/i,                                               'SSOV'],
+  [/^NORMALLY CLOSED FAST OPENING SOLENOID.*$/i,                               'NC Fast'],
+  [/^NORMALLY CLOSED SLOW OPENING SOLENOID.*$/i,                               'NC Slow'],
+  [/^NORMALLY OPEN FAST OPENING SOLENOID.*$/i,                                 'NO Fast'],
+  [/^"MADAS"\s+NORMALLY CLOSED SOLENOID.*$/i,                                  'NC SOV'],
+  [/^"MADAS"\s+NORMALLY OPEN SOLENOID.*$/i,                                    'NO SOV'],
+  [/^MOTORIZED CONTROL VALVE.*$/i,                                             'MCV'],
+  [/^PNEUMATIC CONTROL VALVE.*$/i,                                             'PCV'],
+  [/^PNEUMATIC SHUTOFF VALVE.*$/i,                                             'PSV'],
+  [/^CONTROL VALVE.*$/i,                                                       'Ctrl Val'],
+  [/^Control Valve.*$/i,                                                       'Ctrl Val'],
+  [/^SAFETY RELIEF VALVES?.*$/i,                                               'SRV'],
+  [/^BUTTERFLY VALVE.*\(COG\).*$/i,                                            'BFV (COG)'],
+  [/^BUTTERFLY VALVE.*$/i,                                                     'BFV'],
+  [/^Butterfly Valve.*$/i,                                                     'BFV'],
+  [/^INSTRUMENTS BALL VALVE.*$/i,                                              'Instr BV'],
+  [/^BALL VALVE.*$/i,                                                          'Ball Val'],
+  [/^Ball valve.*$/i,                                                          'Ball Val'],
+  [/^CHECK VALVE.*$/i,                                                         'Check'],
+  [/^SHUT OFF VALVE.*$/i,                                                      'SOV'],
+  [/^FLEXIBLE HOSE.*$/i,                                                       'Flex Hose'],
+  [/^ORIFICE PLATE.*$/i,                                                       'Orifice'],
+  [/^FLOW TRANSMITTER.*$/i,                                                    'Flow Tx'],
+  [/^FUEL DENSITY.*$/i,                                                        'Fuel Dn'],
+  [/^DPT.*$/i,                                                                 'DPT'],
+  [/^PRESSURE GAUGE WITH MANUAL COCK.*$/i,                                     'PG+Cock'],
+  [/^PRESSURE GAUGE.*$/i,                                                      'P-Gauge'],
+  [/^PRESSURE SWITCH HIGH.*$/i,                                                'PS High'],
+  [/^PRESSURE SWITCH.*$/i,                                                     'P-Switch'],
+  [/^IGNITION TRANSFORMER.*$/i,                                                'Ign Trafo'],
+  [/^Ignition Transformer.*$/i,                                                'Ign Trafo'],
+  [/^UV Sensor.*$/i,                                                           'UV Sensor'],
+  [/^CABLE FOR IGNITION.*$/i,                                                  'Ign Cable'],
+  [/^ELECTRODE ASSEMBLY$/i,                                                    'Electrode'],
+  [/^Electrode.*$/i,                                                           'Electrode'],
+  [/^ID FAN.*$/i,                                                              'ID Fan'],
+  [/^GEARED MOTOR.*$/i,                                                        'Geared Mt'],
+  [/^PLUMMER BLOCK$/i,                                                         'Plummer'],
+  [/^TROLLEY WHEEL$/i,                                                         'Trolley'],
+  [/^SHAFT.*$/i,                                                               'Shaft'],
+  [/^FRAME$/i,                                                                 'Frame'],
+  [/^SLIEVE$/i,                                                                'Slieve'],
+  [/^FABRICATION\/?\s*STRUCTURE$/i,                                            'Fab Struc'],
+  [/^FABRICATION.*$/i,                                                         'Fab'],
+  [/^PIPELINE.*$/i,                                                            'Pipe'],
+  [/^PLC WITH HMI.*$/i,                                                        'PLC+HMI'],
+  [/^FLOWMETER$/i,                                                             'Flowmeter'],
+  [/^FUEL.*$/i,                                                                'Fuel'],
+  [/^SUPERVISION CHARGE.*MECHANICAL.*$/i,                                      'Sup Mech'],
+  [/^SUPERVISION CHARGE.*PLC.*$/i,                                             'Sup PLC'],
+  [/^BEARING\s*\((\d+)\).*$/i, (_, n) => 'Bear ' + n.slice(0, 4)],
+  [/^BEARING.*$/i,                                                             'Bearing'],
+  [/^ADOPTER.*\(AIR\).*$/i,                                                    'Adop Air'],
+  [/^ADOPTER.*\(OIL\).*$/i,                                                    'Adop Oil'],
+  [/^ADOPTER.*$/i,                                                             'Adopter'],
+  [/^AIR OIL REGULATOR$/i,                                                     'AOR'],
+  [/^ENCON.PB.*COG.*$/i,                                                       'EncPB COG'],
+  [/^ENCON.PB.*LPG.*$/i,                                                       'EncPB LPG'],
+  [/^ENCON.PB.*MG.*$/i,                                                        'EncPB MG'],
+  [/^ENCON.PB.*NG.*$/i,                                                        'EncPB NG'],
+  [/^ENCON.PB.*$/i,                                                            'EncPB'],
+  [/^ENCON-Y-STRAINER$/i,                                                      'Y-Strain'],
+  [/^ARE-(\d+)\s*Burner.*$/i, (_, n) => 'ARE-' + n + 'B'],
+  [/^Casting Burner Parts$/i,                                                  'Cast Brnr'],
+  [/^Ceramic Fiber$/i,                                                         'Cer Fiber'],
+  [/^CONTROL PANEL$/i,                                                         'Ctrl Pnl'],
+  [/^Control Panel$/i,                                                         'Ctrl Pnl'],
+  [/^COMPENSATOR$/i,                                                           'Compens'],
+  [/^COMPENSATING LEAD$/i,                                                     'Comp Lead'],
+  [/^M\.S\.\s*Angle.*$/i,                                                      'MS Angle'],
+  [/^M\.S\.\s*Channel.*$/i,                                                    'MS Chan'],
+  [/^M\.S\.\s*Plate.*$/i,                                                      'MS Plate'],
+  [/^M\.S\.\s*Pipe.*$/i,                                                       'MS Pipe'],
+  [/^M\.S\.\s*Sheet.*$/i,                                                      'MS Sheet'],
+  [/^M\.S\.\s*Elbow.*$/i,                                                      'MS Elbow'],
+  [/^M\.S\.\s*Rod.*$/i,                                                        'MS Rod'],
+  [/^M\.S\.\s*(.+)$/i, (_, r) => 'MS ' + r.slice(0, 7)],
+  [/^SS\s*Elbow.*$/i,                                                          'SS Elbow'],
+  [/^SS\s*(.+)$/i, (_, r) => 'SS ' + r.slice(0, 7)],
+  [/^C\.I\.\s*Gills$/i,                                                        'CI Gills'],
+  [/^C\.I\.\s*Hub$/i,                                                          'CI Hub'],
+  [/^C\.I\.\s*(.+)$/i, (_, r) => 'CI ' + r.slice(0, 7)],
+  [/^Hardware Bolt$/i,                                                         'HW Bolt'],
+];
+
+function shortenName(name) {
+  let s = (name || '').trim();
+  if (!s) return '';
+  for (const [pat, rep] of NAME_SHORTS) {
+    const m = s.match(pat);
+    if (m) return (typeof rep === 'function') ? rep(...m) : rep;
+  }
+  return s.length > 10 ? s.slice(0, 9) + '…' : s;
+}
+
 // ── RATES sheet ─────────────────────────────────────────────────────────────
 function renderRates(data) {
   const el = document.getElementById('sheet-rates');
@@ -771,7 +882,7 @@ function renderRates(data) {
   <div class="xl-wrap"><table class="xl-table" id="rates-table" style="min-width:800px;">
     <thead><tr>
       <th class="rn"></th>
-      <th class="item-th" style="min-width:260px;">Item</th>
+      <th class="item-th" style="min-width:110px;">Item</th>
       <th style="min-width:80px;">Size</th>
       <th style="min-width:130px;">Model / Cat.</th>
       <th style="min-width:140px;">Company</th>
@@ -794,12 +905,13 @@ function renderRates(data) {
       // still uses the FULL r.item string so inline edits + BOM
       // lookups stay consistent with the DB.
       const parts = splitItem(r.item, r.specification);
-      const shortName = parts.name;
+      const fullName  = parts.name || r.item;
+      const shortName = shortenName(parts.name);
       const size      = parts.size;
       const catCell   = parts.model || r.category || '';
       html += `<tr>
         <td class="rn">${rowNum}</td>
-        <td class="item-cell">${esc(shortName)}</td>
+        <td class="item-cell" title="${esc(fullName)}">${esc(shortName)}</td>
         <td style="text-align:center;font-weight:600;color:#1a3a5c;">${esc(size)}</td>
         <td style="text-align:center;font-family:monospace;font-size:11px;color:#1a5276;">${esc(catCell)}</td>
         <td class="editable rates-company" data-item="${esc(r.item)}" style="color:#1a5276;">${esc(r.company||'')}</td>
