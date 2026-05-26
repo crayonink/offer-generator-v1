@@ -696,29 +696,63 @@ function attachEditHandlers(container, table) {
 // Returns {name, size, model}. Empty strings if a part can't be inferred.
 function splitItem(item, specification) {
   const spec = specification || '';
-  let name = item || '';
+  let name = (item || '').trim();
   if (spec && name.endsWith(' ' + spec)) {
     name = name.slice(0, -1 - spec.length);
   }
   let size = '';
-  // NB (nominal bore) first — most common
-  let m = name.match(/\b(\d+)\s*NB\b/i);
+  let model = spec;
+
+  // 1. Explicit NB suffix: '100 NB', '025NB'
+  let m = name.match(/\b(\d{1,4})\s*NB\b/i);
   if (m) {
-    // Strip leading zeros: '050' -> '50', '065' -> '65'.
     size = parseInt(m[1], 10) + ' NB';
-    name = name.replace(m[0], '').replace(/\s+/g, ' ').trim();
+    name = (name.slice(0, m.index) + name.slice(m.index + m[0].length)).trim();
   } else {
-    // Inch sizes: 2.5", 4", 6", 1/2", 3/4"
-    m = name.match(/(\d+(?:\.\d+)?|\d+\/\d+)\s*"/);
+    // 2. DN prefix: 'DN015', 'DN 25'
+    m = name.match(/\bDN\s*(\d{1,4})\b/i);
     if (m) {
-      size = m[1] + '"';
-      name = name.replace(m[0], '').replace(/\s+/g, ' ').trim();
+      size = parseInt(m[1], 10) + ' NB';
+      name = (name.slice(0, m.index) + name.slice(m.index + m[0].length)).trim();
+    } else {
+      // 3. Inch sizes: 2.5", 4", 1/2"
+      m = name.match(/(\d+(?:\.\d+)?|\d+\/\d+)\s*"/);
+      if (m) {
+        size = m[1] + '"';
+        name = (name.slice(0, m.index) + name.slice(m.index + m[0].length)).trim();
+      } else {
+        // 4. Bare zero-padded or 3-digit NB before a model token
+        //    e.g. 'SLAM SHUT OFF VALVES 025 VB04V0029'
+        m = name.match(/(^|[\s(\[,])(0\d{2}|1\d{2}|2\d{2})\s+([A-Z][A-Z0-9][A-Z0-9\-]+)\b/i);
+        if (m) {
+          size = parseInt(m[2], 10) + ' NB';
+          if (!model) model = m[3];
+          const cut = m.index + m[1].length;
+          name = (name.slice(0, cut) + name.slice(m.index + m[0].length)).trim();
+        }
+      }
     }
   }
-  // Strip sequence numbers like '#01', '#12' — they're DB-row distinctions
-  // already captured by size/model/price; cluttering the display.
-  name = name.replace(/\s*#\d+\b/g, '').replace(/\s+/g, ' ').trim();
-  return { name, size, model: spec };
+
+  // 5. Trailing alphanumeric model code (when DB had no spec)
+  //    e.g. 'SAFETY RELIEF VALVES VS04V-030' -> model='VS04V-030'
+  if (!model) {
+    m = name.match(/\b([A-Z]{2,}[0-9]+[A-Z0-9\-]*)\s*$/);
+    if (m) {
+      model = m[1];
+      name = name.slice(0, m.index).trim();
+    }
+  }
+
+  // 6. Strip sequence numbers like '#01', '#12'
+  name = name.replace(/\s*#\d+\b/g, '');
+  // 7. Strip orphaned suffixes like ' -1XXX', ' -5333' left over from cuts
+  name = name.replace(/[\s,]+-\s*\w+\s*$/g, '');
+  // 8. Tighten parenthetical whitespace: '( Pmax = 5 Bar )' -> '(Pmax = 5 Bar)'
+  name = name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
+  // 9. Collapse whitespace, strip trailing punctuation
+  name = name.replace(/\s+/g, ' ').replace(/[\s,;:\-]+$/g, '').trim();
+  return { name, size, model };
 }
 
 // ── RATES sheet ─────────────────────────────────────────────────────────────
