@@ -790,8 +790,8 @@ const NAME_SHORTS = [
   [/^GAS PRESSURE REGULATORS?.*$/i,                                            'Gas Pressure Reg'],
   [/^GAS PRESSURE SWITCHES?.*$/i,                                              'Gas Press Switch'],
   [/^GAS FILTERS?.*$/i,                                                        'Gas Filter'],
-  [/^SLAM SHUT OFF VALVES?\s*\(Reinforced.*$/i,                                'SSOV (Reinforced)'],
-  [/^SLAM SHUT OFF VALVES?\s*\(pilot.*$/i,                                     'SSOV (Pilot)'],
+  // The category section header already labels Reinforced / Pilot variants,
+  // so the item cell just shows the base name to avoid repeating context.
   [/^SLAM SHUT OFF VALVES?.*$/i,                                               'Slam Shut Off Valve'],
   [/^NORMALLY CLOSED FAST OPENING SOLENOID.*$/i,                               'Solenoid Valve'],
   [/^NORMALLY CLOSED SLOW OPENING SOLENOID.*$/i,                               'Solenoid Valve'],
