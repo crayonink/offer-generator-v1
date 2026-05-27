@@ -770,8 +770,10 @@ function splitItem(item, specification) {
 
   // 6. Strip sequence numbers like '#01', '#12'
   name = name.replace(/\s*#\d+\b/g, '');
-  // 7. Strip orphaned suffixes like ' -1XXX', ' -5333' left over from cuts
-  name = name.replace(/[\s,]+-\s*\w+\s*$/g, '');
+  // 7. Strip orphaned numeric suffixes like ' -1XXX', ' -5333' left over from cuts.
+  //    Must start with a digit so we don't lose meaningful alphabetic tails
+  //    like 'SUPERVISION CHARGE - MECHANICAL' or 'PLC WITH HMI - PLC'.
+  name = name.replace(/[\s,]+-\s*\d[\w-]*\s*$/g, '');
   // 8. Tighten parenthetical whitespace: '( Pmax = 5 Bar )' -> '(Pmax = 5 Bar)'
   name = name.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')');
   // 9. Collapse whitespace, strip trailing punctuation
@@ -803,7 +805,7 @@ const NAME_SHORTS = [
   [/^PNEUMATIC SHUTOFF VALVE.*$/i,                                             'Pneum Shutoff Val'],
   [/^CONTROL VALVE.*$/i,                                                       'Control Valve'],
   [/^Control Valve.*$/i,                                                       'Control Valve'],
-  [/^SAFETY RELIEF VALVES?.*$/i,                                               'Safety Relief Val'],
+  [/^SAFETY RELIEF VALVES?.*$/i,                                               'Safety Relief Valve'],
   [/^BUTTERFLY VALVE.*\(COG\).*$/i,                                            'Butterfly V (COG)'],
   [/^BUTTERFLY VALVE.*$/i,                                                     'Butterfly Valve'],
   [/^Butterfly Valve.*$/i,                                                     'Butterfly Valve'],
@@ -840,8 +842,8 @@ const NAME_SHORTS = [
   [/^PLC WITH HMI.*$/i,                                                        'PLC + HMI'],
   [/^FLOWMETER$/i,                                                             'Flowmeter'],
   [/^FUEL.*$/i,                                                                'Fuel'],
-  [/^SUPERVISION CHARGE.*MECHANICAL.*$/i,                                      'Supv (Mechanical)'],
-  [/^SUPERVISION CHARGE.*PLC.*$/i,                                             'Supv (PLC + Inst)'],
+  [/^SUPERVISION CHARGE.*MECHANICAL.*$/i,                                      'Supervision Charge (Mechanical)'],
+  [/^SUPERVISION CHARGE.*PLC.*$/i,                                             'Supervision Charge (PLC + Inst)'],
   [/^BEARING.*$/i,                                                             'Bearing'],
   [/^ADOPTER.*\(AIR\).*$/i,                                                    'Adopter (Air)'],
   [/^ADOPTER.*\(OIL\).*$/i,                                                    'Adopter (Oil)'],
