@@ -933,13 +933,17 @@ function renderRates(data) {
       const shortName = shortenName(parts.name);
       const size      = parts.size;
       const catCell   = parts.model || r.category || '';
+      // Per-kg rates: Structure rows are quoted per kilogram in the BOM,
+      // so the displayed price needs a /kg suffix to distinguish it from
+      // absolute prices in the same column.
+      const priceSuffix = (r.category === 'Structure') ? ' /kg' : '';
       html += `<tr>
         <td class="rn">${rowNum}</td>
         <td class="item-cell" title="${esc(fullName)}">${esc(shortName)}</td>
         <td style="text-align:center;font-weight:600;color:#1a3a5c;">${esc(size)}</td>
         <td style="text-align:center;font-family:monospace;font-size:11px;color:#1a5276;">${esc(catCell)}</td>
         <td class="editable rates-company" data-item="${esc(r.item)}" style="color:#1a5276;">${esc(r.company||'')}</td>
-        <td class="editable rates-price" data-item="${esc(r.item)}" data-field="price">${fmt(r.price)}</td>
+        <td class="editable rates-price" data-item="${esc(r.item)}" data-field="price">${fmt(r.price)}${priceSuffix}</td>
         <td class="num-cell">${fmt(r.previous_price)}</td>
         <td class="num-cell" style="${cs}">${change}</td>
         <td style="text-align:center;color:#555;font-size:11px;">${esc(updatedAt)}</td>
