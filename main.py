@@ -1002,9 +1002,15 @@ def get_pricelist_rates():
     """Return component_price_master for editing."""
     try:
         conn = sqlite3.connect(DB_PATH)
+        # FUEL DENSITY rows live in this table only because burner sizing
+        # uses _get_fuel_density() to look them up by name. They are not
+        # editable rates, so exclude them from the Rates view.
         rows = conn.execute(
             "SELECT rowid, item, category, price, previous_price, updated_at, company, specification "
-            "FROM component_price_master ORDER BY category, item"
+            "FROM component_price_master "
+            "WHERE item NOT LIKE 'FUEL DENSITY%' "
+            "  AND (category IS NULL OR category != 'Fuel Density') "
+            "ORDER BY category, item"
         ).fetchall()
         conn.close()
         return [{"rowid": r[0], "item": r[1], "category": r[2],
