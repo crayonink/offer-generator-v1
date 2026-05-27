@@ -885,6 +885,19 @@ function renderRates(data) {
 
   Object.keys(cats).sort().forEach(cat => {
     html += `<tr class="section-hdr"><td class="rn"></td><td colspan="8">${esc(cat)}</td></tr>`;
+    // Sort by extracted size ascending so 50 NB precedes 100 NB instead of
+    // following lexicographic order on the full item label. Items without a
+    // numeric size fall to the end of the category.
+    cats[cat].sort((a, b) => {
+      const sa = splitItem(a.item, a.specification).size;
+      const sb = splitItem(b.item, b.specification).size;
+      const na = parseFloat(sa);
+      const nb = parseFloat(sb);
+      const va = isNaN(na) ? Infinity : na;
+      const vb = isNaN(nb) ? Infinity : nb;
+      if (va !== vb) return va - vb;
+      return (a.item || '').localeCompare(b.item || '');
+    });
     cats[cat].forEach(r => {
       if (!r.item) return;
       rowNum++;
