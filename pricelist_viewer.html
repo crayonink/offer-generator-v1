@@ -747,6 +747,17 @@ function splitItem(item, specification) {
     }
   }
 
+  // 5b. Bearing designation: 'BEARING (22222)' -> name='BEARING', size='22222'
+  //     The parenthesized number is a standard bearing code (e.g. SKF 22222),
+  //     so it disambiguates rows the same way kW disambiguates pilot burners.
+  if (!size) {
+    const bm = name.match(/^BEARING\s*\((\d+)\)\s*/i);
+    if (bm) {
+      size = bm[1];
+      name = ('BEARING ' + name.slice(bm[0].length)).trim();
+    }
+  }
+
   // 5. Trailing alphanumeric model code (when DB had no spec)
   //    e.g. 'SAFETY RELIEF VALVES VS04V-030' -> model='VS04V-030'
   if (!model) {
@@ -831,7 +842,6 @@ const NAME_SHORTS = [
   [/^FUEL.*$/i,                                                                'Fuel'],
   [/^SUPERVISION CHARGE.*MECHANICAL.*$/i,                                      'Supv (Mechanical)'],
   [/^SUPERVISION CHARGE.*PLC.*$/i,                                             'Supv (PLC + Inst)'],
-  [/^BEARING\s*\((\d+)\).*$/i, (_, n) => 'Bearing (' + n + ')'],
   [/^BEARING.*$/i,                                                             'Bearing'],
   [/^ADOPTER.*\(AIR\).*$/i,                                                    'Adopter (Air)'],
   [/^ADOPTER.*\(OIL\).*$/i,                                                    'Adopter (Oil)'],
