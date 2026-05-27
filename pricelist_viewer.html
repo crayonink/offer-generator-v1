@@ -733,6 +733,15 @@ function splitItem(item, specification) {
           if (!model) model = m[3];
           const cut = m.index + m[1].length;
           name = (name.slice(0, cut) + name.slice(m.index + m[0].length)).trim();
+        } else {
+          // 5. kW rating: '100 KW', '10 kW', '10KW', 'LPG-10KW'.
+          //    Used by pilot burners (ENCON-PB ...) where capacity, not
+          //    pipe size, is the disambiguator between rows.
+          m = name.match(/(\d{1,4})\s*-?\s*KW\b/i);
+          if (m) {
+            size = parseInt(m[1], 10) + ' kW';
+            name = (name.slice(0, m.index) + name.slice(m.index + m[0].length)).trim();
+          }
         }
       }
     }
@@ -828,11 +837,12 @@ const NAME_SHORTS = [
   [/^ADOPTER.*\(OIL\).*$/i,                                                    'Adopter (Oil)'],
   [/^ADOPTER.*$/i,                                                             'Adopter'],
   [/^AIR OIL REGULATOR$/i,                                                     'Air/Oil Regulator'],
-  [/^ENCON.PB.*COG.*$/i,                                                       'ENCON-PB COG'],
-  [/^ENCON.PB.*LPG.*$/i,                                                       'ENCON-PB LPG'],
-  [/^ENCON.PB.*MG.*$/i,                                                        'ENCON-PB MG'],
-  [/^ENCON.PB.*NG.*$/i,                                                        'ENCON-PB NG'],
-  [/^ENCON.PB.*$/i,                                                            'ENCON-PB'],
+  [/^ENCON.PB.*\(NG\s*\/\s*LPG\).*$/i,                                         'Pilot Burner NG/LPG'],
+  [/^ENCON.PB.*COG.*$/i,                                                       'Pilot Burner COG'],
+  [/^ENCON.PB.*LPG.*$/i,                                                       'Pilot Burner LPG'],
+  [/^ENCON.PB.*MG.*$/i,                                                        'Pilot Burner MG'],
+  [/^ENCON.PB.*NG.*$/i,                                                        'Pilot Burner NG'],
+  [/^ENCON.PB.*$/i,                                                            'Pilot Burner'],
   [/^ENCON-Y-STRAINER$/i,                                                      'Y-Strainer'],
   [/^ARE-(\d+)\s*Burner.*$/i, (_, n) => 'ARE-' + n + ' Burner'],
   [/^Casting Burner Parts$/i,                                                  'Cast Burner Parts'],
