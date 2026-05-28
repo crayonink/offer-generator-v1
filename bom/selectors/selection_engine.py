@@ -86,12 +86,17 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     # Air side
     air_duct = select_air_duct(air_flow_nm3hr)
     motorized_control_valve = select_motorized_control_valve(air_flow_nm3hr)
-    # Butterfly valve — fall back from Lever to Gear if pipe NB exceeds 300
+    # The combustion-air line NB is floored to 125 (this is what the BOM shows
+    # for the compensator/air duct). The butterfly valve sits in that line, so
+    # size it to the line NB rather than the raw pipe air_nb — which can come
+    # out smaller (e.g. 80) and leave a butterfly valve narrower than its pipe.
+    air_line_nb = max(125, air_duct["nb"])
+    # Butterfly valve — fall back from Lever to Gear if NB exceeds the lever range
     try:
-        butterfly_valve = select_butterfly_valve(air_nb, vendor=butterfly_valve_vendor)
+        butterfly_valve = select_butterfly_valve(air_line_nb, vendor=butterfly_valve_vendor)
     except ValueError:
         if butterfly_valve_vendor == "lt_lever":
-            butterfly_valve = select_butterfly_valve(air_nb, vendor="lt_gear")
+            butterfly_valve = select_butterfly_valve(air_line_nb, vendor="lt_gear")
         else:
             raise
     rotary_joint = select_rotary_joint(air_nb)
