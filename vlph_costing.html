@@ -763,7 +763,7 @@
           <option value="mg_10">ENCON-PB MG 10 KW (Rs. 12,000)</option>
         </select>
       </div>
-      <div class="field">
+      <div class="field" id="pipeline-weight-field">
         <label>Air-Gas Pipeline Weight (kg)</label>
         <input id="pipeline_weight_kg" type="number" value="1000" min="0" step="1"/>
         <div class="hint">Auto from ladle capacity — editable. Rs. 125/kg</div>
@@ -2280,6 +2280,11 @@ function onHoodMovementChange() {
   const hoodType = document.getElementById("hood_movement")?.value || "up_down";
   const ppRow = document.getElementById("td-power_pack-row");
   if (ppRow) ppRow.style.display = (hoodType === "up_down") ? "" : "none";
+  // Air-gas pipeline weight is irrelevant for swivel hoods — the pipeline is
+  // bundled into the SWIVEL ASSEMBLY line, so hide the input for them.
+  const isSwivel = hoodType === "swivel_manual" || hoodType === "swivel_geared";
+  const pipeField = document.getElementById("pipeline-weight-field");
+  if (pipeField) pipeField.style.display = isSwivel ? "none" : "";
   // Each hood type maps to its own fabrication/ceramic table.
   if (typeof refreshLadleMapping === "function") refreshLadleMapping();
 }
