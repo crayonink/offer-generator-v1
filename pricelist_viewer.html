@@ -270,7 +270,8 @@
     /* Rates table uses abbreviated names (<=20 chars), so the sticky
        item column is narrower than the global default but wide enough
        for readable short forms like 'Gas Reg (5 Bar)'. */
-    #rates-table .item-cell, #rates-table th.item-th { min-width: 170px; max-width: 220px; }
+    #rates-table .item-cell, #rates-table th.item-th,
+    #rawmat-table .item-cell, #rawmat-table th.item-th { min-width: 170px; max-width: 220px; }
 
     /* Data cells */
     .xl-table td, .ro-table td {
@@ -468,6 +469,7 @@
 <!-- Pill tab bar -->
 <div class="pillbar" id="tabs-bar">
   <div class="tab active" data-sheet="rates"        onclick="switchTab('rates')">Rates</div>
+  <div class="tab"        data-sheet="raw-material" onclick="switchTab('raw-material')">Raw Material</div>
   <div class="tab"        data-sheet="hpu"          onclick="switchTab('hpu')">HPU</div>
   <div class="tab"        data-sheet="oil-parts"    onclick="switchTab('oil-parts')">Oil Burner</div>
   <div class="tab"        data-sheet="hv-parts"     onclick="switchTab('hv-parts')">HV Oil Burner</div>
@@ -489,6 +491,7 @@
 <!-- Sheet content area -->
 <div class="sheet-area" id="sheet-area">
   <div class="sheet-panel active" id="sheet-rates">       <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-raw-material"><div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hpu">         <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-oil-parts">   <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hv-parts">    <div class="empty-msg">Loading&hellip;</div></div>
@@ -592,6 +595,7 @@ async function loadAll() {
 function renderAll() {
   const s = DATA.summary || {};
   renderRates(DATA.rates || []);
+  renderRawMaterials(DATA.rates || []);
   renderHPU(s.hpu || []);
   renderPartsColumns('oil-parts',  s.oil_burner_parts || [], 'oil_burner_parts_master');
   renderPartsColumns('hv-parts',   s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
@@ -908,20 +912,32 @@ function shortenName(name) {
   return s.length > 20 ? s.slice(0, 19) + '…' : s;
 }
 
-// ── RATES sheet ─────────────────────────────────────────────────────────────
+// ── RATES + RAW MATERIAL sheets ─────────────────────────────────────────────
+// Both tabs render through one table builder. Rates excludes 'Raw Material'
+// rows; the Raw Material tab shows only those.
 function renderRates(data) {
-  const el = document.getElementById('sheet-rates');
-  if (!Array.isArray(data) || !data.length) { el.innerHTML = emptyMsg('No rates data'); return; }
+  _renderRatesTable((data || []).filter(r => r.category !== 'Raw Material'),
+    { elId: 'sheet-rates', tableId: 'rates-table', searchId: 'rates-search' });
+}
+
+function renderRawMaterials(data) {
+  _renderRatesTable((data || []).filter(r => r.category === 'Raw Material'),
+    { elId: 'sheet-raw-material', tableId: 'rawmat-table', searchId: 'rawmat-search' });
+}
+
+function _renderRatesTable(data, opts) {
+  const el = document.getElementById(opts.elId);
+  if (!Array.isArray(data) || !data.length) { el.innerHTML = emptyMsg('No data'); return; }
 
   const cats = {};
   data.forEach(r => { cats[r.category] = cats[r.category] || []; cats[r.category].push(r); });
 
   let rowNum = 0;
   let html = `<div style="padding:6px 10px;background:#f0f0f0;display:flex;gap:10px;align-items:center;">
-    <input type="text" id="rates-search" placeholder="Search items..." oninput="filterRates(this.value)" style="padding:5px 10px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:250px;font-family:inherit;"/>
+    <input type="text" id="${opts.searchId}" placeholder="Search items..." oninput="filterRatesTable('${opts.tableId}', this.value)" style="padding:5px 10px;border:1px solid #ccc;border-radius:4px;font-size:12px;width:250px;font-family:inherit;"/>
     <span style="font-size:11px;color:#666;">${data.length} items in ${Object.keys(cats).length} categories</span>
   </div>
-  <div class="xl-wrap"><table class="xl-table" id="rates-table" style="min-width:800px;">
+  <div class="xl-wrap"><table class="xl-table" id="${opts.tableId}" style="min-width:800px;">
     <thead><tr>
       <th class="rn"></th>
       <th class="item-th" style="min-width:170px;">Item</th>
@@ -1048,8 +1064,8 @@ function renderRates(data) {
   });
 }
 
-function filterRates(query) {
-  const table = document.getElementById('rates-table');
+function filterRatesTable(tableId, query) {
+  const table = document.getElementById(tableId);
   if (!table) return;
   const q = query.toLowerCase().trim();
   const rows = table.querySelectorAll('tbody tr');
