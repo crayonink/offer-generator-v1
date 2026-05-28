@@ -1169,8 +1169,24 @@ def build_vlph_manual_df(
              f'{equipment["butterfly_valve"]["nb"]} NB', 1,
              unit_price_override=equipment["butterfly_valve"]["price"],
              make=equipment["butterfly_valve"].get("make", "L&T")),
-        _row("MISC ITEMS", "CONTROL PANEL", "", 1),
     ]
+    # Pilot burner taps combustion air for the pilot line (20 NB) and the UV
+    # cooling line (15 NB) — each gets a ball valve + flexible hose. Mirrors the
+    # automatic builder's auto-ignition block so both modes match.
+    if include_pilot:
+        rows += [
+            _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+            _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
+            _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)",
+                 f'{_get_flexible_hose_price(20)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(20)[1], make="BENGAL IND."),
+            _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)",
+                 f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
+        ]
+    rows.append(_row("MISC ITEMS", "CONTROL PANEL", "", 1))
 
     # ── FUEL LINE (base items only — no AGR, orifice, DPT, control valve) ─
     f1_label = FUEL_NAMES.get(fuel1_type, fuel1_type.upper())
