@@ -758,6 +758,35 @@ function splitItem(item, specification) {
     }
   }
 
+  // 5c. Raw material sizes: thickness (5mm), thickness × thickness
+  //     (16mm*10mm), W×T (100x3mm — SS pipes), N,N or N*N (angles 100,100
+  //     or 50*6), N OD (elbows), N in (tubes by inch). Most-specific
+  //     patterns are listed first so 'Nmm*Nmm' isn't half-eaten by the
+  //     plain 'Nmm' rule. All gated on '!size' so items that already
+  //     resolved an NB/DN/kW/bearing size are untouched.
+  if (!size) {
+    const rawSizePatterns = [
+      [/(\d+)\s*mm\s*[*x×]\s*(\d+)\s*mm\b/i,   m => m[1] + 'mm × ' + m[2] + 'mm'],
+      [/(\d+)\s*[x×]\s*(\d+)\s*mm\b/i,         m => m[1] + ' × ' + m[2] + 'mm'],
+      [/\b(\d+)\s*,\s*(\d+)\b/,                 m => m[1] + ' × ' + m[2]],
+      [/\b(\d+)\s*[*×]\s*(\d+)\b/,              m => m[1] + ' × ' + m[2]],
+      [/\b(\d+(?:\.\d+)?)\s*mm\b/i,             m => m[1] + 'mm'],
+      [/\b(\d+)\s*OD\b/i,                       m => m[1] + ' OD'],
+      [/\b(\d+(?:\.\d+)?)\s*in\b/i,             m => m[1] + ' in'],
+    ];
+    for (const [pat, fmt] of rawSizePatterns) {
+      const mm = name.match(pat);
+      if (mm) {
+        size = fmt(mm);
+        name = (name.slice(0, mm.index) + name.slice(mm.index + mm[0].length)).trim();
+        break;
+      }
+    }
+    // Strip the '(per mtr)' / '(per meter)' qualifier left on SS-pipe rows
+    // after size extraction. It's a unit indicator, not part of the name.
+    name = name.replace(/\s*\(per\s*m(?:tr|eter)?\)\s*$/i, '').trim();
+  }
+
   // 5. Trailing alphanumeric model code (when DB had no spec)
   //    e.g. 'SAFETY RELIEF VALVES VS04V-030' -> model='VS04V-030'
   if (!model) {
@@ -831,7 +860,7 @@ const NAME_SHORTS = [
   [/^Electrode.*$/i,                                                           'Electrode'],
   [/^ID FAN.*$/i,                                                              'ID Fan'],
   [/^GEARED MOTOR.*$/i,                                                        'Geared Motor'],
-  [/^PLUMMER BLOCK$/i,                                                         'Plummer Block'],
+  [/^Plum[bm]er\s*block.*$/i,                                                  'Plummer Block'],
   [/^TROLLEY WHEEL$/i,                                                         'Trolley Wheel'],
   [/^SHAFT.*$/i,                                                               'Shaft'],
   [/^FRAME$/i,                                                                 'Frame'],
