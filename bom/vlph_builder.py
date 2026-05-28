@@ -953,28 +953,38 @@ def build_vlph_120t_df(
         burner_desc = equipment["burner"]["model"]
         import math as _m
         burner_ref = f'GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
-    rows += [
-        _row("ENCON ITEMS", burner_desc,
-             burner_ref,
-             1, unit_price_override=equipment["burner"]["price"]),
-        _row("ENCON ITEMS",
-             "BEARING (24026)" if ladle_tons >= 50 else "BEARING (22222)",
-             "", 2),
-        _row("ENCON ITEMS", "PLUMMER BLOCK", "", 1,
-             unit_price_override=params.get("plummer_block_kg", 300) * 170),
-        _row("ENCON ITEMS", "SHAFT", "", 1,
-             unit_price_override=params.get("shaft_kg", 350) * 120),
-        _row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
+    is_swivel = hood_type in ("swivel_manual", "swivel_geared", "swivel")
+    rows.append(_row("ENCON ITEMS", burner_desc, burner_ref,
+                     1, unit_price_override=equipment["burner"]["price"]))
+    # Rotation hardware vs swivel assembly: Up/Down hoods use bearing + plummer
+    # block + shaft; swivelling hoods (manual/geared) use a single Swivel
+    # Assembly instead and also drop the air-gas pipeline.
+    if is_swivel:
+        # Swivel assembly bundles the swirling mechanism + pipeline + fittings;
+        # priced from the tonnage-based swirling-mech row in vertical_master.
+        rows.append(_row("ENCON ITEMS", "SWIVEL ASSEMBLY", "", 1,
+                         unit_price_override=params.get("pipeline_swirling_cost", 0)))
+    else:
+        rows += [
+            _row("ENCON ITEMS",
+                 "BEARING (24026)" if ladle_tons >= 50 else "BEARING (22222)",
+                 "", 2),
+            _row("ENCON ITEMS", "PLUMMER BLOCK", "", 1,
+                 unit_price_override=params.get("plummer_block_kg", 300) * 170),
+            _row("ENCON ITEMS", "SHAFT", "", 1,
+                 unit_price_override=params.get("shaft_kg", 350) * 120),
+        ]
+    rows.append(_row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
              f'{(ms_structure_kg_override or params["ms_structure_kg"])} kg',
-             1, unit_price_override=(ms_structure_kg_override or params["ms_structure_kg"]) * get_price("FABRICATION RATE")),
-        _row("ENCON ITEMS", "AIR-GAS PIPELINE",
+             1, unit_price_override=(ms_structure_kg_override or params["ms_structure_kg"]) * get_price("FABRICATION RATE")))
+    if not is_swivel:
+        rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
-             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
-        _row("ENCON ITEMS", equipment["blower"]["model"],
+             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")))
+    rows.append(_row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
-             1, unit_price_override=equipment["blower"]["price_premium"]),
-    ]
+             1, unit_price_override=equipment["blower"]["price_premium"]))
     # Pilot ignition equipment — only when Auto Ignition is selected.
     if special_auto_ignition:
         rows += [
@@ -1230,11 +1240,16 @@ def build_vlph_manual_df(
              1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
     ]
 
-    # Swivel rotation hardware — bearing/plummer block/shaft let a swivelling
-    # hood rotate. Up/Down hoods use the hydraulic cylinder instead, so they
-    # don't get these. (The automatic builder adds them unconditionally; the
-    # manual builder gates on hood type per the offer spec.)
-    if hood_type in ("swivel_manual", "swivel_geared", "swivel"):
+    # Rotation hardware vs swivel assembly: Up/Down hoods use bearing + plummer
+    # block + shaft; swivelling hoods (manual/geared) use a single Swivel
+    # Assembly instead and also drop the air-gas pipeline (added below).
+    is_swivel = hood_type in ("swivel_manual", "swivel_geared", "swivel")
+    if is_swivel:
+        # Swivel assembly bundles the swirling mechanism + pipeline + fittings;
+        # priced from the tonnage-based swirling-mech row in vertical_master.
+        rows.append(_row("ENCON ITEMS", "SWIVEL ASSEMBLY", "", 1,
+                         unit_price_override=params.get("pipeline_swirling_cost", 0)))
+    else:
         rows += [
             _row("ENCON ITEMS",
                  "BEARING (24026)" if ladle_tons >= 50 else "BEARING (22222)",
@@ -1281,15 +1296,16 @@ def build_vlph_manual_df(
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
             _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
         ]
-    rows += [
-        _row("ENCON ITEMS", "AIR-GAS PIPELINE",
+    # AIR-GAS PIPELINE only for Up/Down hoods — swivel hoods bundle the
+    # pipeline into the SWIVEL ASSEMBLY row added above.
+    if not is_swivel:
+        rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
-             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")),
-        _row("ENCON ITEMS", "CERAMIC FIBRE",
+             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")))
+    rows.append(_row("ENCON ITEMS", "CERAMIC FIBRE",
              f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
              params["ceramic_rolls"],
-             unit_price_override=params.get("ceramic_rate", 0)),
-    ]
+             unit_price_override=params.get("ceramic_rate", 0)))
 
     df = pd.DataFrame(
         rows,
