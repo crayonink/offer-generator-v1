@@ -1230,6 +1230,21 @@ def build_vlph_manual_df(
              1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
     ]
 
+    # Swivel rotation hardware — bearing/plummer block/shaft let a swivelling
+    # hood rotate. Up/Down hoods use the hydraulic cylinder instead, so they
+    # don't get these. (The automatic builder adds them unconditionally; the
+    # manual builder gates on hood type per the offer spec.)
+    if hood_type in ("swivel_manual", "swivel_geared", "swivel"):
+        rows += [
+            _row("ENCON ITEMS",
+                 "BEARING (24026)" if ladle_tons >= 50 else "BEARING (22222)",
+                 "", 2),
+            _row("ENCON ITEMS", "PLUMMER BLOCK", "", 1,
+                 unit_price_override=params.get("plummer_block_kg", 300) * 170),
+            _row("ENCON ITEMS", "SHAFT", "", 1,
+                 unit_price_override=params.get("shaft_kg", 350) * 120),
+        ]
+
     # HPU — for oil fuels. In a dual-fuel offer the oil fuel (and thus the HPU)
     # may be fuel 2, so pull it from whichever side carries it.
     hpu = equipment.get("hpu") or (equipment2.get("hpu") if equipment2 else None)
