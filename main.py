@@ -1517,6 +1517,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 equipment=equip1,
                 ladle_tons=req.ladle_tons,
                 fuel1_type=req.fuel1_type,
+                fuel2_type=req.fuel2_type,
+                equipment2=equip2,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
                 pipeline_weight_kg=_pipeline_kg,

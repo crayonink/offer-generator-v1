@@ -1116,6 +1116,8 @@ def build_vlph_manual_df(
     equipment: dict,
     ladle_tons: float = 10.0,
     fuel1_type: str = "ng",
+    fuel2_type: str = "none",
+    equipment2: dict = None,
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
@@ -1128,6 +1130,11 @@ def build_vlph_manual_df(
     Bought Out items are few; In-House items are grouped.
     LPG NG Pilot Line is expanded with individual items (same as automatic).
     include_pilot=False skips pilot burner, ignition transformer, UV sensor, pilot line.
+
+    Dual fuel: equipment2 carries the second fuel's equipment. The HPU may live
+    on either side (it's only present for the oil fuel), so it's pulled from
+    fuel 1 OR fuel 2. A gas fuel 2 adds its own gas train; an oil fuel 2 is
+    represented by the HPU only (no itemised oil line in the manual format).
     """
 
     pg_vendor = pressure_gauge_vendor.upper()
@@ -1136,6 +1143,9 @@ def build_vlph_manual_df(
     pg_price = _get_price_fuzzy(f'PRESSURE GAUGE WITH TNV ({pg_vendor})')
     pg_item = "PRESSURE GAUGE WITH TNV"
     params = get_vlph_params(ladle_tons)
+
+    f2_label = FUEL_NAMES.get(fuel2_type, fuel2_type.upper()) if fuel2_type != "none" else None
+    is_dual = fuel2_type != "none" and equipment2 is not None
 
     rows = []
 
@@ -1159,6 +1169,16 @@ def build_vlph_manual_df(
         pressure_gauge_vendor=pressure_gauge_vendor,
         base_only=True,
     )
+
+    # ── FUEL 2 LINE (dual fuel only) ──────────────────────────────────────
+    # Gas fuel 2 contributes its own gas train here; an oil fuel 2 yields no
+    # rows in base_only mode and is represented downstream by the HPU.
+    if is_dual:
+        rows += _fuel_line_rows(
+            f2_label, fuel2_type, equipment2,
+            pressure_gauge_vendor=pressure_gauge_vendor,
+            base_only=True,
+        )
 
     # ── PILOT LINE (only if pilot burner is included) ──────────────
     pilot_media = f"{pilot_line_fuel.upper()} PILOT LINE"
@@ -1192,17 +1212,27 @@ def build_vlph_manual_df(
         ]
 
     # ── IN-HOUSE / ENCON ITEMS ────────────────────────────────────────────
+    import math as _m
+    if is_dual:
+        burner_desc = equipment["burner"]["model"].replace("ENCON ", "ENCON DUAL- ")
+        burner_ref = (
+            f'{f1_label}: {equipment["burner"]["input_nm3hr"]} Nm3/hr | '
+            f'{f2_label}: {equipment2["burner"]["input_nm3hr"]} Nm3/hr'
+        )
+    else:
+        burner_desc = equipment["burner"]["model"]
+        burner_ref = f'GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
     rows += [
-        _row("ENCON ITEMS", equipment["burner"]["model"],
-             f'GAS FLOW: {__import__("math").ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr',
+        _row("ENCON ITEMS", burner_desc, burner_ref,
              1, unit_price_override=equipment["burner"]["price"]),
         _row("ENCON ITEMS", "FABRICATION",
              f'{params["ms_structure_kg"]} KG',
              1, unit_price_override=params["ms_structure_kg"] * get_price("FABRICATION RATE")),
     ]
 
-    # HPU — for oil fuels
-    hpu = equipment.get("hpu")
+    # HPU — for oil fuels. In a dual-fuel offer the oil fuel (and thus the HPU)
+    # may be fuel 2, so pull it from whichever side carries it.
+    hpu = equipment.get("hpu") or (equipment2.get("hpu") if equipment2 else None)
     if hpu:
         rows.append(_row(
             "ENCON ITEMS", hpu.get("label", "Heating and Pumping Unit (HPU)"),
