@@ -1298,8 +1298,8 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
   setTimeout(refreshLadleMapping, 300);
-  // Pilot fields start hidden; updatePilotVisibility reveals them only when
-  // Automatic + Auto Ignition are both active.
+  // Pilot fields start hidden; updatePilotVisibility reveals the Pilot Burner
+  // selector for Automatic + Auto Ignition, or for Manual mode with pilot required.
   if (typeof updatePilotVisibility === "function") updatePilotVisibility();
   const techEl = document.getElementById("c-technical");
   if (techEl) techEl.addEventListener("input", updateAutoRef);
@@ -1424,7 +1424,8 @@ function onControlModeChange() {
 }
 
 function onManualPilotChange() {
-  // placeholder — pilot fuel is now in the common section
+  // Toggling "Pilot Burner Required?" shows/hides the Pilot Burner selector.
+  updatePilotVisibility();
 }
 
 const OIL_FUEL_SET = new Set(["hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"]);
@@ -2289,10 +2290,14 @@ function updatePilotVisibility() {
   // are shown only when Control Mode is Automatic AND Auto Ignition is ticked.
   const mode = document.getElementById("control_mode")?.value;
   const autoIgn = !!document.getElementById("special_auto_ignition")?.checked;
+  const manualPilot = document.getElementById("manual_pilot_burner")?.value === "yes";
   const show = mode === "automatic" && autoIgn;
-  // .pilot-gated covers Step 2 dropdowns
+  // .pilot-gated covers the Pilot Burner selector. Show it for automatic +
+  // auto-ignition, OR in manual mode when "Pilot Burner Required?" is Yes
+  // (manual mode reads this dropdown to pick the ENCON-PB model + pilot line fuel).
+  const showPilotBurner = show || (mode === "manual" && manualPilot);
   document.querySelectorAll(".pilot-gated").forEach(el => {
-    el.style.display = show ? "" : "none";
+    el.style.display = showPilotBurner ? "" : "none";
   });
   // Step 4 tech-data row: Firing & Ignition of Burner only.
   // 'td-pilot_gas_type-row' is permanently hidden (its value is auto-set
