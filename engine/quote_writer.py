@@ -246,7 +246,14 @@ def _temp_control_scope_text(control_mode: str | None, auto_control_type: str | 
     return "Temperature Control System"
 
 
-def _flow_meter_scope_text(is_oil: bool, is_dual: bool) -> str:
+def _flow_meter_scope_text(is_oil: bool, is_dual: bool, control_mode: str = "automatic") -> str:
+    cm = (control_mode or "automatic").lower()
+    if cm == "manual":
+        # Manual mode has no automated control valves; the operator works the
+        # line valves directly. Drop the "Control valve" mention.
+        if is_oil or is_dual:
+            return "Manual shut-off valves on Oil and Air line"
+        return "Manual shut-off valves on Air line"
     if is_oil or is_dual:
         return "Flow meter and Control valve in Oil and Air line"
     return "Control valve on Air line"
@@ -873,11 +880,12 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             else "ENCON Gas Burner"  if not bool(customer.get("is_oil"))
             else "ENCON IIP Film Burner"
         ),
-        # Row 5 — fuel delivery unit
+        # Row 5 — fuel delivery unit. Use the actual fuel name (LDO/HSD/FO/etc.)
+        # instead of hardcoding "LDO" — works for any oil sub-type.
         "pumping_scope_text": (
             "Gas train with pressure regulating and control valves"
             if (not bool(customer.get("is_oil")) and not bool(customer.get("is_dual")))
-            else "LDO pumping unit with micro valve"
+            else f'{(customer.get("fuel_name") or "Oil").strip()} pumping unit with micro valve'
         ),
         # Row 6 (vertical column) — hood mechanism
         "hood_scope_vertical": (
@@ -977,7 +985,8 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         "temp_control_scope_text": _temp_control_scope_text(
             customer.get("control_mode"), customer.get("auto_control_type")),
         "flow_meter_scope_text":   _flow_meter_scope_text(
-            bool(customer.get("is_oil")), bool(customer.get("is_dual"))),
+            bool(customer.get("is_oil")), bool(customer.get("is_dual")),
+            customer.get("control_mode")),
         "pipeline_scope_text":     _pipeline_scope_text(
             bool(customer.get("is_oil")), bool(customer.get("is_dual"))),
         # Annexure I section headers — qty is user-editable on Step 4
