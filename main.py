@@ -3053,7 +3053,24 @@ async def generate_quote(req: QuoteRequest):
         }
 
         quote_data = calculate_quote(form_data)
-        filename = f"Quote_{quote_data['quote_no'].replace('/', '_')}.docx"
+        # Filename format: {YYYY-MM-DD}_{Customer}_{Product}-{Capacity}T.docx
+        # (e.g. '2026-05-30_MagnoSteel_VLPH-10T.docx'). Falls back gracefully
+        # if fields are missing.
+        _PRODUCT_SHORT = {
+            "Vertical Ladle Preheater":   "VLPH",
+            "Horizontal Ladle Preheater": "HLPH",
+        }
+        _first_pt = (req.items[0].product_type if req.items else "") or ""
+        _product = _PRODUCT_SHORT.get(_first_pt) or (
+            "Tundish" if "Tundish" in _first_pt
+            else "Recup" if "Recuperator" in _first_pt
+            else (_first_pt.replace(" ", "") or "Offer")
+        )
+        _safe_company = "".join(ch for ch in (req.company_name or "Client")
+                                if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        _date = datetime.now().strftime("%Y-%m-%d")
+        _capacity = f"-{int(req.ladle_tons)}T" if req.ladle_tons else ""
+        filename = f"{_date}_{_safe_company}_{_product}{_capacity}.docx"
         output_path = os.path.join(QUOTES_FOLDER, filename)
         generate_quote_docx(quote_data, output_path)
 
