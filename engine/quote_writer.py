@@ -436,15 +436,20 @@ def _temp_control_items_for_mode(control_mode: str, auto_control_type: str,
     return [{"item": x, "ref": ""} for x in items]
 
 
-def _operational_sequence_text(control_mode: str, auto_control_type: str) -> str:
+def _operational_sequence_text(control_mode: str, auto_control_type: str,
+                                is_oil: bool = False, is_dual: bool = False) -> str:
     """Mode-specific wording for the OPERATIONAL SEQUENCE paragraph in the
     offer document. Mirrored in pdf_writer.py."""
     cm  = (control_mode or "automatic").lower()
     act = (auto_control_type or "plc").lower()
     if cm == "manual":
+        # Manual offers have no automated control valves; the operator
+        # works the line valves directly. Wording stays fuel-aware so an
+        # LDO offer doesn't read "air and gas".
+        fuel_word = "fuel" if is_dual else ("oil" if is_oil else "gas")
         return ("The temperature of the ladle will be monitored manually through the "
-                "temperature indicator fitted on the panel. The operator will open / "
-                "close the air and gas control valves to maintain the desired "
+                "temperature indicator fitted on the panel. The operator will manually "
+                f"regulate the air and {fuel_word} flow to maintain the desired "
                 "temperature profile of the ladle as per the heating schedule.")
     if act == "pid":
         return ("The ladle temperature shall be controlled in a closed-loop system "
@@ -475,7 +480,8 @@ def _operational_sequence_text(control_mode: str, auto_control_type: str) -> str
             "the set values.")
 
 
-def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "") -> dict:
+def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "",
+                              manual_oil_only: bool = False) -> dict:
     """Group BOM rows into the lists the offer doc renders.
 
     Buckets:
@@ -553,6 +559,14 @@ def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "") ->
             else:
                 fuel2.append(_fmt(x))
         # BOUGHT OUT ITEMS, ENCON ITEMS etc. are ignored here.
+
+    # Manual-mode oil-only offers have no itemised oil line in the BOM (HPU
+    # represents the oil side). The Scope-of-Supply 'ON THE MAIN <fuel> PIPELINE'
+    # section loops over gas_pipeline_items, so seed it with a PUMPING UNIT
+    # entry — otherwise the section renders an empty heading.
+    if manual_oil_only and not gas and not fuel1:
+        gas = [{"item": "PUMPING UNIT", "ref": ""}]
+        fuel1 = [{"item": "PUMPING UNIT", "ref": ""}]
 
     # Strip the trailing " LINE" suffix to surface the short fuel name (NG, MG, BG, COG, LDO...).
     # When no fuel-line media exists in the BOM (e.g. single oil fuel in manual
@@ -920,6 +934,13 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             # as a fallback so the heading reads e.g. 'ON THE MAIN LDO PIPELINE'
             # instead of falling through to the template's "gas" default.
             fuel1_fallback_label=(customer.get("fuel_name") or "").strip(),
+            # Manual + oil-only: seed the fuel-line lists with PUMPING UNIT
+            # so the Scope-of-Supply pipeline section isn't an empty heading.
+            manual_oil_only=(
+                (customer.get("control_mode") or "automatic").lower() == "manual"
+                and bool(customer.get("is_oil"))
+                and not bool(customer.get("is_dual"))
+            ),
         ),
         # Override temp_control_items with mode-specific static list (does NOT
         # come from BOM). PLC, PLC+AGR, PID and Manual each get their own.
@@ -959,9 +980,12 @@ def generate_quote_docx(quote_data: dict, output_path: str):
                 )
             ),
         ),
-        # Mode-specific OPERATIONAL SEQUENCE paragraph wording.
+        # Mode-specific OPERATIONAL SEQUENCE paragraph wording. Pass fuel
+        # flags so manual offers reference oil/gas/fuel correctly.
         "operational_sequence_text": _operational_sequence_text(
-            customer.get("control_mode"), customer.get("auto_control_type")),
+            customer.get("control_mode"), customer.get("auto_control_type"),
+            is_oil=bool(customer.get("is_oil")) and not bool(customer.get("is_dual")),
+            is_dual=bool(customer.get("is_dual"))),
         # Annexure I scope-of-supply dynamic strings
         "ignition_scope_text":     _ignition_scope_text(
             _has_pilot_in_bom or bool(customer.get("special_auto_ignition")),
