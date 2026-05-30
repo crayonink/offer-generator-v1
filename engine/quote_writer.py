@@ -338,6 +338,8 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
 def _cv_bullets_for_offer(control_mode: str, auto_control_type: str,
                           is_oil: bool, is_dual_with_oil: bool) -> list:
     """Build the Temperature Control System control-valve bullets per spec:
+      - Manual mode       : no automated control valves at all — the operator
+                            opens/closes the valves manually, so no bullets.
       - PID and PLC+AGR   : single 'CONTROL VALVE ON AIR LINE'
                             (the AGR / PID modulates fuel via the air valve,
                             so no separate fuel CV is needed)
@@ -347,8 +349,10 @@ def _cv_bullets_for_offer(control_mode: str, auto_control_type: str,
     """
     cm  = (control_mode or "automatic").lower()
     act = (auto_control_type or "plc").lower()
+    if cm == "manual":
+        return []
     bullets = ["CONTROL VALVE ON AIR LINE"]
-    air_only = (cm != "manual" and act in ("pid", "plc_agr"))
+    air_only = act in ("pid", "plc_agr")
     if not air_only:
         if is_dual_with_oil:
             bullets.append("CONTROL VALVE ON GAS LINE")
@@ -471,7 +475,7 @@ def _operational_sequence_text(control_mode: str, auto_control_type: str) -> str
             "the set values.")
 
 
-def _control_system_sections(bom_items: list) -> dict:
+def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "") -> dict:
     """Group BOM rows into the lists the offer doc renders.
 
     Buckets:
@@ -550,8 +554,12 @@ def _control_system_sections(bom_items: list) -> dict:
                 fuel2.append(_fmt(x))
         # BOUGHT OUT ITEMS, ENCON ITEMS etc. are ignored here.
 
-    # Strip the trailing " LINE" suffix to surface the short fuel name (NG, MG, BG, COG, LDO...)
-    fuel1_label = fuel1_media[:-5] if fuel1_media and fuel1_media.endswith(" LINE") else (fuel1_media or "")
+    # Strip the trailing " LINE" suffix to surface the short fuel name (NG, MG, BG, COG, LDO...).
+    # When no fuel-line media exists in the BOM (e.g. single oil fuel in manual
+    # mode — the HPU represents the oil side, no itemised oil line), fall back
+    # to the caller-supplied fuel name so the template doesn't default to "gas".
+    fuel1_label = (fuel1_media[:-5] if fuel1_media and fuel1_media.endswith(" LINE")
+                   else (fuel1_media or fuel1_fallback_label or ""))
     # The second fuel media is whichever we collected into fuel2; pick from any item.
     # Exclude PURGING LINE and any '<X> PILOT LINE' (those belong to the pilot bucket).
     fuel2_media = ""
@@ -905,7 +913,14 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         # Each list is [{item, ref}, ...]; the template renders one bullet per entry.
         # For dual-fuel offers the fuel-line items are split into
         # fuel1_line_items / fuel2_line_items by the BOM's MEDIA value.
-        **_control_system_sections(customer.get("bom_items") or []),
+        **_control_system_sections(
+            customer.get("bom_items") or [],
+            # Manual-mode oil offers don't emit any fuel-line items, so the
+            # BOM-derived label comes out blank. Use the customer's fuel name
+            # as a fallback so the heading reads e.g. 'ON THE MAIN LDO PIPELINE'
+            # instead of falling through to the template's "gas" default.
+            fuel1_fallback_label=(customer.get("fuel_name") or "").strip(),
+        ),
         # Override temp_control_items with mode-specific static list (does NOT
         # come from BOM). PLC, PLC+AGR, PID and Manual each get their own.
         # Dual-fuel offers carrying both an oil and a gas component get an
