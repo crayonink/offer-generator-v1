@@ -480,8 +480,7 @@ def _operational_sequence_text(control_mode: str, auto_control_type: str,
             "the set values.")
 
 
-def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "",
-                              manual_oil_only: bool = False) -> dict:
+def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "") -> dict:
     """Group BOM rows into the lists the offer doc renders.
 
     Buckets:
@@ -559,14 +558,6 @@ def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "",
             else:
                 fuel2.append(_fmt(x))
         # BOUGHT OUT ITEMS, ENCON ITEMS etc. are ignored here.
-
-    # Manual-mode oil-only offers have no itemised oil line in the BOM (HPU
-    # represents the oil side). The Scope-of-Supply 'ON THE MAIN <fuel> PIPELINE'
-    # section loops over gas_pipeline_items, so seed it with a PUMPING UNIT
-    # entry — otherwise the section renders an empty heading.
-    if manual_oil_only and not gas and not fuel1:
-        gas = [{"item": "PUMPING UNIT", "ref": ""}]
-        fuel1 = [{"item": "PUMPING UNIT", "ref": ""}]
 
     # Strip the trailing " LINE" suffix to surface the short fuel name (NG, MG, BG, COG, LDO...).
     # When no fuel-line media exists in the BOM (e.g. single oil fuel in manual
@@ -934,13 +925,6 @@ def generate_quote_docx(quote_data: dict, output_path: str):
             # as a fallback so the heading reads e.g. 'ON THE MAIN LDO PIPELINE'
             # instead of falling through to the template's "gas" default.
             fuel1_fallback_label=(customer.get("fuel_name") or "").strip(),
-            # Manual + oil-only: seed the fuel-line lists with PUMPING UNIT
-            # so the Scope-of-Supply pipeline section isn't an empty heading.
-            manual_oil_only=(
-                (customer.get("control_mode") or "automatic").lower() == "manual"
-                and bool(customer.get("is_oil"))
-                and not bool(customer.get("is_dual"))
-            ),
         ),
         # Override temp_control_items with mode-specific static list (does NOT
         # come from BOM). PLC, PLC+AGR, PID and Manual each get their own.
