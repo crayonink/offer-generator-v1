@@ -369,7 +369,7 @@ def _cog_line_rows(media: str, equipment: dict,
         if is_plc or is_ppid_ratio:
             rows += [
                 _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
-                     unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
+                     unit_price_override=10000,  # was: _get_price_fuzzy("ORIFICE PLATE (COG)")
                      make="ENGINEERING SPECIALITY"),
                 _row(media, "DPT", "", 1,
                      unit_price_override=_get_price_fuzzy("DPT (COG)"),
@@ -456,7 +456,7 @@ def _bfg_line_rows(media: str, equipment: dict,
     if is_plc or is_ppid_ratio:
         rows += [
             _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
-                 unit_price_override=_get_price_fuzzy("ORIFICE PLATE (COG)"),
+                 unit_price_override=10000,  # was: _get_price_fuzzy("ORIFICE PLATE (COG)")
                  make="ENGINEERING SPECIALITY"),
             _row(media, "DPT", "", 1,
                  unit_price_override=_get_price_fuzzy("DPT (COG)"),
@@ -574,7 +574,7 @@ def _mix_gas_line_rows(media: str, equipment: dict,
         if is_plc or is_ppid_ratio:
             rows += [
                 _row(media, "ORIFICE PLATE", "", 1,
-                     unit_price_override=_get_price_fuzzy("ORIFICE PLATE (Gas)"),
+                     unit_price_override=7000,  # was: _get_price_fuzzy("ORIFICE PLATE (Gas)")
                      make="ENGINEERING SPECIALITY"),
                 _row(media, "DPT", "", 1,
                      unit_price_override=_get_price_fuzzy("DPT"),
