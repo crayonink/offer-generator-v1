@@ -820,8 +820,9 @@ function splitItem(item, specification) {
 // pattern matches and the name is still over 20 chars, it gets clipped
 // with an ellipsis. Original name is preserved as a hover tooltip.
 const NAME_SHORTS = [
-  [/^GAS PRESSURE REGULATORS?\s*with\s*OPSO.*$/i,                              'Gas Reg w/ OPSO'],
-  [/^GAS PRESSURE REGULATORS?.*Pmax\s*=\s*(\d+)\s*Bar.*$/i, (_, b) => 'Gas Reg (' + b + ' Bar)'],
+  // All GAS PRESSURE REGULATORS variants display as just 'Gas Pressure Reg';
+  // the variant (OPSO / 2 Bar / 5 Bar / 5 Bar Std) is conveyed by the
+  // category heading instead of being repeated in every row.
   [/^GAS PRESSURE REGULATORS?.*$/i,                                            'Gas Pressure Reg'],
   [/^GAS PRESSURE SWITCHES?.*$/i,                                              'Gas Press Switch'],
   [/^GAS FILTERS?.*$/i,                                                        'Gas Filter'],
@@ -980,7 +981,7 @@ function _renderRatesTable(data, opts) {
     // ascending (50 NB precedes 100 NB instead of following lexicographic
     // order on the full item label). Items without a numeric size fall to
     // the end of the category, tie-broken alphabetically.
-    if (cat === 'Bought Out' || cat === 'Control Valve' || cat === 'Gas Regulator') {
+    if (cat === 'Bought Out' || cat === 'Control Valve') {
       // Sort by base name (case-insensitive) then by numeric NB size. Bought
       // Out is a grab-bag; Control Valve mixes 'Control Valve' and 'Motorized
       // Control Valve' which should land in separate runs. Within a run,
