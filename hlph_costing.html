@@ -440,7 +440,7 @@
     <div class="fg fg-4">
       <div class="field">
         <label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
-        <input id="c-ref" type="text" readonly style="background:#f1f5f9;color:#475569" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/>
+        <input id="c-ref" type="text" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY" oninput="_refDirty = true"/>
       </div>
       <div class="field">
         <label>Location</label>
@@ -1242,6 +1242,7 @@ function _personInitials(name) {
 function _locationCode(loc) {
   return _LOC_CODES[(loc || "").trim().toLowerCase()] || "";
 }
+let _refDirty = false;
 function updateAutoRef() {
   const tech = document.getElementById("c-technical");
   const loc  = document.getElementById("c-location");
@@ -1256,7 +1257,7 @@ function updateAutoRef() {
   const dd = String(d.getDate()).padStart(2, "0");
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
-  ref.value = `ENCON.04026.${parts.join("/")} DT.${dd}/${mm}/${yyyy}`;
+  if (!_refDirty || !ref.value) ref.value = `ENCON.04026.${parts.join("/")} DT.${dd}/${mm}/${yyyy}`;
   // (yy variable above retained for any legacy callers but unused now)
 }
 async function fetchAutoRefSeq() {
