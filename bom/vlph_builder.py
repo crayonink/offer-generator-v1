@@ -1134,6 +1134,7 @@ def build_vlph_manual_df(
     include_pilot: bool = True,
     pilot_line_fuel: str = "lpg",
     hood_type: str = "up_down",
+    ceramic_rolls_override: int = 0,
 ) -> pd.DataFrame:
     """
     Manual / simplified VLPH BOM — matches the Lloyds manual costing format.
@@ -1318,9 +1319,13 @@ def build_vlph_manual_df(
         rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")))
+    # Ceramic roll count: prefer the override coming from the form (sourced
+    # from fabrication_ladle_mapping via /api/ladle-mapping) so the BOM
+    # matches what the user sees in Step 2; fall back to vertical_master.
+    cf_rolls = ceramic_rolls_override or params["ceramic_rolls"]
     rows.append(_row("ENCON ITEMS", "CERAMIC FIBRE",
-             f'{params["ceramic_rolls"]} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
-             params["ceramic_rolls"],
+             f'{cf_rolls} Rolls @ Rs.{params.get("ceramic_rate", 0):,.0f}/roll',
+             cf_rolls,
              unit_price_override=params.get("ceramic_rate", 0)))
 
     df = pd.DataFrame(

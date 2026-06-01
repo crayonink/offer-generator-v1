@@ -1525,6 +1525,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 include_pilot=req.manual_pilot_burner == "yes",
                 pilot_line_fuel=req.pilot_line_fuel,
                 hood_type=req.hood_type,
+                ceramic_rolls_override=_ceramic_rolls,
             )
         else:
             bom_df = build_vlph_120t_df(
