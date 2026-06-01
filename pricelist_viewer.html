@@ -843,6 +843,12 @@ const NAME_SHORTS = [
   [/^BUTTERFLY VALVE.*$/i,                                                     'Butterfly Valve'],
   [/^Butterfly Valve.*$/i,                                                     'Butterfly Valve'],
   [/^INSTRUMENTS BALL VALVE.*$/i,                                              'Instr Ball Valve'],
+  // L&T ball-valve variants (renamed in DB from L1RF model codes) — keep
+  // the CS/SS + 1P/3P distinction before the generic Ball Valve rule below.
+  [/^Ball Valve CS \(1P\).*$/i,                                                'Ball Valve CS (1P)'],
+  [/^Ball Valve CS \(3P\).*$/i,                                                'Ball Valve CS (3P)'],
+  [/^Ball Valve SS \(1P\).*$/i,                                                'Ball Valve SS (1P)'],
+  [/^Ball Valve SS \(3P\).*$/i,                                                'Ball Valve SS (3P)'],
   [/^BALL VALVE.*$/i,                                                          'Ball Valve'],
   [/^Ball valve.*$/i,                                                          'Ball Valve'],
   [/^CHECK VALVE.*$/i,                                                         'Check Valve'],
