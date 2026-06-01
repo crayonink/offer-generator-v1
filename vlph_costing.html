@@ -695,17 +695,23 @@
           </select>
           <div class="hint">Include pilot burner, ignition transformer, UV sensor in BOM</div>
         </div>
-        <div class="field pilot-gated">
-          <label>Pilot Burner</label>
-          <select id="pilot_burner">
-            <option value="lpg_10" selected>ENCON-PB LPG 10 KW (Rs. 11,000)</option>
-            <option value="ng_10">ENCON-PB NG 10 KW (Rs. 11,000)</option>
-            <option value="lpg_100">ENCON-PB LPG 100 KW (Rs. 21,000)</option>
-            <option value="ng_100">ENCON-PB NG 100 KW (Rs. 21,000)</option>
-            <option value="cog_100">ENCON PB COG 100 KW (Rs. 32,000)</option>
-            <option value="mg_10">ENCON-PB MG 10 KW (Rs. 12,000)</option>
-          </select>
-        </div>
+      </div>
+    </div>
+
+    <!-- Pilot Burner selector: visible for (manual + Pilot Burner Required = Yes)
+         OR for (automatic + Auto Ignition ticked). Lives outside manual-inputs
+         so it shows in automatic mode too — updatePilotVisibility() toggles it. -->
+    <div class="fg fg-2 pilot-gated" style="margin-bottom:24px;display:none;">
+      <div class="field">
+        <label>Pilot Burner</label>
+        <select id="pilot_burner">
+          <option value="lpg_10" selected>ENCON-PB LPG 10 KW (Rs. 11,000)</option>
+          <option value="ng_10">ENCON-PB NG 10 KW (Rs. 11,000)</option>
+          <option value="lpg_100">ENCON-PB LPG 100 KW (Rs. 21,000)</option>
+          <option value="ng_100">ENCON-PB NG 100 KW (Rs. 21,000)</option>
+          <option value="cog_100">ENCON PB COG 100 KW (Rs. 32,000)</option>
+          <option value="mg_10">ENCON-PB MG 10 KW (Rs. 12,000)</option>
+        </select>
       </div>
     </div>
 
