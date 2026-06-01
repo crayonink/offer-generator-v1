@@ -2317,6 +2317,45 @@ function togglePreview(url) {
 
 // Initialize fuel dropdowns on page load
 setFuelCategory('gas');
+
+// ── Sticky Step-1 form fields (per-browser via localStorage) ────────────────
+const _STICKY_FIELDS = [
+  'c-salutation','c-name','c-email','c-phone',
+  'c-company','c-designation','c-address','c-city','c-state','c-pin','c-gstin',
+  'c-ref','c-location','c-subject',
+  'c-marketing-salutation','c-marketing','c-marketing-email','c-marketing-phone',
+  'c-technical-salutation','c-technical','c-technical-email','c-technical-phone',
+];
+const _STICKY_KEY = 'encon_form_step1';
+function _saveStickyStep1() {
+  const obj = {};
+  for (const id of _STICKY_FIELDS) {
+    const el = document.getElementById(id);
+    if (el) obj[id] = el.value;
+  }
+  try { localStorage.setItem(_STICKY_KEY, JSON.stringify(obj)); } catch (e) {}
+}
+function _loadStickyStep1() {
+  try {
+    const raw = localStorage.getItem(_STICKY_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    for (const id of _STICKY_FIELDS) {
+      const el = document.getElementById(id);
+      if (el && obj[id] != null) el.value = obj[id];
+    }
+  } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', () => {
+  _loadStickyStep1();
+  for (const id of _STICKY_FIELDS) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.addEventListener('input',  _saveStickyStep1);
+    el.addEventListener('change', _saveStickyStep1);
+  }
+});
+
 </script>
 </body>
 </html>
