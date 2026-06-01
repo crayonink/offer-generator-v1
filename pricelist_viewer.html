@@ -820,18 +820,19 @@ function splitItem(item, specification) {
 // pattern matches and the name is still over 20 chars, it gets clipped
 // with an ellipsis. Original name is preserved as a hover tooltip.
 const NAME_SHORTS = [
-  // All GAS PRESSURE REGULATORS variants display as just 'Gas Pressure Reg';
-  // the variant (OPSO / 2 Bar / 5 Bar / 5 Bar Std) is conveyed by the
+  // All GAS PRESSURE REGULATORS variants display with full names; the
+  // (OPSO / 2 Bar / 5 Bar / 5 Bar Std) variant info is conveyed by the
   // category heading instead of being repeated in every row.
-  [/^GAS PRESSURE REGULATORS?.*$/i,                                            'Gas Pressure Reg'],
+  [/^GAS PRESSURE REGULATORS?.*$/i,                                            'Gas Pressure Regulator'],
   // My earlier MADAS renames added (008)/(208)/(Flg) disambiguators to item
   // names — collapse them out of the visible label (model code in the
-  // Model/Cat column already disambiguates). Keep the F/R speed variant.
-  [/^Gas Reg \+ Slam \(F\).*$/i,                                               'Gas Reg + Slam (F)'],
-  [/^Gas Reg \+ Slam \(R\).*$/i,                                               'Gas Reg + Slam (R)'],
-  [/^Gas Reg \+ Slam.*$/i,                                                     'Gas Reg + Slam'],
-  [/^Gas Reg \(Fast\).*$/i,                                                    'Gas Reg (Fast)'],
-  [/^Gas Reg \(Reinf\).*$/i,                                                   'Gas Reg (Reinf)'],
+  // Model/Cat column already disambiguates). Keep the Fast/Reinforced
+  // speed variant in full.
+  [/^Gas Reg \+ Slam \(F\).*$/i,                                               'Gas Pressure Regulator + Slam Shut-Off (Fast)'],
+  [/^Gas Reg \+ Slam \(R\).*$/i,                                               'Gas Pressure Regulator + Slam Shut-Off (Reinforced)'],
+  [/^Gas Reg \+ Slam.*$/i,                                                     'Gas Pressure Regulator + Slam Shut-Off'],
+  [/^Gas Reg \(Fast\).*$/i,                                                    'Gas Pressure Regulator (Fast)'],
+  [/^Gas Reg \(Reinf\).*$/i,                                                   'Gas Pressure Regulator (Reinforced)'],
   [/^GAS PRESSURE SWITCHES?.*$/i,                                              'Gas Press Switch'],
   [/^GAS FILTERS?.*$/i,                                                        'Gas Filter'],
   // The category section header already labels Reinforced / Pilot variants,
