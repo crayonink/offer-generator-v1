@@ -941,18 +941,23 @@ def build_vlph_120t_df(
 
 
     # ── ENCON ITEMS ────────────────────────────────────────────────────────
-    # Dual fuel: one physical dual-fuel burner — match pricelist naming
-    # ("ENCON 5A" → "ENCON DUAL- 5A") and show both fuel flows in the ref.
+    # Burner row: item name is the burner TYPE; the specific model code
+    # (e.g. ENCON 7A, ENCON DUAL- 5A) goes into the reference column.
+    import math as _m
+    _burner_model = equipment["burner"]["model"]
     if is_dual:
-        burner_desc = equipment["burner"]["model"].replace("ENCON ", "ENCON DUAL- ")
+        burner_desc = "ENCON Dual Burner"
         burner_ref = (
+            f'{_burner_model.replace("ENCON ", "ENCON DUAL- ")} — '
             f'{f1_label}: {equipment["burner"]["input_nm3hr"]} Nm3/hr | '
             f'{f2_label}: {equipment2["burner"]["input_nm3hr"]} Nm3/hr'
         )
+    elif fuel1_type in OIL_FUELS:
+        burner_desc = "ENCON Oil Burner"
+        burner_ref = f'{_burner_model} — GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
     else:
-        burner_desc = equipment["burner"]["model"]
-        import math as _m
-        burner_ref = f'GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
+        burner_desc = "ENCON Gas Burner"
+        burner_ref = f'{_burner_model} — GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
     is_swivel = hood_type in ("swivel_manual", "swivel_geared", "swivel")
     rows.append(_row("ENCON ITEMS", burner_desc, burner_ref,
                      1, unit_price_override=equipment["burner"]["price"]))
@@ -981,9 +986,9 @@ def build_vlph_120t_df(
         rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")))
-    rows.append(_row("ENCON ITEMS", equipment["blower"]["model"],
-             f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
-             f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
+    rows.append(_row("ENCON ITEMS", "Blower",
+             f'{equipment["blower"]["model"]} — {equipment["blower"]["hp"]} HP, '
+             f'{equipment["blower"]["pressure"]} WC, {equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"]))
     # Pilot ignition equipment — only when Auto Ignition is selected.
     if special_auto_ignition:
@@ -992,7 +997,7 @@ def build_vlph_120t_df(
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
             _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
             _row(
-                "ENCON ITEMS",
+                "ENCON ITEMS", "Pilot Burner",
                 {
                     "lpg_10":  "ENCON-PB-LPG-10KW",
                     "ng_10":   "ENCON-PB NG 10 KW",
@@ -1001,7 +1006,7 @@ def build_vlph_120t_df(
                     "cog_100": "ENCON PB COG 100 KW",
                     "mg_10":   "ENCON-PB MG 10 KW",
                 }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-                "", 1,
+                1,
             ),
         ]
     cf_rolls = ceramic_rolls_override or params["ceramic_rolls"]
@@ -1239,16 +1244,23 @@ def build_vlph_manual_df(
         ]
 
     # ── IN-HOUSE / ENCON ITEMS ────────────────────────────────────────────
+    # Burner row: item name is the burner TYPE; the specific model code
+    # (e.g. ENCON 7A, ENCON DUAL- 5A) goes into the reference column.
     import math as _m
+    _burner_model = equipment["burner"]["model"]
     if is_dual:
-        burner_desc = equipment["burner"]["model"].replace("ENCON ", "ENCON DUAL- ")
+        burner_desc = "ENCON Dual Burner"
         burner_ref = (
+            f'{_burner_model.replace("ENCON ", "ENCON DUAL- ")} — '
             f'{f1_label}: {equipment["burner"]["input_nm3hr"]} Nm3/hr | '
             f'{f2_label}: {equipment2["burner"]["input_nm3hr"]} Nm3/hr'
         )
+    elif fuel1_type in OIL_FUELS:
+        burner_desc = "ENCON Oil Burner"
+        burner_ref = f'{_burner_model} — GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
     else:
-        burner_desc = equipment["burner"]["model"]
-        burner_ref = f'GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
+        burner_desc = "ENCON Gas Burner"
+        burner_ref = f'{_burner_model} — GAS FLOW: {_m.ceil(equipment["burner"]["input_nm3hr"])} Nm3/hr'
     rows += [
         _row("ENCON ITEMS", burner_desc, burner_ref,
              1, unit_price_override=equipment["burner"]["price"]),
@@ -1288,9 +1300,9 @@ def build_vlph_manual_df(
         ))
 
     rows += [
-        _row("ENCON ITEMS", equipment["blower"]["model"],
-             f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
-             f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
+        _row("ENCON ITEMS", "Blower",
+             f'{equipment["blower"]["model"]} — {equipment["blower"]["hp"]} HP, '
+             f'{equipment["blower"]["pressure"]} WC, {equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
              1, unit_price_override=equipment["blower"]["price_premium"]),
     ]
     if hood_type not in ("swivel_manual", "swivel_geared", "swivel"):
@@ -1298,7 +1310,7 @@ def build_vlph_manual_df(
     if include_pilot:
         rows += [
             _row(
-                "ENCON ITEMS",
+                "ENCON ITEMS", "Pilot Burner",
                 {
                     "lpg_10":  "ENCON-PB-LPG-10KW",
                     "ng_10":   "ENCON-PB NG 10 KW",
@@ -1307,7 +1319,7 @@ def build_vlph_manual_df(
                     "cog_100": "ENCON PB COG 100 KW",
                     "mg_10":   "ENCON-PB MG 10 KW",
                 }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-                "", 1,
+                1,
             ),
             _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
