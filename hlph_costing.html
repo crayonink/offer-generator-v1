@@ -2123,9 +2123,17 @@ function fillTechDataTable() {
     if (fr2Row) fr2Row.style.display = "none";
   }
 
+  // Calc-derived fields must always reflect the latest inputs (Ti/Tf, fuel
+  // type, refractory weight, etc.). Other fields stay sticky once filled.
+  const AUTO_FIELDS = new Set([
+    "td-fuel_name", "td-fuel_cv", "td-fuel_consumption",
+    "td-burner_capacity_range", "td-fuel2_cv", "td-fuel2_consumption",
+    "td-refractory_weight_kg", "td-heating_schedule", "td-heating_time",
+  ]);
   Object.entries(defaults).forEach(([id, val]) => {
     const el = document.getElementById(id);
-    if (el && !el.value) el.value = val;
+    if (!el) return;
+    if (AUTO_FIELDS.has(id) || !el.value) el.value = val;
   });
   // Force-refresh td-ignition every Calculate so it always tracks the
   // current Pilot Burner / Pilot Line Fuel selection, even if the user
