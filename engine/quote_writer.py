@@ -854,6 +854,8 @@ def generate_quote_docx(quote_data: dict, output_path: str):
                               for it in quote_data.get("items", [])),
         "is_horizontal": any("horizontal" in (it.get("product_type") or "").lower()
                               for it in quote_data.get("items", [])),
+        "is_tundish":    any("tundish"    in (it.get("product_type") or "").lower()
+                              for it in quote_data.get("items", [])),
         # Label used in 'On the main ___ pipeline:' heading. Dual fuel keeps 'oil'
         # since the oil-line components (flow meter, manual ball valve, etc.) still apply.
         "fuel_line_label":       (
