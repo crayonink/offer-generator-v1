@@ -2992,11 +2992,20 @@ class HpuQuoteRequest(BaseModel):
 
 @app.post("/api/generate-hpu-quote")
 def generate_hpu_quote(req: HpuQuoteRequest):
-    """Stand-alone HPU offer: look up sell_price from pumping_unit_price,
-    build a Word document via engine.hpu_offer_writer and return the
-    download URL."""
+    """Stand-alone HPU offer.
+
+    Routes through the same Offer_Template.docx + docxtpl path that
+    VLPH/HLPH/Tundish use, so the letterhead, customer block, ref/date,
+    Annexure III price schedule and T&Cs match those products exactly.
+    The HPU item is fed as a single line with a custom product_type
+    that gates out the preheater-specific scope-of-supply sections."""
     try:
-        # ── Look up unit price ────────────────────────────────────────────
+        from engine.quote_engine import calculate_quote
+        from engine.quote_writer import generate_quote_docx
+
+        cust = req.customer
+
+        # ── 1. Unit price from pumping_unit_price master ──────────────────
         conn = sqlite3.connect(DB_PATH)
         row = conn.execute(
             "SELECT sell_price FROM pumping_unit_price "
@@ -3011,10 +3020,121 @@ def generate_hpu_quote(req: HpuQuoteRequest):
             }
         unit_price = float(row[0])
         qty = max(1, int(req.qty or 1))
-        total_price = unit_price * qty
 
-        # ── Filename: {YYYY-MM-DD}_{Customer}_HPU-{kW}kW-{variant}.docx ─
-        cust = req.customer
+        # ── 2. Enquiry ref (canonical ENCON pattern) ──────────────────────
+        seq = next_quote_seq()
+        auto_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
+
+        # ── 3. Build form_data mirroring VLPH/Tundish shape ──────────────
+        equipment_name = (
+            f"Hydraulic Pumping Unit – {req.hpu_variant}, {req.hpu_kw:g} kW "
+            f"({req.fuel_type} @ {req.fuel_lph:g} LPH)"
+        )
+        form_data = {
+            "quote_seq": seq,
+            "customer": {
+                "company_name":     cust.company or "",
+                "company_city":     cust.city or "",
+                "company_state":    cust.state or "",
+                "address":          ", ".join(filter(None, [
+                                        cust.address or "",
+                                        cust.city or "",
+                                        cust.state or "",
+                                        cust.pin or "",
+                                    ])),
+                "poc_name":         _with_salutation(cust.salutation, cust.name),
+                "poc_designation":  cust.designation or "",
+                "mobile_no":        cust.phone or "",
+                "email":            cust.email or "",
+                "project_name":     cust.subject or equipment_name,
+                "subject":          cust.subject or equipment_name,
+                "ref_no":           auto_ref,
+                "your_ref":         cust.ref_no or auto_ref,
+                "enquiry_ref":      auto_ref,
+                "marketing_person": _with_salutation(cust.marketing_salutation, cust.marketing),
+                "marketing_phone":  cust.marketing_phone or "",
+                "marketing_email":  cust.marketing_email or "",
+                "technical_person": _with_salutation(cust.technical_salutation, cust.technical),
+                "technical_phone":  cust.technical_phone or "",
+                "technical_email":  cust.technical_email or "",
+                "gstin":            cust.gstin or "",
+                # HPU-specific labels picked up by _build_equipment_name
+                # and by the HPU template ({{ hpu_variant }} / {{ hpu_kw }}
+                # / {{ hpu_fuel }} / {{ hpu_lph }} / {{ hpu_qty }}).
+                "equipment_name_override": equipment_name,
+                "hpu_variant":      req.hpu_variant,
+                "hpu_kw":           f"{req.hpu_kw:g}",
+                "hpu_fuel":         req.fuel_type,
+                "hpu_lph":          f"{req.fuel_lph:g}",
+                "hpu_qty":          str(qty),
+                # Preheater-specific tech-data: blank so _strip_empty_tech_rows
+                # drops the rows entirely.
+                "ladle_tons":          "",
+                "ladle_dim":           "",
+                "ladle_drawing_no":    "",
+                "refractory_weight_kg": "",
+                "heating_schedule":    "",
+                "heating_time":        "",
+                "fuel_cv":             "",
+                "fuel_consumption":    "",
+                "fuel2_cv":            "",
+                "fuel2_consumption":   "",
+                "burner_model":        "",
+                "blower_model":        "",
+                "blower_size":         "",
+                "blower_capacity":     "",
+                "hydraulic_motor_hp":  "",
+                "max_electrical_load": "",
+                "fuel_name":           req.fuel_type,
+                "burner_capacity_range": "",
+                "pumping_unit":        f"{req.hpu_variant}, {req.hpu_kw:g} kW",
+                "hood_movement":       "",
+                "hood_type":           "",
+                "pilot_gas_type":      "",
+                "ignition_method":     "",
+                "num_burners":         "",
+                "max_fuel_consumption1": "",
+                "max_fuel_consumption2": "",
+                # Fuel flags: HPU pumps oil — set is_oil so the oil-related
+                # pumping-unit scope blocks render.
+                "is_oil":              True,
+                "is_dual":             False,
+                "control_mode":        "manual",
+                "auto_control_type":   "",
+                "control_valve_type":  "",
+                "special_auto_ignition": False,
+                "special_auto_controls": False,
+                "vertical_qty":        qty,
+                "horizontal_qty":      0,
+                "nitrogen_purging":    False,
+                "burner_kw_value":     "",
+                "bom_items":           [],
+                # T&Cs left blank — user edits in Word
+                "tnc_prices": "", "tnc_delivery": "", "tnc_gst": "",
+                "tnc_hsn_code": "", "tnc_pan_gst": "",
+                "tnc_payment_terms": "", "tnc_packing_forwarding": "",
+                "tnc_freight": "", "tnc_transit_insurance": "",
+                "tnc_validity": "", "tnc_inspection": "", "tnc_guarantee": "",
+            },
+            # Single-line price schedule. product_type='Hydraulic Pumping Unit'
+            # falls through quote_writer's product-type gates (is_vertical/
+            # is_horizontal/is_tundish all False) so the preheater-specific
+            # scope sections are suppressed, while the total pours into the
+            # vertical price slot via the 'else' branch at quote_writer:692.
+            "items": [{
+                "product_type": "Hydraulic Pumping Unit",
+                "model":        f"{req.hpu_variant} {req.hpu_kw:g} kW",
+                "description":  equipment_name,
+                "qty":          qty,
+                "unit_price":   unit_price,
+            }],
+            "valid_days": 30,
+        }
+
+        quote_data = calculate_quote(form_data)
+        total_price = float(quote_data.get("grand_total") or unit_price * qty)
+
+        # ── 4. Filename: {YYYY-MM-DD}_{Customer}_HPU-{kW}kW-{variant}.docx ─
         _safe_company = "".join(ch for ch in (cust.company or "Client")
                                 if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
         _safe_variant = req.hpu_variant.replace(" ", "")
@@ -3022,21 +3142,8 @@ def generate_hpu_quote(req: HpuQuoteRequest):
         filename = f"{_date}_{_safe_company}_HPU-{int(round(req.hpu_kw))}kW-{_safe_variant}.docx"
         output_path = os.path.join(QUOTES_FOLDER, filename)
 
-        # ── Build the docx ────────────────────────────────────────────────
-        from engine.hpu_offer_writer import generate_hpu_quote_docx
-        generate_hpu_quote_docx(
-            payload={
-                "customer":     cust.model_dump(),
-                "hpu_variant":  req.hpu_variant,
-                "hpu_kw":       req.hpu_kw,
-                "fuel_type":    req.fuel_type,
-                "fuel_lph":     req.fuel_lph,
-                "qty":          qty,
-                "unit_price":   unit_price,
-                "total_price":  total_price,
-            },
-            output_path=output_path,
-        )
+        hpu_template = os.path.join(BASE_DIR, "HPU_Offer_Template.docx")
+        generate_quote_docx(quote_data, output_path, template_path=hpu_template)
 
         return {
             "success":      True,

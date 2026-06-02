@@ -204,6 +204,8 @@ def _fmt_int_if_whole(val):
 
 def _build_equipment_name(customer, quote_data):
     """Derive equipment name from items product_type or customer fields."""
+    if customer.get("equipment_name_override"):
+        return customer["equipment_name_override"]
     # Check items for product type
     for item in quote_data.get("items", []):
         pt = (item.get("product_type") or "").lower()
@@ -213,6 +215,15 @@ def _build_equipment_name(customer, quote_data):
         elif "horizontal" in pt:
             tons = _fmt_int_if_whole(customer.get("ladle_tons"))
             return f"Horizontal Ladle Preheater – {tons} Ton" if tons else "Horizontal Ladle Preheater"
+        elif "pumping" in pt or "hpu" in pt or "hydraulic" in pt:
+            variant = customer.get("hpu_variant") or ""
+            kw      = customer.get("hpu_kw") or ""
+            label   = "Hydraulic Pumping Unit"
+            if variant and kw:
+                return f"{label} – {variant}, {kw} kW"
+            if variant:
+                return f"{label} – {variant}"
+            return label
     # Default: Vertical Ladle Preheater
     tons = _fmt_int_if_whole(customer.get("ladle_tons"))
     if tons:
@@ -659,7 +670,8 @@ def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "") ->
     }
 
 
-def generate_quote_docx(quote_data: dict, output_path: str):
+def generate_quote_docx(quote_data: dict, output_path: str,
+                        template_path: str | None = None):
     customer = quote_data["customer"]
     sup_mech, sup_plc = _supervision_rates()
 
@@ -856,6 +868,14 @@ def generate_quote_docx(quote_data: dict, output_path: str):
                               for it in quote_data.get("items", [])),
         "is_tundish":    any("tundish"    in (it.get("product_type") or "").lower()
                               for it in quote_data.get("items", [])),
+        # HPU stand-alone offer placeholders — referenced by HPU_Offer_Template.docx
+        # (HPU Specifications table + Annexure I scope row qty gates).
+        # Empty strings for non-HPU offers so the keys exist in every context.
+        "hpu_variant":           customer.get("hpu_variant") or "",
+        "hpu_kw":                customer.get("hpu_kw") or "",
+        "hpu_fuel":              customer.get("hpu_fuel") or customer.get("fuel_name") or "",
+        "hpu_lph":               customer.get("hpu_lph") or "",
+        "hpu_qty":               customer.get("hpu_qty") or "",
         # Label used in 'On the main ___ pipeline:' heading. Dual fuel keeps 'oil'
         # since the oil-line components (flow meter, manual ball valve, etc.) still apply.
         "fuel_line_label":       (
@@ -1021,10 +1041,11 @@ def generate_quote_docx(quote_data: dict, output_path: str):
         )),
     }
 
-    # All products (Vertical, Horizontal, Tundish) now render from the
-    # same Offer_Template.docx so they share hood / HPU / scope-of-supply
-    # content. The old Tundish_Offer_Template.docx is no longer used.
-    template = TEMPLATE_PATH
+    # All products (Vertical, Horizontal, Tundish) render from
+    # Offer_Template.docx so they share hood / HPU / scope-of-supply
+    # content. HPU stand-alone offers pass HPU_Offer_Template.docx via
+    # template_path — same context, different shell.
+    template = template_path or TEMPLATE_PATH
     buffer = generate_word_offer(template, context)
     with open(output_path, "wb") as f:
         f.write(buffer.read())
@@ -1037,12 +1058,13 @@ def generate_quote_docx(quote_data: dict, output_path: str):
 
     # Post-process: drop the unused column in the Scope of Supply (Annexure I)
     # table — VLPH-only quotes should not show the Horizontal column and vice
-    # versa. total_vertical and total_horizontal were computed above.
-    _prune_scope_columns(
-        output_path,
-        has_vertical=(total_vertical > 0),
-        has_horizontal=(total_horizontal > 0),
-    )
+    # versa. Skipped for the HPU template which is single-column already.
+    if template_path is None:
+        _prune_scope_columns(
+            output_path,
+            has_vertical=(total_vertical > 0),
+            has_horizontal=(total_horizontal > 0),
+        )
 
 
 def _append_make_list(docx_path: str, items: list):
