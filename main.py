@@ -782,6 +782,12 @@ def tundish_costing_form():
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+@app.get("/hpu", response_class=HTMLResponse)
+def hpu_costing_form():
+    html_path = os.path.join(BASE_DIR, "hpu_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
 @app.get("/regen", response_class=HTMLResponse)
 def regen_costing_form():
     html_path = os.path.join(BASE_DIR, "regen_costing.html")
@@ -2943,6 +2949,106 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "enquiry_ref":  full_ref,
             "final_total":  unit_price,
             "total_price":  total_price,
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+# ── HPU stand-alone offer ────────────────────────────────────────────────────
+class HpuCustomer(BaseModel):
+    salutation: Optional[str] = ""
+    name: Optional[str] = ""
+    email: Optional[str] = ""
+    phone: Optional[str] = ""
+    company: Optional[str] = ""
+    designation: Optional[str] = ""
+    address: Optional[str] = ""
+    city: Optional[str] = ""
+    state: Optional[str] = ""
+    pin: Optional[str] = ""
+    gstin: Optional[str] = ""
+    ref_no: Optional[str] = ""
+    location: Optional[str] = ""
+    subject: Optional[str] = ""
+    marketing_salutation: Optional[str] = ""
+    marketing: Optional[str] = ""
+    marketing_email: Optional[str] = ""
+    marketing_phone: Optional[str] = ""
+    technical_salutation: Optional[str] = ""
+    technical: Optional[str] = ""
+    technical_email: Optional[str] = ""
+    technical_phone: Optional[str] = ""
+
+
+class HpuQuoteRequest(BaseModel):
+    customer: HpuCustomer
+    hpu_variant: str
+    hpu_kw: float
+    fuel_type: str
+    fuel_lph: float
+    qty: int = 1
+
+
+@app.post("/api/generate-hpu-quote")
+def generate_hpu_quote(req: HpuQuoteRequest):
+    """Stand-alone HPU offer: look up sell_price from pumping_unit_price,
+    build a Word document via engine.hpu_offer_writer and return the
+    download URL."""
+    try:
+        # ── Look up unit price ────────────────────────────────────────────
+        conn = sqlite3.connect(DB_PATH)
+        row = conn.execute(
+            "SELECT sell_price FROM pumping_unit_price "
+            "WHERE unit_kw = ? AND variant = ? LIMIT 1",
+            (int(round(req.hpu_kw)), req.hpu_variant),
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {
+                "error": f"No price found for {req.hpu_variant} @ {req.hpu_kw} kW. "
+                         f"Check pumping_unit_price master."
+            }
+        unit_price = float(row[0])
+        qty = max(1, int(req.qty or 1))
+        total_price = unit_price * qty
+
+        # ── Filename: {YYYY-MM-DD}_{Customer}_HPU-{kW}kW-{variant}.docx ─
+        cust = req.customer
+        _safe_company = "".join(ch for ch in (cust.company or "Client")
+                                if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        _safe_variant = req.hpu_variant.replace(" ", "")
+        _date = datetime.now().strftime("%Y-%m-%d")
+        filename = f"{_date}_{_safe_company}_HPU-{int(round(req.hpu_kw))}kW-{_safe_variant}.docx"
+        output_path = os.path.join(QUOTES_FOLDER, filename)
+
+        # ── Build the docx ────────────────────────────────────────────────
+        from engine.hpu_offer_writer import generate_hpu_quote_docx
+        generate_hpu_quote_docx(
+            payload={
+                "customer":     cust.model_dump(),
+                "hpu_variant":  req.hpu_variant,
+                "hpu_kw":       req.hpu_kw,
+                "fuel_type":    req.fuel_type,
+                "fuel_lph":     req.fuel_lph,
+                "qty":          qty,
+                "unit_price":   unit_price,
+                "total_price":  total_price,
+            },
+            output_path=output_path,
+        )
+
+        return {
+            "success":      True,
+            "filename":     filename,
+            "download_url": f"/api/download-quote/{filename}",
+            "unit_price":   unit_price,
+            "total_price":  total_price,
+            "variant":      req.hpu_variant,
+            "kw":           req.hpu_kw,
+            "fuel_type":    req.fuel_type,
+            "lph":          req.fuel_lph,
+            "qty":          qty,
         }
     except Exception as e:
         import traceback
