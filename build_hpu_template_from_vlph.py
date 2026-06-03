@@ -54,9 +54,6 @@ _HPU_SPECS = [
     ('Motor Capacity',      '{{ hpu_kw }} kW'),
     ('Oil Flow Rate',       '{{ hpu_lph }} LPH'),
     ('Quantity',            '{{ hpu_qty }} No.'),
-    ('Construction',        'MS skid-mounted with pre-wired control panel'),
-    ('Electrical Supply',   '415 V / 3 Phase / 50 Hz, 4-Wire'),
-    ('Operating Pressure',  'Up to 7 kg/cm² (adjustable)'),
 ]
 
 
