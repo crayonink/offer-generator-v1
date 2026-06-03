@@ -198,7 +198,7 @@
     <div class="step-heading">Step 2 — HPU Specifications</div>
 
     <div class="sec-label">Pumping Unit</div>
-    <div class="fg fg-3">
+    <div class="fg fg-2">
       <div class="field">
         <label>Variant <span class="req">*</span></label>
         <select id="hpu_variant">
@@ -222,21 +222,13 @@
           <option value="48">48 kW</option>
         </select>
       </div>
-      <div class="field">
-        <label>Fuel Type <span class="req">*</span></label>
-        <select id="fuel_type">
-          <option value="LDO" selected>LDO</option>
-          <option value="HSD">HSD</option>
-          <option value="FO">FO</option>
-          <option value="LSHS">LSHS</option>
-        </select>
-      </div>
     </div>
 
     <div class="fg fg-2">
       <div class="field">
-        <label>Oil Flow Rate (LPH) <span class="req">*</span></label>
-        <input id="fuel_lph" type="number" min="0" step="0.1" value="20"/>
+        <label>Oil Flow Rate (LPH) <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
+        <input id="fuel_lph" type="text" value="—" readonly
+               style="background:#eef4fb; color:var(--navy); font-weight:700; cursor:not-allowed"/>
       </div>
       <div class="field">
         <label>Quantity</label>
@@ -274,8 +266,8 @@
       a Word document with the standard accessories list, scope of supply and commercial terms.
     </p>
 
-    <div class="action-row">
-      <button class="btn-outline" onclick="goStep(2)">Back</button>
+    <div class="action-row" id="action-row-step3">
+      <button class="btn-outline" id="back-btn" onclick="goStep(2)">Back</button>
       <button class="btn-primary" id="gen-btn" onclick="generateOffer()">
         <span class="btn-txt">Generate Offer</span>
       </button>
@@ -345,9 +337,31 @@ function _customerPayload() {
   };
 }
 
+// ── Oil-flow-rate is catalog-driven: pumping_unit_price.flow_lph keyed
+//    by (kw, variant). The user can't type it — the backend tells us.
+async function _refreshFlowLph() {
+  const lphEl     = document.getElementById('fuel_lph');
+  const variant   = document.getElementById('hpu_variant').value;
+  const kw        = document.getElementById('hpu_kw').value;
+  lphEl.value = '…';
+  try {
+    const r = await fetch(`/api/hpu/flow-lph?kw=${encodeURIComponent(kw)}&variant=${encodeURIComponent(variant)}`);
+    const j = await r.json();
+    if (j.flow_lph != null) {
+      lphEl.value = j.flow_lph;
+      lphEl.dataset.modelCode = j.model_code || '';
+    } else {
+      lphEl.value = '—';
+    }
+  } catch (e) {
+    lphEl.value = '—';
+  }
+}
+
 async function generateOffer() {
-  const errEl = document.getElementById('hpu-error');
-  const btn = document.getElementById('gen-btn');
+  const errEl  = document.getElementById('hpu-error');
+  const btn    = document.getElementById('gen-btn');
+  const backBtn = document.getElementById('back-btn');
   errEl.style.display = 'none';
   btn.disabled = true;
   btn.querySelector('.btn-txt').textContent = 'Generating…';
@@ -356,8 +370,6 @@ async function generateOffer() {
     customer: _customerPayload(),
     hpu_variant: document.getElementById('hpu_variant').value,
     hpu_kw: parseFloat(document.getElementById('hpu_kw').value),
-    fuel_type: document.getElementById('fuel_type').value,
-    fuel_lph: parseFloat(document.getElementById('fuel_lph').value),
     qty: parseInt(document.getElementById('qty').value || '1', 10),
   };
 
@@ -373,16 +385,22 @@ async function generateOffer() {
     document.getElementById('banner-price').textContent =
       '₹ ' + (j.unit_price || 0).toLocaleString('en-IN') + (j.qty > 1 ? ` × ${j.qty}` : '');
     document.getElementById('banner-config').textContent =
-      `${j.variant} • ${j.kw} kW • ${j.fuel_type} @ ${j.lph} LPH`;
+      `${j.variant} • ${j.kw} kW • ${j.lph} LPH`;
     document.getElementById('cost-banner').classList.add('visible');
     document.getElementById('quote-meta').textContent =
       `${j.filename} — total ₹ ${(j.total_price || 0).toLocaleString('en-IN')}`;
     document.getElementById('dl-link').href = j.download_url;
     document.getElementById('quote-result').style.display = 'block';
+
+    // Hide the Generate Offer button + the action row that held it —
+    // the user has what they came for (the download link) and shouldn't
+    // be tempted to click Generate again. Step 3 tab is also marked
+    // 'done' so the user has a way to return if they navigate away.
+    document.getElementById('action-row-step3').style.display = 'none';
+    document.getElementById('tab-3').classList.add('done');
   } catch (e) {
     errEl.textContent = 'Error: ' + (e.message || e);
     errEl.style.display = 'block';
-  } finally {
     btn.disabled = false;
     btn.querySelector('.btn-txt').textContent = 'Generate Offer';
   }
@@ -417,6 +435,11 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('change', _saveSticky);
   }
   _generateRef();
+  // Auto-fill Oil Flow Rate from pumping_unit_price.flow_lph based on
+  // the selected variant + kW. Refresh on any change to either.
+  document.getElementById('hpu_variant').addEventListener('change', _refreshFlowLph);
+  document.getElementById('hpu_kw').addEventListener('change',      _refreshFlowLph);
+  _refreshFlowLph();
 });
 </script>
 </body>

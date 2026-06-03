@@ -29,7 +29,7 @@ What is replaced:
   * Annexure I intro paragraph -> HPU-specific wording
 
 Template placeholders introduced (filled by /api/generate-hpu-quote):
-  hpu_variant, hpu_kw, hpu_fuel, hpu_lph, hpu_qty
+  hpu_variant, hpu_kw, hpu_lph, hpu_qty
 """
 from __future__ import annotations
 
@@ -52,7 +52,6 @@ _HPU_SPECS = [
     ('Equipment',           '{{ equipment_name }}'),
     ('Variant',             '{{ hpu_variant }}'),
     ('Motor Capacity',      '{{ hpu_kw }} kW'),
-    ('Fuel',                '{{ hpu_fuel }}'),
     ('Oil Flow Rate',       '{{ hpu_lph }} LPH'),
     ('Quantity',            '{{ hpu_qty }} No.'),
     ('Construction',        'MS skid-mounted with pre-wired control panel'),
@@ -69,7 +68,7 @@ _HPU_SPECS = [
 _HPU_SCOPE_ITEMS = [
     ('Oil tank — MS construction with cleaning door, breather, level indicator, drain plug',
      '1 No.'),
-    ('Gear pump suitable for {{ hpu_fuel }} service',
+    ('Gear pump suitable for fuel-oil service',
      '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),
     ('TEFC motor — {{ hpu_kw }} kW × 1440 RPM × 415V / 3-Ph / 50 Hz',
      '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),

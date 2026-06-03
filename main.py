@@ -2994,9 +2994,38 @@ class HpuQuoteRequest(BaseModel):
     customer: HpuCustomer
     hpu_variant: str
     hpu_kw: float
-    fuel_type: str
-    fuel_lph: float
     qty: int = 1
+    # Oil flow rate (LPH) is catalog-driven — the backend looks it up
+    # from pumping_unit_price.flow_lph using (kw, variant). The client
+    # may post it as a hint but it is overridden by the DB value.
+    fuel_lph: Optional[float] = None
+    # Legacy: kept optional so older clients posting fuel_type don't 400.
+    # No longer surfaced in the offer doc.
+    fuel_type: Optional[str] = ""
+
+
+@app.get("/api/hpu/flow-lph")
+def hpu_flow_lph(kw: float, variant: str):
+    """Look up the catalog oil flow rate (LPH) for a given (kW, variant)
+    from pumping_unit_price.flow_lph. Used by the HPU form to auto-fill
+    the Oil Flow Rate field so the user can't type a wrong number."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        row = conn.execute(
+            "SELECT flow_lph, model_code, sell_price FROM pumping_unit_price "
+            "WHERE unit_kw = ? AND variant = ? LIMIT 1",
+            (int(round(kw)), variant),
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {"error": f"no row for {variant} @ {kw} kW", "flow_lph": None}
+        return {
+            "flow_lph":   float(row[0]) if row[0] is not None else None,
+            "model_code": row[1] or "",
+            "sell_price": float(row[2]) if row[2] is not None else None,
+        }
+    except Exception as e:
+        return {"error": str(e), "flow_lph": None}
 
 
 @app.post("/api/generate-hpu-quote")
@@ -3014,10 +3043,10 @@ def generate_hpu_quote(req: HpuQuoteRequest):
 
         cust = req.customer
 
-        # ── 1. Unit price from pumping_unit_price master ──────────────────
+        # ── 1. Unit price + catalog flow rate from pumping_unit_price ────
         conn = sqlite3.connect(DB_PATH)
         row = conn.execute(
-            "SELECT sell_price FROM pumping_unit_price "
+            "SELECT sell_price, flow_lph, model_code FROM pumping_unit_price "
             "WHERE unit_kw = ? AND variant = ? LIMIT 1",
             (int(round(req.hpu_kw)), req.hpu_variant),
         ).fetchone()
@@ -3027,7 +3056,11 @@ def generate_hpu_quote(req: HpuQuoteRequest):
                 "error": f"No price found for {req.hpu_variant} @ {req.hpu_kw} kW. "
                          f"Check pumping_unit_price master."
             }
-        unit_price = float(row[0])
+        unit_price  = float(row[0])
+        # Catalog flow rate (LPH) — authoritative; client value (if any)
+        # is ignored unless the DB column is null.
+        catalog_lph = float(row[1]) if row[1] is not None else (req.fuel_lph or 0.0)
+        model_code  = row[2] or ""
         qty = max(1, int(req.qty or 1))
 
         # ── 2. Enquiry ref (canonical ENCON pattern) ──────────────────────
@@ -3036,8 +3069,8 @@ def generate_hpu_quote(req: HpuQuoteRequest):
 
         # ── 3. Build form_data mirroring VLPH/Tundish shape ──────────────
         equipment_name = (
-            f"Hydraulic Pumping Unit – {req.hpu_variant}, {req.hpu_kw:g} kW "
-            f"({req.fuel_type} @ {req.fuel_lph:g} LPH)"
+            f"Hydraulic Pumping Unit – {req.hpu_variant}, "
+            f"{req.hpu_kw:g} kW @ {catalog_lph:g} LPH"
         )
         form_data = {
             "quote_seq": seq,
@@ -3069,12 +3102,12 @@ def generate_hpu_quote(req: HpuQuoteRequest):
                 "gstin":            cust.gstin or "",
                 # HPU-specific labels picked up by _build_equipment_name
                 # and by the HPU template ({{ hpu_variant }} / {{ hpu_kw }}
-                # / {{ hpu_fuel }} / {{ hpu_lph }} / {{ hpu_qty }}).
+                # / {{ hpu_lph }} / {{ hpu_qty }}).
                 "equipment_name_override": equipment_name,
                 "hpu_variant":      req.hpu_variant,
                 "hpu_kw":           f"{req.hpu_kw:g}",
-                "hpu_fuel":         req.fuel_type,
-                "hpu_lph":          f"{req.fuel_lph:g}",
+                "hpu_lph":          f"{catalog_lph:g}",
+                "hpu_model":        model_code,
                 "hpu_qty":          str(qty),
                 # Preheater-specific tech-data: blank so _strip_empty_tech_rows
                 # drops the rows entirely.
@@ -3094,7 +3127,7 @@ def generate_hpu_quote(req: HpuQuoteRequest):
                 "blower_capacity":     "",
                 "hydraulic_motor_hp":  "",
                 "max_electrical_load": "",
-                "fuel_name":           req.fuel_type,
+                "fuel_name":           req.fuel_type or "",
                 "burner_capacity_range": "",
                 "pumping_unit":        f"{req.hpu_variant}, {req.hpu_kw:g} kW",
                 "hood_movement":       "",
@@ -3162,8 +3195,8 @@ def generate_hpu_quote(req: HpuQuoteRequest):
             "total_price":  total_price,
             "variant":      req.hpu_variant,
             "kw":           req.hpu_kw,
-            "fuel_type":    req.fuel_type,
-            "lph":          req.fuel_lph,
+            "lph":          catalog_lph,
+            "model_code":   model_code,
             "qty":          qty,
         }
     except Exception as e:
