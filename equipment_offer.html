@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON – Equipment Offer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --navy:#1a3a5c; --navy2:#0f2744; --green:#059669; --red:#dc2626;
+            --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f8fafc; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:#fff; color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
+
+    .topnav { background:#fff; border-bottom:1px solid var(--border); box-shadow:0 1px 0 var(--border),0 4px 20px rgba(0,0,0,.04);
+              display:flex; align-items:center; padding:0 40px; position:sticky; top:0; z-index:100; height:56px; }
+    .topnav-brand { display:flex; align-items:center; gap:10px; font-weight:900; font-size:.95rem; color:var(--text); margin-right:32px; letter-spacing:-.4px; text-decoration:none; }
+    .brand-mark { width:30px; height:30px; background:var(--navy); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.7rem; font-weight:900; box-shadow:0 2px 6px rgba(26,58,92,.35); }
+    .topnav-links { margin-left:auto; display:flex; gap:4px; align-items:center; }
+    .topnav-links a { font-size:.75rem; color:var(--muted); text-decoration:none; padding:5px 12px; border-radius:20px; font-weight:500; border:1px solid transparent; }
+    .topnav-links a:hover  { background:#f1f5f9; color:var(--navy); border-color:var(--border); }
+    .topnav-links a.active { background:var(--navy); color:#fff; font-weight:600; border-color:var(--navy); }
+
+    .page { max-width:1100px; margin:0 auto; padding:48px 32px 80px; }
+    .hero { margin-bottom:40px; }
+    .hero h1 { font-size:2.4rem; font-weight:900; line-height:1.15; letter-spacing:-.04em; }
+    .hero p  { font-size:.95rem; color:var(--muted); margin-top:10px; max-width:680px; }
+
+    .section-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:20px 0 16px; }
+
+    .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; }
+    @media (max-width:900px) { .grid { grid-template-columns:1fr 1fr; } }
+    @media (max-width:600px) { .grid { grid-template-columns:1fr; } }
+
+    .pcard {
+      background:#fff; border:1px solid var(--border); border-radius:14px;
+      padding:24px; text-decoration:none; color:inherit;
+      display:flex; flex-direction:column; gap:14px;
+      transition: all .18s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+      position:relative; overflow:hidden;
+    }
+    .pcard:hover { border-color:var(--navy); box-shadow: 0 6px 20px rgba(26,58,92,.10); transform: translateY(-2px); }
+    .pcard.disabled { opacity:.55; cursor:not-allowed; pointer-events:none; }
+    .pcard-icon {
+      width:44px; height:44px; border-radius:10px; background:#eef4fb;
+      display:flex; align-items:center; justify-content:center; color:var(--navy);
+    }
+    .pcard-icon svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .pcard-sub { font-size:.7rem; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:.08em; }
+    .pcard-title { font-size:1.15rem; font-weight:800; letter-spacing:-.02em; }
+    .pcard-desc { font-size:.85rem; color:var(--muted); line-height:1.5; flex:1; }
+    .pcard-footer {
+      display:flex; align-items:center; justify-content:space-between;
+      border-top:1px solid var(--border); padding-top:12px; margin-top:4px;
+    }
+    .pcard-action { font-size:.82rem; font-weight:700; color:var(--navy); display:flex; align-items:center; gap:6px; }
+    .pcard-action svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; }
+    .pcard-tag {
+      font-size:.66rem; font-weight:700; color:var(--muted);
+      background:#f1f5f9; padding:4px 10px; border-radius:20px;
+      text-transform:uppercase; letter-spacing:.06em;
+    }
+    .pcard.disabled .pcard-tag { background:#fef3c7; color:#92400e; }
+
+    .backlink {
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:.82rem; color:var(--muted); text-decoration:none;
+      margin-bottom:18px; font-weight:600;
+    }
+    .backlink:hover { color:var(--navy); }
+    .backlink svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <a class="topnav-brand" href="/"><div class="brand-mark">EN</div>ENCON</a>
+  <div class="topnav-links">
+    <a href="/costing">VLPH</a>
+    <a href="/hlph">HLPH</a>
+    <a href="/tundish">Tundish</a>
+    <a href="/equipment-offer" class="active">Equipment</a>
+    <a href="/recup">Recup</a>
+    <a href="/pricelist">Pricelist</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <a class="backlink" href="/">
+    <svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+    Back to Dashboard
+  </a>
+
+  <div class="hero">
+    <h1>Equipment Offer</h1>
+    <p>Stand-alone offers for individual equipment lines. Pick a category below, fill in the specs and generate a Word offer that follows the same letterhead, customer block and commercial T&amp;Cs as the VLPH / Tundish offers.</p>
+  </div>
+
+  <div class="section-label">Select Equipment</div>
+
+  <div class="grid">
+
+    <a class="pcard" href="/hpu">
+      <div class="pcard-icon">
+        <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="2"/><circle cx="9" cy="12" r="2"/><path d="M14 10h4M14 12h4M14 14h4"/></svg>
+      </div>
+      <div class="pcard-sub">Hydraulic Pumping Unit</div>
+      <div class="pcard-title">HPU</div>
+      <div class="pcard-desc">Stand-alone Hydraulic / Oil Pumping Unit — Simplex, Duplex 1 or Duplex 2 variants. Pick kW capacity, fuel type and oil flow rate (LPH).</div>
+      <div class="pcard-footer">
+        <div class="pcard-action">Open <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pcard-tag">Available</div>
+      </div>
+    </a>
+
+    <a class="pcard disabled" href="#" aria-disabled="true">
+      <div class="pcard-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+      </div>
+      <div class="pcard-sub">Centrifugal Blower</div>
+      <div class="pcard-title">Blower</div>
+      <div class="pcard-desc">Stand-alone combustion-air blower — HP, pressure (mmWC) and air flow (Nm³/hr). Sourced from blower_pricelist_master.</div>
+      <div class="pcard-footer">
+        <div class="pcard-action">Open <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pcard-tag">Coming Soon</div>
+      </div>
+    </a>
+
+    <a class="pcard disabled" href="#" aria-disabled="true">
+      <div class="pcard-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 18h16M6 18V9l6-5 6 5v9"/><path d="M10 18v-4h4v4"/><path d="M12 9l3 3-3 3-3-3z"/></svg>
+      </div>
+      <div class="pcard-sub">ENCON Burner</div>
+      <div class="pcard-title">Burner</div>
+      <div class="pcard-desc">Stand-alone burner offer — Gas / Oil / Dual fuel, burner size (kW), with or without pilot. Sourced from burner_pricelist_master.</div>
+      <div class="pcard-footer">
+        <div class="pcard-action">Open <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="pcard-tag">Coming Soon</div>
+      </div>
+    </a>
+
+  </div>
+
+</div>
+
+</body>
+</html>

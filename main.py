@@ -782,6 +782,15 @@ def tundish_costing_form():
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+@app.get("/equipment-offer", response_class=HTMLResponse)
+def equipment_offer_hub():
+    """Hub page that lets the user pick which stand-alone equipment
+    offer to generate (HPU, Blower or Burner)."""
+    html_path = os.path.join(BASE_DIR, "equipment_offer.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
 @app.get("/hpu", response_class=HTMLResponse)
 def hpu_costing_form():
     html_path = os.path.join(BASE_DIR, "hpu_costing.html")
