@@ -58,36 +58,10 @@ _HPU_SPECS = [
 
 
 # ── Annexure I — Scope of Supply (HPU accessories) ─────────────────────────
-# The S.No. column is auto-numbered in _replace_scope_table_with_hpu().
-# Each entry is (description, quantity). Pump/motor qty switches between
-# Simplex (1 No.) and Duplex (2 Nos.) via the {% if %} Jinja gate; the
-# rest of the rows are constant.
-_HPU_SCOPE_ITEMS = [
-    ('Oil tank — MS construction with cleaning door, breather, level indicator, drain plug',
-     '1 No.'),
-    ('Gear pump suitable for fuel-oil service',
-     '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),
-    ('TEFC motor — {{ hpu_kw }} kW × 1440 RPM × 415V / 3-Ph / 50 Hz',
-     '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),
-    ('Coupling with guard (pump-motor)',
-     '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),
-    ('Suction strainer 150 micron',
-     '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),
-    ('Pressure relief valve',
-     '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),
-    ('Pressure gauge with isolation valve (0–10 kg/cm²)',
-     '1 No.'),
-    ('Duplex line strainer 25 micron (changeover type) / Inline strainer 25 micron',
-     '1 No.'),
-    ('Non-return valve',
-     '{% if "duplex" in hpu_variant.lower() %}2 Nos.{% else %}1 No.{% endif %}'),
-    ('Pressure switch (low-pressure cut-off)',                       '1 No.'),
-    ('Float-type oil level switch (low-level cut-off)',              '1 No.'),
-    ('Inter-connecting piping inside the unit',                      'Lot'),
-    ('Common skid base frame with mounting bolts',                   '1 No.'),
-    ('Control panel — start / stop / interlock / indication',        '1 No.'),
-    ('Set of foundation bolts & matching flanges',                   '1 Lot'),
-]
+# Intentionally empty: previous defaults were fabricated by the AI rather
+# than sourced from ENCON catalogs. Populate with real (description, qty)
+# tuples — or wire to a master table — when the catalog list is provided.
+_HPU_SCOPE_ITEMS = []
 
 
 def _para(text: str = '', *, bold: bool = False, underline: bool = False) -> OxmlElement:
