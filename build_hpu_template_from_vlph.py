@@ -64,27 +64,6 @@ _HPU_SPECS = [
 _HPU_SCOPE_ITEMS = []
 
 
-def _para(text: str = '', *, bold: bool = False, underline: bool = False) -> OxmlElement:
-    p = OxmlElement('w:p')
-    if text:
-        r = OxmlElement('w:r')
-        if bold or underline:
-            rPr = OxmlElement('w:rPr')
-            if bold:
-                rPr.append(OxmlElement('w:b'))
-            if underline:
-                u = OxmlElement('w:u')
-                u.set(qn('w:val'), 'single')
-                rPr.append(u)
-            r.append(rPr)
-        t = OxmlElement('w:t')
-        t.text = text
-        t.set(qn('xml:space'), 'preserve')
-        r.append(t)
-        p.append(r)
-    return p
-
-
 def _replace_spec_table_with_hpu(table) -> None:
     """Wipe the VLPH 24-row tech-data table and re-fill with HPU specs.
     Keep the header row from VLPH; relabel it 'HPU Specifications'."""
@@ -115,7 +94,7 @@ def _replace_scope_table_with_hpu(table) -> None:
     # Banner row (merged) — short label
     banner = table.add_row()
     banner.cells[0].merge(banner.cells[1])
-    banner.cells[0].text = 'Hydraulic Pumping Unit'
+    banner.cells[0].text = 'Heating and Pumping Unit'
     for p in banner.cells[0].paragraphs:
         for r in p.runs:
             r.bold = True
@@ -152,32 +131,11 @@ def _delete_vlph_scope_body(doc: Document) -> None:
         print('Could not locate VLPH scope body markers — skipping delete.')
         return
 
-    anchor = elements[end_idx]
     for el in elements[start_idx:end_idx]:
         body.remove(el)
-
-    hpu_body = [
-        _para('HYDRAULIC PUMPING UNIT', bold=True),
-        _para(
-            'The offered Hydraulic Pumping Unit is an oil pumping skid '
-            'designed to deliver fuel oil at the required pressure and '
-            'flow rate to combustion equipment such as preheater burners, '
-            'reheating furnaces and bath heaters. The unit is offered in '
-            'three configurations — Simplex (single pump-motor), '
-            'Duplex 1 and Duplex 2 (twin pump-motor arrangements with '
-            'a standby line) — and is built on a common MS skid base '
-            'with a pre-wired control panel for start / stop, '
-            'interlocks and indication.'
-        ),
-        _para(
-            'Refer to the HPU Specifications table above for the '
-            'offered configuration and motor capacity. The complete '
-            'scope of standard accessories shipped with each unit is '
-            'detailed in Annexure I — Scope of Supply.'
-        ),
-    ]
-    for el in hpu_body:
-        anchor.addprevious(el)
+    # No replacement description block — the previous wording was
+    # AI-fabricated rather than sourced from ENCON's catalog. The
+    # HPU Specifications table speaks for itself.
 
     # Flip the section title. In the source template this heading is a
     # Jinja conditional:
@@ -192,7 +150,7 @@ def _delete_vlph_scope_body(doc: Document) -> None:
             for t in t_els:
                 t.text = ''
             if t_els:
-                t_els[0].text = 'HYDRAULIC PUMPING UNIT'
+                t_els[0].text = 'HEATING AND PUMPING UNIT'
 
 
 def _inject_scope_intro_paragraph(doc: Document) -> None:
@@ -221,9 +179,8 @@ def _inject_scope_intro_paragraph(doc: Document) -> None:
 
     NEW_INTRO = (
         'The Scope of supply covers Design, manufacturing and supply '
-        'of the Hydraulic Pumping Unit as per the specifications '
-        'listed below. The standard accessories shipped with each '
-        'unit are itemised in the table that follows.'
+        'of the Heating and Pumping Unit as per the specifications '
+        'listed below.'
     )
     t_els = list(intro_p.iter(qn('w:t')))
     if t_els and t_els[0].text and t_els[0].text.startswith(NEW_INTRO[:40]):
@@ -324,6 +281,65 @@ def _remove_annexure_ii(doc: Document) -> None:
         removed += 1
         i += 1
     print(f'Removed Annexure II (elements removed={removed})')
+
+
+def _remove_annexure_i_scope_table(doc: Document) -> None:
+    """Strip the Annexure I scope-of-supply table itself. The list of
+    accessories is empty (see _HPU_SCOPE_ITEMS = []), so an S.No. /
+    Item-Description header with only an equipment-name banner row
+    adds no information.
+
+    Identified by content: it's the table that has a 'Heating and
+    Pumping Unit' (or 'Hydraulic Pumping Unit') banner row stamped
+    by _replace_scope_table_with_hpu(). Identifying by content avoids
+    a false-match on the 5-row Section TOC ('S. No. | Section')."""
+    SCOPE_BANNERS = {'HEATING AND PUMPING UNIT', 'HYDRAULIC PUMPING UNIT'}
+    target = None
+    for t in doc.tables:
+        for row in t.rows:
+            cell_text = row.cells[0].text.strip().upper() if row.cells else ''
+            if cell_text in SCOPE_BANNERS:
+                target = t
+                break
+        if target is not None:
+            break
+    if target is None:
+        return
+    tbl_xml = target._element
+    parent = tbl_xml.getparent()
+    nxt = tbl_xml.getnext()
+    parent.remove(tbl_xml)
+    if nxt is not None and nxt.tag.split('}')[-1] == 'p':
+        nxt_txt = ''.join(t.text or '' for t in nxt.iter(qn('w:t'))).strip()
+        if not nxt_txt:
+            parent.remove(nxt)
+    print('Removed empty Annexure I scope table.')
+
+
+def _rename_annexure_i_heading(doc: Document) -> None:
+    """Extend 'ANNEXURE I — SCOPE OF SUPPLY' to
+    'ANNEXURE I — SCOPE OF SUPPLY: HEATING AND PUMPING UNIT'."""
+    body = doc.element.body
+    for el in body.iter(qn('w:p')):
+        t_els = list(el.iter(qn('w:t')))
+        joined = ''.join((t.text or '') for t in t_els)
+        joined_u = joined.upper()
+        if 'ANNEXURE I' in joined_u and 'SCOPE OF SUPPLY' in joined_u:
+            # Skip if already extended.
+            if 'HEATING AND PUMPING UNIT' in joined_u:
+                return
+            # Only the *standalone* Annexure I heading paragraph, not
+            # the List-of-Annexures row (which is inside a table cell —
+            # those are also reached by body.iter, so filter by length).
+            if len(joined.strip()) > 60:
+                continue
+            new_text = 'ANNEXURE I — SCOPE OF SUPPLY: HEATING AND PUMPING UNIT'
+            for t in t_els:
+                t.text = ''
+            if t_els:
+                t_els[0].text = new_text
+            print('Renamed Annexure I heading.')
+            return
 
 
 def _remove_supervision_table(doc: Document) -> None:
@@ -560,8 +576,16 @@ def main() -> None:
     else:
         print('Annexure I Scope of Supply table not found — leaving as-is.')
 
-    # 4. Rewrite the intro paragraph above the Scope of Supply table.
+    # 4. Rewrite the intro paragraph above the (about-to-be-removed)
+    #    Scope of Supply table.
     _inject_scope_intro_paragraph(doc)
+
+    # 4b. Extend the Annexure I heading to include the equipment label.
+    _rename_annexure_i_heading(doc)
+
+    # 4c. Remove the empty Annexure I scope table entirely — with
+    #     _HPU_SCOPE_ITEMS=[] it has only header + banner row, no value.
+    _remove_annexure_i_scope_table(doc)
 
     # 5. Drop the redundant 'Project Name' row from the cover-box
     #    table (Project/Equipment + Client + Enquiry No. is enough).

@@ -3082,7 +3082,7 @@ def generate_hpu_quote(req: HpuQuoteRequest):
 
         # ── 3. Build form_data mirroring VLPH/Tundish shape ──────────────
         equipment_name = (
-            f"Hydraulic Pumping Unit – {req.hpu_variant}, "
+            f"Heating and Pumping Unit – {req.hpu_variant}, "
             f"{req.hpu_kw:g} kW @ {catalog_lph:g} LPH"
         )
         form_data = {

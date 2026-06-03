@@ -218,7 +218,7 @@ def _build_equipment_name(customer, quote_data):
         elif "pumping" in pt or "hpu" in pt or "hydraulic" in pt:
             variant = customer.get("hpu_variant") or ""
             kw      = customer.get("hpu_kw") or ""
-            label   = "Hydraulic Pumping Unit"
+            label   = "Heating and Pumping Unit"
             if variant and kw:
                 return f"{label} – {variant}, {kw} kW"
             if variant:
