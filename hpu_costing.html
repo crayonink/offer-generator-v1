@@ -79,7 +79,8 @@
   <div class="step-tabs">
     <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Customer Details</div>
     <div class="step-tab"        id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>HPU Specs</div>
-    <div class="step-tab"        id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Generate Offer</div>
+    <div class="step-tab"        id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Terms &amp; Conditions</div>
+    <div class="step-tab"        id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Generate Offer</div>
   </div>
   <div class="topnav-links">
     <a href="/costing">VLPH</a>
@@ -239,14 +240,94 @@
     <div class="action-row">
       <button class="btn-outline" onclick="goStep(1)">Back</button>
       <button class="btn-primary" onclick="goStep(3)">
+        Continue to T&amp;Cs <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: Terms & Conditions ══ -->
+  <div class="step-panel" id="panel-3">
+    <div class="step-heading">Step 3 — Terms &amp; Conditions (Annexure IV)</div>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">
+      These values appear verbatim in Annexure IV of the generated offer. Edit as needed.
+    </p>
+    <style>
+      #tnc-table { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+      #tnc-table td { padding:10px 12px; vertical-align:middle; border-top:1px solid var(--border); }
+      #tnc-table tr:first-child td { border-top:none; }
+      #tnc-table td.tech-lbl { width:30%; background:#f8fafc; font-weight:600; color:var(--text); }
+      #tnc-table input[type=text], #tnc-table select, #tnc-table textarea {
+        width:100%; box-sizing:border-box; padding:8px 10px;
+        border:1px solid var(--border); border-radius:6px;
+        font-family:inherit; font-size:.9rem; color:var(--text); background:#fff;
+      }
+      #tnc-table textarea { resize:vertical; line-height:1.4; min-height:48px; }
+      #tnc-table select { appearance:auto; cursor:pointer; }
+      #tnc-table input:focus, #tnc-table select:focus, #tnc-table textarea:focus {
+        outline:none; border-color:var(--navy); box-shadow:0 0 0 2px rgba(31,58,95,0.12);
+      }
+    </style>
+    <table id="tnc-table" style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+      <tbody>
+        <tr><td class="tech-lbl">Prices</td>
+            <td><select id="tnc_prices">
+              <option value="EX Bhagola (Ex-Works)" selected>EX Bhagola (Ex-Works)</option>
+              <option value="FOR (Free on Road / Free on Rail)">FOR (Free on Road / Free on Rail)</option>
+              <option value="FOB (Free On Board)">FOB (Free On Board)</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Delivery</td>
+            <td><textarea id="tnc_delivery" rows="2">10 – 12 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later.</textarea></td></tr>
+        <tr><td class="tech-lbl">GST</td>
+            <td><select id="tnc_gst">
+              <option value="18% extra." selected>18% extra.</option>
+              <option value="28% extra.">28% extra.</option>
+              <option value="12% extra.">12% extra.</option>
+              <option value="5% extra.">5% extra.</option>
+              <option value="Inclusive">Inclusive</option>
+              <option value="Exempt">Exempt</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">HSN Code</td>
+            <td><input id="tnc_hsn_code" type="text" value="84541000"/></td></tr>
+        <tr><td class="tech-lbl">PAN / GST No.</td>
+            <td><input id="tnc_pan_gst" type="text" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
+        <tr><td class="tech-lbl">Terms of Payment</td>
+            <td><textarea id="tnc_payment_terms" rows="2">30% advance with the purchase order
+70% against proforma invoice prior to dispatch</textarea></td></tr>
+        <tr><td class="tech-lbl">Packing &amp; Forwarding</td>
+            <td><select id="tnc_packing_forwarding">
+              <option value="4% and 2% respectively." selected>4% and 2% respectively.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Freight Charges</td>
+            <td><select id="tnc_freight">
+              <option value="In client's scope." selected>In client's scope.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Transit Insurance</td>
+            <td><select id="tnc_transit_insurance">
+              <option value="To be arranged by the client." selected>To be arranged by the client.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Validity</td>
+            <td><input id="tnc_validity" type="text" value="45 days from the date of our offer."/></td></tr>
+        <tr><td class="tech-lbl">Inspection</td>
+            <td><textarea id="tnc_inspection" rows="2">If required, materials can be inspected at our works before dispatch, at the client's cost and with prior intimation.</textarea></td></tr>
+        <tr><td class="tech-lbl">Guarantee</td>
+            <td><textarea id="tnc_guarantee" rows="2">Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier — against any manufacturing defects or poor workmanship.</textarea></td></tr>
+      </tbody>
+    </table>
+
+    <div class="action-row">
+      <button class="btn-outline" onclick="goStep(2)">Back</button>
+      <button class="btn-primary" onclick="goStep(4)">
         Continue to Generate <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </div>
   </div>
 
-  <!-- ══ STEP 3: Generate Offer ══ -->
-  <div class="step-panel" id="panel-3">
-    <div class="step-heading">Step 3 — Generate Offer</div>
+  <!-- ══ STEP 4: Generate Offer ══ -->
+  <div class="step-panel" id="panel-4">
+    <div class="step-heading">Step 4 — Generate Offer</div>
 
     <div class="alert-error" id="hpu-error"></div>
 
@@ -267,7 +348,7 @@
     </p>
 
     <div class="action-row" id="action-row-step3">
-      <button class="btn-outline" id="back-btn" onclick="goStep(2)">Back</button>
+      <button class="btn-outline" id="back-btn" onclick="goStep(3)">Back</button>
       <button class="btn-primary" id="gen-btn" onclick="generateOffer()">
         <span class="btn-txt">Generate Offer</span>
       </button>
@@ -286,7 +367,7 @@
 let _refDirty = false;
 
 function goStep(n) {
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 4; i++) {
     document.getElementById(`panel-${i}`).classList.toggle('active', i === n);
     const tab = document.getElementById(`tab-${i}`);
     tab.classList.toggle('active', i === n);
@@ -334,6 +415,19 @@ function _customerPayload() {
     technical: v('c-technical'),
     technical_email: v('c-technical-email'),
     technical_phone: v('c-technical-phone'),
+    // Annexure IV — Terms & Conditions (Step 3)
+    tnc_prices:             v('tnc_prices'),
+    tnc_delivery:           v('tnc_delivery'),
+    tnc_gst:                v('tnc_gst'),
+    tnc_hsn_code:           v('tnc_hsn_code'),
+    tnc_pan_gst:            v('tnc_pan_gst'),
+    tnc_payment_terms:      v('tnc_payment_terms'),
+    tnc_packing_forwarding: v('tnc_packing_forwarding'),
+    tnc_freight:            v('tnc_freight'),
+    tnc_transit_insurance:  v('tnc_transit_insurance'),
+    tnc_validity:           v('tnc_validity'),
+    tnc_inspection:         v('tnc_inspection'),
+    tnc_guarantee:          v('tnc_guarantee'),
   };
 }
 
@@ -394,10 +488,10 @@ async function generateOffer() {
 
     // Hide the Generate Offer button + the action row that held it —
     // the user has what they came for (the download link) and shouldn't
-    // be tempted to click Generate again. Step 3 tab is also marked
-    // 'done' so the user has a way to return if they navigate away.
+    // be tempted to click Generate again. The Generate-step tab is also
+    // marked 'done' so the user has a way to return if they navigate away.
     document.getElementById('action-row-step3').style.display = 'none';
-    document.getElementById('tab-3').classList.add('done');
+    document.getElementById('tab-4').classList.add('done');
   } catch (e) {
     errEl.textContent = 'Error: ' + (e.message || e);
     errEl.style.display = 'block';

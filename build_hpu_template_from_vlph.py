@@ -266,53 +266,162 @@ def _strip_project_name_from_cover_box(doc: Document) -> None:
             return
 
 
-def _clear_reference_list(doc: Document) -> None:
-    """Wipe the 50-row VLPH Reference List (Annexure V). The HPU offer
-    has no curated client list yet, so we strip rows and leave a single
-    placeholder row the user can fill in Word. Header (S. No. | Client
-    | Application) is preserved.
-
-    Also rewrites the intro paragraph above the table from the
-    'ladle preheating systems' line to a neutral HPU equivalent."""
-    table = None
+def _remove_annexure_ii(doc: Document) -> None:
+    """Strip Annexure II — Exclusions from the cloned VLPH template.
+    Annexure II is a bullet list (no table), so we remove paragraphs
+    from the 'ANNEXURE II' heading up to (but NOT including) the next
+    'ANNEXURE ...' heading. Also strips the matching row from the
+    List of Annexures table on the cover page.
+    """
+    # ── Part A: strip the Annexure II row from List of Annexures ──────
     for t in doc.tables:
-        head = [c.text.strip() for c in t.rows[0].cells] if t.rows else []
-        if (len(head) >= 3 and head[0].upper() == 'S. NO.'
-                and head[1].upper() == 'CLIENT' and 'APPLICATION' in head[2].upper()):
-            table = t
+        if not t.rows or len(t.rows[0].cells) < 2:
+            continue
+        head = [c.text.strip().upper() for c in t.rows[0].cells]
+        if 'ANNEXURE NO.' in head[0]:
+            tbl_xml = t._element
+            for tr in list(tbl_xml.findall(qn('w:tr'))):
+                row_txt = ''.join(x.text or '' for x in tr.iter(qn('w:t'))).upper()
+                # Match 'ANNEXURE II' + 'EXCLUSIONS' but NOT 'ANNEXURE III'.
+                if ('ANNEXURE II' in row_txt
+                        and 'ANNEXURE III' not in row_txt
+                        and 'EXCLUS' in row_txt):
+                    tbl_xml.remove(tr)
             break
-    if table is None:
-        print('Reference List table not found — skipping clear.')
+
+    # ── Part B: strip the body block (heading + intro + bullets) ──────
+    body = doc.element.body
+    elements = list(body)
+
+    heading_idx = None
+    for i, el in enumerate(elements):
+        if el.tag.split('}')[-1] != 'p':
+            continue
+        txt = ''.join(t.text or '' for t in el.iter(qn('w:t'))).strip().upper()
+        # 'ANNEXURE II — EXCLUSIONS' but not 'ANNEXURE III'
+        if (txt.startswith('ANNEXURE II')
+                and not txt.startswith('ANNEXURE III')
+                and 'EXCLUS' in txt):
+            heading_idx = i
+            break
+    if heading_idx is None:
+        return  # idempotent — already removed
+
+    # Walk forward until we hit the next 'ANNEXURE …' heading, deleting
+    # everything in between (the bullets live as plain paragraphs).
+    i = heading_idx
+    removed = 0
+    while i < len(elements):
+        el = elements[i]
+        tag = el.tag.split('}')[-1]
+        if tag == 'sectPr':
+            break
+        if tag == 'p' and i != heading_idx:
+            txt = ''.join(t.text or '' for t in el.iter(qn('w:t'))).strip().upper()
+            if txt.startswith('ANNEXURE'):
+                break  # next annexure — stop here, leave it intact
+        body.remove(el)
+        removed += 1
+        i += 1
+    print(f'Removed Annexure II (elements removed={removed})')
+
+
+def _scrub_reference_list_mention(doc: Document) -> None:
+    """The Company Profile blurb ends with '... a representative
+    reference list is included in Annexure V.' Once Annexure V is
+    removed that sentence dangles — rewrite the paragraph to drop the
+    trailing reference."""
+    needle = 'a representative reference list is included in Annexure V'
+    for p in doc.paragraphs:
+        if needle.lower() not in p.text.lower():
+            continue
+        # Join all runs, snip the dangling tail, blank the runs and
+        # stamp the cleaned text into the first run.
+        full = ''.join(r.text or '' for r in p.runs)
+        idx = full.lower().find('— ' + needle.lower())
+        if idx == -1:
+            idx = full.lower().find(needle.lower())
+        if idx == -1:
+            continue
+        cleaned = full[:idx].rstrip(' —-').rstrip()
+        if not cleaned.endswith('.'):
+            cleaned += '.'
+        for r in p.runs:
+            r.text = ''
+        if p.runs:
+            p.runs[0].text = cleaned
+        else:
+            p.add_run(cleaned)
+        print('Scrubbed dangling Annexure V mention from Company Profile.')
         return
 
-    tbl_xml = table._element
-    for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
-        tbl_xml.remove(tr)
 
-    # Single placeholder row.
-    row = table.add_row()
-    row.cells[0].text = '1'
-    row.cells[1].text = '— (to be added)'
-    row.cells[2].text = 'Hydraulic Pumping Unit'
+def _remove_annexure_section(doc: Document, roman: str, label_keyword: str) -> None:
+    """Generic Annexure remover. Strips:
+      * The matching row from the cover-page 'List of Annexures' table
+        (matched by 'ANNEXURE <roman>' + the label keyword).
+      * The body block: heading paragraph + every element after it up
+        to (but NOT including) the next 'ANNEXURE …' heading or
+        section properties marker.
 
-    # Rewrite intro paragraph.
-    for p in doc.paragraphs:
-        if 'ladle preheating systems' in p.text.lower():
-            for run in p.runs:
-                run.text = ''
-            if p.runs:
-                p.runs[0].text = (
-                    'We have supplied Hydraulic Pumping Units to various '
-                    'clients across India and overseas; a representative '
-                    'list will be furnished on request.'
-                )
-            else:
-                p.add_run(
-                    'We have supplied Hydraulic Pumping Units to various '
-                    'clients across India and overseas; a representative '
-                    'list will be furnished on request.'
-                )
+    `roman` is e.g. 'V' / 'VI'. `label_keyword` is e.g. 'REFERENCE' /
+    'MAKE' — used to disambiguate from same-prefix annexures (e.g.
+    'ANNEXURE V' must not match 'ANNEXURE VI').
+    """
+    target_prefix = f'ANNEXURE {roman}'
+
+    def _is_target_heading(txt_upper: str) -> bool:
+        if not txt_upper.startswith(target_prefix):
+            return False
+        # Reject longer-roman matches (e.g. when looking for V, reject VI).
+        rest = txt_upper[len(target_prefix):].lstrip()
+        if rest and rest[0].isalpha() and rest[0] in 'IVX':
+            return False
+        return label_keyword in txt_upper
+
+    # ── Part A: strip the row from List of Annexures ──────────────────
+    for t in doc.tables:
+        if not t.rows or len(t.rows[0].cells) < 2:
+            continue
+        head = [c.text.strip().upper() for c in t.rows[0].cells]
+        if 'ANNEXURE NO.' in head[0]:
+            tbl_xml = t._element
+            for tr in list(tbl_xml.findall(qn('w:tr'))):
+                row_txt = ''.join(x.text or '' for x in tr.iter(qn('w:t'))).upper()
+                if _is_target_heading(row_txt):
+                    tbl_xml.remove(tr)
             break
+
+    # ── Part B: strip the body section ────────────────────────────────
+    body = doc.element.body
+    elements = list(body)
+
+    heading_idx = None
+    for i, el in enumerate(elements):
+        if el.tag.split('}')[-1] != 'p':
+            continue
+        txt = ''.join(t.text or '' for t in el.iter(qn('w:t'))).strip().upper()
+        if _is_target_heading(txt):
+            heading_idx = i
+            break
+    if heading_idx is None:
+        return  # idempotent
+
+    i = heading_idx
+    removed = 0
+    while i < len(elements):
+        el = elements[i]
+        tag = el.tag.split('}')[-1]
+        if tag == 'sectPr':
+            break
+        if tag == 'p' and i != heading_idx:
+            txt = ''.join(t.text or '' for t in el.iter(qn('w:t'))).strip().upper()
+            if txt.startswith('ANNEXURE'):
+                break
+        body.remove(el)
+        removed += 1
+        i += 1
+    print(f'Removed {target_prefix} ({label_keyword}) — elements removed={removed}')
 
 
 def _pad_table_rows(doc: Document, min_height_cm: float = 0.75) -> None:
@@ -379,12 +488,24 @@ def main() -> None:
     # 4. Rewrite the intro paragraph above the Scope of Supply table.
     _inject_scope_intro_paragraph(doc)
 
-    # 5. Wipe the 50-row Reference List; leave a placeholder row.
-    _clear_reference_list(doc)
-
-    # 5b. Drop the redundant 'Project Name' row from the cover-box
-    #     table (Project/Equipment + Client + Enquiry No. is enough).
+    # 5. Drop the redundant 'Project Name' row from the cover-box
+    #    table (Project/Equipment + Client + Enquiry No. is enough).
     _strip_project_name_from_cover_box(doc)
+
+    # 5b. Strip Annexure II — Exclusions (HPU offers don't need it).
+    _remove_annexure_ii(doc)
+
+    # 5c. Strip Annexure V — Reference List of Clients (no curated
+    #     HPU client list yet).
+    _remove_annexure_section(doc, 'V',  'REFERENCE')
+
+    # 5d. Strip Annexure VI — Make List (irrelevant for stand-alone HPU).
+    _remove_annexure_section(doc, 'VI', 'MAKE')
+
+    # 5e. Scrub the dangling "...representative reference list is
+    #     included in Annexure V" tail-sentence in the Company Profile
+    #     section, since Annexure V was just removed.
+    _scrub_reference_list_mention(doc)
 
     # 6. Give the Price Schedule + Supervision rows some breathing room.
     _pad_table_rows(doc, min_height_cm=0.75)

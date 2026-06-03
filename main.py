@@ -2988,6 +2988,19 @@ class HpuCustomer(BaseModel):
     technical: Optional[str] = ""
     technical_email: Optional[str] = ""
     technical_phone: Optional[str] = ""
+    # Annexure IV — Terms & Conditions (HPU Step 3, mirrored from VLPH).
+    tnc_prices: Optional[str] = ""
+    tnc_delivery: Optional[str] = ""
+    tnc_gst: Optional[str] = ""
+    tnc_hsn_code: Optional[str] = ""
+    tnc_pan_gst: Optional[str] = ""
+    tnc_payment_terms: Optional[str] = ""
+    tnc_packing_forwarding: Optional[str] = ""
+    tnc_freight: Optional[str] = ""
+    tnc_transit_insurance: Optional[str] = ""
+    tnc_validity: Optional[str] = ""
+    tnc_inspection: Optional[str] = ""
+    tnc_guarantee: Optional[str] = ""
 
 
 class HpuQuoteRequest(BaseModel):
@@ -3151,12 +3164,19 @@ def generate_hpu_quote(req: HpuQuoteRequest):
                 "nitrogen_purging":    False,
                 "burner_kw_value":     "",
                 "bom_items":           [],
-                # T&Cs left blank — user edits in Word
-                "tnc_prices": "", "tnc_delivery": "", "tnc_gst": "",
-                "tnc_hsn_code": "", "tnc_pan_gst": "",
-                "tnc_payment_terms": "", "tnc_packing_forwarding": "",
-                "tnc_freight": "", "tnc_transit_insurance": "",
-                "tnc_validity": "", "tnc_inspection": "", "tnc_guarantee": "",
+                # Annexure IV — T&Cs sourced from HPU Step 3 (mirrors VLPH).
+                "tnc_prices":             cust.tnc_prices or "",
+                "tnc_delivery":           cust.tnc_delivery or "",
+                "tnc_gst":                cust.tnc_gst or "",
+                "tnc_hsn_code":           cust.tnc_hsn_code or "",
+                "tnc_pan_gst":            cust.tnc_pan_gst or "",
+                "tnc_payment_terms":      cust.tnc_payment_terms or "",
+                "tnc_packing_forwarding": cust.tnc_packing_forwarding or "",
+                "tnc_freight":            cust.tnc_freight or "",
+                "tnc_transit_insurance":  cust.tnc_transit_insurance or "",
+                "tnc_validity":           cust.tnc_validity or "",
+                "tnc_inspection":         cust.tnc_inspection or "",
+                "tnc_guarantee":          cust.tnc_guarantee or "",
             },
             # Single-line price schedule. product_type='Hydraulic Pumping Unit'
             # falls through quote_writer's product-type gates (is_vertical/
