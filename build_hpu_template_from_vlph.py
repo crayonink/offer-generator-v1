@@ -326,6 +326,81 @@ def _remove_annexure_ii(doc: Document) -> None:
     print(f'Removed Annexure II (elements removed={removed})')
 
 
+def _remove_supervision_table(doc: Document) -> None:
+    """Strip the 3-row Supervision Charges sub-table (Mechanical + PLC
+    + Note) that sits just below the Price Schedule. HPU offers don't
+    quote supervision separately."""
+    target = None
+    for t in doc.tables:
+        if not t.rows or not t.rows[0].cells:
+            continue
+        head = t.rows[0].cells[0].text.strip()
+        # Match either the original VLPH heading or the {%tr%}-wrapped
+        # supervision_include variant introduced by build_recup_template.
+        if head.startswith('Supervision Charges') or head.startswith('{%tr if supervision_include'):
+            target = t
+            break
+    if target is None:
+        return  # idempotent — already removed
+    tbl_xml = target._element
+    parent = tbl_xml.getparent()
+    # Drop the table itself + one trailing blank paragraph (if any) so
+    # the offer doesn't leave a yawning gap where the table used to be.
+    nxt = tbl_xml.getnext()
+    parent.remove(tbl_xml)
+    if nxt is not None and nxt.tag.split('}')[-1] == 'p':
+        nxt_txt = ''.join(t.text or '' for t in nxt.iter(qn('w:t'))).strip()
+        if not nxt_txt:
+            parent.remove(nxt)
+    print('Removed Supervision Charges sub-table.')
+
+
+def _renumber_annexures_after_removal(doc: Document) -> None:
+    """After Annexure II is removed, the body still has 'ANNEXURE III'
+    (Price Schedule) and 'ANNEXURE IV' (T&Cs) headings, and the
+    cover-page List of Annexures lists them under those numbers.
+    Shift them down so the document reads I, II, III consistently.
+
+    Replacement order is critical:
+      1) III -> II  (do this first; it does not touch IV)
+      2) IV  -> III (safe; previous step already consumed the III)
+    Doing IV first would create a new 'III' that step 2 would then
+    rename to 'II', collapsing both into II.
+
+    Each paragraph's runs are joined, replaced, and the result is
+    stamped back into the first run so headings that Word split
+    across multiple <w:t> elements are handled correctly.
+    """
+    renames = [
+        ('ANNEXURE III', 'ANNEXURE II'),
+        ('Annexure III', 'Annexure II'),
+        ('ANNEXURE IV',  'ANNEXURE III'),
+        ('Annexure IV',  'Annexure III'),
+    ]
+
+    def _rewrite(p_el) -> bool:
+        t_els = list(p_el.iter(qn('w:t')))
+        if not t_els:
+            return False
+        joined = ''.join((t.text or '') for t in t_els)
+        new = joined
+        for old, repl in renames:
+            new = new.replace(old, repl)
+        if new == joined:
+            return False
+        for t in t_els:
+            t.text = ''
+        t_els[0].text = new
+        return True
+
+    body = doc.element.body
+    count = 0
+    for p_el in body.iter(qn('w:p')):
+        if _rewrite(p_el):
+            count += 1
+    print(f'Renumbered annexures III->II and IV->III in {count} paragraphs.')
+
+
 def _scrub_reference_list_mention(doc: Document) -> None:
     """The Company Profile blurb ends with '... a representative
     reference list is included in Annexure V.' Once Annexure V is
@@ -506,6 +581,16 @@ def main() -> None:
     #     included in Annexure V" tail-sentence in the Company Profile
     #     section, since Annexure V was just removed.
     _scrub_reference_list_mention(doc)
+
+    # 5f. Strip the Supervision Charges sub-table (Mechanical + PLC +
+    #     Note). HPU offers don't quote erection / commissioning
+    #     supervision separately.
+    _remove_supervision_table(doc)
+
+    # 5g. Annexure II was removed in 5b. Renumber the remaining body
+    #     headings + List-of-Annexures rows so the offer reads
+    #     I -> II -> III instead of I -> III -> IV.
+    _renumber_annexures_after_removal(doc)
 
     # 6. Give the Price Schedule + Supervision rows some breathing room.
     _pad_table_rows(doc, min_height_cm=0.75)
