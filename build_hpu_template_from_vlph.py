@@ -179,8 +179,7 @@ def _inject_scope_intro_paragraph(doc: Document) -> None:
 
     NEW_INTRO = (
         'The Scope of supply covers Design, manufacturing and supply '
-        'of the Heating and Pumping Unit as per the specifications '
-        'listed below.'
+        'of the Heating and Pumping Unit.'
     )
     t_els = list(intro_p.iter(qn('w:t')))
     if t_els and t_els[0].text and t_els[0].text.startswith(NEW_INTRO[:40]):
