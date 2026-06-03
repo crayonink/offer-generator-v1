@@ -267,6 +267,34 @@ def _inject_scope_intro_paragraph(doc: Document) -> None:
         intro_p.append(r)
 
 
+def _strip_project_name_from_cover_box(doc: Document) -> None:
+    """Remove the 'Project Name' row from the cover-box table.
+    The HPU offer doesn't have a separate project name beyond the
+    equipment name itself, so the duplicate row is just noise.
+
+    The target is the first 4-row table whose row 0 label is
+    'Project / Equipment'. We drop the row whose first cell starts
+    with 'Project Name'.
+    """
+    target = None
+    for t in doc.tables:
+        if not t.rows or not t.rows[0].cells:
+            continue
+        if t.rows[0].cells[0].text.strip().startswith('Project / Equipment'):
+            target = t
+            break
+    if target is None:
+        print('Cover-box table not found — skipping Project Name strip.')
+        return
+    tbl_xml = target._element
+    for tr in list(tbl_xml.findall(qn('w:tr'))):
+        first_cell_txt = ''.join(t.text or '' for t in tr.iter(qn('w:t'))).strip()
+        if first_cell_txt.lower().startswith('project name'):
+            tbl_xml.remove(tr)
+            print('Stripped Project Name row from cover-box table.')
+            return
+
+
 def _clear_reference_list(doc: Document) -> None:
     """Wipe the 50-row VLPH Reference List (Annexure V). The HPU offer
     has no curated client list yet, so we strip rows and leave a single
@@ -382,6 +410,10 @@ def main() -> None:
 
     # 5. Wipe the 50-row Reference List; leave a placeholder row.
     _clear_reference_list(doc)
+
+    # 5b. Drop the redundant 'Project Name' row from the cover-box
+    #     table (Project/Equipment + Client + Enquiry No. is enough).
+    _strip_project_name_from_cover_box(doc)
 
     # 6. Give the Price Schedule + Supervision rows some breathing room.
     _pad_table_rows(doc, min_height_cm=0.75)
