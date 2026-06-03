@@ -792,7 +792,18 @@ def equipment_offer_hub():
 
 
 @app.get("/hpu", response_class=HTMLResponse)
+def hpu_picker():
+    """Sub-hub under Equipment Offer that lets the user pick between
+    HPU (Heating + Pumping Unit) and PU (Pumping Unit only)."""
+    html_path = os.path.join(BASE_DIR, "hpu_picker.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/hpu/heating-pumping", response_class=HTMLResponse)
 def hpu_costing_form():
+    """HPU offer form — pumping skid with in-built electric heater
+    (model codes HPS / HPD / HPDD)."""
     html_path = os.path.join(BASE_DIR, "hpu_costing.html")
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
