@@ -739,8 +739,11 @@ def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
 
     if vendor in ("dembla", "aira"):
         company = vendor.upper()
-        item = f'CONTROL VALVE {nb_str}' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}'
-        like_prefix = 'CONTROL VALVE ' if valve_type == "control" else 'SHUT OFF VALVE '
+        # DEMBLA / AIRA control valves are pneumatically actuated and live in
+        # the dedicated 'PNEUMATIC CONTROL VALVE {nb} NB' rows (CAIR = motorised,
+        # handled below). Shut-off valves are unchanged.
+        item = f'PNEUMATIC CONTROL VALVE {nb_str}' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}'
+        like_prefix = 'PNEUMATIC CONTROL VALVE ' if valve_type == "control" else 'SHUT OFF VALVE '
     elif vendor == "cair":
         company = "CAIR"
         item = (f'MOTORIZED CONTROL VALVE {nb_str}' if valve_type == "control"
