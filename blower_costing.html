@@ -363,7 +363,9 @@ async function _loadCatalog() {
   const sel = document.getElementById('blower_model');
   try {
     const r = await fetch('/api/blower/catalog');
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — is the server running the latest code?');
     const j = await r.json();
+    if (j.error) throw new Error(j.error);
     _catalog = j.items || [];
     sel.innerHTML = '';
     const byPressure = {};
@@ -381,7 +383,7 @@ async function _loadCatalog() {
     }
     _onModelChange();
   } catch (e) {
-    sel.innerHTML = '<option value="">Failed to load catalog</option>';
+    sel.innerHTML = '<option value="">Failed to load catalog — ' + (e.message || e) + '</option>';
   }
 }
 function _onModelChange() {

@@ -366,7 +366,9 @@ async function _loadCatalog() {
   const gsel = document.getElementById('burner_group');
   try {
     const r = await fetch('/api/burner/catalog');
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' — is the server running the latest code?');
     const j = await r.json();
+    if (j.error) throw new Error(j.error);
     _groups = (j.groups || []).filter(g => (g.items || []).length);
     gsel.innerHTML = '';
     for (const g of _groups) {
@@ -376,7 +378,7 @@ async function _loadCatalog() {
     }
     _onGroupChange();
   } catch (e) {
-    gsel.innerHTML = '<option value="">Failed to load catalog</option>';
+    gsel.innerHTML = '<option value="">Failed to load catalog — ' + (e.message || e) + '</option>';
   }
 }
 function _curGroup() { return _groups.find(g => g.key === document.getElementById('burner_group').value); }
