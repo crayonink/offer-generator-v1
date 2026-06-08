@@ -3286,6 +3286,323 @@ def generate_pu_quote(req: HpuQuoteRequest):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+# ══════════════════════════════════════════════════════════════════════════
+#  STAND-ALONE BLOWER & BURNER OFFERS
+#  Catalog-pick offers modelled on the HPU/PU + Recuperator pattern:
+#  template (Blower_/Burner_Offer_Template.docx, built by
+#  build_blower_burner_templates.py) rendered self-contained via docxtpl.
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.get("/blower", response_class=HTMLResponse)
+def blower_costing_form():
+    """Stand-alone Blower offer form (catalog pick from blower_master)."""
+    html_path = os.path.join(BASE_DIR, "blower_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/burner", response_class=HTMLResponse)
+def burner_costing_form():
+    """Stand-alone Burner offer form (catalog pick — ENCON oil/gas/dual + GAIL)."""
+    html_path = os.path.join(BASE_DIR, "burner_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+def _fmt_num(v) -> str:
+    """'10.0' -> '10', '7.5' -> '7.5', '2040.0' -> '2,040'."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return str(v or "")
+    if f != f or f in (float("inf"), float("-inf")):  # NaN / inf -> blank
+        return ""
+    return f"{int(f):,}" if f == int(f) else f"{f:g}"
+
+
+@app.get("/api/blower/catalog")
+def blower_catalog():
+    """ENCON blower models for the offer dropdown (price = with-motor)."""
+    conn = sqlite3.connect(DB_PATH)
+    rows = conn.execute(
+        "SELECT model, hp, airflow, pressure, price_premium "
+        "FROM blower_master ORDER BY pressure, CAST(hp AS REAL)"
+    ).fetchall()
+    conn.close()
+    items = [{
+        "model":    r[0],
+        "hp":       _fmt_num(r[1]),
+        "airflow":  _fmt_num(r[2]),
+        "pressure": (r[3] or "").strip(),
+        "price":    float(r[4] or 0),
+    } for r in rows]
+    return {"items": items}
+
+
+# Burner catalog config: group key -> (label, fuel text, pricelist section).
+_BURNER_SECTIONS = {
+    "oil":  ("ENCON Oil (Film) Burner", "Oil (LDO / HSD / SKO)",
+             "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"),
+    "gas":  ("ENCON Gas Burner",        "Gas (NG / LPG / COG)",
+             "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"),
+    "dual": ("ENCON Dual Fuel Burner",  "Dual Fuel (Gas + Oil)",
+             "PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"),
+}
+
+
+def _burner_firing_capacity(conn, model: str) -> str:
+    """Max firing rate (LPH at 24\" W.G.) for an ENCON burner size, if known."""
+    row = conn.execute(
+        "SELECT max_firing_lph FROM burner_selection_master "
+        "WHERE model = ? AND pressure_wg = 24 LIMIT 1", (model,)
+    ).fetchone()
+    if row and row[0]:
+        return f"up to {_fmt_num(row[0])} LPH"
+    return ""
+
+
+def _burner_lookup(group: str, model: str):
+    """Return (price, fuel_text, capacity, label) for a burner pick, or None."""
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        if group == "gail":
+            row = conn.execute(
+                "SELECT burner_set FROM gail_gas_burner_master "
+                "WHERE burner_size = ? AND burner_set IS NOT NULL LIMIT 1", (model,)
+            ).fetchone()
+            if not row:
+                return None
+            # Capacity is inherent in the GAIL model name (e.g. 'ENCON-500 KW').
+            import re as _re
+            m = _re.search(r"(\d[\d,]*)\s*KW", model, _re.I)
+            cap = f"{m.group(1)} kW" if m else ""
+            return float(row[0]), "Natural Gas", cap, "GAIL Gas Burner"
+        cfg = _BURNER_SECTIONS.get(group)
+        if not cfg:
+            return None
+        label, fuel, section = cfg
+        row = conn.execute(
+            "SELECT price FROM burner_pricelist_master "
+            "WHERE section = ? AND burner_size = ? AND component = 'BURNER SET' LIMIT 1",
+            (section, model),
+        ).fetchone()
+        if not row:
+            return None
+        return float(row[0]), fuel, _burner_firing_capacity(conn, model), label
+    finally:
+        conn.close()
+
+
+@app.get("/api/burner/catalog")
+def burner_catalog():
+    """Burner models grouped by type for the offer dropdown."""
+    conn = sqlite3.connect(DB_PATH)
+    groups = []
+    for key, (label, fuel, section) in _BURNER_SECTIONS.items():
+        rows = conn.execute(
+            "SELECT burner_size, price FROM burner_pricelist_master "
+            "WHERE section = ? AND component = 'BURNER SET' ORDER BY burner_size",
+            (section,),
+        ).fetchall()
+        items = [{"model": r[0], "price": float(r[1] or 0),
+                  "capacity": _burner_firing_capacity(conn, r[0])} for r in rows]
+        groups.append({"key": key, "label": label, "fuel": fuel, "items": items})
+    # GAIL pre-assembled sets
+    gail_rows = conn.execute(
+        "SELECT burner_size, burner_set FROM gail_gas_burner_master "
+        "WHERE burner_set IS NOT NULL AND section LIKE '%GAIL GAS BURNER%' ORDER BY burner_set"
+    ).fetchall()
+    import re as _re
+    gail_items = []
+    for sz, price in gail_rows:
+        m = _re.search(r"(\d[\d,]*)\s*KW", sz or "", _re.I)
+        gail_items.append({"model": sz, "price": float(price or 0),
+                           "capacity": f"{m.group(1)} kW" if m else ""})
+    groups.append({"key": "gail", "label": "GAIL Gas Burner",
+                   "fuel": "Natural Gas", "items": gail_items})
+    conn.close()
+    return {"groups": groups}
+
+
+class BlowerQuoteRequest(BaseModel):
+    customer: HpuCustomer
+    blower_model: str
+    qty: int = 1
+
+
+class BurnerQuoteRequest(BaseModel):
+    customer: HpuCustomer
+    burner_group: str = "gas"   # oil | gas | dual | gail
+    burner_model: str
+    qty: int = 1
+
+
+def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
+                              specs: dict, unit_price: float, qty: int,
+                              template_name: str, filename_infix: str,
+                              drive_product: str) -> dict:
+    """Shared minimal-offer generator for stand-alone equipment (blower /
+    burner). Builds the docxtpl context from the customer block + the
+    equipment specs, renders template_name, saves to quotes/, best-effort
+    PDF + Drive upload. Returns the API response dict."""
+    from datetime import datetime as _dt
+    from docxtpl import DocxTemplate
+    from engine.quote_writer import amount_in_words_indian, _format_inr
+
+    qty = max(1, int(qty or 1))
+    total_price = float(unit_price) * qty
+
+    seq = next_quote_seq()
+    full_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
+    short_ref = full_ref.split(" DT.")[0]
+    date_str = full_ref.split(" DT.")[-1] if " DT." in full_ref else _dt.now().strftime("%d/%m/%Y")
+
+    company_address = ", ".join(filter(None, [
+        (cust.address or "").strip(), (cust.city or "").strip(),
+        (cust.state or "").strip(), (cust.pin or "").strip()]))
+
+    ctx = {
+        "project_name":      cust.subject or equipment_name,
+        "subject":           cust.subject or f"Offer for {equipment_name}",
+        "application":       equipment_name,
+        "equipment_name":    equipment_name,
+        "company_name":      cust.company or "",
+        "company_address":   company_address,
+        "email":             cust.email or "",
+        "mobile_no":         cust.phone or "",
+        "poc_name":          _with_salutation(cust.salutation, cust.name),
+        "poc_designation":   cust.designation or "",
+        "client_enq_ref":    "",
+        "enquiry_ref":       full_ref,
+        "enquiry_ref_short": short_ref,
+        "enquiry_date_str":  date_str,
+        "marketing_person":  _with_salutation(cust.marketing_salutation, cust.marketing),
+        "marketing_email":   cust.marketing_email or "",
+        "marketing_phone":   cust.marketing_phone or "",
+        "technical_person":  _with_salutation(cust.technical_salutation, cust.technical) or _with_salutation(cust.marketing_salutation, cust.marketing),
+        "technical_phone":   cust.technical_phone or cust.marketing_phone or "",
+        "technical_email":   cust.technical_email or cust.marketing_email or "",
+        # Price schedule (single line)
+        "item_qty":          f"{qty:02d} No.",
+        "unit_price":        _format_inr(unit_price),
+        "total_price":       _format_inr(total_price),
+        "grand_total":       _format_inr(total_price),
+        "grand_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
+        # T&C (Annexure renumbered to III)
+        "tnc_prices":             cust.tnc_prices or "",
+        "tnc_delivery":           cust.tnc_delivery or "",
+        "tnc_gst":                cust.tnc_gst or "",
+        "tnc_hsn_code":           cust.tnc_hsn_code or "",
+        "tnc_pan_gst":            cust.tnc_pan_gst or "",
+        "tnc_payment_terms":      cust.tnc_payment_terms or "",
+        "tnc_packing_forwarding": cust.tnc_packing_forwarding or "",
+        "tnc_freight":            cust.tnc_freight or "",
+        "tnc_transit_insurance":  cust.tnc_transit_insurance or "",
+        "tnc_validity":           cust.tnc_validity or "",
+        "tnc_inspection":         cust.tnc_inspection or "",
+        "tnc_guarantee":          cust.tnc_guarantee or "",
+    }
+    ctx.update(specs)
+
+    tpl_path = os.path.join(BASE_DIR, template_name)
+    tpl = DocxTemplate(tpl_path)
+    tpl.render(ctx)
+
+    safe_company = "".join(ch for ch in (cust.company or "Client")
+                           if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+    docx_name = f"{filename_infix}_Offer_{safe_company}_{seq}.docx"
+    docx_path = os.path.join(QUOTES_FOLDER, docx_name)
+    tpl.save(docx_path)
+
+    pdf_name = docx_name.replace(".docx", ".pdf")
+    pdf_path = os.path.join(QUOTES_FOLDER, pdf_name)
+    pdf_ok = _docx_to_pdf(docx_path, pdf_path)
+
+    try:
+        from engine.drive_uploader import upload_offer_async
+        upload_offer_async(docx_path, docx_name, drive_product)
+        if pdf_ok:
+            upload_offer_async(pdf_path, pdf_name, drive_product)
+    except Exception as _drv_err:
+        print(f"WARN: drive upload kickoff failed: {_drv_err}")
+
+    return {
+        "success":      True,
+        "filename":     docx_name,
+        "pdf_filename": pdf_name if pdf_ok else None,
+        "download_url": f"/api/download-quote/{docx_name}",
+        "pdf_url":      f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
+        "preview_url":  f"/api/preview-quote/{docx_name}",
+        "quote_no":     full_ref,
+        "enquiry_ref":  full_ref,
+        "unit_price":   float(unit_price),
+        "total_price":  total_price,
+        "qty":          qty,
+    }
+
+
+@app.post("/api/generate-blower-quote")
+def generate_blower_quote(req: BlowerQuoteRequest):
+    """Stand-alone Blower offer — catalog pick from blower_master
+    (price = price_premium, i.e. with motor)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        row = conn.execute(
+            "SELECT model, hp, airflow, pressure, price_premium "
+            "FROM blower_master WHERE model = ? LIMIT 1", (req.blower_model,)
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {"error": f"unknown blower model: {req.blower_model}"}
+        model, hp, airflow, pressure, price = row
+        unit_price = float(price or 0)
+        equipment_name = f"Centrifugal Blower – {model}"
+        specs = {
+            "blower_model":    model,
+            "blower_hp":       _fmt_num(hp),
+            "blower_airflow":  _fmt_num(airflow),
+            "blower_pressure": (pressure or "").strip(),
+        }
+        result = _generate_equipment_offer(
+            req.customer, equipment_name=equipment_name, specs=specs,
+            unit_price=unit_price, qty=req.qty,
+            template_name="Blower_Offer_Template.docx",
+            filename_infix="Blower", drive_product="blower")
+        result.update({"model": model, "config": f"{_fmt_num(hp)} HP • {(pressure or '').strip()}"})
+        return result
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+@app.post("/api/generate-burner-quote")
+def generate_burner_quote(req: BurnerQuoteRequest):
+    """Stand-alone Burner offer — ENCON oil/gas/dual (burner_pricelist_master,
+    BURNER SET) or GAIL pre-assembled set (gail_gas_burner_master)."""
+    try:
+        looked = _burner_lookup(req.burner_group, req.burner_model)
+        if not looked:
+            return {"error": f"unknown burner: {req.burner_group}/{req.burner_model}"}
+        unit_price, fuel, capacity, label = looked
+        equipment_name = f"{label} – {req.burner_model}"
+        specs = {
+            "burner_model":    req.burner_model,
+            "burner_fuel":     fuel,
+            "burner_capacity": capacity,
+        }
+        result = _generate_equipment_offer(
+            req.customer, equipment_name=equipment_name, specs=specs,
+            unit_price=unit_price, qty=req.qty,
+            template_name="Burner_Offer_Template.docx",
+            filename_infix="Burner", drive_product="burner")
+        result.update({"model": req.burner_model,
+                       "config": f"{fuel}{(' • ' + capacity) if capacity else ''}"})
+        return result
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
 @app.get("/api/next-quote-ref")
 def api_next_quote_ref(technical_person: str = "", location: str = ""):
     """Preview the auto-generated enquiry ref for the form.

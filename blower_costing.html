@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON – Blower Offer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --navy:#1a3a5c; --navy2:#0f2744; --green:#059669; --red:#dc2626;
+            --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f8fafc; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:#fff; color:var(--text); font-size:14px; -webkit-font-smoothing:antialiased; }
+    .topnav { background:#fff; border-bottom:1px solid var(--border); box-shadow:0 1px 0 var(--border),0 4px 20px rgba(0,0,0,.04);
+              display:flex; align-items:center; padding:0 40px; position:sticky; top:0; z-index:100; height:56px; }
+    .topnav-brand { display:flex; align-items:center; gap:10px; font-weight:900; font-size:.95rem; color:var(--text); margin-right:32px; letter-spacing:-.4px; text-decoration:none; }
+    .brand-mark { width:30px; height:30px; background:var(--navy); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.7rem; font-weight:900; box-shadow:0 2px 6px rgba(26,58,92,.35); }
+    .step-tabs { display:flex; }
+    .step-tab { padding:0 20px; height:56px; font-size:.82rem; font-weight:500; color:#94a3b8; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; display:flex; align-items:center; gap:8px; }
+    .step-tab.active { color:var(--navy); border-bottom-color:var(--navy); font-weight:600; }
+    .step-tab.done   { color:var(--green); }
+    .tab-n { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; font-size:.68rem; font-weight:700; background:#e5e7eb; color:#94a3b8; }
+    .step-tab.active .tab-n { background:var(--navy); color:#fff; }
+    .step-tab.done   .tab-n { background:var(--green); color:#fff; }
+    .topnav-links { margin-left:auto; display:flex; gap:4px; align-items:center; }
+    .topnav-links a { font-size:.75rem; color:var(--muted); text-decoration:none; padding:5px 12px; border-radius:20px; font-weight:500; border:1px solid transparent; }
+    .topnav-links a:hover  { background:#f1f5f9; color:var(--navy); border-color:var(--border); }
+    .topnav-links a.active { background:var(--navy); color:#fff; font-weight:600; border-color:var(--navy); }
+
+    .page { max-width:820px; margin:0 auto; padding:48px 24px 80px; }
+    .step-panel { display:none; }
+    .step-panel.active { display:block; }
+    .hero { margin-bottom:40px; }
+    .hero h1 { font-size:2.4rem; font-weight:900; line-height:1.15; letter-spacing:-.04em; }
+    .hero p  { font-size:.95rem; color:var(--muted); margin-top:10px; }
+    .step-heading { font-size:1.05rem; font-weight:700; margin-bottom:24px; padding-bottom:14px; border-bottom:1.5px solid var(--border); }
+    .sec-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:20px 0 10px; }
+
+    .fg   { display:grid; gap:16px; margin-bottom:16px; }
+    .fg-2 { grid-template-columns:1fr 1fr; }
+    .fg-3 { grid-template-columns:1fr 1fr 1fr; }
+    .fg-4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+    @media (max-width:640px) { .fg-3,.fg-4 { grid-template-columns:1fr 1fr; } .fg-2 { grid-template-columns:1fr; } }
+    @media (max-width:480px) { .fg-3,.fg-4,.fg-2 { grid-template-columns:1fr; } }
+    .field { display:flex; flex-direction:column; gap:5px; }
+    .field label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+    .field label .req { color:var(--red); }
+    .field input, .field textarea, .field select {
+      padding:10px 13px; border:1.5px solid var(--border); border-radius:9px;
+      font-size:.88rem; color:var(--text); background:var(--bg); outline:none; font-family:inherit;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color:var(--navy); background:#fff; box-shadow:0 0 0 3px rgba(26,58,92,.07); }
+    .field textarea { resize:vertical; min-height:72px; }
+    .ro { background:#eef4fb; color:var(--navy); font-weight:700; cursor:not-allowed; }
+
+    .action-row { margin-top:32px; display:flex; gap:12px; }
+    .btn-primary { flex:1; padding:14px 24px; background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%); color:#fff; border:none; border-radius:10px; font-size:.92rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 10px rgba(26,58,92,.32); }
+    .btn-primary:hover { background:linear-gradient(135deg,var(--navy2) 0%,var(--navy) 100%); transform:translateY(-1px); }
+    .btn-primary:disabled { background:#94a3b8; cursor:not-allowed; }
+    .btn-outline { padding:14px 24px; background:#fff; color:var(--navy); border:1.5px solid #cbd5e1; border-radius:10px; font-size:.92rem; font-weight:600; cursor:pointer; }
+    .btn-outline:hover { background:#f8fafc; border-color:var(--navy); }
+
+    .alert-error { background:#fef2f2; border:1px solid #fecaca; color:var(--red); padding:12px 16px; border-radius:8px; font-size:.85rem; margin-bottom:20px; display:none; white-space:pre-wrap; }
+    .cost-banner { display:none; background:linear-gradient(135deg,var(--navy2) 0%,var(--navy) 55%,#1e4a7a 100%); color:#fff; border-radius:14px; padding:22px 30px; margin-bottom:28px; align-items:center; justify-content:space-between; box-shadow:0 8px 32px rgba(15,39,68,.38); }
+    .cost-banner.visible { display:flex; }
+    .banner-label { font-size:.7rem; opacity:.6; text-transform:uppercase; letter-spacing:.6px; margin-bottom:4px; font-weight:600; }
+    .banner-big   { font-size:1.9rem; font-weight:900; letter-spacing:-.04em; }
+    .quote-result { display:none; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px; padding:20px 24px; margin-top:20px; }
+    .quote-result h4 { font-size:.95rem; font-weight:700; color:#15803d; margin-bottom:12px; }
+    .dl-btn { display:inline-block; margin-top:12px; padding:10px 20px; background:#15803d; color:#fff; text-decoration:none; border-radius:8px; font-size:.85rem; font-weight:600; }
+    .dl-btn:hover { background:#166534; }
+
+    #tnc-table { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    #tnc-table td { padding:10px 12px; vertical-align:middle; border-top:1px solid var(--border); }
+    #tnc-table tr:first-child td { border-top:none; }
+    #tnc-table td.tech-lbl { width:30%; background:#f8fafc; font-weight:600; color:var(--text); }
+    #tnc-table input[type=text], #tnc-table select, #tnc-table textarea {
+      width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--border);
+      border-radius:6px; font-family:inherit; font-size:.9rem; color:var(--text); background:#fff; }
+    #tnc-table textarea { resize:vertical; line-height:1.4; min-height:48px; }
+    #tnc-table input:focus, #tnc-table select:focus, #tnc-table textarea:focus { outline:none; border-color:var(--navy); box-shadow:0 0 0 2px rgba(31,58,95,0.12); }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-brand"><div class="brand-mark">EN</div>ENCON</div>
+  <div class="step-tabs">
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Customer Details</div>
+    <div class="step-tab"        id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Blower Specs</div>
+    <div class="step-tab"        id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Terms &amp; Conditions</div>
+    <div class="step-tab"        id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Generate Offer</div>
+  </div>
+  <div class="topnav-links">
+    <a href="/equipment-offer">Equipment</a>
+    <a href="/blower" class="active">Blower</a>
+    <a href="/pricelist">Pricelist</a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- ══ STEP 1: Customer Details ══ -->
+  <div class="step-panel active" id="panel-1">
+    <div class="hero">
+      <h1>Blower Offer Generator</h1>
+      <p>Stand-alone centrifugal-blower offer — pick the ENCON model and generate a Word offer with the standard letterhead, customer block and commercial T&amp;Cs.</p>
+    </div>
+    <div class="step-heading">Step 1 — Customer &amp; Enquiry Details</div>
+
+    <div class="sec-label">Contact Person</div>
+    <div class="fg fg-3">
+      <div class="field">
+        <label>Full Name <span class="req">*</span></label>
+        <div style="display:flex; gap:6px">
+          <select id="c-salutation" style="flex:0 0 80px">
+            <option value="">—</option><option value="Mr." selected>Mr.</option>
+            <option value="Mrs.">Mrs.</option><option value="Miss">Miss</option><option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-name" type="text" placeholder="Full Name" style="flex:1"/>
+        </div>
+      </div>
+      <div class="field"><label>Email Address <span class="req">*</span></label>
+        <input id="c-email" type="email" placeholder="name@company.com"/></div>
+      <div class="field"><label>Phone / Mobile <span class="req">*</span></label>
+        <input id="c-phone" type="tel" placeholder="+91 98765 43210"/></div>
+    </div>
+
+    <div class="sec-label">Company</div>
+    <div class="fg fg-2">
+      <div class="field"><label>Company Name <span class="req">*</span></label>
+        <input id="c-company" type="text" placeholder="ABC Steel Ltd"/></div>
+      <div class="field"><label>Designation / Department</label>
+        <input id="c-designation" type="text"/></div>
+    </div>
+    <div class="fg fg-2">
+      <div class="field"><label>Address</label>
+        <textarea id="c-address"></textarea></div>
+      <div class="fg fg-2" style="margin-bottom:0; align-content:start;">
+        <div class="field"><label>City</label><input id="c-city"/></div>
+        <div class="field"><label>State</label><input id="c-state"/></div>
+        <div class="field"><label>PIN Code</label><input id="c-pin"/></div>
+        <div class="field"><label>GSTIN</label><input id="c-gstin"/></div>
+      </div>
+    </div>
+
+    <div class="sec-label">Enquiry</div>
+    <div class="fg fg-4">
+      <div class="field">
+        <label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
+        <input id="c-ref" type="text" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY" oninput="_refDirty = true"/>
+      </div>
+      <div class="field"><label>Location</label>
+        <select id="c-location">
+          <option value="">— Select —</option>
+          <option value="Goa" selected>Goa</option>
+          <option value="Vadodara">Vadodara</option>
+          <option value="Faridabad">Faridabad</option>
+        </select>
+      </div>
+      <div class="field" style="grid-column: span 2">
+        <label>Subject</label>
+        <input id="c-subject" value="Offer for Centrifugal Blower"/>
+      </div>
+    </div>
+
+    <div class="fg fg-2">
+      <div class="field"><label>Marketing Person</label>
+        <div style="display:flex; gap:6px">
+          <select id="c-marketing-salutation" style="flex:0 0 80px">
+            <option value="">—</option><option value="Mr.">Mr.</option>
+            <option value="Mrs." selected>Mrs.</option><option value="Miss">Miss</option><option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-marketing" style="flex:1"/>
+        </div></div>
+      <div class="field"><label>Technical Person</label>
+        <div style="display:flex; gap:6px">
+          <select id="c-technical-salutation" style="flex:0 0 80px">
+            <option value="">—</option><option value="Mr." selected>Mr.</option>
+            <option value="Mrs.">Mrs.</option><option value="Miss">Miss</option><option value="Dr.">Dr.</option>
+          </select>
+          <input id="c-technical" style="flex:1"/>
+        </div></div>
+    </div>
+    <div class="fg fg-4">
+      <div class="field"><label>Marketing Email</label><input id="c-marketing-email"/></div>
+      <div class="field"><label>Marketing Phone</label><input id="c-marketing-phone"/></div>
+      <div class="field"><label>Technical Email</label><input id="c-technical-email"/></div>
+      <div class="field"><label>Technical Phone</label><input id="c-technical-phone"/></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-primary" onclick="goStep(2)">
+        Continue to Blower Specs <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: Blower Specs ══ -->
+  <div class="step-panel" id="panel-2">
+    <div class="step-heading">Step 2 — Blower Selection</div>
+
+    <div class="sec-label">Model</div>
+    <div class="fg fg-2">
+      <div class="field">
+        <label>Blower Model <span class="req">*</span></label>
+        <select id="blower_model"><option value="">Loading…</option></select>
+      </div>
+      <div class="field">
+        <label>Quantity</label>
+        <input id="qty" type="number" min="1" step="1" value="1"/>
+      </div>
+    </div>
+
+    <div class="sec-label">Specifications <small style="color:#94a3b8;font-weight:400;text-transform:none;letter-spacing:0">(auto from catalog)</small></div>
+    <div class="fg fg-4">
+      <div class="field"><label>Motor Rating</label><input id="b-hp" class="ro" readonly value="—"/></div>
+      <div class="field"><label>Air Flow (Nm³/hr)</label><input id="b-airflow" class="ro" readonly value="—"/></div>
+      <div class="field"><label>Static Pressure</label><input id="b-pressure" class="ro" readonly value="—"/></div>
+      <div class="field"><label>Unit Price</label><input id="b-price" class="ro" readonly value="—"/></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-outline" onclick="goStep(1)">Back</button>
+      <button class="btn-primary" onclick="goStep(3)">
+        Continue to T&amp;Cs <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: Terms & Conditions ══ -->
+  <div class="step-panel" id="panel-3">
+    <div class="step-heading">Step 3 — Terms &amp; Conditions (Annexure)</div>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">These values appear verbatim in the Terms &amp; Conditions annexure. Edit as needed.</p>
+    <table id="tnc-table" style="width:100%;border-collapse:collapse;margin-bottom:28px;">
+      <tbody>
+        <tr><td class="tech-lbl">Prices</td>
+            <td><select id="tnc_prices">
+              <option value="EX Bhagola (Ex-Works)" selected>EX Bhagola (Ex-Works)</option>
+              <option value="FOR (Free on Road / Free on Rail)">FOR (Free on Road / Free on Rail)</option>
+              <option value="FOB (Free On Board)">FOB (Free On Board)</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Delivery</td>
+            <td><textarea id="tnc_delivery" rows="2">6 – 8 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later.</textarea></td></tr>
+        <tr><td class="tech-lbl">GST</td>
+            <td><select id="tnc_gst">
+              <option value="18% extra." selected>18% extra.</option>
+              <option value="28% extra.">28% extra.</option>
+              <option value="12% extra.">12% extra.</option>
+              <option value="5% extra.">5% extra.</option>
+              <option value="Inclusive">Inclusive</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">HSN Code</td>
+            <td><input id="tnc_hsn_code" type="text" value="84145930"/></td></tr>
+        <tr><td class="tech-lbl">PAN / GST No.</td>
+            <td><input id="tnc_pan_gst" type="text" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
+        <tr><td class="tech-lbl">Terms of Payment</td>
+            <td><textarea id="tnc_payment_terms" rows="2">30% advance with the purchase order
+70% against proforma invoice prior to dispatch</textarea></td></tr>
+        <tr><td class="tech-lbl">Packing &amp; Forwarding</td>
+            <td><select id="tnc_packing_forwarding">
+              <option value="4% and 2% respectively." selected>4% and 2% respectively.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Freight Charges</td>
+            <td><select id="tnc_freight">
+              <option value="In client's scope." selected>In client's scope.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Transit Insurance</td>
+            <td><select id="tnc_transit_insurance">
+              <option value="To be arranged by the client." selected>To be arranged by the client.</option>
+              <option value="In ENCON's scope.">In ENCON's scope.</option>
+            </select></td></tr>
+        <tr><td class="tech-lbl">Validity</td>
+            <td><input id="tnc_validity" type="text" value="45 days from the date of our offer."/></td></tr>
+        <tr><td class="tech-lbl">Inspection</td>
+            <td><textarea id="tnc_inspection" rows="2">If required, materials can be inspected at our works before dispatch, at the client's cost and with prior intimation.</textarea></td></tr>
+        <tr><td class="tech-lbl">Guarantee</td>
+            <td><textarea id="tnc_guarantee" rows="2">Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier — against any manufacturing defects or poor workmanship.</textarea></td></tr>
+      </tbody>
+    </table>
+
+    <div class="action-row">
+      <button class="btn-outline" onclick="goStep(2)">Back</button>
+      <button class="btn-primary" onclick="goStep(4)">
+        Continue to Generate <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 4: Generate Offer ══ -->
+  <div class="step-panel" id="panel-4">
+    <div class="step-heading">Step 4 — Generate Offer</div>
+    <div class="alert-error" id="gen-error"></div>
+    <div class="cost-banner" id="cost-banner">
+      <div><div class="banner-label">Blower Price</div><div class="banner-big" id="banner-price">—</div></div>
+      <div><div class="banner-label">Configuration</div><div class="banner-big" id="banner-config" style="font-size:1.1rem;">—</div></div>
+    </div>
+    <p style="color:var(--muted); font-size:.9rem;">
+      Click <b>Generate Offer</b> to produce a Word document for the selected blower with the standard specifications table, price schedule and commercial terms.
+    </p>
+    <div class="action-row" id="action-row-gen">
+      <button class="btn-outline" id="back-btn" onclick="goStep(3)">Back</button>
+      <button class="btn-primary" id="gen-btn" onclick="generateOffer()"><span class="btn-txt">Generate Offer</span></button>
+    </div>
+    <div class="quote-result" id="quote-result">
+      <h4>Offer generated successfully</h4>
+      <div style="font-size:.88rem; color:#166534;" id="quote-meta">—</div>
+      <a id="dl-link" class="dl-btn" href="#" target="_blank" rel="noopener">Download .docx</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let _refDirty = false;
+
+function goStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById(`panel-${i}`).classList.toggle('active', i === n);
+    const tab = document.getElementById(`tab-${i}`);
+    tab.classList.toggle('active', i === n);
+    tab.classList.toggle('done', i < n);
+  }
+  if (n >= 2) _generateRef();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function _generateRef() {
+  const ref = document.getElementById('c-ref');
+  if (_refDirty && ref.value) return;
+  const city = (document.getElementById('c-city').value || 'XXX').slice(0, 3).toUpperCase();
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  if (!_refDirty || !ref.value) ref.value = `ENCON.04026.XXX/${city}/BLR DT.${dd}/${mm}/${yyyy}`;
+}
+
+function _customerPayload() {
+  const v = (id) => (document.getElementById(id) || {}).value || '';
+  return {
+    salutation: v('c-salutation'), name: v('c-name'), email: v('c-email'), phone: v('c-phone'),
+    company: v('c-company'), designation: v('c-designation'), address: v('c-address'),
+    city: v('c-city'), state: v('c-state'), pin: v('c-pin'), gstin: v('c-gstin'),
+    ref_no: v('c-ref'), location: v('c-location'), subject: v('c-subject'),
+    marketing_salutation: v('c-marketing-salutation'), marketing: v('c-marketing'),
+    marketing_email: v('c-marketing-email'), marketing_phone: v('c-marketing-phone'),
+    technical_salutation: v('c-technical-salutation'), technical: v('c-technical'),
+    technical_email: v('c-technical-email'), technical_phone: v('c-technical-phone'),
+    tnc_prices: v('tnc_prices'), tnc_delivery: v('tnc_delivery'), tnc_gst: v('tnc_gst'),
+    tnc_hsn_code: v('tnc_hsn_code'), tnc_pan_gst: v('tnc_pan_gst'), tnc_payment_terms: v('tnc_payment_terms'),
+    tnc_packing_forwarding: v('tnc_packing_forwarding'), tnc_freight: v('tnc_freight'),
+    tnc_transit_insurance: v('tnc_transit_insurance'), tnc_validity: v('tnc_validity'),
+    tnc_inspection: v('tnc_inspection'), tnc_guarantee: v('tnc_guarantee'),
+  };
+}
+
+// ── Load blower catalog into the dropdown, grouped by pressure ───────────────
+let _catalog = [];
+async function _loadCatalog() {
+  const sel = document.getElementById('blower_model');
+  try {
+    const r = await fetch('/api/blower/catalog');
+    const j = await r.json();
+    _catalog = j.items || [];
+    sel.innerHTML = '';
+    const byPressure = {};
+    for (const it of _catalog) (byPressure[it.pressure] = byPressure[it.pressure] || []).push(it);
+    for (const pr of Object.keys(byPressure)) {
+      const og = document.createElement('optgroup');
+      og.label = pr || 'Other';
+      for (const it of byPressure[pr]) {
+        const o = document.createElement('option');
+        o.value = it.model;
+        o.textContent = `${it.model} — ${it.hp} HP, ${it.airflow} Nm³/hr`;
+        og.appendChild(o);
+      }
+      sel.appendChild(og);
+    }
+    _onModelChange();
+  } catch (e) {
+    sel.innerHTML = '<option value="">Failed to load catalog</option>';
+  }
+}
+function _onModelChange() {
+  const m = document.getElementById('blower_model').value;
+  const it = _catalog.find(x => x.model === m);
+  const set = (id, val) => document.getElementById(id).value = val;
+  if (!it) { set('b-hp','—'); set('b-airflow','—'); set('b-pressure','—'); set('b-price','—'); return; }
+  set('b-hp', it.hp + ' HP');
+  set('b-airflow', it.airflow + ' Nm³/hr');
+  set('b-pressure', it.pressure);
+  set('b-price', '₹ ' + (it.price || 0).toLocaleString('en-IN'));
+}
+
+async function generateOffer() {
+  const errEl = document.getElementById('gen-error');
+  const btn = document.getElementById('gen-btn');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.querySelector('.btn-txt').textContent = 'Generating…';
+
+  const model = document.getElementById('blower_model').value;
+  if (!model) { errEl.textContent = 'Please select a blower model (Step 2).'; errEl.style.display='block';
+    btn.disabled=false; btn.querySelector('.btn-txt').textContent='Generate Offer'; return; }
+
+  const payload = {
+    customer: _customerPayload(),
+    blower_model: model,
+    qty: parseInt(document.getElementById('qty').value || '1', 10),
+  };
+  try {
+    const r = await fetch('/api/generate-blower-quote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+    document.getElementById('banner-price').textContent =
+      '₹ ' + (j.unit_price || 0).toLocaleString('en-IN') + (j.qty > 1 ? ` × ${j.qty}` : '');
+    document.getElementById('banner-config').textContent = `${j.model} • ${j.config || ''}`;
+    document.getElementById('cost-banner').classList.add('visible');
+    document.getElementById('quote-meta').textContent =
+      `${j.filename} — total ₹ ${(j.total_price || 0).toLocaleString('en-IN')}`;
+    document.getElementById('dl-link').href = j.download_url;
+    document.getElementById('quote-result').style.display = 'block';
+    document.getElementById('action-row-gen').style.display = 'none';
+    document.getElementById('tab-4').classList.add('done');
+  } catch (e) {
+    errEl.textContent = 'Error: ' + (e.message || e);
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.querySelector('.btn-txt').textContent = 'Generate Offer';
+  }
+}
+
+// ── Sticky Step-1 fields (shared with VLPH/HLPH/HPU forms) ───────────────────
+const _STICKY_FIELDS = [
+  'c-salutation','c-name','c-email','c-phone','c-company','c-designation','c-address',
+  'c-city','c-state','c-pin','c-gstin','c-ref','c-location','c-subject',
+  'c-marketing-salutation','c-marketing','c-marketing-email','c-marketing-phone',
+  'c-technical-salutation','c-technical','c-technical-email','c-technical-phone',
+];
+const _STICKY_KEY = 'encon_form_step1';
+function _saveSticky() {
+  const obj = {};
+  for (const id of _STICKY_FIELDS) { const el = document.getElementById(id); if (el) obj[id] = el.value; }
+  try { localStorage.setItem(_STICKY_KEY, JSON.stringify(obj)); } catch (e) {}
+}
+function _loadSticky() {
+  try {
+    const raw = localStorage.getItem(_STICKY_KEY); if (!raw) return;
+    const obj = JSON.parse(raw);
+    // Don't clobber the blower subject with a preheater subject from another form.
+    for (const id of _STICKY_FIELDS) {
+      if (id === 'c-subject') continue;
+      const el = document.getElementById(id); if (el && obj[id] != null) el.value = obj[id];
+    }
+  } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', () => {
+  _loadSticky();
+  for (const id of _STICKY_FIELDS) {
+    const el = document.getElementById(id); if (!el) continue;
+    el.addEventListener('input', _saveSticky);
+    el.addEventListener('change', _saveSticky);
+  }
+  document.getElementById('blower_model').addEventListener('change', _onModelChange);
+  _generateRef();
+  _loadCatalog();
+});
+</script>
+</body>
+</html>
