@@ -321,8 +321,9 @@ def _cog_line_rows(media: str, equipment: dict,
     _, shutoff_price = _get_valve_price(gas_pipe_nb, "shutoff", shutoff_valve_vendor)
 
     # Control valve — DEMBLA pneumatic by default, CAIR motorised when chosen.
-    # _get_valve_price returns either 'CONTROL VALVE NB' (DEMBLA/AIRA) or
-    # 'MOTORIZED CONTROL VALVE NB' (CAIR) based on the vendor.
+    # _get_valve_price returns 'PNEUMATIC CONTROL VALVE NB' (DEMBLA/AIRA) or
+    # 'MOTORIZED CONTROL VALVE NB' (CAIR) based on the vendor; we only use the
+    # price (display label is set via pcv_display_name below).
     _, pcv_price = _get_valve_price(cv_nb, "control", control_valve_vendor)
     pcv_make = control_valve_vendor.upper() if control_valve_vendor else "DEMBLA"
     pcv_display_name = ("MOTORIZED CONTROL VALVE" if control_valve_vendor == "cair"
