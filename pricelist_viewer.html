@@ -707,6 +707,13 @@ function attachEditHandlers(container, table) {
 function splitItem(item, specification) {
   const spec = specification || '';
   let name = (item || '').trim();
+  // Burner 'A-frame' sizes (2A, 2A/3A, 5A/6A, 7A) ARE the item's identity,
+  // not a separable size or model code. Keep them inline in the name so each
+  // assembly reads in full ('SS ASSLY 2A/3A') and the four sizes aren't
+  // collapsed to an identical 'SS ASSLY' that looks like a duplicate set.
+  if (/^\s*\d+A(\s*\/\s*\d+A)*\s*$/i.test(spec)) {
+    return { name, size: '', model: '' };
+  }
   if (spec && name.endsWith(' ' + spec)) {
     name = name.slice(0, -1 - spec.length);
   }
@@ -1051,7 +1058,9 @@ function _renderRatesTable(data, opts) {
     // group can be flagged, not just the 2nd+ occurrence.
     const dupKey = (r) => {
       const p = splitItem(r.item, r.specification);
-      return `${(p.name||'').toUpperCase()}|${(p.size||'').toUpperCase()}|${(r.company||'').toUpperCase()}`;
+      // Include the model/spec code: rows that differ only by model (e.g. a
+      // size variant parked in the Model column) are NOT duplicates.
+      return `${(p.name||'').toUpperCase()}|${(p.size||'').toUpperCase()}|${(p.model||'').toUpperCase()}|${(r.company||'').toUpperCase()}`;
     };
     const dupCounts = {};
     cats[cat].forEach(r => { if (r.item) { const k = dupKey(r); dupCounts[k] = (dupCounts[k]||0) + 1; } });
