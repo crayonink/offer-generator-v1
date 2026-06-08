@@ -1050,6 +1050,14 @@ function _renderRatesTable(data, opts) {
       // Sort by price ascending — these are type variants with no NB size,
       // so price is the meaningful order.
       cats[cat].sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+    } else if (cat === 'Pressure Switch') {
+      // Group by company (all MADAS together, all Switzer together), then by
+      // item label (High / Low) within each company.
+      cats[cat].sort((a, b) => {
+        const c = (a.company || '').toUpperCase().localeCompare((b.company || '').toUpperCase());
+        if (c !== 0) return c;
+        return (a.item || '').localeCompare(b.item || '');
+      });
     } else {
       cats[cat].sort((a, b) => {
         const sa = splitItem(a.item, a.specification).size;
@@ -1079,7 +1087,7 @@ function _renderRatesTable(data, opts) {
     // banner row each time the supplier changes so each vendor's block is
     // visually fenced off. Skipped for other categories where company isn't
     // the primary sort key.
-    const showCompanyHdrs = (cat === 'Control Valve' || cat === 'Pneumatic Control Valve' || cat === 'Pneumatic Shut Off Valve');
+    const showCompanyHdrs = (cat === 'Control Valve' || cat === 'Pneumatic Control Valve' || cat === 'Pneumatic Shut Off Valve' || cat === 'Pressure Switch');
     let lastCompanyHdr = null;
 
     cats[cat].forEach(r => {
