@@ -3309,6 +3309,19 @@ def burner_costing_form():
         return HTMLResponse(content=f.read())
 
 
+def _finite_price(v):
+    """Coerce to a finite float > 0, or None. Guards against NaN/inf values
+    (e.g. incomplete blower_master rows) that aren't JSON-serialisable and
+    would 500 the response."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    if f != f or f in (float("inf"), float("-inf")) or f <= 0:
+        return None
+    return f
+
+
 def _fmt_num(v) -> str:
     """'10.0' -> '10', '7.5' -> '7.5', '2040.0' -> '2,040'."""
     try:
@@ -3329,13 +3342,18 @@ def blower_catalog():
         "FROM blower_master ORDER BY pressure, CAST(hp AS REAL)"
     ).fetchall()
     conn.close()
-    items = [{
-        "model":    r[0],
-        "hp":       _fmt_num(r[1]),
-        "airflow":  _fmt_num(r[2]),
-        "pressure": (r[3] or "").strip(),
-        "price":    float(r[4] or 0),
-    } for r in rows]
+    items = []
+    for r in rows:
+        price = _finite_price(r[4])
+        if price is None:
+            continue  # skip incomplete / NaN-priced rows (unsellable)
+        items.append({
+            "model":    r[0],
+            "hp":       _fmt_num(r[1]),
+            "airflow":  _fmt_num(r[2]),
+            "pressure": (r[3] or "").strip(),
+            "price":    price,
+        })
     return {"items": items}
 
 
@@ -3370,13 +3388,14 @@ def _burner_lookup(group: str, model: str):
                 "SELECT burner_set FROM gail_gas_burner_master "
                 "WHERE burner_size = ? AND burner_set IS NOT NULL LIMIT 1", (model,)
             ).fetchone()
-            if not row:
+            price = _finite_price(row[0]) if row else None
+            if price is None:
                 return None
             # Capacity is inherent in the GAIL model name (e.g. 'ENCON-500 KW').
             import re as _re
             m = _re.search(r"(\d[\d,]*)\s*KW", model, _re.I)
             cap = f"{m.group(1)} kW" if m else ""
-            return float(row[0]), "Natural Gas", cap, "GAIL Gas Burner"
+            return price, "Natural Gas", cap, "GAIL Gas Burner"
         cfg = _BURNER_SECTIONS.get(group)
         if not cfg:
             return None
@@ -3386,9 +3405,10 @@ def _burner_lookup(group: str, model: str):
             "WHERE section = ? AND burner_size = ? AND component = 'BURNER SET' LIMIT 1",
             (section, model),
         ).fetchone()
-        if not row:
+        price = _finite_price(row[0]) if row else None
+        if price is None:
             return None
-        return float(row[0]), fuel, _burner_firing_capacity(conn, model), label
+        return price, fuel, _burner_firing_capacity(conn, model), label
     finally:
         conn.close()
 
@@ -3404,8 +3424,13 @@ def burner_catalog():
             "WHERE section = ? AND component = 'BURNER SET' ORDER BY burner_size",
             (section,),
         ).fetchall()
-        items = [{"model": r[0], "price": float(r[1] or 0),
-                  "capacity": _burner_firing_capacity(conn, r[0])} for r in rows]
+        items = []
+        for r in rows:
+            price = _finite_price(r[1])
+            if price is None:
+                continue
+            items.append({"model": r[0], "price": price,
+                          "capacity": _burner_firing_capacity(conn, r[0])})
         groups.append({"key": key, "label": label, "fuel": fuel, "items": items})
     # GAIL pre-assembled sets
     gail_rows = conn.execute(
@@ -3414,9 +3439,12 @@ def burner_catalog():
     ).fetchall()
     import re as _re
     gail_items = []
-    for sz, price in gail_rows:
+    for sz, raw_price in gail_rows:
+        price = _finite_price(raw_price)
+        if price is None:
+            continue
         m = _re.search(r"(\d[\d,]*)\s*KW", sz or "", _re.I)
-        gail_items.append({"model": sz, "price": float(price or 0),
+        gail_items.append({"model": sz, "price": price,
                            "capacity": f"{m.group(1)} kW" if m else ""})
     groups.append({"key": "gail", "label": "GAIL Gas Burner",
                    "fuel": "Natural Gas", "items": gail_items})
@@ -3555,7 +3583,9 @@ def generate_blower_quote(req: BlowerQuoteRequest):
         if not row:
             return {"error": f"unknown blower model: {req.blower_model}"}
         model, hp, airflow, pressure, price = row
-        unit_price = float(price or 0)
+        unit_price = _finite_price(price)
+        if unit_price is None:
+            return {"error": f"blower '{model}' has no valid price in the catalog"}
         equipment_name = f"Centrifugal Blower – {model}"
         specs = {
             "blower_model":    model,
