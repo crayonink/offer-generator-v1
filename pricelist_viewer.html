@@ -326,6 +326,31 @@
       border-top: none; padding: 9px 12px;
     }
 
+    /* Company sub-header rows (within a category — groups one supplier) */
+    .xl-table .company-hdr td {
+      background: #eef2f7; color: var(--navy);
+      font-weight: 700; font-size: 0.66rem;
+      letter-spacing: .06em; text-transform: uppercase;
+      padding: 5px 12px 5px 28px; border-top: 1px solid var(--border);
+    }
+    .xl-table .company-hdr .ct { color: var(--muted); font-weight: 600; margin-left: 8px; text-transform: none; letter-spacing: 0; }
+
+    /* Company badge chip (in the Company cell) */
+    .co-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 9px; border-radius: 11px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: .02em;
+      line-height: 1.5; white-space: nowrap;
+    }
+
+    /* Duplicate-row warning marker */
+    .dup-flag {
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-left: 6px; cursor: help; color: var(--amber);
+      font-size: 0.8rem; vertical-align: middle;
+    }
+    .xl-table tr.is-dup td { background: #fffbeb; }
+
     /* HPU KW selector (top of HPU sheet) */
     .kw-selector {
       display: flex; flex-wrap: wrap; gap: 6px;
@@ -922,6 +947,29 @@ function shortenName(name) {
   return s.length > 20 ? s.slice(0, 19) + '…' : s;
 }
 
+// ── Company badge ───────────────────────────────────────────────────────────
+// Known vendors get a fixed colour; anything else is hashed to a stable hue so
+// the same supplier always renders the same shade across the sheet.
+const COMPANY_COLORS = {
+  'AIRA':   { bg: '#dbeafe', fg: '#1e40af' },
+  'DEMBLA': { bg: '#dcfce7', fg: '#166534' },
+  'CAIR':   { bg: '#fef3c7', fg: '#92400e' },
+  'CIRcOR': { bg: '#f3e8ff', fg: '#6b21a8' },
+};
+function _companyColor(name) {
+  const key = (name || '').trim().toUpperCase();
+  if (COMPANY_COLORS[key]) return COMPANY_COLORS[key];
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) % 360;
+  return { bg: `hsl(${h} 70% 92%)`, fg: `hsl(${h} 65% 32%)` };
+}
+function companyBadge(name) {
+  const txt = (name || '').trim();
+  if (!txt) return '';
+  const c = _companyColor(txt);
+  return `<span class="co-badge" style="background:${c.bg};color:${c.fg};">${esc(txt)}</span>`;
+}
+
 // ── RATES + RAW MATERIAL sheets ─────────────────────────────────────────────
 // Both tabs render through one table builder. Rates excludes 'Raw Material'
 // rows; the Raw Material tab shows only those.
@@ -997,13 +1045,26 @@ function _renderRatesTable(data, opts) {
         return (a.item || '').localeCompare(b.item || '');
       });
     }
+    // Duplicate detection: a row is a likely dupe when another row in the
+    // same category shares its name + size + company (e.g. a stale entry left
+    // behind after a re-quote). Count keys up front so every member of a dupe
+    // group can be flagged, not just the 2nd+ occurrence.
+    const dupKey = (r) => {
+      const p = splitItem(r.item, r.specification);
+      return `${(p.name||'').toUpperCase()}|${(p.size||'').toUpperCase()}|${(r.company||'').toUpperCase()}`;
+    };
+    const dupCounts = {};
+    cats[cat].forEach(r => { if (r.item) { const k = dupKey(r); dupCounts[k] = (dupCounts[k]||0) + 1; } });
+
+    // Company sub-headers: for Control Valve (sorted company-primary) emit a
+    // banner row each time the supplier changes so each vendor's block is
+    // visually fenced off. Skipped for other categories where company isn't
+    // the primary sort key.
+    const showCompanyHdrs = (cat === 'Control Valve');
+    let lastCompanyHdr = null;
+
     cats[cat].forEach(r => {
       if (!r.item) return;
-      rowNum++;
-      const change = r.previous_price && r.previous_price !== r.price
-        ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%' : '—';
-      const cs = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
-      const updatedAt = r.updated_at || '—';
       // Split the item display into name / size / model. data-item
       // still uses the FULL r.item string so inline edits + BOM
       // lookups stay consistent with the DB.
@@ -1012,16 +1073,34 @@ function _renderRatesTable(data, opts) {
       const shortName = shortenName(parts.name);
       const size      = parts.size;
       const catCell   = parts.model || r.category || '';
+
+      if (showCompanyHdrs) {
+        const co = (r.company || '').trim() || 'Unspecified';
+        if (co !== lastCompanyHdr) {
+          lastCompanyHdr = co;
+          html += `<tr class="company-hdr"><td class="rn"></td><td colspan="8">${esc(co)}</td></tr>`;
+        }
+      }
+
+      rowNum++;
+      const change = r.previous_price && r.previous_price !== r.price
+        ? ((r.price - r.previous_price) / r.previous_price * 100).toFixed(1) + '%' : '—';
+      const cs = r.previous_price && r.price > r.previous_price ? 'color:#c62828' : r.previous_price && r.price < r.previous_price ? 'color:#2e7d32' : '';
+      const updatedAt = r.updated_at || '—';
       // Per-kg rates: Structure rows are quoted per kilogram in the BOM,
       // so the displayed price needs a /kg suffix to distinguish it from
       // absolute prices in the same column.
       const priceSuffix = (r.category === 'Structure') ? ' /kg' : '';
-      html += `<tr>
+      const isDup = dupCounts[dupKey(r)] > 1;
+      const dupMark = isDup
+        ? ` <span class="dup-flag" title="Duplicate: another ${esc(cat)} row has the same item, size &amp; company">⚠</span>`
+        : '';
+      html += `<tr${isDup ? ' class="is-dup"' : ''}>
         <td class="rn">${rowNum}</td>
-        <td class="item-cell" title="${esc(fullName)}">${esc(shortName)}</td>
+        <td class="item-cell" title="${esc(fullName)}">${esc(shortName)}${dupMark}</td>
         <td style="text-align:center;font-weight:600;color:#1a3a5c;">${esc(size)}</td>
         <td style="text-align:center;font-family:monospace;font-size:11px;color:#1a5276;">${esc(catCell)}</td>
-        <td class="editable rates-company" data-item="${esc(r.item)}" style="color:#1a5276;">${esc(r.company||'')}</td>
+        <td class="editable rates-company" data-item="${esc(r.item)}">${companyBadge(r.company)}</td>
         <td class="editable rates-price" data-item="${esc(r.item)}" data-field="price">${fmt(r.price)}${priceSuffix}</td>
         <td class="num-cell">${fmt(r.previous_price)}</td>
         <td class="num-cell" style="${cs}">${change}</td>
@@ -1048,16 +1127,16 @@ function _renderRatesTable(data, opts) {
       async function save() {
         const val = inp.value.trim();
         td.classList.remove('editing');
-        td.textContent = val;
+        td.innerHTML = companyBadge(val);
         try {
           await fetch('/api/pricelist/company', {
             method: 'PUT', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({ item, company: val }),
           });
-        } catch(e) { td.textContent = orig; }
+        } catch(e) { td.innerHTML = companyBadge(orig); }
       }
       inp.addEventListener('blur', save);
-      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { td.classList.remove('editing'); td.textContent = orig; } });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { td.classList.remove('editing'); td.innerHTML = companyBadge(orig); } });
     });
   });
 
@@ -1102,7 +1181,7 @@ function filterRatesTable(tableId, query) {
   const q = query.toLowerCase().trim();
   const rows = table.querySelectorAll('tbody tr');
   rows.forEach(tr => {
-    if (tr.classList.contains('section-hdr')) {
+    if (tr.classList.contains('section-hdr') || tr.classList.contains('company-hdr')) {
       tr.style.display = q ? 'none' : '';
       return;
     }
@@ -1981,6 +2060,12 @@ function applyFilter() {
     const sheetId = panel.id.replace(/^sheet-/, '');
     let visible = 0;
     panel.querySelectorAll('tbody tr').forEach(tr => {
+      // Per-vendor sub-headers are only meaningful when the full list shows —
+      // during a search they'd strand above filtered-out rows, so hide them.
+      if (tr.classList.contains('company-hdr')) {
+        tr.classList.toggle('row-filtered', !!q);
+        return;
+      }
       // Section / header rows always visible — they're navigation context, not data.
       if (tr.classList.contains('section-hdr') || tr.classList.contains('sec-hdr') ||
           tr.classList.contains('hdr2') || !tr.querySelector('td')) {
