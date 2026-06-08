@@ -182,17 +182,29 @@ def _get_cheapest_ball_valve(nb: int) -> float:
 
 
 def _get_cheapest_butterfly_valve(nb: int) -> float:
-    """Get cheapest L&T butterfly valve (lever preferred) price for a given NB
-    from lt_butterfly_valve_master. Falls back to gear type if lever is not
-    available at that NB (levers only go up to 300 NB)."""
+    """L&T butterfly valve price for a given NB.
+
+    Primary source is the curated 'BUTTERFLY VALVE {nb} NB' (L&T) rows in
+    component_price_master (50-300 NB). For larger NB not in that list, falls
+    back to lt_butterfly_valve_master (lever/gear, up to 600 NB)."""
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
-    row = conn.execute(
-        "SELECT price FROM lt_butterfly_valve_master WHERE nb = ? ORDER BY price ASC LIMIT 1",
-        (nb,),
-    ).fetchone()
-    conn.close()
-    return float(row[0]) if row else 0
+    try:
+        row = conn.execute(
+            "SELECT price FROM component_price_master "
+            "WHERE item = ? AND category = 'Butterfly Valve' AND company = 'L&T'",
+            (f'BUTTERFLY VALVE {nb} NB',),
+        ).fetchone()
+        if row and row[0] is not None:
+            return float(row[0])
+        # Fallback for sizes beyond the curated list (350-600 NB).
+        row = conn.execute(
+            "SELECT price FROM lt_butterfly_valve_master WHERE nb = ? ORDER BY price ASC LIMIT 1",
+            (nb,),
+        ).fetchone()
+        return float(row[0]) if row else 0
+    finally:
+        conn.close()
 
 
 CERAMIC_FIBRE_KG_PER_ROLL = 14.0
