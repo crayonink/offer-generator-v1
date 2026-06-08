@@ -1046,8 +1046,9 @@ function _renderRatesTable(data, opts) {
         const vb = isNaN(nb) ? Infinity : nb;
         return va - vb;
       });
-    } else if (cat === 'Safety Relief Valve') {
-      // Sort by price ascending (these share a size, so price is the useful key).
+    } else if (cat === 'Safety Relief Valve' || cat === 'ID Fan') {
+      // Sort by price ascending — these are type variants with no NB size,
+      // so price is the meaningful order.
       cats[cat].sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
     } else {
       cats[cat].sort((a, b) => {
