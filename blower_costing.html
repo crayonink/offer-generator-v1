@@ -53,6 +53,42 @@
     .field textarea { resize:vertical; min-height:72px; }
     .ro { background:#eef4fb; color:var(--navy); font-weight:700; cursor:not-allowed; }
 
+    /* Cascading blower dropdown: pressure series -> models on hover */
+    .bd { position:relative; }
+    .bd-trigger { width:100%; display:flex; align-items:center; justify-content:space-between;
+      padding:10px 13px; border:1.5px solid var(--border); border-radius:9px; background:var(--bg);
+      font:inherit; font-size:.88rem; color:var(--text); cursor:pointer; text-align:left; }
+    .bd-trigger:hover { border-color:#cbd5e1; }
+    .bd.open .bd-trigger { border-color:var(--navy); background:#fff; box-shadow:0 0 0 3px rgba(26,58,92,.07); }
+    .bd-caret { color:var(--muted); font-size:.8rem; margin-left:8px; }
+    .bd-menu { position:absolute; top:calc(100% + 5px); left:0; min-width:300px; background:#fff;
+      border:1.5px solid var(--border); border-radius:11px; box-shadow:0 12px 32px rgba(15,39,68,.18);
+      z-index:60; padding:6px; display:none; }
+    .bd.open .bd-menu { display:block; }
+    .bd-loading { padding:12px; color:var(--muted); font-size:.85rem; }
+    .bd-group { position:relative; padding:11px 12px; border-radius:8px; cursor:default;
+      display:flex; align-items:center; justify-content:space-between; }
+    .bd-group:hover, .bd-group.open { background:#eef4fb; }
+    .bd-group-main { display:flex; flex-direction:column; gap:2px; }
+    .bd-group-title { font-weight:700; font-size:.86rem; color:var(--navy); }
+    .bd-group-sub   { font-size:.72rem; color:var(--muted); }
+    .bd-group-chev  { color:var(--muted); font-size:.8rem; }
+    .bd-submenu { position:absolute; left:calc(100% + 6px); top:-6px; min-width:320px;
+      max-height:340px; overflow-y:auto; background:#fff; border:1.5px solid var(--border);
+      border-radius:11px; box-shadow:0 12px 32px rgba(15,39,68,.18); padding:6px; display:none; }
+    .bd-group:hover .bd-submenu, .bd-group.open .bd-submenu { display:block; }
+    .bd-opt { padding:9px 12px; border-radius:7px; cursor:pointer; font-size:.85rem; display:flex;
+      align-items:baseline; gap:8px; }
+    .bd-opt:hover { background:var(--navy); color:#fff; }
+    .bd-opt.sel { background:#dbeafe; font-weight:700; }
+    .bd-opt .m { font-weight:700; min-width:92px; }
+    .bd-opt .d { font-size:.78rem; opacity:.85; }
+    @media (max-width:640px) {
+      /* On narrow screens flow the submenu below the group instead of right. */
+      .bd-submenu { position:static; left:auto; top:auto; box-shadow:none; border:none;
+        border-left:2px solid var(--border); border-radius:0; margin:2px 0 2px 10px; }
+    }
+
     .action-row { margin-top:32px; display:flex; gap:12px; }
     .btn-primary { flex:1; padding:14px 24px; background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%); color:#fff; border:none; border-radius:10px; font-size:.92rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 10px rgba(26,58,92,.32); }
     .btn-primary:hover { background:linear-gradient(135deg,var(--navy2) 0%,var(--navy) 100%); transform:translateY(-1px); }
@@ -204,7 +240,13 @@
     <div class="fg fg-2">
       <div class="field">
         <label>Blower Model <span class="req">*</span></label>
-        <select id="blower_model"><option value="">Loading…</option></select>
+        <div class="bd" id="bd">
+          <button type="button" class="bd-trigger" id="bd-trigger" onclick="_toggleDD(event)">
+            <span id="bd-label">Select a blower…</span><span class="bd-caret">▾</span>
+          </button>
+          <div class="bd-menu" id="bd-menu"><div class="bd-loading">Loading…</div></div>
+        </div>
+        <input type="hidden" id="blower_model" value=""/>
       </div>
       <div class="field">
         <label>Quantity</label>
@@ -357,35 +399,81 @@ function _customerPayload() {
   };
 }
 
-// ── Load blower catalog into the dropdown, grouped by pressure ───────────────
+// ── Cascading blower dropdown: pick a pressure series, hover to see models ────
 let _catalog = [];
+const _PRESSURE_LABEL = { '28': 'Medium Pressure', '40': 'High Pressure' };
+function _pressureLabel(pr) {
+  const m = (pr || '').match(/\d+/);
+  return (m && _PRESSURE_LABEL[m[0]]) || 'Pressure';
+}
+function _toggleDD(e) { if (e) e.stopPropagation(); document.getElementById('bd').classList.toggle('open'); }
+function _closeDD() {
+  document.getElementById('bd').classList.remove('open');
+  document.querySelectorAll('.bd-group.open').forEach(g => g.classList.remove('open'));
+}
+
 async function _loadCatalog() {
-  const sel = document.getElementById('blower_model');
+  const menu = document.getElementById('bd-menu');
   try {
     const r = await fetch('/api/blower/catalog');
     if (!r.ok) throw new Error('HTTP ' + r.status + ' — is the server running the latest code?');
     const j = await r.json();
     if (j.error) throw new Error(j.error);
     _catalog = j.items || [];
-    sel.innerHTML = '';
-    const byPressure = {};
-    for (const it of _catalog) (byPressure[it.pressure] = byPressure[it.pressure] || []).push(it);
-    for (const pr of Object.keys(byPressure)) {
-      const og = document.createElement('optgroup');
-      og.label = pr || 'Other';
-      for (const it of byPressure[pr]) {
-        const o = document.createElement('option');
-        o.value = it.model;
-        o.textContent = `${it.model} — ${it.hp} HP, ${it.airflow} Nm³/hr`;
-        og.appendChild(o);
-      }
-      sel.appendChild(og);
+    // Group by pressure, preserving first-seen order (28″ then 40″).
+    const order = [], byPressure = {};
+    for (const it of _catalog) {
+      if (!byPressure[it.pressure]) { byPressure[it.pressure] = []; order.push(it.pressure); }
+      byPressure[it.pressure].push(it);
     }
-    _onModelChange();
+    menu.innerHTML = '';
+    for (const pr of order) {
+      const group = document.createElement('div');
+      group.className = 'bd-group';
+      const main = document.createElement('div');
+      main.className = 'bd-group-main';
+      main.innerHTML = `<span class="bd-group-title">${_pressureLabel(pr)}</span>` +
+                       `<span class="bd-group-sub">${pr} · ${byPressure[pr].length} models</span>`;
+      group.appendChild(main);
+      const chev = document.createElement('span'); chev.className = 'bd-group-chev'; chev.textContent = '▸';
+      group.appendChild(chev);
+      const sub = document.createElement('div'); sub.className = 'bd-submenu';
+      for (const it of byPressure[pr]) {
+        const opt = document.createElement('div');
+        opt.className = 'bd-opt'; opt.dataset.model = it.model;
+        opt.innerHTML = `<span class="m">${it.model}</span>` +
+                        `<span class="d">${it.hp} HP · ${it.airflow} Nm³/hr · ₹${(it.price||0).toLocaleString('en-IN')}</span>`;
+        opt.addEventListener('click', (e) => { e.stopPropagation(); _selectModel(it.model); });
+        sub.appendChild(opt);
+      }
+      group.appendChild(sub);
+      // Touch / click fallback: tapping a group toggles its submenu.
+      group.addEventListener('click', (e) => {
+        if (e.target.closest('.bd-opt')) return;
+        e.stopPropagation();
+        document.querySelectorAll('.bd-group.open').forEach(g => { if (g !== group) g.classList.remove('open'); });
+        group.classList.toggle('open');
+      });
+      menu.appendChild(group);
+    }
   } catch (e) {
-    sel.innerHTML = '<option value="">Failed to load catalog — ' + (e.message || e) + '</option>';
+    const div = document.createElement('div');
+    div.className = 'bd-loading';
+    div.textContent = 'Failed to load catalog — ' + (e.message || e);
+    menu.innerHTML = ''; menu.appendChild(div);
   }
 }
+
+function _selectModel(model) {
+  document.getElementById('blower_model').value = model;
+  const it = _catalog.find(x => x.model === model);
+  document.getElementById('bd-label').textContent =
+    it ? `${model} — ${it.hp} HP, ${it.airflow} Nm³/hr` : model;
+  document.querySelectorAll('#bd-menu .bd-opt').forEach(o => o.classList.toggle('sel', o.dataset.model === model));
+  _onModelChange();
+  _closeDD();
+}
+
 function _onModelChange() {
   const m = document.getElementById('blower_model').value;
   const it = _catalog.find(x => x.model === m);
@@ -396,6 +484,8 @@ function _onModelChange() {
   set('b-pressure', it.pressure);
   set('b-price', '₹ ' + (it.price || 0).toLocaleString('en-IN'));
 }
+// Close the dropdown when clicking outside it.
+document.addEventListener('click', (e) => { if (!e.target.closest('#bd')) _closeDD(); });
 
 async function generateOffer() {
   const errEl = document.getElementById('gen-error');
@@ -468,7 +558,6 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('input', _saveSticky);
     el.addEventListener('change', _saveSticky);
   }
-  document.getElementById('blower_model').addEventListener('change', _onModelChange);
   _generateRef();
   _loadCatalog();
 });
