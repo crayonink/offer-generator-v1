@@ -351,6 +351,9 @@
     }
     .xl-table tr.is-dup td { background: #fffbeb; }
 
+    /* Search match highlight */
+    mark.search-hl { background: #fde68a; color: inherit; padding: 0 1px; border-radius: 2px; font-weight: 700; }
+
     /* HPU KW selector (top of HPU sheet) */
     .kw-selector {
       display: flex; flex-wrap: wrap; gap: 6px;
@@ -2062,8 +2065,51 @@ function _rowItemText(tr) {
   return txt;
 }
 
+// ── Match highlighting ──────────────────────────────────────────────────────
+// Wrap the matched substring in <mark> inside a row's cells. Operates on text
+// nodes only, so existing markup (company badges, dup flags) is preserved.
+function _highlightCell(el, q) {
+  const textNodes = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+  for (const node of textNodes) {
+    const text = node.nodeValue;
+    const lower = text.toLowerCase();
+    if (lower.indexOf(q) === -1) continue;
+    const frag = document.createDocumentFragment();
+    let last = 0, idx = lower.indexOf(q);
+    while (idx !== -1) {
+      if (idx > last) frag.appendChild(document.createTextNode(text.slice(last, idx)));
+      const m = document.createElement('mark');
+      m.className = 'search-hl';
+      m.textContent = text.slice(idx, idx + q.length);
+      frag.appendChild(m);
+      last = idx + q.length;
+      idx = lower.indexOf(q, last);
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  }
+}
+function _highlightRow(tr, q) {
+  tr.querySelectorAll('td').forEach(td => {
+    if (td.classList.contains('rn') || td.classList.contains('gap-td')) return;
+    _highlightCell(td, q);
+  });
+}
+function _clearHighlights(root) {
+  const parents = new Set();
+  root.querySelectorAll('mark.search-hl').forEach(m => {
+    parents.add(m.parentNode);
+    m.replaceWith(document.createTextNode(m.textContent));
+  });
+  parents.forEach(p => { if (p && p.normalize) p.normalize(); });
+}
+
 function applyFilter() {
   const q = _currentQuery.toLowerCase();
+  // Clear any previous highlights before re-applying for the new query.
+  _clearHighlights(document);
   // body.searching reveals every Vendor Valves sub-pill so cross-vendor
   // matches show up (e.g. searching "DEMBLA" while parked on the CAIR pill).
   document.body.classList.toggle('searching', !!q);
@@ -2087,7 +2133,7 @@ function applyFilter() {
       if (!q) { tr.classList.remove('row-filtered'); visible++; return; }
       const match = _rowItemText(tr).toLowerCase().includes(q);
       tr.classList.toggle('row-filtered', !match);
-      if (match) visible++;
+      if (match) { visible++; _highlightRow(tr, q); }
     });
     counters[sheetId] = visible;
 
