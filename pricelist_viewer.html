@@ -2091,6 +2091,25 @@ function applyFilter() {
     });
     counters[sheetId] = visible;
 
+    // During a search, hide section/category headers that have no matching
+    // rows beneath them — otherwise the result is a wall of empty navy bars
+    // (e.g. searching "pilot" still showed GAS REGULATOR, GATE VALVE, …).
+    if (q) {
+      const trs = Array.from(panel.querySelectorAll('tbody tr'));
+      for (let i = 0; i < trs.length; i++) {
+        const hdr = trs[i];
+        if (!(hdr.classList.contains('section-hdr') || hdr.classList.contains('sec-hdr'))) continue;
+        let anyVisible = false;
+        for (let j = i + 1; j < trs.length; j++) {
+          const r = trs[j];
+          if (r.classList.contains('section-hdr') || r.classList.contains('sec-hdr')) break;
+          if (r.classList.contains('company-hdr')) continue;
+          if (!r.classList.contains('row-filtered') && r.querySelector('td:not(.rn)')) { anyVisible = true; break; }
+        }
+        hdr.classList.toggle('row-filtered', !anyVisible);
+      }
+    }
+
     // Hide table wrappers (and their section-label / kw-selector caps) whose
     // every data row is filtered out — avoids a stack of empty cards.
     panel.querySelectorAll('.xl-wrap, .ro-wrap').forEach(wrap => {
