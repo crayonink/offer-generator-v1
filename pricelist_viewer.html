@@ -1025,7 +1025,7 @@ function _renderRatesTable(data, opts) {
     // ascending (50 NB precedes 100 NB instead of following lexicographic
     // order on the full item label). Items without a numeric size fall to
     // the end of the category, tie-broken alphabetically.
-    if (cat === 'Bought Out' || cat === 'Control Valve' || cat === 'Pneumatic Control Valve') {
+    if (cat === 'Bought Out' || cat === 'Control Valve' || cat === 'Pneumatic Control Valve' || cat === 'Pneumatic Shut Off Valve') {
       // Sort by base name (case-insensitive), then group by company so each
       // supplier's rows sit together (all AIRA, then all DEMBLA, ...), then
       // ascend by NB size within a company. Bought Out is a grab-bag; Control
@@ -1072,7 +1072,7 @@ function _renderRatesTable(data, opts) {
     // banner row each time the supplier changes so each vendor's block is
     // visually fenced off. Skipped for other categories where company isn't
     // the primary sort key.
-    const showCompanyHdrs = (cat === 'Control Valve' || cat === 'Pneumatic Control Valve');
+    const showCompanyHdrs = (cat === 'Control Valve' || cat === 'Pneumatic Control Valve' || cat === 'Pneumatic Shut Off Valve');
     let lastCompanyHdr = null;
 
     cats[cat].forEach(r => {

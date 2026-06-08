@@ -278,12 +278,14 @@ def lookup_ladle_fab_pipeline(ladle_tons: float, preheater_type: str,
 
 
 def _get_cheapest_shutoff_valve(nb: int) -> float:
-    """Cheapest pneumatic shut-off valve price for a given NB."""
+    """Cheapest pneumatic shut-off valve price for a given NB.
+    Pneumatic shut-off valves (AIRA / DEMBLA) live in the
+    'PNEUMATIC SHUT OFF VALVE {nb} NB' rows."""
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
     row = conn.execute(
         "SELECT price FROM component_price_master WHERE item LIKE ? ORDER BY price ASC LIMIT 1",
-        (f'SHUT OFF VALVE {nb} NB%',),
+        (f'PNEUMATIC SHUT OFF VALVE {nb} NB%',),
     ).fetchone()
     conn.close()
     return float(row[0]) if row else 0
@@ -740,11 +742,14 @@ def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
 
     if vendor in ("dembla", "aira"):
         company = vendor.upper()
-        # DEMBLA / AIRA control valves are pneumatically actuated and live in
-        # the dedicated 'PNEUMATIC CONTROL VALVE {nb} NB' rows (CAIR = motorised,
-        # handled below). Shut-off valves are unchanged.
-        item = f'PNEUMATIC CONTROL VALVE {nb_str}' if valve_type == "control" else f'SHUT OFF VALVE {nb_str}'
-        like_prefix = 'PNEUMATIC CONTROL VALVE ' if valve_type == "control" else 'SHUT OFF VALVE '
+        # DEMBLA / AIRA control + shut-off valves are pneumatically actuated and
+        # live in the dedicated 'PNEUMATIC CONTROL VALVE {nb} NB' /
+        # 'PNEUMATIC SHUT OFF VALVE {nb} NB' rows (CAIR = motorised / butterfly,
+        # handled below).
+        item = (f'PNEUMATIC CONTROL VALVE {nb_str}' if valve_type == "control"
+                else f'PNEUMATIC SHUT OFF VALVE {nb_str}')
+        like_prefix = ('PNEUMATIC CONTROL VALVE ' if valve_type == "control"
+                       else 'PNEUMATIC SHUT OFF VALVE ')
     elif vendor == "cair":
         company = "CAIR"
         item = (f'MOTORIZED CONTROL VALVE {nb_str}' if valve_type == "control"
