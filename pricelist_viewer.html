@@ -968,21 +968,22 @@ function _renderRatesTable(data, opts) {
     // order on the full item label). Items without a numeric size fall to
     // the end of the category, tie-broken alphabetically.
     if (cat === 'Bought Out' || cat === 'Control Valve') {
-      // Sort by base name (case-insensitive) then by numeric NB size. Bought
-      // Out is a grab-bag; Control Valve mixes 'Control Valve' and 'Motorized
-      // Control Valve' which should land in separate runs. Within a run,
-      // ascend by NB (25 -> 600) instead of pure alphabetic, then group the
-      // same-size valves by company so each supplier's rows sit together.
+      // Sort by base name (case-insensitive), then group by company so each
+      // supplier's rows sit together (all AIRA, then all DEMBLA, ...), then
+      // ascend by NB size within a company. Bought Out is a grab-bag; Control
+      // Valve mixes 'Control Valve' and 'Motorized Control Valve' which land
+      // in separate name runs first.
       cats[cat].sort((a, b) => {
         const pa = splitItem(a.item, a.specification);
         const pb = splitItem(b.item, b.specification);
         const nameCmp = (pa.name || '').toUpperCase().localeCompare((pb.name || '').toUpperCase());
         if (nameCmp !== 0) return nameCmp;
+        const compCmp = (a.company || '').toUpperCase().localeCompare((b.company || '').toUpperCase());
+        if (compCmp !== 0) return compCmp;
         const na = parseFloat(pa.size); const nb = parseFloat(pb.size);
         const va = isNaN(na) ? Infinity : na;
         const vb = isNaN(nb) ? Infinity : nb;
-        if (va !== vb) return va - vb;
-        return (a.company || '').toUpperCase().localeCompare((b.company || '').toUpperCase());
+        return va - vb;
       });
     } else {
       cats[cat].sort((a, b) => {
