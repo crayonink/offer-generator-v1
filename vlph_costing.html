@@ -1894,7 +1894,9 @@ function renderResults(d) {
   // Show the SELECTED blower's rated airflow — that's what the air pipe
   // NB is sized for (not the application's required flow).
   set("cd-air-flow", fmt(eq.blower_airflow, 0) + " Nm³/hr");
-  set("cd-air-nb", p.air_nb + " NB");
+  // Air Line Size = the actual combustion-air line NB the BOM components are
+  // sized to (air duct, floored to 125), not the raw hydraulic pipe NB.
+  set("cd-air-nb", (p.air_line_nb || p.air_nb) + " NB");
   if (isOil) {
     set("cd-fuel1-pipe-label", "Oil Line Size");
     set("cd-gas1-flow", fmt(p.fuel1_oil_lph, 0) + " LPH");
