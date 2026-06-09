@@ -132,6 +132,8 @@
 
 <script>
 const CATALOG_TYPES = { 'Blower':'/api/blower/catalog', 'Burner':'/api/burner/catalog', 'HPU':null };
+// Types whose full config form is embedded (computes the BOM inline).
+const EMBED_SRC = { 'Vertical Ladle Preheater':'/costing?embed=1', 'Horizontal Ladle Preheater':'/hlph?embed=1' };
 const EQ_TYPES = ['Vertical Ladle Preheater','Horizontal Ladle Preheater','Tundish Preheater','Recuperator','HPU','Blower','Burner','Other'];
 let _eq = [];   // [{id, type, name, specs, qty, unit_price, bom:[{item,qty,unit_price}]}]
 let _uid = 0;
@@ -143,6 +145,21 @@ function addEquipment(t) {
 }
 function removeEq(id) { _eq = _eq.filter(e => e.id !== id); renderEq(); }
 function eqById(id) { return _eq.find(e => e.id === id); }
+function e_reset(id) { const e = eqById(id); if (e) { e.configured=false; e.bom=[]; e.name=''; e.specs=''; e.unit_price=0; e.qty=1; } }
+
+// Receive computed BOM/total from an embedded VLPH/HLPH form.
+window.addEventListener('message', (ev) => {
+  const d = ev.data;
+  if (!d || d.source !== 'encon-combined-equipment') return;
+  const e = _eq.find(x => { const f = document.getElementById('iframe-' + x.id); return f && f.contentWindow === ev.source; });
+  if (!e) return;
+  e.name = d.name || e.type; e.specs = d.specs || ''; e.unit_price = +d.total || 0; e.qty = 1;
+  e.bom = (d.bom || []).map(b => ({ media:b.media, item:b.item, ref:b.ref, qty:b.qty, unit_price:b.unit_price, total:b.total }));
+  e.configured = true;
+  const st = document.getElementById('status-' + e.id);   // update inline, don't reload the iframe
+  if (st) st.innerHTML = `<span style="color:var(--green);font-weight:700">✓ ${esc(e.name)} — ₹${(e.unit_price||0).toLocaleString('en-IN')} · ${e.bom.length} BOM lines</span>`;
+  recalc();
+});
 
 function renderEq() {
   const wrap = document.getElementById('eq-list');
@@ -152,12 +169,29 @@ function renderEq() {
     div.className = 'eq';
     const opts = EQ_TYPES.map(t => `<option ${t===e.type?'selected':''}>${t}</option>`).join('');
     const isCatalog = (e.type in CATALOG_TYPES);
+    const isEmbed = (e.type in EMBED_SRC);
+    if (isEmbed) {
+      const status = e.configured
+        ? `<span style="color:var(--green);font-weight:700">✓ ${esc(e.name)} — ₹${(e.unit_price||0).toLocaleString('en-IN')} · ${e.bom.length} BOM lines</span>`
+        : `<span style="color:var(--muted)">Configure below, then click <b>“Use in Combined Offer ↑”</b> at the bottom of the panel.</span>`;
+      div.innerHTML = `
+        <div class="eq-head"><div class="n">${i+1}</div>
+          <strong>${esc(e.name || e.type)}</strong>
+          <button class="x" title="Remove" onclick="removeEq(${e.id})">✕</button></div>
+        <div class="fg fg-2">
+          <div class="field"><label>Type</label><select onchange="setEq(${e.id},'type',this.value);e_reset(${e.id});renderEq()">${opts}</select></div>
+          <div class="field"><label>Status</label><div style="padding:9px 0;font-size:.84rem" id="status-${e.id}">${status}</div></div>
+        </div>
+        <iframe id="iframe-${e.id}" src="${EMBED_SRC[e.type]}" style="width:100%;height:640px;border:1px solid var(--border);border-radius:10px;background:#fff" loading="lazy"></iframe>`;
+      wrap.appendChild(div);
+      return;
+    }
     div.innerHTML = `
       <div class="eq-head"><div class="n">${i+1}</div>
-        <strong>${e.name || e.type}</strong>
+        <strong>${esc(e.name || e.type)}</strong>
         <button class="x" title="Remove" onclick="removeEq(${e.id})">✕</button></div>
       <div class="fg fg-4">
-        <div class="field"><label>Type</label><select onchange="setEq(${e.id},'type',this.value);renderEq()">${opts}</select></div>
+        <div class="field"><label>Type</label><select onchange="setEq(${e.id},'type',this.value);e_reset(${e.id});renderEq()">${opts}</select></div>
         <div class="field"><label>Name (shown on offer)</label><input value="${esc(e.name)}" oninput="setEq(${e.id},'name',this.value)" placeholder="${e.type}"/></div>
         <div class="field"><label>Qty</label><input type="number" min="1" value="${e.qty}" oninput="setEq(${e.id},'qty',this.value);recalc()"/></div>
         <div class="field"><label>Unit Price (₹)</label><input type="number" min="0" value="${e.unit_price}" oninput="setEq(${e.id},'unit_price',this.value);recalc()"/></div>
@@ -252,7 +286,7 @@ async function generateExcel() {
   if (!_eq.length) return showErr('Add at least one equipment.');
   const payload = { project_name: document.getElementById('c-subject').value, company_name: document.getElementById('c-company').value,
     equipments: _eq.map(e => ({ name: e.name || e.type, total: (+e.qty||1)*(+e.unit_price||0),
-      bom: (e.bom.length ? e.bom : [{item:e.name||e.type, qty:+e.qty||1, unit_price:+e.unit_price||0}]).map(b => ({ item:b.item, qty:b.qty, unit_price:b.unit_price, total:(+b.qty||0)*(+b.unit_price||0) })) })) };
+      bom: (e.bom.length ? e.bom : [{item:e.name||e.type, qty:+e.qty||1, unit_price:+e.unit_price||0}]).map(b => ({ media:b.media||'', item:b.item, ref:b.ref||'', qty:b.qty, unit_price:b.unit_price, total:(b.total!=null?b.total:(+b.qty||0)*(+b.unit_price||0)) })) })) };
   const btn = document.getElementById('gen-xls'); btn.disabled=true; btn.textContent='Building…';
   try {
     const j = await (await fetch('/api/combined-costing-excel', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })).json();
