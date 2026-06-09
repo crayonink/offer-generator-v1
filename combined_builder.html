@@ -260,6 +260,9 @@ function buildConfig() {
 function configHTML(e, i) {
   if (e.type in EMBED_SRC) {
     return `<div class="sec-label" style="margin-top:0">${i+1}. ${e.type} <span id="status-${e.id}" style="text-transform:none;font-weight:600;margin-left:8px">${statusText(e)}</span></div>
+      <div class="fg fg-4" style="margin-bottom:10px">
+        <div class="field"><label>Quantity (of this configuration)</label><input type="number" min="1" value="${e.qty}" oninput="setEq(${e.id},'qty',this.value);recalc()"/></div>
+      </div>
       <iframe id="iframe-${e.id}" src="${EMBED_SRC[e.type]}" style="width:100%;height:660px;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe>`;
   }
   const isCat = (e.type in CATALOG_TYPES);
@@ -328,7 +331,8 @@ window.addEventListener('message', (ev) => {
   const d = ev.data; if (!d || d.source !== 'encon-combined-equipment') return;
   const e = _eq.find(x => { const f = document.getElementById('iframe-'+x.id); return f && f.contentWindow === ev.source; });
   if (!e) return;
-  e.name=d.name||e.type; e.specs=d.specs||''; e.unit_price=+d.total||0; e.qty=1; e.configured=true;
+  e.name=d.name||e.type; e.specs=d.specs||''; e.unit_price=+d.total||0; e.configured=true;
+  if (!(+e.qty)) e.qty = 1;   // keep the user's quantity (don't reset to 1)
   e.bom=(d.bom||[]).map(b=>({media:b.media,item:b.item,ref:b.ref,qty:b.qty,unit_price:b.unit_price,total:b.total}));
   const st=document.getElementById('status-'+e.id); if(st) st.innerHTML=statusText(e);
   renderPager(); renderSelected(); recalc();
