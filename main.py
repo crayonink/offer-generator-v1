@@ -1554,6 +1554,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 fuel1_type=req.fuel1_type,
                 fuel2_type=req.fuel2_type,
                 equipment2=equip2,
+                purging_line=req.purging_line,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
                 pipeline_weight_kg=_pipeline_kg,
@@ -2179,6 +2180,7 @@ def hlph_calculate(req: VLPHCalcRequest):
             bom_df = build_hlph_manual_df(
                 equipment=equip1, ladle_tons=req.ladle_tons,
                 fuel1_type=req.fuel1_type,
+                purging_line=req.purging_line,
                 pressure_gauge_vendor=req.pressure_gauge_vendor,
                 pilot_burner=req.pilot_burner,
                 pipeline_weight_kg=_pipeline_kg_h,

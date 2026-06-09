@@ -466,9 +466,10 @@ def _bfg_line_rows(media: str, equipment: dict,
         _row(media, "PRESSURE SWITCH LOW", "Set PT - L", 1, make="MADAS"),
     ]
 
-    # Mass flow control elements — orifice + DPT only in PLC (flow-measurement
-    # needed only when the PLC regulates the valve directly, no AGR).
-    if is_plc or is_ppid_ratio:
+    # Mass flow control elements — orifice + DPT only in automatic PLC mode
+    # (flow-measurement needed only when the PLC regulates the valve directly,
+    # no AGR). Never in the base_only / manual BOM.
+    if not base_only and (is_plc or is_ppid_ratio):
         rows += [
             _row(media, "ORIFICE PLATE", "Output: 4-20 mA, 230 V AC", 1,
                  unit_price_override=10000,  # was: _get_price_fuzzy("ORIFICE PLATE (COG)")
@@ -478,7 +479,7 @@ def _bfg_line_rows(media: str, equipment: dict,
                  make="HONEYWELL"),
         ]
     # PCV/MCV is added in PLC and P.PID modes — AGR replaces it in PLC+AGR / PID / manual.
-    if is_plc or is_ppid_ratio:
+    if not base_only and (is_plc or is_ppid_ratio):
         rows.append(_row(media, pcv_display_name, f'{cv_nb} NB', 1,
                          unit_price_override=pcv_price, make=pcv_make))
 
@@ -1154,6 +1155,7 @@ def build_vlph_manual_df(
     fuel1_type: str = "ng",
     fuel2_type: str = "none",
     equipment2: dict = None,
+    purging_line: str = "no",
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
@@ -1232,6 +1234,19 @@ def build_vlph_manual_df(
             pressure_gauge_vendor=pressure_gauge_vendor,
             base_only=True,
         )
+
+    # ── PURGING LINE (MG/COG/BG, when the user enabled it) ────────────────
+    # Same nitrogen-purging assembly as the automatic builder. Prices are
+    # specific to this assembly and inlined here.
+    if purging_line == "yes":
+        rows += [
+            _row("PURGING LINE", "BALL VALVE",                "20 NB",       1, unit_price_override=1800,  make="AUDCO/L&T/LEADER"),
+            _row("PURGING LINE", "PRESSURE GAUGE WITH TNV",   "0-1600 mmWC", 1, unit_price_override=4000,  make="HGURU/BAUMER"),
+            _row("PURGING LINE", "PRESSURE REGULATING VALVE", "25 NB",       1, unit_price_override=35000, make="NIRMAL"),
+            _row("PURGING LINE", "PRESSURE SWITCH HIGH",      "",            1, unit_price_override=10000, make="SWITZER"),
+            _row("PURGING LINE", "SOLENOID VALVE",            "20 NB",       1, unit_price_override=5000,  make="MADAS"),
+            _row("PURGING LINE", "CHECK VALVE",               "20 NB",       1, unit_price_override=3300,  make="AUDCO/L&T/LEADER"),
+        ]
 
     # ── PILOT LINE (only if pilot burner is included) ──────────────
     pilot_media = f"{pilot_line_fuel.upper()} PILOT LINE"

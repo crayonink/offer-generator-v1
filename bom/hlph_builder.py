@@ -303,6 +303,7 @@ def build_hlph_manual_df(
     equipment: dict,
     ladle_tons: float = 10.0,
     fuel1_type: str = "ng",
+    purging_line: str = "no",
     pressure_gauge_vendor: str = "baumer",
     pilot_burner: str = "auto",
     pipeline_weight_kg: float = 1000.0,
@@ -342,6 +343,17 @@ def build_hlph_manual_df(
         pressure_gauge_vendor=pressure_gauge_vendor,
         base_only=True,
     )
+
+    # ── PURGING LINE (MG/COG/BG, when the user enabled it) ────────────────
+    if purging_line == "yes":
+        rows += [
+            _row("PURGING LINE", "BALL VALVE",                "20 NB",       1, unit_price_override=1800,  make="AUDCO/L&T/LEADER"),
+            _row("PURGING LINE", "PRESSURE GAUGE WITH TNV",   "0-1600 mmWC", 1, unit_price_override=4000,  make="HGURU/BAUMER"),
+            _row("PURGING LINE", "PRESSURE REGULATING VALVE", "25 NB",       1, unit_price_override=35000, make="NIRMAL"),
+            _row("PURGING LINE", "PRESSURE SWITCH HIGH",      "",            1, unit_price_override=10000, make="SWITZER"),
+            _row("PURGING LINE", "SOLENOID VALVE",            "20 NB",       1, unit_price_override=5000,  make="MADAS"),
+            _row("PURGING LINE", "CHECK VALVE",               "20 NB",       1, unit_price_override=3300,  make="AUDCO/L&T/LEADER"),
+        ]
 
     # ── PILOT LINE (only if pilot burner is included) ────────────────────
     pilot_media = f"{pilot_line_fuel.upper()} PILOT LINE"
