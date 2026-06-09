@@ -703,6 +703,14 @@ function _initEmbed(prodType, prodLabel) {
   bar.querySelector('button').addEventListener('click', () => _useInCombined(prodType, prodLabel));
   host.appendChild(bar);
   if (typeof goStep === 'function') goStep(2);
+  // Combined mode: hide per-equipment commercial adjustments (P&F /
+  // Designing / Negotiation / Transport / Final Total) — applied once at
+  // the combined level instead. Grand Total (the base) stays visible.
+  ['pf-pct','design-pct','negotiation-pct','transport-amt','s-pf','s-design','s-nego','s-trans','s-final'].forEach(id => {
+    const el = document.getElementById(id);
+    const row = el && (el.closest('tr') || el.closest('.summary-row'));
+    if (row) row.style.display = 'none';
+  });
 }
 if (document.readyState === 'loading')
   window.addEventListener('DOMContentLoaded', () => _initEmbed('RECUP', 'Recuperator'));
