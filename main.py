@@ -3633,6 +3633,107 @@ def generate_burner_quote(req: BurnerQuoteRequest):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+# ══════════════════════════════════════════════════════════════════════════
+#  COMBINED OFFER — merge several individually-generated offers into one .docx
+# ══════════════════════════════════════════════════════════════════════════
+
+@app.get("/combined", response_class=HTMLResponse)
+def combined_offer_page():
+    """Builder that merges several generated offers into one document."""
+    html_path = os.path.join(BASE_DIR, "combined_offer.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+def _quote_label(fname: str) -> str:
+    """'Blower_Offer_PP_Rolling_Mills_035.docx' -> 'Blower Offer — PP Rolling Mills (035)'."""
+    base = fname[:-5] if fname.lower().endswith(".docx") else fname
+    parts = base.split("_")
+    seq = parts[-1] if parts and parts[-1].isdigit() else ""
+    if seq:
+        parts = parts[:-1]
+    words = " ".join(parts).replace("Offer", "Offer —", 1)
+    return f"{words}" + (f" ({seq})" if seq else "")
+
+
+@app.get("/api/recent-quotes")
+def recent_quotes():
+    """List generated offer .docx files in the quotes folder (newest first),
+    so the combined-offer builder can pick which to merge. Excludes PDFs,
+    combined outputs and temp files."""
+    import glob
+    items = []
+    for p in glob.glob(os.path.join(QUOTES_FOLDER, "*.docx")):
+        fn = os.path.basename(p)
+        low = fn.lower()
+        if low.startswith("_") or low.startswith("combined_offer") or "~$" in fn:
+            continue
+        try:
+            st = os.stat(p)
+        except OSError:
+            continue
+        items.append({
+            "filename": fn,
+            "label":    _quote_label(fn),
+            "size_kb":  round(st.st_size / 1024, 1),
+            "modified": datetime.fromtimestamp(st.st_mtime).strftime("%d %b %Y, %H:%M"),
+            "mtime":    st.st_mtime,
+        })
+    items.sort(key=lambda x: x["mtime"], reverse=True)
+    return {"quotes": items}
+
+
+class CombineRequest(BaseModel):
+    filenames: List[str]
+    output_name: Optional[str] = None
+
+
+@app.post("/api/combine-quotes")
+def combine_quotes(req: CombineRequest):
+    """Merge the selected offer .docx files (in the given order) into one
+    combined document via docxcompose. Returns a download link."""
+    try:
+        from docxcompose.composer import Composer
+        from docx import Document as _Docx
+
+        paths = []
+        for fn in (req.filenames or []):
+            safe = os.path.basename(fn)
+            p = os.path.join(QUOTES_FOLDER, safe)
+            if not safe.lower().endswith(".docx") or not os.path.exists(p):
+                return {"error": f"file not found: {safe}"}
+            paths.append(p)
+        if len(paths) < 2:
+            return {"error": "Select at least two offers to combine."}
+
+        master = _Docx(paths[0])
+        composer = Composer(master)
+        for p in paths[1:]:
+            composer.append(_Docx(p))
+
+        base = (req.output_name or "Combined Offer").strip()
+        safe_base = "".join(ch for ch in base if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Combined_Offer"
+        stamp = datetime.now().strftime("%d%b%Y_%H%M%S")
+        out_name = f"{safe_base}_{stamp}.docx"
+        out_path = os.path.join(QUOTES_FOLDER, out_name)
+        composer.save(out_path)
+
+        pdf_name = out_name.replace(".docx", ".pdf")
+        pdf_ok = _docx_to_pdf(out_path, os.path.join(QUOTES_FOLDER, pdf_name))
+
+        return {
+            "success":      True,
+            "filename":     out_name,
+            "download_url": f"/api/download-quote/{out_name}",
+            "pdf_url":      f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
+            "preview_url":  f"/api/preview-quote/{out_name}",
+            "count":        len(paths),
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
 @app.get("/api/next-quote-ref")
 def api_next_quote_ref(technical_person: str = "", location: str = ""):
     """Preview the auto-generated enquiry ref for the form.
