@@ -3853,6 +3853,128 @@ def combined_costing_excel(req: CombinedCostingRequest):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+# ── Unified combined offer: one cover/customer/T&C, equipment sections ──────
+class CombinedOfferEquipment(BaseModel):
+    name: str
+    specs: Optional[str] = ""          # one-line specs summary
+    qty: int = 1
+    unit_price: float = 0
+
+
+class CombinedOfferRequest(BaseModel):
+    customer: HpuCustomer
+    equipments: List[CombinedOfferEquipment] = []
+    project_name: Optional[str] = ""
+
+
+@app.post("/api/generate-combined-offer")
+def generate_combined_offer(req: CombinedOfferRequest):
+    """Render Combined_Offer_Template.docx — one shared cover/customer/T&C,
+    a technical row per equipment, and one combined price schedule."""
+    try:
+        from datetime import datetime as _dt
+        from docxtpl import DocxTemplate
+        from engine.quote_writer import amount_in_words_indian, _format_inr
+
+        if not req.equipments:
+            return {"error": "No equipment supplied."}
+        cust = req.customer
+
+        seq = next_quote_seq()
+        full_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
+        short_ref = full_ref.split(" DT.")[0]
+        date_str = full_ref.split(" DT.")[-1] if " DT." in full_ref else _dt.now().strftime("%d/%m/%Y")
+        company_address = ", ".join(filter(None, [
+            (cust.address or "").strip(), (cust.city or "").strip(),
+            (cust.state or "").strip(), (cust.pin or "").strip()]))
+
+        price_lines, grand = [], 0.0
+        for i, eq in enumerate(req.equipments, start=1):
+            qty = max(1, int(eq.qty or 1))
+            line_total = float(eq.unit_price or 0) * qty
+            grand += line_total
+            price_lines.append({
+                "sno":        f"{i}.",
+                "name":       eq.name,
+                "qty":        f"{qty:02d} No.",
+                "unit_price": _format_inr(eq.unit_price or 0),
+                "total":      _format_inr(line_total),
+            })
+
+        ctx = {
+            "project_name":      req.project_name or "Combined Equipment Offer",
+            "subject":           cust.subject or "Offer for Combined Equipment",
+            "application":       "Combined Equipment",
+            "equipment_name":    "Combined Equipment Offer",
+            "company_name":      cust.company or "",
+            "company_address":   company_address,
+            "email":             cust.email or "",
+            "mobile_no":         cust.phone or "",
+            "poc_name":          _with_salutation(cust.salutation, cust.name),
+            "poc_designation":   cust.designation or "",
+            "client_enq_ref":    "",
+            "enquiry_ref":       full_ref,
+            "enquiry_ref_short": short_ref,
+            "enquiry_date_str":  date_str,
+            "marketing_person":  _with_salutation(cust.marketing_salutation, cust.marketing),
+            "marketing_email":   cust.marketing_email or "",
+            "marketing_phone":   cust.marketing_phone or "",
+            "technical_person":  _with_salutation(cust.technical_salutation, cust.technical) or _with_salutation(cust.marketing_salutation, cust.marketing),
+            "technical_phone":   cust.technical_phone or cust.marketing_phone or "",
+            "technical_email":   cust.technical_email or cust.marketing_email or "",
+            # technical section + price schedule loops
+            "equipments":   [{"name": e.name, "specs": e.specs or ""} for e in req.equipments],
+            "price_lines":  price_lines,
+            "grand_total":  _format_inr(grand),
+            "grand_total_in_words": f"INR. {amount_in_words_indian(grand)} ONLY.",
+            # shared T&C
+            "tnc_prices":             cust.tnc_prices or "",
+            "tnc_delivery":           cust.tnc_delivery or "",
+            "tnc_gst":                cust.tnc_gst or "",
+            "tnc_hsn_code":           cust.tnc_hsn_code or "",
+            "tnc_pan_gst":            cust.tnc_pan_gst or "",
+            "tnc_payment_terms":      cust.tnc_payment_terms or "",
+            "tnc_packing_forwarding": cust.tnc_packing_forwarding or "",
+            "tnc_freight":            cust.tnc_freight or "",
+            "tnc_transit_insurance":  cust.tnc_transit_insurance or "",
+            "tnc_validity":           cust.tnc_validity or "",
+            "tnc_inspection":         cust.tnc_inspection or "",
+            "tnc_guarantee":          cust.tnc_guarantee or "",
+        }
+
+        tpl = DocxTemplate(os.path.join(BASE_DIR, "Combined_Offer_Template.docx"))
+        tpl.render(ctx)
+        safe_company = "".join(ch for ch in (cust.company or "Client")
+                               if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        docx_name = f"Combined_Offer_{safe_company}_{seq}.docx"
+        docx_path = os.path.join(QUOTES_FOLDER, docx_name)
+        tpl.save(docx_path)
+
+        pdf_name = docx_name.replace(".docx", ".pdf")
+        pdf_ok = _docx_to_pdf(docx_path, os.path.join(QUOTES_FOLDER, pdf_name))
+        try:
+            from engine.drive_uploader import upload_offer_async
+            upload_offer_async(docx_path, docx_name, "combined")
+            if pdf_ok:
+                upload_offer_async(os.path.join(QUOTES_FOLDER, pdf_name), pdf_name, "combined")
+        except Exception as _drv_err:
+            print(f"WARN: drive upload kickoff failed: {_drv_err}")
+
+        return {
+            "success":      True,
+            "filename":     docx_name,
+            "download_url": f"/api/download-quote/{docx_name}",
+            "pdf_url":      f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
+            "preview_url":  f"/api/preview-quote/{docx_name}",
+            "quote_no":     full_ref,
+            "grand_total":  grand,
+            "count":        len(req.equipments),
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
 @app.get("/api/next-quote-ref")
 def api_next_quote_ref(technical_person: str = "", location: str = ""):
     """Preview the auto-generated enquiry ref for the form.
