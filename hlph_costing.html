@@ -1846,7 +1846,11 @@ function renderResults(d) {
     set("cd-fuel1-pipe-label", (c.fuel1_name || "NG") + " Line Size");
     set("cd-gas1-flow", fmt(p.ng_flow, 0) + " Nm³/hr");
   }
-  set("cd-gas1-nb", p.ng_nb + " NB");
+  // Gas-train fuels (NG/LPG/RLNG): the supplied gas line size is the gas
+  // train's port size (matches the pipe card + BOM), not the hydraulic pipe
+  // NB. Discrete-line fuels (COG/BFG/MG) and oil use the calculated pipe NB.
+  const f1NoGasTrain = p.fuel1_is_oil || ["cog", "mg", "bg"].includes(c.fuel1_type);
+  set("cd-gas1-nb", (f1NoGasTrain || !p.gas_train_model) ? (p.ng_nb + " NB") : (p.gas_train_model + " NB"));
 
   // Dual fuel
   if (c.is_dual) {
@@ -1863,7 +1867,8 @@ function renderResults(d) {
       set("cd-fuel2-pipe-label", c.fuel2_name + " Line Size");
       set("cd-gas2-flow", fmt(p.fuel2_flow, 0) + " Nm³/hr");
     }
-    set("cd-gas2-nb", p.fuel2_nb + " NB");
+    const f2NoGasTrain = p.fuel2_is_oil || ["cog", "mg", "bg"].includes(f2Type);
+    set("cd-gas2-nb", (f2NoGasTrain || !p.fuel2_gas_train_model) ? (p.fuel2_nb + " NB") : (p.fuel2_gas_train_model + " NB"));
   } else {
     document.getElementById("cd-fuel2-row").style.display = "none";
     document.getElementById("cd-cv2-row").style.display = "none";
