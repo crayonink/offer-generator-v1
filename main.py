@@ -1646,8 +1646,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "air_dia_mm":   round(pipes1.air_pipe_inner_dia_mm, 2),
                 "air_nb":       pipes1.air_pipe_nb,
                 # Actual combustion-air line NB the BOM components are sized to
-                # (floored to 125, follows the air duct) — see selection_engine.
-                "air_line_nb":  max(125, equip1["air_duct"]["nb"]) if equip1.get("air_duct") else pipes1.air_pipe_nb,
+                # (hydraulic pipe size, floored to 125 & air duct) — see selection_engine.
+                "air_line_nb":  equip1.get("air_line_nb") or pipes1.air_pipe_nb,
             },
             "equipment": {
                 "burner_model":   equip1["burner"]["model"],
@@ -2256,7 +2256,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "ng_nb": pipes1.ng_pipe_nb,
                 "air_flow": round(air_flow, 2),
                 "air_nb": pipes1.air_pipe_nb,
-                "air_line_nb": max(125, equip1["air_duct"]["nb"]) if equip1.get("air_duct") else pipes1.air_pipe_nb,
+                "air_line_nb": equip1.get("air_line_nb") or pipes1.air_pipe_nb,
                 "gas_train_flow": round(equip1["ng_gas_train"]["max_flow"], 0) if equip1.get("ng_gas_train") else 0,
                 "gas_train_model": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]}' if equip1.get("ng_gas_train") else "",
             },

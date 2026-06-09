@@ -86,11 +86,12 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     # Air side
     air_duct = select_air_duct(air_flow_nm3hr)
     motorized_control_valve = select_motorized_control_valve(air_flow_nm3hr)
-    # The combustion-air line NB is floored to 125 (this is what the BOM shows
-    # for the compensator/air duct). The butterfly valve sits in that line, so
-    # size it to the line NB rather than the raw pipe air_nb — which can come
-    # out smaller (e.g. 80) and leave a butterfly valve narrower than its pipe.
-    air_line_nb = max(125, air_duct["nb"])
+    # Combustion-air line NB. The hydraulic pipe size (air_nb, computed from the
+    # combustion air flow) is authoritative — that's what the manual calc gives
+    # (e.g. 2040 Nm3/hr -> ~238 mm -> 250 NB). Floor to 125 and never go below
+    # the air duct. (Previously this used ONLY the air duct, which under-sized
+    # the line vs the calculated pipe, e.g. showed 200 where 250 is required.)
+    air_line_nb = max(125, air_nb, air_duct["nb"])
     # Butterfly valve — fall back from Lever to Gear if NB exceeds the lever range
     try:
         butterfly_valve = select_butterfly_valve(air_line_nb, vendor=butterfly_valve_vendor)
@@ -136,6 +137,7 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         "agr": agr,
         "blower": blower,
         "air_duct": air_duct,
+        "air_line_nb": air_line_nb,
         "motorized_control_valve": motorized_control_valve,
         "butterfly_valve": butterfly_valve,
         "rotary_joint": rotary_joint,

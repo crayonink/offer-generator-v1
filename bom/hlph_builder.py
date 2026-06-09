@@ -94,7 +94,7 @@ def build_hlph_df(
     ]
 
     # ── COMBUSTION AIR LINE ───────────────────────────────────────────────
-    air_nb = max(125, equipment["air_duct"]["nb"])
+    air_nb = equipment.get("air_line_nb") or max(125, equipment["air_duct"]["nb"])
 
     rows += [
         _row("COMB AIR", "COMPENSATOR", "", 1),
@@ -321,7 +321,7 @@ def build_hlph_manual_df(
     params = get_hlph_params(ladle_tons)
 
     rows = []
-    air_nb = max(125, equipment["air_duct"]["nb"])
+    air_nb = equipment.get("air_line_nb") or max(125, equipment["air_duct"]["nb"])
 
     # ── BOUGHT OUT ITEMS ──────────────────────────────────────────────────
     rows += [

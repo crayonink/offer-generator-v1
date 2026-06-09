@@ -848,7 +848,7 @@ def build_vlph_120t_df(
     is_ppid_ratio = control_mode == "automatic" and auto_control_type == "ppid_ratio"
 
     # Air pipe NB — minimum 125 NB, or next bigger from pipe sizing
-    air_nb = max(125, equipment["air_duct"]["nb"])
+    air_nb = equipment.get("air_line_nb") or max(125, equipment["air_duct"]["nb"])
 
     pg_vendor = pressure_gauge_vendor.upper()
     # Use clean display name; vendor only shown in MAKE column.
@@ -1189,7 +1189,7 @@ def build_vlph_manual_df(
     rows = []
 
     # ── BOUGHT OUT ITEMS ──────────────────────────────────────────────────
-    air_nb = max(125, equipment["air_duct"]["nb"])
+    air_nb = equipment.get("air_line_nb") or max(125, equipment["air_duct"]["nb"])
 
     rows += [
         _row("COMB AIR", "COMPENSATOR", f'{air_nb} NB F150#', 1),
