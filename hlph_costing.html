@@ -1221,7 +1221,7 @@ function _useInCombined(prodType, prodLabel) {
     media: r.MEDIA || '', item: r['ITEM NAME'] || '', ref: r.REFERENCE || '',
     qty: +r.QTY || 0, unit_price: +r['UNIT PRICE'] || 0, total: +r.TOTAL || 0 }));
   const cs = lastCalc.cost_summary || {};
-  const total = +cs.final_total || +cs.grand_total || 0;
+  const total = +cs.grand_total || +cs.final_total || 0;  // base (pre-adjustment) for combined offer
   parent.postMessage({ source: 'encon-combined-equipment', type: prodType, name,
     specs: bits.join(' · '), total, bom }, '*');
   const b = document.getElementById('_use-combined-btn');

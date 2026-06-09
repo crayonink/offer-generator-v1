@@ -3781,6 +3781,11 @@ class CombinedOfferRequest(BaseModel):
     customer: HpuCustomer
     equipments: List[CombinedOfferEquipment] = []
     project_name: Optional[str] = ""
+    # Commercial adjustments applied once to the combined grand total.
+    pf_pct: float = 0          # Packaging & Forwarding %
+    design_pct: float = 0      # Designing %
+    neg_pct: float = 0         # Negotiation %
+    transport_amt: float = 0   # Transport (flat Rs.)
 
 
 @app.post("/api/generate-combined-offer")
@@ -3817,6 +3822,14 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 "total":      _format_inr(line_total),
             })
 
+        # Commercial adjustments on the combined grand total -> Final Total
+        # (rounded to the nearest Rs.1000, matching the standalone forms).
+        _pf   = grand * (req.pf_pct or 0) / 100
+        _des  = grand * (req.design_pct or 0) / 100
+        _neg  = grand * (req.neg_pct or 0) / 100
+        _trn  = float(req.transport_amt or 0)
+        _combined_final = round((grand + _pf + _des + _neg + _trn) / 1000) * 1000
+
         ctx = {
             "project_name":      req.project_name or "Combined Equipment Offer",
             "subject":           cust.subject or "Offer for Combined Equipment",
@@ -3842,7 +3855,17 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "equipments":   [{"name": e.name, "specs": e.specs or ""} for e in req.equipments],
             "price_lines":  price_lines,
             "grand_total":  _format_inr(grand),
-            "grand_total_in_words": f"INR. {amount_in_words_indian(grand)} ONLY.",
+            # Commercial adjustments applied once to the combined grand total.
+            "pf_amount":         _format_inr(round(grand * (req.pf_pct or 0) / 100, 2)),
+            "design_amount":     _format_inr(round(grand * (req.design_pct or 0) / 100, 2)),
+            "neg_amount":        _format_inr(round(grand * (req.neg_pct or 0) / 100, 2)),
+            "transport_amount":  _format_inr(float(req.transport_amt or 0)),
+            "show_pf":           (grand * (req.pf_pct or 0) / 100) > 0,
+            "show_design":       (grand * (req.design_pct or 0) / 100) > 0,
+            "show_neg":          (grand * (req.neg_pct or 0) / 100) != 0,
+            "show_transport":    float(req.transport_amt or 0) > 0,
+            "final_total":       _format_inr(_combined_final),
+            "grand_total_in_words": f"INR. {amount_in_words_indian(_combined_final)} ONLY.",
             # shared T&C
             "tnc_prices":             cust.tnc_prices or "",
             "tnc_delivery":           cust.tnc_delivery or "",

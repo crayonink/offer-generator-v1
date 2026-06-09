@@ -318,6 +318,21 @@ def _rebuild_price_schedule(doc: Document) -> None:
     add('{{ line.sno }}', '{{ line.name }}', '{{ line.qty }}', '{{ line.unit_price }}', '{{ line.total }}')
     add('{%tr endfor %}', '', '', '', '')
     add('', 'GRAND TOTAL', '', '', '{{ grand_total }}', bold=True)
+    # Commercial adjustments applied once to the combined total -> Final Total.
+    # Each row is shown only when its amount is non-zero.
+    add("{%tr if show_pf %}", '', '', '', '')
+    add('', 'Packaging & Forwarding', '', '', '{{ pf_amount }}')
+    add("{%tr endif %}", '', '', '', '')
+    add("{%tr if show_design %}", '', '', '', '')
+    add('', 'Designing', '', '', '{{ design_amount }}')
+    add("{%tr endif %}", '', '', '', '')
+    add("{%tr if show_neg %}", '', '', '', '')
+    add('', 'Negotiation', '', '', '{{ neg_amount }}')
+    add("{%tr endif %}", '', '', '', '')
+    add("{%tr if show_transport %}", '', '', '', '')
+    add('', 'Transport', '', '', '{{ transport_amount }}')
+    add("{%tr endif %}", '', '', '', '')
+    add('', 'FINAL TOTAL', '', '', '{{ final_total }}', bold=True)
 
 
 def _pad_table_rows(doc: Document, min_height_cm: float = 0.7) -> None:

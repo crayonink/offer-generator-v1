@@ -170,6 +170,22 @@
     <h2>Generate</h2>
     <p class="lead">Review the line-up and terms, then generate the combined offer and the costing Excel.</p>
     <div class="summary" id="summary"></div>
+    <div class="sec-label">Commercial Adjustments <span style="text-transform:none;font-weight:500;color:#94a3b8">— applied once to the combined total</span></div>
+    <table class="summary" style="max-width:520px"><tbody>
+      <tr><td>Packaging &amp; Forwarding</td>
+          <td style="text-align:center;width:120px"><input id="adj-pf" type="number" min="0" step="0.5" value="5" oninput="computeAdj()" style="width:62px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> %</td>
+          <td class="r" id="adj-pf-amt">₹ 0</td></tr>
+      <tr><td>Designing</td>
+          <td style="text-align:center"><input id="adj-design" type="number" min="0" step="0.5" value="5" oninput="computeAdj()" style="width:62px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> %</td>
+          <td class="r" id="adj-design-amt">₹ 0</td></tr>
+      <tr><td>Negotiation</td>
+          <td style="text-align:center"><input id="adj-neg" type="number" step="0.5" value="0" oninput="computeAdj()" style="width:62px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> %</td>
+          <td class="r" id="adj-neg-amt">₹ 0</td></tr>
+      <tr><td>Transport</td>
+          <td style="text-align:center"><input id="adj-transport" type="number" min="0" value="0" oninput="computeAdj()" style="width:90px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> ₹</td>
+          <td class="r" id="adj-transport-amt">₹ 0</td></tr>
+      <tr class="tot"><td>FINAL TOTAL</td><td></td><td class="r" id="adj-final">₹ 0</td></tr>
+    </tbody></table>
     <div class="sec-label">Terms &amp; Conditions (shared)</div>
     <table id="tnc">
       <tr><td class="l">Prices</td><td><input id="tnc_prices" value="EX Bhagola (Ex-Works)"/></td></tr>
@@ -354,6 +370,7 @@ function renderSummary() {
         style="width:64px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> No.</td>
       <td class="r" id="sum-line-${e.id}">₹ ${t.toLocaleString('en-IN')}</td></tr>`; }).join('');
   document.getElementById('summary').innerHTML = `<table>${rows}<tr class="tot"><td>GRAND TOTAL</td><td></td><td class="r" id="sum-grand">₹ ${g.toLocaleString('en-IN')}</td></tr></table>`;
+  computeAdj();
 }
 function onSummaryQty(id, v) {
   const e = eqById(id); if (!e) return;
@@ -363,6 +380,24 @@ function onSummaryQty(id, v) {
   let g = 0; _eq.forEach(x => g += (+x.qty || 1) * (+x.unit_price || 0));
   const gc = document.getElementById('sum-grand'); if (gc) gc.textContent = '₹ ' + g.toLocaleString('en-IN');
   document.getElementById('top-total').textContent = '₹ ' + g.toLocaleString('en-IN');
+  computeAdj();
+}
+function adjVals() {
+  return { pf:+(document.getElementById('adj-pf')||{}).value||0, design:+(document.getElementById('adj-design')||{}).value||0,
+           neg:+(document.getElementById('adj-neg')||{}).value||0, transport:+(document.getElementById('adj-transport')||{}).value||0 };
+}
+function computeAdj() {
+  if (!document.getElementById('adj-final')) return;
+  let base = 0; _eq.forEach(e => base += (+e.qty||1)*(+e.unit_price||0));
+  const a = adjVals();
+  const pf = base*a.pf/100, des = base*a.design/100, neg = base*a.neg/100, trn = a.transport;
+  const final = Math.round((base + pf + des + neg + trn)/1000)*1000;
+  const f = v => '₹ ' + Math.round(v).toLocaleString('en-IN');
+  document.getElementById('adj-pf-amt').textContent = f(pf);
+  document.getElementById('adj-design-amt').textContent = f(des);
+  document.getElementById('adj-neg-amt').textContent = f(neg);
+  document.getElementById('adj-transport-amt').textContent = f(trn);
+  document.getElementById('adj-final').textContent = f(final);
 }
 function customer() {
   const v = id => (document.getElementById(id)||{}).value || '';
@@ -384,7 +419,9 @@ function showResult(title, links){ document.getElementById('result-h').textConte
 async function generateOffer() {
   document.getElementById('err').style.display='none';
   if (!_eq.length) return showErr('Add at least one equipment.');
+  const a = adjVals();
   const payload = { customer: customer(), project_name: document.getElementById('c-subject').value,
+    pf_pct:a.pf, design_pct:a.design, neg_pct:a.neg, transport_amt:a.transport,
     equipments: _eq.map(e => ({ name:e.name||e.type, specs:e.specs, qty:+e.qty||1, unit_price:+e.unit_price||0 })) };
   const btn=document.getElementById('gen-offer'); btn.disabled=true; btn.textContent='Generating…';
   try {
