@@ -3734,6 +3734,125 @@ def combine_quotes(req: CombineRequest):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+# ── Combined costing workbook: one sheet per equipment + a summary ──────────
+class CombinedEquipment(BaseModel):
+    name: str                          # e.g. "Vertical Ladle Preheater (10 T)"
+    bom: List[dict] = []               # rows: {media?, item, ref?, qty, unit_price, total}
+    total: Optional[float] = None      # equipment grand total (falls back to sum of rows)
+
+
+class CombinedCostingRequest(BaseModel):
+    project_name: Optional[str] = ""
+    company_name: Optional[str] = ""
+    equipments: List[CombinedEquipment] = []
+
+
+@app.get("/api/download-xlsx/{filename}")
+def download_xlsx(filename: str):
+    """Serve a generated .xlsx from the quotes folder with the right type."""
+    safe = os.path.basename(filename)
+    file_path = os.path.join(QUOTES_FOLDER, safe)
+    if not safe.lower().endswith(".xlsx") or not os.path.exists(file_path):
+        return {"error": "File not found"}
+    return FileResponse(
+        path=file_path, filename=safe,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@app.post("/api/combined-costing-excel")
+def combined_costing_excel(req: CombinedCostingRequest):
+    """Build one .xlsx with a sheet per equipment (full itemised BOM) plus a
+    Summary sheet totalling all equipment. Returns a download link."""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+        if not req.equipments:
+            return {"error": "No equipment supplied."}
+
+        navy = "1A3A5C"
+        hdr_fill = PatternFill("solid", fgColor=navy)
+        hdr_font = Font(bold=True, color="FFFFFF")
+        bold = Font(bold=True)
+        thin = Side(style="thin", color="D0D7DE")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        money = '#,##0.00'
+
+        wb = openpyxl.Workbook()
+
+        # ── Summary sheet (first) ────────────────────────────────────────
+        ws = wb.active
+        ws.title = "Summary"
+        ws["A1"] = "COMBINED COSTING SUMMARY"; ws["A1"].font = Font(bold=True, size=14, color=navy)
+        ws["A2"] = f"Project: {req.project_name or '—'}"
+        ws["A3"] = f"Client: {req.company_name or '—'}"
+        r = 5
+        for c, h in enumerate(["S. No.", "Equipment", "Total (Rs.)"], start=1):
+            cell = ws.cell(r, c, h); cell.fill = hdr_fill; cell.font = hdr_font; cell.border = border
+        grand = 0.0
+        eq_totals = []
+        for i, eq in enumerate(req.equipments, start=1):
+            t = eq.total if eq.total is not None else sum(float(x.get("total") or 0) for x in eq.bom)
+            t = float(t or 0); grand += t; eq_totals.append(t)
+            ws.cell(r + i, 1, i).border = border
+            ws.cell(r + i, 2, eq.name).border = border
+            tc = ws.cell(r + i, 3, t); tc.number_format = money; tc.border = border
+        gr = r + len(req.equipments) + 1
+        ws.cell(gr, 2, "GRAND TOTAL").font = bold
+        gc = ws.cell(gr, 3, grand); gc.font = bold; gc.number_format = money
+        ws.column_dimensions["A"].width = 8; ws.column_dimensions["B"].width = 46; ws.column_dimensions["C"].width = 18
+
+        # ── One sheet per equipment (full BOM) ───────────────────────────
+        used = {"Summary"}
+        for idx, eq in enumerate(req.equipments):
+            base = "".join(ch for ch in eq.name if ch not in '[]:*?/\\').strip()[:28] or f"Equipment {idx+1}"
+            name = base; n = 2
+            while name in used:
+                name = f"{base[:26]} {n}"; n += 1
+            used.add(name)
+            sh = wb.create_sheet(name)
+            sh["A1"] = eq.name; sh["A1"].font = Font(bold=True, size=12, color=navy)
+            hr = 3
+            cols = ["S. No.", "Media", "Item", "Ref / Size", "Qty", "Unit Price", "Total"]
+            for c, h in enumerate(cols, start=1):
+                cell = sh.cell(hr, c, h); cell.fill = hdr_fill; cell.font = hdr_font; cell.border = border
+                cell.alignment = Alignment(horizontal="center")
+            sub = 0.0
+            for j, row in enumerate(eq.bom, start=1):
+                rr = hr + j
+                tot = float(row.get("total") or 0); sub += tot
+                vals = [j, row.get("media", ""), row.get("item", ""),
+                        row.get("ref", row.get("size", "")),
+                        row.get("qty", ""), float(row.get("unit_price") or 0), tot]
+                for c, v in enumerate(vals, start=1):
+                    cell = sh.cell(rr, c, v); cell.border = border
+                    if c in (6, 7): cell.number_format = money
+            tr = hr + len(eq.bom) + 1
+            sh.cell(tr, 3, "TOTAL").font = bold
+            tc = sh.cell(tr, 7, eq.total if eq.total is not None else sub)
+            tc.font = bold; tc.number_format = money
+            widths = [8, 16, 40, 18, 8, 14, 16]
+            for c, w in enumerate(widths, start=1):
+                sh.column_dimensions[openpyxl.utils.get_column_letter(c)].width = w
+
+        safe_company = "".join(ch for ch in (req.company_name or "Client")
+                               if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        stamp = datetime.now().strftime("%d%b%Y_%H%M%S")
+        out_name = f"Combined_Costing_{safe_company}_{stamp}.xlsx"
+        out_path = os.path.join(QUOTES_FOLDER, out_name)
+        wb.save(out_path)
+        return {
+            "success":      True,
+            "filename":     out_name,
+            "download_url": f"/api/download-xlsx/{out_name}",
+            "sheets":       len(req.equipments) + 1,
+            "grand_total":  grand,
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
 @app.get("/api/next-quote-ref")
 def api_next_quote_ref(technical_person: str = "", location: str = ""):
     """Preview the auto-generated enquiry ref for the form.
