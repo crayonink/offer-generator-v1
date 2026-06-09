@@ -387,7 +387,7 @@ def _cog_line_rows(media: str, equipment: dict,
                      unit_price_override=10000,  # was: _get_price_fuzzy("ORIFICE PLATE (COG)")
                      make="ENGINEERING SPECIALITY"),
                 _row(media, "DPT", "", 1,
-                     unit_price_override=_get_price_fuzzy("DPT (COG)"),
+                     unit_price_override=_get_price_fuzzy("DPT"),
                      make="HONEYWELL"),
             ]
 
@@ -475,7 +475,7 @@ def _bfg_line_rows(media: str, equipment: dict,
                  unit_price_override=10000,  # was: _get_price_fuzzy("ORIFICE PLATE (COG)")
                  make="ENGINEERING SPECIALITY"),
             _row(media, "DPT", "", 1,
-                 unit_price_override=_get_price_fuzzy("DPT (COG)"),
+                 unit_price_override=_get_price_fuzzy("DPT"),
                  make="HONEYWELL"),
         ]
     # PCV/MCV is added in PLC and P.PID modes — AGR replaces it in PLC+AGR / PID / manual.
