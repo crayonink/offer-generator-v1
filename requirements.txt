@@ -4,7 +4,6 @@ pandas
 openpyxl
 python-multipart
 docxtpl
-docxcompose
 mammoth
 pypdf
 reportlab
