@@ -441,7 +441,9 @@ async function generateExcel() {
   try {
     const j = await (await fetch('/api/combined-costing-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
     if (j.error) throw new Error(j.error);
-    showResult(`Costing Excel ready — ${j.sheets} sheets`, [['Download .xlsx',j.download_url,true]]);
+    // One click = download. Trigger it immediately; keep a fallback link in case the browser blocks it.
+    const a=document.createElement('a'); a.href=j.download_url; a.download=''; document.body.appendChild(a); a.click(); a.remove();
+    showResult(`✓ Costing Excel downloaded — ${j.sheets} sheets`, [['Didn’t download? Click here',j.download_url,true]]);
   } catch(e){ showErr(e.message||e); } finally { btn.disabled=false; btn.textContent='Download Costing Excel'; }
 }
 
