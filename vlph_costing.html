@@ -1473,8 +1473,9 @@ function onControlModeChange() {
   });
   // Pilot fields have their own rule (auto mode + auto-ignition ticked)
   updatePilotVisibility();
-  if (mode === 'manual') document.getElementById('purging-row').style.display = 'none';
-  else onFuelChange();
+  // Purging line is fuel-based (MG/COG/BG) and offered in both manual and
+  // automatic modes — let onFuelChange decide its visibility.
+  onFuelChange();
 }
 
 function onManualPilotChange() {
@@ -1495,9 +1496,9 @@ function onFuelChange() {
   const isDual = f2 !== 'none';
   document.getElementById('fuel2-cv-wrap').style.display  = isDual ? 'block' : 'none';
   document.getElementById('fuel-ratio-row').style.display = isDual ? 'block' : 'none';
-  // Purging line — only for MG / COG fuels (either fuel 1 or fuel 2)
-  const isManualMode = document.getElementById('control_mode').value === 'manual';
-  const needsPurging = !isManualMode && (PURGING_FUELS.has(f1) || (isDual && PURGING_FUELS.has(f2)));
+  // Purging line — for MG / COG / BG fuels (either fuel 1 or fuel 2), in
+  // both manual and automatic modes.
+  const needsPurging = (PURGING_FUELS.has(f1) || (isDual && PURGING_FUELS.has(f2)));
   document.getElementById('purging-row').style.display = needsPurging ? 'block' : 'none';
 
   // Mix Gas uses only pneumatic control valves (DEMBLA/AIRA) — disable CAIR
