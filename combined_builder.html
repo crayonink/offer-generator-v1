@@ -103,29 +103,39 @@
   <div class="panel active" id="p-1">
     <h2>Customer</h2>
     <p class="lead">Entered once and shared across every equipment in this combined offer.</p>
-    <div class="sec-label">Customer</div>
-    <div class="fg fg-3">
+    <div class="sec-label">Contact</div>
+    <div class="fg fg-4">
       <div class="field"><label>Contact Name</label>
         <div style="display:flex;gap:6px"><select id="c-salutation" style="flex:0 0 70px"><option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option></select><input id="c-name" style="flex:1"/></div></div>
+      <div class="field"><label>Designation</label><input id="c-designation" placeholder="e.g. Purchase Manager"/></div>
       <div class="field"><label>Email</label><input id="c-email" type="email"/></div>
       <div class="field"><label>Phone</label><input id="c-phone"/></div>
     </div>
-    <div class="fg fg-3">
-      <div class="field"><label>Company</label><input id="c-company"/></div>
-      <div class="field"><label>City</label><input id="c-city"/></div>
-      <div class="field"><label>Location</label><select id="c-location"><option>Goa</option><option>Vadodara</option><option>Faridabad</option></select></div>
-    </div>
+    <div class="sec-label">Company</div>
     <div class="fg fg-4">
-      <div class="field"><label>Address</label><input id="c-address"/></div>
-      <div class="field"><label>State</label><input id="c-state"/></div>
-      <div class="field"><label>PIN</label><input id="c-pin"/></div>
+      <div class="field"><label>Company</label><input id="c-company"/></div>
+      <div class="field"><label>GSTIN</label><input id="c-gstin"/></div>
+      <div class="field"><label>Location</label><select id="c-location"><option>Goa</option><option>Vadodara</option><option>Faridabad</option></select></div>
       <div class="field"><label>Subject / Project</label><input id="c-subject" value="Offer for Combined Equipment"/></div>
     </div>
     <div class="fg fg-4">
-      <div class="field"><label>Marketing Person</label><input id="c-marketing"/></div>
+      <div class="field"><label>Address</label><input id="c-address"/></div>
+      <div class="field"><label>City</label><input id="c-city"/></div>
+      <div class="field"><label>State</label><input id="c-state"/></div>
+      <div class="field"><label>PIN</label><input id="c-pin"/></div>
+    </div>
+    <div class="sec-label">ENCON Contacts</div>
+    <div class="fg fg-3">
+      <div class="field"><label>Marketing Person</label>
+        <div style="display:flex;gap:6px"><select id="c-marketing-salutation" style="flex:0 0 70px"><option>Mr.</option><option selected>Mrs.</option><option>Miss</option><option>Dr.</option></select><input id="c-marketing" style="flex:1"/></div></div>
       <div class="field"><label>Marketing Email</label><input id="c-marketing-email"/></div>
-      <div class="field"><label>Technical Person</label><input id="c-technical"/></div>
+      <div class="field"><label>Marketing Phone</label><input id="c-marketing-phone"/></div>
+    </div>
+    <div class="fg fg-3">
+      <div class="field"><label>Technical Person</label>
+        <div style="display:flex;gap:6px"><select id="c-technical-salutation" style="flex:0 0 70px"><option selected>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option></select><input id="c-technical" style="flex:1"/></div></div>
       <div class="field"><label>Technical Email</label><input id="c-technical-email"/></div>
+      <div class="field"><label>Technical Phone</label><input id="c-technical-phone"/></div>
     </div>
     <div class="nav"><button class="btn btn-primary" onclick="goStep(2)">Continue to Select Costing →</button></div>
   </div>
@@ -341,9 +351,11 @@ function renderSummary() {
 }
 function customer() {
   const v = id => (document.getElementById(id)||{}).value || '';
-  return { salutation:v('c-salutation'), name:v('c-name'), email:v('c-email'), phone:v('c-phone'), company:v('c-company'),
-    address:v('c-address'), city:v('c-city'), state:v('c-state'), pin:v('c-pin'), location:v('c-location'), subject:v('c-subject'),
-    marketing:v('c-marketing'), marketing_email:v('c-marketing-email'), technical:v('c-technical'), technical_email:v('c-technical-email'),
+  return { salutation:v('c-salutation'), name:v('c-name'), designation:v('c-designation'), email:v('c-email'), phone:v('c-phone'),
+    company:v('c-company'), gstin:v('c-gstin'), address:v('c-address'), city:v('c-city'), state:v('c-state'), pin:v('c-pin'),
+    location:v('c-location'), subject:v('c-subject'),
+    marketing_salutation:v('c-marketing-salutation'), marketing:v('c-marketing'), marketing_email:v('c-marketing-email'), marketing_phone:v('c-marketing-phone'),
+    technical_salutation:v('c-technical-salutation'), technical:v('c-technical'), technical_email:v('c-technical-email'), technical_phone:v('c-technical-phone'),
     tnc_prices:v('tnc_prices'), tnc_delivery:v('tnc_delivery'), tnc_gst:v('tnc_gst'), tnc_hsn_code:v('tnc_hsn_code'), tnc_pan_gst:v('tnc_pan_gst'),
     tnc_payment_terms:v('tnc_payment_terms'), tnc_packing_forwarding:v('tnc_packing_forwarding'), tnc_freight:v('tnc_freight'),
     tnc_transit_insurance:v('tnc_transit_insurance'), tnc_validity:v('tnc_validity'), tnc_inspection:v('tnc_inspection'), tnc_guarantee:v('tnc_guarantee') };
@@ -380,7 +392,8 @@ async function generateExcel() {
   } catch(e){ showErr(e.message||e); } finally { btn.disabled=false; btn.textContent='Download Costing Excel'; }
 }
 
-const STICKY=['c-salutation','c-name','c-email','c-phone','c-company','c-address','c-city','c-state','c-pin','c-location','c-marketing','c-marketing-email','c-technical','c-technical-email'];
+const STICKY=['c-salutation','c-name','c-designation','c-email','c-phone','c-company','c-gstin','c-address','c-city','c-state','c-pin','c-location',
+  'c-marketing-salutation','c-marketing','c-marketing-email','c-marketing-phone','c-technical-salutation','c-technical','c-technical-email','c-technical-phone'];
 function loadSticky(){ try{ const o=JSON.parse(localStorage.getItem('encon_form_step1')||'{}'); STICKY.forEach(id=>{const el=document.getElementById(id); if(el&&o[id]!=null)el.value=o[id];}); }catch(e){} }
 document.addEventListener('DOMContentLoaded', () => { loadSticky(); renderTypes(); });
 </script>
