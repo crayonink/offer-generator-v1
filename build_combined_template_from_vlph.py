@@ -350,6 +350,36 @@ def _pad_table_rows(doc: Document, min_height_cm: float = 0.7) -> None:
                 row.height_rule = WD_ROW_HEIGHT_RULE.AT_LEAST
 
 
+def _fill_annexure_i_scope(doc: Document) -> None:
+    """Annexure I — Scope of Supply: replace the VLPH component list with a
+    loop over the combined equipment (so the scope reads as the equipment
+    being supplied), keeping the annexure itself intact."""
+    target = None
+    for t in doc.tables:
+        if not t.rows or len(t.rows[0].cells) < 2:
+            continue
+        head_l = t.rows[0].cells[0].text.strip().upper()
+        head_r = t.rows[0].cells[1].text.strip().upper()
+        if head_l == 'S. NO.' and 'ITEM DESCRIPTION' not in head_r and 10 <= len(t.rows) <= 15:
+            target = t
+            break
+    if target is None:
+        print('Annexure I scope table not found — skipping.')
+        return
+    tbl_xml = target._element
+    for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
+        tbl_xml.remove(tr)
+
+    def add(c0, c1):
+        r = target.add_row()
+        r.cells[0].text = c0
+        r.cells[1].text = c1
+
+    add('{%tr for eq in equipments %}', '')
+    add('{{ loop.index }}.', '{{ eq.name }}')
+    add('{%tr endfor %}', '')
+
+
 def main() -> None:
     if not os.path.exists(SOURCE):
         raise SystemExit(f"missing: {SOURCE}")
@@ -359,17 +389,14 @@ def main() -> None:
     doc = Document(TARGET)
     print(f'Cloned {SOURCE} -> {TARGET}: {len(doc.paragraphs)} paragraphs, {len(doc.tables)} tables')
 
+    # Full proper-offer structure (like the VLPH/HLPH offers): keep Scope of
+    # Supply, Exclusions, Reference List, Make List and Supervision. Only the
+    # technical-specs table, the Annexure-I scope list and the price schedule
+    # are made equipment-driven.
     _delete_vlph_scope_body(doc)
     _replace_spec_table_with_equipment_loop(doc.tables[5])
-    _rename_annexure_i_heading(doc)
-    _remove_annexure_i_scope_table(doc)
+    _fill_annexure_i_scope(doc)
     _strip_project_name_from_cover_box(doc)
-    _remove_annexure_ii(doc)
-    _remove_annexure_section(doc, 'V', 'REFERENCE')
-    _remove_annexure_section(doc, 'VI', 'MAKE')
-    _scrub_reference_list_mention(doc)
-    _remove_supervision_table(doc)
-    _renumber_annexures_after_removal(doc)
     _rebuild_price_schedule(doc)
     _pad_table_rows(doc)
 
