@@ -350,8 +350,19 @@ function renderSummary() {
   let g = 0;
   const rows = _eq.map((e,i) => { const t=(+e.qty||1)*(+e.unit_price||0); g+=t;
     return `<tr><td>${i+1}. ${esc(e.name||e.type)}${e.specs?`<div style="color:var(--muted);font-size:.76rem">${esc(e.specs)}</div>`:''}</td>
-      <td style="text-align:center">${e.qty||1} No.</td><td class="r">₹ ${t.toLocaleString('en-IN')}</td></tr>`; }).join('');
-  document.getElementById('summary').innerHTML = `<table>${rows}<tr class="tot"><td>GRAND TOTAL</td><td></td><td class="r">₹ ${g.toLocaleString('en-IN')}</td></tr></table>`;
+      <td style="text-align:center"><input type="number" min="1" value="${e.qty||1}" oninput="onSummaryQty(${e.id},this.value)"
+        style="width:64px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> No.</td>
+      <td class="r" id="sum-line-${e.id}">₹ ${t.toLocaleString('en-IN')}</td></tr>`; }).join('');
+  document.getElementById('summary').innerHTML = `<table>${rows}<tr class="tot"><td>GRAND TOTAL</td><td></td><td class="r" id="sum-grand">₹ ${g.toLocaleString('en-IN')}</td></tr></table>`;
+}
+function onSummaryQty(id, v) {
+  const e = eqById(id); if (!e) return;
+  e.qty = Math.max(1, +v || 1);
+  const line = e.qty * (+e.unit_price || 0);
+  const lc = document.getElementById('sum-line-' + id); if (lc) lc.textContent = '₹ ' + line.toLocaleString('en-IN');
+  let g = 0; _eq.forEach(x => g += (+x.qty || 1) * (+x.unit_price || 0));
+  const gc = document.getElementById('sum-grand'); if (gc) gc.textContent = '₹ ' + g.toLocaleString('en-IN');
+  document.getElementById('top-total').textContent = '₹ ' + g.toLocaleString('en-IN');
 }
 function customer() {
   const v = id => (document.getElementById(id)||{}).value || '';
