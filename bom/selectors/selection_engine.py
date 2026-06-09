@@ -83,15 +83,33 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         agr = {"nb": gt_outlet_nb, "price": 0, "enag": None, "item_code": None,
                "connection": None, "ratio": None, "compact": None, "pmax_mbar": None}
 
+    # Blower — selected before the air line so the line can be sized to the
+    # blower's airflow (the figure shown to the user as "Air Flow").
+    # Blower HP = CFM × pressure (inches w.g.) / 3200. Gas CFM = air / 1.7.
+    # Oil CFM = LPH × 10 (atomisation air); dual-fuel takes the max.
+    gas_cfm = air_flow_nm3hr / 1.7
+    oil_cfm = 0
+    if _resolve_category(fuel_type) == "oil" and burner.get("equivalent_lph"):
+        oil_cfm = burner["equivalent_lph"] * 10
+    if fuel2_lph and fuel2_lph > 0:
+        oil_cfm = max(oil_cfm, fuel2_lph * 10)
+    cfm = max(gas_cfm, oil_cfm) if oil_cfm else gas_cfm
+    pressure_in_wg = int(blower_pressure)
+    required_hp = cfm * pressure_in_wg / 3200
+    blower = select_blower(required_hp, series=blower_pressure)
+
     # Air side
     air_duct = select_air_duct(air_flow_nm3hr)
     motorized_control_valve = select_motorized_control_valve(air_flow_nm3hr)
-    # Combustion-air line NB. The hydraulic pipe size (air_nb, computed from the
-    # combustion air flow) is authoritative — that's what the manual calc gives
-    # (e.g. 2040 Nm3/hr -> ~238 mm -> 250 NB). Floor to 125 and never go below
-    # the air duct. (Previously this used ONLY the air duct, which under-sized
-    # the line vs the calculated pipe, e.g. showed 200 where 250 is required.)
-    air_line_nb = max(125, air_nb, air_duct["nb"])
+    # Combustion-air line NB, sized to the blower's airflow — the figure shown
+    # to the user as "Air Flow" — so the displayed flow and the pipe NB always
+    # agree (e.g. 2040 Nm3/hr -> ~219 mm -> 250 NB). Floor to 125; never below
+    # the combustion pipe NB or the air duct.
+    _blower_air = blower.get("airflow_nm3hr") or air_flow_nm3hr
+    _blower_air_nb = calculate_pipe_sizes(
+        PipeInputs(ng_flow_nm3hr=ng_flow_nm3hr, air_flow_nm3hr=_blower_air)
+    ).air_pipe_nb
+    air_line_nb = max(125, _blower_air_nb, air_nb, air_duct["nb"])
     # Butterfly valve — fall back from Lever to Gear if NB exceeds the lever range
     try:
         butterfly_valve = select_butterfly_valve(air_line_nb, vendor=butterfly_valve_vendor)
@@ -100,23 +118,7 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
             butterfly_valve = select_butterfly_valve(air_line_nb, vendor="lt_gear")
         else:
             raise
-    rotary_joint = select_rotary_joint(air_nb)
-
-    # Blower HP = CFM × pressure (inches w.g.) / 3200
-    # Gas CFM = air / 1.7. Oil CFM = LPH × 10 (accounts for atomization air).
-    # For dual fuel with any oil: use max(gas_cfm, oil_cfm) so blower handles
-    # both modes.
-    gas_cfm = air_flow_nm3hr / 1.7
-    oil_cfm = 0
-    if _resolve_category(fuel_type) == "oil" and burner.get("equivalent_lph"):
-        oil_cfm = burner["equivalent_lph"] * 10
-    # Dual-fuel: if fuel2 is oil, its LPH × 10 may exceed gas CFM
-    if fuel2_lph and fuel2_lph > 0:
-        oil_cfm = max(oil_cfm, fuel2_lph * 10)
-    cfm = max(gas_cfm, oil_cfm) if oil_cfm else gas_cfm
-    pressure_in_wg = int(blower_pressure)   # "28" or "40"
-    required_hp = cfm * pressure_in_wg / 3200
-    blower = select_blower(required_hp, series=blower_pressure)
+    rotary_joint = select_rotary_joint(air_line_nb)
 
     # HPU / Pumping Unit — only for oil-based fuels.
     # Heavy oils (LSHS, FO) get a standalone Pumping Unit since the oil is
