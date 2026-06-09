@@ -1253,7 +1253,7 @@ function _useInCombined(prodType, prodLabel) {
   const SUB = new Set(['BOUGHT OUT ITEMS', 'ENCON ITEMS', 'GRAND TOTAL']);
   const bom = lastCalc.bom.filter(r => !SUB.has((r['ITEM NAME'] || '').trim())).map(r => ({
     media: r.MEDIA || '', item: r['ITEM NAME'] || '', ref: r.REFERENCE || '',
-    qty: +r.QTY || 0, unit_price: +r['UNIT PRICE'] || 0, total: +r.TOTAL || 0 }));
+    qty: +r.QTY || 0, unit_price: +r['UNIT PRICE'] || 0, total: +r.TOTAL || 0, make: r.MAKE || '' }));
   const cs = lastCalc.cost_summary || {};
   const total = +cs.grand_total || +cs.final_total || 0;  // base (pre-adjustment) for combined offer
   parent.postMessage({ source: 'encon-combined-equipment', type: prodType, name,

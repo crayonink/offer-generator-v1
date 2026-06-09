@@ -3775,6 +3775,7 @@ class CombinedOfferEquipment(BaseModel):
     specs: Optional[str] = ""          # one-line specs summary
     qty: int = 1
     unit_price: float = 0
+    bom: List[dict] = []               # itemised BOM -> Scope of Supply
 
 
 class CombinedOfferRequest(BaseModel):
@@ -3822,6 +3823,35 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 "total":      _format_inr(line_total),
             })
 
+        # Scope of Supply (Annexure I): per-equipment header row followed by
+        # that equipment's itemised BOM lines. docxtpl doesn't XML-escape free
+        # text reliably here, so escape & < > ourselves (e.g. makes like L&T).
+        import xml.sax.saxutils as _saxutils
+        def _xesc(s):
+            return _saxutils.escape(str(s))
+        scope_rows, _sno = [], 0
+        for eq in req.equipments:
+            scope_rows.append({"sno": "", "desc": _xesc((eq.name or "Equipment").upper())})
+            for b in (eq.bom or []):
+                item = (b.get("item") or "").strip()
+                if not item:
+                    continue
+                _sno += 1
+                ref  = (b.get("ref") or b.get("size") or "").strip()
+                make = (b.get("make") or "").strip()
+                qty  = b.get("qty")
+                desc = item
+                if ref:
+                    desc += f" — {ref}"
+                tail = []
+                if qty:
+                    tail.append(f"Qty {qty}")
+                if make:
+                    tail.append(make)
+                if tail:
+                    desc += f"  ({', '.join(str(x) for x in tail)})"
+                scope_rows.append({"sno": f"{_sno}.", "desc": _xesc(desc)})
+
         # Commercial adjustments on the combined grand total -> Final Total
         # (rounded to the nearest Rs.1000, matching the standalone forms).
         _pf   = grand * (req.pf_pct or 0) / 100
@@ -3851,8 +3881,9 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "technical_person":  _with_salutation(cust.technical_salutation, cust.technical) or _with_salutation(cust.marketing_salutation, cust.marketing),
             "technical_phone":   cust.technical_phone or cust.marketing_phone or "",
             "technical_email":   cust.technical_email or cust.marketing_email or "",
-            # technical section + price schedule loops
+            # technical section + scope of supply + price schedule loops
             "equipments":   [{"name": e.name, "specs": e.specs or ""} for e in req.equipments],
+            "scope_rows":   scope_rows,
             "price_lines":  price_lines,
             "grand_total":  _format_inr(grand),
             # Commercial adjustments applied once to the combined grand total.

@@ -366,17 +366,26 @@ def _fill_annexure_i_scope(doc: Document) -> None:
     if target is None:
         print('Annexure I scope table not found — skipping.')
         return
+    target.rows[0].cells[0].text = 'S. No.'
+    target.rows[0].cells[1].text = 'Item Description'
     tbl_xml = target._element
     for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
         tbl_xml.remove(tr)
 
-    def add(c0, c1):
+    def add(c0, c1, *, bold=False):
         r = target.add_row()
         r.cells[0].text = c0
         r.cells[1].text = c1
+        if bold:
+            for cell in r.cells:
+                for p in cell.paragraphs:
+                    for run in p.runs:
+                        run.bold = True
 
-    add('{%tr for eq in equipments %}', '')
-    add('{{ loop.index }}.', '{{ eq.name }}')
+    # Flat list of scope rows built by the endpoint: an equipment header row
+    # (r.head true, name in r.desc) followed by its itemised BOM lines.
+    add('{%tr for r in scope_rows %}', '')
+    add('{{ r.sno }}', '{{ r.desc }}')
     add('{%tr endfor %}', '')
 
 
@@ -395,9 +404,12 @@ def main() -> None:
     # are made equipment-driven.
     _delete_vlph_scope_body(doc)
     _replace_spec_table_with_equipment_loop(doc.tables[5])
+    # Rebuild the price schedule BEFORE filling the scope table: the scope
+    # fill renames its header to "Item Description", which would otherwise
+    # collide with the price-schedule detection.
+    _rebuild_price_schedule(doc)
     _fill_annexure_i_scope(doc)
     _strip_project_name_from_cover_box(doc)
-    _rebuild_price_schedule(doc)
     _pad_table_rows(doc)
 
     doc.save(TARGET)

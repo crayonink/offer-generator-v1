@@ -422,7 +422,8 @@ async function generateOffer() {
   const a = adjVals();
   const payload = { customer: customer(), project_name: document.getElementById('c-subject').value,
     pf_pct:a.pf, design_pct:a.design, neg_pct:a.neg, transport_amt:a.transport,
-    equipments: _eq.map(e => ({ name:e.name||e.type, specs:e.specs, qty:+e.qty||1, unit_price:+e.unit_price||0 })) };
+    equipments: _eq.map(e => ({ name:e.name||e.type, specs:e.specs, qty:+e.qty||1, unit_price:+e.unit_price||0,
+      bom:(e.bom||[]).map(b => ({ item:b.item, ref:b.ref||'', qty:b.qty, make:b.make||'' })) })) };
   const btn=document.getElementById('gen-offer'); btn.disabled=true; btn.textContent='Generating…';
   try {
     const j = await (await fetch('/api/generate-combined-offer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
