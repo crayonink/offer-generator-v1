@@ -578,11 +578,6 @@
           <div class="hint">Auto from ladle capacity — editable</div>
         </div>
         <div class="field">
-          <label>Pipeline Weight (kg)</label>
-          <input id="direct_pipeline_kg" type="number" value="0" min="0"/>
-          <div class="hint">Auto from tundish capacity — editable</div>
-        </div>
-        <div class="field">
           <label>Ceramic Fibre Rolls</label>
           <input id="direct_ceramic_rolls" type="number" value="0" min="0"/>
           <div class="hint">Auto from tundish capacity — editable (1 roll = 14 kg)</div>
@@ -1302,7 +1297,6 @@ async function refreshLadleMapping() {
     const res = await fetch(`${API}/api/ladle-mapping?tons=${tons}&type=vertical`);
     const data = await res.json();
     setVal("direct_ms_structure_kg", data.fabrication_kg);
-    setVal("direct_pipeline_kg",     data.pipeline_kg);
     setVal("direct_ceramic_rolls",   data.ceramic_rolls);
     setVal("ms_structure_kg",        data.fabrication_kg);
     setVal("ceramic_rolls",          data.ceramic_rolls);
