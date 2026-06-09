@@ -3827,34 +3827,99 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 "total":      _format_inr(line_total),
             })
 
-        # Scope of Supply (Annexure I): per-equipment header row followed by
-        # that equipment's itemised BOM lines. docxtpl doesn't XML-escape free
-        # text reliably here, so escape & < > ourselves (e.g. makes like L&T).
-        import xml.sax.saxutils as _saxutils
+        # Scope of Supply (Annexure I) — modelled on the reference offer:
+        # per equipment, the BOM is grouped by system (Combustion Air Train,
+        # Gas Train, Nitrogen Train, …) with lettered sub-items + makes, then
+        # the standard ENCON inclusions (Control Panel internals, I&C, safety)
+        # are appended. docxtpl doesn't XML-escape free text reliably here, so
+        # escape & < > ourselves (e.g. makes like L&T).
+        import xml.sax.saxutils as _saxutils, string as _string
         def _xesc(s):
             return _saxutils.escape(str(s))
-        scope_rows, _sno = [], 0
+
+        def _system_name(media: str) -> str:
+            m = (media or "").strip()
+            mu = m.upper()
+            mapping = {
+                "COMB AIR": "Combustion Air Train",
+                "ENCON ITEMS": "ENCON Supplied Equipment",
+                "PURGING LINE": "Nitrogen Purging Train",
+                "MISC ITEMS": "Miscellaneous Items",
+            }
+            if mu in mapping:
+                return mapping[mu]
+            if "PILOT LINE" in mu:
+                return "Pilot Gas Train"
+            if mu.endswith("LINE"):
+                base = m[:-4].strip()          # keep fuel acronym case, e.g. "NG", "COG"
+                return base + (" Train" if "GAS" in base.upper() else " Gas Train")
+            return m.title() if m else "Items"
+
+        # Standard inclusions present on every ENCON offer (not all are priced
+        # BOM lines). Makes follow the reference offer.
+        STANDARD_SCOPE = [
+            ("Instrumentation & Control", [
+                ("Thermocouples", "2 Nos", "Toshniwal / Tempsen / SBI"),
+                ("Temperature Transmitters", "2 Nos", "Honeywell / ABB"),
+            ]),
+            ("Control Panel", [
+                ("Isolation Switch", "1 No", "Siemens / ABB"),
+                ("Emergency Stop", "1 No", "Standard"),
+                ("Ammeter & Voltmeter", "1 Set", "Standard"),
+                ("MCB / MPCB", "1 Lot", "Siemens / ABB"),
+                ("Contactors & Relays", "1 Lot", "Siemens / ABB"),
+                ("Temperature Indicator", "1 No", "Masibus"),
+                ("PLC with HMI", "1 No", "Siemens"),
+            ]),
+            ("Safety Systems", [
+                ("Gas Leakage Detection System", "1 Set", "Honeywell"),
+                ("Limit Switches", "2 Nos", "BCH"),
+            ]),
+        ]
+        _ltr = _string.ascii_lowercase
+
+        def _subdesc(item, ref, qty, make):
+            d = item
+            if ref:
+                d += f" — {ref}"
+            extra = []
+            if qty:
+                extra.append(f"{qty} No.")
+            if make:
+                extra.append(make)
+            if extra:
+                d += "   ·   " + "  ·  ".join(str(x) for x in extra)
+            return d
+
+        scope_rows = []
         for eq in req.equipments:
-            scope_rows.append({"sno": "", "desc": _xesc((eq.name or "Equipment").upper())})
+            scope_rows.append({"sno": "", "desc": _xesc("► " + (eq.name or "Equipment").upper())})
+            # group this equipment's BOM by media, preserving first-seen order
+            groups, order = {}, []
             for b in (eq.bom or []):
                 item = (b.get("item") or "").strip()
-                if not item:
-                    continue
-                _sno += 1
-                ref  = (b.get("ref") or b.get("size") or "").strip()
-                make = (b.get("make") or "").strip()
-                qty  = b.get("qty")
-                desc = item
-                if ref:
-                    desc += f" — {ref}"
-                tail = []
-                if qty:
-                    tail.append(f"Qty {qty}")
-                if make:
-                    tail.append(make)
-                if tail:
-                    desc += f"  ({', '.join(str(x) for x in tail)})"
-                scope_rows.append({"sno": f"{_sno}.", "desc": _xesc(desc)})
+                if not item or item.upper() == "CONTROL PANEL":
+                    continue  # control panel is expanded via standard inclusions
+                media = (b.get("media") or "Items").strip() or "Items"
+                if media not in groups:
+                    groups[media] = []
+                    order.append(media)
+                groups[media].append(b)
+            sysno = 0
+            for media in order:
+                sysno += 1
+                scope_rows.append({"sno": f"{sysno}.", "desc": _xesc(_system_name(media))})
+                for i, b in enumerate(groups[media]):
+                    lbl = _ltr[i] if i < 26 else str(i + 1)
+                    desc = _subdesc((b.get("item") or "").strip(),
+                                    (b.get("ref") or b.get("size") or "").strip(),
+                                    b.get("qty"), (b.get("make") or "").strip())
+                    scope_rows.append({"sno": lbl, "desc": _xesc(desc)})
+            for sysname, items in STANDARD_SCOPE:
+                sysno += 1
+                scope_rows.append({"sno": f"{sysno}.", "desc": _xesc(sysname)})
+                for i, (it, q, mk) in enumerate(items):
+                    scope_rows.append({"sno": _ltr[i], "desc": _xesc(f"{it}   ·   {q}  ·  {mk}")})
 
         # Commercial adjustments on the combined grand total -> Final Total
         # (rounded to the nearest Rs.1000, matching the standalone forms).
