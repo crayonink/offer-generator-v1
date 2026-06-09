@@ -133,7 +133,12 @@
 <script>
 const CATALOG_TYPES = { 'Blower':'/api/blower/catalog', 'Burner':'/api/burner/catalog', 'HPU':null };
 // Types whose full config form is embedded (computes the BOM inline).
-const EMBED_SRC = { 'Vertical Ladle Preheater':'/costing?embed=1', 'Horizontal Ladle Preheater':'/hlph?embed=1' };
+const EMBED_SRC = {
+  'Vertical Ladle Preheater':   '/costing?embed=1',
+  'Horizontal Ladle Preheater': '/hlph?embed=1',
+  'Tundish Preheater':          '/tundish?embed=1',
+  'Recuperator':                '/recup?embed=1',
+};
 const EQ_TYPES = ['Vertical Ladle Preheater','Horizontal Ladle Preheater','Tundish Preheater','Recuperator','HPU','Blower','Burner','Other'];
 let _eq = [];   // [{id, type, name, specs, qty, unit_price, bom:[{item,qty,unit_price}]}]
 let _uid = 0;

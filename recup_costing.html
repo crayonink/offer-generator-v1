@@ -667,6 +667,47 @@
 <script>
 let lastCalc = null;
 
+// ── Combined-builder embed mode (see vlph_costing.html for notes) ───────────
+const EMBED = new URLSearchParams(location.search).get('embed') === '1';
+function _useInCombined(prodType, prodLabel) {
+  if (!lastCalc || !lastCalc.bom) {
+    alert('Please run the calculation first (Step 2 → Parameters).'); return;
+  }
+  const c = lastCalc.calculations || {};
+  const name = prodLabel + (c.application ? ` — ${c.application}` : '');
+  const bits = [];
+  if (c.air_temp_out_C) bits.push('Air out ~' + Math.round(c.air_temp_out_C) + '°C');
+  if (c.surface_area_m2) bits.push((Math.round(c.surface_area_m2 * 10) / 10) + ' m² surface');
+  if (c.flue_flow_nm3hr) bits.push('Flue ' + Math.round(c.flue_flow_nm3hr) + ' Nm³/hr');
+  const SUB = new Set(['BOUGHT OUT ITEMS', 'ENCON ITEMS', 'GRAND TOTAL']);
+  const bom = lastCalc.bom.filter(r => !SUB.has((r['ITEM NAME'] || '').trim())).map(r => ({
+    media: r.MEDIA || '', item: r['ITEM NAME'] || '', ref: r.REFERENCE || '',
+    qty: +r.QTY || 0, unit_price: +r['UNIT PRICE'] || 0, total: +r.TOTAL || 0 }));
+  const cs = lastCalc.cost_summary || {};
+  const total = +lastCalc._final_total || +lastCalc._grand_total || +cs.final_total || +cs.grand_total || 0;
+  parent.postMessage({ source: 'encon-combined-equipment', type: prodType, name,
+    specs: bits.join(' · '), total, bom }, '*');
+  const b = document.getElementById('_use-combined-btn');
+  if (b) { b.textContent = '✓ Added — ₹ ' + total.toLocaleString('en-IN') + ' (click to update)'; b.style.background = '#15803d'; }
+}
+function _initEmbed(prodType, prodLabel) {
+  if (!EMBED) return;
+  document.body.classList.add('embed');
+  const st = document.createElement('style');
+  st.textContent = '.embed .topnav-links,.embed #tab-1,.embed #tab-4,.embed .hero{display:none!important}.embed .topnav{padding:0 16px}';
+  document.head.appendChild(st);
+  const host = document.getElementById('panel-3') || document.body;
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:sticky;bottom:0;background:#fff;border-top:1.5px solid #e2e8f0;padding:14px 0;margin-top:14px;text-align:center;z-index:5;';
+  bar.innerHTML = '<button id="_use-combined-btn" class="btn-primary" style="padding:13px 26px">Use in Combined Offer ↑</button>';
+  bar.querySelector('button').addEventListener('click', () => _useInCombined(prodType, prodLabel));
+  host.appendChild(bar);
+  if (typeof goStep === 'function') goStep(2);
+}
+if (document.readyState === 'loading')
+  window.addEventListener('DOMContentLoaded', () => _initEmbed('RECUP', 'Recuperator'));
+else _initEmbed('RECUP', 'Recuperator');
+
 const $ = id => document.getElementById(id);
 const fmt = n => "₹ " + Math.round(n).toLocaleString("en-IN");
 const num = id => parseFloat($(id).value) || 0;
