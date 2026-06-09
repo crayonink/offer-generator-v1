@@ -3645,6 +3645,15 @@ def combined_offer_page():
         return HTMLResponse(content=f.read())
 
 
+@app.get("/combined-builder", response_class=HTMLResponse)
+def combined_builder_page():
+    """Unified combined-project builder: customer + T&C once, an input
+    section per equipment, then one combined offer + a costing Excel."""
+    html_path = os.path.join(BASE_DIR, "combined_builder.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
 def _quote_label(fname: str) -> str:
     """'Blower_Offer_PP_Rolling_Mills_035.docx' -> 'Blower Offer — PP Rolling Mills (035)'."""
     base = fname[:-5] if fname.lower().endswith(".docx") else fname

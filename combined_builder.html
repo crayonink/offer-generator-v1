@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ENCON – Combined Project Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --navy:#1a3a5c; --navy2:#0f2744; --green:#059669; --red:#dc2626; --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f8fafc; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:#fff; color:var(--text); font-size:14px; }
+    .topnav { background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 40px; position:sticky; top:0; z-index:100; height:56px; box-shadow:0 1px 0 var(--border); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:900; color:var(--text); text-decoration:none; margin-right:24px; }
+    .brand-mark { width:30px; height:30px; background:var(--navy); border-radius:7px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.7rem; font-weight:900; }
+    .topnav-links { margin-left:auto; display:flex; gap:4px; }
+    .topnav-links a { font-size:.75rem; color:var(--muted); text-decoration:none; padding:5px 12px; border-radius:20px; border:1px solid transparent; }
+    .topnav-links a.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .page { max-width:980px; margin:0 auto; padding:36px 24px 90px; }
+    h1 { font-size:2rem; font-weight:900; letter-spacing:-.03em; }
+    .lead { color:var(--muted); font-size:.9rem; margin-top:6px; max-width:720px; }
+    .sec-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:28px 0 12px; }
+    .fg { display:grid; gap:14px; margin-bottom:14px; }
+    .fg-2 { grid-template-columns:1fr 1fr; } .fg-3 { grid-template-columns:1fr 1fr 1fr; } .fg-4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+    @media(max-width:640px){ .fg-2,.fg-3,.fg-4 { grid-template-columns:1fr; } }
+    .field { display:flex; flex-direction:column; gap:5px; }
+    .field label { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+    .field input, .field select, .field textarea { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font:inherit; font-size:.86rem; background:var(--bg); outline:none; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--navy); background:#fff; box-shadow:0 0 0 3px rgba(26,58,92,.07); }
+    .eq { border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; background:#fff; }
+    .eq-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .eq-head .n { width:24px; height:24px; border-radius:50%; background:var(--navy); color:#fff; font-size:.74rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
+    .eq-head .x { margin-left:auto; border:1px solid var(--border); background:#fff; border-radius:6px; width:26px; height:26px; cursor:pointer; color:var(--muted); }
+    .eq-head .x:hover { border-color:var(--red); color:var(--red); }
+    .bom { margin-top:10px; }
+    .bom table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .bom th { text-align:left; font-size:.66rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); padding:4px 6px; }
+    .bom td { padding:3px 4px; }
+    .bom input { width:100%; padding:6px 8px; border:1px solid var(--border); border-radius:6px; font:inherit; font-size:.82rem; }
+    .bom td.t { font-weight:700; color:var(--navy); white-space:nowrap; text-align:right; padding-right:8px; }
+    .bom .rm { border:none; background:none; color:var(--muted); cursor:pointer; font-size:1rem; }
+    .linkbtn { background:none; border:none; color:var(--navy); font-weight:700; font-size:.78rem; cursor:pointer; padding:4px 0; }
+    .btn { padding:11px 18px; border-radius:9px; font:inherit; font-weight:700; cursor:pointer; border:none; font-size:.86rem; }
+    .btn-primary { background:linear-gradient(135deg,var(--navy),#1e4a7a); color:#fff; }
+    .btn-primary:disabled { background:#94a3b8; cursor:not-allowed; }
+    .btn-ghost { background:#fff; border:1.5px solid var(--border); color:var(--navy); }
+    .btn-add { background:#eff6ff; border:1.5px dashed #93c5fd; color:var(--navy); width:100%; padding:12px; border-radius:10px; font-weight:700; cursor:pointer; }
+    .totbar { display:flex; justify-content:space-between; align-items:center; background:#0f2744; color:#fff; border-radius:12px; padding:16px 22px; margin-top:18px; }
+    .totbar .v { font-size:1.5rem; font-weight:900; }
+    .actions { display:flex; gap:12px; margin-top:22px; flex-wrap:wrap; }
+    .alert { display:none; padding:11px 15px; border-radius:8px; font-size:.84rem; margin-top:14px; white-space:pre-wrap; }
+    .alert.err { background:#fef2f2; border:1px solid #fecaca; color:var(--red); }
+    .result { display:none; background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px; padding:16px 20px; margin-top:16px; }
+    .result h4 { color:#15803d; font-size:.92rem; margin-bottom:8px; }
+    .dl { display:inline-block; margin:6px 8px 0 0; padding:9px 16px; background:#15803d; color:#fff; text-decoration:none; border-radius:8px; font-size:.82rem; font-weight:600; }
+    .dl.x { background:var(--navy); }
+    #tnc td { padding:8px 10px; border-top:1px solid var(--border); vertical-align:middle; }
+    #tnc td.l { width:32%; background:#f8fafc; font-weight:600; font-size:.82rem; }
+    #tnc input, #tnc select, #tnc textarea { width:100%; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font:inherit; font-size:.84rem; }
+  </style>
+</head>
+<body>
+<nav class="topnav">
+  <a class="brand" href="/"><div class="brand-mark">EN</div>ENCON</a>
+  <div class="topnav-links">
+    <a href="/equipment-offer">Equipment</a><a href="/combined">Merge</a>
+    <a href="/combined-builder" class="active">Combined Builder</a><a href="/pricelist">Pricelist</a>
+  </div>
+</nav>
+<div class="page">
+  <h1>Combined Project Builder</h1>
+  <p class="lead">Build one offer covering several equipment for the same client — fill the customer &amp; terms once, add each equipment as its own section, then generate a single combined offer plus a costing Excel (one sheet per equipment).</p>
+
+  <!-- Customer -->
+  <div class="sec-label">Customer &amp; Enquiry</div>
+  <div class="fg fg-3">
+    <div class="field"><label>Contact Name</label>
+      <div style="display:flex;gap:6px"><select id="c-salutation" style="flex:0 0 70px"><option>Mr.</option><option>Mrs.</option><option>Miss</option><option>Dr.</option></select>
+      <input id="c-name" style="flex:1"/></div></div>
+    <div class="field"><label>Email</label><input id="c-email" type="email"/></div>
+    <div class="field"><label>Phone</label><input id="c-phone"/></div>
+  </div>
+  <div class="fg fg-3">
+    <div class="field"><label>Company</label><input id="c-company"/></div>
+    <div class="field"><label>City</label><input id="c-city"/></div>
+    <div class="field"><label>Location</label>
+      <select id="c-location"><option value="Goa">Goa</option><option value="Vadodara">Vadodara</option><option value="Faridabad">Faridabad</option></select></div>
+  </div>
+  <div class="fg fg-4">
+    <div class="field"><label>Address</label><input id="c-address"/></div>
+    <div class="field"><label>State</label><input id="c-state"/></div>
+    <div class="field"><label>PIN</label><input id="c-pin"/></div>
+    <div class="field"><label>Subject</label><input id="c-subject" value="Offer for Combined Equipment"/></div>
+  </div>
+  <div class="fg fg-4">
+    <div class="field"><label>Marketing Person</label><input id="c-marketing"/></div>
+    <div class="field"><label>Marketing Email</label><input id="c-marketing-email"/></div>
+    <div class="field"><label>Technical Person</label><input id="c-technical"/></div>
+    <div class="field"><label>Technical Email</label><input id="c-technical-email"/></div>
+  </div>
+
+  <!-- Equipment -->
+  <div class="sec-label">Equipment <span style="text-transform:none;font-weight:500;color:#94a3b8">— add one section per item; pick a Blower / Burner / HPU model to auto-fill its price &amp; specs</span></div>
+  <div id="eq-list"></div>
+  <button class="btn-add" onclick="addEquipment()">+ Add equipment</button>
+
+  <div class="totbar"><div>Combined total</div><div class="v" id="grand">₹ 0</div></div>
+
+  <!-- T&C -->
+  <div class="sec-label">Terms &amp; Conditions (shared)</div>
+  <table id="tnc" style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+    <tr><td class="l">Prices</td><td><input id="tnc_prices" value="EX Bhagola (Ex-Works)"/></td></tr>
+    <tr><td class="l">Delivery</td><td><input id="tnc_delivery" value="8 – 10 weeks from receipt of advance or drawing approval, whichever is later."/></td></tr>
+    <tr><td class="l">GST</td><td><input id="tnc_gst" value="18% extra."/></td></tr>
+    <tr><td class="l">HSN Code</td><td><input id="tnc_hsn_code" value="84179000"/></td></tr>
+    <tr><td class="l">PAN / GST No.</td><td><input id="tnc_pan_gst" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
+    <tr><td class="l">Terms of Payment</td><td><input id="tnc_payment_terms" value="30% advance with PO, 70% against proforma invoice before dispatch"/></td></tr>
+    <tr><td class="l">Packing &amp; Forwarding</td><td><input id="tnc_packing_forwarding" value="4% and 2% respectively."/></td></tr>
+    <tr><td class="l">Freight</td><td><input id="tnc_freight" value="In client's scope."/></td></tr>
+    <tr><td class="l">Transit Insurance</td><td><input id="tnc_transit_insurance" value="To be arranged by the client."/></td></tr>
+    <tr><td class="l">Validity</td><td><input id="tnc_validity" value="45 days from the date of our offer."/></td></tr>
+    <tr><td class="l">Inspection</td><td><input id="tnc_inspection" value="At our works before dispatch, at client's cost with prior intimation."/></td></tr>
+    <tr><td class="l">Guarantee</td><td><input id="tnc_guarantee" value="18 months from dispatch or 12 months from commissioning, whichever is earlier."/></td></tr>
+  </table>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="gen-offer" onclick="generateOffer()">Generate Combined Offer (.docx)</button>
+    <button class="btn btn-ghost" id="gen-xls" onclick="generateExcel()">Download Costing Excel</button>
+  </div>
+  <div class="alert err" id="err"></div>
+  <div class="result" id="result"><h4 id="result-h">Done</h4><div id="result-links"></div></div>
+</div>
+
+<script>
+const CATALOG_TYPES = { 'Blower':'/api/blower/catalog', 'Burner':'/api/burner/catalog', 'HPU':null };
+const EQ_TYPES = ['Vertical Ladle Preheater','Horizontal Ladle Preheater','Tundish Preheater','Recuperator','HPU','Blower','Burner','Other'];
+let _eq = [];   // [{id, type, name, specs, qty, unit_price, bom:[{item,qty,unit_price}]}]
+let _uid = 0;
+let _blowerCat = null, _burnerCat = null;
+
+function addEquipment(t) {
+  _eq.push({ id: ++_uid, type: t || 'Vertical Ladle Preheater', name: '', specs: '', qty: 1, unit_price: 0, bom: [] });
+  renderEq();
+}
+function removeEq(id) { _eq = _eq.filter(e => e.id !== id); renderEq(); }
+function eqById(id) { return _eq.find(e => e.id === id); }
+
+function renderEq() {
+  const wrap = document.getElementById('eq-list');
+  wrap.innerHTML = '';
+  _eq.forEach((e, i) => {
+    const div = document.createElement('div');
+    div.className = 'eq';
+    const opts = EQ_TYPES.map(t => `<option ${t===e.type?'selected':''}>${t}</option>`).join('');
+    const isCatalog = (e.type in CATALOG_TYPES);
+    div.innerHTML = `
+      <div class="eq-head"><div class="n">${i+1}</div>
+        <strong>${e.name || e.type}</strong>
+        <button class="x" title="Remove" onclick="removeEq(${e.id})">✕</button></div>
+      <div class="fg fg-4">
+        <div class="field"><label>Type</label><select onchange="setEq(${e.id},'type',this.value);renderEq()">${opts}</select></div>
+        <div class="field"><label>Name (shown on offer)</label><input value="${esc(e.name)}" oninput="setEq(${e.id},'name',this.value)" placeholder="${e.type}"/></div>
+        <div class="field"><label>Qty</label><input type="number" min="1" value="${e.qty}" oninput="setEq(${e.id},'qty',this.value);recalc()"/></div>
+        <div class="field"><label>Unit Price (₹)</label><input type="number" min="0" value="${e.unit_price}" oninput="setEq(${e.id},'unit_price',this.value);recalc()"/></div>
+      </div>
+      <div class="field"><label>Specifications (one line, shown on offer)</label><input value="${esc(e.specs)}" oninput="setEq(${e.id},'specs',this.value)" placeholder="e.g. ENCON Gas Burner 5A · Blower 28/10 · PLC control"/></div>
+      ${isCatalog ? `<div style="margin-top:8px"><button class="linkbtn" onclick="pickCatalog(${e.id})">⌕ Pick ${e.type} model from catalog…</button> <span id="cat-${e.id}"></span></div>` : ''}
+      <div class="bom" id="bom-${e.id}"></div>
+      <button class="linkbtn" onclick="addBom(${e.id})">+ Add BOM line (for the costing Excel)</button>`;
+    wrap.appendChild(div);
+    renderBom(e);
+  });
+  recalc();
+}
+
+function renderBom(e) {
+  const el = document.getElementById('bom-' + e.id);
+  if (!el) return;
+  if (!e.bom.length) { el.innerHTML = ''; return; }
+  let rows = e.bom.map((b, j) => `
+    <tr>
+      <td><input value="${esc(b.item)}" oninput="setBom(${e.id},${j},'item',this.value)" placeholder="Item"/></td>
+      <td style="width:70px"><input type="number" value="${b.qty}" oninput="setBom(${e.id},${j},'qty',this.value)"/></td>
+      <td style="width:110px"><input type="number" value="${b.unit_price}" oninput="setBom(${e.id},${j},'unit_price',this.value)"/></td>
+      <td class="t">₹${((+b.qty||0)*(+b.unit_price||0)).toLocaleString('en-IN')}</td>
+      <td style="width:24px"><button class="rm" onclick="rmBom(${e.id},${j})">✕</button></td>
+    </tr>`).join('');
+  el.innerHTML = `<table><tr><th>Item</th><th>Qty</th><th>Unit ₹</th><th style="text-align:right">Total</th><th></th></tr>${rows}</table>`;
+}
+
+function setEq(id, k, v) { const e = eqById(id); if (e) e[k] = (k==='qty'||k==='unit_price') ? (+v||0) : v; }
+function addBom(id) { const e = eqById(id); e.bom.push({ item:'', qty:1, unit_price:0 }); renderBom(e); }
+function rmBom(id, j) { const e = eqById(id); e.bom.splice(j,1); renderBom(e); }
+function setBom(id, j, k, v) { const e = eqById(id); e.bom[j][k] = (k==='item') ? v : (+v||0); if (k!=='item') renderBom(e); recalc(); }
+
+async function pickCatalog(id) {
+  const e = eqById(id);
+  const span = document.getElementById('cat-' + e.id);
+  if (e.type === 'Blower') {
+    if (!_blowerCat) _blowerCat = (await (await fetch('/api/blower/catalog')).json()).items || [];
+    const m = prompt('Blower models:\n' + _blowerCat.map(x => `${x.model} — ₹${(x.price||0).toLocaleString('en-IN')}`).join('\n') + '\n\nType the model:');
+    const it = _blowerCat.find(x => x.model === (m||'').trim());
+    if (it) applyCatalog(e, `Centrifugal Blower – ${it.model}`, `${it.hp} HP · ${it.airflow} Nm³/hr · ${it.pressure}`, it.price, `Blower ${it.model}`);
+  } else if (e.type === 'Burner') {
+    if (!_burnerCat) _burnerCat = (await (await fetch('/api/burner/catalog')).json()).groups || [];
+    const flat = _burnerCat.flatMap(g => g.items.map(it => ({...it, fuel:g.fuel, label:g.label})));
+    const m = prompt('Burner models:\n' + flat.map(x => `${x.model} — ₹${(x.price||0).toLocaleString('en-IN')}`).join('\n') + '\n\nType the model:');
+    const it = flat.find(x => x.model === (m||'').trim());
+    if (it) applyCatalog(e, `${it.label} – ${it.model}`, `${it.fuel}${it.capacity?' · '+it.capacity:''}`, it.price, `Burner ${it.model}`);
+  }
+  renderEq();
+}
+function applyCatalog(e, name, specs, price, bomItem) {
+  e.name = name; e.specs = specs; e.unit_price = +price || 0; e.qty = e.qty || 1;
+  e.bom = [{ item: bomItem, qty: e.qty, unit_price: +price || 0 }];
+}
+
+function recalc() {
+  let g = 0;
+  _eq.forEach(e => g += (+e.qty||0) * (+e.unit_price||0));
+  document.getElementById('grand').textContent = '₹ ' + g.toLocaleString('en-IN');
+  document.getElementById('gen-offer').disabled = _eq.length === 0;
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function customer() {
+  const v = id => (document.getElementById(id)||{}).value || '';
+  return { salutation:v('c-salutation'), name:v('c-name'), email:v('c-email'), phone:v('c-phone'),
+    company:v('c-company'), address:v('c-address'), city:v('c-city'), state:v('c-state'), pin:v('c-pin'),
+    location:v('c-location'), subject:v('c-subject'), marketing:v('c-marketing'), marketing_email:v('c-marketing-email'),
+    technical:v('c-technical'), technical_email:v('c-technical-email'),
+    tnc_prices:v('tnc_prices'), tnc_delivery:v('tnc_delivery'), tnc_gst:v('tnc_gst'), tnc_hsn_code:v('tnc_hsn_code'),
+    tnc_pan_gst:v('tnc_pan_gst'), tnc_payment_terms:v('tnc_payment_terms'), tnc_packing_forwarding:v('tnc_packing_forwarding'),
+    tnc_freight:v('tnc_freight'), tnc_transit_insurance:v('tnc_transit_insurance'), tnc_validity:v('tnc_validity'),
+    tnc_inspection:v('tnc_inspection'), tnc_guarantee:v('tnc_guarantee') };
+}
+function showErr(m){ const e=document.getElementById('err'); e.textContent='Error: '+m; e.style.display='block'; }
+
+async function generateOffer() {
+  document.getElementById('err').style.display='none';
+  if (!_eq.length) return showErr('Add at least one equipment.');
+  const payload = { customer: customer(), project_name: document.getElementById('c-subject').value,
+    equipments: _eq.map(e => ({ name: e.name || e.type, specs: e.specs, qty: +e.qty||1, unit_price: +e.unit_price||0 })) };
+  const btn = document.getElementById('gen-offer'); btn.disabled=true; btn.textContent='Generating…';
+  try {
+    const j = await (await fetch('/api/generate-combined-offer', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })).json();
+    if (j.error) throw new Error(j.error);
+    showResult('Combined offer generated', [['Download .docx', j.download_url, false], j.pdf_url?['Download PDF', j.pdf_url, true]:null].filter(Boolean));
+  } catch(e){ showErr(e.message||e); } finally { btn.disabled=false; btn.textContent='Generate Combined Offer (.docx)'; }
+}
+async function generateExcel() {
+  document.getElementById('err').style.display='none';
+  if (!_eq.length) return showErr('Add at least one equipment.');
+  const payload = { project_name: document.getElementById('c-subject').value, company_name: document.getElementById('c-company').value,
+    equipments: _eq.map(e => ({ name: e.name || e.type, total: (+e.qty||1)*(+e.unit_price||0),
+      bom: (e.bom.length ? e.bom : [{item:e.name||e.type, qty:+e.qty||1, unit_price:+e.unit_price||0}]).map(b => ({ item:b.item, qty:b.qty, unit_price:b.unit_price, total:(+b.qty||0)*(+b.unit_price||0) })) })) };
+  const btn = document.getElementById('gen-xls'); btn.disabled=true; btn.textContent='Building…';
+  try {
+    const j = await (await fetch('/api/combined-costing-excel', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })).json();
+    if (j.error) throw new Error(j.error);
+    showResult(`Costing Excel ready — ${j.sheets} sheets`, [['Download .xlsx', j.download_url, true]]);
+  } catch(e){ showErr(e.message||e); } finally { btn.disabled=false; btn.textContent='Download Costing Excel'; }
+}
+function showResult(title, links) {
+  document.getElementById('result-h').textContent = title;
+  document.getElementById('result-links').innerHTML = links.map(([t,u,x]) => `<a class="dl ${x?'x':''}" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
+  document.getElementById('result').style.display='block';
+}
+
+// sticky customer (shared with other ENCON forms)
+const STICKY=['c-salutation','c-name','c-email','c-phone','c-company','c-address','c-city','c-state','c-pin','c-location','c-marketing','c-marketing-email','c-technical','c-technical-email'];
+function loadSticky(){ try{ const o=JSON.parse(localStorage.getItem('encon_form_step1')||'{}'); STICKY.forEach(id=>{const el=document.getElementById(id); if(el&&o[id]!=null)el.value=o[id];}); }catch(e){} }
+document.addEventListener('DOMContentLoaded', () => { loadSticky(); addEquipment('Vertical Ladle Preheater'); addEquipment('Horizontal Ladle Preheater'); });
+</script>
+</body>
+</html>
