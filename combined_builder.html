@@ -101,7 +101,7 @@
 
   <!-- STEP 1: Customer & Terms -->
   <div class="panel active" id="p-1">
-    <h2>Customer &amp; Terms</h2>
+    <h2>Customer</h2>
     <p class="lead">Entered once and shared across every equipment in this combined offer.</p>
     <div class="sec-label">Customer</div>
     <div class="fg fg-3">
@@ -127,21 +127,6 @@
       <div class="field"><label>Technical Person</label><input id="c-technical"/></div>
       <div class="field"><label>Technical Email</label><input id="c-technical-email"/></div>
     </div>
-    <div class="sec-label">Terms &amp; Conditions (shared)</div>
-    <table id="tnc">
-      <tr><td class="l">Prices</td><td><input id="tnc_prices" value="EX Bhagola (Ex-Works)"/></td></tr>
-      <tr><td class="l">Delivery</td><td><input id="tnc_delivery" value="8 – 10 weeks from receipt of advance or drawing approval, whichever is later."/></td></tr>
-      <tr><td class="l">GST</td><td><input id="tnc_gst" value="18% extra."/></td></tr>
-      <tr><td class="l">HSN Code</td><td><input id="tnc_hsn_code" value="84179000"/></td></tr>
-      <tr><td class="l">PAN / GST No.</td><td><input id="tnc_pan_gst" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
-      <tr><td class="l">Terms of Payment</td><td><input id="tnc_payment_terms" value="30% advance with PO, 70% against proforma invoice before dispatch"/></td></tr>
-      <tr><td class="l">Packing &amp; Forwarding</td><td><input id="tnc_packing_forwarding" value="4% and 2% respectively."/></td></tr>
-      <tr><td class="l">Freight</td><td><input id="tnc_freight" value="In client's scope."/></td></tr>
-      <tr><td class="l">Transit Insurance</td><td><input id="tnc_transit_insurance" value="To be arranged by the client."/></td></tr>
-      <tr><td class="l">Validity</td><td><input id="tnc_validity" value="45 days from the date of our offer."/></td></tr>
-      <tr><td class="l">Inspection</td><td><input id="tnc_inspection" value="At our works before dispatch, at client's cost with prior intimation."/></td></tr>
-      <tr><td class="l">Guarantee</td><td><input id="tnc_guarantee" value="18 months from dispatch or 12 months from commissioning, whichever is earlier."/></td></tr>
-    </table>
     <div class="nav"><button class="btn btn-primary" onclick="goStep(2)">Continue to Select Costing →</button></div>
   </div>
 
@@ -173,8 +158,24 @@
   <!-- STEP 4: Generate -->
   <div class="panel" id="p-4">
     <h2>Generate</h2>
-    <p class="lead">Review the line-up, then generate the combined offer and the costing Excel.</p>
+    <p class="lead">Review the line-up and terms, then generate the combined offer and the costing Excel.</p>
     <div class="summary" id="summary"></div>
+    <div class="sec-label">Terms &amp; Conditions (shared)</div>
+    <table id="tnc">
+      <tr><td class="l">Prices</td><td><input id="tnc_prices" value="EX Bhagola (Ex-Works)"/></td></tr>
+      <tr><td class="l">Delivery</td><td><input id="tnc_delivery" value="8 – 10 weeks from receipt of advance or drawing approval, whichever is later."/></td></tr>
+      <tr><td class="l">GST</td><td><input id="tnc_gst" value="18% extra."/></td></tr>
+      <tr><td class="l">HSN Code</td><td><input id="tnc_hsn_code" value="84179000"/></td></tr>
+      <tr><td class="l">PAN / GST No.</td><td><input id="tnc_pan_gst" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
+      <tr><td class="l">Terms of Payment</td><td><input id="tnc_payment_terms" value="30% advance with PO, 70% against proforma invoice before dispatch"/></td></tr>
+      <tr><td class="l">Packing &amp; Forwarding</td><td><input id="tnc_packing_forwarding" value="4% and 2% respectively."/></td></tr>
+      <tr><td class="l">Freight</td><td><input id="tnc_freight" value="In client's scope."/></td></tr>
+      <tr><td class="l">Transit Insurance</td><td><input id="tnc_transit_insurance" value="To be arranged by the client."/></td></tr>
+      <tr><td class="l">Validity</td><td><input id="tnc_validity" value="45 days from the date of our offer."/></td></tr>
+      <tr><td class="l">Inspection</td><td><input id="tnc_inspection" value="At our works before dispatch, at client's cost with prior intimation."/></td></tr>
+      <tr><td class="l">Guarantee</td><td><input id="tnc_guarantee" value="18 months from dispatch or 12 months from commissioning, whichever is earlier."/></td></tr>
+    </table>
+    <div class="sec-label" style="margin-top:22px">Generate</div>
     <div class="actions">
       <button class="btn btn-primary" id="gen-offer" onclick="generateOffer()">Generate Combined Offer (.docx)</button>
       <button class="btn btn-ghost" id="gen-xls" onclick="generateExcel()">Download Costing Excel</button>
