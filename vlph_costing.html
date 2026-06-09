@@ -1241,10 +1241,30 @@ function _useInCombined(prodType, prodLabel) {
   const tons = (window._lastCalcPayload && window._lastCalcPayload.ladle_tons) || '';
   const name = prodLabel + (tons ? ` (${tons} T)` : '');
   const eq = lastCalc.equipment || {}, c = lastCalc.calculations || {};
-  const bits = [];
-  if (c.fuel_name) bits.push(c.fuel_name);
-  if (eq.burner && eq.burner.model) bits.push('Burner ' + eq.burner.model);
-  if (eq.blower && eq.blower.model) bits.push('Blower ' + eq.blower.model);
+  const p = lastCalc.pipes || {}, pay = window._lastCalcPayload || {};
+  const _dom = id => (document.getElementById(id) || {}).value;
+  const specRows = [];
+  const _push = (l, v) => { const s = (v==null?'':String(v)).trim(); if (s && s!=='undefined' && s!=='NaN' && s!=='0') specRows.push({ label: l, value: s }); };
+  const _r0 = x => Math.round(+x);
+  const _ladle = pay.ladle_tons || _dom('ladle_tons') || _dom('direct_ladle_tons') || tons;
+  if (_ladle) _push('Ladle Capacity', _ladle + ' Ton');
+  if (c.refractory_weight) _push('Refractory Weight', _r0(c.refractory_weight) + ' Ton');
+  if (c.fuel1_name) _push('Fuel', c.fuel1_name + (c.fuel2_name && c.fuel2_name !== 'none' ? ' + ' + c.fuel2_name : ''));
+  if (c.fuel1_cv) _push('CV of Fuel', _r0(c.fuel1_cv) + ' kcal/' + (p.fuel1_is_oil ? 'kg' : 'Nm³'));
+  if (eq.burner_model) _push('Main Burner', 'ENCON ' + eq.burner_model + (c.num_burners > 1 ? ' × ' + c.num_burners : ''));
+  if (c.final_firing_rate_mw) _push('Burner Firing Rate', (Math.round(c.final_firing_rate_mw * 1000) / 1000) + ' MW');
+  if (p.ng_flow) _push('Fuel Consumption Rate', _r0(p.ng_flow) + ' Nm³/hr');
+  if (eq.blower_model) _push('Combustion Air Blower', 'ENCON ' + eq.blower_model + (eq.blower_cfm ? ' — ' + _r0(eq.blower_cfm) + ' CFM' : '') + (eq.blower_hp ? ', ' + eq.blower_hp + ' HP' : ''));
+  if (eq.blower_airflow) _push('Combustion Air Flow', _r0(eq.blower_airflow) + ' Nm³/hr');
+  if (p.air_line_nb) _push('Air Line Size', p.air_line_nb + ' NB');
+  if (p.gas_train_model) _push('Gas Train Size', p.gas_train_model + ' NB'); else if (p.ng_nb) _push('Gas Line Size', p.ng_nb + ' NB');
+  if (c.Tf) _push('Max. Heating Temperature', _r0(c.Tf) + ' °C');
+  if (c.time_taken_hr) _push('Heating Cycle Time', (Math.round(c.time_taken_hr * 10) / 10) + ' Hrs');
+  if (c.air_temp_out_C) _push('Air Outlet Temperature', _r0(c.air_temp_out_C) + ' °C');
+  if (c.surface_area_m2) _push('Heat Transfer Surface', (Math.round(c.surface_area_m2 * 10) / 10) + ' m²');
+  const _hasPilot = (lastCalc.bom || []).some(r => /pilot burner/i.test(r['ITEM NAME'] || ''));
+  _push('Ignition of Main Burner', _hasPilot ? 'Automatic (with pilot burner)' : 'Manual');
+  _push('Temperature Control', ((pay.control_mode || _dom('control_mode')) === 'manual') ? 'Manual' : 'Automatic');
   const SUB = new Set(['BOUGHT OUT ITEMS', 'ENCON ITEMS', 'GRAND TOTAL']);
   const bom = lastCalc.bom.filter(r => !SUB.has((r['ITEM NAME'] || '').trim())).map(r => ({
     media: r.MEDIA || '', item: r['ITEM NAME'] || '', ref: r.REFERENCE || '',
@@ -1252,7 +1272,7 @@ function _useInCombined(prodType, prodLabel) {
   const cs = lastCalc.cost_summary || {};
   const total = +cs.grand_total || +cs.final_total || 0;  // base (pre-adjustment) for combined offer
   parent.postMessage({ source: 'encon-combined-equipment', type: prodType, name,
-    specs: bits.join(' · '), total, bom }, '*');
+    specs: specRows.slice(0, 3).map(s => s.value).join(' · '), spec_rows: specRows, total, bom }, '*');
   const b = document.getElementById('_use-combined-btn');
   if (b) { b.textContent = '✓ Added — ₹ ' + total.toLocaleString('en-IN') + ' (click to update)'; b.style.background = '#15803d'; }
 }

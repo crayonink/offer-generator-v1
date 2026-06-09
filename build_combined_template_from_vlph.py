@@ -59,13 +59,14 @@ def _delete_vlph_scope_body(doc: Document) -> None:
 
 
 def _replace_spec_table_with_equipment_loop(table) -> None:
-    """Wipe the 24-row tech-data table; make it loop one row per equipment."""
+    """Wipe the 24-row tech-data table; loop the per-equipment technical
+    specification rows (an equipment header followed by label/value rows)."""
     tbl_xml = table._element
     for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
         tbl_xml.remove(tr)
     head = table.rows[0]
-    head.cells[0].text = 'Equipment'
-    head.cells[1].text = 'Specifications'
+    head.cells[0].text = 'Parameter'
+    head.cells[1].text = 'Specification'
     for cell in head.cells:
         for p in cell.paragraphs:
             for r in p.runs:
@@ -77,8 +78,8 @@ def _replace_spec_table_with_equipment_loop(table) -> None:
         row.cells[1].text = c1
         return row
 
-    add('{%tr for eq in equipments %}', '')
-    add('{{ eq.name }}', '{{ eq.specs }}')
+    add('{%tr for r in tech_rows %}', '')
+    add('{{ r.label }}', '{{ r.value }}')
     add('{%tr endfor %}', '')
 
 

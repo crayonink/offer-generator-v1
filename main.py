@@ -3777,6 +3777,7 @@ def combined_costing_excel(req: CombinedCostingRequest):
 class CombinedOfferEquipment(BaseModel):
     name: str
     specs: Optional[str] = ""          # one-line specs summary
+    spec_rows: List[dict] = []         # [{label, value}] -> Technical Specifications
     qty: int = 1
     unit_price: float = 0
     bom: List[dict] = []               # itemised BOM -> Scope of Supply
@@ -3921,6 +3922,19 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 for i, (it, q, mk) in enumerate(items):
                     scope_rows.append({"sno": _ltr[i], "desc": _xesc(f"{it}   ·   {q}  ·  {mk}")})
 
+        # Technical Specifications: per equipment, a header row then its
+        # label/value spec rows (posted by the embedded form). Falls back to
+        # the one-line summary for catalog/manual equipment.
+        tech_rows = []
+        for eq in req.equipments:
+            tech_rows.append({"label": _xesc("► " + (eq.name or "Equipment").upper()), "value": ""})
+            rows = eq.spec_rows or []
+            if not rows and (eq.specs or "").strip():
+                rows = [{"label": "Specifications", "value": eq.specs}]
+            for s in rows:
+                tech_rows.append({"label": _xesc(str((s or {}).get("label", ""))),
+                                  "value": _xesc(str((s or {}).get("value", "")))})
+
         # Commercial adjustments on the combined grand total -> Final Total
         # (rounded to the nearest Rs.1000, matching the standalone forms).
         _pf   = grand * (req.pf_pct or 0) / 100
@@ -3952,6 +3966,7 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "technical_email":   cust.technical_email or cust.marketing_email or "",
             # technical section + scope of supply + price schedule loops
             "equipments":   [{"name": e.name, "specs": e.specs or ""} for e in req.equipments],
+            "tech_rows":    tech_rows,
             "scope_rows":   scope_rows,
             "price_lines":  price_lines,
             "grand_total":  _format_inr(grand),

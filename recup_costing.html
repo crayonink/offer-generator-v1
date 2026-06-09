@@ -675,10 +675,20 @@ function _useInCombined(prodType, prodLabel) {
   }
   const c = lastCalc.calculations || {};
   const name = prodLabel + (c.application ? ` — ${c.application}` : '');
-  const bits = [];
-  if (c.air_temp_out_C) bits.push('Air out ~' + Math.round(c.air_temp_out_C) + '°C');
-  if (c.surface_area_m2) bits.push((Math.round(c.surface_area_m2 * 10) / 10) + ' m² surface');
-  if (c.flue_flow_nm3hr) bits.push('Flue ' + Math.round(c.flue_flow_nm3hr) + ' Nm³/hr');
+  const specRows = [];
+  const _push = (l, v) => { const s = (v==null?'':String(v)).trim(); if (s && s!=='undefined' && s!=='NaN' && s!=='0') specRows.push({ label: l, value: s }); };
+  const _r0 = x => Math.round(+x);
+  if (c.application) _push('Application', c.application);
+  if (c.flue_flow_nm3hr) _push('Flue Gas Flow', _r0(c.flue_flow_nm3hr) + ' Nm³/hr');
+  if (c.flue_temp_in_C) _push('Flue Gas Inlet Temp.', _r0(c.flue_temp_in_C) + ' °C');
+  if (c.flue_temp_out_C) _push('Flue Gas Outlet Temp.', _r0(c.flue_temp_out_C) + ' °C');
+  if (c.air_volume_nm3hr) _push('Combustion Air Flow', _r0(c.air_volume_nm3hr) + ' Nm³/hr');
+  if (c.air_temp_in_C) _push('Air Inlet Temperature', _r0(c.air_temp_in_C) + ' °C');
+  if (c.air_temp_out_C) _push('Air Outlet Temperature', _r0(c.air_temp_out_C) + ' °C');
+  if (c.surface_area_m2) _push('Heat Transfer Surface', (Math.round(c.surface_area_m2 * 10) / 10) + ' m²');
+  if (c.pipes_total) _push('No. of Heat-Exchanger Tubes', c.pipes_total);
+  if (c.pipe_dia_mm) _push('Tube Size', c.pipe_dia_mm + ' mm OD × ' + (c.pipe_thick_mm || '') + ' mm thk');
+  if (c.hot_bank_material) _push('Hot Bank Material', c.hot_bank_material + (c.cold_bank_material && c.cold_bank_material !== c.hot_bank_material ? ' / Cold ' + c.cold_bank_material : ''));
   const SUB = new Set(['BOUGHT OUT ITEMS', 'ENCON ITEMS', 'GRAND TOTAL']);
   const bom = lastCalc.bom.filter(r => !SUB.has((r['ITEM NAME'] || '').trim())).map(r => ({
     media: r.MEDIA || '', item: r['ITEM NAME'] || '', ref: r.REFERENCE || '',
@@ -686,7 +696,7 @@ function _useInCombined(prodType, prodLabel) {
   const cs = lastCalc.cost_summary || {};
   const total = +lastCalc._grand_total || +cs.grand_total || +lastCalc._final_total || +cs.final_total || 0;  // base (pre-adjustment) for combined offer
   parent.postMessage({ source: 'encon-combined-equipment', type: prodType, name,
-    specs: bits.join(' · '), total, bom }, '*');
+    specs: specRows.slice(0, 3).map(s => s.value).join(' · '), spec_rows: specRows, total, bom }, '*');
   const b = document.getElementById('_use-combined-btn');
   if (b) { b.textContent = '✓ Added — ₹ ' + total.toLocaleString('en-IN') + ' (click to update)'; b.style.background = '#15803d'; }
 }
