@@ -1018,19 +1018,19 @@ def build_vlph_120t_df(
             _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
             _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
-            _row(
-                "ENCON ITEMS", "Pilot Burner",
-                {
-                    "lpg_10":  "ENCON-PB-LPG-10KW",
-                    "ng_10":   "ENCON-PB NG 10 KW",
-                    "lpg_100": "ENCON-PB LPG 100 KW",
-                    "ng_100":  "ENCON-PB NG 100 KW",
-                    "cog_100": "ENCON PB COG 100 KW",
-                    "mg_10":   "ENCON-PB MG 10 KW",
-                }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-                1,
-            ),
         ]
+        # Pilot Burner: priced in the DB under its model code, not "Pilot
+        # Burner" — look it up by the code so it isn't left at 0.
+        _pb_code = {
+            "lpg_10":  "ENCON-PB-LPG-10KW",
+            "ng_10":   "ENCON-PB NG 10 KW",
+            "lpg_100": "ENCON-PB LPG 100 KW",
+            "ng_100":  "ENCON-PB NG 100 KW",
+            "cog_100": "ENCON PB COG 100 KW",
+            "mg_10":   "ENCON-PB MG 10 KW",
+        }.get(pilot_burner, "ENCON-PB-LPG-10KW")
+        rows.append(_row("ENCON ITEMS", "Pilot Burner", _pb_code, 1,
+                         unit_price_override=_get_price_fuzzy(_pb_code), make="ENCON"))
     cf_rolls = ceramic_rolls_override or params["ceramic_rolls"]
     rows.append(_row(
         "ENCON ITEMS", "CERAMIC FIBRE",
@@ -1344,19 +1344,19 @@ def build_vlph_manual_df(
     if hood_type not in ("swivel_manual", "swivel_geared", "swivel"):
         rows.insert(-1, _row("ENCON ITEMS", "HYDRAULIC POWER PACK & CYLINDER", "", 1))
     if include_pilot:
+        # Pilot Burner: priced in the DB under its model code, not "Pilot
+        # Burner" — look it up by the code so it isn't left at 0.
+        _pb_code = {
+            "lpg_10":  "ENCON-PB-LPG-10KW",
+            "ng_10":   "ENCON-PB NG 10 KW",
+            "lpg_100": "ENCON-PB LPG 100 KW",
+            "ng_100":  "ENCON-PB NG 100 KW",
+            "cog_100": "ENCON PB COG 100 KW",
+            "mg_10":   "ENCON-PB MG 10 KW",
+        }.get(pilot_burner, "ENCON-PB-LPG-10KW")
         rows += [
-            _row(
-                "ENCON ITEMS", "Pilot Burner",
-                {
-                    "lpg_10":  "ENCON-PB-LPG-10KW",
-                    "ng_10":   "ENCON-PB NG 10 KW",
-                    "lpg_100": "ENCON-PB LPG 100 KW",
-                    "ng_100":  "ENCON-PB NG 100 KW",
-                    "cog_100": "ENCON PB COG 100 KW",
-                    "mg_10":   "ENCON-PB MG 10 KW",
-                }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-                1,
-            ),
+            _row("ENCON ITEMS", "Pilot Burner", _pb_code, 1,
+                 unit_price_override=_get_price_fuzzy(_pb_code), make="ENCON"),
             _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
             _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),

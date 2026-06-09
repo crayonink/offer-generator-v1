@@ -214,22 +214,20 @@ def build_hlph_df(
     ]
     # Pilot ignition equipment — only when Auto Ignition is selected.
     if special_auto_ignition:
+        _pb_code = {
+            "lpg_10":  "ENCON-PB-LPG-10KW",
+            "ng_10":   "ENCON-PB NG 10 KW",
+            "lpg_100": "ENCON-PB LPG 100 KW",
+            "ng_100":  "ENCON-PB NG 100 KW",
+            "cog_100": "ENCON PB COG 100 KW",
+            "mg_10":   "ENCON-PB MG 10 KW",
+        }.get(pilot_burner, "ENCON-PB-LPG-10KW")
         rows += [
             _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
             _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
-            _row(
-                "ENCON ITEMS",
-                {
-                    "lpg_10":  "ENCON-PB-LPG-10KW",
-                    "ng_10":   "ENCON-PB NG 10 KW",
-                    "lpg_100": "ENCON-PB LPG 100 KW",
-                    "ng_100":  "ENCON-PB NG 100 KW",
-                    "cog_100": "ENCON PB COG 100 KW",
-                    "mg_10":   "ENCON-PB MG 10 KW",
-                }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-                "", 1,
-            ),
+            _row("ENCON ITEMS", "Pilot Burner", _pb_code, 1,
+                 unit_price_override=_get_price_fuzzy(_pb_code), make="ENCON"),
         ]
 
     # HPU — for oil fuels
@@ -419,18 +417,17 @@ def build_hlph_manual_df(
              1, unit_price_override=equipment["blower"]["price_premium"]),
     ]
     if include_pilot:
+        _pb_code = {
+            "lpg_10":  "ENCON-PB-LPG-10KW",
+            "ng_10":   "ENCON-PB NG 10 KW",
+            "lpg_100": "ENCON-PB LPG 100 KW",
+            "ng_100":  "ENCON-PB NG 100 KW",
+            "cog_100": "ENCON PB COG 100 KW",
+            "mg_10":   "ENCON-PB MG 10 KW",
+        }.get(pilot_burner, "ENCON-PB-LPG-10KW")
         rows += [
-            _row(
-                "ENCON ITEMS",
-                {
-                    "lpg_10":  "ENCON-PB-LPG-10KW",
-                    "ng_10":   "ENCON-PB NG 10 KW",
-                    "lpg_100": "ENCON-PB LPG 100 KW",
-                    "ng_100":  "ENCON-PB NG 100 KW",
-                    "cog_100": "ENCON PB COG 100 KW",
-                }.get(pilot_burner, "ENCON-PB-LPG-10KW"),
-                "", 1,
-            ),
+            _row("ENCON ITEMS", "Pilot Burner", _pb_code, 1,
+                 unit_price_override=_get_price_fuzzy(_pb_code), make="ENCON"),
             _row("ENCON ITEMS", "Ignition Transformer", "", 1, make="DANFOSS"),
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
             _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
