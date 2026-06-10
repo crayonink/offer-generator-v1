@@ -1,21 +1,39 @@
 digraph rfq_integration {
-  rankdir=LR; bgcolor="transparent"; nodesep=0.35; ranksep=0.7;
-  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.08"];
+  rankdir=TB; bgcolor="transparent"; compound=true; nodesep=0.32; ranksep=0.7;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.07"];
   edge [color="#64748b", arrowsize=0.85, fontname="Helvetica", fontsize=9, fontcolor="#475569"];
 
   subgraph cluster_rfq {
     label="RFQ ENQUIRY TRACKER"; style="rounded"; bgcolor="#eff6ff"; color="#bfdbfe"; fontname="Helvetica-Bold"; fontsize=11;
-    enq [label="Enquiry\n(company, contact, item,\nsales / technical, RFQ ref)", fillcolor="#dbeafe", color="#1d4ed8"];
-    upd [label="Enquiry updated\n(offer no, offer date,\ndocument link, costing)", fillcolor="#dcfce7", color="#16a34a"];
+    list [label="Enquiry list", fillcolor="#dbeafe", color="#1d4ed8"];
+    enq  [label="Enquiry record\n(company · contact · item ·\nsales / technical · RFQ ref)", fillcolor="#dbeafe", color="#1d4ed8"];
+    enq2 [label="Enquiry updated\n(offer no · offer date ·\ndocument link · costing)", fillcolor="#dcfce7", color="#16a34a"];
+    list -> enq [style=invis];
+    enq -> enq2 [style=invis];
   }
 
   subgraph cluster_gen {
     label="OFFER GENERATOR"; style="rounded"; bgcolor="#fefce8"; color="#fde68a"; fontname="Helvetica-Bold"; fontsize=11;
-    form  [label="Offer form\n(pre-filled from enquiry)", fillcolor="#fff7ed", color="#d97706"];
-    offer [label="Priced offer\n(Word / PDF + costing Excel,\nfiled to shared drive)", fillcolor="#fff7ed", color="#d97706"];
+    form [label="Offer form\n(pre-filled from enquiry)", fillcolor="#fff7ed", color="#d97706"];
+    calc [label="Sizing -> components ->\npriced BOM -> cost summary", fillcolor="#fff7ed", color="#d97706"];
+    out  [label="Offer\n(Word / PDF + costing Excel)", fillcolor="#fff7ed", color="#d97706"];
+    form -> calc [label="2. estimator completes"]; calc -> out [label="generate"];
   }
 
-  enq   -> form  [label="  1. Generate Offer\n  (link carries enquiry details)"];
-  form  -> offer [label="  2. estimator completes"];
-  offer -> upd   [label="  3. write-back (small API)", color="#16a34a", fontcolor="#16a34a"];
+  subgraph cluster_drv {
+    label="GOOGLE DRIVE"; style="rounded"; bgcolor="#ecfdf5"; color="#86efac"; fontname="Helvetica-Bold"; fontsize=11;
+    folder [label="Enquiry folder\n\"Costing & Offer\"", shape=folder, fillcolor="#dcfce7", color="#16a34a"];
+  }
+
+  tech [label="Technical person", shape=ellipse, fillcolor="#fee2e2", color="#b91c1c", fontcolor="#7f1d1d"];
+
+  // ---- proposed automated integration (green) ----
+  enq -> form  [label="1. \"Generate Offer\" link\ncustomer + item + RFQ ref", color="#1d4ed8", fontcolor="#1d4ed8", penwidth=1.4];
+  out -> enq2  [label="3. write-back (small API)\noffer no · date · doc link · costing", color="#16a34a", fontcolor="#15803d", penwidth=1.7];
+  out -> folder [label="files offer + costing", color="#16a34a", fontcolor="#15803d"];
+
+  // ---- today's manual hand-off (red, dashed) ----
+  out  -> tech  [label="today: hands over", style=dashed, color="#b91c1c", fontcolor="#b91c1c"];
+  tech -> enq2  [label="today: manual upload + re-key", style=dashed, color="#b91c1c", fontcolor="#b91c1c"];
+  tech -> folder [label="today: manual upload", style=dashed, color="#b91c1c", fontcolor="#b91c1c"];
 }

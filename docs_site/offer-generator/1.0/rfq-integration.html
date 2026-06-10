@@ -135,44 +135,105 @@
 </div>
 </div>
 <div class="sect1">
-<h2 id="_why_integrate"><a class="anchor" href="#_why_integrate"></a>Why integrate</h2>
+<h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>ENCON runs two related tools. The <strong>RFQ Enquiry Tracker</strong> logs every incoming
-request for quotation and follows it through to an offer — it records the
-company, the contact, the item, who it is assigned to, the target date, and,
-once an offer exists, the offer number, offer date, document and costing. The
-<strong>Offer Generator</strong> (this tool) is what actually produces that priced offer.</p>
-</div>
-<div class="paragraph">
-<p>Today the two are used side by side. The team logs an enquiry in the tracker,
-then separately opens the generator, re-keys the customer and the item, and
-produces the offer. The technical person then <strong>manually uploads the finished
-offer and the costing into the RFQ tracker</strong> against that enquiry, and types in
-the offer number and date. Connecting the two removes that manual upload and
-re-keying, and keeps the tracker up to date on its own.</p>
+request for quotation and follows it through to an offer. The <strong>Offer Generator</strong>
+(this tool) produces the priced offer itself. At the moment the two are not
+connected: the technical person generates the offer here and then uploads it
+and the costing into the tracker by hand. This page sets out how to join the
+two so that an offer is started from an enquiry (with the customer details
+already filled in) and its results return to the enquiry automatically —
+removing the manual upload and the re-keying.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_how_they_connect"><a class="anchor" href="#_how_they_connect"></a>How they connect</h2>
+<h2 id="_the_two_systems"><a class="anchor" href="#_the_two_systems"></a>The two systems</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>RFQ Enquiry Tracker.</strong> A shared web app the team uses to log and follow every
+enquiry. Each enquiry carries a reference (for example <code>ENC/RFQ/2026/001</code>), the
+company and contact, the item, who it is assigned to, the sales and technical
+owners, the target date, and the status. Once an offer exists, the enquiry also
+holds the offer number, offer date, the document and the costing. Every enquiry
+has its own Google Drive folder ("Costing &amp; Offer") where the finished
+documents are kept.</p>
+</div>
+<div class="paragraph">
+<p><strong>Offer Generator.</strong> This tool. The estimator enters the process parameters for a
+piece of equipment; the tool sizes it, selects the components, prices the bill
+of materials, and produces the offer as Word and PDF together with a costing
+workbook, filing them to Google Drive.</p>
+</div>
+<div class="paragraph">
+<p>Both run as separate web apps and both already work with Google Drive, which is
+what makes a clean, loose connection between them practical.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_it_works_today_manual"><a class="anchor" href="#_how_it_works_today_manual"></a>How it works today (manual)</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>An enquiry is logged in the tracker with the company, contact and item.</p>
+</li>
+<li>
+<p>The technical person opens the Offer Generator separately and re-keys the
+customer and the item.</p>
+</li>
+<li>
+<p>The offer is generated — Word, PDF and the costing sheet.</p>
+</li>
+<li>
+<p>The technical person then <strong>uploads the offer and the costing into the tracker
+by hand</strong>, against the right enquiry, and types in the offer number and date.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This works, but it means the same information is entered twice, the upload is a
+manual step that can be missed or delayed, and the tracker is only as current
+as the last time someone remembered to update it.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_proposed_integration"><a class="anchor" href="#_proposed_integration"></a>Proposed integration</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The two apps stay separate — each keeps its own database and its own
-deployment — and are joined loosely through a web link and a small interface.
-Neither app&#8217;s internal workings change; they simply hand information to each
-other at two points. This keeps the integration low-risk and lets either app
-be updated on its own.</p>
+deployment — and are joined loosely at two points: a link out from the tracker,
+and a small write-back interface into it. Nothing about either app&#8217;s internal
+working changes, which keeps the change low-risk and lets either app be updated
+on its own.</p>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_the_flow"><a class="anchor" href="#_the_flow"></a>The flow</h2>
-<div class="sectionbody">
 <div class="imageblock">
 <div class="content">
 <img src="_images/rfq-integration.svg" alt="RFQ Tracker and Offer Generator integration">
 </div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="title">Reading the diagram</div>
+<div class="paragraph">
+<p><strong>Green, solid</strong> = the proposed automatic flow.<br>
+<strong>Red, dashed</strong> = the manual hand-off the technical person does today.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The proposed flow has three steps:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -185,57 +246,181 @@ owners — along with the RFQ reference.</p>
 <li>
 <p><strong>Produce the offer.</strong> The estimator completes the technical inputs and
 generates the priced offer as normal: the Word and PDF documents and the
-costing sheet, filed to the shared drive.</p>
+costing sheet.</p>
 </li>
 <li>
 <p><strong>Write the result back.</strong> As the offer is finished, the generator sends the
 key results back to the tracker — the offer number, the offer date, the
 document link and the costing total — and the matching enquiry is updated
-automatically. This replaces the step the technical person does by hand today,
-uploading the offer and costing into the tracker; the offer can also be filed
-straight into that enquiry&#8217;s existing "Costing &amp; Offer" drive folder.</p>
+automatically. The documents are filed into that enquiry&#8217;s existing
+"Costing &amp; Offer" Drive folder. This replaces the manual upload and re-keying
+done today.</p>
 </li>
 </ol>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_what_is_shared"><a class="anchor" href="#_what_is_shared"></a>What is shared</h2>
+<h2 id="_data_exchanged"><a class="anchor" href="#_data_exchanged"></a>Data exchanged</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>When the offer is started from an enquiry, these details are carried across so
+the estimator does not re-key them:</p>
+</div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 75%;">
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Sent to the generator (pre-fill)</th>
-<th class="tableblock halign-left valign-top">Returned to the enquiry (write-back)</th>
+<th class="tableblock halign-left valign-top">From the enquiry</th>
+<th class="tableblock halign-left valign-top">Used in the offer as</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Company, contact, mobile, email</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Offer number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Company</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Customer company</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Contact person, mobile, email</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Customer contact details</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Item / equipment description</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Offer date</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The equipment being quoted</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Sales &amp; technical owners</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Document link (Word / PDF)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sales owner</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sales / marketing person on the offer</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Technical owner</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Technical person on the offer</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">RFQ reference</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Costing total</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The link key (see below)</p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p>The RFQ reference ties the two together: the generator always knows which
-enquiry an offer belongs to, and the tracker always shows the latest offer
-against each enquiry.</p>
+<p>When the offer is finished, these results return to the same enquiry:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Back to the enquiry</th>
+<th class="tableblock halign-left valign-top">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offer number</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The generator&#8217;s offer / quote number</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offer date</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Date the offer was produced</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Document link</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Location of the Word / PDF offer (Drive)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Costing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The offer total</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_link_key"><a class="anchor" href="#_the_link_key"></a>The link key</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <strong>RFQ reference</strong> (for example <code>ENC/RFQ/2026/001</code>) ties the two together. It
+travels out with the "Generate Offer" link and comes back with the write-back,
+so the generator always knows which enquiry an offer belongs to and the tracker
+always updates the right one. The offer number can also be matched on, for
+offers created the other way round.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_documents_google_drive"><a class="anchor" href="#_documents_google_drive"></a>Documents &amp; Google Drive</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Both apps already use Google Drive, and each enquiry already has its own
+"Costing &amp; Offer" folder. In the integrated flow the generator files the
+finished offer and costing straight into that enquiry&#8217;s folder, and the
+document link it writes back points there — so the tracker, the enquiry folder
+and the offer all line up without anyone moving files by hand.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_rules_edge_cases"><a class="anchor" href="#_rules_edge_cases"></a>Rules &amp; edge cases</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Offer with no enquiry.</strong> The generator can still be used on its own (no RFQ
+reference); it simply skips the write-back. The integration is additive.</p>
+</li>
+<li>
+<p><strong>Re-issuing an offer.</strong> If an offer is regenerated for the same enquiry, the
+write-back updates the existing offer details rather than creating a second
+entry, and a new revision is filed to the same folder.</p>
+</li>
+<li>
+<p><strong>Offer number.</strong> If an enquiry does not yet have an offer number, the
+generator&#8217;s number becomes the enquiry&#8217;s offer number on write-back; if it
+already has one, that number is reused.</p>
+</li>
+<li>
+<p><strong>Access.</strong> The write-back is a controlled interface between the two apps, so
+only the generator can update enquiry offer details — the rest of the tracker
+is unaffected.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_changes_for_each_role"><a class="anchor" href="#_what_changes_for_each_role"></a>What changes for each role</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Technical person / estimator</strong> — no more re-keying the customer, and no more
+manually uploading the offer and costing into the tracker.</p>
+</li>
+<li>
+<p><strong>Sales / reviewer</strong> — the tracker shows the latest offer number, date,
+document and costing against each enquiry as soon as the offer is produced.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_build_outline_when_approved"><a class="anchor" href="#_build_outline_when_approved"></a>Build outline (when approved)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>On the <strong>tracker</strong> side: add a "Generate Offer" link on the enquiry that opens the
+generator with the enquiry details, and a small write-back interface that
+accepts the offer results and updates the enquiry.</p>
+</div>
+<div class="paragraph">
+<p>On the <strong>generator</strong> side: accept the pre-filled details when opened from an
+enquiry, carry the RFQ reference through, and call the tracker&#8217;s write-back once
+the offer is produced (and file the documents to the enquiry&#8217;s Drive folder).</p>
 </div>
 </div>
 </div>
@@ -244,10 +429,9 @@ against each enquiry.</p>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This integration is <strong>documented but not yet built</strong>. The agreed approach is to
-keep both apps separate and connect them through a link and a small interface.
-Building it would mean adding the "Generate Offer" link on the tracker, having
-the generator accept the pre-filled details, and a small write-back step once
-an offer is produced.</p>
+keep both apps separate and connect them through a link and a small interface,
+as above. The next step is to approve the build and schedule the two small
+pieces of work on each side.</p>
 </div>
 </div>
 </div>
