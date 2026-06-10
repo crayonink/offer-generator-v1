@@ -1,0 +1,52 @@
+= Deployment & Operations
+:description: Hosting, configuration, database, and pricebook operations.
+
+// TODO: expand each section. This is a scaffold outline.
+
+== Hosting
+
+The app is deployed on *Railway* (auto-deploys from the `main` branch on push).
+
+// TODO: domain, replica/region, how to read deploy logs, rollback.
+
+== Configuration files
+
+[cols="1,3", options="header"]
+|===
+| File | Purpose
+| `Procfile` | process/start command
+| `nixpacks.toml` | build configuration
+| `railway.toml` | Railway service config
+| `config.py` | app constants (`MARKUP = 1.8`, `USD_RATE`, …)
+| `requirements.txt` | Python dependencies
+|===
+
+== Database
+
+The SQLite database `vlph.db` is *committed to the repo*.
+
+[IMPORTANT]
+====
+DB edits do not reach Railway until the `.db` file itself is committed and pushed
+in the same change. Always commit `vlph.db` alongside related code.
+====
+
+// TODO: list key tables (component_price_master, *_master catalogs, quotes_log) — see init_db.py.
+
+== Pricebook updates
+
+`vlph.db` carries manual rate edits, so a new price list must be *delta-applied*,
+not full-reset, to preserve them.
+
+// TODO: document apply_pricebook_delta.py usage and the BOM zero-price audit
+// (a _row without unit_price_override prices 0 if its item name != DB key).
+
+== Local development
+
+// TODO: venv setup, run command (uvicorn), note that a plain process won't hot-reload
+// .py changes without --reload.
+
+== Documentation site (this site)
+
+Built with Antora: `npx antora antora-playbook.yml` → output in `build/site/`.
+Add a page under `modules/ROOT/pages/` and a nav entry in `modules/ROOT/nav.adoc`.

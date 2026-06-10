@@ -1,0 +1,14 @@
+= Offer Generator Documentation
+
+Welcome to the documentation for the *ENCON Offer Generator* — a FastAPI + SQLite
+application that generates Word/PDF offers and multi-sheet costing Excels for
+ENCON's industrial heating equipment.
+
+== Contents
+
+* xref:product-scope.adoc[Product Scope & Roadmap] — which product lines are built, in progress, or pending.
+
+== Getting Started
+
+This site is built with Antora. Run `npx antora antora-playbook.yml` to build the site
+into `build/site`.

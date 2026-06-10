@@ -1,0 +1,6 @@
+name: offer-generator
+version: '1.0'
+title: Offer Generator
+start_page: index.adoc
+nav:
+- modules/ROOT/nav.adoc

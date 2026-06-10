@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Architecture &amp; Overview :: Offer Generator Documentation</title>
+    <meta name="description" content="High-level architecture of the ENCON Offer Generator.">
+    <meta name="generator" content="Antora 3.1.15">
+    <link rel="stylesheet" href="../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/docs">Offer Generator Documentation</a>
+      <button class="navbar-burger" aria-controls="topbar-nav" aria-expanded="false" aria-label="Toggle main menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="#">Home</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Products</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Product A</a>
+            <a class="navbar-item" href="#">Product B</a>
+            <a class="navbar-item" href="#">Product C</a>
+          </div>
+        </div>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Services</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Service A</a>
+            <a class="navbar-item" href="#">Service B</a>
+            <a class="navbar-item" href="#">Service C</a>
+          </div>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+            <a class="button is-primary" href="#">Download</a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="offer-generator" data-version="1.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="index.html">Offer Generator</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Home</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="product-scope.html">Product Scope &amp; Roadmap</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Technical Documentation</span>
+<ul class="nav-list">
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="architecture.html">Architecture &amp; Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="modules.html">Modules &amp; Equipment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="api.html">API Reference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deployment.html">Deployment &amp; Operations</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Offer Generator</span>
+    <span class="version">1.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="index.html">Offer Generator</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="index.html">1.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Offer Generator</a></li>
+    <li>Technical Documentation</li>
+    <li><a href="architecture.html">Architecture &amp; Overview</a></li>
+  </ul>
+</nav>
+<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/architecture.adoc">Edit this Page</a></div>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Architecture &amp; Overview</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Offer Generator is a FastAPI + SQLite application that turns equipment
+parameters into priced Bills of Material, Word/PDF offers, and multi-sheet
+costing Excels.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_technology_stack"><a class="anchor" href="#_technology_stack"></a>Technology stack</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Backend:</strong> FastAPI (Python), served by Uvicorn.</p>
+</li>
+<li>
+<p><strong>Database:</strong> SQLite (<code>vlph.db</code>) — committed to the repo (see <a href="deployment.html" class="xref page">Deployment &amp; Operations</a>).</p>
+</li>
+<li>
+<p><strong>Documents:</strong> <code>docxtpl</code> (Jinja-in-Word templating), <code>docxcompose</code> (merge),
+<code>openpyxl</code> (Excel), <code>reportlab</code>/LibreOffice (PDF).</p>
+</li>
+<li>
+<p><strong>Frontend:</strong> server-rendered static HTML pages (one per equipment) with vanilla JS.</p>
+</li>
+<li>
+<p><strong>Integrations:</strong> Google Drive upload (<code>google-api-python-client</code>).</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_request_flow"><a class="anchor" href="#_request_flow"></a>Request flow</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>User opens an equipment form (e.g. <code>/costing</code> for VLPH).</p>
+</li>
+<li>
+<p>Form posts parameters to a calculation endpoint (e.g. <code>/api/vlph-calculate</code>).</p>
+</li>
+<li>
+<p>The endpoint runs the <strong>calculation layer</strong> → <strong>selection engine</strong> → <strong>BOM builder</strong>,
+producing a priced BOM grouped by <code>MEDIA</code>.</p>
+</li>
+<li>
+<p>A cost summary (bought-out vs ENCON items, markup) is computed.</p>
+</li>
+<li>
+<p>On generate, the BOM + customer data fill a Word template; PDF/Excel are derived.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_layered_structure"><a class="anchor" href="#_layered_structure"></a>Layered structure</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Layer</th>
+<th class="tableblock halign-left valign-top">Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Calculations (sizing/engineering)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>calculations/</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Selection engine (pick catalog parts)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bom/selectors/</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BOM builders (priced line items)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bom/*_builder.py</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pricing / price master</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bom/price_master.py</code>, <code>component_price_master</code> table</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Web app (routes, endpoints, generation)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>main.py</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Document engine (docx/pdf/drive)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>engine/</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Forms (UI)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>*_costing.html</code>, <code>combined_builder.html</code>, <code>dashboard.html</code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_key_concepts"><a class="anchor" href="#_key_concepts"></a>Key concepts</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>BOM <code>MEDIA</code> grouping</strong> — rows are tagged by system (COMB AIR, gas line, ENCON ITEMS…); drives the grouped Scope of Supply.</p>
+</li>
+<li>
+<p><strong>Markup</strong> — <code>config.MARKUP</code> (1.8) applied to bought-out items in the grand total.</p>
+</li>
+<li>
+<p><strong>Templates</strong> — cloned from <code>Offer_Template.docx</code>; per-product variants built by <code>build_*_template_from_vlph.py</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <p>This page was built using the Antora default UI.</p>
+  <p>The source code for this UI is licensed under the terms of the MPL-2.0 license.</p>
+</footer>
+<script id="site-script" src="../../_/js/site.js" data-ui-root-path="../../_"></script>
+<script async src="../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

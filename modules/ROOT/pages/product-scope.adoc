@@ -1,0 +1,97 @@
+= Product Scope & Roadmap
+:description: ENCON product-catalogue coverage for the Offer Generator.
+
+The target scope is ENCON's full product catalogue (the https://encon.co.in[encon.co.in] *Products* menu).
+This page tracks which product lines the Offer Generator covers.
+
+_Last updated: 2026-06-10_
+
+[TIP]
+.Status legend
+====
+*Complete* — built, in use +
+*Partial* — in progress / exists only inside other offers +
+*Scaffolding* — only scaffolding exists, not started in earnest +
+*Pending* — not started
+====
+
+== Iron & Steel Making
+
+[cols="4,1,3", options="header"]
+|===
+| Product | Status | Module / Notes
+
+| Vertical Ladle Preheaters | Complete | `vlph`
+| Horizontal Ladle Preheaters | Complete | `hlph`
+| Tundish Preheating System | Complete | `tundish`
+| Torpedo Preheaters (TLC) | Pending | reference: `Combined_Offer_Test.docx`
+| Impeller Dryer | Pending |
+| Launder / Runner / Chutes Dryer & Preheater | Pending |
+| Ladle & Tundish Cooler – Refractory Cooler | Pending |
+| Refractory Dry-out Burner System | Pending |
+| RAYCON – Patch-up Lining Heater (Sintering) | Pending |
+| Scrap Dryer / Heaters | Pending |
+| Sub-merged Nozzle (SEN) Heating | Pending |
+| Vessel Preheating Systems | Pending |
+|===
+
+== Combustion Equipment
+
+[cols="4,1,3", options="header"]
+|===
+| Product | Status | Module / Notes
+
+| Blowers | Complete | `blower`
+| Burners | Complete | `burner`
+| Heating & Pumping Units (HPU + PU) | Complete | `hpu`, `pu`
+| Recuperators | Complete | `recup`
+| REGEN Burners | Scaffolding | `regen` — not started in earnest
+| Fuel & Air Skids / Trains | Partial | exist inside other offers; no standalone module
+| Self-Recuperative Burners | Pending |
+| Specialised Burners | Pending |
+| Die / Bolster Heating | Pending |
+| Hot Air Generator | Pending |
+| Refractory Dry-out Burner System | Pending |
+|===
+
+== Furnaces · Ovens · Other
+
+[cols="4,1,3", options="header"]
+|===
+| Product | Status | Module / Notes
+
+| Billet Reheating Furnace (SNSF BRF) | Scaffolding | `snsf_brf` — not started in earnest
+| Box Type Furnace (BTF) | Scaffolding | `btf` — not started in earnest
+| Rad Heat Gas Elements | Partial | DB tables only (`rad_heat_master`), no UI
+| Specialised Fabrications | Pending |
+| Ovens | Pending |
+| Other Furnaces | Pending |
+| Specialised Testing Ovens & Furnaces | Pending |
+|===
+
+== Cross-cutting Capabilities
+
+These are not product lines but support every offer.
+
+[cols="4,1", options="header"]
+|===
+| Capability | Status
+
+| Combined Offer builder (multi-equipment, one customer / T&C) | Complete
+| Pricelist / price-master management & upload | Complete
+| Google Drive offer upload | Complete
+|===
+
+== Summary
+
+* *Complete (8):* VLPH, HLPH, Tundish, Blowers, Burners, HPU/PU, Recuperators.
+* *Scaffolding (3):* REGEN Burners, Billet Reheating Furnace, Box Type Furnace.
+* *Partial (2):* Fuel & Air Skids/Trains, Rad Heat Gas Elements.
+* *Pending (18):* all remaining product lines above.
+
+[NOTE]
+====
+Module acronyms: *VLPH/HLPH* = Vertical/Horizontal Ladle Preheater · *HPU* = Heating & Pumping Unit ·
+*PU* = Pumping Unit only · *SNSF BRF* = Billet Reheating Furnace · *BTF* = Box Type Furnace ·
+*REGEN* = Regenerative Burner · *TLC* = Torpedo Ladle Car.
+====

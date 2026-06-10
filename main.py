@@ -23,6 +23,13 @@ app.add_middleware(
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "vlph.db")
+
+# Documentation site (Antora, pre-built into ./docs_site) served at /docs.
+# Guarded so a missing build never breaks app start-up.
+from fastapi.staticfiles import StaticFiles
+_DOCS_DIR = os.path.join(BASE_DIR, "docs_site")
+if os.path.isdir(_DOCS_DIR):
+    app.mount("/docs", StaticFiles(directory=_DOCS_DIR, html=True), name="docs")
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 QUOTES_FOLDER = os.path.join(BASE_DIR, "quotes")
 

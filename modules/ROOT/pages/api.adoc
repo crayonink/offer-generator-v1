@@ -1,0 +1,52 @@
+= API Reference
+:description: HTTP routes exposed by the Offer Generator (main.py).
+
+// TODO: document request/response schemas for each endpoint. This is a scaffold outline.
+
+All routes are defined in `main.py` (~66 endpoints). Grouped below by purpose.
+
+== Page routes (HTML)
+
+`/` (dashboard), `/costing` (VLPH), `/hlph`, `/tundish`, `/recup`, `/blower`, `/burner`,
+`/hpu`, `/hpu/heating-pumping`, `/hpu/pumping-only`, `/regen`, `/snsf-brf`, `/btf`,
+`/combined`, `/combined-builder`, `/pricelist`, `/price-master`, `/viewer`, `/quote`,
+`/equipment-offer`.
+
+== Calculation endpoints
+
+* `POST /api/vlph-calculate` — VLPH (also serves Tundish via equipment type).
+* `POST /api/hlph-calculate`
+* `POST /api/recup-calculate`
+* `POST /api/regen-calculate`
+* `POST /api/snsf-brf-calculate`
+* `POST /api/btf-calculate`
+* `POST /api/cost-variations`, `POST /api/hlph-cost-variations`
+
+// TODO: document VLPHCalcRequest / RecupCalcRequest fields and the response
+// shape (calculations, equipment, pipes, bom, cost_summary).
+
+== Offer generation
+
+* `POST /api/generate-quote` (VLPH/HLPH), `POST /api/generate-recup-quote`,
+  `POST /api/generate-blower-quote`, `POST /api/generate-burner-quote`,
+  `POST /api/generate-hpu-quote`, `POST /api/generate-pu-quote`.
+* `POST /api/generate-combined-offer` — combined multi-equipment offer.
+* `POST /api/combined-costing-excel` — multi-sheet costing workbook.
+* `GET /api/download-quote/\{filename}`, `GET /api/download-xlsx/\{filename}`,
+  `GET /api/preview-quote/...`, `GET /api/pdf-quote/...`.
+
+== Pricelist & price master
+
+* `POST /api/upload-pricelist`, `POST /upload-excel/`, `POST /api/export-excel`.
+* `GET /api/price`, `/api/catalog`, `/api/price-master/items`, `/api/price-master/coverage`,
+  `/api/pricelist/rates`, `/api/pricelist/recup-rates`, `/api/pricelist/vendor-tables`,
+  `/api/pricelist-summary`, `/api/last-pricebook-update`.
+
+== Catalog / utility
+
+`/api/blower/catalog`, `/api/burner/catalog`, `/api/hpu/flow-lph`, `/api/ladle-mapping`,
+`/api/next-quote-ref`, `/api/stock-rates`, `/api/system-health`.
+
+== Google Drive auth
+
+`/auth/drive/login`, `/auth/drive/callback`, `/auth/drive/status`.

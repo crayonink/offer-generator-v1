@@ -1,0 +1,48 @@
+= Architecture & Overview
+:description: High-level architecture of the ENCON Offer Generator.
+
+// TODO: expand each section into full prose. This is a scaffold outline.
+
+The Offer Generator is a FastAPI + SQLite application that turns equipment
+parameters into priced Bills of Material, Word/PDF offers, and multi-sheet
+costing Excels.
+
+== Technology stack
+
+* *Backend:* FastAPI (Python), served by Uvicorn.
+* *Database:* SQLite (`vlph.db`) — committed to the repo (see xref:deployment.adoc[]).
+* *Documents:* `docxtpl` (Jinja-in-Word templating), `docxcompose` (merge),
+  `openpyxl` (Excel), `reportlab`/LibreOffice (PDF).
+* *Frontend:* server-rendered static HTML pages (one per equipment) with vanilla JS.
+* *Integrations:* Google Drive upload (`google-api-python-client`).
+
+== Request flow
+
+// TODO: diagram. Outline of the happy path:
+. User opens an equipment form (e.g. `/costing` for VLPH).
+. Form posts parameters to a calculation endpoint (e.g. `/api/vlph-calculate`).
+. The endpoint runs the *calculation layer* → *selection engine* → *BOM builder*,
+  producing a priced BOM grouped by `MEDIA`.
+. A cost summary (bought-out vs ENCON items, markup) is computed.
+. On generate, the BOM + customer data fill a Word template; PDF/Excel are derived.
+
+== Layered structure
+
+[cols="1,3", options="header"]
+|===
+| Layer | Location
+| Calculations (sizing/engineering) | `calculations/`
+| Selection engine (pick catalog parts) | `bom/selectors/`
+| BOM builders (priced line items) | `bom/*_builder.py`
+| Pricing / price master | `bom/price_master.py`, `component_price_master` table
+| Web app (routes, endpoints, generation) | `main.py`
+| Document engine (docx/pdf/drive) | `engine/`
+| Forms (UI) | `*_costing.html`, `combined_builder.html`, `dashboard.html`
+|===
+
+== Key concepts
+
+// TODO: define each.
+* *BOM `MEDIA` grouping* — rows are tagged by system (COMB AIR, gas line, ENCON ITEMS…); drives the grouped Scope of Supply.
+* *Markup* — `config.MARKUP` (1.8) applied to bought-out items in the grand total.
+* *Templates* — cloned from `Offer_Template.docx`; per-product variants built by `build_*_template_from_vlph.py`.

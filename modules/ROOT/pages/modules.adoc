@@ -1,0 +1,52 @@
+= Modules & Equipment
+:description: The equipment modules and the shared calculation/selection/BOM layers.
+
+// TODO: expand each section. This is a scaffold outline.
+
+For per-product build status see xref:product-scope.adoc[Product Scope & Roadmap].
+
+== Calculation layer (`calculations/`)
+
+// TODO: describe each.
+* `pipes.py` — gas & combustion-air pipe sizing (`round_up_to_nb`, velocities).
+* `burner.py` — burner firing-rate / heat-load calculations.
+* `recup.py` — recuperator heat-transfer & surface-area sizing.
+* `regen.py` — regenerative burner sizing.
+
+== Selection engine (`bom/selectors/`)
+
+`selection_engine.py` orchestrates catalog-part selection (burner, gas train, AGR,
+blower, air duct, butterfly valve, rotary joint, HPU). Individual selectors:
+`encon_burner`, `ng_gas_train`, `agr_selector`, `blower_selector`, `air_duct_selector`,
+`air_valve_selector`, `rotary_joint_selector`, `orifice_plate_selector`,
+`gas_regulator_selector`, `hpu_selector`.
+
+// TODO: document the air-line sizing rule (sized from blower airflow) and gas-train rules.
+
+== BOM builders (`bom/*_builder.py`)
+
+Each builder turns selected equipment + parameters into priced `_row(...)` line items
+tagged with `MEDIA`, `ITEM NAME`, `REFERENCE`, `QTY`, `MAKE`, `UNIT PRICE`, `TOTAL`.
+
+[cols="2,3", options="header"]
+|===
+| Builder | Covers
+| `vlph_builder.py` | Vertical & (shared) ladle preheater BOM
+| `hlph_builder.py` | Horizontal ladle preheater BOM
+| `recup_builder.py` | Recuperator BOM
+| `regen_builder.py` | Regenerative burner BOM (scaffolding)
+| `snsf_brf_builder.py` | Billet reheating furnace (scaffolding)
+| `btf_builder.py` | Box type furnace (scaffolding)
+| `hpu_calculator.py` | Heating & pumping unit
+| `burner_fabrication.py` | Burner fabrication items
+|===
+
+== Pricing
+
+// TODO: document _row pricing, unit_price_override vs DB lookup, the zero-price audit,
+// and the delta-apply pricebook workflow.
+
+== Adding a new equipment module
+
+// TODO: step-by-step checklist (form page → route → calc request/endpoint →
+// selectors → BOM builder → template build script → generate endpoint → tests).
