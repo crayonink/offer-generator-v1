@@ -1,3 +1,8 @@
+# Node (Antora docs toolchain)
+node_modules/
+# Antora default build dir (we publish to ./docs_site instead)
+build/
+
 # Python
 __pycache__/
 *.pyc

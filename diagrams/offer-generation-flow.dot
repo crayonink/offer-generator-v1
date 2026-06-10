@@ -1,0 +1,19 @@
+digraph offer_flow {
+  rankdir=TB; bgcolor="transparent";
+  node [shape=box, style="rounded,filled", fillcolor="#eff6ff", color="#1d4ed8", fontname="Helvetica", fontsize=11, margin="0.2,0.09"];
+  edge [color="#64748b", arrowsize=0.8];
+  A [label="Select equipment", shape=ellipse, fillcolor="#dbeafe"];
+  B [label="Fill parameters (web form)"];
+  C [label="Calculate sizing\npipes / burner / blower / recuperator"];
+  D [label="Select catalogue parts (selection engine)"];
+  E [label="Build priced BOM (grouped by system)"];
+  F [label="Cost summary\nbought-out x markup + ENCON items"];
+  G [label="Generate Word offer\nthen convert to PDF"];
+  H [label="Costing Excel (multi-sheet)"];
+  I [label="Upload to Google Drive", shape=cylinder, fillcolor="#dcfce7", color="#16a34a"];
+  J [label="Combined Offer\none customer / one T&C", fillcolor="#fef3c7", color="#b45309"];
+  A -> B -> C -> D -> E -> F;
+  F -> G; F -> H; G -> I; H -> I;
+  E -> J [style=dashed, label="multiple equipment", fontsize=9, fontcolor="#b45309"];
+  J -> F [style=dashed];
+}

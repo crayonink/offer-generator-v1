@@ -1,60 +1,82 @@
 = Product Scope & Roadmap
-:description: ENCON product-catalogue coverage for the Offer Generator.
+:description: ENCON product-catalogue coverage and the offer-generation flow.
 
-The target scope is ENCON's full product catalogue (the https://encon.co.in[encon.co.in] *Products* menu).
-This page tracks which product lines the Offer Generator covers.
+The Offer Generator's target scope is ENCON's full product catalogue
+(the https://encon.co.in[encon.co.in] *Products* menu). This page shows
+*how the product works* (offer-generation flow) and *what it covers*
+(product map + coverage tables).
 
 _Last updated: 2026-06-10_
+
+== Offer-generation flow
+
+How a priced offer is produced, end to end, for any supported equipment:
+
+image::offer-generation-flow.svg[Offer-generation flow]
+
+== Product coverage map
+
+Every product line in the catalogue, colour-coded by build status.
+
+image::product-coverage-map.svg[Product coverage map]
+
+[NOTE]
+====
+Both diagrams are authored as Graphviz in `diagrams/*.dot`. After editing, regenerate the
+SVGs with `node diagrams/render.mjs` (renders offline — no Docker or network needed).
+====
 
 [TIP]
 .Status legend
 ====
-*Complete* — built, in use +
-*Partial* — in progress / exists only inside other offers +
+*Done* — built, in use +
 *Scaffolding* — only scaffolding exists, not started in earnest +
+*Partial* — in progress / exists only inside other offers +
 *Pending* — not started
 ====
 
-== Iron & Steel Making
+== Coverage details
+
+=== Iron & Steel Making
 
 [cols="4,1,3", options="header"]
 |===
 | Product | Status | Module / Notes
 
-| Vertical Ladle Preheaters | Complete | `vlph`
-| Horizontal Ladle Preheaters | Complete | `hlph`
-| Tundish Preheating System | Complete | `tundish`
+| Vertical Ladle Preheaters | Done | `vlph`
+| Horizontal Ladle Preheaters | Done | `hlph`
+| Tundish Preheating System | Done | `tundish`
 | Torpedo Preheaters (TLC) | Pending | reference: `Combined_Offer_Test.docx`
 | Impeller Dryer | Pending |
 | Launder / Runner / Chutes Dryer & Preheater | Pending |
 | Ladle & Tundish Cooler – Refractory Cooler | Pending |
-| Refractory Dry-out Burner System | Pending |
+| Refractory Dry-out Burner System | Pending | also listed under Combustion
 | RAYCON – Patch-up Lining Heater (Sintering) | Pending |
 | Scrap Dryer / Heaters | Pending |
 | Sub-merged Nozzle (SEN) Heating | Pending |
 | Vessel Preheating Systems | Pending |
 |===
 
-== Combustion Equipment
+=== Combustion Equipment
 
 [cols="4,1,3", options="header"]
 |===
 | Product | Status | Module / Notes
 
-| Blowers | Complete | `blower`
-| Burners | Complete | `burner`
-| Heating & Pumping Units (HPU + PU) | Complete | `hpu`, `pu`
-| Recuperators | Complete | `recup`
+| Blowers | Done | `blower`
+| Burners | Done | `burner`
+| Heating & Pumping Unit | Done | `hpu`
+| Pumping Unit (only) | Done | `pu`
+| Recuperators | Done | `recup`
 | REGEN Burners | Scaffolding | `regen` — not started in earnest
 | Fuel & Air Skids / Trains | Partial | exist inside other offers; no standalone module
 | Self-Recuperative Burners | Pending |
 | Specialised Burners | Pending |
 | Die / Bolster Heating | Pending |
 | Hot Air Generator | Pending |
-| Refractory Dry-out Burner System | Pending |
 |===
 
-== Furnaces · Ovens · Other
+=== Furnaces · Ovens · Other
 
 [cols="4,1,3", options="header"]
 |===
@@ -65,29 +87,34 @@ _Last updated: 2026-06-10_
 | Rad Heat Gas Elements | Partial | DB tables only (`rad_heat_master`), no UI
 | Specialised Fabrications | Pending |
 | Ovens | Pending |
-| Other Furnaces | Pending |
 | Specialised Testing Ovens & Furnaces | Pending |
 |===
 
-== Cross-cutting Capabilities
+== Cross-cutting capabilities
 
-These are not product lines but support every offer.
+Not product lines, but support every offer.
 
 [cols="4,1", options="header"]
 |===
 | Capability | Status
 
-| Combined Offer builder (multi-equipment, one customer / T&C) | Complete
-| Pricelist / price-master management & upload | Complete
-| Google Drive offer upload | Complete
+| Combined Offer builder (multi-equipment, one customer / T&C) | Done
+| Pricelist / price-master management & upload | Done
+| Google Drive offer upload | Done
 |===
 
 == Summary
 
-* *Complete (8):* VLPH, HLPH, Tundish, Blowers, Burners, HPU/PU, Recuperators.
-* *Scaffolding (3):* REGEN Burners, Billet Reheating Furnace, Box Type Furnace.
-* *Partial (2):* Fuel & Air Skids/Trains, Rad Heat Gas Elements.
-* *Pending (18):* all remaining product lines above.
+[cols="2,1,5", options="header"]
+|===
+| Status | Count | Product lines
+
+| Done | *8* | VLPH, HLPH, Tundish, Blowers, Burners, HPU, PU, Recuperators
+| Scaffolding | 3 | REGEN Burners, Billet Reheating Furnace, Box Type Furnace
+| Partial | 2 | Fuel & Air Skids/Trains, Rad Heat Gas Elements
+| Pending | 16 | all remaining lines above
+| *Total* | *29* | distinct catalogue lines
+|===
 
 [NOTE]
 ====

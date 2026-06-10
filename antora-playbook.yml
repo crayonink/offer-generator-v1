@@ -15,3 +15,5 @@ output:
   # Built site is committed and served by the FastAPI app at /docs
   # (Railway builds Python-only, so the docs are pre-built locally).
   dir: ./docs_site
+# Diagrams are pre-rendered offline to SVG (diagrams/render.mjs) and embedded as
+# images, so the build needs no diagram server (kroki.io / Docker).

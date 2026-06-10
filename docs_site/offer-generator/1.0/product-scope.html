@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Product Scope &amp; Roadmap :: Offer Generator Documentation</title>
-    <meta name="description" content="ENCON product-catalogue coverage for the Offer Generator.">
+    <meta name="description" content="ENCON product-catalogue coverage and the offer-generation flow.">
     <meta name="generator" content="Antora 3.1.15">
     <link rel="stylesheet" href="../../_/css/site.css">
   </head>
@@ -127,11 +127,54 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>The target scope is ENCON&#8217;s full product catalogue (the <a href="https://encon.co.in">encon.co.in</a> <strong>Products</strong> menu).
-This page tracks which product lines the Offer Generator covers.</p>
+<p>The Offer Generator&#8217;s target scope is ENCON&#8217;s full product catalogue
+(the <a href="https://encon.co.in">encon.co.in</a> <strong>Products</strong> menu). This page shows
+<strong>how the product works</strong> (offer-generation flow) and <strong>what it covers</strong>
+(product map + coverage tables).</p>
 </div>
 <div class="paragraph">
 <p><em>Last updated: 2026-06-10</em></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_offer_generation_flow"><a class="anchor" href="#_offer_generation_flow"></a>Offer-generation flow</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>How a priced offer is produced, end to end, for any supported equipment:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/offer-generation-flow.svg" alt="Offer-generation flow">
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_product_coverage_map"><a class="anchor" href="#_product_coverage_map"></a>Product coverage map</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Every product line in the catalogue, colour-coded by build status.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="_images/product-coverage-map.svg" alt="Product coverage map">
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Both diagrams are authored as Graphviz in <code>diagrams/*.dot</code>. After editing, regenerate the
+SVGs with <code>node diagrams/render.mjs</code> (renders offline — no Docker or network needed).</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="admonitionblock tip">
 <table>
@@ -142,9 +185,9 @@ This page tracks which product lines the Offer Generator covers.</p>
 <td class="content">
 <div class="title">Status legend</div>
 <div class="paragraph">
-<p><strong>Complete</strong> — built, in use<br>
-<strong>Partial</strong> — in progress / exists only inside other offers<br>
+<p><strong>Done</strong> — built, in use<br>
 <strong>Scaffolding</strong> — only scaffolding exists, not started in earnest<br>
+<strong>Partial</strong> — in progress / exists only inside other offers<br>
 <strong>Pending</strong> — not started</p>
 </div>
 </td>
@@ -154,8 +197,10 @@ This page tracks which product lines the Offer Generator covers.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_iron_steel_making"><a class="anchor" href="#_iron_steel_making"></a>Iron &amp; Steel Making</h2>
+<h2 id="_coverage_details"><a class="anchor" href="#_coverage_details"></a>Coverage details</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_iron_steel_making"><a class="anchor" href="#_iron_steel_making"></a>Iron &amp; Steel Making</h3>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 50%;">
@@ -172,17 +217,17 @@ This page tracks which product lines the Offer Generator covers.</p>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Vertical Ladle Preheaters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>vlph</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Horizontal Ladle Preheaters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>hlph</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Tundish Preheating System</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>tundish</code></p></td>
 </tr>
 <tr>
@@ -208,7 +253,7 @@ This page tracks which product lines the Offer Generator covers.</p>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Refractory Dry-out Burner System</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
-<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">also listed under Combustion</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">RAYCON – Patch-up Lining Heater (Sintering)</p></td>
@@ -233,10 +278,8 @@ This page tracks which product lines the Offer Generator covers.</p>
 </tbody>
 </table>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_combustion_equipment"><a class="anchor" href="#_combustion_equipment"></a>Combustion Equipment</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_combustion_equipment"><a class="anchor" href="#_combustion_equipment"></a>Combustion Equipment</h3>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 50%;">
@@ -253,22 +296,27 @@ This page tracks which product lines the Offer Generator covers.</p>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Blowers</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>blower</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Burners</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>burner</code></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Heating &amp; Pumping Units (HPU + PU)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu</code>, <code>pu</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heating &amp; Pumping Unit</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pumping Unit (only)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pu</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Recuperators</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>recup</code></p></td>
 </tr>
 <tr>
@@ -301,18 +349,11 @@ This page tracks which product lines the Offer Generator covers.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Refractory Dry-out Burner System</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
 </tbody>
 </table>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_furnaces_ovens_other"><a class="anchor" href="#_furnaces_ovens_other"></a>Furnaces · Ovens · Other</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_furnaces_ovens_other"><a class="anchor" href="#_furnaces_ovens_other"></a>Furnaces · Ovens · Other</h3>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 50%;">
@@ -353,11 +394,6 @@ This page tracks which product lines the Offer Generator covers.</p>
 <td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Other Furnaces</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Specialised Testing Ovens &amp; Furnaces</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
 <td class="tableblock halign-left valign-top"></td>
@@ -366,11 +402,12 @@ This page tracks which product lines the Offer Generator covers.</p>
 </table>
 </div>
 </div>
+</div>
 <div class="sect1">
-<h2 id="_cross_cutting_capabilities"><a class="anchor" href="#_cross_cutting_capabilities"></a>Cross-cutting Capabilities</h2>
+<h2 id="_cross_cutting_capabilities"><a class="anchor" href="#_cross_cutting_capabilities"></a>Cross-cutting capabilities</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>These are not product lines but support every offer.</p>
+<p>Not product lines, but support every offer.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -386,15 +423,15 @@ This page tracks which product lines the Offer Generator covers.</p>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Combined Offer builder (multi-equipment, one customer / T&amp;C)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Pricelist / price-master management &amp; upload</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Google Drive offer upload</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Complete</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 </tr>
 </tbody>
 </table>
@@ -403,22 +440,47 @@ This page tracks which product lines the Offer Generator covers.</p>
 <div class="sect1">
 <h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Complete (8):</strong> VLPH, HLPH, Tundish, Blowers, Burners, HPU/PU, Recuperators.</p>
-</li>
-<li>
-<p><strong>Scaffolding (3):</strong> REGEN Burners, Billet Reheating Furnace, Box Type Furnace.</p>
-</li>
-<li>
-<p><strong>Partial (2):</strong> Fuel &amp; Air Skids/Trains, Rad Heat Gas Elements.</p>
-</li>
-<li>
-<p><strong>Pending (18):</strong> all remaining product lines above.</p>
-</li>
-</ul>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 12.5%;">
+<col style="width: 62.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Status</th>
+<th class="tableblock halign-left valign-top">Count</th>
+<th class="tableblock halign-left valign-top">Product lines</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>8</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">VLPH, HLPH, Tundish, Blowers, Burners, HPU, PU, Recuperators</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Scaffolding</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REGEN Burners, Billet Reheating Furnace, Box Type Furnace</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Partial</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fuel &amp; Air Skids/Trains, Rad Heat Gas Elements</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all remaining lines above</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Total</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>29</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">distinct catalogue lines</p></td>
+</tr>
+</tbody>
+</table>
 <div class="admonitionblock note">
 <table>
 <tr>
