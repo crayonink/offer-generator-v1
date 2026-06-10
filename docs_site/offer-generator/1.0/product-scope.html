@@ -135,20 +135,20 @@
 <h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The ENCON Offer Generator is an internal web application that turns equipment
-parameters into complete, priced commercial offers. An estimator selects a
-product, enters a handful of process and configuration parameters, and the
-system performs the engineering sizing, selects the correct catalogue
-components, builds a fully-priced Bill of Materials, and produces a formatted
-Word and PDF offer together with a multi-sheet costing workbook — work that
-previously took hours of manual spreadsheet effort for every enquiry.</p>
+<p>The Offer Generator is an internal tool that produces priced commercial offers
+for ENCON&#8217;s heating equipment. An estimator picks the product, enters the
+process details — fuel, capacity, temperatures, control type and so on — and
+the tool sizes the equipment, selects the right components, prices the full
+bill of materials, and produces a ready-to-send Word and PDF offer along with a
+costing sheet. Before this, every offer was put together by hand in
+spreadsheets and Word: a few hours each, and easy to get wrong as prices moved.</p>
 </div>
 <div class="paragraph">
-<p>This document defines the <strong>target scope</strong> — ENCON&#8217;s full product catalogue, as
-published on the company&#8217;s <a href="https://encon.co.in">Products</a> menu — and records,
-for each product line, whether it is already automated, partially built, or
-still pending. It is the single reference for what the tool covers today and
-what remains on the roadmap.</p>
+<p>This page is the scope and roadmap. The target is ENCON&#8217;s full product range —
+the lines on the company&#8217;s <a href="https://encon.co.in">Products</a> menu — and for each
+one it records whether the tool produces that offer today, produces part of it,
+or doesn&#8217;t cover it yet. It is meant to be the single answer to "what can the
+generator quote, and what is still to come".</p>
 </div>
 </div>
 </div>
@@ -156,17 +156,13 @@ what remains on the roadmap.</p>
 <h2 id="_offer_generation_flow"><a class="anchor" href="#_offer_generation_flow"></a>Offer-generation flow</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Every supported product follows the same pipeline. The estimator opens the
-relevant equipment form and supplies the process inputs — fuel, capacity,
-temperatures, control mode and so on. The application calculates the
-engineering sizing (gas and combustion-air pipe sizes, burner firing rate,
-blower duty, recuperator surface), and the selection engine then picks the
-matching catalogue parts: burner, gas train, air-gas ratio control, blower,
-air duct, valves, rotary joint and pumping unit. From these it assembles a
-priced Bill of Materials, grouped by system, applies the standard markup, and
-arrives at a cost summary. Finally the offer is rendered into the Word
-template, converted to PDF and — optionally — uploaded to Google Drive, while
-a parallel route produces the multi-sheet costing Excel.</p>
+<p>Every product follows the same path. The estimator opens the form for that
+equipment and enters the process inputs. The tool sizes the equipment (pipe
+sizes, burner rating, blower duty, recuperator surface), selects the matching
+components against the catalogue and the current price list, builds the priced
+bill of materials grouped by system, applies the standard margin, and arrives
+at the total. From that it produces the formatted offer document and PDF, and a
+costing workbook; the finished offer can be filed straight to the shared drive.</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -176,13 +172,13 @@ a parallel route produces the multi-sheet costing Excel.</p>
 <div class="sect2">
 <h3 id="_detailed_system_flow_all_paths"><a class="anchor" href="#_detailed_system_flow_all_paths"></a>Detailed system flow — all paths</h3>
 <div class="paragraph">
-<p>The diagram below expands that pipeline to show every path in the system: the
-single-equipment flow described above; the <strong>Combined Offer</strong> route, in which
-several equipment forms are embedded and their Bills of Material aggregated
-into one document under a single customer and set of terms; the price-master
-and catalogue feeds drawn from the <code>vlph.db</code> database; and the document, Excel
-and Drive outputs. The pricelist-administration path — by which new vendor
-prices are uploaded and delta-applied into the price master — is shown as well.</p>
+<p>The larger diagram adds the rest. The <strong>Combined Offer</strong> path lets several pieces
+of equipment be quoted together as one document, under one customer and one set
+of terms and conditions. It also shows how the live price list and the
+component catalogue feed the pricing, and how a finished offer goes out — as
+Word and PDF, as a costing Excel, and up to the shared drive. The price-list
+side is included too: a new vendor price list is loaded as an update and the
+rates flow through to every offer.</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -196,10 +192,9 @@ prices are uploaded and delta-applied into the price master — is shown as well
 <h2 id="_product_coverage_map"><a class="anchor" href="#_product_coverage_map"></a>Product coverage map</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The map below places every line in the catalogue against its build status, so
-the overall picture can be read at a glance. Green lines are live, blue are
-scaffolded but not yet started in earnest, amber are partial, and grey remain
-to be built.</p>
+<p>The map sets every line in the catalogue against its build status, so the whole
+picture can be read at a glance. Green is live, blue is part-set-up only, amber
+is partial, and grey is not started.</p>
 </div>
 <div class="imageblock">
 <div class="content">
@@ -214,8 +209,8 @@ to be built.</p>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>All three diagrams are authored as Graphviz in <code>diagrams/*.dot</code>. After editing, regenerate the
-SVGs with <code>node diagrams/render.mjs</code> (renders offline — no Docker or network needed).</p>
+<p>The diagrams are maintained as source files under <code>diagrams/</code> and regenerated with a single
+command, so they can be updated as the roadmap moves.</p>
 </div>
 </td>
 </tr>
@@ -230,9 +225,9 @@ SVGs with <code>node diagrams/render.mjs</code> (renders offline — no Docker o
 <td class="content">
 <div class="title">Status legend</div>
 <div class="paragraph">
-<p><strong>Done</strong> — built, in use<br>
-<strong>Scaffolding</strong> — only scaffolding exists, not started in earnest<br>
-<strong>Partial</strong> — in progress / exists only inside other offers<br>
+<p><strong>Done</strong> — built and in use<br>
+<strong>Scaffolding</strong> — part-set-up only, not really started<br>
+<strong>Partial</strong> — in progress, or only built inside other offers<br>
 <strong>Pending</strong> — not started</p>
 </div>
 </td>
@@ -247,13 +242,16 @@ SVGs with <code>node diagrams/render.mjs</code> (renders offline — no Docker o
 <div class="sect2">
 <h3 id="_iron_steel_making"><a class="anchor" href="#_iron_steel_making"></a>Iron &amp; Steel Making</h3>
 <div class="paragraph">
-<p>The iron-and-steel range is the heart of ENCON&#8217;s preheating business and the
-most heavily automated part of the tool. The three ladle and tundish
-preheaters — vertical, horizontal and tundish — are fully built and in daily
-use. The remainder of the family (torpedo preheaters, the various dryers and
-coolers, refractory dry-out and patch-up lining heaters, sub-merged nozzle and
-vessel preheating) is still to be added; the torpedo preheater already has a
-reference offer to work from.</p>
+<p>This is the most complete part of the tool and the core of ENCON&#8217;s preheating
+business. The vertical, horizontal and tundish preheaters are fully built and
+in daily use; they are closely related products, and most of the recent work —
+sizing accuracy, scope of supply, technical specifications, combined offers —
+has gone into them. The rest of the family is not yet covered: torpedo
+preheaters, the impeller dryer, the launder/runner/chutes dryer, the ladle and
+tundish cooler, the refractory dry-out burner, the RAYCON patch-up lining
+heater, the scrap dryer, sub-merged nozzle (SEN) heating and vessel preheating.
+The torpedo preheater at least has a sample offer on file to base the content
+on.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -265,29 +263,29 @@ reference offer to work from.</p>
 <tr>
 <th class="tableblock halign-left valign-top">Product</th>
 <th class="tableblock halign-left valign-top">Status</th>
-<th class="tableblock halign-left valign-top">Module / Notes</th>
+<th class="tableblock halign-left valign-top">Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Vertical Ladle Preheaters</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vlph</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Horizontal Ladle Preheaters</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hlph</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Tundish Preheating System</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>tundish</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Torpedo Preheaters (TLC)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Pending</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">reference: <code>Combined_Offer_Test.docx</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sample offer on file</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Impeller Dryer</p></td>
@@ -335,13 +333,14 @@ reference offer to work from.</p>
 <div class="sect2">
 <h3 id="_combustion_equipment"><a class="anchor" href="#_combustion_equipment"></a>Combustion Equipment</h3>
 <div class="paragraph">
-<p>Combustion equipment covers the burners, blowers, recuperators and pumping
-units that also appear as components inside the larger preheater offers.
-Blowers, burners, recuperators, and both the heating-and-pumping and
-pumping-only units are complete and can be offered stand-alone. Regenerative
-burners are scaffolded only; fuel-and-air skids exist today purely as
-sub-assemblies inside other offers; and the remaining specialised burners and
-heaters are pending.</p>
+<p>These are the burners, blowers, recuperators and pumping units that also go
+into the larger preheater packages but can be quoted on their own. Blowers,
+burners, recuperators, and both the heating-and-pumping unit and the
+pumping-only unit are done. Regenerative burners are only part-set-up, not
+really started. Fuel and air skids are not a separate offer yet — they are
+currently built only as part of the larger packages. Self-recuperative burners,
+specialised burners, die/bolster heating and the hot air generator are not
+started.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -353,44 +352,44 @@ heaters are pending.</p>
 <tr>
 <th class="tableblock halign-left valign-top">Product</th>
 <th class="tableblock halign-left valign-top">Status</th>
-<th class="tableblock halign-left valign-top">Module / Notes</th>
+<th class="tableblock halign-left valign-top">Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Blowers</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blower</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Burners</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>burner</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Heating &amp; Pumping Unit</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Pumping Unit (only)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pu</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Recuperators</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>recup</code></p></td>
+<td class="tableblock halign-left valign-top"></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">REGEN Burners</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Scaffolding</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>regen</code> — not started in earnest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">part-set-up, not really started</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fuel &amp; Air Skids / Trains</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Partial</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">exist inside other offers; no standalone module</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">built only inside larger packages</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Self-Recuperative Burners</p></td>
@@ -418,11 +417,10 @@ heaters are pending.</p>
 <div class="sect2">
 <h3 id="_furnaces_ovens_other"><a class="anchor" href="#_furnaces_ovens_other"></a>Furnaces · Ovens · Other</h3>
 <div class="paragraph">
-<p>The furnace, oven and specialised-fabrication lines are the least developed.
-Two reheating furnaces — billet (SNSF BRF) and box-type — have scaffolding in
-place but no real implementation; rad-heat gas elements exist only as price
-data with no user interface; and the remaining ovens and testing furnaces are
-not yet started.</p>
+<p>The least developed area. The billet reheating furnace and the box-type furnace
+are part-set-up but not really started. Rad-heat gas elements have only pricing
+entered, with no offer form on top yet. Ovens, the other specialised
+fabrications and the testing ovens and furnaces have not been started.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -434,24 +432,24 @@ not yet started.</p>
 <tr>
 <th class="tableblock halign-left valign-top">Product</th>
 <th class="tableblock halign-left valign-top">Status</th>
-<th class="tableblock halign-left valign-top">Module / Notes</th>
+<th class="tableblock halign-left valign-top">Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Billet Reheating Furnace (SNSF BRF)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Scaffolding</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>snsf_brf</code> — not started in earnest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">part-set-up, not really started</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Box Type Furnace (BTF)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Scaffolding</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>btf</code> — not started in earnest</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">part-set-up, not really started</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Rad Heat Gas Elements</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Partial</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">DB tables only (<code>rad_heat_master</code>), no UI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pricing entered only; no offer form</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Specialised Fabrications</p></td>
@@ -477,12 +475,12 @@ not yet started.</p>
 <h2 id="_cross_cutting_capabilities"><a class="anchor" href="#_cross_cutting_capabilities"></a>Cross-cutting capabilities</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Beyond the individual product lines, three capabilities support every offer.
-The <strong>Combined Offer</strong> builder merges several pieces of equipment into a single
-document under one customer and one set of terms and conditions. <strong>Pricelist and
-price-master management</strong> keeps the underlying vendor rates current, applying
-new price lists as deltas so manual rate edits are preserved. And finished
-offers are uploaded automatically to <strong>Google Drive</strong> for sharing and record.</p>
+<p>Three capabilities run across all the products. The <strong>Combined Offer</strong> brings
+several pieces of equipment into one document under a single customer and one
+set of terms. <strong>Price management</strong> keeps the vendor rates current — a new price
+list is loaded as an update, so any manual rate changes already made are kept
+rather than overwritten. And finished offers are filed automatically to the
+shared drive for sharing and record.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -497,15 +495,15 @@ offers are uploaded automatically to <strong>Google Drive</strong> for sharing a
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Combined Offer builder (multi-equipment, one customer / T&amp;C)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combined Offer (several equipment, one customer / one set of terms)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pricelist / price-master management &amp; upload</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Price-list / rate management &amp; upload</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Google Drive offer upload</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic filing of offers to the shared drive</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Done</p></td>
 </tr>
 </tbody>
@@ -516,12 +514,11 @@ offers are uploaded automatically to <strong>Google Drive</strong> for sharing a
 <h2 id="_summary"><a class="anchor" href="#_summary"></a>Summary</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Of the twenty-nine distinct catalogue lines, eight are complete and in use,
-three exist only as scaffolding, two are partially covered, and sixteen are
-still to be built. In short, the core ladle-and-tundish preheating business and
-the common combustion components are automated, while the broader furnace,
-dryer, cooler and specialised-heating families make up the main body of work
-that remains.</p>
+<p>29 product lines in total: 8 are fully built and in use, 3 are part-set-up
+only, 2 are partially covered, and 16 are not yet started. In short, the core
+ladle and tundish preheating business and the common combustion components are
+automated; the furnaces, dryers, coolers and specialised heaters are the bulk
+of what is still to build.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -572,7 +569,7 @@ that remains.</p>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Module acronyms: <strong>VLPH/HLPH</strong> = Vertical/Horizontal Ladle Preheater · <strong>HPU</strong> = Heating &amp; Pumping Unit ·
+<p>Acronyms: <strong>VLPH/HLPH</strong> = Vertical/Horizontal Ladle Preheater · <strong>HPU</strong> = Heating &amp; Pumping Unit ·
 <strong>PU</strong> = Pumping Unit only · <strong>SNSF BRF</strong> = Billet Reheating Furnace · <strong>BTF</strong> = Box Type Furnace ·
 <strong>REGEN</strong> = Regenerative Burner · <strong>TLC</strong> = Torpedo Ladle Car.</p>
 </div>
