@@ -9,7 +9,7 @@ const graphviz = await Graphviz.load();
 const outDir = "modules/ROOT/images";
 mkdirSync(outDir, { recursive: true });
 
-const diagrams = ["offer-generation-flow", "system-flows", "product-coverage-map"];
+const diagrams = ["offer-generation-flow", "system-flows", "product-coverage-map", "rfq-integration"];
 for (const name of diagrams) {
   const dot = readFileSync(`diagrams/${name}.dot`, "utf8");
   const svg = graphviz.layout(dot, "svg", "dot");

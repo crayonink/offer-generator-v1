@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Modules &amp; Equipment :: Offer Generator Documentation</title>
-    <meta name="description" content="The equipment modules and the shared calculation/selection/BOM layers.">
+    <title>RFQ Tracker Integration :: Offer Generator Documentation</title>
+    <meta name="description" content="How the Offer Generator connects to the RFQ Enquiry Tracker.">
     <meta name="generator" content="Antora 3.1.15">
     <link rel="stylesheet" href="../../_/css/site.css">
   </head>
@@ -64,7 +64,7 @@
   <li class="nav-item" data-depth="1">
     <a class="nav-link" href="product-scope.html">Product Scope &amp; Roadmap</a>
   </li>
-  <li class="nav-item" data-depth="1">
+  <li class="nav-item is-current-page" data-depth="1">
     <a class="nav-link" href="rfq-integration.html">RFQ Tracker Integration</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -74,7 +74,7 @@
   <li class="nav-item" data-depth="2">
     <a class="nav-link" href="architecture.html">Architecture &amp; Overview</a>
   </li>
-  <li class="nav-item is-current-page" data-depth="2">
+  <li class="nav-item" data-depth="2">
     <a class="nav-link" href="modules.html">Modules &amp; Equipment</a>
   </li>
   <li class="nav-item" data-depth="2">
@@ -116,123 +116,137 @@
 <nav class="breadcrumbs" aria-label="breadcrumbs">
   <ul>
     <li><a href="index.html">Offer Generator</a></li>
-    <li>Technical Documentation</li>
-    <li><a href="modules.html">Modules &amp; Equipment</a></li>
+    <li><a href="rfq-integration.html">RFQ Tracker Integration</a></li>
   </ul>
 </nav>
-<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/modules.adoc">Edit this Page</a></div>
+<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/rfq-integration.adoc">Edit this Page</a></div>
 </div>
   <div class="content">
 <aside class="toc sidebar" data-title="Contents" data-levels="2">
   <div class="toc-menu"></div>
 </aside>
 <article class="doc">
-<h1 class="page">Modules &amp; Equipment</h1>
+<h1 class="page">RFQ Tracker Integration</h1>
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>For per-product build status see <a href="product-scope.html" class="xref page">Product Scope &amp; Roadmap</a>.</p>
+<p><em>Status: proposed — documented, not yet built.</em></p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_calculation_layer_calculations"><a class="anchor" href="#_calculation_layer_calculations"></a>Calculation layer (<code>calculations/</code>)</h2>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><code>pipes.py</code> — gas &amp; combustion-air pipe sizing (<code>round_up_to_nb</code>, velocities).</p>
-</li>
-<li>
-<p><code>burner.py</code> — burner firing-rate / heat-load calculations.</p>
-</li>
-<li>
-<p><code>recup.py</code> — recuperator heat-transfer &amp; surface-area sizing.</p>
-</li>
-<li>
-<p><code>regen.py</code> — regenerative burner sizing.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_selection_engine_bomselectors"><a class="anchor" href="#_selection_engine_bomselectors"></a>Selection engine (<code>bom/selectors/</code>)</h2>
+<h2 id="_why_integrate"><a class="anchor" href="#_why_integrate"></a>Why integrate</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><code>selection_engine.py</code> orchestrates catalog-part selection (burner, gas train, AGR,
-blower, air duct, butterfly valve, rotary joint, HPU). Individual selectors:
-<code>encon_burner</code>, <code>ng_gas_train</code>, <code>agr_selector</code>, <code>blower_selector</code>, <code>air_duct_selector</code>,
-<code>air_valve_selector</code>, <code>rotary_joint_selector</code>, <code>orifice_plate_selector</code>,
-<code>gas_regulator_selector</code>, <code>hpu_selector</code>.</p>
+<p>ENCON runs two related tools. The <strong>RFQ Enquiry Tracker</strong> logs every incoming
+request for quotation and follows it through to an offer — it records the
+company, the contact, the item, who it is assigned to, the target date, and,
+once an offer exists, the offer number, offer date, document and costing. The
+<strong>Offer Generator</strong> (this tool) is what actually produces that priced offer.</p>
+</div>
+<div class="paragraph">
+<p>Today the two are used side by side. The team logs an enquiry in the tracker,
+then separately opens the generator, re-keys the customer and the item,
+produces the offer, and goes back to the tracker to type in the offer number,
+date, document link and costing. Connecting the two removes that double entry
+and keeps the tracker up to date on its own.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_bom_builders_bom_builder_py"><a class="anchor" href="#_bom_builders_bom_builder_py"></a>BOM builders (<code>bom/*_builder.py</code>)</h2>
+<h2 id="_how_they_connect"><a class="anchor" href="#_how_they_connect"></a>How they connect</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Each builder turns selected equipment + parameters into priced <code>_row(&#8230;&#8203;)</code> line items
-tagged with <code>MEDIA</code>, <code>ITEM NAME</code>, <code>REFERENCE</code>, <code>QTY</code>, <code>MAKE</code>, <code>UNIT PRICE</code>, <code>TOTAL</code>.</p>
+<p>The two apps stay separate — each keeps its own database and its own
+deployment — and are joined loosely through a web link and a small interface.
+Neither app&#8217;s internal workings change; they simply hand information to each
+other at two points. This keeps the integration low-risk and lets either app
+be updated on its own.</p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_the_flow"><a class="anchor" href="#_the_flow"></a>The flow</h2>
+<div class="sectionbody">
+<div class="imageblock">
+<div class="content">
+<img src="_images/rfq-integration.svg" alt="RFQ Tracker and Offer Generator integration">
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Start from the enquiry.</strong> On an enquiry in the tracker, a "Generate Offer"
+link opens the Offer Generator with that enquiry&#8217;s details already filled
+in — company, contact, mobile, email, the item, and the sales and technical
+owners — along with the RFQ reference.</p>
+</li>
+<li>
+<p><strong>Produce the offer.</strong> The estimator completes the technical inputs and
+generates the priced offer as normal: the Word and PDF documents and the
+costing sheet, filed to the shared drive.</p>
+</li>
+<li>
+<p><strong>Write the result back.</strong> As the offer is finished, the generator sends the
+key results back to the tracker — the offer number, the offer date, the
+document link and the costing total — and the matching enquiry is updated
+automatically. The offer can also be filed into that enquiry&#8217;s existing
+"Costing &amp; Offer" drive folder.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_shared"><a class="anchor" href="#_what_is_shared"></a>What is shared</h2>
+<div class="sectionbody">
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
-<col style="width: 40%;">
-<col style="width: 60%;">
+<col style="width: 50%;">
+<col style="width: 50%;">
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Builder</th>
-<th class="tableblock halign-left valign-top">Covers</th>
+<th class="tableblock halign-left valign-top">Sent to the generator (pre-fill)</th>
+<th class="tableblock halign-left valign-top">Returned to the enquiry (write-back)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vlph_builder.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Vertical &amp; (shared) ladle preheater BOM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Company, contact, mobile, email</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offer number</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hlph_builder.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Horizontal ladle preheater BOM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Item / equipment description</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Offer date</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>recup_builder.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Recuperator BOM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sales &amp; technical owners</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Document link (Word / PDF)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>regen_builder.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Regenerative burner BOM (scaffolding)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>snsf_brf_builder.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Billet reheating furnace (scaffolding)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>btf_builder.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Box type furnace (scaffolding)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu_calculator.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Heating &amp; pumping unit</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>burner_fabrication.py</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Burner fabrication items</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">RFQ reference</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Costing total</p></td>
 </tr>
 </tbody>
 </table>
+<div class="paragraph">
+<p>The RFQ reference ties the two together: the generator always knows which
+enquiry an offer belongs to, and the tracker always shows the latest offer
+against each enquiry.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_pricing"><a class="anchor" href="#_pricing"></a>Pricing</h2>
+<h2 id="_status_next_steps"><a class="anchor" href="#_status_next_steps"></a>Status &amp; next steps</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>This integration is <strong>documented but not yet built</strong>. The agreed approach is to
+keep both apps separate and connect them through a link and a small interface.
+Building it would mean adding the "Generate Offer" link on the tracker, having
+the generator accept the pre-filled details, and a small write-back step once
+an offer is produced.</p>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_adding_a_new_equipment_module"><a class="anchor" href="#_adding_a_new_equipment_module"></a>Adding a new equipment module</h2>
-<div class="sectionbody">
-
 </div>
 </div>
 </article>

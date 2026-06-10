@@ -1,0 +1,21 @@
+digraph rfq_integration {
+  rankdir=LR; bgcolor="transparent"; nodesep=0.35; ranksep=0.7;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.08"];
+  edge [color="#64748b", arrowsize=0.85, fontname="Helvetica", fontsize=9, fontcolor="#475569"];
+
+  subgraph cluster_rfq {
+    label="RFQ ENQUIRY TRACKER"; style="rounded"; bgcolor="#eff6ff"; color="#bfdbfe"; fontname="Helvetica-Bold"; fontsize=11;
+    enq [label="Enquiry\n(company, contact, item,\nsales / technical, RFQ ref)", fillcolor="#dbeafe", color="#1d4ed8"];
+    upd [label="Enquiry updated\n(offer no, offer date,\ndocument link, costing)", fillcolor="#dcfce7", color="#16a34a"];
+  }
+
+  subgraph cluster_gen {
+    label="OFFER GENERATOR"; style="rounded"; bgcolor="#fefce8"; color="#fde68a"; fontname="Helvetica-Bold"; fontsize=11;
+    form  [label="Offer form\n(pre-filled from enquiry)", fillcolor="#fff7ed", color="#d97706"];
+    offer [label="Priced offer\n(Word / PDF + costing Excel,\nfiled to shared drive)", fillcolor="#fff7ed", color="#d97706"];
+  }
+
+  enq   -> form  [label="  1. Generate Offer\n  (link carries enquiry details)"];
+  form  -> offer [label="  2. estimator completes"];
+  offer -> upd   [label="  3. write-back (small API)", color="#16a34a", fontcolor="#16a34a"];
+}

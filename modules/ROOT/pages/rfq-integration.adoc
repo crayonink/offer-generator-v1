@@ -1,0 +1,67 @@
+= RFQ Tracker Integration
+:description: How the Offer Generator connects to the RFQ Enquiry Tracker.
+
+_Status: proposed — documented, not yet built._
+
+== Why integrate
+
+ENCON runs two related tools. The *RFQ Enquiry Tracker* logs every incoming
+request for quotation and follows it through to an offer — it records the
+company, the contact, the item, who it is assigned to, the target date, and,
+once an offer exists, the offer number, offer date, document and costing. The
+*Offer Generator* (this tool) is what actually produces that priced offer.
+
+Today the two are used side by side. The team logs an enquiry in the tracker,
+then separately opens the generator, re-keys the customer and the item,
+produces the offer, and goes back to the tracker to type in the offer number,
+date, document link and costing. Connecting the two removes that double entry
+and keeps the tracker up to date on its own.
+
+== How they connect
+
+The two apps stay separate — each keeps its own database and its own
+deployment — and are joined loosely through a web link and a small interface.
+Neither app's internal workings change; they simply hand information to each
+other at two points. This keeps the integration low-risk and lets either app
+be updated on its own.
+
+== The flow
+
+image::rfq-integration.svg[RFQ Tracker and Offer Generator integration]
+
+. *Start from the enquiry.* On an enquiry in the tracker, a "Generate Offer"
+  link opens the Offer Generator with that enquiry's details already filled
+  in — company, contact, mobile, email, the item, and the sales and technical
+  owners — along with the RFQ reference.
+. *Produce the offer.* The estimator completes the technical inputs and
+  generates the priced offer as normal: the Word and PDF documents and the
+  costing sheet, filed to the shared drive.
+. *Write the result back.* As the offer is finished, the generator sends the
+  key results back to the tracker — the offer number, the offer date, the
+  document link and the costing total — and the matching enquiry is updated
+  automatically. The offer can also be filed into that enquiry's existing
+  "Costing & Offer" drive folder.
+
+== What is shared
+
+[cols="1,1", options="header"]
+|===
+| Sent to the generator (pre-fill) | Returned to the enquiry (write-back)
+
+| Company, contact, mobile, email | Offer number
+| Item / equipment description | Offer date
+| Sales & technical owners | Document link (Word / PDF)
+| RFQ reference | Costing total
+|===
+
+The RFQ reference ties the two together: the generator always knows which
+enquiry an offer belongs to, and the tracker always shows the latest offer
+against each enquiry.
+
+== Status & next steps
+
+This integration is *documented but not yet built*. The agreed approach is to
+keep both apps separate and connect them through a link and a small interface.
+Building it would mean adding the "Generate Offer" link on the tracker, having
+the generator accept the pre-filled details, and a small write-back step once
+an offer is produced.
