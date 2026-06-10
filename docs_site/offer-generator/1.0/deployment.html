@@ -207,7 +207,51 @@ not full-reset, to preserve them.</p>
 <div class="sect1">
 <h2 id="_local_development"><a class="anchor" href="#_local_development"></a>Local development</h2>
 <div class="sectionbody">
-
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a virtual environment and install dependencies:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt        # Windows
+# source .venv/bin/activate &amp;&amp; pip install -r requirements.txt   # macOS / Linux</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run the app with auto-reload:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-console hljs" data-lang="console">.venv\Scripts\uvicorn main:app --reload</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then open <code><a href="http://localhost:8000" class="bare">http://localhost:8000</a></code> (dashboard) — or <code><a href="http://localhost:8000/docs" class="bare">http://localhost:8000/docs</a></code> for this handbook.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>A plain <code>uvicorn main:app</code> process does <strong>not</strong> hot-reload Python changes. Pass <code>--reload</code>
+during development, or restart the process after editing <code>.py</code> files.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The SQLite database <code>vlph.db</code> is read from the repo root. High-fidelity PDF conversion
+(<code>/api/pdf-quote</code>) needs LibreOffice installed locally; on Railway it is provided via
+<code>nixpacks.toml</code>.</p>
+</div>
 </div>
 </div>
 <div class="sect1">

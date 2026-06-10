@@ -43,8 +43,33 @@ not full-reset, to preserve them.
 
 == Local development
 
-// TODO: venv setup, run command (uvicorn), note that a plain process won't hot-reload
-// .py changes without --reload.
+. Create a virtual environment and install dependencies:
++
+[source,console]
+----
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt        # Windows
+# source .venv/bin/activate && pip install -r requirements.txt   # macOS / Linux
+----
+
+. Run the app with auto-reload:
++
+[source,console]
+----
+.venv\Scripts\uvicorn main:app --reload
+----
++
+Then open `http://localhost:8000` (dashboard) — or `http://localhost:8000/docs` for this handbook.
+
+[NOTE]
+====
+A plain `uvicorn main:app` process does *not* hot-reload Python changes. Pass `--reload`
+during development, or restart the process after editing `.py` files.
+====
+
+The SQLite database `vlph.db` is read from the repo root. High-fidelity PDF conversion
+(`/api/pdf-quote`) needs LibreOffice installed locally; on Railway it is provided via
+`nixpacks.toml`.
 
 == Documentation site (this site)
 
