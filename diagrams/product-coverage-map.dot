@@ -1,9 +1,9 @@
 digraph product_map {
-  rankdir=LR; bgcolor="transparent";
-  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.14,0.06"];
+  rankdir=TB; bgcolor="transparent"; nodesep=0.12; ranksep=0.16;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.16,0.05", width=3.0, height=0.34, fixedsize=false];
 
   subgraph cluster_is {
-    label="IRON & STEEL MAKING"; labeljust="l"; style="rounded"; bgcolor="#f8fafc"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=11;
+    label="IRON & STEEL MAKING"; labeljust="l"; style="rounded"; bgcolor="#f8fafc"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=12;
     i1 [label="Vertical Ladle Preheater", fillcolor="#dcfce7", color="#16a34a"];
     i2 [label="Horizontal Ladle Preheater", fillcolor="#dcfce7", color="#16a34a"];
     i3 [label="Tundish Preheating", fillcolor="#dcfce7", color="#16a34a"];
@@ -19,7 +19,7 @@ digraph product_map {
     i1->i2->i3->i4->i5->i6->i7->i8->i9->i10->i11->i12 [style=invis];
   }
   subgraph cluster_ce {
-    label="COMBUSTION EQUIPMENT"; labeljust="l"; style="rounded"; bgcolor="#f8fafc"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=11;
+    label="COMBUSTION EQUIPMENT"; labeljust="l"; style="rounded"; bgcolor="#f8fafc"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=12;
     c1 [label="Blowers", fillcolor="#dcfce7", color="#16a34a"];
     c2 [label="Burners", fillcolor="#dcfce7", color="#16a34a"];
     c3 [label="Heating & Pumping Unit", fillcolor="#dcfce7", color="#16a34a"];
@@ -34,7 +34,7 @@ digraph product_map {
     c1->c2->c3->c4->c5->c6->c7->c8->c9->c10->c11 [style=invis];
   }
   subgraph cluster_fo {
-    label="FURNACES / OVENS / OTHER"; labeljust="l"; style="rounded"; bgcolor="#f8fafc"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=11;
+    label="FURNACES / OVENS / OTHER"; labeljust="l"; style="rounded"; bgcolor="#f8fafc"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=12;
     f1 [label="Billet Reheating Furnace", fillcolor="#dbeafe", color="#1d4ed8"];
     f2 [label="Box Type Furnace", fillcolor="#dbeafe", color="#1d4ed8"];
     f3 [label="Rad Heat Gas Elements", fillcolor="#fef3c7", color="#b45309"];
@@ -43,4 +43,7 @@ digraph product_map {
     f6 [label="Specialised Testing Ovens", fillcolor="#eef2f7", color="#94a3b8"];
     f1->f2->f3->f4->f5->f6 [style=invis];
   }
+
+  // Two balanced columns: Iron & Steel in one; Combustion over Furnaces in the other.
+  c11 -> f1 [style=invis];
 }
