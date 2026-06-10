@@ -1,5 +1,8 @@
-# Node (Antora docs toolchain)
+# Node (Antora docs toolchain) — local only; Railway must NOT see these or
+# nixpacks treats the app as Node and skips the Python (requirements.txt) build.
 node_modules/
+package.json
+package-lock.json
 # Antora default build dir (we publish to ./docs_site instead)
 build/
 
