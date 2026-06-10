@@ -14,6 +14,14 @@ How a priced offer is produced, end to end, for any supported equipment:
 
 image::offer-generation-flow.svg[Offer-generation flow]
 
+=== Detailed system flow — all paths
+
+The fuller picture: the single-equipment pipeline, the combined-offer path,
+the price-master / catalogue feeds from `vlph.db`, and the document & Drive
+outputs.
+
+image::system-flows.svg[Detailed system and data flow]
+
 == Product coverage map
 
 Every product line in the catalogue, colour-coded by build status.

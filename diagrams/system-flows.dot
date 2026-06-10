@@ -1,0 +1,60 @@
+digraph system_flows {
+  rankdir=TB; bgcolor="transparent"; compound=true; nodesep=0.28; ranksep=0.5;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, margin="0.14,0.06", fillcolor="#eff6ff", color="#1d4ed8"];
+  edge [color="#64748b", arrowsize=0.8, fontname="Helvetica", fontsize=8, fontcolor="#64748b"];
+
+  subgraph cluster_ui {
+    label="WEB UI"; style="rounded"; bgcolor="#f8fafc"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=11;
+    dash  [label="Dashboard"];
+    forms [label="Equipment forms\n(VLPH / HLPH / Tundish / Recup /\nBlower / Burner / HPU / PU)", fillcolor="#dbeafe"];
+    cbld  [label="Combined Offer builder", fillcolor="#fef3c7", color="#b45309"];
+    padm  [label="Pricelist / Price-master admin"];
+  }
+
+  subgraph cluster_pipe {
+    label="CALCULATION PIPELINE  (FastAPI / main.py)"; style="rounded"; bgcolor="#f1f5f9"; color="#cbd5e1"; fontname="Helvetica-Bold"; fontsize=11;
+    api [label="/api/*-calculate"];
+    cl  [label="Calculation layer\n(pipes / burner / recuperator)"];
+    se  [label="Selection engine\n(burner, gas train, AGR, blower,\nair duct, valves, rotary joint, HPU)"];
+    bb  [label="BOM builder\n(grouped by system / MEDIA)"];
+    pr  [label="Pricing\n(rate lookup + 1.8x markup)"];
+    cs  [label="Cost summary"];
+    api -> cl -> se -> bb -> pr -> cs;
+  }
+
+  subgraph cluster_db {
+    label="DATABASE  (vlph.db)"; style="rounded"; bgcolor="#ecfdf5"; color="#86efac"; fontname="Helvetica-Bold"; fontsize=11;
+    pm  [label="component_price_master", fillcolor="#dcfce7", color="#16a34a", shape=cylinder];
+    cat [label="Catalogue masters\n(blower / burner / gas train /\nvalves / HPU / recuperator ...)", fillcolor="#dcfce7", color="#16a34a", shape=cylinder];
+  }
+
+  subgraph cluster_out {
+    label="OUTPUT"; style="rounded"; bgcolor="#fefce8"; color="#fde68a"; fontname="Helvetica-Bold"; fontsize=11;
+    tpl [label="docxtpl render\n(Offer_Template.docx)"];
+    pdf [label="Word .docx  ->  PDF\n(LibreOffice)", shape=note, fillcolor="#fff7ed", color="#d97706"];
+    xls [label="Costing Excel .xlsx\n(openpyxl, multi-sheet)", shape=note, fillcolor="#fff7ed", color="#d97706"];
+    drv [label="Google Drive\n(OAuth upload)", shape=cylinder, fillcolor="#dcfce7", color="#16a34a"];
+  }
+
+  // primary single-equipment flow
+  dash -> forms;
+  forms -> api [label="parameters"];
+  cs -> tpl [label="BOM + customer"];
+  tpl -> pdf -> drv;
+  cs -> xls -> drv;
+
+  // data feeds
+  cat -> se [label="select parts", style=dashed];
+  pm -> pr [label="rates", style=dashed];
+
+  // combined-offer flow
+  dash -> cbld;
+  cbld -> forms [label="embeds (iframe)", style=dashed];
+  forms -> cbld [label="BOM + specs (postMessage)", style=dotted, constraint=false];
+  cbld -> tpl [label="generate-combined-offer", color="#b45309", fontcolor="#b45309"];
+  cbld -> xls [label="combined-costing-excel", color="#b45309", fontcolor="#b45309"];
+
+  // pricelist admin flow
+  dash -> padm;
+  padm -> pm [label="upload / delta-apply", style=dashed, color="#16a34a", fontcolor="#16a34a"];
+}
