@@ -1,36 +1,64 @@
 = Product Scope & Roadmap
 :description: ENCON product-catalogue coverage and the offer-generation flow.
 
-The Offer Generator's target scope is ENCON's full product catalogue
-(the https://encon.co.in[encon.co.in] *Products* menu). This page shows
-*how the product works* (offer-generation flow) and *what it covers*
-(product map + coverage tables).
-
 _Last updated: 2026-06-10_
+
+== Overview
+
+The ENCON Offer Generator is an internal web application that turns equipment
+parameters into complete, priced commercial offers. An estimator selects a
+product, enters a handful of process and configuration parameters, and the
+system performs the engineering sizing, selects the correct catalogue
+components, builds a fully-priced Bill of Materials, and produces a formatted
+Word and PDF offer together with a multi-sheet costing workbook — work that
+previously took hours of manual spreadsheet effort for every enquiry.
+
+This document defines the *target scope* — ENCON's full product catalogue, as
+published on the company's https://encon.co.in[Products] menu — and records,
+for each product line, whether it is already automated, partially built, or
+still pending. It is the single reference for what the tool covers today and
+what remains on the roadmap.
 
 == Offer-generation flow
 
-How a priced offer is produced, end to end, for any supported equipment:
+Every supported product follows the same pipeline. The estimator opens the
+relevant equipment form and supplies the process inputs — fuel, capacity,
+temperatures, control mode and so on. The application calculates the
+engineering sizing (gas and combustion-air pipe sizes, burner firing rate,
+blower duty, recuperator surface), and the selection engine then picks the
+matching catalogue parts: burner, gas train, air-gas ratio control, blower,
+air duct, valves, rotary joint and pumping unit. From these it assembles a
+priced Bill of Materials, grouped by system, applies the standard markup, and
+arrives at a cost summary. Finally the offer is rendered into the Word
+template, converted to PDF and — optionally — uploaded to Google Drive, while
+a parallel route produces the multi-sheet costing Excel.
 
 image::offer-generation-flow.svg[Offer-generation flow]
 
 === Detailed system flow — all paths
 
-The fuller picture: the single-equipment pipeline, the combined-offer path,
-the price-master / catalogue feeds from `vlph.db`, and the document & Drive
-outputs.
+The diagram below expands that pipeline to show every path in the system: the
+single-equipment flow described above; the *Combined Offer* route, in which
+several equipment forms are embedded and their Bills of Material aggregated
+into one document under a single customer and set of terms; the price-master
+and catalogue feeds drawn from the `vlph.db` database; and the document, Excel
+and Drive outputs. The pricelist-administration path — by which new vendor
+prices are uploaded and delta-applied into the price master — is shown as well.
 
 image::system-flows.svg[Detailed system and data flow]
 
 == Product coverage map
 
-Every product line in the catalogue, colour-coded by build status.
+The map below places every line in the catalogue against its build status, so
+the overall picture can be read at a glance. Green lines are live, blue are
+scaffolded but not yet started in earnest, amber are partial, and grey remain
+to be built.
 
 image::product-coverage-map.svg[Product coverage map]
 
 [NOTE]
 ====
-Both diagrams are authored as Graphviz in `diagrams/*.dot`. After editing, regenerate the
+All three diagrams are authored as Graphviz in `diagrams/*.dot`. After editing, regenerate the
 SVGs with `node diagrams/render.mjs` (renders offline — no Docker or network needed).
 ====
 
@@ -46,6 +74,14 @@ SVGs with `node diagrams/render.mjs` (renders offline — no Docker or network n
 == Coverage details
 
 === Iron & Steel Making
+
+The iron-and-steel range is the heart of ENCON's preheating business and the
+most heavily automated part of the tool. The three ladle and tundish
+preheaters — vertical, horizontal and tundish — are fully built and in daily
+use. The remainder of the family (torpedo preheaters, the various dryers and
+coolers, refractory dry-out and patch-up lining heaters, sub-merged nozzle and
+vessel preheating) is still to be added; the torpedo preheater already has a
+reference offer to work from.
 
 [cols="4,1,3", options="header"]
 |===
@@ -67,6 +103,14 @@ SVGs with `node diagrams/render.mjs` (renders offline — no Docker or network n
 
 === Combustion Equipment
 
+Combustion equipment covers the burners, blowers, recuperators and pumping
+units that also appear as components inside the larger preheater offers.
+Blowers, burners, recuperators, and both the heating-and-pumping and
+pumping-only units are complete and can be offered stand-alone. Regenerative
+burners are scaffolded only; fuel-and-air skids exist today purely as
+sub-assemblies inside other offers; and the remaining specialised burners and
+heaters are pending.
+
 [cols="4,1,3", options="header"]
 |===
 | Product | Status | Module / Notes
@@ -86,6 +130,12 @@ SVGs with `node diagrams/render.mjs` (renders offline — no Docker or network n
 
 === Furnaces · Ovens · Other
 
+The furnace, oven and specialised-fabrication lines are the least developed.
+Two reheating furnaces — billet (SNSF BRF) and box-type — have scaffolding in
+place but no real implementation; rad-heat gas elements exist only as price
+data with no user interface; and the remaining ovens and testing furnaces are
+not yet started.
+
 [cols="4,1,3", options="header"]
 |===
 | Product | Status | Module / Notes
@@ -100,7 +150,12 @@ SVGs with `node diagrams/render.mjs` (renders offline — no Docker or network n
 
 == Cross-cutting capabilities
 
-Not product lines, but support every offer.
+Beyond the individual product lines, three capabilities support every offer.
+The *Combined Offer* builder merges several pieces of equipment into a single
+document under one customer and one set of terms and conditions. *Pricelist and
+price-master management* keeps the underlying vendor rates current, applying
+new price lists as deltas so manual rate edits are preserved. And finished
+offers are uploaded automatically to *Google Drive* for sharing and record.
 
 [cols="4,1", options="header"]
 |===
@@ -112,6 +167,13 @@ Not product lines, but support every offer.
 |===
 
 == Summary
+
+Of the twenty-nine distinct catalogue lines, eight are complete and in use,
+three exist only as scaffolding, two are partially covered, and sixteen are
+still to be built. In short, the core ladle-and-tundish preheating business and
+the common combustion components are automated, while the broader furnace,
+dryer, cooler and specialised-heating families make up the main body of work
+that remains.
 
 [cols="2,1,5", options="header"]
 |===
