@@ -12,10 +12,11 @@ once an offer exists, the offer number, offer date, document and costing. The
 *Offer Generator* (this tool) is what actually produces that priced offer.
 
 Today the two are used side by side. The team logs an enquiry in the tracker,
-then separately opens the generator, re-keys the customer and the item,
-produces the offer, and goes back to the tracker to type in the offer number,
-date, document link and costing. Connecting the two removes that double entry
-and keeps the tracker up to date on its own.
+then separately opens the generator, re-keys the customer and the item, and
+produces the offer. The technical person then *manually uploads the finished
+offer and the costing into the RFQ tracker* against that enquiry, and types in
+the offer number and date. Connecting the two removes that manual upload and
+re-keying, and keeps the tracker up to date on its own.
 
 == How they connect
 
@@ -39,8 +40,9 @@ image::rfq-integration.svg[RFQ Tracker and Offer Generator integration]
 . *Write the result back.* As the offer is finished, the generator sends the
   key results back to the tracker — the offer number, the offer date, the
   document link and the costing total — and the matching enquiry is updated
-  automatically. The offer can also be filed into that enquiry's existing
-  "Costing & Offer" drive folder.
+  automatically. This replaces the step the technical person does by hand today,
+  uploading the offer and costing into the tracker; the offer can also be filed
+  straight into that enquiry's existing "Costing & Offer" drive folder.
 
 == What is shared
 
