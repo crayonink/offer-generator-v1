@@ -11,7 +11,8 @@ from datetime import datetime
 
 from bom.pricelist_parser import parse_all as _parse_pricelist_all
 
-app = FastAPI()
+# Swagger/ReDoc moved off /docs so the Antora handbook can own /docs.
+app = FastAPI(docs_url="/api-docs", redoc_url="/api-redoc")
 
 app.add_middleware(
     CORSMiddleware,
