@@ -59,8 +59,10 @@ def _delete_vlph_scope_body(doc: Document) -> None:
 
 
 def _replace_spec_table_with_equipment_loop(table) -> None:
-    """Wipe the 24-row tech-data table; loop the per-equipment technical
-    specification rows (an equipment header followed by label/value rows)."""
+    """Reduce the tech-data table to a 'Parameter | Specification' header-only
+    placeholder. The combined-offer endpoint replaces it after rendering with a
+    side-by-side comparison (one column per equipment), since the column count
+    is dynamic and can't be expressed with docxtpl loops."""
     tbl_xml = table._element
     for tr in list(tbl_xml.findall(qn('w:tr')))[1:]:
         tbl_xml.remove(tr)
@@ -71,16 +73,6 @@ def _replace_spec_table_with_equipment_loop(table) -> None:
         for p in cell.paragraphs:
             for r in p.runs:
                 r.bold = True
-
-    def add(c0, c1):
-        row = table.add_row()
-        row.cells[0].text = c0
-        row.cells[1].text = c1
-        return row
-
-    add('{%tr for r in tech_rows %}', '')
-    add('{{ r.label }}', '{{ r.value }}')
-    add('{%tr endfor %}', '')
 
 
 def _strip_project_name_from_cover_box(doc: Document) -> None:

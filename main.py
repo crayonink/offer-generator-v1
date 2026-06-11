@@ -3802,6 +3802,64 @@ class CombinedOfferRequest(BaseModel):
     transport_amt: float = 0   # Transport (flat Rs.)
 
 
+def _build_spec_comparison_table(docx_path, columns, rows):
+    """Rewrite the rendered 'Parameter | Specification' placeholder table into a
+    side-by-side comparison: parameters down the left column, one column per
+    equipment with the equipment name as the heading. Modifies the placeholder
+    in place so it keeps the offer's table style (borders, header shading)."""
+    if not columns:
+        return
+    import copy as _copy
+    from docx import Document as _Docx
+    from docx.oxml import OxmlElement as _OE
+    from docx.oxml.ns import qn as _qn
+
+    doc = _Docx(docx_path)
+    table = None
+    for t in doc.tables:
+        if t.rows and t.rows[0].cells and t.rows[0].cells[0].text.strip().lower() == "parameter":
+            table = t
+            break
+    if table is None:
+        return
+
+    ncol = 1 + len(columns)
+    grid = table._tbl.find(_qn("w:tblGrid"))
+    # Extend to one column per equipment by cloning the last cell of each row
+    # (so new cells inherit borders / the header shading).
+    guard = 0
+    while len(table.columns) < ncol and guard < 40:
+        guard += 1
+        if grid is not None:
+            grid.append(_OE("w:gridCol"))
+        for row in table.rows:
+            tcs = row._tr.findall(_qn("w:tc"))
+            new_tc = _copy.deepcopy(tcs[-1])
+            for t_el in new_tc.iter(_qn("w:t")):
+                t_el.text = ""
+            row._tr.append(new_tc)
+
+    hdr = table.rows[0].cells
+    hdr[0].text = "Parameter"
+    for j, name in enumerate(columns):
+        if 1 + j < len(hdr):
+            hdr[1 + j].text = str(name)
+    for c in hdr:
+        for p in c.paragraphs:
+            for r in p.runs:
+                r.bold = True
+
+    for r in rows:
+        cells = table.add_row().cells
+        cells[0].text = str(r.get("param", ""))
+        for j, v in enumerate(r.get("values", [])):
+            if 1 + j < len(cells):
+                cells[1 + j].text = str(v)
+
+    table.autofit = True
+    doc.save(docx_path)
+
+
 @app.post("/api/generate-combined-offer")
 def generate_combined_offer(req: CombinedOfferRequest):
     """Render Combined_Offer_Template.docx — one shared cover/customer/T&C,
@@ -3930,18 +3988,30 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 for i, (it, q, mk) in enumerate(items):
                     scope_rows.append({"sno": _ltr[i], "desc": _xesc(f"{it}   ·   {q}  ·  {mk}")})
 
-        # Technical Specifications: per equipment, a header row then its
-        # label/value spec rows (posted by the embedded form). Falls back to
-        # the one-line summary for catalog/manual equipment.
-        tech_rows = []
+        # Technical Specifications — side by side: parameters down the left, one
+        # column per equipment (equipment name = column heading). Built directly
+        # with python-docx after rendering (dynamic column count), so plain text
+        # here — no XML escaping needed.
+        spec_columns = []          # equipment names (column headings)
+        _eq_maps     = []          # per-equipment {param: value}
+        _param_order = []          # union of parameter names, first-seen order
         for eq in req.equipments:
-            tech_rows.append({"label": _xesc("► " + (eq.name or "Equipment").upper()), "value": ""})
+            spec_columns.append(eq.name or "Equipment")
             rows = eq.spec_rows or []
             if not rows and (eq.specs or "").strip():
                 rows = [{"label": "Specifications", "value": eq.specs}]
+            m = {}
             for s in rows:
-                tech_rows.append({"label": _xesc(str((s or {}).get("label", ""))),
-                                  "value": _xesc(str((s or {}).get("value", "")))})
+                lbl = str((s or {}).get("label", "")).strip()
+                if not lbl:
+                    continue
+                if lbl not in m:
+                    m[lbl] = str((s or {}).get("value", "")).strip()
+                if lbl not in _param_order:
+                    _param_order.append(lbl)
+            _eq_maps.append(m)
+        spec_rows = [{"param": p, "values": [m.get(p, "") for m in _eq_maps]}
+                     for p in _param_order]
 
         # Commercial adjustments on the combined grand total -> Final Total
         # (rounded to the nearest Rs.1000, matching the standalone forms).
@@ -3974,7 +4044,6 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "technical_email":   cust.technical_email or cust.marketing_email or "",
             # technical section + scope of supply + price schedule loops
             "equipments":   [{"name": e.name, "specs": e.specs or ""} for e in req.equipments],
-            "tech_rows":    tech_rows,
             "scope_rows":   scope_rows,
             "price_lines":  price_lines,
             "grand_total":  _format_inr(grand),
@@ -4011,6 +4080,8 @@ def generate_combined_offer(req: CombinedOfferRequest):
         docx_name = f"Combined_Offer_{safe_company}_{seq}.docx"
         docx_path = os.path.join(QUOTES_FOLDER, docx_name)
         tpl.save(docx_path)
+        # Build the side-by-side technical-spec table (one column per equipment).
+        _build_spec_comparison_table(docx_path, spec_columns, spec_rows)
 
         pdf_name = docx_name.replace(".docx", ".pdf")
         pdf_ok = _docx_to_pdf(docx_path, os.path.join(QUOTES_FOLDER, pdf_name))
