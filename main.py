@@ -744,6 +744,7 @@ class QuoteRequest(BaseModel):
     special_auto_controls:  Optional[bool] = False  # Special Requirements
     vertical_qty:   Optional[int] = 1   # Annexure I scope-of-supply header — Vertical units count
     horizontal_qty: Optional[int] = 1   # Annexure I scope-of-supply header — Horizontal units count
+    transport_amt:  float = 0           # Transport (flat Rs.) — shown as its own price-schedule line
     purging_line:    Optional[str] = "no"   # "yes" | "no" — drives the Nitrogen Purging block in the offer
     hpu_variant:     Optional[str] = "Duplex 1"   # "Simplex" | "Duplex 1" | "Duplex 2" — Pumping Unit type
     burner_kw_value: Optional[str] = ""   # Pre-formatted total kW for the ENCON burner body line
@@ -4265,6 +4266,76 @@ def api_next_quote_ref(technical_person: str = "", location: str = ""):
     return {"seq": seq, "ref": build_enquiry_ref(seq, technical_person, location)}
 
 
+def _break_out_transport(docx_path: str, transport: float):
+    """In a standalone offer's Annexure III, pull Transport out of the single
+    all-inclusive price onto its own line: reduce the equipment row by the
+    transport amount and insert a 'Transport' row just before TOTAL (TOTAL is
+    unchanged, so the schedule still reconciles). No-op when transport <= 0."""
+    try:
+        transport = float(transport or 0)
+    except (TypeError, ValueError):
+        return
+    if transport <= 0:
+        return
+    import copy, re
+    from docx import Document
+    from engine.quote_writer import _format_inr
+
+    def _num(s):
+        s = (s or "").replace(",", "").replace("₹", "").strip()
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    def _set_cell(cell, text):
+        # set text on the first run (preserve its formatting); clear the rest
+        if not cell.paragraphs:
+            cell.text = text
+            return
+        p = cell.paragraphs[0]
+        if p.runs:
+            p.runs[0].text = text
+            for r in p.runs[1:]:
+                r.text = ""
+        else:
+            p.add_run(text)
+
+    doc = Document(docx_path)
+    for t in doc.tables:
+        if not t.rows:
+            continue
+        hdr = " ".join(c.text for c in t.rows[0].cells).lower()
+        if "unit price" not in hdr or "total price" not in hdr:
+            continue
+        total_idx = next((i for i, r in enumerate(t.rows)
+                          if any(c.text.strip().upper() == "TOTAL" for c in r.cells)), None)
+        if not total_idx:               # None or 0 (TOTAL is never the header row)
+            continue
+        eq = t.rows[total_idx - 1]
+        if len(eq.cells) < 5:
+            continue
+        tot = _num(eq.cells[4].text)
+        if tot is None:
+            continue
+        qty = 1
+        m = re.search(r"\d+", eq.cells[2].text or "")
+        if m:
+            qty = max(1, int(m.group()))
+        new_total = tot - transport
+        _set_cell(eq.cells[3], _format_inr(new_total / qty))
+        _set_cell(eq.cells[4], _format_inr(new_total))
+        # insert a Transport row before TOTAL (clone the equipment row to match style)
+        new_tr = copy.deepcopy(eq._tr)
+        t.rows[total_idx]._tr.addprevious(new_tr)
+        trow = t.rows[total_idx]
+        for i, lab in enumerate(["", "Transport", "", "", _format_inr(transport)]):
+            if i < len(trow.cells):
+                _set_cell(trow.cells[i], lab)
+        break
+    doc.save(docx_path)
+
+
 @app.post("/api/generate-quote")
 async def generate_quote(req: QuoteRequest):
     try:
@@ -4382,6 +4453,12 @@ async def generate_quote(req: QuoteRequest):
         filename = f"{_date}_{_safe_company}_{_product}{_capacity}.docx"
         output_path = os.path.join(QUOTES_FOLDER, filename)
         generate_quote_docx(quote_data, output_path)
+        # Pull Transport onto its own price-schedule line (P&F/designing/
+        # negotiation stay baked into the equipment price). No-op if 0.
+        try:
+            _break_out_transport(output_path, req.transport_amt)
+        except Exception as _trn_err:
+            print(f"WARN: transport line break-out failed: {_trn_err}")
 
         # Build the PDF as a faithful render of the .docx via LibreOffice
         # so the PDF and Word offer are visually identical. Fall back to the

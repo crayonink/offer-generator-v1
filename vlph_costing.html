@@ -2495,6 +2495,7 @@ async function generateQuote() {
     // Technical data for template (pulled from lastCalc)
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
+    transport_amt:   parseFloat(document.getElementById("transport-amt")?.value) || 0,
     items: [{
       product_type: "Vertical Ladle Preheater",
       model:        "VLPH (As per Calculation)",

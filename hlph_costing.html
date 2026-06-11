@@ -2385,6 +2385,7 @@ async function generateQuote() {
     tnc_guarantee:          str("tnc_guarantee"),
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
+    transport_amt:   parseFloat(document.getElementById("transport-amt")?.value) || 0,
     items: [{
       product_type: "Horizontal Ladle Preheater",
       model:        "HLPH (As per Calculation)",
