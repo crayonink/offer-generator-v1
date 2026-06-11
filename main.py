@@ -4112,6 +4112,9 @@ def generate_combined_offer(req: CombinedOfferRequest):
         _trn  = float(req.transport_amt or 0)
         _combined_final = round((grand + _pf + _des + _neg + _trn) / 1000) * 1000
 
+        from engine.quote_writer import _supervision_rates
+        _sup_mech, _sup_plc = _supervision_rates()
+
         ctx = {
             "project_name":      req.project_name or "Combined Equipment Offer",
             "subject":           cust.subject or "Offer for Combined Equipment",
@@ -4149,6 +4152,9 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "show_transport":    float(req.transport_amt or 0) > 0,
             "final_total":       _format_inr(_combined_final),
             "grand_total_in_words": f"INR. {amount_in_words_indian(_combined_final)} ONLY.",
+            # Supervision charges — pulled from the price master (component_price_master).
+            "supervision_mech":  _sup_mech,
+            "supervision_plc":   _sup_plc,
             # shared T&C
             "tnc_prices":             cust.tnc_prices or "",
             "tnc_delivery":           cust.tnc_delivery or "",
