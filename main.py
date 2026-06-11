@@ -3972,6 +3972,39 @@ def generate_combined_offer(req: CombinedOfferRequest):
             (cust.address or "").strip(), (cust.city or "").strip(),
             (cust.state or "").strip(), (cust.pin or "").strip()]))
 
+        # If two equipment share the same name (e.g. two 60 T verticals), append
+        # a differentiating factor in brackets so they can be told apart across
+        # the specs, scope and price schedule. Pick the first spec whose value is
+        # distinct for each; fall back to a unit number.
+        from collections import defaultdict as _dd
+        _groups = _dd(list)
+        for eq in req.equipments:
+            _groups[(eq.name or "").strip()].append(eq)
+        _PRIORITY = ["Fuel", "CV of Fuel", "Main Burner", "Combustion Air Blower",
+                     "Air Line Size", "Gas Train Size", "Max. Heating Temperature",
+                     "Burner Firing Rate", "Fuel Consumption Rate"]
+        for _nm, _grp in _groups.items():
+            if len(_grp) < 2:
+                continue
+            _maps = []
+            for eq in _grp:
+                m = {}
+                for s in (eq.spec_rows or []):
+                    l = str((s or {}).get("label", "")).strip()
+                    v = str((s or {}).get("value", "")).strip()
+                    if l and l not in m:
+                        m[l] = v
+                _maps.append(m)
+            _chosen = None
+            for lbl in _PRIORITY + sorted({k for m in _maps for k in m}):
+                vals = [m.get(lbl, "") for m in _maps]
+                if all(vals) and len(set(vals)) == len(vals):
+                    _chosen = lbl
+                    break
+            for _i, eq in enumerate(_grp):
+                factor = _maps[_i].get(_chosen, "") if _chosen else f"Unit {_i + 1}"
+                eq.name = f"{(eq.name or '').strip()} ({factor})"
+
         price_lines, grand = [], 0.0
         for i, eq in enumerate(req.equipments, start=1):
             qty = max(1, int(eq.qty or 1))
