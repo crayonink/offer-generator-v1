@@ -933,7 +933,19 @@ def build_vlph_120t_df(
     # ── PILOT LINE ─────────────────────────────────────────────────────────
     # Only built when the user has Auto Ignition selected — otherwise the
     # offer doesn't have a pilot burner and the cost should not include it.
-    if special_auto_ignition:
+    if special_auto_ignition and pilot_burner == "cog_100":
+        # COG pilot line: only three items, all 50 NB.
+        pl_media = "COG PILOT LINE"
+        rows += [
+            _row(pl_media, "BALL VALVE", "50 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(50), make="L&T"),
+            _row(pl_media, "SOLENOID VALVE", "50 NB", 1,
+                 unit_price_override=_get_cheapest_solenoid_valve(50), make="MADAS"),
+            _row(pl_media, "FLEXIBLE HOSE",
+                 f'{_get_flexible_hose_price(50)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(50)[1], make="BENGAL IND."),
+        ]
+    elif special_auto_ignition:
         pl_media = f"{pilot_line_fuel.upper()} PILOT LINE"
         rows += [
             _row(pl_media, "BALL VALVE", "20 NB", 1,
@@ -1254,7 +1266,18 @@ def build_vlph_manual_df(
 
     # ── PILOT LINE (only if pilot burner is included) ──────────────
     pilot_media = f"{pilot_line_fuel.upper()} PILOT LINE"
-    if include_pilot:
+    if include_pilot and pilot_burner == "cog_100":
+        # COG pilot line: only three items, all 50 NB.
+        rows += [
+            _row("COG PILOT LINE", "BALL VALVE", "50 NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(50), make="L&T"),
+            _row("COG PILOT LINE", "SOLENOID VALVE", "50 NB", 1,
+                 unit_price_override=_get_cheapest_solenoid_valve(50), make="MADAS"),
+            _row("COG PILOT LINE", "FLEXIBLE HOSE",
+                 f'{_get_flexible_hose_price(50)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(50)[1], make="BENGAL IND."),
+        ]
+    elif include_pilot:
         rows += [
             _row(pilot_media, "BALL VALVE", "20 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
