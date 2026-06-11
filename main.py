@@ -1474,10 +1474,11 @@ def vlph_calculate(req: VLPHCalcRequest):
         # air pipe for the SELECTED blower's RATED airflow (e.g. a 10 HP
         # blower rated at 1360 Nm3/hr — pipe must handle that, not just
         # the application's required flow).
-        _rated_blower_air = float(equip1.get("blower", {}).get("airflow_nm3hr") or blower_air_flow)
+        # Air pipe sized for the combustion-air flow (the burner's actual air
+        # demand), not the blower's rated airflow.
         pipes1 = calculate_pipe_sizes(PipeInputs(
             ng_flow_nm3hr=ng_flow,
-            air_flow_nm3hr=_rated_blower_air,
+            air_flow_nm3hr=air_flow,
         ))
 
         # Tundish multi-burner: re-select burner for per-burner flow
@@ -2132,11 +2133,8 @@ def hlph_calculate(req: VLPHCalcRequest):
         )
 
         # Size pipes AFTER blower selection — gas pipe for fuel 1's flow,
-        # air pipe for the SELECTED blower's RATED airflow (e.g. a 10 HP
-        # blower rated at 1360 Nm3/hr — pipe must handle that, not just
-        # the application's required flow).
-        _rated_blower_air = float(equip1.get("blower", {}).get("airflow_nm3hr") or blower_air_flow)
-        pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=_rated_blower_air))
+        # air pipe for the combustion-air flow (the burner's actual air demand).
+        pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow))
 
         f1_is_oil = req.fuel1_type in OIL_FUELS
         f1_oil_lph = equip1["burner"].get("equivalent_lph", 0) if f1_is_oil else 0

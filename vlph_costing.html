@@ -1852,7 +1852,7 @@ function renderResults(d) {
     pipe2Section.style.display = "none";
   }
 
-  set("p-air-q",   fmt(eq.blower_airflow || p.air_flow, 2));
+  set("p-air-q",   fmt(p.air_flow, 2));
   set("p-air-d",   p.air_dia_mm);
   set("p-air-nb",  p.air_nb + " NB");
 
