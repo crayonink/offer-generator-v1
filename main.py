@@ -3911,7 +3911,11 @@ def _build_narrative_scope_combined(combined_path, equipments, cust_base):
                     collecting = True
                     continue
                 if collecting:
-                    if u.startswith("ANNEXURE") and "SCOPE OF SUPPLY" not in u:
+                    # Stop at the next annexure — including the formal
+                    # "ANNEXURE I — SCOPE OF SUPPLY" heading that follows the
+                    # body scope (it contains "SCOPE OF SUPPLY", so must NOT be
+                    # excluded or we'd swallow it + its intro into every block).
+                    if u.startswith("ANNEXURE"):
                         break
                     if not paras and not sty.startswith("Heading 3"):
                         continue   # skip the per-equipment intro line
@@ -3939,7 +3943,7 @@ def _build_narrative_scope_combined(combined_path, equipments, cust_base):
     anchor = target._tbl
     for eqname, head_el, paras in blocks:
         h = _copy.deepcopy(head_el)
-        _retext(h, MARK + " " + (eqname or "Equipment").upper())
+        _retext(h, (eqname or "Equipment").upper())
         anchor.addprevious(h)
         for pel in paras:
             anchor.addprevious(_copy.deepcopy(pel))
@@ -4047,7 +4051,7 @@ def generate_combined_offer(req: CombinedOfferRequest):
 
         scope_rows = []
         for eq in req.equipments:
-            scope_rows.append({"sno": "", "desc": _xesc("► " + (eq.name or "Equipment").upper())})
+            scope_rows.append({"sno": "", "desc": _xesc((eq.name or "Equipment").upper())})
             # group this equipment's BOM by media, preserving first-seen order
             groups, order = {}, []
             for b in (eq.bom or []):
