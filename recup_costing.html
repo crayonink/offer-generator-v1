@@ -1025,6 +1025,7 @@ async function generateOffer() {
     bom:           lastCalc.bom,          // includes any user-edited unit prices / qtys
     final_total:   lastCalc._final_total,
     grand_total:   lastCalc._grand_total,
+    transport_amt: parseFloat(document.getElementById("transport-amt")?.value) || 0,
     qty:           Math.max(1, parseInt(($("o-qty") && $("o-qty").value) || "1", 10)),
     // Hard-coded defaults — the Price Schedule UI section was removed
     // since these never need to change per-offer.

@@ -2738,6 +2738,7 @@ class RecupQuoteRequest(BaseModel):
     bom:          list = []        # the full BOM detail rows for the price schedule
     final_total:  float = 0.0
     grand_total:  float = 0.0
+    transport_amt: float = 0          # Transport (flat Rs.) — own price-schedule line
     qty:          int = 1
     # Price schedule style — "single" (VLPH-like, one row + amount in words)
     # or "full" (Viraj-like, every BOM line + supervision + totals)
@@ -3260,6 +3261,11 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
 
     template_path = os.path.join(BASE_DIR, template_name)
     generate_quote_docx(quote_data, output_path, template_path=template_path)
+    # Pull Transport onto its own price-schedule line (no-op if 0).
+    try:
+        _break_out_transport(output_path, req.transport_amt)
+    except Exception as _trn_err:
+        print(f"WARN: recup transport line break-out failed: {_trn_err}")
 
     return {
         "success":      True,
