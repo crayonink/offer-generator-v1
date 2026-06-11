@@ -347,7 +347,7 @@ window.addEventListener('message', (ev) => {
   const d = ev.data; if (!d || d.source !== 'encon-combined-equipment') return;
   const e = _eq.find(x => { const f = document.getElementById('iframe-'+x.id); return f && f.contentWindow === ev.source; });
   if (!e) return;
-  e.name=d.name||e.type; e.specs=d.specs||''; e.spec_rows=d.spec_rows||[]; e.unit_price=+d.total||0; e.configured=true;
+  e.name=d.name||e.type; e.specs=d.specs||''; e.spec_rows=d.spec_rows||[]; e.quote_payload=d.quote_payload||{}; e.unit_price=+d.total||0; e.configured=true;
   if (!(+e.qty)) e.qty = 1;   // keep the user's quantity (don't reset to 1)
   e.bom=(d.bom||[]).map(b=>({media:b.media,item:b.item,ref:b.ref,qty:b.qty,unit_price:b.unit_price,total:b.total}));
   const st=document.getElementById('status-'+e.id); if(st) st.innerHTML=statusText(e);
@@ -424,6 +424,7 @@ async function generateOffer() {
     pf_pct:a.pf, design_pct:a.design, neg_pct:a.neg, transport_amt:a.transport,
     equipments: _eq.map(e => ({ name:e.name||e.type, specs:e.specs, qty:+e.qty||1, unit_price:+e.unit_price||0,
       spec_rows:(e.spec_rows||[]).map(s => ({ label:s.label, value:s.value })),
+      quote_payload: e.quote_payload || {},
       bom:(e.bom||[]).map(b => ({ media:b.media||'', item:b.item, ref:b.ref||'', qty:b.qty, make:b.make||'' })) })) };
   const btn=document.getElementById('gen-offer'); btn.disabled=true; btn.textContent='Generating…';
   try {

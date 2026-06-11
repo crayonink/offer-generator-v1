@@ -1271,8 +1271,12 @@ function _useInCombined(prodType, prodLabel) {
     qty: +r.QTY || 0, unit_price: +r['UNIT PRICE'] || 0, total: +r.TOTAL || 0, make: r.MAKE || '' }));
   const cs = lastCalc.cost_summary || {};
   const total = +cs.grand_total || +cs.final_total || 0;  // base (pre-adjustment) for combined offer
+  let _qp = {};
+  try { _qp = Object.assign({}, buildTechData(), {
+    bom_items: (lastCalc.bom||[]).filter(r=>r['ITEM NAME']&&r['ITEM NAME']!=='BOUGHT OUT ITEMS'&&r['ITEM NAME']!=='ENCON ITEMS').map(r=>({item:r['ITEM NAME'],make:r.MAKE||'ENCON',media:r.MEDIA||'',ref:r.REFERENCE||''})),
+    items: [{ product_type: prodLabel, model: prodLabel, description: name, qty: 1, unit_price: total, total: total }] }); } catch(e) {}
   parent.postMessage({ source: 'encon-combined-equipment', type: prodType, name,
-    specs: specRows.slice(0, 3).map(s => s.value).join(' · '), spec_rows: specRows, total, bom }, '*');
+    specs: specRows.slice(0, 3).map(s => s.value).join(' · '), spec_rows: specRows, total, bom, quote_payload: _qp }, '*');
   const b = document.getElementById('_use-combined-btn');
   if (b) { b.textContent = '✓ Added — ₹ ' + total.toLocaleString('en-IN') + ' (click to update)'; b.style.background = '#15803d'; }
 }

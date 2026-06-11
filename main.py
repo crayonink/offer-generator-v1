@@ -3789,6 +3789,7 @@ class CombinedOfferEquipment(BaseModel):
     qty: int = 1
     unit_price: float = 0
     bom: List[dict] = []               # itemised BOM -> Scope of Supply
+    quote_payload: dict = {}           # full standalone QuoteRequest -> narrative Scope of Supply
 
 
 class CombinedOfferRequest(BaseModel):
