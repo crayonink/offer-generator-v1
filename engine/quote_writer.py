@@ -277,7 +277,8 @@ def _pipeline_scope_text(is_oil: bool, is_dual: bool) -> str:
 
 
 def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
-                         hpu_variant: str = "Duplex 1"):
+                         hpu_variant: str = "Duplex 1",
+                         force_pumping_only=None):
     """Decide heading + intro + bullets for the oil-side pumping section.
 
     Returns (heading, intro, bullets_list). Heading is empty when neither
@@ -311,7 +312,10 @@ def _pumping_unit_block(fuel_name: str, is_oil: bool, is_dual: bool,
         pump_bullet = "2 Nos. oil pumps each fitted with a suitable electric motor."
 
     name = (fuel_name or "").upper().strip()
-    pumping_only = any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES)
+    # Callers (e.g. the standalone HPU/PU offer) can force the branch; otherwise
+    # decide from the fuel name (light oils = pumping only, heavy oils = heating).
+    pumping_only = (force_pumping_only if force_pumping_only is not None
+                    else any(token in name for token in PUMPING_UNIT_ONLY_FUEL_NAMES))
     if pumping_only:
         heading = "Pumping Unit"
         # Pure-oil fuels never have the heater. Duplex variants use a
@@ -1038,6 +1042,7 @@ def generate_quote_docx(quote_data: dict, output_path: str,
             bool(customer.get("is_oil")),
             bool(customer.get("is_dual")),
             customer.get("hpu_variant") or "Duplex 1",
+            customer.get("force_pumping_only"),
         )),
     }
 

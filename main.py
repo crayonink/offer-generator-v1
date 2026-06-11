@@ -3208,6 +3208,8 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
             "max_fuel_consumption1": "", "max_fuel_consumption2": "",
             "is_oil":              True,
             "is_dual":             False,
+            # PU offer = pumping only (no heater); HPU offer = heating + pumping.
+            "force_pumping_only":  (filename_infix == "PU"),
             "control_mode":        "manual",
             "auto_control_type":   "",
             "control_valve_type":  "",
