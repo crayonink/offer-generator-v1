@@ -1280,7 +1280,7 @@ function _initEmbed(prodType, prodLabel) {
   if (!EMBED) return;
   document.body.classList.add('embed');
   const st = document.createElement('style');
-  st.textContent = '.embed .topnav-links,.embed #tab-1,.embed #tab-4,.embed .hero{display:none!important}.embed .topnav{padding:0 16px}';
+  st.textContent = '.embed .topnav-links,.embed #tab-1,.embed #tab-4,.embed .hero,.embed #quote-btn,.embed #quote-result{display:none!important}.embed .topnav{padding:0 16px}';
   document.head.appendChild(st);
   const host = document.getElementById('panel-3') || document.body;
   const bar = document.createElement('div');
