@@ -237,6 +237,24 @@
       </div>
     </div>
 
+    <div style="margin-top:18px; padding:16px 18px; border:1px solid var(--border); border-radius:10px; background:#f8fafc;">
+      <div style="font-weight:600; color:var(--navy); margin-bottom:12px; font-size:.8rem; letter-spacing:.04em; text-transform:uppercase;">Price &amp; Commercial Adjustments</div>
+      <div style="display:flex; flex-wrap:wrap; gap:12px 22px; margin-bottom:14px;">
+        <label style="font-size:.88rem;">Packaging &amp; Forwarding <input id="pf-pct" type="number" step="0.5" min="0" value="5" oninput="recalcTotal()" style="width:60px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Designing <input id="design-pct" type="number" step="0.5" min="0" value="10" oninput="recalcTotal()" style="width:60px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Negotiation <input id="negotiation-pct" type="number" step="0.5" min="0" value="0" oninput="recalcTotal()" style="width:60px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Transport <input id="transport-amt" type="number" step="1000" min="0" value="0" oninput="recalcTotal()" style="width:88px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:right;"/> ₹</label>
+      </div>
+      <table style="width:100%; font-size:.9rem; border-collapse:collapse;">
+        <tr><td style="padding:3px 0; color:#64748b;">Catalog price (&times; qty)</td><td style="text-align:right;" id="cs-catalog">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">+ Packaging &amp; Forwarding</td><td style="text-align:right;" id="cs-pf">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">+ Designing</td><td style="text-align:right;" id="cs-design">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">&minus; Negotiation</td><td style="text-align:right;" id="cs-neg">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">+ Transport</td><td style="text-align:right;" id="cs-trans">&mdash;</td></tr>
+        <tr style="border-top:1px solid var(--border);"><td style="padding:7px 0 0; font-weight:700; color:var(--navy);">Total Price</td><td style="text-align:right; padding:7px 0 0; font-weight:700; color:var(--navy); font-size:1.05rem;" id="cs-total">&mdash;</td></tr>
+      </table>
+    </div>
+
     <div class="action-row">
       <button class="btn-outline" onclick="goStep(1)">Back</button>
       <button class="btn-primary" onclick="goStep(3)">
@@ -342,20 +360,10 @@
       </div>
     </div>
 
-    <div style="margin:16px 0; padding:14px 16px; border:1px solid var(--border); border-radius:10px; background:#f8fafc;">
-      <div style="font-weight:600; color:var(--navy); margin-bottom:10px; font-size:.8rem; letter-spacing:.04em; text-transform:uppercase;">Commercial Adjustments</div>
-      <div style="display:flex; flex-wrap:wrap; gap:12px 22px;">
-        <label style="font-size:.88rem;">Packaging &amp; Forwarding <input id="pf-pct" type="number" step="0.5" min="0" value="5" style="width:62px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
-        <label style="font-size:.88rem;">Designing <input id="design-pct" type="number" step="0.5" min="0" value="10" style="width:62px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
-        <label style="font-size:.88rem;">Negotiation <input id="negotiation-pct" type="number" step="0.5" min="0" value="0" style="width:62px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
-        <label style="font-size:.88rem;">Transport <input id="transport-amt" type="number" step="1000" min="0" value="0" style="width:90px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:right;"/> ₹</label>
-      </div>
-    </div>
-
     <p style="color:var(--muted); font-size:.9rem;">
-      Click <b>Generate Offer</b> to apply these adjustments to the catalog price for this HPU
-      combination and produce a Word document with the standard accessories list, scope of supply
-      and commercial terms (Transport shows on its own price-schedule line).
+      Click <b>Generate Offer</b> to produce the Word document — the price and the commercial
+      adjustments (Packaging &amp; Forwarding, Designing, Negotiation, Transport) you set in Step 2
+      are applied (Transport shows on its own price-schedule line).
     </p>
 
     <div class="action-row" id="action-row-step3">
@@ -464,6 +472,34 @@ async function _refreshFlowLph() {
   }
 }
 
+// ── Live price + commercial-adjustments total on Step 2 ────────────────────
+let _catalogUnit = 0;
+async function _refreshPrice() {
+  const variant = document.getElementById('hpu_variant').value;
+  const kw      = document.getElementById('hpu_kw').value;
+  try {
+    const r = await fetch(`/api/hpu/price?kw=${encodeURIComponent(kw)}&variant=${encodeURIComponent(variant)}&mode=hpu`);
+    const j = await r.json();
+    _catalogUnit = (j && j.unit_price) ? +j.unit_price : 0;
+  } catch (e) { _catalogUnit = 0; }
+  recalcTotal();
+}
+function recalcTotal() {
+  const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+  const qty = Math.max(1, parseInt((document.getElementById('qty') || {}).value || '1', 10));
+  const pf = num('pf-pct'), des = num('design-pct'), neg = num('negotiation-pct'), trn = num('transport-amt');
+  const base = _catalogUnit * qty;
+  const pfA = base * pf / 100, desA = base * des / 100, negA = base * neg / 100;
+  let total = base + pfA + desA - negA + trn;
+  if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+  const f = n => '₹ ' + Math.round(n).toLocaleString('en-IN');
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('cs-catalog', base ? f(base) : '—');
+  set('cs-pf', f(pfA)); set('cs-design', f(desA));
+  set('cs-neg', '− ' + f(negA)); set('cs-trans', f(trn));
+  set('cs-total', base ? f(total) : '—');
+}
+
 async function generateOffer() {
   const errEl  = document.getElementById('hpu-error');
   const btn    = document.getElementById('gen-btn');
@@ -551,6 +587,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('hpu_variant').addEventListener('change', _refreshFlowLph);
   document.getElementById('hpu_kw').addEventListener('change',      _refreshFlowLph);
   _refreshFlowLph();
+  // Live total: refresh the catalog price on variant/kW change, recompute on qty.
+  document.getElementById('hpu_variant').addEventListener('change', _refreshPrice);
+  document.getElementById('hpu_kw').addEventListener('change',      _refreshPrice);
+  document.getElementById('qty').addEventListener('input',          recalcTotal);
+  _refreshPrice();
 });
 </script>
 </body>

@@ -3085,6 +3085,34 @@ def hpu_flow_lph(kw: float, variant: str):
         return {"error": str(e), "flow_lph": None}
 
 
+@app.get("/api/hpu/price")
+def hpu_price(kw: float, variant: str, mode: str = "hpu"):
+    """Catalog sell price for an HPU/PU (kW, variant) so the form can show a live
+    total before generating. HPU = SUM(hpu_master.amount) × 1.8;
+    PU = pumping_unit_price.sell_price."""
+    try:
+        from bom.hpu_calculator import HPU_MARKUP
+        kw_int = int(round(kw))
+        conn = sqlite3.connect(DB_PATH)
+        if (mode or "hpu").lower() == "pu":
+            row = conn.execute(
+                "SELECT sell_price FROM pumping_unit_price WHERE unit_kw = ? AND variant = ? LIMIT 1",
+                (kw_int, variant)).fetchone()
+            conn.close()
+            if not row or row[0] is None:
+                return {"error": "no price", "unit_price": None}
+            return {"unit_price": float(row[0])}
+        row = conn.execute(
+            "SELECT SUM(amount) FROM hpu_master WHERE unit_kw = ? AND variant = ?",
+            (kw_int, variant)).fetchone()
+        conn.close()
+        if not row or row[0] is None:
+            return {"error": "no price", "unit_price": None}
+        return {"unit_price": round(float(row[0]) * HPU_MARKUP, 2)}
+    except Exception as e:
+        return {"error": str(e), "unit_price": None}
+
+
 def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     """Shared body for the HPU and PU stand-alone offer endpoints.
 
