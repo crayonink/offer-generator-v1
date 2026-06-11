@@ -342,9 +342,20 @@
       </div>
     </div>
 
+    <div style="margin:16px 0; padding:14px 16px; border:1px solid var(--border); border-radius:10px; background:#f8fafc;">
+      <div style="font-weight:600; color:var(--navy); margin-bottom:10px; font-size:.8rem; letter-spacing:.04em; text-transform:uppercase;">Commercial Adjustments</div>
+      <div style="display:flex; flex-wrap:wrap; gap:12px 22px;">
+        <label style="font-size:.88rem;">Packaging &amp; Forwarding <input id="pf-pct" type="number" step="0.5" min="0" value="5" style="width:62px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Designing <input id="design-pct" type="number" step="0.5" min="0" value="10" style="width:62px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Negotiation <input id="negotiation-pct" type="number" step="0.5" min="0" value="0" style="width:62px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Transport <input id="transport-amt" type="number" step="1000" min="0" value="0" style="width:90px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:right;"/> ₹</label>
+      </div>
+    </div>
+
     <p style="color:var(--muted); font-size:.9rem;">
-      Click <b>Generate Offer</b> to look up the price for this PU combination and produce
-      a Word document with the standard accessories list, scope of supply and commercial terms.
+      Click <b>Generate Offer</b> to apply these adjustments to the catalog price for this PU
+      combination and produce a Word document with the standard accessories list, scope of supply
+      and commercial terms (Transport shows on its own price-schedule line).
     </p>
 
     <div class="action-row" id="action-row-step3">
@@ -358,6 +369,7 @@
       <h4>Offer generated successfully</h4>
       <div style="font-size:.88rem; color:#166534;" id="quote-meta">—</div>
       <a id="dl-link" class="dl-btn" href="#" target="_blank" rel="noopener">Download .docx</a>
+      <a id="preview-link" class="dl-btn" href="#" target="_blank" rel="noopener" style="background:#334155;">Preview Offer</a>
     </div>
   </div>
 
@@ -465,6 +477,10 @@ async function generateOffer() {
     hpu_variant: document.getElementById('hpu_variant').value,
     hpu_kw: parseFloat(document.getElementById('hpu_kw').value),
     qty: parseInt(document.getElementById('qty').value || '1', 10),
+    pf_pct: parseFloat(document.getElementById('pf-pct')?.value) || 0,
+    design_pct: parseFloat(document.getElementById('design-pct')?.value) || 0,
+    neg_pct: parseFloat(document.getElementById('negotiation-pct')?.value) || 0,
+    transport_amt: parseFloat(document.getElementById('transport-amt')?.value) || 0,
   };
 
   try {
@@ -484,6 +500,7 @@ async function generateOffer() {
     document.getElementById('quote-meta').textContent =
       `${j.filename} — total ₹ ${(j.total_price || 0).toLocaleString('en-IN')}`;
     document.getElementById('dl-link').href = j.download_url;
+    if (j.preview_url) document.getElementById('preview-link').href = j.preview_url;
     document.getElementById('quote-result').style.display = 'block';
 
     // Hide the Generate Offer button + the action row that held it —

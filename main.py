@@ -3056,6 +3056,9 @@ class HpuQuoteRequest(BaseModel):
     final_total:   float = 0.0
     grand_total:   float = 0.0
     transport_amt: float = 0
+    pf_pct:        float = 0    # Packaging & Forwarding (% of catalog price)
+    design_pct:    float = 0    # Designing (%)
+    neg_pct:       float = 0    # Negotiation (%, subtracted)
 
 
 @app.get("/api/hpu/flow-lph")
@@ -3148,9 +3151,18 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     catalog_lph = float(flow_row[0]) if flow_row and flow_row[0] is not None \
                   else (req.fuel_lph or 0.0)
     qty = max(1, int(req.qty or 1))
-    # Offer sell price = the form's final total (Packaging & Forwarding, Designing,
-    # Negotiation and Transport applied); fall back to the catalog price.
-    offer_unit = float(req.final_total) if (req.final_total or 0) > 0 else unit_price
+    # Commercial adjustments applied to the catalog price: Packaging & Forwarding
+    # and Designing add, Negotiation subtracts; Transport is a flat amount shown
+    # on its own price-schedule line. The per-unit offer price folds Transport in
+    # (so _break_out_transport can split it back out below). Final total rounded
+    # to the nearest Rs.1000, matching the other equipment offers.
+    _pf  = float(getattr(req, "pf_pct", 0) or 0)
+    _des = float(getattr(req, "design_pct", 0) or 0)
+    _neg = float(getattr(req, "neg_pct", 0) or 0)
+    _trn = float(getattr(req, "transport_amt", 0) or 0)
+    _adj_total  = unit_price * qty * (1 + (_pf + _des - _neg) / 100) + _trn
+    _final_incl = (round(_adj_total / 1000) * 1000) if (_pf or _des or _neg or _trn) else _adj_total
+    offer_unit  = _final_incl / qty
 
     # ── 2. Enquiry ref (canonical ENCON pattern) ──────────────────────
     seq = next_quote_seq()
