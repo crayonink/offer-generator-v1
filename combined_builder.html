@@ -429,7 +429,7 @@ async function generateOffer() {
   try {
     const j = await (await fetch('/api/generate-combined-offer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
     if (j.error) throw new Error(j.error);
-    showResult('Combined offer generated', [['Download .docx',j.download_url,false], j.pdf_url?['Download PDF',j.pdf_url,true]:null].filter(Boolean));
+    showResult('Combined offer generated', [['Download .docx',j.download_url,false], j.pdf_url?['Download PDF',j.pdf_url,true]:null, j.preview_url?['Preview Offer',j.preview_url,false]:null].filter(Boolean));
   } catch(e){ showErr(e.message||e); } finally { btn.disabled=false; btn.textContent='Generate Combined Offer (.docx)'; }
 }
 async function generateExcel() {
