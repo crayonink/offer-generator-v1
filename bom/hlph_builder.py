@@ -132,14 +132,16 @@ def build_hlph_df(
     # No ROTARY JOINT for HLPH. Pilot/UV ancillaries on the air line only
     # when Auto Ignition is selected.
     if special_auto_ignition:
+        # COG 100 kW pilot needs a larger (50 NB) line; other pilots use 20 NB.
+        _pilot_nb = 50 if pilot_burner == "cog_100" else 20
         rows += [
-            _row("COMB AIR", "BALL VALVE (Pilot Burner)", "20 NB", 1,
-                 unit_price_override=_get_cheapest_ball_valve(20), make="L&T"),
+            _row("COMB AIR", "BALL VALVE (Pilot Burner)", f"{_pilot_nb} NB", 1,
+                 unit_price_override=_get_cheapest_ball_valve(_pilot_nb), make="L&T"),
             _row("COMB AIR", "BALL VALVE (UV LINE)", "15 NB", 1,
                  unit_price_override=_get_cheapest_ball_valve(15), make="L&T"),
             _row("COMB AIR", "FLEXIBLE HOSE (Pilot Burner)",
-                 f'{_get_flexible_hose_price(20)[0]} NB, 1500mm', 1,
-                 unit_price_override=_get_flexible_hose_price(20)[1], make="BENGAL IND."),
+                 f'{_get_flexible_hose_price(_pilot_nb)[0]} NB, 1500mm', 1,
+                 unit_price_override=_get_flexible_hose_price(_pilot_nb)[1], make="BENGAL IND."),
             _row("COMB AIR", "FLEXIBLE HOSE (UV LINE)",
                  f'{_get_flexible_hose_price(15)[0]} NB, 1500mm', 1,
                  unit_price_override=_get_flexible_hose_price(15)[1], make="BENGAL IND."),
