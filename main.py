@@ -3141,6 +3141,9 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     catalog_lph = float(flow_row[0]) if flow_row and flow_row[0] is not None \
                   else (req.fuel_lph or 0.0)
     qty = max(1, int(req.qty or 1))
+    # Offer sell price = the form's final total (Packaging & Forwarding, Designing,
+    # Negotiation and Transport applied); fall back to the catalog price.
+    offer_unit = float(req.final_total) if (req.final_total or 0) > 0 else unit_price
 
     # ── 2. Enquiry ref (canonical ENCON pattern) ──────────────────────
     seq = next_quote_seq()
@@ -3245,13 +3248,15 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
             "model":        f"{req.hpu_variant} {req.hpu_kw:g} kW",
             "description":  equipment_name,
             "qty":          qty,
-            "unit_price":   unit_price,
+            # Sell price with Packaging & Forwarding, Designing, Negotiation and
+            # Transport applied (Transport is broken onto its own line below).
+            "unit_price":   offer_unit,
         }],
         "valid_days": 30,
     }
 
     quote_data = calculate_quote(form_data)
-    total_price = float(quote_data.get("grand_total") or unit_price * qty)
+    total_price = float(quote_data.get("grand_total") or offer_unit * qty)
 
     # ── 4. Filename: {YYYY-MM-DD}_{Customer}_{HPU|PU}-{kW}kW-{variant}.docx ─
     _safe_company = "".join(ch for ch in (cust.company or "Client")
@@ -3273,7 +3278,8 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
         "success":      True,
         "filename":     filename,
         "download_url": f"/api/download-quote/{filename}",
-        "unit_price":   unit_price,
+        "preview_url":  f"/api/preview-quote/{filename}",
+        "unit_price":   offer_unit,
         "total_price":  total_price,
         "variant":      req.hpu_variant,
         "kw":           req.hpu_kw,
