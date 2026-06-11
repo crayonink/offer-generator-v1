@@ -101,10 +101,14 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     # Air side
     air_duct = select_air_duct(air_flow_nm3hr)
     motorized_control_valve = select_motorized_control_valve(air_flow_nm3hr)
-    # Combustion-air line NB, sized to the actual combustion-air flow (the
-    # burner's air demand) — not the blower's rated airflow. Floor to 125;
-    # never below the air duct.
-    air_line_nb = max(125, air_nb, air_duct["nb"])
+    # Combustion-air line NB, sized from the airflow the SELECTED blower moves:
+    # the blower's rated CFM converted back to Nm³/hr (CFM × 1.7), run through
+    # the pipe formula. e.g. 2092 CFM × 1.7 = 3556 -> 289 mm -> 300 NB.
+    air_line_flow = (blower.get("cfm") or cfm) * 1.7
+    _cfm_air_nb = calculate_pipe_sizes(
+        PipeInputs(ng_flow_nm3hr=ng_flow_nm3hr, air_flow_nm3hr=air_line_flow)
+    ).air_pipe_nb
+    air_line_nb = max(125, _cfm_air_nb, air_duct["nb"])
     # Butterfly valve — fall back from Lever to Gear if NB exceeds the lever range
     try:
         butterfly_valve = select_butterfly_valve(air_line_nb, vendor=butterfly_valve_vendor)
@@ -135,6 +139,8 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         "blower": blower,
         "air_duct": air_duct,
         "air_line_nb": air_line_nb,
+        "air_line_flow": round(air_line_flow),   # cfm × 1.7 — the flow the line is sized on
+
         "motorized_control_valve": motorized_control_valve,
         "butterfly_valve": butterfly_valve,
         "rotary_joint": rotary_joint,

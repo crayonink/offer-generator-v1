@@ -1852,7 +1852,7 @@ function renderResults(d) {
     pipe2Section.style.display = "none";
   }
 
-  set("p-air-q",   fmt(p.air_flow, 2));
+  set("p-air-q",   fmt(p.air_line_flow || p.air_flow, 2));
   set("p-air-d",   p.air_dia_mm);
   set("p-air-nb",  p.air_nb + " NB");
 
@@ -1911,7 +1911,7 @@ function renderResults(d) {
   set("cd-hp", fmt(c.blower_hp_calc, 1) + " HP");
   // Show the SELECTED blower's rated airflow — that's what the air pipe
   // NB is sized for (not the application's required flow).
-  set("cd-air-flow", fmt(eq.blower_airflow, 0) + " Nm³/hr");
+  set("cd-air-flow", fmt(p.air_line_flow || eq.blower_airflow, 0) + " Nm³/hr");
   // Air Line Size = the actual combustion-air line NB the BOM components are
   // sized to (air duct, floored to 125), not the raw hydraulic pipe NB.
   set("cd-air-nb", (p.air_line_nb || p.air_nb) + " NB");

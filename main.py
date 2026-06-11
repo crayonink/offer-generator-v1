@@ -1471,15 +1471,12 @@ def vlph_calculate(req: VLPHCalcRequest):
             fuel2_lph=f2_oil_lph_for_blower,
         )
 
-        # Size pipes AFTER blower selection — gas pipe for fuel 1's flow,
-        # air pipe for the SELECTED blower's RATED airflow (e.g. a 10 HP
-        # blower rated at 1360 Nm3/hr — pipe must handle that, not just
-        # the application's required flow).
-        # Air pipe sized for the combustion-air flow (the burner's actual air
-        # demand), not the blower's rated airflow.
+        # Size pipes AFTER blower selection. Air pipe sized from the airflow the
+        # blower actually moves — cfm × 1.7 (max of gas combustion air and oil
+        # atomisation air) — matching the air-line NB from select_equipment.
         pipes1 = calculate_pipe_sizes(PipeInputs(
             ng_flow_nm3hr=ng_flow,
-            air_flow_nm3hr=air_flow,
+            air_flow_nm3hr=equip1.get("air_line_flow") or air_flow,
         ))
 
         # Tundish multi-burner: re-select burner for per-burner flow
@@ -1658,6 +1655,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 # Actual combustion-air line NB the BOM components are sized to
                 # (hydraulic pipe size, floored to 125 & air duct) — see selection_engine.
                 "air_line_nb":  equip1.get("air_line_nb") or pipes1.air_pipe_nb,
+                "air_line_flow": equip1.get("air_line_flow") or round(air_flow),
             },
             "equipment": {
                 "burner_model":   equip1["burner"]["model"],
@@ -2135,7 +2133,7 @@ def hlph_calculate(req: VLPHCalcRequest):
 
         # Size pipes AFTER blower selection — gas pipe for fuel 1's flow,
         # air pipe for the combustion-air flow (the burner's actual air demand).
-        pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=air_flow))
+        pipes1 = calculate_pipe_sizes(PipeInputs(ng_flow_nm3hr=ng_flow, air_flow_nm3hr=equip1.get("air_line_flow") or air_flow))
 
         f1_is_oil = req.fuel1_type in OIL_FUELS
         f1_oil_lph = equip1["burner"].get("equivalent_lph", 0) if f1_is_oil else 0
@@ -2264,6 +2262,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "air_flow": round(air_flow, 2),
                 "air_nb": pipes1.air_pipe_nb,
                 "air_line_nb": equip1.get("air_line_nb") or pipes1.air_pipe_nb,
+                "air_line_flow": equip1.get("air_line_flow") or round(air_flow),
                 "gas_train_flow": round(equip1["ng_gas_train"]["max_flow"], 0) if equip1.get("ng_gas_train") else 0,
                 "gas_train_model": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]}' if equip1.get("ng_gas_train") else "",
             },
