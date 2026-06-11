@@ -3861,6 +3861,92 @@ def _build_spec_comparison_table(docx_path, columns, rows):
     doc.save(docx_path)
 
 
+def _build_narrative_scope_combined(combined_path, equipments, cust_base):
+    """Replace the grouped Scope-of-Supply table in the combined offer with the
+    full narrative scope of each equipment, reusing the standalone renderer
+    (generate_quote_docx) per equipment and splicing in its scope section.
+    Safe: any failure leaves the existing grouped scope untouched."""
+    import copy as _copy
+    from docx import Document as _Docx
+    from docx.oxml import OxmlElement as _OE
+    from docx.oxml.ns import qn as _qn
+    from engine.quote_writer import generate_quote_docx as _gqd
+    MARK = "►"
+
+    def _retext(p_el, text):
+        runs = p_el.findall(_qn('w:r'))
+        if not runs:
+            return
+        first = runs[0]
+        for t in first.findall(_qn('w:t')):
+            first.remove(t)
+        for r in runs[1:]:
+            p_el.remove(r)
+        t = _OE('w:t'); t.set(_qn('xml:space'), 'preserve'); t.text = text
+        first.append(t)
+
+    blocks = []
+    for eq in equipments:
+        qp = getattr(eq, "quote_payload", None) or {}
+        if not qp:
+            continue
+        customer = dict(cust_base)
+        for k, v in qp.items():
+            if k not in ("bom_items", "items"):
+                customer[k] = v
+        customer["bom_items"] = qp.get("bom_items", [])
+        qd = {"quote_seq": 0, "quote_no": "", "date": "", "customer": customer,
+              "items": qp.get("items", [])}
+        tmp = os.path.join(QUOTES_FOLDER, f"_scope_{abs(hash(eq.name)) % 999999}.docx")
+        head_el, paras = None, []
+        try:
+            _gqd(qd, tmp)
+            ed = _Docx(tmp)
+            collecting = False
+            for p in ed.paragraphs:
+                u = (p.text or "").strip().upper()
+                sty = (p.style.name if p.style else "") or ""
+                if not collecting and u == "SCOPE OF SUPPLY":
+                    head_el = _copy.deepcopy(p._p)
+                    collecting = True
+                    continue
+                if collecting:
+                    if u.startswith("ANNEXURE") and "SCOPE OF SUPPLY" not in u:
+                        break
+                    if not paras and not sty.startswith("Heading 3"):
+                        continue   # skip the per-equipment intro line
+                    paras.append(_copy.deepcopy(p._p))
+        except Exception:
+            paras = []
+        finally:
+            if os.path.exists(tmp):
+                try: os.remove(tmp)
+                except Exception: pass
+        if paras and head_el is not None:
+            blocks.append((eq.name, head_el, paras))
+
+    if not blocks:
+        return
+    doc = _Docx(combined_path)
+    target = None
+    for t in doc.tables:
+        full = "\n".join(c.text for r in t.rows for c in r.cells)
+        if MARK in full or "Combustion Air Train" in full or "ENCON Supplied" in full:
+            target = t
+            break
+    if target is None:
+        return
+    anchor = target._tbl
+    for eqname, head_el, paras in blocks:
+        h = _copy.deepcopy(head_el)
+        _retext(h, MARK + " " + (eqname or "Equipment").upper())
+        anchor.addprevious(h)
+        for pel in paras:
+            anchor.addprevious(_copy.deepcopy(pel))
+    anchor.getparent().remove(anchor)
+    doc.save(combined_path)
+
+
 @app.post("/api/generate-combined-offer")
 def generate_combined_offer(req: CombinedOfferRequest):
     """Render Combined_Offer_Template.docx — one shared cover/customer/T&C,
@@ -4083,6 +4169,16 @@ def generate_combined_offer(req: CombinedOfferRequest):
         tpl.save(docx_path)
         # Build the side-by-side technical-spec table (one column per equipment).
         _build_spec_comparison_table(docx_path, spec_columns, spec_rows)
+        # Replace the grouped Scope of Supply with the full narrative scope per
+        # equipment (falls back to the grouped scope if anything goes wrong).
+        try:
+            _build_narrative_scope_combined(
+                docx_path, req.equipments,
+                {"company_name": cust.company or "Client",
+                 "project_name": req.project_name or "",
+                 "subject": cust.subject or "", "address": "", "poc_name": ""})
+        except Exception as _scope_err:
+            print(f"WARN: narrative scope build failed, keeping grouped scope: {_scope_err}")
 
         pdf_name = docx_name.replace(".docx", ".pdf")
         pdf_ok = _docx_to_pdf(docx_path, os.path.join(QUOTES_FOLDER, pdf_name))
