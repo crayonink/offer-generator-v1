@@ -249,7 +249,7 @@
         <tr><td style="padding:3px 0; color:#64748b;">Catalog price (&times; qty)</td><td style="text-align:right;" id="cs-catalog">&mdash;</td></tr>
         <tr><td style="padding:3px 0; color:#64748b;">+ Packaging &amp; Forwarding</td><td style="text-align:right;" id="cs-pf">&mdash;</td></tr>
         <tr><td style="padding:3px 0; color:#64748b;">+ Designing</td><td style="text-align:right;" id="cs-design">&mdash;</td></tr>
-        <tr><td style="padding:3px 0; color:#64748b;">&minus; Negotiation</td><td style="text-align:right;" id="cs-neg">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">+ Negotiation</td><td style="text-align:right;" id="cs-neg">&mdash;</td></tr>
         <tr><td style="padding:3px 0; color:#64748b;">+ Transport</td><td style="text-align:right;" id="cs-trans">&mdash;</td></tr>
         <tr style="border-top:1px solid var(--border);"><td style="padding:7px 0 0; font-weight:700; color:var(--navy);">Total Price</td><td style="text-align:right; padding:7px 0 0; font-weight:700; color:var(--navy); font-size:1.05rem;" id="cs-total">&mdash;</td></tr>
       </table>
@@ -490,13 +490,13 @@ function recalcTotal() {
   const pf = num('pf-pct'), des = num('design-pct'), neg = num('negotiation-pct'), trn = num('transport-amt');
   const base = _catalogUnit * qty;
   const pfA = base * pf / 100, desA = base * des / 100, negA = base * neg / 100;
-  let total = base + pfA + desA - negA + trn;
+  let total = base + pfA + desA + negA + trn;
   if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
   const f = n => '₹ ' + Math.round(n).toLocaleString('en-IN');
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('cs-catalog', base ? f(base) : '—');
   set('cs-pf', f(pfA)); set('cs-design', f(desA));
-  set('cs-neg', '− ' + f(negA)); set('cs-trans', f(trn));
+  set('cs-neg', '+ ' + f(negA)); set('cs-trans', f(trn));
   set('cs-total', base ? f(total) : '—');
 }
 

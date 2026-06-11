@@ -3057,7 +3057,7 @@ class HpuQuoteRequest(BaseModel):
     transport_amt: float = 0
     pf_pct:        float = 0    # Packaging & Forwarding (% of catalog price)
     design_pct:    float = 0    # Designing (%)
-    neg_pct:       float = 0    # Negotiation (%, subtracted)
+    neg_pct:       float = 0    # Negotiation (%, added)
 
 
 @app.get("/api/hpu/flow-lph")
@@ -3179,7 +3179,7 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
                   else (req.fuel_lph or 0.0)
     qty = max(1, int(req.qty or 1))
     # Commercial adjustments applied to the catalog price: Packaging & Forwarding
-    # and Designing add, Negotiation subtracts; Transport is a flat amount shown
+    # and Designing add, Negotiation all add; Transport is a flat amount shown
     # on its own price-schedule line. The per-unit offer price folds Transport in
     # (so _break_out_transport can split it back out below). Final total rounded
     # to the nearest Rs.1000, matching the other equipment offers.
@@ -3187,7 +3187,7 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     _des = float(getattr(req, "design_pct", 0) or 0)
     _neg = float(getattr(req, "neg_pct", 0) or 0)
     _trn = float(getattr(req, "transport_amt", 0) or 0)
-    _adj_total  = unit_price * qty * (1 + (_pf + _des - _neg) / 100) + _trn
+    _adj_total  = unit_price * qty * (1 + (_pf + _des + _neg) / 100) + _trn
     _final_incl = (round(_adj_total / 1000) * 1000) if (_pf or _des or _neg or _trn) else _adj_total
     offer_unit  = _final_incl / qty
 
@@ -3531,7 +3531,7 @@ class BlowerQuoteRequest(BaseModel):
     qty: int = 1
     pf_pct:        float = 0    # Packaging & Forwarding (%)
     design_pct:    float = 0    # Designing (%)
-    neg_pct:       float = 0    # Negotiation (%, subtracted)
+    neg_pct:       float = 0    # Negotiation (%, added)
     transport_amt: float = 0    # Transport (flat Rs., own price line)
 
 
@@ -3542,7 +3542,7 @@ class BurnerQuoteRequest(BaseModel):
     qty: int = 1
     pf_pct:        float = 0    # Packaging & Forwarding (%)
     design_pct:    float = 0    # Designing (%)
-    neg_pct:       float = 0    # Negotiation (%, subtracted)
+    neg_pct:       float = 0    # Negotiation (%, added)
     transport_amt: float = 0    # Transport (flat Rs., own price line)
 
 
@@ -3561,11 +3561,11 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     from engine.quote_writer import amount_in_words_indian, _format_inr
 
     qty = max(1, int(qty or 1))
-    # Commercial adjustments: P&F + Designing add, Negotiation subtracts; Transport
+    # Commercial adjustments: P&F + Designing add, Negotiation all add; Transport
     # is a flat amount broken onto its own price-schedule line below. Final total
     # rounded to the nearest Rs.1000 when any adjustment is applied.
     _pf, _des, _neg, _trn = (pf_pct or 0), (design_pct or 0), (neg_pct or 0), (transport_amt or 0)
-    _adj_total  = float(unit_price) * qty * (1 + (_pf + _des - _neg) / 100) + _trn
+    _adj_total  = float(unit_price) * qty * (1 + (_pf + _des + _neg) / 100) + _trn
     _final_incl = (round(_adj_total / 1000) * 1000) if (_pf or _des or _neg or _trn) else _adj_total
     offer_unit  = _final_incl / qty
     total_price = _final_incl
