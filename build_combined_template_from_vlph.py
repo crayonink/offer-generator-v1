@@ -403,6 +403,8 @@ def main() -> None:
     _rebuild_price_schedule(doc)
     _fill_annexure_i_scope(doc)
     _strip_project_name_from_cover_box(doc)
+    # Drop the Make List (Annexure VI) — heading, table and its List-of-Annexures row.
+    _remove_annexure_section(doc, "VI", "MAKE LIST")
     _pad_table_rows(doc)
 
     doc.save(TARGET)
