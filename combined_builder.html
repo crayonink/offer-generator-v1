@@ -368,7 +368,7 @@ function recalc() {
 function renderSummary() {
   let g = 0;
   const rows = _eq.map((e,i) => { const t=(+e.qty||1)*(+e.unit_price||0); g+=t;
-    return `<tr><td>${i+1}. ${esc(e.name||e.type)}${e.specs?`<div style="color:var(--muted);font-size:.76rem">${esc(e.specs)}</div>`:''}</td>
+    return `<tr><td><span style="color:var(--muted)">${i+1}.</span> <input value="${esc(e.name||'')}" oninput="setEqName(${e.id},this.value)" placeholder="${esc(e.type)}" title="Name on the offer" style="min-width:240px;border:1px solid var(--border);border-radius:6px;padding:5px 9px;font:inherit"/>${e.specs?`<div style="color:var(--muted);font-size:.76rem;margin-top:3px">${esc(e.specs)}</div>`:''}</td>
       <td style="text-align:center"><input type="number" min="1" value="${e.qty||1}" oninput="onSummaryQty(${e.id},this.value)"
         style="width:64px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> No.</td>
       <td class="r" id="sum-line-${e.id}">₹ ${t.toLocaleString('en-IN')}</td></tr>`; }).join('');
