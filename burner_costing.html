@@ -329,6 +329,7 @@
       <h4>Offer generated successfully</h4>
       <div style="font-size:.88rem; color:#166534;" id="quote-meta">—</div>
       <a id="dl-link" class="dl-btn" href="#" target="_blank" rel="noopener">Download .docx</a>
+      <a id="preview-link" class="dl-btn" href="#" target="_blank" rel="noopener" style="background:#334155;">Preview Offer</a>
     </div>
   </div>
 
@@ -477,6 +478,7 @@ async function generateOffer() {
     document.getElementById('quote-meta').textContent =
       `${j.filename} — total ₹ ${(j.total_price || 0).toLocaleString('en-IN')}`;
     document.getElementById('dl-link').href = j.download_url;
+    if (j.preview_url) document.getElementById('preview-link').href = j.preview_url;
     document.getElementById('quote-result').style.display = 'block';
     document.getElementById('action-row-gen').style.display = 'none';
     document.getElementById('tab-4').classList.add('done');
