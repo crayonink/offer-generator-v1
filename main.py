@@ -3661,11 +3661,21 @@ def generate_blower_quote(req: BlowerQuoteRequest):
         if unit_price is None:
             return {"error": f"blower '{model}' has no valid price in the catalog"}
         equipment_name = f"Centrifugal Blower – {model}"
+        scope_intro = (f"To supply combustion air to the burner, we will supply a centrifugal "
+                       f"steel-plate air blower ({model}) of {_fmt_num(hp)} HP rated at "
+                       f"{_fmt_num(airflow)} Nm³/hr, complete with a suitable electric motor "
+                       f"mounted on a common base frame. The blower comprises:")
+        scope_items = [{"item": x} for x in [
+            f"1 No. centrifugal steel-plate air blower – {_fmt_num(hp)} HP, {_fmt_num(airflow)} Nm³/hr.",
+            "1 No. suitable electric drive motor.",
+            "Common base frame with anti-vibration pads."]]
         specs = {
             "blower_model":    model,
             "blower_hp":       _fmt_num(hp),
             "blower_airflow":  _fmt_num(airflow),
             "blower_pressure": (pressure or "").strip(),
+            "scope_intro":     scope_intro,
+            "scope_items":     scope_items,
         }
         result = _generate_equipment_offer(
             req.customer, equipment_name=equipment_name, specs=specs,
@@ -3689,10 +3699,20 @@ def generate_burner_quote(req: BurnerQuoteRequest):
             return {"error": f"unknown burner: {req.burner_group}/{req.burner_model}"}
         unit_price, fuel, capacity, label = looked
         equipment_name = f"{label} – {req.burner_model}"
+        _bqty = max(1, int(req.qty or 1))
+        _cap = f" of capacity {capacity}" if capacity else ""
+        scope_intro = (f"We will supply {_bqty} No. {label} ({req.burner_model}){_cap} to achieve "
+                       f"the desired temperature in the required time. The burner consists of the "
+                       f"following main components:")
+        scope_items = [{"item": x} for x in [
+            "Burner alone", "Ball valve", "CI burner mounting plate",
+            "Burner block", "Flexible hoses set", "Butterfly valve"]]
         specs = {
             "burner_model":    req.burner_model,
             "burner_fuel":     fuel,
             "burner_capacity": capacity,
+            "scope_intro":     scope_intro,
+            "scope_items":     scope_items,
         }
         result = _generate_equipment_offer(
             req.customer, equipment_name=equipment_name, specs=specs,
