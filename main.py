@@ -3529,6 +3529,10 @@ class BlowerQuoteRequest(BaseModel):
     customer: HpuCustomer
     blower_model: str
     qty: int = 1
+    pf_pct:        float = 0    # Packaging & Forwarding (%)
+    design_pct:    float = 0    # Designing (%)
+    neg_pct:       float = 0    # Negotiation (%, subtracted)
+    transport_amt: float = 0    # Transport (flat Rs., own price line)
 
 
 class BurnerQuoteRequest(BaseModel):
@@ -3536,12 +3540,18 @@ class BurnerQuoteRequest(BaseModel):
     burner_group: str = "gas"   # oil | gas | dual | gail
     burner_model: str
     qty: int = 1
+    pf_pct:        float = 0    # Packaging & Forwarding (%)
+    design_pct:    float = 0    # Designing (%)
+    neg_pct:       float = 0    # Negotiation (%, subtracted)
+    transport_amt: float = 0    # Transport (flat Rs., own price line)
 
 
 def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
                               specs: dict, unit_price: float, qty: int,
                               template_name: str, filename_infix: str,
-                              drive_product: str) -> dict:
+                              drive_product: str,
+                              pf_pct: float = 0.0, design_pct: float = 0.0,
+                              neg_pct: float = 0.0, transport_amt: float = 0.0) -> dict:
     """Shared minimal-offer generator for stand-alone equipment (blower /
     burner). Builds the docxtpl context from the customer block + the
     equipment specs, renders template_name, saves to quotes/, best-effort
@@ -3551,7 +3561,14 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     from engine.quote_writer import amount_in_words_indian, _format_inr
 
     qty = max(1, int(qty or 1))
-    total_price = float(unit_price) * qty
+    # Commercial adjustments: P&F + Designing add, Negotiation subtracts; Transport
+    # is a flat amount broken onto its own price-schedule line below. Final total
+    # rounded to the nearest Rs.1000 when any adjustment is applied.
+    _pf, _des, _neg, _trn = (pf_pct or 0), (design_pct or 0), (neg_pct or 0), (transport_amt or 0)
+    _adj_total  = float(unit_price) * qty * (1 + (_pf + _des - _neg) / 100) + _trn
+    _final_incl = (round(_adj_total / 1000) * 1000) if (_pf or _des or _neg or _trn) else _adj_total
+    offer_unit  = _final_incl / qty
+    total_price = _final_incl
 
     seq = next_quote_seq()
     full_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
@@ -3585,7 +3602,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
         "technical_email":   cust.technical_email or cust.marketing_email or "",
         # Price schedule (single line)
         "item_qty":          f"{qty:02d} No.",
-        "unit_price":        _format_inr(unit_price),
+        "unit_price":        _format_inr(offer_unit),
         "total_price":       _format_inr(total_price),
         "grand_total":       _format_inr(total_price),
         "grand_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
@@ -3614,6 +3631,11 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     docx_name = f"{filename_infix}_Offer_{safe_company}_{seq}.docx"
     docx_path = os.path.join(QUOTES_FOLDER, docx_name)
     tpl.save(docx_path)
+    # Transport onto its own price-schedule line (no-op if 0).
+    try:
+        _break_out_transport(docx_path, _trn)
+    except Exception as _trn_err:
+        print(f"WARN: {filename_infix} transport break-out failed: {_trn_err}")
 
     pdf_name = docx_name.replace(".docx", ".pdf")
     pdf_path = os.path.join(QUOTES_FOLDER, pdf_name)
@@ -3636,7 +3658,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
         "preview_url":  f"/api/preview-quote/{docx_name}",
         "quote_no":     full_ref,
         "enquiry_ref":  full_ref,
-        "unit_price":   float(unit_price),
+        "unit_price":   offer_unit,
         "total_price":  total_price,
         "qty":          qty,
     }
@@ -3680,7 +3702,9 @@ def generate_blower_quote(req: BlowerQuoteRequest):
             req.customer, equipment_name=equipment_name, specs=specs,
             unit_price=unit_price, qty=req.qty,
             template_name="Blower_Offer_Template.docx",
-            filename_infix="Blower", drive_product="blower")
+            filename_infix="Blower", drive_product="blower",
+            pf_pct=req.pf_pct, design_pct=req.design_pct,
+            neg_pct=req.neg_pct, transport_amt=req.transport_amt)
         result.update({"model": model, "config": f"{_fmt_num(hp)} HP • {(pressure or '').strip()}"})
         return result
     except Exception as e:
@@ -3717,7 +3741,9 @@ def generate_burner_quote(req: BurnerQuoteRequest):
             req.customer, equipment_name=equipment_name, specs=specs,
             unit_price=unit_price, qty=req.qty,
             template_name="Burner_Offer_Template.docx",
-            filename_infix="Burner", drive_product="burner")
+            filename_infix="Burner", drive_product="burner",
+            pf_pct=req.pf_pct, design_pct=req.design_pct,
+            neg_pct=req.neg_pct, transport_amt=req.transport_amt)
         result.update({"model": req.burner_model,
                        "config": f"{fuel}{(' • ' + capacity) if capacity else ''}"})
         return result

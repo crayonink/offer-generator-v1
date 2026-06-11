@@ -212,7 +212,7 @@
       </div>
       <div class="field">
         <label>Quantity</label>
-        <input id="qty" type="number" min="1" step="1" value="1"/>
+        <input id="qty" type="number" min="1" step="1" value="1" oninput="recalcTotal()"/>
       </div>
     </div>
 
@@ -221,6 +221,24 @@
       <div class="field"><label>Fuel</label><input id="b-fuel" class="ro" readonly value="—"/></div>
       <div class="field"><label>Firing Capacity</label><input id="b-capacity" class="ro" readonly value="—"/></div>
       <div class="field"><label>Unit Price</label><input id="b-price" class="ro" readonly value="—"/></div>
+    </div>
+
+    <div style="margin-top:18px; padding:16px 18px; border:1px solid var(--border); border-radius:10px; background:#f8fafc;">
+      <div style="font-weight:600; color:var(--navy); margin-bottom:12px; font-size:.8rem; letter-spacing:.04em; text-transform:uppercase;">Price &amp; Commercial Adjustments</div>
+      <div style="display:flex; flex-wrap:wrap; gap:12px 22px; margin-bottom:14px;">
+        <label style="font-size:.88rem;">Packaging &amp; Forwarding <input id="pf-pct" type="number" step="0.5" min="0" value="5" oninput="recalcTotal()" style="width:60px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Designing <input id="design-pct" type="number" step="0.5" min="0" value="10" oninput="recalcTotal()" style="width:60px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Negotiation <input id="negotiation-pct" type="number" step="0.5" min="0" value="0" oninput="recalcTotal()" style="width:60px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:center;"/> %</label>
+        <label style="font-size:.88rem;">Transport <input id="transport-amt" type="number" step="1000" min="0" value="0" oninput="recalcTotal()" style="width:88px; padding:4px 6px; border:1px solid var(--border); border-radius:6px; font:inherit; text-align:right;"/> ₹</label>
+      </div>
+      <table style="width:100%; font-size:.9rem; border-collapse:collapse;">
+        <tr><td style="padding:3px 0; color:#64748b;">Catalog price (&times; qty)</td><td style="text-align:right;" id="cs-catalog">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">+ Packaging &amp; Forwarding</td><td style="text-align:right;" id="cs-pf">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">+ Designing</td><td style="text-align:right;" id="cs-design">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">&minus; Negotiation</td><td style="text-align:right;" id="cs-neg">&mdash;</td></tr>
+        <tr><td style="padding:3px 0; color:#64748b;">+ Transport</td><td style="text-align:right;" id="cs-trans">&mdash;</td></tr>
+        <tr style="border-top:1px solid var(--border);"><td style="padding:7px 0 0; font-weight:700; color:var(--navy);">Total Price</td><td style="text-align:right; padding:7px 0 0; font-weight:700; color:var(--navy); font-size:1.05rem;" id="cs-total">&mdash;</td></tr>
+      </table>
     </div>
 
     <div class="action-row">
@@ -403,6 +421,25 @@ function _onModelChange() {
   set('b-fuel', g.fuel);
   set('b-capacity', it.capacity || '—');
   set('b-price', '₹ ' + (it.price || 0).toLocaleString('en-IN'));
+  _burnerUnit = it.price || 0;
+  recalcTotal();
+}
+
+let _burnerUnit = 0;
+function recalcTotal() {
+  const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+  const qty = Math.max(1, parseInt((document.getElementById('qty') || {}).value || '1', 10));
+  const pf = num('pf-pct'), des = num('design-pct'), neg = num('negotiation-pct'), trn = num('transport-amt');
+  const base = _burnerUnit * qty;
+  const pfA = base * pf / 100, desA = base * des / 100, negA = base * neg / 100;
+  let total = base + pfA + desA - negA + trn;
+  if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+  const f = n => '₹ ' + Math.round(n).toLocaleString('en-IN');
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('cs-catalog', base ? f(base) : '—');
+  set('cs-pf', f(pfA)); set('cs-design', f(desA));
+  set('cs-neg', '− ' + f(negA)); set('cs-trans', f(trn));
+  set('cs-total', base ? f(total) : '—');
 }
 
 async function generateOffer() {
@@ -422,6 +459,10 @@ async function generateOffer() {
     burner_group: group,
     burner_model: model,
     qty: parseInt(document.getElementById('qty').value || '1', 10),
+    pf_pct: parseFloat(document.getElementById('pf-pct')?.value) || 0,
+    design_pct: parseFloat(document.getElementById('design-pct')?.value) || 0,
+    neg_pct: parseFloat(document.getElementById('negotiation-pct')?.value) || 0,
+    transport_amt: parseFloat(document.getElementById('transport-amt')?.value) || 0,
   };
   try {
     const r = await fetch('/api/generate-burner-quote', {
