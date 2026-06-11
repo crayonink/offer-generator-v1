@@ -3049,6 +3049,13 @@ class HpuQuoteRequest(BaseModel):
     # Legacy: kept optional so older clients posting fuel_type don't 400.
     # No longer surfaced in the offer doc.
     fuel_type: Optional[str] = ""
+    # Commercial adjustments (Packaging & Forwarding, Designing, Negotiation,
+    # Transport). final_total = the form's sell price with all of these applied;
+    # transport_amt is broken onto its own price-schedule line. Default 0 so the
+    # offer falls back to the catalog price when the form doesn't send them.
+    final_total:   float = 0.0
+    grand_total:   float = 0.0
+    transport_amt: float = 0
 
 
 @app.get("/api/hpu/flow-lph")
