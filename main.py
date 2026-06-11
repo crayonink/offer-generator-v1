@@ -4003,16 +4003,30 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 factor = _maps[_i].get(_chosen, "") if _chosen else f"Unit {_i + 1}"
                 eq.name = f"{(eq.name or '').strip()} ({factor})"
 
-        price_lines, grand = [], 0.0
+        # Price schedule. Packaging & Forwarding, Designing and Negotiation are
+        # NOT shown as separate lines — their amounts are distributed EQUALLY
+        # across the equipment prices. Only Transport stays a separate line.
+        grand_base = 0.0
+        _base_lines = []
         for i, eq in enumerate(req.equipments, start=1):
             qty = max(1, int(eq.qty or 1))
-            line_total = float(eq.unit_price or 0) * qty
+            base_total = float(eq.unit_price or 0) * qty
+            grand_base += base_total
+            _base_lines.append((i, eq, qty, base_total))
+        _pf    = grand_base * (req.pf_pct or 0) / 100
+        _des   = grand_base * (req.design_pct or 0) / 100
+        _neg   = grand_base * (req.neg_pct or 0) / 100
+        _trn   = float(req.transport_amt or 0)
+        _share = (_pf + _des + _neg) / len(_base_lines) if _base_lines else 0.0
+        price_lines, grand = [], 0.0
+        for i, eq, qty, base_total in _base_lines:
+            line_total = base_total + _share        # equal share of P&F+design+neg
             grand += line_total
             price_lines.append({
                 "sno":        f"{i}.",
                 "name":       eq.name,
                 "qty":        f"{qty:02d} No.",
-                "unit_price": _format_inr(eq.unit_price or 0),
+                "unit_price": _format_inr(line_total / qty),
                 "total":      _format_inr(line_total),
             })
 
@@ -4135,13 +4149,9 @@ def generate_combined_offer(req: CombinedOfferRequest):
         spec_rows = [{"param": p, "values": [m.get(p, "") for m in _eq_maps]}
                      for p in _param_order]
 
-        # Commercial adjustments on the combined grand total -> Final Total
-        # (rounded to the nearest Rs.1000, matching the standalone forms).
-        _pf   = grand * (req.pf_pct or 0) / 100
-        _des  = grand * (req.design_pct or 0) / 100
-        _neg  = grand * (req.neg_pct or 0) / 100
-        _trn  = float(req.transport_amt or 0)
-        _combined_final = round((grand + _pf + _des + _neg + _trn) / 1000) * 1000
+        # P&F, Designing and Negotiation are already distributed into the
+        # equipment prices above (grand). Only Transport is added separately.
+        _combined_final = grand + _trn
 
         from engine.quote_writer import _supervision_rates
         _sup_mech, _sup_plc = _supervision_rates()
@@ -4172,17 +4182,18 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "scope_rows":   scope_rows,
             "price_lines":  price_lines,
             "grand_total":  _format_inr(grand),
-            # Commercial adjustments applied once to the combined grand total.
-            "pf_amount":         _format_inr(round(grand * (req.pf_pct or 0) / 100, 2)),
-            "design_amount":     _format_inr(round(grand * (req.design_pct or 0) / 100, 2)),
-            "neg_amount":        _format_inr(round(grand * (req.neg_pct or 0) / 100, 2)),
-            "transport_amount":  _format_inr(float(req.transport_amt or 0)),
-            "show_pf":           (grand * (req.pf_pct or 0) / 100) > 0,
-            "show_design":       (grand * (req.design_pct or 0) / 100) > 0,
-            "show_neg":          (grand * (req.neg_pct or 0) / 100) != 0,
-            "show_transport":    float(req.transport_amt or 0) > 0,
+            # P&F, Designing and Negotiation are distributed into the equipment
+            # prices (not shown as separate lines) — only Transport is shown.
+            "pf_amount":         _format_inr(_pf),
+            "design_amount":     _format_inr(_des),
+            "neg_amount":        _format_inr(_neg),
+            "transport_amount":  _format_inr(_trn),
+            "show_pf":           False,
+            "show_design":       False,
+            "show_neg":          False,
+            "show_transport":    _trn > 0,
             "final_total":       _format_inr(_combined_final),
-            "grand_total_in_words": f"INR. {amount_in_words_indian(_combined_final)} ONLY.",
+            "grand_total_in_words": f"INR. {amount_in_words_indian(round(_combined_final))} ONLY.",
             # Supervision charges — pulled from the price master (component_price_master).
             "supervision_mech":  _sup_mech,
             "supervision_plc":   _sup_plc,
