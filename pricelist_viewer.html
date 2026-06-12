@@ -196,6 +196,16 @@
     }
     .sheet-panel { display: none; }
     .sheet-panel.active { display: block; }
+    /* Rates / Raw Material: let the panel fill the sheet area so the table's
+       OWN wrapper scrolls (and its sticky column-header stays pinned), instead
+       of the whole sheet-area scrolling and carrying the header off-screen. */
+    #sheet-rates.active, #sheet-raw-material.active {
+      display: flex; flex-direction: column; height: 100%; min-height: 0;
+    }
+    #sheet-rates.active > div:first-child,
+    #sheet-raw-material.active > div:first-child { flex: 0 0 auto; }
+    #sheet-rates.active > .xl-wrap,
+    #sheet-raw-material.active > .xl-wrap { flex: 1 1 auto; min-height: 0; }
     .model-block { margin-bottom: 22px; }
     .empty-msg { padding: 60px; text-align: center; color: #94a3b8; font-size: 0.88rem; }
 
