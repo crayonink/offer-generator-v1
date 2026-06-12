@@ -198,7 +198,7 @@ ALLOWED_EDIT_TABLES = {
     'gas_burner_parts_master', 'horizontal_master', 'vertical_master',
     'recuperator_master', 'blower_pricelist_master',
     'rad_heat_master', 'rad_heat_tata_master', 'gail_gas_burner_master',
-    'rotary_joint_master', 'agr_master', 'gas_train_master',
+    'rotary_joint_master',
 }
 
 def _find_latest_pricebook():
@@ -632,8 +632,6 @@ class ItemUpdateRequest(BaseModel):
     qty: Optional[float] = None
     rate: Optional[float] = None
     price: Optional[float] = None
-    list_price: Optional[float] = None   # agr_master / valve masters
-    price_inr: Optional[float] = None    # gas_train_master
 
 class VLPHCalcRequest(BaseModel):
     mode: str = "calc"                          # "calc" or "direct"
@@ -965,16 +963,6 @@ def pricelist_summary():
             for r in q("SELECT rowid, * FROM rotary_joint_master ORDER BY nb")
         ]
 
-        # ── AGR (ENAG air-gas ratio regulators) & Gas Train ───────────────
-        def _table_rows(table, order):
-            try:
-                cols = ["rowid"] + [d[0] for d in c.execute(f"SELECT * FROM {table} LIMIT 0").description]
-                return [dict(zip(cols, r)) for r in q(f"SELECT rowid, * FROM {table} ORDER BY {order}")]
-            except Exception:
-                return []
-        agr       = _table_rows("agr_master", "nb, ratio")
-        gas_train = _table_rows("gas_train_master", "sr_no")
-
         # ── Burner Parts (Oil / HV Oil / Gas) ─────────────────────────────
         oil_parts = _parts_sections("oil_burner_parts_master",    markup=1.25)
         hv_parts  = _parts_sections("hv_oil_burner_parts_master", markup=1.25)
@@ -1046,8 +1034,6 @@ def pricelist_summary():
             "horizontal_lph": hlph,
             "vertical_lph": vlph,
             "rotary_joint": rotary_joint,
-            "agr": agr,
-            "gas_train": gas_train,
             "regen_costing": regen_costing,
         }
     except Exception as e:
@@ -1210,10 +1196,6 @@ def update_pricelist_item(req: ItemUpdateRequest):
             conn.execute(f"UPDATE {req.table} SET rate=? WHERE rowid=?", (req.rate, req.rowid))
         if req.price is not None and 'price' in cols:
             conn.execute(f"UPDATE {req.table} SET price=? WHERE rowid=?", (req.price, req.rowid))
-        if req.list_price is not None and 'list_price' in cols:
-            conn.execute(f"UPDATE {req.table} SET list_price=? WHERE rowid=?", (req.list_price, req.rowid))
-        if req.price_inr is not None and 'price_inr' in cols:
-            conn.execute(f"UPDATE {req.table} SET price_inr=? WHERE rowid=?", (req.price_inr, req.rowid))
         # Recalculate amount if qty/rate/amount all exist
         if {'qty', 'rate', 'amount'} <= cols:
             row = conn.execute(f"SELECT qty, rate FROM {req.table} WHERE rowid=?", (req.rowid,)).fetchone()
@@ -1221,7 +1203,7 @@ def update_pricelist_item(req: ItemUpdateRequest):
                 amount = round(float(row[0]) * float(row[1]), 2)
                 conn.execute(f"UPDATE {req.table} SET amount=? WHERE rowid=?", (amount, req.rowid))
         conn.commit()
-        select_cols = [c for c in ('qty', 'rate', 'amount', 'price', 'list_price', 'price_inr') if c in cols]
+        select_cols = [c for c in ('qty', 'rate', 'amount', 'price') if c in cols]
         row2 = conn.execute(
             f"SELECT {','.join(select_cols)} FROM {req.table} WHERE rowid=?", (req.rowid,)
         ).fetchone() if select_cols else None

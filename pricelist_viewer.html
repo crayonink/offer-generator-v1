@@ -499,8 +499,6 @@
   <div class="tab"        data-sheet="recuperator"  onclick="switchTab('recuperator')">Recuperator</div>
   <div class="tab"        data-sheet="rad-heat"     onclick="switchTab('rad-heat')">Rad Heat</div>
   <div class="tab"        data-sheet="gail"         onclick="switchTab('gail')">GAIL Gas Burner</div>
-  <div class="tab"        data-sheet="agr"          onclick="switchTab('agr')">AGR</div>
-  <div class="tab"        data-sheet="gastrain"     onclick="switchTab('gastrain')">Gas Train</div>
   <div class="tab"        data-sheet="hlph"         onclick="switchTab('hlph')">Horizontal</div>
   <div class="tab"        data-sheet="vlph"         onclick="switchTab('vlph')">Vertical</div>
   <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner Prices</div>
@@ -519,8 +517,6 @@
   <div class="sheet-panel"        id="sheet-recuperator"> <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-rad-heat">    <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading&hellip;</div></div>
-  <div class="sheet-panel"        id="sheet-agr">         <div class="empty-msg">Loading&hellip;</div></div>
-  <div class="sheet-panel"        id="sheet-gastrain">    <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading&hellip;</div></div>
@@ -618,8 +614,6 @@ function renderAll() {
   renderRecuperator(s.recuperator || {rows:[], rates:{}});
   renderRadHeat(s.rad_heat || {models:[],spares:[]}, s.rad_heat_tata || {models:[],spares:[]});
   renderGail(s.gail_gas_burner || []);
-  renderAGR(s.agr || []);
-  renderGasTrain(s.gas_train || []);
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
   renderBurnerPivot('burner-prices', s.burners || {});
@@ -1826,43 +1820,6 @@ function renderGail(data) {
     <thead><tr><th class="rn"></th>${labels.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
-}
-
-// ── AGR (ENAG air-gas ratio regulators) — editable List Price ───────────────
-function renderAGR(data) {
-  const el = document.getElementById('sheet-agr');
-  if (!data.length) { el.innerHTML = emptyMsg(); return; }
-  const rows = data.map((r, i) => `<tr><td class="rn">${i+1}</td>
-    <td>${esc(r.enag ?? '')}</td>
-    <td>${esc(r.item_code ?? '')}</td>
-    <td style="text-align:right;">${esc(r.nb ?? '')}</td>
-    <td>${esc(r.ratio ?? '')}</td>
-    <td>${esc(r.connection ?? '')}</td>
-    <td class="editable" data-rowid="${r.rowid}" data-field="list_price" style="text-align:right;cursor:pointer;">${fmt(r.list_price)}</td>
-  </tr>`).join('');
-  el.innerHTML = `<div class="ro-wrap"><table class="xl-table">
-    <thead><tr><th class="rn"></th><th>ENAG</th><th>Item Code</th><th>NB</th><th>Ratio</th><th>Connection</th><th>List Price (₹)</th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
-  attachEditHandlers(el, 'agr_master');
-}
-
-// ── Gas Train — editable Price (INR) ────────────────────────────────────────
-function renderGasTrain(data) {
-  const el = document.getElementById('sheet-gastrain');
-  if (!data.length) { el.innerHTML = emptyMsg(); return; }
-  const rows = data.map((r, i) => `<tr><td class="rn">${i+1}</td>
-    <td>${esc(r.type ?? '')}</td>
-    <td>${esc(r.inlet_nb ?? '')}</td>
-    <td>${esc(r.outlet_nb ?? '')}</td>
-    <td style="text-align:right;">${esc(r.min_flow ?? '')}–${esc(r.max_flow ?? '')}</td>
-    <td>${esc(r.gas ?? '')}</td>
-    <td>${esc(r.part_code ?? '')}</td>
-    <td class="editable" data-rowid="${r.rowid}" data-field="price_inr" style="text-align:right;cursor:pointer;">${fmt(r.price_inr)}</td>
-  </tr>`).join('');
-  el.innerHTML = `<div class="ro-wrap"><table class="xl-table">
-    <thead><tr><th class="rn"></th><th>Type</th><th>Inlet NB</th><th>Outlet NB</th><th>Flow (Nm³/hr)</th><th>Gas</th><th>Part Code</th><th>Price (₹)</th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
-  attachEditHandlers(el, 'gas_train_master');
 }
 
 // ── Rotary Joint ────────────────────────────────────────────────────────────
