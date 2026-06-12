@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Vertical Ladle Preheater (VLPH) :: Offer Generator Documentation</title>
-    <meta name="description" content="Inputs, outputs and calculation flow for the Vertical Ladle Preheater offer.">
+    <meta name="description" content="What a Vertical Ladle Preheater offer needs, what it produces, and how its price is worked out — in plain language.">
     <meta name="generator" content="Antora 3.1.15">
     <link rel="stylesheet" href="../../../_/css/site.css">
   </head>
@@ -164,473 +164,101 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Module: <code>vlph</code>. Form: <code>/quote</code> → <code>vlph_costing.html</code>. Status: ✅ Complete (see <a href="../product-scope.html" class="xref page">Product Scope &amp; Roadmap</a>).</p>
+<p>A vertical ladle preheater dries and heats the refractory lining of a steel ladle before molten metal is poured into it. A burner fires downward into the ladle from a hood that sits on top, so the ladle is heated while standing upright. This page explains, in plain terms, what the user fills in, what the finished offer contains, and how the price is arrived at.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h2>
+<h2 id="_what_you_enter"><a class="anchor" href="#_what_you_enter"></a>What you enter</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The calculation form (<code>/costing</code> → <code>vlph_costing.html</code>) posts to <code>/api/vlph-calculate</code> (<code>main.py:1373</code>) using the <code>VLPHCalcRequest</code> model (<code>main.py:636</code>). The finished-offer form posts to <code>/api/generate-quote</code> (<code>main.py:4445</code>) using the <code>QuoteRequest</code> model (<code>main.py:684</code>). The two are split: <code>VLPHCalcRequest</code> drives the BOM/costing math; <code>QuoteRequest</code> carries customer data, scope toggles and the single all-inclusive price (built client-side) into the document.</p>
-</div>
-<div class="sect2">
-<h3 id="_process_capacity_inputs_vlphcalcrequest_main_py636"><a class="anchor" href="#_process_capacity_inputs_vlphcalcrequest_main_py636"></a>Process / capacity inputs (<code>VLPHCalcRequest</code>, <code>main.py:636</code>)</h3>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mode</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"calc"</code> (size from process params) or <code>"direct"</code> (user enters burner capacity / heat input)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"calc"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Ti</code> / <code>Tf</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Initial / final refractory temperature</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">°C; 650 / 1200</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>refractory_weight</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Refractory mass to heat</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kg; 21500</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel_cv</code> / <code>fuel1_cv</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fuel 1 calorific value (<code>fuel1_cv</code> wins if &gt; 0)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/Nm³ (gas) or kcal/kg (oil); 8500</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>time_taken_hr</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Heating schedule duration</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">hr; 2.0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>refractory_heat_factor</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Specific-heat factor in firing-rate formula</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0.25</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>efficiency</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Combustion / system efficiency</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0.52</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ladle_tons</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Ladle capacity — keys fabrication / ceramic / structure lookups</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">tons; 10.0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>direct_burner_capacity</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Direct mode: per-burner capacity (× num_burners for total)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kW; 0.0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>direct_heat_input_kcal_hr</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Direct mode: total heat input; takes precedence over capacity</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/hr; 0.0</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_fuel_selection"><a class="anchor" href="#_fuel_selection"></a>Fuel selection</h3>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel1_type</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Primary fuel. Gas: <code>ng</code>, <code>rlng</code>, <code>lpg</code>, <code>cog</code>, <code>bg</code> (BFG), <code>mg</code> (mixed gas). Oil: <code>ldo</code>, <code>fo</code>, <code>lshs</code>, <code>hsd</code>, <code>sko</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"ng"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel2_type</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Second fuel for dual-fuel (<code>"none"</code> disables). Dual-fuel is active only when <code>fuel2_type != "none"</code> and <code>fuel2_cv &gt; 0</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"none"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel2_cv</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fuel 2 calorific value</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default 0.0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pilot_burner</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pilot model: <code>auto</code>, <code>lpg_10</code>, <code>nglpg_100</code>, <code>cog_100</code> (maps to DB pilot model codes, <code>vlph_builder.py:1038</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"auto"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pilot_line_fuel</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pilot-line gas in manual mode (<code>lpg</code> / <code>ng</code>) — sets <code>{FUEL} PILOT LINE</code> media</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"lpg"</code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_control_mode_vendors"><a class="anchor" href="#_control_mode_vendors"></a>Control mode &amp; vendors</h3>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>control_mode</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"manual"</code> (→ <code>build_vlph_manual_df</code>) or <code>"automatic"</code> (→ <code>build_vlph_120t_df</code>), <code>main.py:1557</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"automatic"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>auto_control_type</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic sub-mode: <code>plc</code> (orifice+DPT+control valve, no AGR), <code>plc_agr</code>, <code>pid</code>, <code>ppid_ratio</code> (P.PID + Ratio Controller). <code>plc_agr</code>/<code>pid</code>/manual add an AGR</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"agr"</code> in model / <code>"plc"</code> elsewhere</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>control_valve_vendor</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dembla</code> (pneumatic) or <code>cair</code> (motorised) — sets valve item name + price row</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"dembla"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>shutoff_valve_vendor</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dembla</code> / <code>aira</code> / <code>cair</code> shut-off valve</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"aira"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>butterfly_valve_vendor</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lt_lever</code> or <code>lt_gear</code> (falls back lever→gear on NB out of range)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"lt_lever"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pressure_gauge_vendor</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>baumer</code> or <code>hguru</code> — price key <code>PRESSURE GAUGE WITH TNV ({VENDOR})</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"baumer"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu_variant</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Oil-fuel pumping unit: <code>Simplex</code> / <code>Duplex 1</code> / <code>Duplex 2</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"Duplex 1"</code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_air_blower_pressure"><a class="anchor" href="#_air_blower_pressure"></a>Air / blower / pressure</h3>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blower_pressure</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Blower series <code>"28"</code> or <code>"40"</code> (inches WG). Derives burner pressure 28→24, 40→36 WG (<code>main.py:1422</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"28"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipeline_weight_kg</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Air-gas pipeline mass — always user-supplied (never auto-filled), priced at <code>PIPELINE RATE</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kg, 700–2000 step 100; 1000.0</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect2">
-<h3 id="_unit_counts_scope_toggles_commercial"><a class="anchor" href="#_unit_counts_scope_toggles_commercial"></a>Unit counts, scope toggles, commercial</h3>
-<div class="paragraph">
-<p><code>vertical_qty</code> / <code>horizontal_qty</code> (<code>QuoteRequest</code>, <code>main.py:745</code>) drive the Annexure I/III scope-of-supply set counts. Per-equipment commercial adjustments are entered on the form and applied <strong>client-side</strong> (<code>vlph_costing.html:2000</code>, <code>2438</code>); only the resulting all-inclusive price and <code>transport_amt</code> reach the backend.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>num_burners</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tundish: splits firing rate per burner; multiplies per-burner BOM items (<code>vlph_builder.py:1107</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">int; 1</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hood_type</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>up_down</code> (hydraulic power pack + bearing/plummer/shaft + air-gas pipeline) or <code>swivel_manual</code> / <code>swivel_geared</code> (single SWIVEL ASSEMBLY, no pipeline/HPP)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"up_down"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>purging_line</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>yes</code>/<code>no</code> — adds the 6-item nitrogen PURGING LINE block (MG/COG/BFG)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"no"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>manual_pilot_burner</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Manual mode: <code>yes</code>/<code>no</code> to include pilot burner + pilot line (→ <code>include_pilot</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"yes"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>special_auto_ignition</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic mode: adds pilot line + ignition transformer / sequence controller / UV sensor / pilot burner</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bool; False</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>special_auto_controls</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Special-requirements flag (scope wording)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">bool; False</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ms_structure_kg_override</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tundish: override MS structure weight for fabrication cost</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kg; 0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ceramic_rolls_override</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Override ceramic-fibre roll count</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">int; 0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Markup factor (<code>markup-factor</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Client-side: bought-out subtotal × markup (default 1.8) + ENCON subtotal = Grand Total (<code>vlph_costing.html:2001</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default 1.8</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">P&amp;F % (<code>pf-pct</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Packaging &amp; forwarding, % of Grand Total — <strong>added</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">form only</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Designing % (<code>design-pct</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Designing charge, % of Grand Total — <strong>added</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">form only</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation % (<code>negotiation-pct</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">% of Grand Total — <strong>added</strong> (not subtracted; <code>grand + negAmt</code>, <code>vlph_costing.html:2020</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0, max 10</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>transport_amt</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Flat transport (Rs.) — sent separately, broken onto its own price line</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rs.; 0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TnC fields (<code>tnc_*</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Editable Annexure IV terms (prices, delivery, GST, payment, P&amp;F, freight, validity, guarantee, HSN, PAN/GST)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>QuoteRequest:756</code></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_outputs"><a class="anchor" href="#_outputs"></a>Outputs</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><code>/api/vlph-calculate</code> returns a JSON object (<code>main.py:1613</code>) with <code>calculations</code>, <code>pipes</code>, <code>equipment</code>, the full <code>bom</code> line list, and <code>cost_summary</code> (<code>bought_out_total</code>, <code>encon_total</code>, <code>grand_total</code>). <code>/api/generate-quote</code> returns download / preview / PDF URLs and a price summary, and writes the offer documents.</p>
-</div>
-<div class="sect2">
-<h3 id="_bom_line_items"><a class="anchor" href="#_bom_line_items"></a>BOM line items</h3>
-<div class="paragraph">
-<p>Each row is <code>(MEDIA, ITEM NAME, REFERENCE, QTY, MAKE, UNIT PRICE, TOTAL)</code> built by <code>_row</code> (<code>vlph_builder.py:50</code>). Rows are grouped by <code>MEDIA</code>:</p>
+<p><strong>The heating job.</strong> Either describe the process and let the system size the burner, or enter the burner size directly.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>COMB AIR</strong> — compensator, pressure gauge with TNV, pressure switch low, (PLC/P.PID: orifice plate + DPT), control valve, butterfly valve (L&amp;T), rotary joint; plus pilot/UV ball valves + flexible hoses when auto-ignition is on.</p>
+<p><em>Process method:</em> the start and finish temperature of the lining, the weight of refractory to be heated, how long the heating should take, the system efficiency, and the ladle capacity (in tons).</p>
 </li>
 <li>
-<p><strong>{FUEL} LINE</strong> — gas-train package (NG/RLNG/LPG via MADAS) <strong>or</strong> discrete-component trains for Mixed Gas (<code>_mix_gas_line_rows</code>), COG (<code>_cog_line_rows</code>), BFG (<code>_bfg_line_rows</code>); oil line is gated to 20 NB (ball valve, flowmeter, motorised control valve, solenoid). AGR appears in <code>manual</code> / <code>plc_agr</code> / <code>pid</code>.</p>
-</li>
-<li>
-<p><strong>PURGING LINE</strong> — nitrogen block when <code>purging_line == "yes"</code> (<code>vlph_builder.py:923</code>).</p>
-</li>
-<li>
-<p><strong>{LPG/NG/COG} PILOT LINE</strong> — when auto-ignition / pilot included.</p>
-</li>
-<li>
-<p><strong>ENCON ITEMS</strong> — burner (Gas/Oil/Dual), bearing+plummer+shaft <strong>or</strong> SWIVEL ASSEMBLY, fabrication/structure, AIR-GAS PIPELINE, blower, ignition transformer / sequence controller / UV sensor / pilot burner (auto-ignition), HPU/pumping unit (oil), ceramic fibre.</p>
-</li>
-<li>
-<p><strong>MISC ITEMS</strong> — static items (<code>bom/static_items.py</code>) filtered by mode (control panel, instrument ball valves, PLC/PPID/PID, ratio controller, temperature transmitter, hydraulic power pack), plus CONTROL PANEL and PLC WITH HMI.</p>
+<p><em>Direct method:</em> simply type in the burner capacity or the heat input, and the system uses that instead of the process maths.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Three summary rows are appended: <strong>BOUGHT OUT ITEMS</strong>, <strong>ENCON ITEMS</strong>, <strong>GRAND TOTAL</strong> (<code>vlph_builder.py:1148</code>). "Bought out" = every non-<code>ENCON ITEMS</code> row (excluding <code>RATIO CONTROLLER</code>); "ENCON" = <code>MEDIA == "ENCON ITEMS"</code> rows.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_scope_of_supply_annexures"><a class="anchor" href="#_scope_of_supply_annexures"></a>Scope of supply / annexures</h3>
-<div class="paragraph">
-<p><code>generate_quote_docx</code> (<code>engine/quote_writer.py:677</code>) fills <code>Offer_Template.docx</code> (<code>quote_writer.py:5</code>). It produces:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Annexure I</strong> — Scope of Supply, with dynamic Vertical / Horizontal columns and <code>qty_label_*</code> set headers; the unused column is post-stripped (<code>quote_writer.py:1064</code>). Scope strings adapt to hood type, HPU/oil, pilot/auto-ignition, and control mode.</p>
-</li>
-<li>
-<p><strong>Annexure III</strong> — Price schedule: one equipment row bound to <code><strong>_vertical</code>, <code>qty × unit price = total</code>, then a *Transport</strong> line (when &gt; 0) inserted before <strong>TOTAL</strong> by <code>_break_out_transport</code> (<code>main.py:4375</code>).</p>
-</li>
-<li>
-<p><strong>Annexure IV</strong> — editable Terms &amp; Conditions from the <code>tnc_*</code> fields.</p>
-</li>
-<li>
-<p>A MAKE LIST table built from <code>bom_items</code> on the final page.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_output_documents"><a class="anchor" href="#_output_documents"></a>Output documents</h3>
-<div class="paragraph">
-<p>The route writes three files into <code>QUOTES_FOLDER</code> named <code>{YYYY-MM-DD}_{Company}_{VLPH}-{tons}T.{ext}</code> (<code>main.py:4559</code>):</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><code>.docx</code> — the offer (from <code>Offer_Template.docx</code>).</p>
-</li>
-<li>
-<p><code>.pdf</code> — LibreOffice render of the docx, with a reportlab fallback (<code>main.py:4573</code>).</p>
-</li>
-<li>
-<p><code>.json</code> — persisted <code>quote_data</code> for later PDF regeneration.</p>
-</li>
-</ol>
+<p><strong>The fuel.</strong> The main fuel (natural gas, LPG, coke-oven gas, blast-furnace gas, mixed gas, or an oil) and its calorific value. You can add a second fuel for a dual-fuel unit, and choose the pilot burner.</p>
 </div>
 <div class="paragraph">
-<p>The offer is also mirrored to Google Drive (async) and logged to the <code>quotes_log</code> table (<code>main.py:4602</code>).</p>
+<p><strong>The control system.</strong> Whether the unit is operated manually or automatically. Automatic units can be PLC- or PID-based, which changes the instruments included.</p>
 </div>
+<div class="paragraph">
+<p><strong>The makes.</strong> Which supplier to use for the control valve, shut-off valve, butterfly valve and pressure gauge; and, for oil fuels, the type of oil pumping unit (Simplex / Duplex).</p>
+</div>
+<div class="paragraph">
+<p><strong>The air and pipework.</strong> The blower pressure rating, and the weight of the air–gas pipeline (this figure is always entered by hand).</p>
+</div>
+<div class="paragraph">
+<p><strong>Other options.</strong> The hood type (up-down or swivel), whether a nitrogen purging line is needed, whether special ignition equipment is wanted, and optional overrides for the structure weight or ceramic-fibre quantity.</p>
+</div>
+<div class="paragraph">
+<p><strong>Quantities and commercials.</strong> How many vertical (and horizontal) sets the offer covers, and the commercial figures: the mark-up on bought-out items, the packaging &amp; forwarding percentage, the designing percentage, the negotiation percentage, and a flat transport amount.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_calculation_flow"><a class="anchor" href="#_calculation_flow"></a>Calculation Flow</h2>
+<h2 id="_what_the_offer_contains"><a class="anchor" href="#_what_the_offer_contains"></a>What the offer contains</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>A priced bill of materials</strong>, grouped by section — the combustion-air line, the fuel line, the pilot line, the ENCON-built equipment (burner, blower, structure, pipeline, ceramic fibre, and for oil the pumping unit), and the instruments and control panel. Each line shows the item, quantity, make, unit price and total.</p>
+</div>
+<div class="paragraph">
+<p><strong>The offer document</strong> (a Word file, plus a PDF), containing:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a <strong>Scope of Supply</strong> that lists, in words, everything ENCON will provide;</p>
+</li>
+<li>
+<p>a <strong>Price Schedule</strong> with the all-inclusive price, and transport shown on its own separate line;</p>
+</li>
+<li>
+<p>the <strong>Terms &amp; Conditions</strong> (prices, delivery, taxes, payment, validity, guarantee), which can be edited before generating;</p>
+</li>
+<li>
+<p>a <strong>Make List</strong> naming the supplier for each major item.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The document is saved, converted to PDF, and a copy is filed automatically.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_the_price_is_worked_out"><a class="anchor" href="#_how_the_price_is_worked_out"></a>How the price is worked out</h2>
 <div class="sectionbody">
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Resolve fuel &amp; mode</strong> (<code>main.py:1388</code>). <code>f1_cv = fuel1_cv if &gt; 0 else fuel_cv</code>. Dual-fuel active when <code>fuel2_type != "none"</code> and <code>fuel2_cv &gt; 0</code>. <code>n_burners = max(1, num_burners)</code>.</p>
+<p><strong>Work out the fuel and air needed.</strong> From the heating figures (or the direct capacity you typed), the system calculates how much fuel per hour and how much combustion air the burner needs, adding a small safety margin.</p>
 </li>
 <li>
-<p><strong>Compute fuel &amp; air flow.</strong></p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Direct mode</strong> (<code>main.py:1396</code>): <code>heat_kcal_hr = direct_heat_input_kcal_hr</code> if given, else <code>direct_burner_capacity × 860 × n_burners</code>. Then <code>ng_flow = heat_kcal_hr / f1_cv</code> and <code>air_flow = heat_kcal_hr × 118 / 100000</code>.</p>
+<p><strong>Choose the equipment.</strong> Using those flows it sizes the gas and air pipework, then picks the right burner, gas train, air–gas regulator (where used), blower and valves from the catalogue — each chosen to comfortably handle the required flow.</p>
 </li>
 <li>
-<p><strong>Calc mode</strong> (<code>main.py:1407</code>): <code>calculate_burner</code> (<code>calculations/burner.py:35</code>). <code>avg_temp_rise = (Tf−Ti)/2 + 50</code> when <code>Ti &gt; 100</code> else <code>(Tf+Ti)/2</code>; <code>firing_rate = refractory_weight × heat_factor × avg_temp_rise</code>; <code>heat_load = firing_rate / efficiency</code>; <code>fuel_consumption = heat_load / fuel_cv</code>; <code>÷ time_taken_hr</code> then <code>× 1.1</code> (10 % margin) → <code>extra_firing_rate_nm3hr</code> (= <code>ng_flow</code>); <code>air_qty = fuel_cv × extra_firing_rate × 118 / 100000</code> (= <code>air_flow</code>).</p>
-</li>
-</ul>
-</div>
+<p><strong>Size the air line from the blower.</strong> The combustion-air line is sized from the airflow of the blower that was actually selected, so the pipe, the valve and the displayed air flow all agree.</p>
 </li>
 <li>
-<p><strong>Burner pressure</strong> derived from blower pressure: 28→24 WG, 40→36 WG (<code>main.py:1422</code>).</p>
+<p><strong>Fill in the structure and ceramic.</strong> The structure weight and ceramic-fibre quantity are filled in automatically from the ladle size (you can override them).</p>
 </li>
 <li>
-<p><strong>Per-burner split</strong> (tundish, <code>main.py:1426</code>): blower / gas-train / main line size on total flow; burner sizes on <code>ng_flow / n_burners</code>. For dual-fuel, blower air = <code>max(fuel1_air, fuel2_air)</code> (<code>main.py:1432</code>); oil fuel-2 LPH pre-computed for blower CFM.</p>
+<p><strong>Price every line and total it up.</strong> Each item is priced from the rate list. Bought-out items are summed and multiplied by the mark-up; ENCON-made items are added on top, giving the grand total.</p>
 </li>
 <li>
-<p><strong>Equipment selection</strong> — <code>select_equipment</code> (<code>selection_engine.py:20</code>):</p>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Gas pipe NB</strong> via <code>calculate_pipe_sizes</code> at <code>ng_velocity = 12.7 m/s</code> for all gas fuels (<code>pipes.py:33</code>); area = flow/velocity, diameter rounded up to the next <code>STANDARD_PIPE_NB</code> (<code>pipes.py:13</code>). Oil line NB is flow-based: ≤250 LPH → 20 NB else 25 NB (<code>select_oil_pipe_nb</code>, <code>pipes.py:37</code>).</p>
+<p><strong>Add the commercials.</strong> Packaging &amp; forwarding, designing and negotiation are each added as a percentage of the grand total (they add to the price, they do not discount it), the flat transport is added, and the result is rounded to the nearest ₹1,000.</p>
 </li>
 <li>
-<p><strong>Burner</strong> — <code>select_encon_mg_burner</code>, pricelist section keyed by <code>dual</code>/<code>oil</code>/<code>gas</code> and CV, <code>burner_pressure_wg</code> (<code>selection_engine.py:44</code>).</p>
-</li>
-<li>
-<p><strong>Gas train</strong> — <code>select_ng_gas_train</code> picks the row whose <code>[min_flow, max_flow]</code> brackets <code>ng_flow</code>, largest if over-range; price prefers the editable <code>component_price_master</code> "Gas Train {in}x{out}" row (<code>ng_gas_train.py:8</code>).</p>
-</li>
-<li>
-<p><strong>AGR</strong> — only when needed (manual / plc_agr / pid). Sized from the <strong>gas-train outlet NB</strong> (not raw pipe NB), Flanged if NB ≥ 65 else Threaded (<code>selection_engine.py:68</code>).</p>
-</li>
-<li>
-<p><strong>Blower</strong> — CFM logic: <code>gas_cfm = air_flow / 1.7</code>; <code>oil_cfm = equivalent_lph × 10</code> (atomisation air, dual-fuel takes the max); <code>required_hp = cfm × pressure_in_wg / 3200</code>; <code>select_blower</code> picks the smallest HP ≥ required in the chosen <code>ENCON {series}/%</code> series (<code>blower_selector.py:20</code>).</p>
-</li>
-<li>
-<p><strong>Air line NB (the key rule)</strong> — sized from the <strong>selected blower&#8217;s CFM × 1.7</strong> back to Nm³/hr, run through the pipe formula, then floored: <code>air_line_nb = max(125, cfm-based NB, air_duct NB)</code> (<code>selection_engine.py:104-111</code>). Butterfly valve (lever→gear fallback) and rotary joint size to this NB.</p>
-</li>
-<li>
-<p><strong>Air duct / motorised control valve</strong> sized from <code>air_flow</code> (<code>selection_engine.py:102</code>).</p>
-</li>
-<li>
-<p><strong>HPU / Pumping Unit</strong> — oil fuels only; LSHS/FO use a standalone Pumping Unit, others use HPU, sized on <code>equivalent_lph</code> (<code>selection_engine.py:122</code>).</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p><strong>Re-size pipes for display</strong> with <code>air_flow_nm3hr = equip1["air_line_flow"]</code> (cfm×1.7) so the air line shown matches the BOM (<code>main.py:1477</code>). Tundish re-selects the burner for per-burner flow (<code>main.py:1483</code>).</p>
-</li>
-<li>
-<p><strong>Auto-fill structure &amp; ceramic</strong> from <code>fabrication_ladle_mapping</code> via <code>lookup_ladle_fab_pipeline</code> (nearest ladle capacity for the hood type, <code>vlph_builder.py:216</code>). User overrides win; pipeline kg stays user-supplied (<code>main.py:1549</code>).</p>
-</li>
-<li>
-<p><strong>Build BOM DataFrame</strong> — <code>build_vlph_manual_df</code> (control_mode <code>manual</code>, <code>vlph_builder.py:1166</code>) or <code>build_vlph_120t_df</code> (automatic, <code>vlph_builder.py:806</code>). Manual passes <code>base_only=True</code> to <code>_fuel_line_rows</code>, stripping AGR / orifice / DPT / control valve.</p>
-</li>
-<li>
-<p><strong>Per-row pricing</strong> — <code>_row</code> (<code>vlph_builder.py:50</code>): if <code>unit_price_override</code> is supplied it is used verbatim (computed prices such as <code>pipeline_weight_kg × PIPELINE RATE</code>, <code>ms_structure_kg × FABRICATION RATE</code>, selector prices, or NB-scaled DB lookups). Otherwise <code>get_price(item)</code> does an <strong>exact-match</strong> DB lookup (<code>_get_price_fuzzy</code>, no fuzzy fallback). <strong>Zero-price behaviour:</strong> an unmatched item name prices to 0 and logs <code>WARNING: No price found for '{item}'</code> — i.e. a row whose item name does not equal a DB key silently contributes 0. Blank <code>MAKE</code> defaults to <code>ENCON</code> (<code>vlph_builder.py:65</code>).</p>
-</li>
-<li>
-<p><strong>Tundish multiplication</strong> (<code>vlph_builder.py:1107</code>): per-burner items and <code>* PILOT LINE</code> media rows get <code>QTY</code> and <code>TOTAL</code> × <code>num_burners</code>; main equipment stays at qty 1.</p>
-</li>
-<li>
-<p><strong>Summary roll-up</strong> (<code>vlph_builder.py:1137</code>): <code>bought_out_total</code> = non-ENCON rows (excluding <code>RATIO CONTROLLER</code>); <code>encon_total</code> = ENCON rows; <code>grand_total = bought_out + encon</code>. Appended as the three summary rows.</p>
-</li>
-<li>
-<p><strong>Commercial adjustments (client-side, in <code>vlph_costing.html</code>).</strong> <code>recalcGrandTotal</code> (<code>vlph_costing.html:2000</code>): <code>Grand Total = bought_out × markup (default 1.8) + encon</code>. Then <code>pfAmt</code>, <code>designAmt</code>, <code>negAmt</code> each = <code>Grand × pct/100</code> and <code>Final Total = round((Grand + pfAmt + designAmt + negAmt + transAmt) / 1000) × 1000</code> — P&amp;F, designing and <strong>negotiation are all added</strong> (not subtracted), and the result is rounded to the nearest Rs. 1000 (<code>vlph_costing.html:2020</code>). The Final Total is sent to the backend as the single line item&#8217;s <code>unit_price</code> (<code>vlph_costing.html:2505</code>); <code>transport_amt</code> is sent separately.</p>
-</li>
-<li>
-<p><strong>Quote pricing</strong> — <code>calculate_quote</code> (<code>engine/quote_engine.py:88</code>) uses the pre-set <code>unit_price</code> when &gt; 0, else falls back to a DB sum by product type. GST/freight are not added; <code>grand_total = subtotal</code>.</p>
-</li>
-<li>
-<p><strong>Document assembly</strong> — <code>generate_quote_docx</code> (<code>quote_writer.py:677</code>) renders <code>Offer_Template.docx</code> with the mapped context, strips the unused scope column, and saves the <code>.docx</code>. Then <code>_break_out_transport</code> (<code>main.py:4375</code>) reduces the equipment row by <code>transport_amt</code> and inserts a <strong>Transport</strong> line before <strong>TOTAL</strong> (TOTAL unchanged, so the schedule reconciles). Finally the PDF and <code>.json</code> are written, the files mirror to Drive, and the offer is logged to <code>quotes_log</code> (<code>main.py:4569-4629</code>).</p>
+<p><strong>Produce the documents.</strong> The final all-inclusive price goes into the offer; transport is then shown on its own line so the schedule still adds up. The Word file and PDF are created and filed.</p>
 </li>
 </ol>
 </div>

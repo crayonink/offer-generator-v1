@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Burners :: Offer Generator Documentation</title>
-    <meta name="description" content="Inputs, outputs and calculation flow for the standalone Burner offer.">
+    <meta name="description" content="What a standalone Burner offer needs, what it produces, and how its price is worked out — in plain language.">
     <meta name="generator" content="Antora 3.1.15">
     <link rel="stylesheet" href="../../../_/css/site.css">
   </head>
@@ -164,133 +164,85 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Module: <code>burner</code>. Form: <code>/burner</code> → <code>burner_costing.html</code>. Status: ✅ Complete. This is a <strong>catalog-pick</strong> offer — the user selects a pre-priced burner; no firing-rate sizing runs in this path.</p>
+<p>A burner mixes fuel and air and provides the flame that heats a furnace or ladle. This offer is for selling a burner on its own, separate from a full preheater. Like the blower offer, it is a "pick from the catalogue" offer — you choose a pre-priced burner and the system prices it.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h2>
+<h2 id="_what_you_enter"><a class="anchor" href="#_what_you_enter"></a>What you enter</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>The standalone Burner offer is a catalog-pick flow: the user selects a pre-priced burner from the ENCON / GAIL pricelists; no firing-rate sizing is performed. Inputs come from the Step-2 form (<code>burner_costing.html</code>) and are posted as a <code>BurnerQuoteRequest</code> (<code>main.py:3538</code>) to <code>/api/generate-burner-quote</code> (<code>main.py:3715</code>).</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Burner type</strong> — ENCON oil burner, ENCON gas burner, ENCON dual-fuel burner, or a GAIL pre-assembled gas set.</p>
+</li>
+<li>
+<p><strong>Burner model</strong> — the specific size, chosen from a drop-down for the selected type.</p>
+</li>
+<li>
+<p><strong>Quantity</strong> — how many burners.</p>
+</li>
+<li>
+<p><strong>Commercial figures</strong> — packaging &amp; forwarding percentage, designing percentage, negotiation percentage, and a flat transport amount.</p>
+</li>
+<li>
+<p><strong>Customer details and Terms &amp; Conditions.</strong></p>
+</li>
+</ul>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 16.6666%;">
-<col style="width: 50%;">
-<col style="width: 33.3334%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>burner_group</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Burner type / pricelist section: <code>oil</code> (ENCON Oil "Film" Burner), <code>gas</code> (ENCON Gas Burner), <code>dual</code> (ENCON Dual Fuel Burner), or <code>gail</code> (GAIL pre-assembled gas set). Populates the catalog groups in <code>_BURNER_SECTIONS</code> (<code>main.py:3434</code>).</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">enum; default <code>"gas"</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>burner_model</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The specific burner size/model picked from the chosen group&#8217;s dropdown. Required.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">string (catalog model)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fuel <em>(derived, read-only)</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Auto-filled from the catalog. <code>oil</code> → "Oil (LDO / HSD / SKO)", <code>gas</code> → "Gas (NG / LPG / COG)", <code>dual</code> → "Dual Fuel (Gas + Oil)", <code>gail</code> → "Natural Gas". Set in <code>_burner_lookup</code> (<code>main.py:3455</code>).</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">derived string</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Firing Capacity <em>(derived, read-only)</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Auto-filled from the catalog. For ENCON oil/gas/dual sizes it is the max firing rate as <em>"up to N LPH"</em> (litres/hr at 24" W.G., from <code>burner_selection_master.max_firing_lph</code>, <code><em>burner_firing_capacity</code> <code>main.py:3444</code>). For GAIL sets the capacity is parsed from the model name as _"N kW"</em> (<code>main.py:3469</code>). May be blank if unknown.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">LPH (ENCON) / kW (GAIL); auto</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>qty</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Number of burners. Coerced to <code>max(1, int)</code>.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">integer; default <code>1</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Unit Price <em>(derived, read-only)</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Per-burner catalog price. ENCON: <code>burner_pricelist_master</code> row where <code>component = 'BURNER SET'</code>. GAIL: <code>gail_gas_burner_master.burner_set</code>. (<code>_burner_lookup</code>, <code>main.py:3476</code>).</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rs.; auto</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>scope_intro</code> / <code>scope_items</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>Not user inputs</em> — both are generated server-side from the selection (see Outputs / Calculation Flow).</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">auto</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pf_pct</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Packaging &amp; Forwarding, added as a percentage of <code>unit_price × qty</code>.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">%; form default <code>5</code>, model default <code>0</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>design_pct</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Designing charge, added as a percentage of <code>unit_price × qty</code>.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">%; form default <code>10</code>, model default <code>0</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>neg_pct</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation, <strong>added</strong> as a percentage of <code>unit_price × qty</code> (it increases the total — it does <strong>not</strong> discount).</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">%; default <code>0</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>transport_amt</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Flat transport amount (Rs.), added to the total and later broken onto its own price-schedule line.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rs.; default <code>0</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Customer / T&amp;C block</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>customer</code> (<code>HpuCustomer</code>) carries company, contacts, subject, and all Annexure Terms &amp; Conditions.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">object</p></td>
-</tr>
-</tbody>
-</table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-There is <em>no pilot-burner selection, no fuel CV / temperature / time entry, and no fabrication input</em> in this standalone offer. <code>calculations/burner.py</code> (firing-rate / heat-load) and <code>bom/burner_fabrication.py</code> (GAIL parts fabrication × markup) exist in the repo but are <strong>not</strong> invoked by <code>/api/generate-burner-quote</code>; this path is purely a priced catalog pick. (Those modules drive the burner row inside ladle-preheater BOMs instead.)
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p>The fuel, the firing capacity and the unit price are filled in automatically from the catalogue once you pick a model — you don&#8217;t type them in. (Firing capacity is shown in litres per hour for ENCON sizes, or in kilowatts for GAIL sets.)</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_outputs"><a class="anchor" href="#_outputs"></a>Outputs</h2>
+<h2 id="_what_the_offer_contains"><a class="anchor" href="#_what_the_offer_contains"></a>What the offer contains</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The endpoint renders <code>Burner_Offer_Template.docx</code> via the shared <code>_generate_equipment_offer</code> (<code>main.py:3549</code>) and returns a JSON result. The offer document contains:</p>
+<p>The offer document (Word + PDF) includes:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Scope intro</strong> — one sentence built from the selection, e.g. "We will supply <em>{qty}</em> No. <em>{label}</em> (<em>{model}</em>) of capacity <em>{capacity}</em> to achieve the desired temperature in the required time. The burner consists of the following main components:" (the "of capacity …" clause is omitted when capacity is blank) (<code>main.py:3727</code>).</p>
+<p><strong>A short scope paragraph</strong> — "we will supply N burner(s) of capacity … to achieve the desired temperature", followed by the main components.</p>
 </li>
 <li>
-<p><strong>Scope bullets</strong> (<code>scope_items</code>, fixed list, <code>main.py:3730</code>): Burner alone; Ball valve; CI burner mounting plate; Burner block; Flexible hoses set; Butterfly valve.</p>
+<p><strong>A bulleted list</strong> of what makes up the burner package: the burner, a ball valve, a CI mounting plate, a burner block, a set of flexible hoses, and a butterfly valve.</p>
 </li>
 <li>
-<p><strong>Spec fields</strong> injected into the template: <code>burner_model</code>, <code>burner_fuel</code>, <code>burner_capacity</code> (<code>main.py:3733</code>).</p>
+<p><strong>A price schedule</strong> with quantity, unit price and total; transport, if entered, appears on its own line.</p>
 </li>
 <li>
-<p><strong>Price schedule</strong> (single equipment line): <code>item_qty</code>, <code>unit_price</code>, <code>total_price</code>, <code>grand_total</code>, and <code>grand_total_in_words</code> — all formatted INR (<code>main.py:3604</code>). The shown unit price is the <em>adjusted</em> unit (final total ÷ qty), so P&amp;F / Designing / Negotiation / Transport are baked into the figures.</p>
-</li>
-<li>
-<p><strong>Transport line</strong> — when <code>transport_amt &gt; 0</code>, <code>_break_out_transport</code> (<code>main.py:4375</code>) post-processes the saved <code>.docx</code>: it reduces the equipment row by the transport amount and inserts a separate "Transport" row just before TOTAL, leaving the TOTAL unchanged.</p>
-</li>
-<li>
-<p><strong>Terms &amp; Conditions</strong> Annexure populated from the customer&#8217;s <code>tnc_*</code> fields.</p>
+<p><strong>The grand total in figures and words</strong>, and the standard Terms &amp; Conditions.</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>A running total updates live as you change the quantity or commercial figures, and the finished offer can be previewed before sending.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_the_price_is_worked_out"><a class="anchor" href="#_how_the_price_is_worked_out"></a>How the price is worked out</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Look up the chosen burner</strong> in the catalogue and take its price.</p>
+</li>
+<li>
+<p><strong>Multiply by the quantity.</strong></p>
+</li>
+<li>
+<p><strong>Add the commercials</strong> — packaging &amp; forwarding, designing and negotiation are each added as a percentage (they add to the price, they do not discount it), and the flat transport is added.</p>
+</li>
+<li>
+<p><strong>Round</strong> the total to the nearest ₹1,000 when any commercial figure has been applied.</p>
+</li>
+<li>
+<p><strong>Produce the documents</strong> — the price goes into the offer, transport is shown on its own line, and the Word file and PDF are created and filed.</p>
+</li>
+</ol>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -299,62 +251,10 @@ There is <em>no pilot-burner selection, no fuel CV / temperature / time entry, a
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-There is <em>no separate "pilot burner" or "combustion-line" line item</em> emitted by this code — the bulleted components above are the full itemisation.
+This standalone offer is purely a priced catalogue pick. It does not perform any firing-rate or fabrication calculation, and it does not add a pilot burner — those belong to the full preheater offers, where the burner is part of a larger system.
 </td>
 </tr>
 </table>
-</div>
-<div class="paragraph">
-<p>Output file: saved to the quotes folder as <code>Burner_Offer_&lt;Company&gt;_&lt;seq&gt;.docx</code>, with a best-effort PDF render and async Google Drive upload (product "burner"). Returned JSON includes <code>download_url</code>, <code>pdf_url</code>, <code>preview_url</code>, <code>quote_no</code> / <code>enquiry_ref</code>, <code>unit_price</code>, <code>total_price</code>, <code>qty</code>, plus <code>model</code> and <code>config</code> (<code>main.py:3740</code>, <code>:3652</code>).</p>
-</div>
-<div class="paragraph">
-<p><em>Live Step-2 total &amp; Preview.</em> The form mirrors the server math in real time: <code>recalcTotal()</code> (<code>burner_costing.html:430</code>) shows Catalog price (× qty), + P&amp;F, + Designing, + Negotiation, + Transport, and a rounded Total Price (rounded to Rs.1000 when any adjustment is non-zero). After generation the result panel exposes a Preview link (<code>burner_costing.html:481</code>).</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_calculation_flow"><a class="anchor" href="#_calculation_flow"></a>Calculation Flow</h2>
-<div class="sectionbody">
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p><strong>Catalog lookup (no firing-rate calc).</strong> <code>generate_burner_quote</code> calls <code>_burner_lookup(burner_group, burner_model)</code> (<code>main.py:3720</code> → <code>main.py:3455</code>). This returns <code>(unit_price, fuel, capacity, label)</code>:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>For <code>gail</code>: read <code>gail_gas_burner_master.burner_set</code> for the size; capacity parsed as "N kW" from the model name via regex (<code>main.py:3459</code>–<code>:3471</code>).</p>
-</li>
-<li>
-<p>For <code>oil</code>/<code>gas</code>/<code>dual</code>: read <code>burner_pricelist_master.price</code> where <code>component = 'BURNER SET'</code> for that section+size; capacity via <code>_burner_firing_capacity</code> → <code>burner_selection_master.max_firing_lph</code> at 24" W.G., formatted "up to N LPH" (<code>main.py:3476</code>–<code>:3484</code>, <code>:3444</code>). A missing/NaN/≤0 price returns <code>None</code> → error.</p>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p><strong>Quantity normalisation.</strong> <code>_bqty = max(1, int(req.qty or 1))</code> (<code>main.py:3725</code>).</p>
-</li>
-<li>
-<p><strong>Scope text + components built</strong> from the lookup result: <code>scope_intro</code> (with the optional "of capacity {capacity}" clause) and the fixed <code>scope_items</code> list; both packed into <code>specs</code> along with <code>burner_model</code> / <code>burner_fuel</code> / <code>burner_capacity</code> (<code>main.py:3726</code>–<code>:3739</code>). <em>No pilot-burner or fabrication items are added.</em></p>
-</li>
-<li>
-<p><strong>Hand-off to shared generator.</strong> <code>_generate_equipment_offer(&#8230;&#8203;)</code> is called with <code>unit_price</code>, <code>qty</code>, <code>template_name="Burner_Offer_Template.docx"</code>, <code>filename_infix="Burner"</code>, <code>drive_product="burner"</code>, and the four commercial params (<code>main.py:3740</code>).</p>
-</li>
-<li>
-<p><strong>Commercial-adjustment formula</strong> (<code>main.py:3567</code>–<code>:3571</code>): <code>adj_total = unit_price * qty * (1 + (pf_pct + design_pct + neg_pct)/100) + transport_amt</code>; <code>final_incl = round(adj_total / 1000) * 1000</code> (only when any of pf/des/neg/trn is non-zero); <code>offer_unit = final_incl / qty</code>; <code>total_price = final_incl</code>. All three percentages <em>add</em> (negotiation increases the total). The client <code>recalcTotal()</code> reproduces this exactly (<code>burner_costing.html:434</code>–<code>:437</code>).</p>
-</li>
-<li>
-<p><strong>Quote reference &amp; context.</strong> A sequence is allocated (<code>next_quote_seq</code>), <code>build_enquiry_ref</code> builds the enquiry ref/date, and the full docxtpl context (customer, contacts, price schedule, words, T&amp;Cs) is assembled and <code>specs</code> merged in (<code>main.py:3573</code>–<code>:3623</code>).</p>
-</li>
-<li>
-<p><strong>Docx assembly.</strong> <code>DocxTemplate(Burner_Offer_Template.docx).render(ctx)</code> then saved as <code>Burner_Offer_&lt;Company&gt;_&lt;seq&gt;.docx</code> (<code>main.py:3625</code>–<code>:3633</code>).</p>
-</li>
-<li>
-<p><strong>Transport break-out.</strong> <code>_break_out_transport(docx_path, transport_amt)</code> (<code>main.py:3636</code> → <code>:4375</code>) re-opens the saved doc, subtracts transport from the equipment row, and inserts a cloned "Transport" row just before TOTAL. No-op when transport ≤ 0.</p>
-</li>
-<li>
-<p><strong>PDF + Drive + response.</strong> Best-effort <code>_docx_to_pdf</code> render and async Drive upload (<code>main.py:3640</code>–<code>:3650</code>); the JSON response is returned and <code>result.update({"model", "config"})</code> adds the display strings (<code>main.py:3652</code>, <code>:3747</code>).</p>
-</li>
-</ol>
 </div>
 </div>
 </div>

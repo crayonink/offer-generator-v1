@@ -1,164 +1,46 @@
 = Vertical Ladle Preheater (VLPH)
-:description: Inputs, outputs and calculation flow for the Vertical Ladle Preheater offer.
+:description: What a Vertical Ladle Preheater offer needs, what it produces, and how its price is worked out — in plain language.
 
-Module: `vlph`. Form: `/quote` → `vlph_costing.html`. Status: ✅ Complete (see xref:product-scope.adoc[Product Scope & Roadmap]).
+A vertical ladle preheater dries and heats the refractory lining of a steel ladle before molten metal is poured into it. A burner fires downward into the ladle from a hood that sits on top, so the ladle is heated while standing upright. This page explains, in plain terms, what the user fills in, what the finished offer contains, and how the price is arrived at.
 
-== Inputs
+== What you enter
 
-The calculation form (`/costing` → `vlph_costing.html`) posts to `/api/vlph-calculate` (`main.py:1373`) using the `VLPHCalcRequest` model (`main.py:636`). The finished-offer form posts to `/api/generate-quote` (`main.py:4445`) using the `QuoteRequest` model (`main.py:684`). The two are split: `VLPHCalcRequest` drives the BOM/costing math; `QuoteRequest` carries customer data, scope toggles and the single all-inclusive price (built client-side) into the document.
+*The heating job.* Either describe the process and let the system size the burner, or enter the burner size directly.
 
-=== Process / capacity inputs (`VLPHCalcRequest`, `main.py:636`)
+* _Process method:_ the start and finish temperature of the lining, the weight of refractory to be heated, how long the heating should take, the system efficiency, and the ladle capacity (in tons).
+* _Direct method:_ simply type in the burner capacity or the heat input, and the system uses that instead of the process maths.
 
-[cols="2,4,2"]
-|===
-|Field |Meaning |Units / default
+*The fuel.* The main fuel (natural gas, LPG, coke-oven gas, blast-furnace gas, mixed gas, or an oil) and its calorific value. You can add a second fuel for a dual-fuel unit, and choose the pilot burner.
 
-|`mode` |`"calc"` (size from process params) or `"direct"` (user enters burner capacity / heat input) |default `"calc"`
-|`Ti` / `Tf` |Initial / final refractory temperature |°C; 650 / 1200
-|`refractory_weight` |Refractory mass to heat |kg; 21500
-|`fuel_cv` / `fuel1_cv` |Fuel 1 calorific value (`fuel1_cv` wins if > 0) |kcal/Nm³ (gas) or kcal/kg (oil); 8500
-|`time_taken_hr` |Heating schedule duration |hr; 2.0
-|`refractory_heat_factor` |Specific-heat factor in firing-rate formula |0.25
-|`efficiency` |Combustion / system efficiency |0.52
-|`ladle_tons` |Ladle capacity — keys fabrication / ceramic / structure lookups |tons; 10.0
-|`direct_burner_capacity` |Direct mode: per-burner capacity (× num_burners for total) |kW; 0.0
-|`direct_heat_input_kcal_hr` |Direct mode: total heat input; takes precedence over capacity |kcal/hr; 0.0
-|===
+*The control system.* Whether the unit is operated manually or automatically. Automatic units can be PLC- or PID-based, which changes the instruments included.
 
-=== Fuel selection
+*The makes.* Which supplier to use for the control valve, shut-off valve, butterfly valve and pressure gauge; and, for oil fuels, the type of oil pumping unit (Simplex / Duplex).
 
-[cols="2,4,2"]
-|===
-|Field |Meaning |Units / default
+*The air and pipework.* The blower pressure rating, and the weight of the air–gas pipeline (this figure is always entered by hand).
 
-|`fuel1_type` |Primary fuel. Gas: `ng`, `rlng`, `lpg`, `cog`, `bg` (BFG), `mg` (mixed gas). Oil: `ldo`, `fo`, `lshs`, `hsd`, `sko` |default `"ng"`
-|`fuel2_type` |Second fuel for dual-fuel (`"none"` disables). Dual-fuel is active only when `fuel2_type != "none"` and `fuel2_cv > 0` |default `"none"`
-|`fuel2_cv` |Fuel 2 calorific value |default 0.0
-|`pilot_burner` |Pilot model: `auto`, `lpg_10`, `nglpg_100`, `cog_100` (maps to DB pilot model codes, `vlph_builder.py:1038`) |default `"auto"`
-|`pilot_line_fuel` |Pilot-line gas in manual mode (`lpg` / `ng`) — sets `{FUEL} PILOT LINE` media |default `"lpg"`
-|===
+*Other options.* The hood type (up-down or swivel), whether a nitrogen purging line is needed, whether special ignition equipment is wanted, and optional overrides for the structure weight or ceramic-fibre quantity.
 
-=== Control mode & vendors
+*Quantities and commercials.* How many vertical (and horizontal) sets the offer covers, and the commercial figures: the mark-up on bought-out items, the packaging & forwarding percentage, the designing percentage, the negotiation percentage, and a flat transport amount.
 
-[cols="2,4,2"]
-|===
-|Field |Meaning |Units / default
+== What the offer contains
 
-|`control_mode` |`"manual"` (→ `build_vlph_manual_df`) or `"automatic"` (→ `build_vlph_120t_df`), `main.py:1557` |default `"automatic"`
-|`auto_control_type` |Automatic sub-mode: `plc` (orifice+DPT+control valve, no AGR), `plc_agr`, `pid`, `ppid_ratio` (P.PID + Ratio Controller). `plc_agr`/`pid`/manual add an AGR |default `"agr"` in model / `"plc"` elsewhere
-|`control_valve_vendor` |`dembla` (pneumatic) or `cair` (motorised) — sets valve item name + price row |default `"dembla"`
-|`shutoff_valve_vendor` |`dembla` / `aira` / `cair` shut-off valve |default `"aira"`
-|`butterfly_valve_vendor` |`lt_lever` or `lt_gear` (falls back lever→gear on NB out of range) |default `"lt_lever"`
-|`pressure_gauge_vendor` |`baumer` or `hguru` — price key `PRESSURE GAUGE WITH TNV ({VENDOR})` |default `"baumer"`
-|`hpu_variant` |Oil-fuel pumping unit: `Simplex` / `Duplex 1` / `Duplex 2` |default `"Duplex 1"`
-|===
+*A priced bill of materials*, grouped by section — the combustion-air line, the fuel line, the pilot line, the ENCON-built equipment (burner, blower, structure, pipeline, ceramic fibre, and for oil the pumping unit), and the instruments and control panel. Each line shows the item, quantity, make, unit price and total.
 
-=== Air / blower / pressure
+*The offer document* (a Word file, plus a PDF), containing:
 
-[cols="2,4,2"]
-|===
-|Field |Meaning |Units / default
+* a *Scope of Supply* that lists, in words, everything ENCON will provide;
+* a *Price Schedule* with the all-inclusive price, and transport shown on its own separate line;
+* the *Terms & Conditions* (prices, delivery, taxes, payment, validity, guarantee), which can be edited before generating;
+* a *Make List* naming the supplier for each major item.
 
-|`blower_pressure` |Blower series `"28"` or `"40"` (inches WG). Derives burner pressure 28→24, 40→36 WG (`main.py:1422`) |default `"28"`
-|`pipeline_weight_kg` |Air-gas pipeline mass — always user-supplied (never auto-filled), priced at `PIPELINE RATE` |kg, 700–2000 step 100; 1000.0
-|===
+The document is saved, converted to PDF, and a copy is filed automatically.
 
-=== Unit counts, scope toggles, commercial
+== How the price is worked out
 
-`vertical_qty` / `horizontal_qty` (`QuoteRequest`, `main.py:745`) drive the Annexure I/III scope-of-supply set counts. Per-equipment commercial adjustments are entered on the form and applied *client-side* (`vlph_costing.html:2000`, `2438`); only the resulting all-inclusive price and `transport_amt` reach the backend.
-
-[cols="2,4,2"]
-|===
-|Field |Meaning |Units / default
-
-|`num_burners` |Tundish: splits firing rate per burner; multiplies per-burner BOM items (`vlph_builder.py:1107`) |int; 1
-|`hood_type` |`up_down` (hydraulic power pack + bearing/plummer/shaft + air-gas pipeline) or `swivel_manual` / `swivel_geared` (single SWIVEL ASSEMBLY, no pipeline/HPP) |default `"up_down"`
-|`purging_line` |`yes`/`no` — adds the 6-item nitrogen PURGING LINE block (MG/COG/BFG) |default `"no"`
-|`manual_pilot_burner` |Manual mode: `yes`/`no` to include pilot burner + pilot line (→ `include_pilot`) |default `"yes"`
-|`special_auto_ignition` |Automatic mode: adds pilot line + ignition transformer / sequence controller / UV sensor / pilot burner |bool; False
-|`special_auto_controls` |Special-requirements flag (scope wording) |bool; False
-|`ms_structure_kg_override` |Tundish: override MS structure weight for fabrication cost |kg; 0
-|`ceramic_rolls_override` |Override ceramic-fibre roll count |int; 0
-|Markup factor (`markup-factor`) |Client-side: bought-out subtotal × markup (default 1.8) + ENCON subtotal = Grand Total (`vlph_costing.html:2001`) |default 1.8
-|P&F % (`pf-pct`) |Packaging & forwarding, % of Grand Total — *added* |form only
-|Designing % (`design-pct`) |Designing charge, % of Grand Total — *added* |form only
-|Negotiation % (`negotiation-pct`) |% of Grand Total — *added* (not subtracted; `grand + negAmt`, `vlph_costing.html:2020`) |0, max 10
-|`transport_amt` |Flat transport (Rs.) — sent separately, broken onto its own price line |Rs.; 0
-|TnC fields (`tnc_*`) |Editable Annexure IV terms (prices, delivery, GST, payment, P&F, freight, validity, guarantee, HSN, PAN/GST) |`QuoteRequest:756`
-|===
-
-== Outputs
-
-`/api/vlph-calculate` returns a JSON object (`main.py:1613`) with `calculations`, `pipes`, `equipment`, the full `bom` line list, and `cost_summary` (`bought_out_total`, `encon_total`, `grand_total`). `/api/generate-quote` returns download / preview / PDF URLs and a price summary, and writes the offer documents.
-
-=== BOM line items
-
-Each row is `(MEDIA, ITEM NAME, REFERENCE, QTY, MAKE, UNIT PRICE, TOTAL)` built by `_row` (`vlph_builder.py:50`). Rows are grouped by `MEDIA`:
-
-* *COMB AIR* — compensator, pressure gauge with TNV, pressure switch low, (PLC/P.PID: orifice plate + DPT), control valve, butterfly valve (L&T), rotary joint; plus pilot/UV ball valves + flexible hoses when auto-ignition is on.
-* *{FUEL} LINE* — gas-train package (NG/RLNG/LPG via MADAS) *or* discrete-component trains for Mixed Gas (`_mix_gas_line_rows`), COG (`_cog_line_rows`), BFG (`_bfg_line_rows`); oil line is gated to 20 NB (ball valve, flowmeter, motorised control valve, solenoid). AGR appears in `manual` / `plc_agr` / `pid`.
-* *PURGING LINE* — nitrogen block when `purging_line == "yes"` (`vlph_builder.py:923`).
-* *{LPG/NG/COG} PILOT LINE* — when auto-ignition / pilot included.
-* *ENCON ITEMS* — burner (Gas/Oil/Dual), bearing+plummer+shaft *or* SWIVEL ASSEMBLY, fabrication/structure, AIR-GAS PIPELINE, blower, ignition transformer / sequence controller / UV sensor / pilot burner (auto-ignition), HPU/pumping unit (oil), ceramic fibre.
-* *MISC ITEMS* — static items (`bom/static_items.py`) filtered by mode (control panel, instrument ball valves, PLC/PPID/PID, ratio controller, temperature transmitter, hydraulic power pack), plus CONTROL PANEL and PLC WITH HMI.
-
-Three summary rows are appended: *BOUGHT OUT ITEMS*, *ENCON ITEMS*, *GRAND TOTAL* (`vlph_builder.py:1148`). "Bought out" = every non-`ENCON ITEMS` row (excluding `RATIO CONTROLLER`); "ENCON" = `MEDIA == "ENCON ITEMS"` rows.
-
-=== Scope of supply / annexures
-
-`generate_quote_docx` (`engine/quote_writer.py:677`) fills `Offer_Template.docx` (`quote_writer.py:5`). It produces:
-
-* *Annexure I* — Scope of Supply, with dynamic Vertical / Horizontal columns and `qty_label_*` set headers; the unused column is post-stripped (`quote_writer.py:1064`). Scope strings adapt to hood type, HPU/oil, pilot/auto-ignition, and control mode.
-* *Annexure III* — Price schedule: one equipment row bound to `*_vertical`, `qty × unit price = total`, then a *Transport* line (when > 0) inserted before *TOTAL* by `_break_out_transport` (`main.py:4375`).
-* *Annexure IV* — editable Terms & Conditions from the `tnc_*` fields.
-* A MAKE LIST table built from `bom_items` on the final page.
-
-=== Output documents
-
-The route writes three files into `QUOTES_FOLDER` named `{YYYY-MM-DD}_{Company}_{VLPH}-{tons}T.{ext}` (`main.py:4559`):
-
-. `.docx` — the offer (from `Offer_Template.docx`).
-. `.pdf` — LibreOffice render of the docx, with a reportlab fallback (`main.py:4573`).
-. `.json` — persisted `quote_data` for later PDF regeneration.
-
-The offer is also mirrored to Google Drive (async) and logged to the `quotes_log` table (`main.py:4602`).
-
-== Calculation Flow
-
-. *Resolve fuel & mode* (`main.py:1388`). `f1_cv = fuel1_cv if > 0 else fuel_cv`. Dual-fuel active when `fuel2_type != "none"` and `fuel2_cv > 0`. `n_burners = max(1, num_burners)`.
-
-. *Compute fuel & air flow.*
-* *Direct mode* (`main.py:1396`): `heat_kcal_hr = direct_heat_input_kcal_hr` if given, else `direct_burner_capacity × 860 × n_burners`. Then `ng_flow = heat_kcal_hr / f1_cv` and `air_flow = heat_kcal_hr × 118 / 100000`.
-* *Calc mode* (`main.py:1407`): `calculate_burner` (`calculations/burner.py:35`). `avg_temp_rise = (Tf−Ti)/2 + 50` when `Ti > 100` else `(Tf+Ti)/2`; `firing_rate = refractory_weight × heat_factor × avg_temp_rise`; `heat_load = firing_rate / efficiency`; `fuel_consumption = heat_load / fuel_cv`; `÷ time_taken_hr` then `× 1.1` (10 % margin) → `extra_firing_rate_nm3hr` (= `ng_flow`); `air_qty = fuel_cv × extra_firing_rate × 118 / 100000` (= `air_flow`).
-
-. *Burner pressure* derived from blower pressure: 28→24 WG, 40→36 WG (`main.py:1422`).
-
-. *Per-burner split* (tundish, `main.py:1426`): blower / gas-train / main line size on total flow; burner sizes on `ng_flow / n_burners`. For dual-fuel, blower air = `max(fuel1_air, fuel2_air)` (`main.py:1432`); oil fuel-2 LPH pre-computed for blower CFM.
-
-. *Equipment selection* — `select_equipment` (`selection_engine.py:20`):
-* *Gas pipe NB* via `calculate_pipe_sizes` at `ng_velocity = 12.7 m/s` for all gas fuels (`pipes.py:33`); area = flow/velocity, diameter rounded up to the next `STANDARD_PIPE_NB` (`pipes.py:13`). Oil line NB is flow-based: ≤250 LPH → 20 NB else 25 NB (`select_oil_pipe_nb`, `pipes.py:37`).
-* *Burner* — `select_encon_mg_burner`, pricelist section keyed by `dual`/`oil`/`gas` and CV, `burner_pressure_wg` (`selection_engine.py:44`).
-* *Gas train* — `select_ng_gas_train` picks the row whose `[min_flow, max_flow]` brackets `ng_flow`, largest if over-range; price prefers the editable `component_price_master` "Gas Train {in}x{out}" row (`ng_gas_train.py:8`).
-* *AGR* — only when needed (manual / plc_agr / pid). Sized from the *gas-train outlet NB* (not raw pipe NB), Flanged if NB ≥ 65 else Threaded (`selection_engine.py:68`).
-* *Blower* — CFM logic: `gas_cfm = air_flow / 1.7`; `oil_cfm = equivalent_lph × 10` (atomisation air, dual-fuel takes the max); `required_hp = cfm × pressure_in_wg / 3200`; `select_blower` picks the smallest HP ≥ required in the chosen `ENCON {series}/%` series (`blower_selector.py:20`).
-* *Air line NB (the key rule)* — sized from the *selected blower's CFM × 1.7* back to Nm³/hr, run through the pipe formula, then floored: `air_line_nb = max(125, cfm-based NB, air_duct NB)` (`selection_engine.py:104-111`). Butterfly valve (lever→gear fallback) and rotary joint size to this NB.
-* *Air duct / motorised control valve* sized from `air_flow` (`selection_engine.py:102`).
-* *HPU / Pumping Unit* — oil fuels only; LSHS/FO use a standalone Pumping Unit, others use HPU, sized on `equivalent_lph` (`selection_engine.py:122`).
-
-. *Re-size pipes for display* with `air_flow_nm3hr = equip1["air_line_flow"]` (cfm×1.7) so the air line shown matches the BOM (`main.py:1477`). Tundish re-selects the burner for per-burner flow (`main.py:1483`).
-
-. *Auto-fill structure & ceramic* from `fabrication_ladle_mapping` via `lookup_ladle_fab_pipeline` (nearest ladle capacity for the hood type, `vlph_builder.py:216`). User overrides win; pipeline kg stays user-supplied (`main.py:1549`).
-
-. *Build BOM DataFrame* — `build_vlph_manual_df` (control_mode `manual`, `vlph_builder.py:1166`) or `build_vlph_120t_df` (automatic, `vlph_builder.py:806`). Manual passes `base_only=True` to `_fuel_line_rows`, stripping AGR / orifice / DPT / control valve.
-
-. *Per-row pricing* — `_row` (`vlph_builder.py:50`): if `unit_price_override` is supplied it is used verbatim (computed prices such as `pipeline_weight_kg × PIPELINE RATE`, `ms_structure_kg × FABRICATION RATE`, selector prices, or NB-scaled DB lookups). Otherwise `get_price(item)` does an *exact-match* DB lookup (`_get_price_fuzzy`, no fuzzy fallback). *Zero-price behaviour:* an unmatched item name prices to 0 and logs `WARNING: No price found for '{item}'` — i.e. a row whose item name does not equal a DB key silently contributes 0. Blank `MAKE` defaults to `ENCON` (`vlph_builder.py:65`).
-
-. *Tundish multiplication* (`vlph_builder.py:1107`): per-burner items and `* PILOT LINE` media rows get `QTY` and `TOTAL` × `num_burners`; main equipment stays at qty 1.
-
-. *Summary roll-up* (`vlph_builder.py:1137`): `bought_out_total` = non-ENCON rows (excluding `RATIO CONTROLLER`); `encon_total` = ENCON rows; `grand_total = bought_out + encon`. Appended as the three summary rows.
-
-. *Commercial adjustments (client-side, in `vlph_costing.html`).* `recalcGrandTotal` (`vlph_costing.html:2000`): `Grand Total = bought_out × markup (default 1.8) + encon`. Then `pfAmt`, `designAmt`, `negAmt` each = `Grand × pct/100` and `Final Total = round((Grand + pfAmt + designAmt + negAmt + transAmt) / 1000) × 1000` — P&F, designing and *negotiation are all added* (not subtracted), and the result is rounded to the nearest Rs. 1000 (`vlph_costing.html:2020`). The Final Total is sent to the backend as the single line item's `unit_price` (`vlph_costing.html:2505`); `transport_amt` is sent separately.
-
-. *Quote pricing* — `calculate_quote` (`engine/quote_engine.py:88`) uses the pre-set `unit_price` when > 0, else falls back to a DB sum by product type. GST/freight are not added; `grand_total = subtotal`.
-
-. *Document assembly* — `generate_quote_docx` (`quote_writer.py:677`) renders `Offer_Template.docx` with the mapped context, strips the unused scope column, and saves the `.docx`. Then `_break_out_transport` (`main.py:4375`) reduces the equipment row by `transport_amt` and inserts a *Transport* line before *TOTAL* (TOTAL unchanged, so the schedule reconciles). Finally the PDF and `.json` are written, the files mirror to Drive, and the offer is logged to `quotes_log` (`main.py:4569-4629`).
+. *Work out the fuel and air needed.* From the heating figures (or the direct capacity you typed), the system calculates how much fuel per hour and how much combustion air the burner needs, adding a small safety margin.
+. *Choose the equipment.* Using those flows it sizes the gas and air pipework, then picks the right burner, gas train, air–gas regulator (where used), blower and valves from the catalogue — each chosen to comfortably handle the required flow.
+. *Size the air line from the blower.* The combustion-air line is sized from the airflow of the blower that was actually selected, so the pipe, the valve and the displayed air flow all agree.
+. *Fill in the structure and ceramic.* The structure weight and ceramic-fibre quantity are filled in automatically from the ladle size (you can override them).
+. *Price every line and total it up.* Each item is priced from the rate list. Bought-out items are summed and multiplied by the mark-up; ENCON-made items are added on top, giving the grand total.
+. *Add the commercials.* Packaging & forwarding, designing and negotiation are each added as a percentage of the grand total (they add to the price, they do not discount it), the flat transport is added, and the result is rounded to the nearest ₹1,000.
+. *Produce the documents.* The final all-inclusive price goes into the offer; transport is then shown on its own line so the schedule still adds up. The Word file and PDF are created and filed.

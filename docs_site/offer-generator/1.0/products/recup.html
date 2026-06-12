@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Recuperators :: Offer Generator Documentation</title>
-    <meta name="description" content="Inputs, outputs and calculation flow for the Recuperator offer.">
+    <meta name="description" content="What a Recuperator offer needs, what it produces, and how its price is worked out — in plain language.">
     <meta name="generator" content="Antora 3.1.15">
     <link rel="stylesheet" href="../../../_/css/site.css">
   </head>
@@ -164,345 +164,116 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>Module: <code>recup</code>. Form: <code>/recup</code> → <code>recup_costing.html</code>. Status: ✅ Complete. A heat-transfer-sized product: the air-preheater surface area is computed from the flue/air duty, then the tube grid and BOM are derived.</p>
+<p>A recuperator recovers heat from a furnace&#8217;s hot waste flue gas and uses it to pre-heat the incoming combustion air. Pre-heated air means less fuel is burned, so the recuperator pays for itself in fuel savings. Unlike the catalogue products, a recuperator is <strong>sized from the heat duty</strong> — the system works out how big the tube bundle needs to be, then prices the steelwork.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h2>
+<h2 id="_what_you_enter"><a class="anchor" href="#_what_you_enter"></a>What you enter</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The Recuperator form lives at <code>/recup</code> (<code>main.py:2588</code>). Step 1/2 inputs map to <code>RecupCalcRequest</code> (<code>main.py:2595</code>) → <code>RecupInputs</code> (<code>calculations/recup.py:42</code>); Step 3 commercial inputs and Step 4 offer metadata map to <code>RecupQuoteRequest</code> (<code>main.py:2698</code>).</p>
+<p><strong>The heat duty.</strong></p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>flue_flow_nm3hr</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Total flue-gas volumetric flow (Excel E3)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Nm³/hr, default 1900</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>flue_temp_in_C</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Inlet flue-gas temperature (E6)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">°C, default 800</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cp_flue_kcal_kgC</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Specific heat of flue gas (E5, constant)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/kg·°C, default 0.23</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>air_volume_nm3hr</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Combustion-air volume to be preheated (E9)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Nm³/hr, default 1750</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>air_temp_in_C</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Inlet (ambient) air temperature (E10)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">°C, default 35</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>air_temp_out_C</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Target preheated air temperature (E11)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">°C, default 400</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cp_air_kcal_kgC</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Specific heat of air (E12, constant)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/kg·°C, default 0.247</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>heat_transfer_coef</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Overall heat-transfer coefficient (E8)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/m²·°C, default 30</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipe_dia_mm</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tube outer diameter</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">mm, default 48.3</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipe_thick_mm</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tube wall thickness</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">mm, default 2.77</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipe_kg_per_m</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tube unit weight</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kg/m, default 3.16</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipe_length_m_per_bank</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Tube length per bank (0.55 + 0.08)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">m, default 0.63</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bank_gap_mm</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Gap between hot and cold banks (E18)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">mm, default 150</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipes_total_override</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Force a total pipe count; 0 = auto-derive from surface area</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">int, default 0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hot_bank_material</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Hot-bank tube material — <code>"SS"</code> (SS304, ~Rs 250/kg) or <code>"MS"</code> (~Rs 70/kg)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">str, default "SS"</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cold_bank_material</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Cold-bank tube material (may differ from hot bank)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">str, default "SS"</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>side_hood_kg</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">MS side-hood material weight</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">kg, default 1500</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>cai_rate_override</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">MS Combustion-Air-Inlet assembly Rs/kg override; 0 = DB default</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rs/kg, default 0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>qty</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Order quantity; multiplies unit price into the offer total</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">int, default 1</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Commercial inputs (Step 3 — Cost Summary panel, <code>recup_costing.html:520</code>–542). Entered in the UI and folded into <code>final_total</code> on the client; the backend receives only the resulting totals:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The flue-gas flow and its inlet temperature.</p>
+</li>
+<li>
+<p>The combustion-air flow, its inlet (ambient) temperature, and the target pre-heated temperature.</p>
+</li>
+<li>
+<p>The heat-transfer coefficient (how readily heat passes through the tubes).</p>
+</li>
+</ul>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Field</th>
-<th class="tableblock halign-left valign-top">Meaning</th>
-<th class="tableblock halign-left valign-top">Units / Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Conversion markup (<code>s-conv</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Cost→sale multiplier (Excel F60)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">×, default 1.80</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Packaging &amp; Forwarding (<code>s-pf</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">P&amp;F as % of sale price, additive</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">%, default 5</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Designing (<code>s-design</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Designing charge as % of sale, additive</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">%, default 10</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation (<code>s-nego</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation as % of sale, additive</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">%, default 10</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Transport (<code>s-trans</code> → <code>transport_amt</code>)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Flat transport amount; own price-schedule line</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rs., default 0</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>final_total</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Computed sell price (unit) with all of the above applied, rounded up to nearest Rs 1000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rs.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>grand_total</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Raw BOM grand total (bought-out + ENCON)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rs.</p></td>
-</tr>
-</tbody>
-</table>
 <div class="paragraph">
-<p>Offer / T&amp;C metadata in <code>RecupQuoteRequest</code> (<code>main.py:2698</code>): customer block (<code>salutation</code>, <code>poc_name</code>, <code>company_name</code>, <code>company_address</code>, <code>email</code>, <code>mobile_no</code>, <code>project_name</code>, <code>subject</code>, <code>application</code>, <code>client_enq_ref</code>), marketing/technical contacts, <code>location</code> (default "FBD"), supervision lines (<code>supervision_mech</code>, <code>supervision_plc</code>), <code>price_schedule_style</code> (<code>"single"</code> or <code>"full"</code>), optional full-mode supervision row, and the <code>tnc_*</code> fields.</p>
+<p><strong>The tubes and steelwork.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Tube diameter, wall thickness, weight per metre and length per bank.</p>
+</li>
+<li>
+<p>The gap between the hot and cold tube banks.</p>
+</li>
+<li>
+<p>The material of the hot bank and the cold bank — stainless steel or mild steel (they can differ).</p>
+</li>
+<li>
+<p>The side-hood weight, and an optional override for the air-inlet assembly rate.</p>
+</li>
+<li>
+<p>An optional override to force a specific number of tubes.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Quantities and commercials.</strong> The order quantity, and the commercial figures: the cost-to-sale mark-up, packaging &amp; forwarding, designing, negotiation, and a flat transport amount. Customer details, supervision charges and Terms &amp; Conditions are entered for the offer.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_outputs"><a class="anchor" href="#_outputs"></a>Outputs</h2>
+<h2 id="_what_the_offer_contains"><a class="anchor" href="#_what_the_offer_contains"></a>What the offer contains</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><code>/api/recup-calculate</code> (<code>main.py:2619</code>) returns a JSON object with three blocks; <code>/api/generate-recup-quote</code> (<code>main.py:2830</code>) renders the offer document.</p>
+<p><strong>The sizing results</strong> — the heat to be recovered, the required heat-transfer surface area, the number of tubes and how they are arranged into rows and columns, the bank dimensions, and the weights of the tubes and the supporting steelwork.</p>
 </div>
 <div class="paragraph">
-<p><strong>Sizing results</strong> (<code>calculations</code> block, from <code>RecupResults</code>):</p>
+<p><strong>A priced bill of materials</strong> — the hot-bank and cold-bank tubes, the side-hood fabrication, the combustion-air inlet assembly, the structural steel, the bending and welding labour, and the thermocouple — each priced and totalled into bought-out, ENCON and grand totals.</p>
+</div>
+<div class="paragraph">
+<p><strong>The offer document</strong> (Word + PDF), containing:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Heat balance: <code>flue_mass_kghr</code> (E4), <code>heat_required_kcal</code> (E13), <code>flue_temp_out_C</code> (derived, E7), <code>lmtd_C</code> (E14, with 0.9 factor).</p>
+<p>a <strong>Scope of Supply / Materials of Construction</strong> table describing the tubes (hot bank bent, cold bank straight) and the steel grades;</p>
 </li>
 <li>
-<p><code>surface_area_m2</code> — required heat-transfer area (E15).</p>
+<p>a <strong>Price Schedule</strong> — either a single all-inclusive line, or every item listed in full, as chosen;</p>
 </li>
 <li>
-<p>Pipe grid: <code>pipes_total_raw</code> (E19), <code>pipes_total</code>, <code>pipes_in_row</code>, <code>pipes_in_column</code>, <code>pipes_per_bank</code>.</p>
+<p>a <strong>Designing Parameters</strong> table echoing the flue and air conditions, the surface area and the tube geometry;</p>
 </li>
 <li>
-<p>Dimensions: <code>bank_length_mm</code> (E16), <code>bank_width_mm</code> (E17).</p>
+<p>optional 3-D images of the recuperator;</p>
 </li>
 <li>
-<p>Weights: <code>weight_per_pipe_kg</code>, <code>weight_hot_bank_kg</code>, <code>weight_cold_bank_kg</code>, <code>weight_total_pipes_kg</code>, and the MS structural weights <code>ms_outer_shell_kg</code>, <code>ms_air_inlet_duct_kg</code>, <code>ms_hot_outlet_duct_kg</code>, <code>ms_pipe_holding_kg</code>, <code>ms_bottom_box_kg</code>.</p>
-</li>
-<li>
-<p>Echoed process inputs for the offer&#8217;s Designing Parameters table.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>BOM / price schedule</strong> (<code>bom</code> block, built by <code>build_recup_df</code>, <code>bom/recup_builder.py:67</code>): one row per line item with <code>MEDIA</code>, <code>ITEM NAME</code>, <code>REFERENCE</code>, <code>QTY</code>, <code>MAKE</code>, <code>UNIT PRICE</code>, <code>TOTAL</code>. Line items:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>BOUGHT OUT / MISC: Thermocouple with TT (flat).</p>
-</li>
-<li>
-<p>ENCON ITEMS: SS304/MS ERW Tube — Hot Bank, SS304/MS ERW Tube — Cold Bank, MS Side Hood (2 Nos) Fabrication, MS Combustion Air Inlet Assembly, the stock structural steel rows (MS Channel 150×75×10, MS Angle 65×25, 75×10, 50×15), Pipe Bending, Welding Rods, Hole Fabrication.</p>
-</li>
-<li>
-<p>Summary rows: BOUGHT OUT ITEMS, ENCON ITEMS, GRAND TOTAL.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p><strong>Cost summary</strong> (<code>cost_summary</code> block, <code>recup_summary</code>, <code>bom/recup_builder.py:217</code>): <code>bought_out_total</code>, <code>encon_total</code>, <code>grand_total</code>, <code>markup_conversion</code>, <code>sale_after_markup</code>, <code>designing_pct</code>, <code>negotiation_pct</code>, <code>final_total</code> (rounded up to nearest Rs 1000).</p>
-</div>
-<div class="paragraph">
-<p><strong>Offer document</strong> (<code>/api/generate-recup-quote</code>):</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Scope-of-supply / Material of Construction table built by <code>_material_of_construction</code> (<code>main.py:2751</code>): SS→"SS-316", MS→"Mild Steel (CS)"; hot bank rendered as bent tubes, cold bank as straight; tube spec carries OD + Schedule-40.</p>
-</li>
-<li>
-<p>Price Schedule rows assembled by <code>_bom_rows_for_offer</code> (<code>main.py:2775</code>); in <code>"single"</code> style one row at the final price + amount in words, in <code>"full"</code> style every BOM line plus optional supervision row and bought-out/ENCON/grand totals.</p>
-</li>
-<li>
-<p>Designing Parameters table (echoed flue/air conditions, surface area, pipe geometry), plus a marketing-rounded air-outlet temperature (ceil to next 50 °C).</p>
-</li>
-<li>
-<p>Optional 3D recuperator images (side/front/top) embedded from <code>static/recup/*.jpeg</code> when present (<code>main.py:2948</code>).</p>
-</li>
-<li>
-<p>Output template: <strong><code>Recup_Offer_Template.docx</code></strong> (repo root, <code>main.py:2939</code>), cloned from the VLPH <code>Offer_Template.docx</code> via <code>build_recup_template_from_vlph.py</code>. Saved as <code>Recup_Offer_&lt;company&gt;_&lt;seq&gt;.docx</code> in <code>QUOTES_FOLDER</code>, with best-effort PDF conversion and async Google-Drive mirroring (product_type <code>"recuperator"</code>).</p>
+<p>the standard Terms &amp; Conditions.</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_calculation_flow"><a class="anchor" href="#_calculation_flow"></a>Calculation Flow</h2>
+<h2 id="_how_the_price_is_worked_out"><a class="anchor" href="#_how_the_price_is_worked_out"></a>How the price is worked out</h2>
 <div class="sectionbody">
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Flue mass (E4).</strong> <code>flue_mass = flue_flow_nm3hr × 1.2</code> (<code>calculations/recup.py:168</code>).</p>
+<p><strong>Heat balance.</strong> From the air flow and the temperature rise, work out how much heat must be recovered, and what temperature the flue gas drops to after giving up that heat.</p>
 </li>
 <li>
-<p><strong>Heat duty (E13).</strong> Air mass = <code>air_volume_nm3hr × 1.2</code>; <code>heat_required = air_mass × cp_air × (air_temp_out − air_temp_in)</code> (<code>calculations/recup.py:171</code>–173).</p>
+<p><strong>Surface area.</strong> Using the average temperature difference between the two streams and the heat-transfer coefficient, work out the heat-transfer surface area required.</p>
 </li>
 <li>
-<p><strong>Final flue temp (E7).</strong> Back-solved from the heat balance: <code>flue_temp_out = flue_temp_in − heat_required / (flue_mass × cp_flue)</code> (<code>calculations/recup.py:176</code>).</p>
+<p><strong>Tube count and layout.</strong> Convert the surface area into a number of tubes, then arrange them into a near-square grid of rows and columns, split evenly between the hot and cold banks.</p>
 </li>
 <li>
-<p><strong>LMTD (E14).</strong> <code>dT1 = flue_temp_in − air_temp_out</code>, <code>dT2 = flue_temp_out − air_temp_in</code>; <code>lmtd = dT1 − dT2)/ln(dT1/dT2 × 0.9</code> (degenerate cases fall back to the arithmetic mean) (<code>calculations/recup.py:179</code>–185).</p>
+<p><strong>Dimensions and weights.</strong> From the grid, work out the bank length and width, and the weight of the tubes and of all the supporting steelwork.</p>
 </li>
 <li>
-<p><strong>Surface area (E15).</strong> <code>surface_area = heat_required / (lmtd × heat_transfer_coef)</code> (<code>calculations/recup.py:188</code>).</p>
+<p><strong>Price the materials.</strong> Price the tubes by weight at the stainless- or mild-steel rate, price the fabricated assemblies and structural steel, and add the bending, welding and drilling labour and the thermocouple — giving the grand total.</p>
 </li>
 <li>
-<p><strong>Raw pipe count (E19).</strong> <code>pipes_raw = surface_area / (3.14 × (dia/1000) × (length + 0.1))</code> — literal 3.14 to match the spreadsheet (<code>calculations/recup.py:193</code>–195).</p>
+<p><strong>Add the commercials.</strong> Apply the cost-to-sale mark-up, then add packaging &amp; forwarding, designing and negotiation as percentages and the flat transport, rounding up to the nearest ₹1,000.</p>
 </li>
 <li>
-<p><strong>Grid selection (E20/E21).</strong> Target = <code>pipes_total_override</code> if set, else <code>ceil(pipes_raw)</code>. <code>_best_grid</code> (<code>calculations/recup.py:121</code>) picks a near-square (rows, cols) — cols forced even so each bank gets a whole number — scoring <code>aspect_pct + 3×waste_pct</code>, tie-breaking toward rows=14. <code>pipes_total = rows × cols</code>, <code>pipes_per_bank = pipes_total // 2</code> (<code>calculations/recup.py:200</code>–205).</p>
-</li>
-<li>
-<p><strong>Bank dimensions (E16/E17).</strong> <code>bank_length_mm</code> and <code>bank_width_mm</code> derived from the grid, pipe pitch (32 mm), diameter, and 150 mm end margin (<code>calculations/recup.py:208</code>–213).</p>
-</li>
-<li>
-<p><strong>Pipe weights (E27/E28/E35).</strong> <code>weight_per_pipe = pipe_kg_per_m × length</code>; hot and cold banks each = <code>weight_per_pipe × pipes_per_bank</code> (<code>calculations/recup.py:216</code>–219).</p>
-</li>
-<li>
-<p><strong>MS structural weights (E41–E45).</strong> Outer shell, air-inlet duct, hot-outlet duct, pipe-holding plate, and bottom box computed by volume × density (<code>_vol_to_kg</code>), auto-scaling with bank geometry (<code>calculations/recup.py:222</code>–238).</p>
-</li>
-<li>
-<p><strong>BOM assembly + pricing.</strong> <code>/api/recup-calculate</code> loads <code>recup_rates</code> via <code>_load_rates</code> (<code>bom/recup_builder.py:57</code>) and calls <code>build_recup_df</code> (<code>bom/recup_builder.py:67</code>). Rates resolved from DB with Excel-default fallbacks: tube rates <code>SS304_TUBE_PER_KG</code> (250) / <code>MS_TUBE_PER_KG</code> (70) per bank material; <code>MS_PER_KG</code> (60) for stock steel; <code>MS_FABRICATION_PER_KG</code> (70) for the CAI assembly. Rows priced:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Tubes: hot/cold = <code>weight_bank_kg × tube_rate</code> (<code>bom/recup_builder.py:117</code>–130).</p>
-</li>
-<li>
-<p>MS Combustion Air Inlet Assembly (F49): <code>(shell + inlet + outlet + holding + box + flanges_kg(100) + side_hood_kg) × cai_rate</code>, where <code>cai_rate</code> = <code>cai_rate_override</code> if &gt;0 else <code>MS_FABRICATION_PER_KG</code> (<code>bom/recup_builder.py:145</code>–166).</p>
-</li>
-<li>
-<p>MS Side Hood fabrication (F48): flat <code>SIDE_HOOD_COST</code> (50000) (<code>bom/recup_builder.py:135</code>).</p>
-</li>
-<li>
-<p>Stock steel (F50–53): <code>length_m × kg_per_m × MS_PER_KG</code>, specs from <code>_STOCK_STEEL_SPECS</code> (<code>bom/recup_builder.py:170</code>–180).</p>
-</li>
-<li>
-<p>Labour: Pipe Bending <code>(rows+cols) × 350</code>, Welding Rods <code>n_total × 4 × 8</code>, Hole Fabrication <code>n_total × 2 × 100</code> (<code>bom/recup_builder.py:183</code>–200).</p>
-</li>
-<li>
-<p>Thermocouple: flat <code>THERMOCOUPLE_TT</code> (8000) (<code>bom/recup_builder.py:112</code>).
-Summary rows sum BOUGHT OUT and ENCON to GRAND TOTAL (<code>bom/recup_builder.py:206</code>–214).</p>
+<p><strong>Produce the documents</strong> — the price and all the sizing results go into the offer, which is saved as Word and PDF and filed.</p>
 </li>
 </ol>
-</div>
-</li>
-<li>
-<p><strong>Commercial markup.</strong> <code>recup_summary</code> (<code>bom/recup_builder.py:217</code>) applies the Excel additive chain: <code>sale = grand × MARKUP_CONVERSION (1.8)</code>; <code>final = sale × (1 + designing + negotiation)</code>, rounded up to the next Rs 1000 (<code>bom/recup_builder.py:229</code>–242). The Step-3 UI (<code>recup_costing.html:957</code>–968) reproduces and extends this client-side — <code>final = sale + sale×pf + sale×design + sale×nego + transport</code>, rounded up to Rs 1000 — and posts the result as <code>final_total</code> (+ <code>transport_amt</code> on its own line).</p>
-</li>
-<li>
-<p><strong>Offer context build.</strong> <code>/api/generate-recup-quote</code> (<code>main.py:2830</code>) computes <code>unit_price = final_total</code>, <code>total_price = unit_price × qty</code>, generates the enquiry ref/date, and assembles the docxtpl context: Designing Parameters, Material of Construction (<code>main.py:2751</code>), and the price schedule rows (<code>main.py:2775</code>) per <code>price_schedule_style</code>.</p>
-</li>
-<li>
-<p><strong>Docx render &amp; delivery.</strong> Loads <code>Recup_Offer_Template.docx</code> (<code>main.py:2939</code>), embeds the optional 3D images (<code>main.py:2948</code>), renders, saves to <code>QUOTES_FOLDER</code> as <code>Recup_Offer_&lt;company&gt;_&lt;seq&gt;.docx</code>, attempts PDF conversion, mirrors to Google Drive async (product_type <code>"recuperator"</code>), and returns download / PDF / preview URLs (<code>main.py:2956</code>–2994).</p>
-</li>
-</ol>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The backend <code>recup_summary</code> markup is the additive Excel chain (conversion → designing + negotiation only). The actual offer&#8217;s <code>final_total</code> is computed client-side in <code>recup_costing.html</code> and additionally includes Packaging &amp; Forwarding (%) and a flat Transport amount, then rounds up to the nearest Rs 1000. P&amp;F and Transport are UI-only commercial inputs that never pass through the Python calc — they arrive at the backend already baked into <code>final_total</code> (with Transport also echoed separately as <code>transport_amt</code>).</p>
-</div>
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>
