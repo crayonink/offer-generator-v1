@@ -164,7 +164,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>A vertical ladle preheater dries and heats the refractory lining of a steel ladle before molten metal is poured into it. A burner fires downward into the ladle from a hood that sits on top, so the ladle is heated while standing upright. This page explains, in plain terms, what the user fills in, what the finished offer contains, and how the price is arrived at.</p>
+<p>A vertical ladle preheater dries and heats the refractory lining of a steel ladle before molten metal is poured into it. A burner fires downward into the ladle from a hood on top, so the ladle is heated standing upright.</p>
 </div>
 </div>
 </div>
@@ -172,65 +172,285 @@
 <h2 id="_what_you_enter"><a class="anchor" href="#_what_you_enter"></a>What you enter</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>The heating job.</strong> Either describe the process and let the system size the burner, or enter the burner size directly.</p>
+<p><strong>The heating job</strong> — either describe the process and let the system size the burner, or enter the burner size directly.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><em>Process method:</em> the start and finish temperature of the lining, the weight of refractory to be heated, how long the heating should take, the system efficiency, and the ladle capacity (in tons).</p>
-</li>
-<li>
-<p><em>Direct method:</em> simply type in the burner capacity or the heat input, and the system uses that instead of the process maths.</p>
-</li>
-</ul>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">What you enter</th>
+<th class="tableblock halign-left valign-top">Typical value / options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sizing method</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Calculate from process" (default) or "Enter burner size directly"</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lining start temperature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">650 °C</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lining finish temperature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1200 °C</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Refractory weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21,500 kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heating time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 hours</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.52</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ladle capacity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10 tons</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Direct method) Burner capacity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">in kW — used instead of the process figures</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Direct method) Heat input</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">in kcal/hr — overrides the capacity if given</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
-<p><strong>The fuel.</strong> The main fuel (natural gas, LPG, coke-oven gas, blast-furnace gas, mixed gas, or an oil) and its calorific value. You can add a second fuel for a dual-fuel unit, and choose the pilot burner.</p>
+<p><strong>The fuel.</strong></p>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">What you enter</th>
+<th class="tableblock halign-left valign-top">Typical value / options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Main fuel</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Natural Gas (default), RLNG, LPG, Coke-Oven Gas, Blast-Furnace Gas, Mixed Gas, or an oil (LDO / FO / LSHS / HSD / SKO)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Main fuel calorific value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8,500 kcal/Nm³ for gas (kcal/kg for oil)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Second fuel</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None (default), or any of the above — turns it into a dual-fuel unit</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Second fuel calorific value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">as applicable</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pilot burner</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Auto (default), LPG 10 kW, NG-LPG 100 kW, or COG 100 kW</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pilot-line fuel (manual mode)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LPG (default) or NG</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
-<p><strong>The control system.</strong> Whether the unit is operated manually or automatically. Automatic units can be PLC- or PID-based, which changes the instruments included.</p>
+<p><strong>The control system and the makes.</strong></p>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">What you enter</th>
+<th class="tableblock halign-left valign-top">Typical value / options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control mode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic (default) or Manual</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PLC, PLC + air-gas regulator, PID, or P.PID + ratio controller</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control valve make</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dembla pneumatic (default) or CAIR motorised</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shut-off valve make</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AIRA (default), Dembla or CAIR</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Butterfly valve make</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">L&amp;T lever (default) or L&amp;T gear</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pressure gauge make</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Baumer (default) or H-Guru</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oil pumping unit type (oil fuels)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplex, Duplex 1 (default) or Duplex 2</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
-<p><strong>The makes.</strong> Which supplier to use for the control valve, shut-off valve, butterfly valve and pressure gauge; and, for oil fuels, the type of oil pumping unit (Simplex / Duplex).</p>
+<p><strong>The air, pipework and options.</strong></p>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">What you enter</th>
+<th class="tableblock halign-left valign-top">Typical value / options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blower pressure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">28 (default) or 40 inches water gauge</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air–gas pipeline weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,000 kg (entered by hand; 700–2,000)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hood type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Up-down (default), Swivel manual, or Swivel geared</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purging line</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No (default) or Yes (nitrogen line)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Special ignition equipment</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Off (default) or On</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Structure-weight override</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kg (leave 0 to fill in automatically)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ceramic-fibre override</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number of rolls (leave 0 to fill in automatically)</p></td>
+</tr>
+</tbody>
+</table>
 <div class="paragraph">
-<p><strong>The air and pipework.</strong> The blower pressure rating, and the weight of the air–gas pipeline (this figure is always entered by hand).</p>
+<p><strong>Quantities and commercial figures.</strong></p>
 </div>
-<div class="paragraph">
-<p><strong>Other options.</strong> The hood type (up-down or swivel), whether a nitrogen purging line is needed, whether special ignition equipment is wanted, and optional overrides for the structure weight or ceramic-fibre quantity.</p>
-</div>
-<div class="paragraph">
-<p><strong>Quantities and commercials.</strong> How many vertical (and horizontal) sets the offer covers, and the commercial figures: the mark-up on bought-out items, the packaging &amp; forwarding percentage, the designing percentage, the negotiation percentage, and a flat transport amount.</p>
-</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">What you enter</th>
+<th class="tableblock halign-left valign-top">Typical value / options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Vertical sets</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Horizontal sets</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bought-out mark-up</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Packaging &amp; forwarding</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5 %</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Designing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5 %</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0 % (up to 10)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Transport</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flat ₹ amount (default 0)</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_what_the_offer_contains"><a class="anchor" href="#_what_the_offer_contains"></a>What the offer contains</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p><strong>A priced bill of materials</strong>, grouped by section — the combustion-air line, the fuel line, the pilot line, the ENCON-built equipment (burner, blower, structure, pipeline, ceramic fibre, and for oil the pumping unit), and the instruments and control panel. Each line shows the item, quantity, make, unit price and total.</p>
-</div>
-<div class="paragraph">
-<p><strong>The offer document</strong> (a Word file, plus a PDF), containing:</p>
+<p><strong>A priced bill of materials</strong>, grouped by section. Each line shows the item, quantity, make, unit price and total:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>a <strong>Scope of Supply</strong> that lists, in words, everything ENCON will provide;</p>
+<p><strong>Combustion-air line</strong> — compensator, pressure gauge with isolation valve, low-pressure switch; (on PLC) orifice plate and flow transmitter; control valve; butterfly valve; rotary joint; and, when ignition is included, pilot and UV ball valves with flexible hoses.</p>
 </li>
 <li>
-<p>a <strong>Price Schedule</strong> with the all-inclusive price, and transport shown on its own separate line;</p>
+<p><strong>Fuel line</strong> — the gas-train package (for NG / RLNG / LPG) or the individual valves and regulators (for mixed gas, coke-oven gas or blast-furnace gas); the oil-line items for oil fuels; and an air-gas regulator in manual, PLC+AGR or PID modes.</p>
 </li>
 <li>
-<p>the <strong>Terms &amp; Conditions</strong> (prices, delivery, taxes, payment, validity, guarantee), which can be edited before generating;</p>
+<p><strong>Purging line</strong> (if selected) — the nitrogen purging set.</p>
+</li>
+<li>
+<p><strong>Pilot line</strong> (if ignition is included) — the pilot gas line.</p>
+</li>
+<li>
+<p><strong>ENCON-built items</strong> — the burner; the bearing, plummer block and shaft (or a swivel assembly); the fabricated structure; the air–gas pipeline; the blower; the ignition transformer, sequence controller, UV sensor and pilot burner (when auto-ignition is on); the oil pumping unit (for oil fuels); and the ceramic fibre.</p>
+</li>
+<li>
+<p><strong>Instruments and panel</strong> — control panel, instrument ball valves, PLC or PID, ratio controller, temperature transmitter, hydraulic power pack, and PLC-with-HMI.</p>
+</li>
+<li>
+<p><strong>Totals</strong> — bought-out subtotal, ENCON subtotal, and grand total.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>The offer document</strong> (Word file plus PDF), containing:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a <strong>Scope of Supply</strong> listing in words everything ENCON will provide;</p>
+</li>
+<li>
+<p>a <strong>Price Schedule</strong> showing the all-inclusive price, with transport on its own separate line;</p>
+</li>
+<li>
+<p>the editable <strong>Terms &amp; Conditions</strong> (prices, delivery, taxes, payment, validity, guarantee);</p>
 </li>
 <li>
 <p>a <strong>Make List</strong> naming the supplier for each major item.</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>The document is saved, converted to PDF, and a copy is filed automatically.</p>
 </div>
 </div>
 </div>
@@ -240,25 +460,25 @@
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><strong>Work out the fuel and air needed.</strong> From the heating figures (or the direct capacity you typed), the system calculates how much fuel per hour and how much combustion air the burner needs, adding a small safety margin.</p>
+<p><strong>Work out the fuel and air needed</strong> from the heating figures (or the direct capacity you typed), adding a small safety margin.</p>
 </li>
 <li>
-<p><strong>Choose the equipment.</strong> Using those flows it sizes the gas and air pipework, then picks the right burner, gas train, air–gas regulator (where used), blower and valves from the catalogue — each chosen to comfortably handle the required flow.</p>
+<p><strong>Choose the equipment</strong> — size the gas and air pipework, then pick the burner, gas train, air-gas regulator (where used), blower and valves from the catalogue to suit those flows.</p>
 </li>
 <li>
-<p><strong>Size the air line from the blower.</strong> The combustion-air line is sized from the airflow of the blower that was actually selected, so the pipe, the valve and the displayed air flow all agree.</p>
+<p><strong>Size the air line from the blower</strong> that was actually selected, so the pipe, the valve and the displayed air flow all agree.</p>
 </li>
 <li>
-<p><strong>Fill in the structure and ceramic.</strong> The structure weight and ceramic-fibre quantity are filled in automatically from the ladle size (you can override them).</p>
+<p><strong>Fill in the structure and ceramic</strong> automatically from the ladle size (overridable).</p>
 </li>
 <li>
-<p><strong>Price every line and total it up.</strong> Each item is priced from the rate list. Bought-out items are summed and multiplied by the mark-up; ENCON-made items are added on top, giving the grand total.</p>
+<p><strong>Price every line and total it up</strong> — bought-out items summed and multiplied by the mark-up, plus ENCON-made items, giving the grand total.</p>
 </li>
 <li>
-<p><strong>Add the commercials.</strong> Packaging &amp; forwarding, designing and negotiation are each added as a percentage of the grand total (they add to the price, they do not discount it), the flat transport is added, and the result is rounded to the nearest ₹1,000.</p>
+<p><strong>Add the commercials</strong> — packaging &amp; forwarding, designing and negotiation added as percentages (they add to the price, they do not discount it), plus flat transport, rounded to the nearest ₹1,000.</p>
 </li>
 <li>
-<p><strong>Produce the documents.</strong> The final all-inclusive price goes into the offer; transport is then shown on its own line so the schedule still adds up. The Word file and PDF are created and filed.</p>
+<p><strong>Produce the documents</strong> — the all-inclusive price in the offer, transport shown on its own line, saved as Word and PDF.</p>
 </li>
 </ol>
 </div>

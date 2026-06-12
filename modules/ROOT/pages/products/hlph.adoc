@@ -1,40 +1,97 @@
 = Horizontal Ladle Preheater (HLPH)
 :description: What a Horizontal Ladle Preheater offer needs, what it produces, and how its price is worked out — in plain language.
 
-A horizontal ladle preheater does the same job as the xref:products/vlph.adoc[vertical preheater] — drying and heating a ladle's refractory lining before metal is poured — but the ladle is heated lying on its side. The burner fires in from the side, and the ladle sits on a powered trolley instead of under a swivel hood. Most of the offer works exactly like the vertical unit; this page focuses on the differences.
+A horizontal ladle preheater does the same job as the xref:products/vlph.adoc[vertical preheater] — drying and heating a ladle's refractory lining — but the ladle is heated lying on its side. The burner fires in from the side, and the ladle sits on a powered trolley instead of under a swivel hood.
 
 == What you enter
 
-The same set of details as the vertical preheater:
+*The heating job.*
 
-* *The heating job* — start and finish temperature, refractory weight, heating time, efficiency and ladle size; or the burner capacity entered directly.
-* *The fuel* — main fuel and calorific value, an optional second fuel, and the pilot burner.
-* *The control system* — manual or automatic (PLC / PID variants).
-* *The makes* — control valve, shut-off valve, butterfly valve, pressure gauge, and the oil pumping-unit type for oil fuels.
-* *The air and pipework* — blower pressure rating, and the air–gas pipeline weight (always entered by hand for the horizontal unit).
-* *Options* — purging line, special ignition, and overrides for structure weight or ceramic quantity.
-* *Commercials* — mark-up, packaging & forwarding, designing, negotiation, and transport.
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
 
-The one thing that does *not* apply here is the hood choice — a horizontal unit uses a trolley, not a swivel or up-down hood.
+|Sizing method |"Calculate from process" (default) or "Enter burner size directly"
+|Lining start temperature |650 °C
+|Lining finish temperature |1200 °C
+|Refractory weight |21,500 kg
+|Heating time |2 hours
+|Efficiency |0.52
+|Ladle capacity |10 tons
+|(Direct method) Burner capacity / heat input |kW or kcal/hr
+|===
+
+*The fuel.*
+
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Main fuel |Natural Gas (default), RLNG, LPG, Coke-Oven Gas, Blast-Furnace Gas, Mixed Gas, or an oil (HSD / LDO / HDO / FO / SKO / CFO / LSHS)
+|Main fuel calorific value |8,500 kcal/Nm³ for gas (kcal/kg for oil)
+|Second fuel + its calorific value |None (default), or any of the above for a dual-fuel unit
+|Pilot burner / pilot-line fuel |Auto (default); LPG or NG line
+|===
+
+*The control system and the makes.*
+
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Control mode |Automatic (default) or Manual
+|Automatic type |PLC, PLC + air-gas regulator, or PID
+|Control valve make |Dembla (default), AIRA or CAIR
+|Shut-off valve make |AIRA (default), Dembla or CAIR
+|Butterfly valve make |L&T lever (default) or L&T gear
+|Pressure gauge make |Baumer (default) or H-Guru
+|Oil pumping unit type (oil fuels) |Simplex, Duplex 1 (default) or Duplex 2
+|===
+
+*The air, pipework, options and commercials.*
+
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Blower pressure |28 (default) or 40 inches water gauge
+|Air–gas pipeline weight |1,000 kg (entered by hand)
+|Purging line |No (default) or Yes
+|Special ignition equipment |Off (default) or On
+|Structure-weight / ceramic-roll overrides |kg / count (leave 0 to fill in automatically)
+|Bought-out mark-up |1.8
+|Packaging & forwarding |5 %
+|Designing |5 %
+|Negotiation |0 %
+|Transport |flat ₹ amount (default 0)
+|Horizontal sets |1
+|===
+
+NOTE: There is no hood choice here — a horizontal unit uses a trolley, not a swivel or up-down hood.
 
 == What the offer contains
 
 The same kind of priced bill of materials and offer document (Word + PDF) as the vertical unit, with these horizontal-specific points:
 
-* *A trolley drive group* — geared motor, trolley wheels, plummer blocks, shafts, bearings, sleeves and a structural frame — in place of the vertical unit's swivel/hood parts.
-* *No rotary joint* — the horizontal unit has no rotating hood, so that part is left out.
-* Everything else — combustion-air line, fuel line, burner, blower, instruments, scope of supply, price schedule (with transport on its own line) and terms & conditions — follows the same pattern as the vertical preheater.
+* *A trolley drive group* (in place of the vertical unit's swivel/hood parts) — geared motor mechanism, four trolley wheels, plummer blocks, one long and two short shafts, trolley bearings, sleeves, and a structural frame.
+* *No rotary joint* — the horizontal unit has no rotating hood.
+* *Combustion-air line* — compensator, pressure gauge with isolation valve, low-pressure switch; on PLC, the orifice plate and flow transmitter; control valve and butterfly valve.
+* *Fuel line(s)* — gas train, air-gas regulator, shut-off / ball / solenoid valves, regulator and hoses; second fuel line for dual-fuel.
+* *Optional* — nitrogen purging line; and, when special ignition is on, the pilot line plus ignition transformer, sequence controller, UV sensor and pilot burner.
+* *ENCON-built items* — fabricated structure, air–gas pipeline, ceramic fibre, the burner, the blower, and (for oil fuels) the heating & pumping unit.
+* *Instruments and panel* — control panel, instrument ball valves, and PLC-with-HMI on PLC modes.
+* *Totals* — bought-out, ENCON and grand total.
+
+The offer document carries the Scope of Supply, the Price Schedule (transport on its own line), the editable Terms & Conditions and the Make List.
 
 == How the price is worked out
-
-The steps are the same as the vertical preheater:
 
 . *Work out the fuel and air needed* from the heating figures or the direct capacity.
 . *Choose the equipment* — pipework, burner, gas train, regulator, blower and valves sized to the required flows.
 . *Size the air line from the chosen blower's airflow* so the pipe and the displayed flow agree.
 . *Fill in the structure, ceramic and trolley-drive figures* from the ladle size (overridable).
 . *Price every line and total it up* — bought-out items times the mark-up, plus ENCON-made items.
-. *Add the commercials* — packaging & forwarding, designing and negotiation added as percentages, plus flat transport, rounded to the nearest ₹1,000.
+. *Add the commercials* — packaging & forwarding, designing and negotiation as percentages, plus flat transport, rounded to the nearest ₹1,000.
 . *Produce the documents* — the all-inclusive price in the offer, transport on its own line, saved as Word and PDF.
 
 There is also a *cost-comparison tool* that re-runs the calculation across single changes — swapping a vendor, turning ignition on or off, changing the pumping-unit type, or flipping between manual and automatic — so the effect of each choice on the price can be seen side by side.

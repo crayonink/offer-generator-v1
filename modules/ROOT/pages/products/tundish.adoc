@@ -1,34 +1,65 @@
 = Tundish Preheating System
 :description: What a Tundish Preheating offer needs, what it produces, and how its price is worked out — in plain language.
 
-A tundish preheating system heats the refractory lining of a tundish (the holding vessel that feeds molten steel into a continuous caster) before it goes into service. It works just like the xref:products/vlph.adoc[vertical ladle preheater], with one important difference: a tundish is usually heated by *several burners at once* rather than a single burner. This page explains the inputs, the output, and how the price is built, and points out the few tundish-specific extras.
+A tundish preheating system heats the refractory lining of a tundish (the vessel that feeds molten steel into a continuous caster) before it goes into service. It works just like the xref:products/vlph.adoc[vertical ladle preheater], with one important difference: a tundish is usually heated by *several burners at once*.
 
 == What you enter
 
-The same details as the vertical ladle preheater — the heating job, the fuel, the control system, the makes, the air and pipework, and the commercial figures — plus three tundish-specific items:
+The same details as the vertical ladle preheater:
 
-* *Number of burners* — how many burners share the heating. The total firing rate is split between them to size each burner, and the burner-related items in the bill of materials are multiplied by this number.
-* *Structure-weight override* — type in the MS structure weight to use for the fabrication cost, instead of the figure the system would look up.
-* *Ceramic-fibre override* — type in the number of ceramic-fibre rolls, instead of the looked-up figure.
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Sizing method |"Calculate from process" (default) or "Enter burner size directly"
+|Lining start / finish temperature |650 °C / 1200 °C
+|Refractory weight |21,500 kg
+|Heating time |2 hours
+|Efficiency |0.52
+|Ladle / tundish capacity |10 tons
+|(Direct) Burner capacity |kW, taken as the size *per burner*
+|(Direct) Heat input |kcal/hr (overrides capacity)
+|Main fuel + calorific value |Natural Gas (default) / LPG / COG / BFG / Mixed Gas / RLNG / oils; 8,500 kcal/Nm³
+|Second fuel + its calorific value |None (default), or any of the above for dual-fuel
+|Control mode / automatic type |Automatic (default) or Manual; PLC / PLC+AGR / PID
+|Makes |control valve, shut-off valve, butterfly valve, pressure gauge
+|Blower pressure |28 (default) or 40 inches water gauge
+|Air–gas pipeline weight |1,000 kg
+|Oil pumping unit type (oil fuels) |Simplex / Duplex 1 (default) / Duplex 2
+|Purging line |No (default) or Yes
+|===
+
+Plus three tundish-specific items:
+
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Number of burners |1 — the total firing rate is split between them, and the burner-related items are multiplied by this number
+|Structure-weight override |kg (leave 0 to fill in automatically)
+|Ceramic-fibre override |number of rolls (leave 0 to fill in automatically)
+|===
+
+And the commercial figures — bought-out mark-up (1.8), packaging & forwarding (5 %), designing (5 %), negotiation (0 %), and a flat transport amount.
 
 == What the offer contains
 
 The same priced bill of materials and offer document (Word + PDF) as the ladle preheaters:
 
-* the burner (and its pilot and ignition parts) counted once per burner;
-* the shared equipment — blower, gas train, valves, structure, pipeline, ceramic fibre — counted once;
-* a Scope of Supply, a Price Schedule with transport on its own line, and editable Terms & Conditions;
-* the equipment is named "Tundish Preheater" in the document.
+* *The burner* and its pilot and ignition parts — counted once *per burner*.
+* *The shared equipment* — blower, gas train, air-gas regulator / control valve, butterfly and shut-off valves, gate valve, pressure gauges and switches, rotary joint, structure, air–gas pipeline and ceramic fibre — counted once.
+* *The oil pumping unit* for oil fuels.
+* *Totals* — bought-out, ENCON and grand total.
 
-The tundish offer is produced from the same standard offer document as the other preheaters — there is no separate tundish template.
+The offer document carries the Scope of Supply (the equipment is named "Tundish Preheater"), the Price Schedule with transport on its own line, the editable Terms & Conditions, and the Make List. It is produced from the same standard offer document as the other preheaters.
 
 == How the price is worked out
 
 . *Work out the total fuel and air needed* from the heating figures or the direct capacity.
-. *Split the firing rate across the burners.* The shared equipment (blower, gas train, main line) is sized for the total flow, but each burner is sized for its own share.
+. *Split the firing rate across the burners* — the shared equipment is sized for the total flow, but each burner is sized for its own share.
 . *Choose the equipment* — pipework, burner, gas train, regulator, blower and valves from the catalogue.
 . *Size the air line from the chosen blower's airflow.*
-. *Fill in the structure and ceramic figures* from the ladle/tundish size, or use your overrides.
+. *Fill in the structure and ceramic figures* from the size, or use your overrides.
 . *Price every line and total it up*, multiplying the per-burner items by the number of burners.
 . *Add the commercials* — packaging & forwarding, designing and negotiation as percentages, plus flat transport, rounded to the nearest ₹1,000.
 . *Produce the documents* — the all-inclusive price in the offer, transport on its own line, saved as Word and PDF.

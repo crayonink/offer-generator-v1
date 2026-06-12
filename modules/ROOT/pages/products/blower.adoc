@@ -1,27 +1,39 @@
 = Blowers
 :description: What a standalone Blower offer needs, what it produces, and how its price is worked out — in plain language.
 
-A blower supplies combustion air to a burner. This offer is for selling a blower on its own (with its motor and base frame), separate from a full preheater. It is a straightforward "pick from the catalogue" offer — you choose a blower model and the system prices it.
+A blower supplies combustion air to a burner. This offer sells a blower on its own (with its motor and base frame), separate from a full preheater. It is a "pick from the catalogue" offer — you choose a model and the system prices it.
 
 == What you enter
 
-* *Customer details* — company, address, contacts and the subject of the offer.
-* *Blower model* — chosen from a drop-down list of catalogue blowers. Each model already carries its own horsepower, airflow and pressure rating, so there is nothing to size by hand.
-* *Quantity* — how many blower sets.
-* *Commercial figures* — packaging & forwarding percentage, designing percentage, negotiation percentage, and a flat transport amount.
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
 
-The introduction paragraph and the bullet list of what's supplied are written automatically from the model you pick.
+|Customer details |company, address, contacts, and the subject of the offer
+|Blower model |chosen from a drop-down of catalogue blowers — each model already carries its horsepower, airflow and pressure rating, so nothing is sized by hand
+|Quantity |1 (number of blower sets)
+|Packaging & forwarding |5 %
+|Designing |10 %
+|Negotiation |0 %
+|Transport |flat ₹ amount (default 0)
+|===
+
+The introduction paragraph and the bullet list of what's supplied are written automatically from the model you pick — you don't type them.
 
 == What the offer contains
 
 The offer document (Word + PDF) includes:
 
-* *A short scope paragraph* describing the blower — a centrifugal steel-plate air blower of the chosen horsepower and airflow, with a suitable electric motor on a common base frame.
-* *A bulleted list* of what's supplied: the blower, the drive motor, and a common base frame with anti-vibration pads.
-* *A price schedule* with the quantity, unit price and total. If a transport amount was entered, it appears on its own separate line.
-* *The grand total in figures and words*, and the standard Terms & Conditions.
+* *A scope paragraph* describing the blower — a centrifugal steel-plate air blower of the chosen horsepower and airflow, with a suitable electric motor on a common base frame.
+* *A bulleted list* of what's supplied:
+** the centrifugal steel-plate air blower (its horsepower and airflow);
+** a suitable electric drive motor;
+** a common base frame with anti-vibration pads.
+* *A price schedule* with the quantity, unit price and total. If transport was entered, it appears on its own separate line.
+* *The grand total* in figures and words.
+* *The Terms & Conditions.*
 
-While filling in the form, a running total updates live as you change the quantity or any commercial figure, and after the offer is generated you can preview it before sending.
+While filling in the form, a running total updates live as you change the quantity or any commercial figure, and the finished offer can be previewed before sending.
 
 == How the price is worked out
 

@@ -7,33 +7,73 @@ A recuperator recovers heat from a furnace's hot waste flue gas and uses it to p
 
 *The heat duty.*
 
-* The flue-gas flow and its inlet temperature.
-* The combustion-air flow, its inlet (ambient) temperature, and the target pre-heated temperature.
-* The heat-transfer coefficient (how readily heat passes through the tubes).
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Flue-gas flow |1,900 Nm³/hr
+|Flue-gas inlet temperature |800 °C
+|Combustion-air flow |1,750 Nm³/hr
+|Air inlet (ambient) temperature |35 °C
+|Target pre-heated air temperature |400 °C
+|Heat-transfer coefficient |30 kcal/m²·°C
+|===
 
 *The tubes and steelwork.*
 
-* Tube diameter, wall thickness, weight per metre and length per bank.
-* The gap between the hot and cold tube banks.
-* The material of the hot bank and the cold bank — stainless steel or mild steel (they can differ).
-* The side-hood weight, and an optional override for the air-inlet assembly rate.
-* An optional override to force a specific number of tubes.
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
 
-*Quantities and commercials.* The order quantity, and the commercial figures: the cost-to-sale mark-up, packaging & forwarding, designing, negotiation, and a flat transport amount. Customer details, supervision charges and Terms & Conditions are entered for the offer.
+|Tube outer diameter |48.3 mm
+|Tube wall thickness |2.77 mm
+|Tube weight per metre |3.16 kg/m
+|Tube length per bank |0.63 m
+|Gap between hot and cold banks |150 mm
+|Hot-bank material |Stainless steel (default) or Mild steel
+|Cold-bank material |Stainless steel (default) or Mild steel — can differ from the hot bank
+|Side-hood weight |1,500 kg
+|Air-inlet assembly rate override |₹/kg (leave 0 for the default)
+|Force a tube count |leave 0 to let the system decide
+|===
+
+*Quantities and commercials.*
+
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Quantity |1
+|Cost-to-sale mark-up |1.8
+|Packaging & forwarding |5 %
+|Designing |10 %
+|Negotiation |10 %
+|Transport |flat ₹ amount (default 0)
+|Customer details, supervision charges, Terms & Conditions |entered for the offer
+|Price schedule style |single all-inclusive line, or every item listed in full
+|===
 
 == What the offer contains
 
-*The sizing results* — the heat to be recovered, the required heat-transfer surface area, the number of tubes and how they are arranged into rows and columns, the bank dimensions, and the weights of the tubes and the supporting steelwork.
+*The sizing results* — the heat to be recovered, the required heat-transfer surface area, the number of tubes and how they are arranged into rows and columns, the bank length and width, and the weights of the tubes and of the supporting steelwork.
 
-*A priced bill of materials* — the hot-bank and cold-bank tubes, the side-hood fabrication, the combustion-air inlet assembly, the structural steel, the bending and welding labour, and the thermocouple — each priced and totalled into bought-out, ENCON and grand totals.
+*A priced bill of materials* —
+
+* the hot-bank tubes and the cold-bank tubes (priced by weight at the stainless- or mild-steel rate);
+* the side-hood fabrication;
+* the combustion-air inlet assembly;
+* the structural steel (channels and angles);
+* the pipe-bending, welding and drilling labour;
+* the thermocouple;
+* and the bought-out, ENCON and grand totals.
 
 *The offer document* (Word + PDF), containing:
 
 * a *Scope of Supply / Materials of Construction* table describing the tubes (hot bank bent, cold bank straight) and the steel grades;
-* a *Price Schedule* — either a single all-inclusive line, or every item listed in full, as chosen;
+* a *Price Schedule* — either a single all-inclusive line or every item in full, as chosen;
 * a *Designing Parameters* table echoing the flue and air conditions, the surface area and the tube geometry;
 * optional 3-D images of the recuperator;
-* the standard Terms & Conditions.
+* the *Terms & Conditions.*
 
 == How the price is worked out
 
@@ -41,6 +81,6 @@ A recuperator recovers heat from a furnace's hot waste flue gas and uses it to p
 . *Surface area.* Using the average temperature difference between the two streams and the heat-transfer coefficient, work out the heat-transfer surface area required.
 . *Tube count and layout.* Convert the surface area into a number of tubes, then arrange them into a near-square grid of rows and columns, split evenly between the hot and cold banks.
 . *Dimensions and weights.* From the grid, work out the bank length and width, and the weight of the tubes and of all the supporting steelwork.
-. *Price the materials.* Price the tubes by weight at the stainless- or mild-steel rate, price the fabricated assemblies and structural steel, and add the bending, welding and drilling labour and the thermocouple — giving the grand total.
+. *Price the materials.* Price the tubes by weight, price the fabricated assemblies and structural steel, and add the bending, welding and drilling labour and the thermocouple — giving the grand total.
 . *Add the commercials.* Apply the cost-to-sale mark-up, then add packaging & forwarding, designing and negotiation as percentages and the flat transport, rounding up to the nearest ₹1,000.
 . *Produce the documents* — the price and all the sizing results go into the offer, which is saved as Word and PDF and filed.

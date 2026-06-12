@@ -1,16 +1,24 @@
 = Heating & Pumping Unit (HPU)
 :description: What a Heating & Pumping Unit offer needs, what it produces, and how its price is worked out — in plain language.
 
-A heating and pumping unit takes fuel oil, *heats* it so it flows and atomises properly, and *pumps* it to the burner at the right pressure. It is the oil-handling skid that sits between the oil tank and the burner. (For oils that are already hot enough and only need pumping, see the xref:products/pu.adoc[Pumping Unit].)
+A heating and pumping unit takes fuel oil, *heats* it so it flows and atomises properly, and *pumps* it to the burner at the right pressure. It is the oil-handling skid between the oil tank and the burner. (For oils that are already hot enough and only need pumping, see the xref:products/pu.adoc[Pumping Unit].)
 
 == What you enter
 
-* *Variant* — the pump arrangement: Simplex (single), Duplex 1, or Duplex 2 (with standby).
-* *Capacity (kW)* — the heater rating of the unit.
-* *Oil flow rate* — this is filled in automatically from the chosen capacity and variant; you don't type it.
-* *Quantity* — how many units.
-* *Commercial figures* — packaging & forwarding percentage, designing percentage, negotiation percentage, and a flat transport amount.
-* *Customer details and Terms & Conditions.*
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Variant |Simplex (single), Duplex 1 (default), or Duplex 2 (with standby)
+|Capacity |9 kW (choices: 3, 6, 9, 12, 16, 20, 24, 30, 36, 48)
+|Oil flow rate |filled in automatically from the capacity and variant — you don't type it
+|Quantity |1 (number of units)
+|Packaging & forwarding |5 %
+|Designing |10 %
+|Negotiation |0 %
+|Transport |flat ₹ amount (default 0)
+|Customer details and Terms & Conditions |company, contacts, subject, and the standard terms
+|===
 
 There is no fuel drop-down or combustion setting here — this is purely the oil heating-and-pumping skid.
 
@@ -20,12 +28,13 @@ The offer document (Word + PDF) includes:
 
 * *A scope section headed "Oil Heating and Pumping Unit"* describing a heating-and-pumping skid of the chosen variant, with bullets listing:
 ** the pump(s), each with its electric motor (two for Duplex, one for Simplex);
-** an electric oil pre-heater with thermostatic control;
-** duplex coarse and fine filters;
+** an electric oil pre-heater with thermostatic control (two for Duplex 2, otherwise one);
+** duplex coarse and fine filters (cold and hot side);
 ** a pressure-regulating valve;
 ** a pressure gauge and a temperature gauge.
 * *A price schedule* with a single all-inclusive line. Transport, if entered, appears on its own separate line. Packaging & forwarding, designing and negotiation are built into the unit price, not shown as separate lines.
-* *The grand total in figures and words*, and the standard Terms & Conditions.
+* *The grand total* in figures and words.
+* *The Terms & Conditions.*
 
 A running total updates live as you change the inputs, and the finished offer can be previewed before sending.
 

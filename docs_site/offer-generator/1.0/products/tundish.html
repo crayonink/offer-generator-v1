@@ -164,7 +164,7 @@
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>A tundish preheating system heats the refractory lining of a tundish (the holding vessel that feeds molten steel into a continuous caster) before it goes into service. It works just like the <a href="vlph.html" class="xref page">vertical ladle preheater</a>, with one important difference: a tundish is usually heated by <strong>several burners at once</strong> rather than a single burner. This page explains the inputs, the output, and how the price is built, and points out the few tundish-specific extras.</p>
+<p>A tundish preheating system heats the refractory lining of a tundish (the vessel that feeds molten steel into a continuous caster) before it goes into service. It works just like the <a href="vlph.html" class="xref page">vertical ladle preheater</a>, with one important difference: a tundish is usually heated by <strong>several burners at once</strong>.</p>
 </div>
 </div>
 </div>
@@ -172,20 +172,117 @@
 <h2 id="_what_you_enter"><a class="anchor" href="#_what_you_enter"></a>What you enter</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The same details as the vertical ladle preheater — the heating job, the fuel, the control system, the makes, the air and pipework, and the commercial figures — plus three tundish-specific items:</p>
+<p>The same details as the vertical ladle preheater:</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>Number of burners</strong> — how many burners share the heating. The total firing rate is split between them to size each burner, and the burner-related items in the bill of materials are multiplied by this number.</p>
-</li>
-<li>
-<p><strong>Structure-weight override</strong> — type in the MS structure weight to use for the fabrication cost, instead of the figure the system would look up.</p>
-</li>
-<li>
-<p><strong>Ceramic-fibre override</strong> — type in the number of ceramic-fibre rolls, instead of the looked-up figure.</p>
-</li>
-</ul>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">What you enter</th>
+<th class="tableblock halign-left valign-top">Typical value / options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sizing method</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Calculate from process" (default) or "Enter burner size directly"</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lining start / finish temperature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">650 °C / 1200 °C</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Refractory weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21,500 kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heating time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 hours</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.52</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ladle / tundish capacity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10 tons</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Direct) Burner capacity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kW, taken as the size <strong>per burner</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Direct) Heat input</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/hr (overrides capacity)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Main fuel + calorific value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Natural Gas (default) / LPG / COG / BFG / Mixed Gas / RLNG / oils; 8,500 kcal/Nm³</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Second fuel + its calorific value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None (default), or any of the above for dual-fuel</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control mode / automatic type</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic (default) or Manual; PLC / PLC+AGR / PID</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Makes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">control valve, shut-off valve, butterfly valve, pressure gauge</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blower pressure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">28 (default) or 40 inches water gauge</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air–gas pipeline weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,000 kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oil pumping unit type (oil fuels)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplex / Duplex 1 (default) / Duplex 2</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Purging line</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No (default) or Yes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Plus three tundish-specific items:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 42.8571%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">What you enter</th>
+<th class="tableblock halign-left valign-top">Typical value / options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of burners</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 — the total firing rate is split between them, and the burner-related items are multiplied by this number</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Structure-weight override</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kg (leave 0 to fill in automatically)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ceramic-fibre override</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">number of rolls (leave 0 to fill in automatically)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>And the commercial figures — bought-out mark-up (1.8), packaging &amp; forwarding (5 %), designing (5 %), negotiation (0 %), and a flat transport amount.</p>
 </div>
 </div>
 </div>
@@ -198,21 +295,21 @@
 <div class="ulist">
 <ul>
 <li>
-<p>the burner (and its pilot and ignition parts) counted once per burner;</p>
+<p><strong>The burner</strong> and its pilot and ignition parts — counted once <strong>per burner</strong>.</p>
 </li>
 <li>
-<p>the shared equipment — blower, gas train, valves, structure, pipeline, ceramic fibre — counted once;</p>
+<p><strong>The shared equipment</strong> — blower, gas train, air-gas regulator / control valve, butterfly and shut-off valves, gate valve, pressure gauges and switches, rotary joint, structure, air–gas pipeline and ceramic fibre — counted once.</p>
 </li>
 <li>
-<p>a Scope of Supply, a Price Schedule with transport on its own line, and editable Terms &amp; Conditions;</p>
+<p><strong>The oil pumping unit</strong> for oil fuels.</p>
 </li>
 <li>
-<p>the equipment is named "Tundish Preheater" in the document.</p>
+<p><strong>Totals</strong> — bought-out, ENCON and grand total.</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The tundish offer is produced from the same standard offer document as the other preheaters — there is no separate tundish template.</p>
+<p>The offer document carries the Scope of Supply (the equipment is named "Tundish Preheater"), the Price Schedule with transport on its own line, the editable Terms &amp; Conditions, and the Make List. It is produced from the same standard offer document as the other preheaters.</p>
 </div>
 </div>
 </div>
@@ -225,7 +322,7 @@
 <p><strong>Work out the total fuel and air needed</strong> from the heating figures or the direct capacity.</p>
 </li>
 <li>
-<p><strong>Split the firing rate across the burners.</strong> The shared equipment (blower, gas train, main line) is sized for the total flow, but each burner is sized for its own share.</p>
+<p><strong>Split the firing rate across the burners</strong> — the shared equipment is sized for the total flow, but each burner is sized for its own share.</p>
 </li>
 <li>
 <p><strong>Choose the equipment</strong> — pipework, burner, gas train, regulator, blower and valves from the catalogue.</p>
@@ -234,7 +331,7 @@
 <p><strong>Size the air line from the chosen blower&#8217;s airflow.</strong></p>
 </li>
 <li>
-<p><strong>Fill in the structure and ceramic figures</strong> from the ladle/tundish size, or use your overrides.</p>
+<p><strong>Fill in the structure and ceramic figures</strong> from the size, or use your overrides.</p>
 </li>
 <li>
 <p><strong>Price every line and total it up</strong>, multiplying the per-burner items by the number of burners.</p>

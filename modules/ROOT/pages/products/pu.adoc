@@ -5,14 +5,20 @@ A pumping unit pumps fuel oil to the burner at the right pressure. It is the sam
 
 == What you enter
 
-The same details as the Heating & Pumping Unit:
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
 
-* *Variant* — Simplex, Duplex 1, or Duplex 2.
-* *Capacity (kW)* — the unit rating.
-* *Oil flow rate* — filled in automatically from the capacity and variant.
-* *Quantity* — how many units.
-* *Commercial figures* — packaging & forwarding, designing, negotiation, and transport.
-* *Customer details and Terms & Conditions.*
+|Variant |Simplex (single), Duplex 1 (default), or Duplex 2 (with standby)
+|Capacity |9 kW (choices: 3 … 48)
+|Oil flow rate |filled in automatically from the capacity and variant
+|Quantity |1 (number of units)
+|Packaging & forwarding |5 %
+|Designing |10 %
+|Negotiation |0 %
+|Transport |flat ₹ amount (default 0)
+|Customer details and Terms & Conditions |company, contacts, subject, and the standard terms
+|===
 
 There are no heating, combustion or burner settings — the pumping unit is just the oil-pumping skid.
 
@@ -22,13 +28,14 @@ The offer document (Word + PDF) includes:
 
 * *A scope section headed "Pumping Unit"* describing a pumping skid of the chosen variant, with bullets listing:
 ** the pump(s), each with its electric motor;
-** duplex coarse and fine filters;
+** duplex coarse and fine filters (cold and hot side);
 ** a pressure-regulating valve;
 ** a pressure gauge.
 +
 Compared with the Heating & Pumping Unit, there is *no oil pre-heater and no temperature gauge* — that is the main difference between the two products.
 * *A price schedule* with a single all-inclusive line; transport on its own line; packaging & forwarding, designing and negotiation built into the unit price.
-* *The grand total in figures and words*, and the standard Terms & Conditions.
+* *The grand total* in figures and words.
+* *The Terms & Conditions.*
 
 == How the price is worked out
 

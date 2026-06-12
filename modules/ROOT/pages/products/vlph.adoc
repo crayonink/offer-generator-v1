@@ -1,46 +1,111 @@
 = Vertical Ladle Preheater (VLPH)
 :description: What a Vertical Ladle Preheater offer needs, what it produces, and how its price is worked out — in plain language.
 
-A vertical ladle preheater dries and heats the refractory lining of a steel ladle before molten metal is poured into it. A burner fires downward into the ladle from a hood that sits on top, so the ladle is heated while standing upright. This page explains, in plain terms, what the user fills in, what the finished offer contains, and how the price is arrived at.
+A vertical ladle preheater dries and heats the refractory lining of a steel ladle before molten metal is poured into it. A burner fires downward into the ladle from a hood on top, so the ladle is heated standing upright.
 
 == What you enter
 
-*The heating job.* Either describe the process and let the system size the burner, or enter the burner size directly.
+*The heating job* — either describe the process and let the system size the burner, or enter the burner size directly.
 
-* _Process method:_ the start and finish temperature of the lining, the weight of refractory to be heated, how long the heating should take, the system efficiency, and the ladle capacity (in tons).
-* _Direct method:_ simply type in the burner capacity or the heat input, and the system uses that instead of the process maths.
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
 
-*The fuel.* The main fuel (natural gas, LPG, coke-oven gas, blast-furnace gas, mixed gas, or an oil) and its calorific value. You can add a second fuel for a dual-fuel unit, and choose the pilot burner.
+|Sizing method |"Calculate from process" (default) or "Enter burner size directly"
+|Lining start temperature |650 °C
+|Lining finish temperature |1200 °C
+|Refractory weight |21,500 kg
+|Heating time |2 hours
+|Efficiency |0.52
+|Ladle capacity |10 tons
+|(Direct method) Burner capacity |in kW — used instead of the process figures
+|(Direct method) Heat input |in kcal/hr — overrides the capacity if given
+|===
 
-*The control system.* Whether the unit is operated manually or automatically. Automatic units can be PLC- or PID-based, which changes the instruments included.
+*The fuel.*
 
-*The makes.* Which supplier to use for the control valve, shut-off valve, butterfly valve and pressure gauge; and, for oil fuels, the type of oil pumping unit (Simplex / Duplex).
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
 
-*The air and pipework.* The blower pressure rating, and the weight of the air–gas pipeline (this figure is always entered by hand).
+|Main fuel |Natural Gas (default), RLNG, LPG, Coke-Oven Gas, Blast-Furnace Gas, Mixed Gas, or an oil (LDO / FO / LSHS / HSD / SKO)
+|Main fuel calorific value |8,500 kcal/Nm³ for gas (kcal/kg for oil)
+|Second fuel |None (default), or any of the above — turns it into a dual-fuel unit
+|Second fuel calorific value |as applicable
+|Pilot burner |Auto (default), LPG 10 kW, NG-LPG 100 kW, or COG 100 kW
+|Pilot-line fuel (manual mode) |LPG (default) or NG
+|===
 
-*Other options.* The hood type (up-down or swivel), whether a nitrogen purging line is needed, whether special ignition equipment is wanted, and optional overrides for the structure weight or ceramic-fibre quantity.
+*The control system and the makes.*
 
-*Quantities and commercials.* How many vertical (and horizontal) sets the offer covers, and the commercial figures: the mark-up on bought-out items, the packaging & forwarding percentage, the designing percentage, the negotiation percentage, and a flat transport amount.
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Control mode |Automatic (default) or Manual
+|Automatic type |PLC, PLC + air-gas regulator, PID, or P.PID + ratio controller
+|Control valve make |Dembla pneumatic (default) or CAIR motorised
+|Shut-off valve make |AIRA (default), Dembla or CAIR
+|Butterfly valve make |L&T lever (default) or L&T gear
+|Pressure gauge make |Baumer (default) or H-Guru
+|Oil pumping unit type (oil fuels) |Simplex, Duplex 1 (default) or Duplex 2
+|===
+
+*The air, pipework and options.*
+
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Blower pressure |28 (default) or 40 inches water gauge
+|Air–gas pipeline weight |1,000 kg (entered by hand; 700–2,000)
+|Hood type |Up-down (default), Swivel manual, or Swivel geared
+|Purging line |No (default) or Yes (nitrogen line)
+|Special ignition equipment |Off (default) or On
+|Structure-weight override |kg (leave 0 to fill in automatically)
+|Ceramic-fibre override |number of rolls (leave 0 to fill in automatically)
+|===
+
+*Quantities and commercial figures.*
+
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
+
+|Vertical sets |1
+|Horizontal sets |1
+|Bought-out mark-up |1.8
+|Packaging & forwarding |5 %
+|Designing |5 %
+|Negotiation |0 % (up to 10)
+|Transport |flat ₹ amount (default 0)
+|===
 
 == What the offer contains
 
-*A priced bill of materials*, grouped by section — the combustion-air line, the fuel line, the pilot line, the ENCON-built equipment (burner, blower, structure, pipeline, ceramic fibre, and for oil the pumping unit), and the instruments and control panel. Each line shows the item, quantity, make, unit price and total.
+*A priced bill of materials*, grouped by section. Each line shows the item, quantity, make, unit price and total:
 
-*The offer document* (a Word file, plus a PDF), containing:
+* *Combustion-air line* — compensator, pressure gauge with isolation valve, low-pressure switch; (on PLC) orifice plate and flow transmitter; control valve; butterfly valve; rotary joint; and, when ignition is included, pilot and UV ball valves with flexible hoses.
+* *Fuel line* — the gas-train package (for NG / RLNG / LPG) or the individual valves and regulators (for mixed gas, coke-oven gas or blast-furnace gas); the oil-line items for oil fuels; and an air-gas regulator in manual, PLC+AGR or PID modes.
+* *Purging line* (if selected) — the nitrogen purging set.
+* *Pilot line* (if ignition is included) — the pilot gas line.
+* *ENCON-built items* — the burner; the bearing, plummer block and shaft (or a swivel assembly); the fabricated structure; the air–gas pipeline; the blower; the ignition transformer, sequence controller, UV sensor and pilot burner (when auto-ignition is on); the oil pumping unit (for oil fuels); and the ceramic fibre.
+* *Instruments and panel* — control panel, instrument ball valves, PLC or PID, ratio controller, temperature transmitter, hydraulic power pack, and PLC-with-HMI.
+* *Totals* — bought-out subtotal, ENCON subtotal, and grand total.
 
-* a *Scope of Supply* that lists, in words, everything ENCON will provide;
-* a *Price Schedule* with the all-inclusive price, and transport shown on its own separate line;
-* the *Terms & Conditions* (prices, delivery, taxes, payment, validity, guarantee), which can be edited before generating;
+*The offer document* (Word file plus PDF), containing:
+
+* a *Scope of Supply* listing in words everything ENCON will provide;
+* a *Price Schedule* showing the all-inclusive price, with transport on its own separate line;
+* the editable *Terms & Conditions* (prices, delivery, taxes, payment, validity, guarantee);
 * a *Make List* naming the supplier for each major item.
-
-The document is saved, converted to PDF, and a copy is filed automatically.
 
 == How the price is worked out
 
-. *Work out the fuel and air needed.* From the heating figures (or the direct capacity you typed), the system calculates how much fuel per hour and how much combustion air the burner needs, adding a small safety margin.
-. *Choose the equipment.* Using those flows it sizes the gas and air pipework, then picks the right burner, gas train, air–gas regulator (where used), blower and valves from the catalogue — each chosen to comfortably handle the required flow.
-. *Size the air line from the blower.* The combustion-air line is sized from the airflow of the blower that was actually selected, so the pipe, the valve and the displayed air flow all agree.
-. *Fill in the structure and ceramic.* The structure weight and ceramic-fibre quantity are filled in automatically from the ladle size (you can override them).
-. *Price every line and total it up.* Each item is priced from the rate list. Bought-out items are summed and multiplied by the mark-up; ENCON-made items are added on top, giving the grand total.
-. *Add the commercials.* Packaging & forwarding, designing and negotiation are each added as a percentage of the grand total (they add to the price, they do not discount it), the flat transport is added, and the result is rounded to the nearest ₹1,000.
-. *Produce the documents.* The final all-inclusive price goes into the offer; transport is then shown on its own line so the schedule still adds up. The Word file and PDF are created and filed.
+. *Work out the fuel and air needed* from the heating figures (or the direct capacity you typed), adding a small safety margin.
+. *Choose the equipment* — size the gas and air pipework, then pick the burner, gas train, air-gas regulator (where used), blower and valves from the catalogue to suit those flows.
+. *Size the air line from the blower* that was actually selected, so the pipe, the valve and the displayed air flow all agree.
+. *Fill in the structure and ceramic* automatically from the ladle size (overridable).
+. *Price every line and total it up* — bought-out items summed and multiplied by the mark-up, plus ENCON-made items, giving the grand total.
+. *Add the commercials* — packaging & forwarding, designing and negotiation added as percentages (they add to the price, they do not discount it), plus flat transport, rounded to the nearest ₹1,000.
+. *Produce the documents* — the all-inclusive price in the offer, transport shown on its own line, saved as Word and PDF.

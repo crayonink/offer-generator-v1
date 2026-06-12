@@ -1,26 +1,41 @@
 = Burners
 :description: What a standalone Burner offer needs, what it produces, and how its price is worked out — in plain language.
 
-A burner mixes fuel and air and provides the flame that heats a furnace or ladle. This offer is for selling a burner on its own, separate from a full preheater. Like the blower offer, it is a "pick from the catalogue" offer — you choose a pre-priced burner and the system prices it.
+A burner mixes fuel and air and provides the flame that heats a furnace or ladle. This offer sells a burner on its own, separate from a full preheater. Like the blower offer, it is a "pick from the catalogue" offer — you choose a pre-priced burner and the system prices it.
 
 == What you enter
 
-* *Burner type* — ENCON oil burner, ENCON gas burner, ENCON dual-fuel burner, or a GAIL pre-assembled gas set.
-* *Burner model* — the specific size, chosen from a drop-down for the selected type.
-* *Quantity* — how many burners.
-* *Commercial figures* — packaging & forwarding percentage, designing percentage, negotiation percentage, and a flat transport amount.
-* *Customer details and Terms & Conditions.*
+[cols="3,4"]
+|===
+|What you enter |Typical value / options
 
-The fuel, the firing capacity and the unit price are filled in automatically from the catalogue once you pick a model — you don't type them in. (Firing capacity is shown in litres per hour for ENCON sizes, or in kilowatts for GAIL sets.)
+|Burner type |ENCON gas burner (default), ENCON oil burner, ENCON dual-fuel burner, or a GAIL pre-assembled gas set
+|Burner model |the specific size, chosen from a drop-down for the selected type
+|Quantity |1 (number of burners)
+|Packaging & forwarding |5 %
+|Designing |10 %
+|Negotiation |0 %
+|Transport |flat ₹ amount (default 0)
+|Customer details and Terms & Conditions |company, contacts, subject, and the standard terms
+|===
+
+The fuel, the firing capacity and the unit price are filled in automatically from the catalogue once you pick a model — you don't type them. (Firing capacity is shown in litres per hour for ENCON sizes, or in kilowatts for GAIL sets.)
 
 == What the offer contains
 
 The offer document (Word + PDF) includes:
 
-* *A short scope paragraph* — "we will supply N burner(s) of capacity … to achieve the desired temperature", followed by the main components.
-* *A bulleted list* of what makes up the burner package: the burner, a ball valve, a CI mounting plate, a burner block, a set of flexible hoses, and a butterfly valve.
-* *A price schedule* with quantity, unit price and total; transport, if entered, appears on its own line.
-* *The grand total in figures and words*, and the standard Terms & Conditions.
+* *A scope paragraph* — "we will supply N burner(s) of capacity … to achieve the desired temperature", followed by the main components.
+* *A bulleted list* of the burner package:
+** the burner;
+** a ball valve;
+** a CI burner mounting plate;
+** a burner block;
+** a set of flexible hoses;
+** a butterfly valve.
+* *A price schedule* with quantity, unit price and total; transport, if entered, on its own line.
+* *The grand total* in figures and words.
+* *The Terms & Conditions.*
 
 A running total updates live as you change the quantity or commercial figures, and the finished offer can be previewed before sending.
 
