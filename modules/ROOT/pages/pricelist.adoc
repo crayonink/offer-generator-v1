@@ -11,6 +11,115 @@ There are three parts to it:
 * *The pricelist screen* — where you view and edit the rates. It has a *Rates* tab and a *Raw Material* tab, plus several read-only sheets for specific products.
 * *The link to offers* — when an offer is built, every item looks up its price in this list. So the pricelist is the one place to keep prices up to date.
 
+== What's in the price list
+
+The Rates list holds roughly *640 priced items across about 44 categories*. The categories (with a rough count of items in each) are:
+
+*Valves and flow control*
+
+[cols="3,1"]
+|===
+|Category |Items
+
+|Ball Valve |127
+|Butterfly Valve |9
+|Gate Valve |12
+|Micro Valve |4
+|Safety Relief Valve |3
+|Motorised Control Valve |28
+|Pneumatic Control Valve |32
+|Motorised Shut Off Valve |29
+|Pneumatic Shut Off Valve |32
+|Slam Shut Off Valve |12
+|Slam Shut Off (Reinforced) |10
+|Slam Shut Off (Pilot) |8
+|Solenoid Valve (NC) |8
+|Solenoid Valve (NC Fast) |34
+|Solenoid Valve (NC Slow) |10
+|Solenoid Valve (NO) |22
+|Solenoid Valve (NO Fast) |1
+|===
+
+*Gas regulation, trains and filters*
+
+[cols="3,1"]
+|===
+|Category |Items
+
+|Air Gas Regulator |18
+|Gas Regulator (2 Bar) |8
+|Gas Regulator (5 Bar) |8
+|Gas Regulator (5 Bar Std) |16
+|Gas Regulator (OPSO) |38
+|Gas Train |7
+|Gas Filter |9
+|Gas Pressure Switch |2
+|===
+
+*Burners and ignition*
+
+[cols="3,1"]
+|===
+|Category |Items
+
+|Burner SS Assembly |4
+|Pilot Burner |5
+|Ignition |4
+|===
+
+*Instruments and sensors*
+
+[cols="3,1"]
+|===
+|Category |Items
+
+|Instrumentation |19
+|Pressure Switch |4
+|Transmitters (DPT / TT / PT) and Gas Detector |7
+|===
+
+*Air, hoses and rotating connections*
+
+[cols="3,1"]
+|===
+|Category |Items
+
+|Flexible Hose |11
+|Rotary Joint |10
+|ID Fan |4
+|===
+
+*Fabrication, structure and raw material*
+
+[cols="3,1"]
+|===
+|Category |Items
+
+|Structure |2
+|Raw Material |34
+|HLPH Trolley |6
+|Bearing |2
+|N2 Purging |1
+|===
+
+*Reference and miscellaneous*
+
+[cols="3,1"]
+|===
+|Category |Items
+
+|Fuel Density |7
+|Bought Out |17
+|ENCON Purchase |6
+|Misc |6
+|Service |2
+|(uncategorised) |6
+|===
+
+In addition to this Rates list, the pricelist screen has separate read-only sheets for whole-product prices — *blowers, oil / gas / dual-fuel burners, heating & pumping units, recuperator rates,* and the radiant-heat element tables — which are used directly when those products are offered.
+
+NOTE: the counts above are a snapshot and will shift as items are added or removed; treat them as a guide to roughly how much sits in each group, not an exact tally.
+
 == What is stored for each item
 
 Each entry holds:
