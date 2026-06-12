@@ -1,0 +1,81 @@
+= Heating & Pumping Unit (HPU)
+:description: Inputs, outputs and calculation flow for the Heating & Pumping Unit offer.
+
+Module: `hpu`. Form: `/hpu` and `/hpu/heating-pumping` → `hpu_costing.html`. Status: ✅ Complete. Shares its helper, form shell and render path with the xref:products/pu.adoc[Pumping Unit]; HPU includes the heating (oil preheater) scope, PU does not.
+
+== Inputs
+
+[cols="1,2,1"]
+|===
+|Field |Meaning |Units / Default
+
+|Fuel / oil selection
+|No fuel dropdown on the HPU form. `fuel_type` is accepted but legacy/optional. Oil fuel is represented by the HPU itself (manual-mode oil = the unit, no separate oil line). `is_oil` is hard-set `True`, `is_dual` `False` (`main.py:3258`).
+|— (n/a)
+
+|Variant
+|`hpu_variant` — pump configuration; maps to model prefix via `VARIANT_PREFIX` (`hpu_selector.py:25`): Simplex→HPS, Duplex 1→HPD, Duplex 2→HPDD.
+|Simplex / Duplex 1 / Duplex 2. Default Duplex 1.
+
+|kW capacity
+|`hpu_kw` — heater/unit kW, rounded to int and used as the catalog key (`unit_kw`).
+|3,6,9,12,16,20,24,30,36,48 kW. Default 9 kW.
+
+|Oil Flow Rate (LPH)
+|Catalog-driven, read-only. Auto-filled from `pumping_unit_price.flow_lph` keyed by (kW, variant) via `GET /api/hpu/flow-lph` (`main.py:3063`). Posted `fuel_lph` is only a hint; the DB value overrides (`main.py:3044-3047`).
+|Litres/hour. Auto.
+
+|Control mode
+|Fixed to `"manual"` (`main.py:3262`); no auto-control inputs on this form.
+|"manual"
+
+|Quantity
+|`qty` — number of units; clamped to `max(1, qty)` (`main.py:3180`).
+|integer. Default 1.
+
+|Packaging & Forwarding %
+|`pf_pct` — % uplift on catalog price (`main.py:3058`).
+|%. Form default 5.
+
+|Designing %
+|`design_pct` — % uplift (`main.py:3059`).
+|%. Form default 10.
+
+|Negotiation %
+|`neg_pct` — % uplift; ADDS to the price (not subtracts) (`main.py:3060`).
+|%. Form default 0.
+
+|Transport
+|`transport_amt` — flat amount, folded into the offer unit then split onto its own price-schedule line (`main.py:3057`, `3317-3319`).
+|₹. Form default 0.
+
+|Customer / T&Cs
+|`HpuCustomer` block + Annexure-IV terms (prices, delivery, GST, HSN, payment, packing, freight, insurance, validity, inspection, guarantee).
+|text
+|===
+
+== Outputs
+
+* *Output template:* `HPU_Offer_Template.docx` (`main.py:3158`), rendered via `docxtpl` by `generate_quote_docx`.
+* *Equipment label:* "Heating and Pumping Unit"; `item_product_type` = "Hydraulic Pumping Unit" (gates the preheater/heating scope). Model code = `HPS|HPD|HPDD-{kW}` (`main.py:3154-3158`).
+* *Scope intro + bullets (heating branch):* because `force_pumping_only` is `False` for HPU, `_pumping_unit_block` (`quote_writer.py:338-356`) emits heading _"Oil Heating and Pumping Unit"_ with intro _"…we will supply a suitable heating and pumping unit type {variant}…"_ and bullets:
+** N pump(s) each with electric motor (2 for Duplex, 1 for Simplex)
+** electric Oil Preheater with thermostatic control (2 Nos. for Duplex-II, else 1 No.)
+** Duplex coarse + fine filters (cold/hot side)
+** Pressure regulating valve
+** Pressure gauge + Temperature gauge
+* *Price schedule (Annexure III):* single equipment line. `unit_price` = `offer_unit` (catalog price with all commercial adjustments applied). Preheater-specific tech rows are blanked so `_strip_empty_tech_rows` drops them; product_type is not Vertical/Horizontal/Tundish so those scope sections stay suppressed and the total pours into the vertical price slot via the `else` branch (`quote_writer.py:707-708`, `main.py:3286-3300`).
+* *Transport* appears on its own line just before TOTAL via `_break_out_transport` (`main.py:4375`); TOTAL (= `grand_total`) is unchanged.
+* *Packaging & Forwarding / Designing / Negotiation are NOT separate price lines* — they are folded into the unit price as % uplifts; only Transport is itemised. The schedule TOTAL is the all-inclusive `grand_total` (`quote_writer.py:777`).
+* *Result payload:* download/preview URLs, `unit_price`, `total_price`, variant, kW, LPH, model_code (`main.py:3323-3336`). Filename: `{date}_{Customer}_HPU-{kW}kW-{variant}.docx`.
+
+== Calculation Flow
+
+. *Form → request.* Step 2 posts `{hpu_variant, hpu_kw, qty, pf_pct, design_pct, neg_pct, transport_amt}` plus customer/T&Cs to `POST /api/generate-hpu-quote` (`hpu_costing.html:511-523`), validated into `HpuQuoteRequest` (`main.py:3039`). Endpoint delegates to `_generate_pumping_unit_offer(req, mode="hpu")` (`main.py:3339-3344`).
+. *Flow-LPH lookup.* `flow_lph` read from `pumping_unit_price` by (kW, variant) (`main.py:3134-3139`); falls back to posted `fuel_lph` or 0.
+. *HPU selection + unit price.* `unit_price = round(SUM(hpu_master.amount for kW,variant) × HPU_MARKUP, 2)`, where `HPU_MARKUP = 1.8` (`main.py:3144-3153`; `bom/hpu_calculator.py:23,134`). Errors out if no `hpu_master` rows. This mirrors `GET /api/hpu/price?mode=hpu` (`main.py:3104-3110`) used for the live Step-2 total.
+. *Commercial-adjustment formula* (`main.py:3186-3192`): `_adj_total = unit_price * qty * (1 + (_pf + _des + _neg)/100) + _trn`. Negotiation ADDS. If any adjustment is set, `_final_incl = round(_adj_total / 1000) * 1000` (nearest ₹1000); else `_adj_total`. `offer_unit = _final_incl / qty`. (Matches the JS preview in `hpu_costing.html:487-501`.)
+. *Build form_data.* Enquiry ref via `next_quote_seq` + `build_enquiry_ref` (`main.py:3195-3196`); single price-schedule item with `product_type="Hydraulic Pumping Unit"`, `unit_price=offer_unit`; `is_oil=True`, `force_pumping_only=False`, `control_mode="manual"`; preheater tech rows blanked (`main.py:3203-3302`).
+. *Render.* `calculate_quote(form_data)` → `grand_total` (`main.py:3304-3305`); `generate_quote_docx` renders `HPU_Offer_Template.docx` (`main.py:3315-3316`), invoking `_pumping_unit_block` for the heating scope (`quote_writer.py:279`).
+. *Transport break-out.* `_break_out_transport(output_path, transport_amt)` splits Transport onto its own Annexure-III line, leaving TOTAL intact (`main.py:3317-3321`, `4375`).
+. *Respond.* Return filename, download/preview URLs, prices and config (`main.py:3323-3336`).

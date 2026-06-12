@@ -1,0 +1,74 @@
+= Tundish Preheating System
+:description: Inputs, outputs and calculation flow for the Tundish Preheating offer.
+
+Module: `tundish`. Form: `/tundish` → `tundish_costing.html`. Status: ✅ Complete. The tundish path *fully reuses the xref:products/vlph.adoc[VLPH] (ladle-preheater) pipeline*; this page documents what it shares and the three things it overrides.
+
+== Inputs
+
+The Tundish Preheating System reuses the VLPH request model `VLPHCalcRequest` (`main.py:636`) for sizing, plus the shared `QuoteRequest` model (`main.py:684`) for offer generation. The form is served at `GET /tundish` from `tundish_costing.html` (`main.py:788`). Tundish-specific behaviour is driven by `num_burners` and the two override fields below.
+
+[cols="1,3,1"]
+|===
+|Field |Meaning |Units / Default
+
+|`mode` |`"calc"` (derive firing rate from process params) or `"direct"` (user enters burner capacity / heat input) |default `"calc"`
+|`fuel1_type` / `fuel1_cv` |Primary fuel code (`ng`, `lpg`, `cog`, `bg`, `mg`, `rlng`, or oils `hsd/ldo/hdo/fo/sko/cfo/lshs`) and its calorific value |default `ng`, CV `8500`
+|`fuel2_type` / `fuel2_cv` |Optional second fuel — enables dual-fuel sizing when `fuel2_type != "none"` and `fuel2_cv > 0` (`main.py:1419`) |default `"none"` / `0`
+|`Ti`, `Tf`, `refractory_weight`, `time_taken_hr`, `refractory_heat_factor`, `efficiency` |Calc-mode process inputs fed to `calculate_burner` |defaults 650 / 1200 °C, 21500 kg, 2 hr, 0.25, 0.52
+|`direct_burner_capacity` |Direct mode: burner capacity in kW, interpreted *per burner* for tundish (`main.py:650,1400`) |kW, default 0
+|`direct_heat_input_kcal_hr` |Direct mode: total heat input; takes precedence over capacity (`main.py:651,1396`) |kcal/hr, default 0
+|`num_burners` |*Tundish-specific.* Splits total firing rate to size each burner per-burner, and multiplies burner-line BOM items by this count (`main.py:666,1426`; `vlph_builder.py:1107`) |int, default 1
+|`ms_structure_kg_override` |*Tundish-specific.* Overrides the DB-mapped MS-structure fabrication weight (`main.py:667,1553`) |kg, default 0 (0 → use `fabrication_ladle_mapping`)
+|`ceramic_rolls_override` |*Tundish-specific.* Overrides the ceramic-fibre roll count (`main.py:668,1554`) |int, default 0 (0 → DB-mapped)
+|`control_mode` |`"automatic"` (uses `build_vlph_120t_df`) or `"manual"` (uses `build_vlph_manual_df`) (`main.py:653,1557`) |default `"automatic"`
+|`auto_control_type` |`"plc"` / `"plc_agr"` / `"pid"` — drives I&C scope and AGR inclusion |default `"agr"` in calc model
+|`blower_pressure` |`"28"` or `"40"` (WG inches); also derives burner pressure (28→24, 40→36 w.g.) (`main.py:1422`) |default `"28"`
+|`hpu_variant` |Pumping-unit type for oil fuels — `Simplex` / `Duplex 1` / `Duplex 2` |default `"Duplex 1"`
+|`hood_type` |`up_down` / `swivel_manual` / `swivel_geared` (used for fab/ceramic mapping) |default `"up_down"`
+|`purging_line` |`"yes"`/`"no"` — Nitrogen purging line block (auto-shown for MG/COG) |default `"no"`
+|`pipeline_weight_kg` |Air-gas pipeline weight (user-supplied, priced @ Rs.125/kg) |default 1000 kg
+|vendor selectors |`control_valve_vendor`, `shutoff_valve_vendor`, `butterfly_valve_vendor`, `pressure_gauge_vendor` |various defaults
+|`special_auto_ignition` / `special_auto_controls` |Special-requirements toggles |default false
+|===
+
+Commercial inputs (entered on the costing page, applied client-side in `recalcGrandTotal()`, `tundish_costing.html:1980`):
+
+[cols="1,3,1"]
+|===
+|Field |Meaning |Units / Default
+
+|Packaging & Forwarding (`pf-pct`) |% of Grand Total, *added* |default 5%
+|Designing (`design-pct`) |% of Grand Total, *added* |default 5%
+|Negotiation (`negotiation-pct`) |% of Grand Total, *added* (the formula at `tundish_costing.html:1990` adds it; matches commit db33665) |default 0%, max 10%
+|Transport (`transport-amt`) |Flat Rs. amount, broken out onto its own price-schedule line (`transport_amt`, `main.py:747`) |default 0
+|Bought-out markup |Multiplier applied to bought-out subtotal before commercial adders (`tundish_costing.html:1975`) |default 1.80
+|===
+
+== Outputs
+
+*BOM line items* — returned by `POST /api/vlph-calculate` as `resp["bom"]` (`main.py:1681`), split into `MEDIA / ITEM NAME / REFERENCE / QTY / MAKE / UNIT PRICE / TOTAL`. Built by `build_vlph_120t_df` (automatic) or `build_vlph_manual_df` (manual) in `bom/vlph_builder.py`. Lines include: ENCON main burner (× `num_burners`), blower, NG/MG gas train, AGR/control valve, butterfly + shut-off valves, gate valve, pressure gauges/switches, rotary joint, pilot burner & UV line, ceramic fibre, MS-structure fabrication, air-gas pipeline, and (for oil fuels) the HPU/Pumping Unit. Subtotals: `BOUGHT OUT ITEMS`, `ENCON ITEMS`, `GRAND TOTAL` (`main.py:1599–1601`).
+
+*Scope of supply / annexures* — assembled in the offer docx by `engine/quote_writer.py`. Equipment name resolves to `"Tundish Preheater – {tons} Ton"` via the `is_tundish` flag (`quote_writer.py:212,873`). Annexure I scope-of-supply, Annexure III price schedule, Annexure IV editable Terms & Conditions (`tnc_*` fields), and a MAKE LIST.
+
+*Price schedule* — the single equipment line carries `unit_price = final_total` (Grand + P&F + Designing + Negotiation + Transport, rounded to nearest Rs.1000; `tundish_costing.html:2330`). Transport is then split onto its own line by `_break_out_transport` (`main.py:4375`).
+
+*Output .docx template* — Despite the presence of `Tundish_Offer_Template.docx` and `Tundish_Automatic.docx` in the repo, the live code path does _not_ use them. `generate_quote_docx` renders the tundish offer from the shared `Offer_Template.docx` (`quote_writer.py:1049–1053`): all products (Vertical, Horizontal, Tundish) share the same template shell, with `is_tundish` toggling tundish-only tech-data rows (`quote_writer.py:873,1215`) and scope wording. `TUNDISH_TEMPLATE_PATH` is defined (`quote_writer.py:6`) but never referenced again — `Tundish_Offer_Template.docx` / `Tundish_Automatic.docx` are dormant/legacy assets. The generated file is named `{date}_{Company}_Tundish-{N}T.docx` (`main.py:4551,4559`).
+
+== Calculation Flow
+
+The tundish path shares the VLPH calc endpoint `POST /api/vlph-calculate`, the burner/pipe/selector modules, both BOM builders, and the `Offer_Template.docx` renderer. It _overrides_ only three things: `num_burners` (per-burner sizing + line-item multiplication), `ms_structure_kg_override`, and `ceramic_rolls_override`.
+
+. *Submit sizing inputs* — The `/tundish` form posts to `POST /api/vlph-calculate` with `VLPHCalcRequest` (`main.py:1373`).
+. *Compute total firing rate* — In `direct` mode, `heat_kcal_hr = direct_burner_capacity × 860 × num_burners` (per-burner kW scaled to total), or the explicit `direct_heat_input_kcal_hr`; gas flow `ng_flow = heat/CV`, air `= heat × 118/100000` (`main.py:1396–1403`). In `calc` mode, `calculate_burner(BurnerInputs(...))` (`calculations/burner.py:35`) returns `extra_firing_rate_nm3hr` and `air_qty_nm3hr` (`main.py:1407–1416`).
+. *Per-burner split (tundish override)* — `n_burners = max(1, num_burners)`; `per_burner_ng = ng_flow/n` and `per_burner_air = air_flow/n` (`main.py:1426–1428`). Blower/gas-train/main-line size off TOTAL flow; the burner sizes off PER-BURNER flow.
+. *Dual-fuel air sizing* — If dual, the blower is sized for whichever fuel needs more air (`blower_air_flow = max(air_flow, air_flow2)`), and oil LPH is precomputed for CFM sizing (`main.py:1432–1456`).
+. *Select equipment (total flow)* — `select_equipment(...)` (`bom/selectors/selection_engine.py:20`) sizes pipes (source of truth for NB) then picks burner, blower, NG/MG gas train, AGR, control/butterfly/shut-off valves, rotary joint, air duct, and HPU — each by next-bigger DB lookup against the computed flow (`main.py:1458–1472`).
+. *Size pipes* — `calculate_pipe_sizes` after blower selection; air line sized from the blower's actual airflow (CFM × 1.7) per the air-line-NB rule (`main.py:1477–1480`).
+. *Re-select burner per-burner (tundish override)* — When `n_burners > 1`, re-run `select_equipment` with `per_burner_ng/per_burner_air` and replace `equip1["burner"]` with the per-burner model (`main.py:1483–1498`).
+. *Fab / ceramic mapping with overrides (tundish)* — Look up `fabrication_ladle_mapping`; `_ms_override = ms_structure_kg_override or mapped fabrication_kg`, `_ceramic_rolls = ceramic_rolls_override or mapped ceramic_rolls`; pipeline kg is always user-supplied (`main.py:1549–1554`).
+. *Build BOM with pricing* — Automatic: `build_vlph_120t_df(... num_burners=n_burners, ms_structure_kg_override=_ms_override, ceramic_rolls_override=_ceramic_rolls ...)` (`main.py:1574`); Manual: `build_vlph_manual_df(...)` (`main.py:1558`). Each `_row` (`bom/vlph_builder.py:50`) prices via `unit_price_override` when supplied, otherwise exact-matches the DB `component_price_master` via `_get_price_fuzzy` (warns and prices 0 on no match — see BOM zero-price audit).
+. *Multiply per-burner BOM lines (tundish override)* — When `num_burners > 1`, burner / ignition transformer / sequence controller / UV sensor / pilot-burner / pilot-line rows have `QTY` and `TOTAL` multiplied by `num_burners` (`bom/vlph_builder.py:1107–1135`).
+. *Subtotals* — `bought_out_total`, `encon_total`, `grand_total` extracted from the df (`main.py:1599–1601`); returned in `cost_summary`.
+. *Commercial adjustments (client-side)* — In `recalcGrandTotal()` (`tundish_costing.html:1975`): `grand = bought × markup + encon`; then ADD P&F, Designing, Negotiation (each `% of grand`) and flat Transport; round the Final Total to nearest Rs.1000 (`tundish_costing.html:1990`).
+. *Generate offer* — `POST /api/generate-quote` with `QuoteRequest` (`main.py:4445,684`), `product_type = "Tundish Preheater"`, `unit_price = final_total` (`tundish_costing.html:2324–2331`). `calculate_quote` → `generate_quote_docx` renders `Offer_Template.docx` with `is_tundish=True` (`quote_writer.py:873`, `main.py:4561`).
+. *Post-process docx* — `_break_out_transport` splits the flat Transport amount onto its own price-schedule line (`main.py:4375,4565`); empty tech rows stripped, MAKE LIST appended, scope columns pruned (`quote_writer.py:1058–1072`); PDF rendered via LibreOffice (`main.py:4573`).

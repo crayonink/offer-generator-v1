@@ -1,0 +1,85 @@
+= Horizontal Ladle Preheater (HLPH)
+:description: Inputs, outputs and calculation flow for the Horizontal Ladle Preheater offer.
+
+Module: `hlph`. Form: `/hlph` → `hlph_costing.html`. Status: ✅ Complete. Shares the ladle-preheater pipeline with the xref:products/vlph.adoc[Vertical Ladle Preheater]; this page focuses on the horizontal differences.
+
+== Inputs
+
+The HLPH form is served at `/hlph` (`main.py:782`). Step-2 calculation posts a `VLPHCalcRequest` (`main.py:636`) to `POST /api/hlph-calculate` (`main.py:2055`). Commercial inputs (markup, P&F, designing, negotiation, transport) are _not_ part of `VLPHCalcRequest` — they live only in the form's grand-total recalc (`hlph_costing.html:1940`) and are baked into the offer's single line price at generate time.
+
+[cols="2,4,2",options="header"]
+|===
+| Field | Meaning | Units / Default
+
+| `mode` | `calc` (heat-load from refractory) or `direct` (burner kW / heat input given) | default `calc`
+| `Ti`, `Tf` | Initial / final refractory temperature | °C; 650 / 1200
+| `refractory_weight` | Ladle refractory mass driving heat load | kg; 21500
+| `time_taken_hr` | Heating schedule duration | hr; 2.0
+| `refractory_heat_factor`, `efficiency` | Heat-factor and combustion efficiency | 0.25 / 0.52
+| `fuel1_type` / `fuel1_cv` | Primary fuel (ng/lpg/cog/bg/rlng/mg or oils hsd/ldo/hdo/fo/sko/cfo/lshs) and its calorific value | enum / kcal; `ng` / 8500
+| `fuel2_type` / `fuel2_cv` | Optional second fuel for dual-fuel offers (`none` disables) | enum / kcal; `none` / 0
+| `direct_burner_capacity` / `direct_heat_input_kcal_hr` | Direct-mode burner kW (×860→kcal/hr) or explicit heat input (takes precedence) | kW / kcal/hr; 0
+| `ladle_tons` | Ladle capacity — selects the `horizontal_master` sizing row | tons; 10.0
+| `blower_pressure` | Blower static pressure series; also derives burner WG (28→24, 40→36) | `28` or `40`
+| `control_mode` | `manual` (simplified BOM) or `automatic` | default `automatic`
+| `auto_control_type` | `plc` / `plc_agr` / `pid` (also `agr`, `ppid_ratio`) — drives I&C BOM rows and STATIC_SKIP | default `agr`
+| `control_valve_vendor` | dembla / aira / cair | `dembla`
+| `shutoff_valve_vendor` | dembla / aira / cair | `aira`
+| `butterfly_valve_vendor` | lt_lever / lt_gear (auto-falls back lever→gear if NB exceeds lever range) | `lt_lever`
+| `pressure_gauge_vendor` | baumer / hguru | `baumer`
+| `hpu_variant` | Simplex / Duplex 1 / Duplex 2 — Pumping Unit type (oil fuels only) | `Duplex 1`
+| `pilot_burner` | Pilot model code (lpg_10/ng_10/lpg_100/ng_100/cog_100/mg_10) | `auto`
+| `pilot_line_fuel` | Pilot-line media label (lpg/ng) | `lpg`
+| `pipeline_weight_kg` | Air-gas pipeline weight (always user-supplied for HLPH; DB has no horizontal pipeline data) | kg; 1000
+| `purging_line` | `yes`/`no` — nitrogen purging block for MG/COG | `no`
+| `manual_pilot_burner` | `yes`/`no` — include pilot burner in _manual_ BOM | `yes`
+| `special_auto_ignition` | Toggle — adds pilot/UV ancillaries + pilot line + ignition equipment in _automatic_ mode | `false`
+| `ms_structure_kg_override`, `ceramic_rolls_override` | Override fabrication weight / ceramic-roll count (else DB-mapped) | 0 / 0
+| Commercial (form only) | `markup` ×1.8, P&F 5%, Designing 5%, Negotiation 0%, Transport ₹0 | `hlph_costing.html:983–1001`
+|===
+
+NOTE: `hood_type` exists on the request model but is a VLPH/Tundish concept; HLPH cost-variations explicitly _exclude_ the hood axis because the horizontal unit uses a trolley drive, not a swivel/up-down hood (`main.py:2398`).
+
+== Outputs
+
+`POST /api/hlph-calculate` returns `calculations`, `pipes`, `equipment`, `bom` (line items), and `cost_summary` (bought_out_total / encon_total / grand_total). The BOM is built by `bom/hlph_builder.py` — `build_hlph_df` (automatic, line 25) or `build_hlph_manual_df` (manual, line 314), selected at `main.py:2187`.
+
+=== BOM line items (automatic mode)
+* *ENCON ITEMS:* FABRICATION/STRUCTURE (`ms_kg × FABRICATION RATE`), AIR-GAS PIPELINE (`pipeline_kg × PIPELINE RATE`), CERAMIC FIBRE (rolls @ DB rate), the ENCON burner (or "ENCON DUAL FUEL Burner"), blower, and — for oil fuels — the Heating & Pumping Unit (HPU).
+* *Trolley drive group (HLPH-specific):* GEARED MOTOR MECHANISM (3 HP, POWERTEK), TROLLEY WHEEL ×4, PLUMMER BLOCK ×6, SHAFT (1 long, 2 short), BEARING (TROLLEY) ×4, SLIEVE ×4, FRAME (MS Structure) (`hlph_builder.py:86–94`).
+* *COMB AIR:* COMPENSATOR, PRESSURE GAUGE WITH TNV, PRESSURE SWITCH LOW; plus (PLC) ORIFICE PLATE + DPT; plus (PLC/PLC+AGR/PID/PPID-ratio) CONTROL VALVE + BUTTERFLY VALVE.
+* *Fuel 1 / Fuel 2 lines:* via shared `_fuel_line_rows` (gas train, AGR, shutoff/ball/solenoid valves, regulator, hoses).
+* *Optional:* PURGING LINE (6 rows, MG/COG); PILOT LINE + pilot/UV ancillaries + ignition equipment (Ignition Transformer, Sequence Controller, UV Sensor, Pilot Burner) only when `special_auto_ignition` is true.
+* *MISC / static items:* from `bom.static_items()` minus a STATIC_SKIP set, then CONTROL PANEL, INSTRUMENTS BALL VALVE ×3, and (PLC modes) PLC WITH HMI.
+* *Trailer rows:* BOUGHT OUT ITEMS, ENCON ITEMS, GRAND TOTAL subtotals.
+
+=== HLPH-specific vs VLPH
+* *No ROTARY JOINT.* `selection_engine.select_equipment` still selects a rotary joint (shared with VLPH), but `hlph_builder` never emits that row — horizontal has no swirling/rotary mechanism (`hlph_builder.py:132`).
+* *Has the trolley drive group* (geared motor, wheels, plummer blocks, shaft, bearings, sleeve, frame) in place of VLPH's swirling-mechanism / hood rows.
+* *Sizing from `get_hlph_params`* → `horizontal_master` DB table (`ladle_params.py:220`), which carries a `trolley_drive_cost` and a separate `pipeline_cost` (no swirling), unlike VLPH's `pipeline_swirling_cost`.
+* *Pipeline weight always user-supplied* (DB has no horizontal pipeline data; `main.py:2182`).
+* *STATIC_SKIP* behaves the same as VLPH: always skips CONTROL PANEL and HYDRAULIC POWER PACK & CYLINDER; PLC/PLC+AGR additionally skip PPID and RATIO CONTROLLER; PID skips TEMPERATURE TRANSMITTER and RATIO CONTROLLER (and renames PPID→PID); PPID-ratio skips only TEMPERATURE TRANSMITTER (`hlph_builder.py:257–273`).
+
+=== Annexures / scope-of-supply
+The offer .docx (`engine/quote_writer.py`) renders Annexure I scope-of-supply, Annexure III price schedule, and Annexure IV terms. Scope bullets come from `bom_items` posted from the BOM; `horizontal_qty` feeds the Annexure I header count.
+
+=== Price schedule & commercial adjustments
+Per `recalcGrandTotal` (`hlph_costing.html:1940`): `Grand = bought × markup + encon`, then `Final = round1000( Grand + Grand·P&F% + Grand·Design% + Grand·Neg% + Transport )`. Negotiation _adds_ (its % field is applied positively). The Final Total is posted as the single equipment line `unit_price`/`total` (`hlph_costing.html:2395`). Transport is then split onto its own Annexure III line by `_break_out_transport` (`main.py:4375`), leaving TOTAL unchanged.
+
+=== Output template
+`generate_quote_docx` uses the shared `TEMPLATE_PATH = Offer_Template.docx` (`quote_writer.py:5`) — HLPH and VLPH share one template. Filename: `{YYYY-MM-DD}_{Customer}_HLPH-{tons}T.docx` (`main.py:4545–4559`), with a parallel `.pdf` (LibreOffice render) and `.json` snapshot.
+
+== Calculation Flow
+
+. *Heat / flow (calc mode):* `calculate_burner` (`calculations/burner.py:35`) computes avg temp rise (delta formula when `Ti>100`), firing rate = `weight·factor·Δtemp`, heat load = `firing/efficiency`, fuel consumption, ×1.1 → `extra_firing_rate_nm3hr` (= `ng_flow`), and air qty = `cv·extra·118/100000`. _Direct mode:_ `heat_kcal = capacity×860` (or explicit kcal); `ng_flow = heat/cv`, `air = heat·118/100000` (`main.py:2073–2093`).
+. *Burner WG:* `36` if `blower_pressure=="40"` else `24` (`main.py:2095`).
+. *Dual-fuel blower air:* blower sized for `max(air1, air2)`; oil fuel-2 LPH pre-computed for CFM (`main.py:2097–2121`).
+. *Equipment selection:* `select_equipment` (`selection_engine.py:20`) — pipe NB from `calculate_pipe_sizes`; burner from `select_encon_mg_burner` (by gas flow + CV + fuel category); NG gas train (`select_ng_gas_train`); AGR only when manual or auto∈{plc_agr,pid}, sized from gas-train outlet NB; blower HP = `CFM × pressure / 3200` where `gas_cfm = air/1.7`, `oil_cfm = LPH×10`, `cfm = max(...)`; air duct; combustion-air line NB = `max(125, pipe-NB from blower CFM×1.7, air_duct NB)` (`selection_engine.py:104–111`, per the "air line = blower CFM × 1.7" rule); butterfly valve (lever→gear fallback); rotary joint (selected but unused by HLPH); HPU/Pumping Unit for oil fuels.
+. *Pipe sizing:* `calculate_pipe_sizes` (`calculations/pipes.py:67`) — gas NB at 12.7 m/s, air NB at 15.0 m/s, rounded up to `STANDARD_PIPE_NB`. Oil fuel-2 line NB via `select_oil_pipe_nb` (≤250 LPH→20 NB else 25). Re-run for fuel 1 using the burner's actual air demand (`main.py:2136`).
+. *Sizing-row auto-fill:* `lookup_ladle_fab_pipeline(ladle_tons, "horizontal")` maps the nearest horizontal row; `ms_structure_kg_override` and `ceramic_rolls_override` win when nonzero, else DB-mapped; pipeline weight is always the user value (`main.py:2180–2185`).
+. *BOM build:* `build_hlph_df` (or `build_hlph_manual_df` if `control_mode=="manual"`) (`main.py:2187–2214`). `get_hlph_params` (`ladle_params.py:220`) supplies fabrication kg, ceramic rolls/rate, pipeline & trolley costs from `horizontal_master`.
+. *Row pricing:* `_row` either uses `unit_price_override` (fabrication = `kg × FABRICATION RATE`, pipeline = `kg × PIPELINE RATE`, ceramic = `rolls × ceramic_rate`, burner/blower/HPU = selector price) or falls back to a DB lookup by exact item name. Per the BOM zero-price caveat, any row without an override prices 0 if its name ≠ a DB key.
+. *Subtotals:* `bought_out_total` = Σ TOTAL where MEDIA≠"ENCON ITEMS"; `encon_total` = Σ ENCON ITEMS; `grand_total` = sum. Returned in `cost_summary` (`hlph_builder.py:290–309`).
+. *Commercial adjustments (form):* `recalcGrandTotal` — `Grand = bought×markup + encon`; `Final = round-to-₹1000( Grand + P&F% + Design% + Negotiation%(ADD) + Transport )` (`hlph_costing.html:1940–1959`).
+. *Cost variations (optional):* `POST /api/hlph-cost-variations` (`main.py:2352`) re-runs the calc across single-axis swaps (vendors, auto-ignition, HPU variant for oil, auto-control type, control-mode flip). No hood axis.
+. *Offer generation:* form posts `QuoteRequest` (`main.py:684`) with the single HLPH line at `unit_price = Final Total` → `POST /api/generate-quote` (`main.py:4445`) → `calculate_quote` then `generate_quote_docx` against `Offer_Template.docx` → `_break_out_transport` splits the transport line → PDF (LibreOffice) + JSON snapshot + Drive upload + `quotes_log` insert.

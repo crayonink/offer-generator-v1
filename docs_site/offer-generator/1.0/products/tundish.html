@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Tundish Preheating System :: Offer Generator Documentation</title>
+    <meta name="description" content="Inputs, outputs and calculation flow for the Tundish Preheating offer.">
+    <meta name="generator" content="Antora 3.1.15">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/docs">Offer Generator Documentation</a>
+      <button class="navbar-burger" aria-controls="topbar-nav" aria-expanded="false" aria-label="Toggle main menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="#">Home</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Products</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Product A</a>
+            <a class="navbar-item" href="#">Product B</a>
+            <a class="navbar-item" href="#">Product C</a>
+          </div>
+        </div>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Services</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Service A</a>
+            <a class="navbar-item" href="#">Service B</a>
+            <a class="navbar-item" href="#">Service C</a>
+          </div>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+            <a class="button is-primary" href="#">Download</a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="offer-generator" data-version="1.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="../index.html">Offer Generator</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../product-scope.html">Product Scope &amp; Roadmap</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Completed Products</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vlph.html">Vertical Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hlph.html">Horizontal Ladle Preheater</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="tundish.html">Tundish Preheating System</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="blower.html">Blowers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="burner.html">Burners</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hpu.html">Heating &amp; Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="pu.html">Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="recup.html">Recuperators</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../rfq-integration.html">RFQ Tracker Integration</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Technical Documentation</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../architecture.html">Architecture &amp; Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../modules.html">Modules &amp; Equipment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api.html">API Reference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deployment.html">Deployment &amp; Operations</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Offer Generator</span>
+    <span class="version">1.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="../index.html">Offer Generator</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Offer Generator</a></li>
+    <li>Completed Products</li>
+    <li><a href="tundish.html">Tundish Preheating System</a></li>
+  </ul>
+</nav>
+<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/products/tundish.adoc">Edit this Page</a></div>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Tundish Preheating System</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Module: <code>tundish</code>. Form: <code>/tundish</code> → <code>tundish_costing.html</code>. Status: ✅ Complete. The tundish path <strong>fully reuses the <a href="vlph.html" class="xref page">VLPH</a> (ladle-preheater) pipeline</strong>; this page documents what it shares and the three things it overrides.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Tundish Preheating System reuses the VLPH request model <code>VLPHCalcRequest</code> (<code>main.py:636</code>) for sizing, plus the shared <code>QuoteRequest</code> model (<code>main.py:684</code>) for offer generation. The form is served at <code>GET /tundish</code> from <code>tundish_costing.html</code> (<code>main.py:788</code>). Tundish-specific behaviour is driven by <code>num_burners</code> and the two override fields below.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 60%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Units / Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"calc"</code> (derive firing rate from process params) or <code>"direct"</code> (user enters burner capacity / heat input)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"calc"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel1_type</code> / <code>fuel1_cv</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Primary fuel code (<code>ng</code>, <code>lpg</code>, <code>cog</code>, <code>bg</code>, <code>mg</code>, <code>rlng</code>, or oils <code>hsd/ldo/hdo/fo/sko/cfo/lshs</code>) and its calorific value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>ng</code>, CV <code>8500</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel2_type</code> / <code>fuel2_cv</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optional second fuel — enables dual-fuel sizing when <code>fuel2_type != "none"</code> and <code>fuel2_cv &gt; 0</code> (<code>main.py:1419</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"none"</code> / <code>0</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Ti</code>, <code>Tf</code>, <code>refractory_weight</code>, <code>time_taken_hr</code>, <code>refractory_heat_factor</code>, <code>efficiency</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Calc-mode process inputs fed to <code>calculate_burner</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">defaults 650 / 1200 °C, 21500 kg, 2 hr, 0.25, 0.52</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>direct_burner_capacity</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct mode: burner capacity in kW, interpreted <strong>per burner</strong> for tundish (<code>main.py:650,1400</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kW, default 0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>direct_heat_input_kcal_hr</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct mode: total heat input; takes precedence over capacity (<code>main.py:651,1396</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/hr, default 0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>num_burners</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Tundish-specific.</strong> Splits total firing rate to size each burner per-burner, and multiplies burner-line BOM items by this count (<code>main.py:666,1426</code>; <code>vlph_builder.py:1107</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">int, default 1</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ms_structure_kg_override</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Tundish-specific.</strong> Overrides the DB-mapped MS-structure fabrication weight (<code>main.py:667,1553</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kg, default 0 (0 → use <code>fabrication_ladle_mapping</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ceramic_rolls_override</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Tundish-specific.</strong> Overrides the ceramic-fibre roll count (<code>main.py:668,1554</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">int, default 0 (0 → DB-mapped)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>control_mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"automatic"</code> (uses <code>build_vlph_120t_df</code>) or <code>"manual"</code> (uses <code>build_vlph_manual_df</code>) (<code>main.py:653,1557</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"automatic"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>auto_control_type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"plc"</code> / <code>"plc_agr"</code> / <code>"pid"</code> — drives I&amp;C scope and AGR inclusion</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"agr"</code> in calc model</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blower_pressure</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"28"</code> or <code>"40"</code> (WG inches); also derives burner pressure (28→24, 40→36 w.g.) (<code>main.py:1422</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"28"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu_variant</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pumping-unit type for oil fuels — <code>Simplex</code> / <code>Duplex 1</code> / <code>Duplex 2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"Duplex 1"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hood_type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>up_down</code> / <code>swivel_manual</code> / <code>swivel_geared</code> (used for fab/ceramic mapping)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"up_down"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>purging_line</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>"yes"</code>/<code>"no"</code> — Nitrogen purging line block (auto-shown for MG/COG)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>"no"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipeline_weight_kg</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air-gas pipeline weight (user-supplied, priced @ Rs.125/kg)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default 1000 kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">vendor selectors</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>control_valve_vendor</code>, <code>shutoff_valve_vendor</code>, <code>butterfly_valve_vendor</code>, <code>pressure_gauge_vendor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">various defaults</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>special_auto_ignition</code> / <code>special_auto_controls</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Special-requirements toggles</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default false</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Commercial inputs (entered on the costing page, applied client-side in <code>recalcGrandTotal()</code>, <code>tundish_costing.html:1980</code>):</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 60%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Units / Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Packaging &amp; Forwarding (<code>pf-pct</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">% of Grand Total, <strong>added</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default 5%</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Designing (<code>design-pct</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">% of Grand Total, <strong>added</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default 5%</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation (<code>negotiation-pct</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">% of Grand Total, <strong>added</strong> (the formula at <code>tundish_costing.html:1990</code> adds it; matches commit db33665)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default 0%, max 10%</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Transport (<code>transport-amt</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Flat Rs. amount, broken out onto its own price-schedule line (<code>transport_amt</code>, <code>main.py:747</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default 0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bought-out markup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Multiplier applied to bought-out subtotal before commercial adders (<code>tundish_costing.html:1975</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default 1.80</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_outputs"><a class="anchor" href="#_outputs"></a>Outputs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>BOM line items</strong> — returned by <code>POST /api/vlph-calculate</code> as <code>resp["bom"]</code> (<code>main.py:1681</code>), split into <code>MEDIA / ITEM NAME / REFERENCE / QTY / MAKE / UNIT PRICE / TOTAL</code>. Built by <code>build_vlph_120t_df</code> (automatic) or <code>build_vlph_manual_df</code> (manual) in <code>bom/vlph_builder.py</code>. Lines include: ENCON main burner (× <code>num_burners</code>), blower, NG/MG gas train, AGR/control valve, butterfly + shut-off valves, gate valve, pressure gauges/switches, rotary joint, pilot burner &amp; UV line, ceramic fibre, MS-structure fabrication, air-gas pipeline, and (for oil fuels) the HPU/Pumping Unit. Subtotals: <code>BOUGHT OUT ITEMS</code>, <code>ENCON ITEMS</code>, <code>GRAND TOTAL</code> (<code>main.py:1599–1601</code>).</p>
+</div>
+<div class="paragraph">
+<p><strong>Scope of supply / annexures</strong> — assembled in the offer docx by <code>engine/quote_writer.py</code>. Equipment name resolves to <code>"Tundish Preheater – {tons} Ton"</code> via the <code>is_tundish</code> flag (<code>quote_writer.py:212,873</code>). Annexure I scope-of-supply, Annexure III price schedule, Annexure IV editable Terms &amp; Conditions (<code>tnc_*</code> fields), and a MAKE LIST.</p>
+</div>
+<div class="paragraph">
+<p><strong>Price schedule</strong> — the single equipment line carries <code>unit_price = final_total</code> (Grand + P&amp;F + Designing + Negotiation + Transport, rounded to nearest Rs.1000; <code>tundish_costing.html:2330</code>). Transport is then split onto its own line by <code>_break_out_transport</code> (<code>main.py:4375</code>).</p>
+</div>
+<div class="paragraph">
+<p><strong>Output .docx template</strong> — Despite the presence of <code>Tundish_Offer_Template.docx</code> and <code>Tundish_Automatic.docx</code> in the repo, the live code path does <em>not</em> use them. <code>generate_quote_docx</code> renders the tundish offer from the shared <code>Offer_Template.docx</code> (<code>quote_writer.py:1049–1053</code>): all products (Vertical, Horizontal, Tundish) share the same template shell, with <code>is_tundish</code> toggling tundish-only tech-data rows (<code>quote_writer.py:873,1215</code>) and scope wording. <code>TUNDISH_TEMPLATE_PATH</code> is defined (<code>quote_writer.py:6</code>) but never referenced again — <code>Tundish_Offer_Template.docx</code> / <code>Tundish_Automatic.docx</code> are dormant/legacy assets. The generated file is named <code>{date}_{Company}_Tundish-{N}T.docx</code> (<code>main.py:4551,4559</code>).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_calculation_flow"><a class="anchor" href="#_calculation_flow"></a>Calculation Flow</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The tundish path shares the VLPH calc endpoint <code>POST /api/vlph-calculate</code>, the burner/pipe/selector modules, both BOM builders, and the <code>Offer_Template.docx</code> renderer. It <em>overrides</em> only three things: <code>num_burners</code> (per-burner sizing + line-item multiplication), <code>ms_structure_kg_override</code>, and <code>ceramic_rolls_override</code>.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Submit sizing inputs</strong> — The <code>/tundish</code> form posts to <code>POST /api/vlph-calculate</code> with <code>VLPHCalcRequest</code> (<code>main.py:1373</code>).</p>
+</li>
+<li>
+<p><strong>Compute total firing rate</strong> — In <code>direct</code> mode, <code>heat_kcal_hr = direct_burner_capacity × 860 × num_burners</code> (per-burner kW scaled to total), or the explicit <code>direct_heat_input_kcal_hr</code>; gas flow <code>ng_flow = heat/CV</code>, air <code>= heat × 118/100000</code> (<code>main.py:1396–1403</code>). In <code>calc</code> mode, <code>calculate_burner(BurnerInputs(&#8230;&#8203;))</code> (<code>calculations/burner.py:35</code>) returns <code>extra_firing_rate_nm3hr</code> and <code>air_qty_nm3hr</code> (<code>main.py:1407–1416</code>).</p>
+</li>
+<li>
+<p><strong>Per-burner split (tundish override)</strong> — <code>n_burners = max(1, num_burners)</code>; <code>per_burner_ng = ng_flow/n</code> and <code>per_burner_air = air_flow/n</code> (<code>main.py:1426–1428</code>). Blower/gas-train/main-line size off TOTAL flow; the burner sizes off PER-BURNER flow.</p>
+</li>
+<li>
+<p><strong>Dual-fuel air sizing</strong> — If dual, the blower is sized for whichever fuel needs more air (<code>blower_air_flow = max(air_flow, air_flow2)</code>), and oil LPH is precomputed for CFM sizing (<code>main.py:1432–1456</code>).</p>
+</li>
+<li>
+<p><strong>Select equipment (total flow)</strong> — <code>select_equipment(&#8230;&#8203;)</code> (<code>bom/selectors/selection_engine.py:20</code>) sizes pipes (source of truth for NB) then picks burner, blower, NG/MG gas train, AGR, control/butterfly/shut-off valves, rotary joint, air duct, and HPU — each by next-bigger DB lookup against the computed flow (<code>main.py:1458–1472</code>).</p>
+</li>
+<li>
+<p><strong>Size pipes</strong> — <code>calculate_pipe_sizes</code> after blower selection; air line sized from the blower&#8217;s actual airflow (CFM × 1.7) per the air-line-NB rule (<code>main.py:1477–1480</code>).</p>
+</li>
+<li>
+<p><strong>Re-select burner per-burner (tundish override)</strong> — When <code>n_burners &gt; 1</code>, re-run <code>select_equipment</code> with <code>per_burner_ng/per_burner_air</code> and replace <code>equip1["burner"]</code> with the per-burner model (<code>main.py:1483–1498</code>).</p>
+</li>
+<li>
+<p><strong>Fab / ceramic mapping with overrides (tundish)</strong> — Look up <code>fabrication_ladle_mapping</code>; <code>_ms_override = ms_structure_kg_override or mapped fabrication_kg</code>, <code>_ceramic_rolls = ceramic_rolls_override or mapped ceramic_rolls</code>; pipeline kg is always user-supplied (<code>main.py:1549–1554</code>).</p>
+</li>
+<li>
+<p><strong>Build BOM with pricing</strong> — Automatic: <code>build_vlph_120t_df(&#8230;&#8203; num_burners=n_burners, ms_structure_kg_override=_ms_override, ceramic_rolls_override=_ceramic_rolls &#8230;&#8203;)</code> (<code>main.py:1574</code>); Manual: <code>build_vlph_manual_df(&#8230;&#8203;)</code> (<code>main.py:1558</code>). Each <code>_row</code> (<code>bom/vlph_builder.py:50</code>) prices via <code>unit_price_override</code> when supplied, otherwise exact-matches the DB <code>component_price_master</code> via <code>_get_price_fuzzy</code> (warns and prices 0 on no match — see BOM zero-price audit).</p>
+</li>
+<li>
+<p><strong>Multiply per-burner BOM lines (tundish override)</strong> — When <code>num_burners &gt; 1</code>, burner / ignition transformer / sequence controller / UV sensor / pilot-burner / pilot-line rows have <code>QTY</code> and <code>TOTAL</code> multiplied by <code>num_burners</code> (<code>bom/vlph_builder.py:1107–1135</code>).</p>
+</li>
+<li>
+<p><strong>Subtotals</strong> — <code>bought_out_total</code>, <code>encon_total</code>, <code>grand_total</code> extracted from the df (<code>main.py:1599–1601</code>); returned in <code>cost_summary</code>.</p>
+</li>
+<li>
+<p><strong>Commercial adjustments (client-side)</strong> — In <code>recalcGrandTotal()</code> (<code>tundish_costing.html:1975</code>): <code>grand = bought × markup + encon</code>; then ADD P&amp;F, Designing, Negotiation (each <code>% of grand</code>) and flat Transport; round the Final Total to nearest Rs.1000 (<code>tundish_costing.html:1990</code>).</p>
+</li>
+<li>
+<p><strong>Generate offer</strong> — <code>POST /api/generate-quote</code> with <code>QuoteRequest</code> (<code>main.py:4445,684</code>), <code>product_type = "Tundish Preheater"</code>, <code>unit_price = final_total</code> (<code>tundish_costing.html:2324–2331</code>). <code>calculate_quote</code> → <code>generate_quote_docx</code> renders <code>Offer_Template.docx</code> with <code>is_tundish=True</code> (<code>quote_writer.py:873</code>, <code>main.py:4561</code>).</p>
+</li>
+<li>
+<p><strong>Post-process docx</strong> — <code>_break_out_transport</code> splits the flat Transport amount onto its own price-schedule line (<code>main.py:4375,4565</code>); empty tech rows stripped, MAKE LIST appended, scope columns pruned (<code>quote_writer.py:1058–1072</code>); PDF rendered via LibreOffice (<code>main.py:4573</code>).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <p>This page was built using the Antora default UI.</p>
+  <p>The source code for this UI is licensed under the terms of the MPL-2.0 license.</p>
+</footer>
+<script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

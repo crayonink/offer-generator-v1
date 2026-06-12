@@ -1,5 +1,14 @@
 * xref:index.adoc[Home]
 * xref:product-scope.adoc[Product Scope & Roadmap]
+* Completed Products
+** xref:products/vlph.adoc[Vertical Ladle Preheater]
+** xref:products/hlph.adoc[Horizontal Ladle Preheater]
+** xref:products/tundish.adoc[Tundish Preheating System]
+** xref:products/blower.adoc[Blowers]
+** xref:products/burner.adoc[Burners]
+** xref:products/hpu.adoc[Heating & Pumping Unit]
+** xref:products/pu.adoc[Pumping Unit]
+** xref:products/recup.adoc[Recuperators]
 * xref:rfq-integration.adoc[RFQ Tracker Integration]
 * Technical Documentation
 ** xref:architecture.adoc[Architecture & Overview]

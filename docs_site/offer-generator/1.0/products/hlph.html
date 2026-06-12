@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Horizontal Ladle Preheater (HLPH) :: Offer Generator Documentation</title>
+    <meta name="description" content="Inputs, outputs and calculation flow for the Horizontal Ladle Preheater offer.">
+    <meta name="generator" content="Antora 3.1.15">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/docs">Offer Generator Documentation</a>
+      <button class="navbar-burger" aria-controls="topbar-nav" aria-expanded="false" aria-label="Toggle main menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="#">Home</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Products</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Product A</a>
+            <a class="navbar-item" href="#">Product B</a>
+            <a class="navbar-item" href="#">Product C</a>
+          </div>
+        </div>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Services</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Service A</a>
+            <a class="navbar-item" href="#">Service B</a>
+            <a class="navbar-item" href="#">Service C</a>
+          </div>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+            <a class="button is-primary" href="#">Download</a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="offer-generator" data-version="1.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="../index.html">Offer Generator</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../product-scope.html">Product Scope &amp; Roadmap</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Completed Products</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vlph.html">Vertical Ladle Preheater</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="hlph.html">Horizontal Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="tundish.html">Tundish Preheating System</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="blower.html">Blowers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="burner.html">Burners</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hpu.html">Heating &amp; Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="pu.html">Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="recup.html">Recuperators</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../rfq-integration.html">RFQ Tracker Integration</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Technical Documentation</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../architecture.html">Architecture &amp; Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../modules.html">Modules &amp; Equipment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api.html">API Reference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deployment.html">Deployment &amp; Operations</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Offer Generator</span>
+    <span class="version">1.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="../index.html">Offer Generator</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Offer Generator</a></li>
+    <li>Completed Products</li>
+    <li><a href="hlph.html">Horizontal Ladle Preheater</a></li>
+  </ul>
+</nav>
+<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/products/hlph.adoc">Edit this Page</a></div>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Horizontal Ladle Preheater (HLPH)</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Module: <code>hlph</code>. Form: <code>/hlph</code> → <code>hlph_costing.html</code>. Status: ✅ Complete. Shares the ladle-preheater pipeline with the <a href="vlph.html" class="xref page">Vertical Ladle Preheater</a>; this page focuses on the horizontal differences.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The HLPH form is served at <code>/hlph</code> (<code>main.py:782</code>). Step-2 calculation posts a <code>VLPHCalcRequest</code> (<code>main.py:636</code>) to <code>POST /api/hlph-calculate</code> (<code>main.py:2055</code>). Commercial inputs (markup, P&amp;F, designing, negotiation, transport) are <em>not</em> part of <code>VLPHCalcRequest</code> — they live only in the form&#8217;s grand-total recalc (<code>hlph_costing.html:1940</code>) and are baked into the offer&#8217;s single line price at generate time.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Units / Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>calc</code> (heat-load from refractory) or <code>direct</code> (burner kW / heat input given)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>calc</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Ti</code>, <code>Tf</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Initial / final refractory temperature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">°C; 650 / 1200</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>refractory_weight</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ladle refractory mass driving heat load</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kg; 21500</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>time_taken_hr</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heating schedule duration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hr; 2.0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>refractory_heat_factor</code>, <code>efficiency</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heat-factor and combustion efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.25 / 0.52</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel1_type</code> / <code>fuel1_cv</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Primary fuel (ng/lpg/cog/bg/rlng/mg or oils hsd/ldo/hdo/fo/sko/cfo/lshs) and its calorific value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">enum / kcal; <code>ng</code> / 8500</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>fuel2_type</code> / <code>fuel2_cv</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optional second fuel for dual-fuel offers (<code>none</code> disables)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">enum / kcal; <code>none</code> / 0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>direct_burner_capacity</code> / <code>direct_heat_input_kcal_hr</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct-mode burner kW (×860→kcal/hr) or explicit heat input (takes precedence)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kW / kcal/hr; 0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ladle_tons</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ladle capacity — selects the <code>horizontal_master</code> sizing row</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">tons; 10.0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blower_pressure</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blower static pressure series; also derives burner WG (28→24, 40→36)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>28</code> or <code>40</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>control_mode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>manual</code> (simplified BOM) or <code>automatic</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>automatic</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>auto_control_type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>plc</code> / <code>plc_agr</code> / <code>pid</code> (also <code>agr</code>, <code>ppid_ratio</code>) — drives I&amp;C BOM rows and STATIC_SKIP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default <code>agr</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>control_valve_vendor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dembla / aira / cair</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>dembla</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>shutoff_valve_vendor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dembla / aira / cair</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>aira</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>butterfly_valve_vendor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">lt_lever / lt_gear (auto-falls back lever→gear if NB exceeds lever range)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lt_lever</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pressure_gauge_vendor</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">baumer / hguru</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>baumer</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu_variant</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplex / Duplex 1 / Duplex 2 — Pumping Unit type (oil fuels only)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Duplex 1</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pilot_burner</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pilot model code (lpg_10/ng_10/lpg_100/ng_100/cog_100/mg_10)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>auto</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pilot_line_fuel</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pilot-line media label (lpg/ng)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lpg</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pipeline_weight_kg</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air-gas pipeline weight (always user-supplied for HLPH; DB has no horizontal pipeline data)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kg; 1000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>purging_line</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>yes</code>/<code>no</code> — nitrogen purging block for MG/COG</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>no</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>manual_pilot_burner</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>yes</code>/<code>no</code> — include pilot burner in <em>manual</em> BOM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>yes</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>special_auto_ignition</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Toggle — adds pilot/UV ancillaries + pilot line + ignition equipment in <em>automatic</em> mode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>false</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ms_structure_kg_override</code>, <code>ceramic_rolls_override</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Override fabrication weight / ceramic-roll count (else DB-mapped)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0 / 0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Commercial (form only)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>markup</code> ×1.8, P&amp;F 5%, Designing 5%, Negotiation 0%, Transport ₹0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hlph_costing.html:983–1001</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<code>hood_type</code> exists on the request model but is a VLPH/Tundish concept; HLPH cost-variations explicitly <em>exclude</em> the hood axis because the horizontal unit uses a trolley drive, not a swivel/up-down hood (<code>main.py:2398</code>).
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_outputs"><a class="anchor" href="#_outputs"></a>Outputs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>POST /api/hlph-calculate</code> returns <code>calculations</code>, <code>pipes</code>, <code>equipment</code>, <code>bom</code> (line items), and <code>cost_summary</code> (bought_out_total / encon_total / grand_total). The BOM is built by <code>bom/hlph_builder.py</code> — <code>build_hlph_df</code> (automatic, line 25) or <code>build_hlph_manual_df</code> (manual, line 314), selected at <code>main.py:2187</code>.</p>
+</div>
+<div class="sect2">
+<h3 id="_bom_line_items_automatic_mode"><a class="anchor" href="#_bom_line_items_automatic_mode"></a>BOM line items (automatic mode)</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>ENCON ITEMS:</strong> FABRICATION/STRUCTURE (<code>ms_kg × FABRICATION RATE</code>), AIR-GAS PIPELINE (<code>pipeline_kg × PIPELINE RATE</code>), CERAMIC FIBRE (rolls @ DB rate), the ENCON burner (or "ENCON DUAL FUEL Burner"), blower, and — for oil fuels — the Heating &amp; Pumping Unit (HPU).</p>
+</li>
+<li>
+<p><strong>Trolley drive group (HLPH-specific):</strong> GEARED MOTOR MECHANISM (3 HP, POWERTEK), TROLLEY WHEEL ×4, PLUMMER BLOCK ×6, SHAFT (1 long, 2 short), BEARING (TROLLEY) ×4, SLIEVE ×4, FRAME (MS Structure) (<code>hlph_builder.py:86–94</code>).</p>
+</li>
+<li>
+<p><strong>COMB AIR:</strong> COMPENSATOR, PRESSURE GAUGE WITH TNV, PRESSURE SWITCH LOW; plus (PLC) ORIFICE PLATE + DPT; plus (PLC/PLC+AGR/PID/PPID-ratio) CONTROL VALVE + BUTTERFLY VALVE.</p>
+</li>
+<li>
+<p><strong>Fuel 1 / Fuel 2 lines:</strong> via shared <code>_fuel_line_rows</code> (gas train, AGR, shutoff/ball/solenoid valves, regulator, hoses).</p>
+</li>
+<li>
+<p><strong>Optional:</strong> PURGING LINE (6 rows, MG/COG); PILOT LINE + pilot/UV ancillaries + ignition equipment (Ignition Transformer, Sequence Controller, UV Sensor, Pilot Burner) only when <code>special_auto_ignition</code> is true.</p>
+</li>
+<li>
+<p><strong>MISC / static items:</strong> from <code>bom.static_items()</code> minus a STATIC_SKIP set, then CONTROL PANEL, INSTRUMENTS BALL VALVE ×3, and (PLC modes) PLC WITH HMI.</p>
+</li>
+<li>
+<p><strong>Trailer rows:</strong> BOUGHT OUT ITEMS, ENCON ITEMS, GRAND TOTAL subtotals.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_hlph_specific_vs_vlph"><a class="anchor" href="#_hlph_specific_vs_vlph"></a>HLPH-specific vs VLPH</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>No ROTARY JOINT.</strong> <code>selection_engine.select_equipment</code> still selects a rotary joint (shared with VLPH), but <code>hlph_builder</code> never emits that row — horizontal has no swirling/rotary mechanism (<code>hlph_builder.py:132</code>).</p>
+</li>
+<li>
+<p><strong>Has the trolley drive group</strong> (geared motor, wheels, plummer blocks, shaft, bearings, sleeve, frame) in place of VLPH&#8217;s swirling-mechanism / hood rows.</p>
+</li>
+<li>
+<p><strong>Sizing from <code>get_hlph_params</code></strong> → <code>horizontal_master</code> DB table (<code>ladle_params.py:220</code>), which carries a <code>trolley_drive_cost</code> and a separate <code>pipeline_cost</code> (no swirling), unlike VLPH&#8217;s <code>pipeline_swirling_cost</code>.</p>
+</li>
+<li>
+<p><strong>Pipeline weight always user-supplied</strong> (DB has no horizontal pipeline data; <code>main.py:2182</code>).</p>
+</li>
+<li>
+<p><strong>STATIC_SKIP</strong> behaves the same as VLPH: always skips CONTROL PANEL and HYDRAULIC POWER PACK &amp; CYLINDER; PLC/PLC+AGR additionally skip PPID and RATIO CONTROLLER; PID skips TEMPERATURE TRANSMITTER and RATIO CONTROLLER (and renames PPID→PID); PPID-ratio skips only TEMPERATURE TRANSMITTER (<code>hlph_builder.py:257–273</code>).</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_annexures_scope_of_supply"><a class="anchor" href="#_annexures_scope_of_supply"></a>Annexures / scope-of-supply</h3>
+<div class="paragraph">
+<p>The offer .docx (<code>engine/quote_writer.py</code>) renders Annexure I scope-of-supply, Annexure III price schedule, and Annexure IV terms. Scope bullets come from <code>bom_items</code> posted from the BOM; <code>horizontal_qty</code> feeds the Annexure I header count.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_price_schedule_commercial_adjustments"><a class="anchor" href="#_price_schedule_commercial_adjustments"></a>Price schedule &amp; commercial adjustments</h3>
+<div class="paragraph">
+<p>Per <code>recalcGrandTotal</code> (<code>hlph_costing.html:1940</code>): <code>Grand = bought × markup + encon</code>, then <code>Final = round1000( Grand + Grand·P&amp;F% + Grand·Design% + Grand·Neg% + Transport )</code>. Negotiation <em>adds</em> (its % field is applied positively). The Final Total is posted as the single equipment line <code>unit_price</code>/<code>total</code> (<code>hlph_costing.html:2395</code>). Transport is then split onto its own Annexure III line by <code>_break_out_transport</code> (<code>main.py:4375</code>), leaving TOTAL unchanged.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_output_template"><a class="anchor" href="#_output_template"></a>Output template</h3>
+<div class="paragraph">
+<p><code>generate_quote_docx</code> uses the shared <code>TEMPLATE_PATH = Offer_Template.docx</code> (<code>quote_writer.py:5</code>) — HLPH and VLPH share one template. Filename: <code>{YYYY-MM-DD}_{Customer}_HLPH-{tons}T.docx</code> (<code>main.py:4545–4559</code>), with a parallel <code>.pdf</code> (LibreOffice render) and <code>.json</code> snapshot.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_calculation_flow"><a class="anchor" href="#_calculation_flow"></a>Calculation Flow</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Heat / flow (calc mode):</strong> <code>calculate_burner</code> (<code>calculations/burner.py:35</code>) computes avg temp rise (delta formula when <code>Ti&gt;100</code>), firing rate = <code>weight·factor·Δtemp</code>, heat load = <code>firing/efficiency</code>, fuel consumption, ×1.1 → <code>extra_firing_rate_nm3hr</code> (= <code>ng_flow</code>), and air qty = <code>cv·extra·118/100000</code>. <em>Direct mode:</em> <code>heat_kcal = capacity×860</code> (or explicit kcal); <code>ng_flow = heat/cv</code>, <code>air = heat·118/100000</code> (<code>main.py:2073–2093</code>).</p>
+</li>
+<li>
+<p><strong>Burner WG:</strong> <code>36</code> if <code>blower_pressure=="40"</code> else <code>24</code> (<code>main.py:2095</code>).</p>
+</li>
+<li>
+<p><strong>Dual-fuel blower air:</strong> blower sized for <code>max(air1, air2)</code>; oil fuel-2 LPH pre-computed for CFM (<code>main.py:2097–2121</code>).</p>
+</li>
+<li>
+<p><strong>Equipment selection:</strong> <code>select_equipment</code> (<code>selection_engine.py:20</code>) — pipe NB from <code>calculate_pipe_sizes</code>; burner from <code>select_encon_mg_burner</code> (by gas flow + CV + fuel category); NG gas train (<code>select_ng_gas_train</code>); AGR only when manual or auto∈{plc_agr,pid}, sized from gas-train outlet NB; blower HP = <code>CFM × pressure / 3200</code> where <code>gas_cfm = air/1.7</code>, <code>oil_cfm = LPH×10</code>, <code>cfm = max(&#8230;&#8203;)</code>; air duct; combustion-air line NB = <code>max(125, pipe-NB from blower CFM×1.7, air_duct NB)</code> (<code>selection_engine.py:104–111</code>, per the "air line = blower CFM × 1.7" rule); butterfly valve (lever→gear fallback); rotary joint (selected but unused by HLPH); HPU/Pumping Unit for oil fuels.</p>
+</li>
+<li>
+<p><strong>Pipe sizing:</strong> <code>calculate_pipe_sizes</code> (<code>calculations/pipes.py:67</code>) — gas NB at 12.7 m/s, air NB at 15.0 m/s, rounded up to <code>STANDARD_PIPE_NB</code>. Oil fuel-2 line NB via <code>select_oil_pipe_nb</code> (≤250 LPH→20 NB else 25). Re-run for fuel 1 using the burner&#8217;s actual air demand (<code>main.py:2136</code>).</p>
+</li>
+<li>
+<p><strong>Sizing-row auto-fill:</strong> <code>lookup_ladle_fab_pipeline(ladle_tons, "horizontal")</code> maps the nearest horizontal row; <code>ms_structure_kg_override</code> and <code>ceramic_rolls_override</code> win when nonzero, else DB-mapped; pipeline weight is always the user value (<code>main.py:2180–2185</code>).</p>
+</li>
+<li>
+<p><strong>BOM build:</strong> <code>build_hlph_df</code> (or <code>build_hlph_manual_df</code> if <code>control_mode=="manual"</code>) (<code>main.py:2187–2214</code>). <code>get_hlph_params</code> (<code>ladle_params.py:220</code>) supplies fabrication kg, ceramic rolls/rate, pipeline &amp; trolley costs from <code>horizontal_master</code>.</p>
+</li>
+<li>
+<p><strong>Row pricing:</strong> <code>_row</code> either uses <code>unit_price_override</code> (fabrication = <code>kg × FABRICATION RATE</code>, pipeline = <code>kg × PIPELINE RATE</code>, ceramic = <code>rolls × ceramic_rate</code>, burner/blower/HPU = selector price) or falls back to a DB lookup by exact item name. Per the BOM zero-price caveat, any row without an override prices 0 if its name ≠ a DB key.</p>
+</li>
+<li>
+<p><strong>Subtotals:</strong> <code>bought_out_total</code> = Σ TOTAL where MEDIA≠"ENCON ITEMS"; <code>encon_total</code> = Σ ENCON ITEMS; <code>grand_total</code> = sum. Returned in <code>cost_summary</code> (<code>hlph_builder.py:290–309</code>).</p>
+</li>
+<li>
+<p><strong>Commercial adjustments (form):</strong> <code>recalcGrandTotal</code> — <code>Grand = bought×markup + encon</code>; <code>Final = round-to-₹1000( Grand + P&amp;F% + Design% + Negotiation%(ADD) + Transport )</code> (<code>hlph_costing.html:1940–1959</code>).</p>
+</li>
+<li>
+<p><strong>Cost variations (optional):</strong> <code>POST /api/hlph-cost-variations</code> (<code>main.py:2352</code>) re-runs the calc across single-axis swaps (vendors, auto-ignition, HPU variant for oil, auto-control type, control-mode flip). No hood axis.</p>
+</li>
+<li>
+<p><strong>Offer generation:</strong> form posts <code>QuoteRequest</code> (<code>main.py:684</code>) with the single HLPH line at <code>unit_price = Final Total</code> → <code>POST /api/generate-quote</code> (<code>main.py:4445</code>) → <code>calculate_quote</code> then <code>generate_quote_docx</code> against <code>Offer_Template.docx</code> → <code>_break_out_transport</code> splits the transport line → PDF (LibreOffice) + JSON snapshot + Drive upload + <code>quotes_log</code> insert.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <p>This page was built using the Antora default UI.</p>
+  <p>The source code for this UI is licensed under the terms of the MPL-2.0 license.</p>
+</footer>
+<script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

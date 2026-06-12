@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Blowers :: Offer Generator Documentation</title>
+    <meta name="description" content="Inputs, outputs and calculation flow for the standalone Blower offer.">
+    <meta name="generator" content="Antora 3.1.15">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/docs">Offer Generator Documentation</a>
+      <button class="navbar-burger" aria-controls="topbar-nav" aria-expanded="false" aria-label="Toggle main menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="#">Home</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Products</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Product A</a>
+            <a class="navbar-item" href="#">Product B</a>
+            <a class="navbar-item" href="#">Product C</a>
+          </div>
+        </div>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Services</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Service A</a>
+            <a class="navbar-item" href="#">Service B</a>
+            <a class="navbar-item" href="#">Service C</a>
+          </div>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+            <a class="button is-primary" href="#">Download</a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="offer-generator" data-version="1.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="../index.html">Offer Generator</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../product-scope.html">Product Scope &amp; Roadmap</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Completed Products</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vlph.html">Vertical Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hlph.html">Horizontal Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="tundish.html">Tundish Preheating System</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="blower.html">Blowers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="burner.html">Burners</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hpu.html">Heating &amp; Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="pu.html">Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="recup.html">Recuperators</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../rfq-integration.html">RFQ Tracker Integration</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Technical Documentation</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../architecture.html">Architecture &amp; Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../modules.html">Modules &amp; Equipment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api.html">API Reference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deployment.html">Deployment &amp; Operations</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Offer Generator</span>
+    <span class="version">1.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="../index.html">Offer Generator</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Offer Generator</a></li>
+    <li>Completed Products</li>
+    <li><a href="blower.html">Blowers</a></li>
+  </ul>
+</nav>
+<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/products/blower.adoc">Edit this Page</a></div>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Blowers</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Module: <code>blower</code>. Form: <code>/blower</code> → <code>blower_costing.html</code> (reached from <code>/equipment-offer</code>). Status: ✅ Complete. This is a catalog-pick offer; the air-line sizing rule (CFM × 1.7) belongs to the combined/ladle-preheater pipeline, not this standalone path.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Blower form (<code>GET /blower</code>, <code>main.py:3369</code>, template <code>blower_costing.html</code>) is reached from the Equipment-Offer hub (<code>GET /equipment-offer</code>, <code>main.py:794</code>). It posts a <code>BlowerQuoteRequest</code> (<code>main.py:3528</code>).</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Units / Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>customer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Customer block (<code>HpuCustomer</code>): company, address/city/state/pin, contact + salutation, marketing &amp; technical persons, subject, and the Annexure T&amp;C fields.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">object, required</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>blower_model</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exact catalog key chosen from the blower dropdown; matched against <code>blower_master.model</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string, required</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>qty</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of blower sets.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer, default <code>1</code> (coerced to <code>&gt;= 1</code>, <code>main.py:3563</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pf_pct</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Packaging &amp; Forwarding, <strong>added</strong> as a percentage of base.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%, request default <code>0</code>; form default <code>5</code> (<code>blower_costing.html:268</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>design_pct</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Designing, <strong>added</strong> as a percentage of base.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%, request default <code>0</code>; form default <code>10</code> (<code>blower_costing.html:269</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>neg_pct</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation — <strong>adds</strong> (does not subtract) as a percentage of base.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%, request default <code>0</code>; form default <code>0</code> (<code>blower_costing.html:270</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>transport_amt</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Flat transport amount; placed on its own price-schedule line (not folded into the unit price).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flat Rs., default <code>0</code> (<code>blower_costing.html:271</code>)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The catalog feeding the dropdown comes from <code>GET /api/blower/catalog</code> (<code>main.py:3409</code>), which returns <code>model, hp, airflow, pressure, price</code> (= <code>price_premium</code>, the with-motor price) from <code>blower_master</code>, ordered by pressure then HP, skipping any row whose price is not a finite positive float (<code>_finite_price</code>, <code>main.py:3385</code>). The form has no free-text CFM/static-pressure/motor inputs — those values are inherent to the selected model. <code>scope_intro</code> and <code>scope_items</code> bullets are not user inputs either; they are generated server-side from the picked model (see Outputs).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_outputs"><a class="anchor" href="#_outputs"></a>Outputs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The offer is rendered from <code>Blower_Offer_Template.docx</code> via the shared helper <code><em>generate_equipment_offer</code> (<code>main.py:3549</code>) and saved to <code>quotes/</code> as <code>Blower_Offer</em>&lt;Company&gt;_&lt;seq&gt;.docx</code>, with a best-effort PDF and async Google Drive upload (<code>drive_product="blower"</code>).</p>
+</div>
+<div class="paragraph">
+<p>Offer contents:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Equipment name</strong> — <code>Centrifugal Blower – &lt;model&gt;</code> (<code>main.py:3684</code>).</p>
+</li>
+<li>
+<p><strong>Scope intro</strong> (<code>main.py:3685</code>) — a paragraph stating a centrifugal steel-plate air blower of <code>&lt;hp&gt; HP</code> rated at <code>&lt;airflow&gt; Nm³/hr</code> with a suitable electric motor on a common base frame is supplied to provide combustion air.</p>
+</li>
+<li>
+<p><strong>Bulleted scope items</strong> (<code>main.py:3689</code>): centrifugal steel-plate air blower (<code>&lt;hp&gt; HP, &lt;airflow&gt; Nm³/hr</code>); suitable electric drive motor; common base frame with anti-vibration pads.</p>
+</li>
+<li>
+<p><strong>Spec fields</strong> injected into the template: <code>blower_model</code>, <code>blower_hp</code>, <code>blower_airflow</code>, <code>blower_pressure</code> (static pressure), plus <code>scope_intro</code> / <code>scope_items</code> (<code>main.py:3693</code>).</p>
+</li>
+<li>
+<p><strong>Price schedule</strong> (single line in Annexure III): quantity <code>&lt;qty&gt; No.</code>, unit price, and total price (<code>main.py:3604</code>). When <code>transport_amt &gt; 0</code>, <code>_break_out_transport</code> (<code>main.py:4375</code>) pulls transport onto its own <code>Transport</code> row inserted just before TOTAL, reducing the equipment row by that amount so the schedule still reconciles (TOTAL unchanged).</p>
+</li>
+<li>
+<p><strong>Grand total + amount in words</strong> — INR figure and Indian-format words (<code>main.py:3607</code>).</p>
+</li>
+<li>
+<p><strong>T&amp;C</strong> — all <code>tnc_*</code> Annexure fields carried from the customer block.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The total reflects the commercial adjustments (P&amp;F + Designing + Negotiation all added, transport added, rounded to the nearest Rs.1000). The API response (<code>main.py:3652</code>) returns <code>filename</code>, <code>download_url</code>, <code>pdf_url</code>, <code>preview_url</code>, <code>quote_no</code>/<code>enquiry_ref</code>, <code>unit_price</code>, <code>total_price</code>, <code>qty</code>, plus <code>model</code> and <code>config</code> (<code>&lt;hp&gt; HP • &lt;pressure&gt;</code>).</p>
+</div>
+<div class="paragraph">
+<p><em>Live UX:</em> Step 2 shows a running total recomputed client-side by <code>recalcTotal()</code> (<code>blower_costing.html:510</code>) on any change to qty / P&amp;F / designing / negotiation / transport, mirroring the server formula. After generation, a <strong>Preview Offer</strong> button (<code>blower_costing.html:371</code>) links to <code>preview_url</code>, alongside DOCX/PDF download links.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_calculation_flow"><a class="anchor" href="#_calculation_flow"></a>Calculation Flow</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Pick the blower from the catalog.</strong> <code>generate_blower_quote</code> (<code>main.py:3667</code>) takes <code>req.blower_model</code> and looks it up directly by exact model in <code>blower_master</code>: <code>SELECT model, hp, airflow, pressure, price_premium &#8230;&#8203; WHERE model = ?</code> (<code>main.py:3673</code>). This is a direct catalog pick (no <code>blower_selector.py</code> / <code>selection_engine.py</code> selection logic — those belong to the combined-furnace pipeline). If no row matches it returns an <code>unknown blower model</code> error.</p>
+</li>
+<li>
+<p><strong>Validate price.</strong> <code>price_premium</code> (with-motor price) is coerced by <code>_finite_price</code> (<code>main.py:3681</code>); a non-finite or non-positive price yields a <code>no valid price</code> error. This becomes <code>unit_price</code>.</p>
+</li>
+<li>
+<p><strong>Air-line sizing (context — combined pipeline only).</strong> The rule "air line NB = blower CFM × 1.7" lives in <code>bom/selectors/selection_engine.py:104-111</code>: the selected blower&#8217;s rated CFM is converted back to Nm³/hr (<code>air_line_flow = blower.cfm × 1.7</code>, <code>selection_engine.py:107</code>) and fed to <code>PipeInputs(air_flow_nm3hr=&#8230;&#8203;)</code>, which <code>calculations/pipes.py:90-97</code> sizes at the air design velocity of 15 m/s (<code>air_velocity_ms = 15.0</code>, <code>pipes.py:34</code>), rounded up to the next standard pipe NB, floored at 125 NB. e.g. 2092 CFM × 1.7 = 3556 → 300 NB. <strong>The standalone Blower offer does not run this step</strong> — it supplies the blower + motor + base frame only and sizes no air line.</p>
+</li>
+<li>
+<p><strong>Quantity.</strong> <code>qty = max(1, int(qty or 1))</code> (<code>main.py:3563</code>).</p>
+</li>
+<li>
+<p><strong>Commercial adjustment formula</strong> (<code>main.py:3567-3571</code>). With <code><em>pf, _des, _neg, _trn</code> = the four inputs: <code>_adj_total = unit_price × qty × (1 + (_pf + _des + _neg)/100) + _trn</code>. P&amp;F, Designing and Negotiation are all _added</em> (negotiation ADDS, it does not subtract). Transport is added as a flat amount.</p>
+</li>
+<li>
+<p><strong>Rounding.</strong> If any of the four adjustments is non-zero, <code>_final_incl = round(_adj_total / 1000) × 1000</code> (nearest Rs.1000); otherwise the raw total is kept (<code>main.py:3569</code>). Then <code>offer_unit = _final_incl / qty</code> and <code>total_price = _final_incl</code>.</p>
+</li>
+<li>
+<p><strong>Build scope + specs.</strong> <code>equipment_name</code>, <code>scope_intro</code>, <code>scope_items</code>, and the <code>specs</code> dict are assembled (<code>main.py:3684-3700</code>) and passed to the shared helper.</p>
+</li>
+<li>
+<p><strong>Render docx.</strong> <code><em>generate_equipment_offer</code> (<code>main.py:3549</code>) builds the docxtpl context — customer/contact fields, enquiry ref via <code>next_quote_seq()</code> + <code>build_enquiry_ref</code> (<code>main.py:3573</code>), the price-schedule line, grand total + Indian words, and all <code>tnc</em>*</code> fields — updates it with <code>specs</code>, loads <code>Blower_Offer_Template.docx</code>, renders, and saves to <code>quotes/</code> (<code>main.py:3625-3633</code>).</p>
+</li>
+<li>
+<p><strong>Break out transport.</strong> <code>_break_out_transport(docx_path, _trn)</code> (<code>main.py:3636</code>, defined <code>main.py:4375</code>) post-processes the saved docx: subtracts <code>transport</code> from the equipment row&#8217;s unit and total cells and clones that row to insert a <code>Transport</code> line immediately before TOTAL. No-op when transport ≤ 0; TOTAL stays unchanged so the schedule reconciles.</p>
+</li>
+<li>
+<p><strong>PDF + Drive + response.</strong> Best-effort PDF conversion (<code>_docx_to_pdf</code>) and async Drive upload (<code>drive_product="blower"</code>) follow (<code>main.py:3642-3650</code>), then the response dict is returned (<code>main.py:3652</code>, augmented at <code>main.py:3708</code>).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <p>This page was built using the Antora default UI.</p>
+  <p>The source code for this UI is licensed under the terms of the MPL-2.0 license.</p>
+</footer>
+<script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

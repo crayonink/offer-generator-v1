@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Heating &amp; Pumping Unit (HPU) :: Offer Generator Documentation</title>
+    <meta name="description" content="Inputs, outputs and calculation flow for the Heating &amp; Pumping Unit offer.">
+    <meta name="generator" content="Antora 3.1.15">
+    <link rel="stylesheet" href="../../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/docs">Offer Generator Documentation</a>
+      <button class="navbar-burger" aria-controls="topbar-nav" aria-expanded="false" aria-label="Toggle main menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="#">Home</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Products</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Product A</a>
+            <a class="navbar-item" href="#">Product B</a>
+            <a class="navbar-item" href="#">Product C</a>
+          </div>
+        </div>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Services</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Service A</a>
+            <a class="navbar-item" href="#">Service B</a>
+            <a class="navbar-item" href="#">Service C</a>
+          </div>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+            <a class="button is-primary" href="#">Download</a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="offer-generator" data-version="1.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="../index.html">Offer Generator</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../index.html">Home</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../product-scope.html">Product Scope &amp; Roadmap</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Completed Products</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="vlph.html">Vertical Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="hlph.html">Horizontal Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="tundish.html">Tundish Preheating System</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="blower.html">Blowers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="burner.html">Burners</a>
+  </li>
+  <li class="nav-item is-current-page" data-depth="2">
+    <a class="nav-link" href="hpu.html">Heating &amp; Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="pu.html">Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="recup.html">Recuperators</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../rfq-integration.html">RFQ Tracker Integration</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Technical Documentation</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../architecture.html">Architecture &amp; Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../modules.html">Modules &amp; Equipment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../api.html">API Reference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="../deployment.html">Deployment &amp; Operations</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Offer Generator</span>
+    <span class="version">1.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="../index.html">Offer Generator</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="../index.html">1.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="../index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="../index.html">Offer Generator</a></li>
+    <li>Completed Products</li>
+    <li><a href="hpu.html">Heating &amp; Pumping Unit</a></li>
+  </ul>
+</nav>
+<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/products/hpu.adoc">Edit this Page</a></div>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Heating &amp; Pumping Unit (HPU)</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>Module: <code>hpu</code>. Form: <code>/hpu</code> and <code>/hpu/heating-pumping</code> → <code>hpu_costing.html</code>. Status: ✅ Complete. Shares its helper, form shell and render path with the <a href="pu.html" class="xref page">Pumping Unit</a>; HPU includes the heating (oil preheater) scope, PU does not.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Field</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Units / Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fuel / oil selection</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No fuel dropdown on the HPU form. <code>fuel_type</code> is accepted but legacy/optional. Oil fuel is represented by the HPU itself (manual-mode oil = the unit, no separate oil line). <code>is_oil</code> is hard-set <code>True</code>, <code>is_dual</code> <code>False</code> (<code>main.py:3258</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">— (n/a)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Variant</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu_variant</code> — pump configuration; maps to model prefix via <code>VARIANT_PREFIX</code> (<code>hpu_selector.py:25</code>): Simplex→HPS, Duplex 1→HPD, Duplex 2→HPDD.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Simplex / Duplex 1 / Duplex 2. Default Duplex 1.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kW capacity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hpu_kw</code> — heater/unit kW, rounded to int and used as the catalog key (<code>unit_kw</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3,6,9,12,16,20,24,30,36,48 kW. Default 9 kW.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Oil Flow Rate (LPH)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Catalog-driven, read-only. Auto-filled from <code>pumping_unit_price.flow_lph</code> keyed by (kW, variant) via <code>GET /api/hpu/flow-lph</code> (<code>main.py:3063</code>). Posted <code>fuel_lph</code> is only a hint; the DB value overrides (<code>main.py:3044-3047</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Litres/hour. Auto.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control mode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fixed to <code>"manual"</code> (<code>main.py:3262</code>); no auto-control inputs on this form.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"manual"</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quantity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>qty</code> — number of units; clamped to <code>max(1, qty)</code> (<code>main.py:3180</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">integer. Default 1.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Packaging &amp; Forwarding %</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>pf_pct</code> — % uplift on catalog price (<code>main.py:3058</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%. Form default 5.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Designing %</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>design_pct</code> — % uplift (<code>main.py:3059</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%. Form default 10.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negotiation %</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>neg_pct</code> — % uplift; ADDS to the price (not subtracts) (<code>main.py:3060</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">%. Form default 0.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Transport</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>transport_amt</code> — flat amount, folded into the offer unit then split onto its own price-schedule line (<code>main.py:3057</code>, <code>3317-3319</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹. Form default 0.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Customer / T&amp;Cs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>HpuCustomer</code> block + Annexure-IV terms (prices, delivery, GST, HSN, payment, packing, freight, insurance, validity, inspection, guarantee).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">text</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_outputs"><a class="anchor" href="#_outputs"></a>Outputs</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Output template:</strong> <code>HPU_Offer_Template.docx</code> (<code>main.py:3158</code>), rendered via <code>docxtpl</code> by <code>generate_quote_docx</code>.</p>
+</li>
+<li>
+<p><strong>Equipment label:</strong> "Heating and Pumping Unit"; <code>item_product_type</code> = "Hydraulic Pumping Unit" (gates the preheater/heating scope). Model code = <code>HPS|HPD|HPDD-{kW}</code> (<code>main.py:3154-3158</code>).</p>
+</li>
+<li>
+<p><strong>Scope intro + bullets (heating branch):</strong> because <code>force_pumping_only</code> is <code>False</code> for HPU, <code><em>pumping_unit_block</code> (<code>quote_writer.py:338-356</code>) emits heading _"Oil Heating and Pumping Unit"</em> with intro <em>"…we will supply a suitable heating and pumping unit type {variant}…"</em> and bullets:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>N pump(s) each with electric motor (2 for Duplex, 1 for Simplex)</p>
+</li>
+<li>
+<p>electric Oil Preheater with thermostatic control (2 Nos. for Duplex-II, else 1 No.)</p>
+</li>
+<li>
+<p>Duplex coarse + fine filters (cold/hot side)</p>
+</li>
+<li>
+<p>Pressure regulating valve</p>
+</li>
+<li>
+<p>Pressure gauge + Temperature gauge</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Price schedule (Annexure III):</strong> single equipment line. <code>unit_price</code> = <code>offer_unit</code> (catalog price with all commercial adjustments applied). Preheater-specific tech rows are blanked so <code>_strip_empty_tech_rows</code> drops them; product_type is not Vertical/Horizontal/Tundish so those scope sections stay suppressed and the total pours into the vertical price slot via the <code>else</code> branch (<code>quote_writer.py:707-708</code>, <code>main.py:3286-3300</code>).</p>
+</li>
+<li>
+<p><strong>Transport</strong> appears on its own line just before TOTAL via <code>_break_out_transport</code> (<code>main.py:4375</code>); TOTAL (= <code>grand_total</code>) is unchanged.</p>
+</li>
+<li>
+<p><strong>Packaging &amp; Forwarding / Designing / Negotiation are NOT separate price lines</strong> — they are folded into the unit price as % uplifts; only Transport is itemised. The schedule TOTAL is the all-inclusive <code>grand_total</code> (<code>quote_writer.py:777</code>).</p>
+</li>
+<li>
+<p><strong>Result payload:</strong> download/preview URLs, <code>unit_price</code>, <code>total_price</code>, variant, kW, LPH, model_code (<code>main.py:3323-3336</code>). Filename: <code>{date}_{Customer}_HPU-{kW}kW-{variant}.docx</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_calculation_flow"><a class="anchor" href="#_calculation_flow"></a>Calculation Flow</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Form → request.</strong> Step 2 posts <code>{hpu_variant, hpu_kw, qty, pf_pct, design_pct, neg_pct, transport_amt}</code> plus customer/T&amp;Cs to <code>POST /api/generate-hpu-quote</code> (<code>hpu_costing.html:511-523</code>), validated into <code>HpuQuoteRequest</code> (<code>main.py:3039</code>). Endpoint delegates to <code>_generate_pumping_unit_offer(req, mode="hpu")</code> (<code>main.py:3339-3344</code>).</p>
+</li>
+<li>
+<p><strong>Flow-LPH lookup.</strong> <code>flow_lph</code> read from <code>pumping_unit_price</code> by (kW, variant) (<code>main.py:3134-3139</code>); falls back to posted <code>fuel_lph</code> or 0.</p>
+</li>
+<li>
+<p><strong>HPU selection + unit price.</strong> <code>unit_price = round(SUM(hpu_master.amount for kW,variant) × HPU_MARKUP, 2)</code>, where <code>HPU_MARKUP = 1.8</code> (<code>main.py:3144-3153</code>; <code>bom/hpu_calculator.py:23,134</code>). Errors out if no <code>hpu_master</code> rows. This mirrors <code>GET /api/hpu/price?mode=hpu</code> (<code>main.py:3104-3110</code>) used for the live Step-2 total.</p>
+</li>
+<li>
+<p><strong>Commercial-adjustment formula</strong> (<code>main.py:3186-3192</code>): <code>_adj_total = unit_price * qty * (1 + (_pf + _des + _neg)/100) + _trn</code>. Negotiation ADDS. If any adjustment is set, <code>_final_incl = round(_adj_total / 1000) * 1000</code> (nearest ₹1000); else <code>_adj_total</code>. <code>offer_unit = _final_incl / qty</code>. (Matches the JS preview in <code>hpu_costing.html:487-501</code>.)</p>
+</li>
+<li>
+<p><strong>Build form_data.</strong> Enquiry ref via <code>next_quote_seq</code> + <code>build_enquiry_ref</code> (<code>main.py:3195-3196</code>); single price-schedule item with <code>product_type="Hydraulic Pumping Unit"</code>, <code>unit_price=offer_unit</code>; <code>is_oil=True</code>, <code>force_pumping_only=False</code>, <code>control_mode="manual"</code>; preheater tech rows blanked (<code>main.py:3203-3302</code>).</p>
+</li>
+<li>
+<p><strong>Render.</strong> <code>calculate_quote(form_data)</code> → <code>grand_total</code> (<code>main.py:3304-3305</code>); <code>generate_quote_docx</code> renders <code>HPU_Offer_Template.docx</code> (<code>main.py:3315-3316</code>), invoking <code>_pumping_unit_block</code> for the heating scope (<code>quote_writer.py:279</code>).</p>
+</li>
+<li>
+<p><strong>Transport break-out.</strong> <code>_break_out_transport(output_path, transport_amt)</code> splits Transport onto its own Annexure-III line, leaving TOTAL intact (<code>main.py:3317-3321</code>, <code>4375</code>).</p>
+</li>
+<li>
+<p><strong>Respond.</strong> Return filename, download/preview URLs, prices and config (<code>main.py:3323-3336</code>).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <p>This page was built using the Antora default UI.</p>
+  <p>The source code for this UI is licensed under the terms of the MPL-2.0 license.</p>
+</footer>
+<script id="site-script" src="../../../_/js/site.js" data-ui-root-path="../../../_"></script>
+<script async src="../../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

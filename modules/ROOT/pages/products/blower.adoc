@@ -1,0 +1,54 @@
+= Blowers
+:description: Inputs, outputs and calculation flow for the standalone Blower offer.
+
+Module: `blower`. Form: `/blower` → `blower_costing.html` (reached from `/equipment-offer`). Status: ✅ Complete. This is a catalog-pick offer; the air-line sizing rule (CFM × 1.7) belongs to the combined/ladle-preheater pipeline, not this standalone path.
+
+== Inputs
+
+The Blower form (`GET /blower`, `main.py:3369`, template `blower_costing.html`) is reached from the Equipment-Offer hub (`GET /equipment-offer`, `main.py:794`). It posts a `BlowerQuoteRequest` (`main.py:3528`).
+
+[cols="1,3,2",options="header"]
+|===
+| Field | Meaning | Units / Default
+
+| `customer` | Customer block (`HpuCustomer`): company, address/city/state/pin, contact + salutation, marketing & technical persons, subject, and the Annexure T&C fields. | object, required
+| `blower_model` | Exact catalog key chosen from the blower dropdown; matched against `blower_master.model`. | string, required
+| `qty` | Number of blower sets. | integer, default `1` (coerced to `>= 1`, `main.py:3563`)
+| `pf_pct` | Packaging & Forwarding, *added* as a percentage of base. | %, request default `0`; form default `5` (`blower_costing.html:268`)
+| `design_pct` | Designing, *added* as a percentage of base. | %, request default `0`; form default `10` (`blower_costing.html:269`)
+| `neg_pct` | Negotiation — *adds* (does not subtract) as a percentage of base. | %, request default `0`; form default `0` (`blower_costing.html:270`)
+| `transport_amt` | Flat transport amount; placed on its own price-schedule line (not folded into the unit price). | flat Rs., default `0` (`blower_costing.html:271`)
+|===
+
+The catalog feeding the dropdown comes from `GET /api/blower/catalog` (`main.py:3409`), which returns `model, hp, airflow, pressure, price` (= `price_premium`, the with-motor price) from `blower_master`, ordered by pressure then HP, skipping any row whose price is not a finite positive float (`_finite_price`, `main.py:3385`). The form has no free-text CFM/static-pressure/motor inputs — those values are inherent to the selected model. `scope_intro` and `scope_items` bullets are not user inputs either; they are generated server-side from the picked model (see Outputs).
+
+== Outputs
+
+The offer is rendered from `Blower_Offer_Template.docx` via the shared helper `_generate_equipment_offer` (`main.py:3549`) and saved to `quotes/` as `Blower_Offer_<Company>_<seq>.docx`, with a best-effort PDF and async Google Drive upload (`drive_product="blower"`).
+
+Offer contents:
+
+* *Equipment name* — `Centrifugal Blower – <model>` (`main.py:3684`).
+* *Scope intro* (`main.py:3685`) — a paragraph stating a centrifugal steel-plate air blower of `<hp> HP` rated at `<airflow> Nm³/hr` with a suitable electric motor on a common base frame is supplied to provide combustion air.
+* *Bulleted scope items* (`main.py:3689`): centrifugal steel-plate air blower (`<hp> HP, <airflow> Nm³/hr`); suitable electric drive motor; common base frame with anti-vibration pads.
+* *Spec fields* injected into the template: `blower_model`, `blower_hp`, `blower_airflow`, `blower_pressure` (static pressure), plus `scope_intro` / `scope_items` (`main.py:3693`).
+* *Price schedule* (single line in Annexure III): quantity `<qty> No.`, unit price, and total price (`main.py:3604`). When `transport_amt > 0`, `_break_out_transport` (`main.py:4375`) pulls transport onto its own `Transport` row inserted just before TOTAL, reducing the equipment row by that amount so the schedule still reconciles (TOTAL unchanged).
+* *Grand total + amount in words* — INR figure and Indian-format words (`main.py:3607`).
+* *T&C* — all `tnc_*` Annexure fields carried from the customer block.
+
+The total reflects the commercial adjustments (P&F + Designing + Negotiation all added, transport added, rounded to the nearest Rs.1000). The API response (`main.py:3652`) returns `filename`, `download_url`, `pdf_url`, `preview_url`, `quote_no`/`enquiry_ref`, `unit_price`, `total_price`, `qty`, plus `model` and `config` (`<hp> HP • <pressure>`).
+
+_Live UX:_ Step 2 shows a running total recomputed client-side by `recalcTotal()` (`blower_costing.html:510`) on any change to qty / P&F / designing / negotiation / transport, mirroring the server formula. After generation, a *Preview Offer* button (`blower_costing.html:371`) links to `preview_url`, alongside DOCX/PDF download links.
+
+== Calculation Flow
+
+. *Pick the blower from the catalog.* `generate_blower_quote` (`main.py:3667`) takes `req.blower_model` and looks it up directly by exact model in `blower_master`: `SELECT model, hp, airflow, pressure, price_premium ... WHERE model = ?` (`main.py:3673`). This is a direct catalog pick (no `blower_selector.py` / `selection_engine.py` selection logic — those belong to the combined-furnace pipeline). If no row matches it returns an `unknown blower model` error.
+. *Validate price.* `price_premium` (with-motor price) is coerced by `_finite_price` (`main.py:3681`); a non-finite or non-positive price yields a `no valid price` error. This becomes `unit_price`.
+. *Air-line sizing (context — combined pipeline only).* The rule "air line NB = blower CFM × 1.7" lives in `bom/selectors/selection_engine.py:104-111`: the selected blower's rated CFM is converted back to Nm³/hr (`air_line_flow = blower.cfm × 1.7`, `selection_engine.py:107`) and fed to `PipeInputs(air_flow_nm3hr=...)`, which `calculations/pipes.py:90-97` sizes at the air design velocity of 15 m/s (`air_velocity_ms = 15.0`, `pipes.py:34`), rounded up to the next standard pipe NB, floored at 125 NB. e.g. 2092 CFM × 1.7 = 3556 → 300 NB. *The standalone Blower offer does not run this step* — it supplies the blower + motor + base frame only and sizes no air line.
+. *Quantity.* `qty = max(1, int(qty or 1))` (`main.py:3563`).
+. *Commercial adjustment formula* (`main.py:3567-3571`). With `_pf, _des, _neg, _trn` = the four inputs: `_adj_total = unit_price × qty × (1 + (_pf + _des + _neg)/100) + _trn`. P&F, Designing and Negotiation are all _added_ (negotiation ADDS, it does not subtract). Transport is added as a flat amount.
+. *Rounding.* If any of the four adjustments is non-zero, `_final_incl = round(_adj_total / 1000) × 1000` (nearest Rs.1000); otherwise the raw total is kept (`main.py:3569`). Then `offer_unit = _final_incl / qty` and `total_price = _final_incl`.
+. *Build scope + specs.* `equipment_name`, `scope_intro`, `scope_items`, and the `specs` dict are assembled (`main.py:3684-3700`) and passed to the shared helper.
+. *Render docx.* `_generate_equipment_offer` (`main.py:3549`) builds the docxtpl context — customer/contact fields, enquiry ref via `next_quote_seq()` + `build_enquiry_ref` (`main.py:3573`), the price-schedule line, grand total + Indian words, and all `tnc_*` fields — updates it with `specs`, loads `Blower_Offer_Template.docx`, renders, and saves to `quotes/` (`main.py:3625-3633`).
+. *Break out transport.* `_break_out_transport(docx_path, _trn)` (`main.py:3636`, defined `main.py:4375`) post-processes the saved docx: subtracts `transport` from the equipment row's unit and total cells and clones that row to insert a `Transport` line immediately before TOTAL. No-op when transport ≤ 0; TOTAL stays unchanged so the schedule reconciles.
+. *PDF + Drive + response.* Best-effort PDF conversion (`_docx_to_pdf`) and async Drive upload (`drive_product="blower"`) follow (`main.py:3642-3650`), then the response dict is returned (`main.py:3652`, augmented at `main.py:3708`).

@@ -1,0 +1,108 @@
+= Recuperators
+:description: Inputs, outputs and calculation flow for the Recuperator offer.
+
+Module: `recup`. Form: `/recup` → `recup_costing.html`. Status: ✅ Complete. A heat-transfer-sized product: the air-preheater surface area is computed from the flue/air duty, then the tube grid and BOM are derived.
+
+== Inputs
+
+The Recuperator form lives at `/recup` (`main.py:2588`). Step 1/2 inputs map to `RecupCalcRequest` (`main.py:2595`) → `RecupInputs` (`calculations/recup.py:42`); Step 3 commercial inputs and Step 4 offer metadata map to `RecupQuoteRequest` (`main.py:2698`).
+
+[cols="2,4,2", options="header"]
+|===
+| Field | Meaning | Units / Default
+
+| `flue_flow_nm3hr`        | Total flue-gas volumetric flow (Excel E3) | Nm³/hr, default 1900
+| `flue_temp_in_C`         | Inlet flue-gas temperature (E6) | °C, default 800
+| `cp_flue_kcal_kgC`       | Specific heat of flue gas (E5, constant) | kcal/kg·°C, default 0.23
+| `air_volume_nm3hr`       | Combustion-air volume to be preheated (E9) | Nm³/hr, default 1750
+| `air_temp_in_C`          | Inlet (ambient) air temperature (E10) | °C, default 35
+| `air_temp_out_C`         | Target preheated air temperature (E11) | °C, default 400
+| `cp_air_kcal_kgC`        | Specific heat of air (E12, constant) | kcal/kg·°C, default 0.247
+| `heat_transfer_coef`     | Overall heat-transfer coefficient (E8) | kcal/m²·°C, default 30
+| `pipe_dia_mm`            | Tube outer diameter | mm, default 48.3
+| `pipe_thick_mm`          | Tube wall thickness | mm, default 2.77
+| `pipe_kg_per_m`          | Tube unit weight | kg/m, default 3.16
+| `pipe_length_m_per_bank` | Tube length per bank (0.55 + 0.08) | m, default 0.63
+| `bank_gap_mm`            | Gap between hot and cold banks (E18) | mm, default 150
+| `pipes_total_override`   | Force a total pipe count; 0 = auto-derive from surface area | int, default 0
+| `hot_bank_material`      | Hot-bank tube material — `"SS"` (SS304, ~Rs 250/kg) or `"MS"` (~Rs 70/kg) | str, default "SS"
+| `cold_bank_material`     | Cold-bank tube material (may differ from hot bank) | str, default "SS"
+| `side_hood_kg`           | MS side-hood material weight | kg, default 1500
+| `cai_rate_override`      | MS Combustion-Air-Inlet assembly Rs/kg override; 0 = DB default | Rs/kg, default 0
+| `qty`                    | Order quantity; multiplies unit price into the offer total | int, default 1
+|===
+
+Commercial inputs (Step 3 — Cost Summary panel, `recup_costing.html:520`–542). Entered in the UI and folded into `final_total` on the client; the backend receives only the resulting totals:
+
+[cols="2,4,2", options="header"]
+|===
+| Field | Meaning | Units / Default
+
+| Conversion markup (`s-conv`)   | Cost→sale multiplier (Excel F60) | ×, default 1.80
+| Packaging & Forwarding (`s-pf`)| P&F as % of sale price, additive | %, default 5
+| Designing (`s-design`)         | Designing charge as % of sale, additive | %, default 10
+| Negotiation (`s-nego`)         | Negotiation as % of sale, additive | %, default 10
+| Transport (`s-trans` → `transport_amt`) | Flat transport amount; own price-schedule line | Rs., default 0
+| `final_total`                  | Computed sell price (unit) with all of the above applied, rounded up to nearest Rs 1000 | Rs.
+| `grand_total`                  | Raw BOM grand total (bought-out + ENCON) | Rs.
+|===
+
+Offer / T&C metadata in `RecupQuoteRequest` (`main.py:2698`): customer block (`salutation`, `poc_name`, `company_name`, `company_address`, `email`, `mobile_no`, `project_name`, `subject`, `application`, `client_enq_ref`), marketing/technical contacts, `location` (default "FBD"), supervision lines (`supervision_mech`, `supervision_plc`), `price_schedule_style` (`"single"` or `"full"`), optional full-mode supervision row, and the `tnc_*` fields.
+
+== Outputs
+
+`/api/recup-calculate` (`main.py:2619`) returns a JSON object with three blocks; `/api/generate-recup-quote` (`main.py:2830`) renders the offer document.
+
+*Sizing results* (`calculations` block, from `RecupResults`):
+
+* Heat balance: `flue_mass_kghr` (E4), `heat_required_kcal` (E13), `flue_temp_out_C` (derived, E7), `lmtd_C` (E14, with 0.9 factor).
+* `surface_area_m2` — required heat-transfer area (E15).
+* Pipe grid: `pipes_total_raw` (E19), `pipes_total`, `pipes_in_row`, `pipes_in_column`, `pipes_per_bank`.
+* Dimensions: `bank_length_mm` (E16), `bank_width_mm` (E17).
+* Weights: `weight_per_pipe_kg`, `weight_hot_bank_kg`, `weight_cold_bank_kg`, `weight_total_pipes_kg`, and the MS structural weights `ms_outer_shell_kg`, `ms_air_inlet_duct_kg`, `ms_hot_outlet_duct_kg`, `ms_pipe_holding_kg`, `ms_bottom_box_kg`.
+* Echoed process inputs for the offer's Designing Parameters table.
+
+*BOM / price schedule* (`bom` block, built by `build_recup_df`, `bom/recup_builder.py:67`): one row per line item with `MEDIA`, `ITEM NAME`, `REFERENCE`, `QTY`, `MAKE`, `UNIT PRICE`, `TOTAL`. Line items:
+
+* BOUGHT OUT / MISC: Thermocouple with TT (flat).
+* ENCON ITEMS: SS304/MS ERW Tube — Hot Bank, SS304/MS ERW Tube — Cold Bank, MS Side Hood (2 Nos) Fabrication, MS Combustion Air Inlet Assembly, the stock structural steel rows (MS Channel 150×75×10, MS Angle 65×25, 75×10, 50×15), Pipe Bending, Welding Rods, Hole Fabrication.
+* Summary rows: BOUGHT OUT ITEMS, ENCON ITEMS, GRAND TOTAL.
+
+*Cost summary* (`cost_summary` block, `recup_summary`, `bom/recup_builder.py:217`): `bought_out_total`, `encon_total`, `grand_total`, `markup_conversion`, `sale_after_markup`, `designing_pct`, `negotiation_pct`, `final_total` (rounded up to nearest Rs 1000).
+
+*Offer document* (`/api/generate-recup-quote`):
+
+* Scope-of-supply / Material of Construction table built by `_material_of_construction` (`main.py:2751`): SS→"SS-316", MS→"Mild Steel (CS)"; hot bank rendered as bent tubes, cold bank as straight; tube spec carries OD + Schedule-40.
+* Price Schedule rows assembled by `_bom_rows_for_offer` (`main.py:2775`); in `"single"` style one row at the final price + amount in words, in `"full"` style every BOM line plus optional supervision row and bought-out/ENCON/grand totals.
+* Designing Parameters table (echoed flue/air conditions, surface area, pipe geometry), plus a marketing-rounded air-outlet temperature (ceil to next 50 °C).
+* Optional 3D recuperator images (side/front/top) embedded from `static/recup/*.jpeg` when present (`main.py:2948`).
+* Output template: *`Recup_Offer_Template.docx`* (repo root, `main.py:2939`), cloned from the VLPH `Offer_Template.docx` via `build_recup_template_from_vlph.py`. Saved as `Recup_Offer_<company>_<seq>.docx` in `QUOTES_FOLDER`, with best-effort PDF conversion and async Google-Drive mirroring (product_type `"recuperator"`).
+
+== Calculation Flow
+
+. *Flue mass (E4).* `flue_mass = flue_flow_nm3hr × 1.2` (`calculations/recup.py:168`).
+. *Heat duty (E13).* Air mass = `air_volume_nm3hr × 1.2`; `heat_required = air_mass × cp_air × (air_temp_out − air_temp_in)` (`calculations/recup.py:171`–173).
+. *Final flue temp (E7).* Back-solved from the heat balance: `flue_temp_out = flue_temp_in − heat_required / (flue_mass × cp_flue)` (`calculations/recup.py:176`).
+. *LMTD (E14).* `dT1 = flue_temp_in − air_temp_out`, `dT2 = flue_temp_out − air_temp_in`; `lmtd = ((dT1 − dT2)/ln(dT1/dT2)) × 0.9` (degenerate cases fall back to the arithmetic mean) (`calculations/recup.py:179`–185).
+. *Surface area (E15).* `surface_area = heat_required / (lmtd × heat_transfer_coef)` (`calculations/recup.py:188`).
+. *Raw pipe count (E19).* `pipes_raw = surface_area / (3.14 × (dia/1000) × (length + 0.1))` — literal 3.14 to match the spreadsheet (`calculations/recup.py:193`–195).
+. *Grid selection (E20/E21).* Target = `pipes_total_override` if set, else `ceil(pipes_raw)`. `_best_grid` (`calculations/recup.py:121`) picks a near-square (rows, cols) — cols forced even so each bank gets a whole number — scoring `aspect_pct + 3×waste_pct`, tie-breaking toward rows=14. `pipes_total = rows × cols`, `pipes_per_bank = pipes_total // 2` (`calculations/recup.py:200`–205).
+. *Bank dimensions (E16/E17).* `bank_length_mm` and `bank_width_mm` derived from the grid, pipe pitch (32 mm), diameter, and 150 mm end margin (`calculations/recup.py:208`–213).
+. *Pipe weights (E27/E28/E35).* `weight_per_pipe = pipe_kg_per_m × length`; hot and cold banks each = `weight_per_pipe × pipes_per_bank` (`calculations/recup.py:216`–219).
+. *MS structural weights (E41–E45).* Outer shell, air-inlet duct, hot-outlet duct, pipe-holding plate, and bottom box computed by volume × density (`_vol_to_kg`), auto-scaling with bank geometry (`calculations/recup.py:222`–238).
+. *BOM assembly + pricing.* `/api/recup-calculate` loads `recup_rates` via `_load_rates` (`bom/recup_builder.py:57`) and calls `build_recup_df` (`bom/recup_builder.py:67`). Rates resolved from DB with Excel-default fallbacks: tube rates `SS304_TUBE_PER_KG` (250) / `MS_TUBE_PER_KG` (70) per bank material; `MS_PER_KG` (60) for stock steel; `MS_FABRICATION_PER_KG` (70) for the CAI assembly. Rows priced:
+.. Tubes: hot/cold = `weight_bank_kg × tube_rate` (`bom/recup_builder.py:117`–130).
+.. MS Combustion Air Inlet Assembly (F49): `(shell + inlet + outlet + holding + box + flanges_kg(100) + side_hood_kg) × cai_rate`, where `cai_rate` = `cai_rate_override` if >0 else `MS_FABRICATION_PER_KG` (`bom/recup_builder.py:145`–166).
+.. MS Side Hood fabrication (F48): flat `SIDE_HOOD_COST` (50000) (`bom/recup_builder.py:135`).
+.. Stock steel (F50–53): `length_m × kg_per_m × MS_PER_KG`, specs from `_STOCK_STEEL_SPECS` (`bom/recup_builder.py:170`–180).
+.. Labour: Pipe Bending `(rows+cols) × 350`, Welding Rods `n_total × 4 × 8`, Hole Fabrication `n_total × 2 × 100` (`bom/recup_builder.py:183`–200).
+.. Thermocouple: flat `THERMOCOUPLE_TT` (8000) (`bom/recup_builder.py:112`).
+Summary rows sum BOUGHT OUT and ENCON to GRAND TOTAL (`bom/recup_builder.py:206`–214).
+. *Commercial markup.* `recup_summary` (`bom/recup_builder.py:217`) applies the Excel additive chain: `sale = grand × MARKUP_CONVERSION (1.8)`; `final = sale × (1 + designing + negotiation)`, rounded up to the next Rs 1000 (`bom/recup_builder.py:229`–242). The Step-3 UI (`recup_costing.html:957`–968) reproduces and extends this client-side — `final = sale + sale×pf + sale×design + sale×nego + transport`, rounded up to Rs 1000 — and posts the result as `final_total` (+ `transport_amt` on its own line).
+. *Offer context build.* `/api/generate-recup-quote` (`main.py:2830`) computes `unit_price = final_total`, `total_price = unit_price × qty`, generates the enquiry ref/date, and assembles the docxtpl context: Designing Parameters, Material of Construction (`main.py:2751`), and the price schedule rows (`main.py:2775`) per `price_schedule_style`.
+. *Docx render & delivery.* Loads `Recup_Offer_Template.docx` (`main.py:2939`), embeds the optional 3D images (`main.py:2948`), renders, saves to `QUOTES_FOLDER` as `Recup_Offer_<company>_<seq>.docx`, attempts PDF conversion, mirrors to Google Drive async (product_type `"recuperator"`), and returns download / PDF / preview URLs (`main.py:2956`–2994).
+
+[NOTE]
+====
+The backend `recup_summary` markup is the additive Excel chain (conversion → designing + negotiation only). The actual offer's `final_total` is computed client-side in `recup_costing.html` and additionally includes Packaging & Forwarding (%) and a flat Transport amount, then rounds up to the nearest Rs 1000. P&F and Transport are UI-only commercial inputs that never pass through the Python calc — they arrive at the backend already baked into `final_total` (with Transport also echoed separately as `transport_amt`).
+====
