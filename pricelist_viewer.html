@@ -725,7 +725,11 @@ function splitItem(item, specification) {
   // assembly reads in full ('SS ASSLY 2A/3A') and the four sizes aren't
   // collapsed to an identical 'SS ASSLY' that looks like a duplicate set.
   if (/^\s*\d+A(\s*\/\s*\d+A)*\s*$/i.test(spec)) {
-    return { name, size: '', model: '' };
+    // Burner A-frame size (2A/3A, 4A, 5A/6A, 7A). Show it in the Size column
+    // so same-named assemblies (Micro Valve, SS Assly) are distinguishable
+    // instead of collapsing to one identical-looking name.
+    if (name.endsWith(' ' + spec)) name = name.slice(0, -1 - spec.length).trim();
+    return { name, size: spec.trim(), model: '' };
   }
   if (spec && name.endsWith(' ' + spec)) {
     name = name.slice(0, -1 - spec.length);
