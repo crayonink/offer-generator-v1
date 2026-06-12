@@ -64,7 +64,7 @@ def select_agr(nb: int, connection: str, ratio: str, compact: str) -> dict:
         _c = sqlite3.connect(DB_PATH)
         _r = _c.execute(
             "SELECT price FROM component_price_master WHERE item=? LIMIT 1",
-            (f"AGR {row[2]} NB, {row[4]} ({row[3]})",)).fetchone()
+            (f"AGR {row[2]} NB ({row[3]}) {row[4]}",)).fetchone()
         _c.close()
         if _r and _r[0] is not None:
             _price = float(_r[0])
