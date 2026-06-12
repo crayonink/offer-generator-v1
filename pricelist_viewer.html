@@ -1059,7 +1059,7 @@ function _renderRatesTable(data, opts) {
         const vb = isNaN(nb) ? Infinity : nb;
         return va - vb;
       });
-    } else if (cat === 'Control Valve') {
+    } else if (cat === 'Motorised Control Valve') {
       // Motorised control valves (CAIR). Group by company, then pure NB size
       // order — so '25 NB (Globe)' sorts by its size rather than landing after
       // the other names (its '(Globe)' suffix gives it a different base name).
@@ -1111,7 +1111,7 @@ function _renderRatesTable(data, opts) {
     // banner row each time the supplier changes so each vendor's block is
     // visually fenced off. Skipped for other categories where company isn't
     // the primary sort key.
-    const showCompanyHdrs = (cat === 'Control Valve' || cat === 'Pneumatic Control Valve' || cat === 'Pneumatic Shut Off Valve' || cat === 'Motorised Shut Off Valve' || cat === 'Pressure Switch');
+    const showCompanyHdrs = (cat === 'Motorised Control Valve' || cat === 'Pneumatic Control Valve' || cat === 'Pneumatic Shut Off Valve' || cat === 'Motorised Shut Off Valve' || cat === 'Pressure Switch');
     let lastCompanyHdr = null;
 
     cats[cat].forEach(r => {
