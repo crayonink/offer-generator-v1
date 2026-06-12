@@ -52,7 +52,7 @@ Commercial inputs (entered on the costing page, applied client-side in `recalcGr
 
 *Price schedule* — the single equipment line carries `unit_price = final_total` (Grand + P&F + Designing + Negotiation + Transport, rounded to nearest Rs.1000; `tundish_costing.html:2330`). Transport is then split onto its own line by `_break_out_transport` (`main.py:4375`).
 
-*Output .docx template* — Despite the presence of `Tundish_Offer_Template.docx` and `Tundish_Automatic.docx` in the repo, the live code path does _not_ use them. `generate_quote_docx` renders the tundish offer from the shared `Offer_Template.docx` (`quote_writer.py:1049–1053`): all products (Vertical, Horizontal, Tundish) share the same template shell, with `is_tundish` toggling tundish-only tech-data rows (`quote_writer.py:873,1215`) and scope wording. `TUNDISH_TEMPLATE_PATH` is defined (`quote_writer.py:6`) but never referenced again — `Tundish_Offer_Template.docx` / `Tundish_Automatic.docx` are dormant/legacy assets. The generated file is named `{date}_{Company}_Tundish-{N}T.docx` (`main.py:4551,4559`).
+*Output .docx template* — `generate_quote_docx` renders the tundish offer from the shared `Offer_Template.docx` (`quote_writer.py`): all products (Vertical, Horizontal, Tundish) share the same template shell, with `is_tundish` toggling tundish-only tech-data rows (`quote_writer.py:873,1215`) and scope wording. (The dormant `Tundish_Offer_Template.docx` / `Tundish_Automatic.docx` assets and the unused `TUNDISH_TEMPLATE_PATH` constant were removed.) The generated file is named `{date}_{Company}_Tundish-{N}T.docx` (`main.py:4551,4559`).
 
 == Calculation Flow
 

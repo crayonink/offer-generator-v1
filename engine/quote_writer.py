@@ -3,7 +3,6 @@ from export.word_writer import generate_word_offer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(BASE_DIR, "Offer_Template.docx")
-TUNDISH_TEMPLATE_PATH = os.path.join(BASE_DIR, "Tundish_Offer_Template.docx")
 
 
 # ── MAKE LIST (static) ────────────────────────────────────────────────────
