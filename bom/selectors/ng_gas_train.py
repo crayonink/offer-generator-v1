@@ -43,12 +43,27 @@ def select_ng_gas_train(required_flow_nm3hr: float) -> dict:
             f"No suitable NG Gas Train found for required flow {required_flow_nm3hr}"
         )
 
+    # Price comes from the editable Rates sheet (component_price_master) if a
+    # matching row exists, so pricelist edits cascade into the BOM; otherwise
+    # fall back to the gas_train_master price.
+    _price = row[4]
+    try:
+        _c = sqlite3.connect(DB_PATH)
+        _r = _c.execute(
+            "SELECT price FROM component_price_master WHERE item=? LIMIT 1",
+            (f"Gas Train {row[0]} x {row[1]}",)).fetchone()
+        _c.close()
+        if _r and _r[0] is not None:
+            _price = float(_r[0])
+    except Exception:
+        pass
+
     return {
         "inlet_nb": row[0],
         "outlet_nb": row[1],
         "min_flow": row[2],
         "max_flow": row[3],
-        "price": row[4],
+        "price": _price,
     }
 
 

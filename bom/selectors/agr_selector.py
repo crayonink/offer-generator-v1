@@ -56,6 +56,21 @@ def select_agr(nb: int, connection: str, ratio: str, compact: str) -> dict:
             f"ratio={ratio}, compact={compact}"
         )
 
+    # Price comes from the editable Rates sheet (component_price_master) if a
+    # matching row exists, so pricelist edits cascade into the BOM; otherwise
+    # fall back to the agr_master list price.
+    _price = row[6]
+    try:
+        _c = sqlite3.connect(DB_PATH)
+        _r = _c.execute(
+            "SELECT price FROM component_price_master WHERE item=? LIMIT 1",
+            (f"AGR {row[2]} NB, {row[4]} ({row[3]})",)).fetchone()
+        _c.close()
+        if _r and _r[0] is not None:
+            _price = float(_r[0])
+    except Exception:
+        pass
+
     return {
         "enag":       row[0],
         "item_code":  row[1],
@@ -63,7 +78,7 @@ def select_agr(nb: int, connection: str, ratio: str, compact: str) -> dict:
         "connection": row[3],
         "ratio":      row[4],
         "compact":    row[5],
-        "price":      row[6],
+        "price":      _price,
         "pmax_mbar":  row[7],
     }
 
