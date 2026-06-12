@@ -598,6 +598,108 @@ the counts above are a snapshot and will shift as items are added or removed; tr
 </div>
 </div>
 <div class="sect1">
+<h2 id="_how_each_price_is_built"><a class="anchor" href="#_how_each_price_is_built"></a>How each price is built</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Not every price is worked out the same way. There are five kinds:</p>
+</div>
+<div class="paragraph">
+<p><strong>1. Flat catalogue rates (most of the list).</strong> Valves, regulators, solenoids, filters, hoses, gauges, pilot burners and so on are simply stored at the supplier&#8217;s rate — there is no calculation. When an offer needs one, the system picks the row that matches the required pipe size (NB). <em>Example: a 80 NB ball valve is taken at its stored rate; no maths involved.</em></p>
+</div>
+<div class="paragraph">
+<p><strong>2. Per-kilogram rates.</strong> Fabrication and steelwork are priced by weight × a rate:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 60%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Item</th>
+<th class="tableblock halign-left valign-top">Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fabricated structure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">about ₹70 per kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air–gas pipeline</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹125 per kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stock structural steel (channels, angles)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">about ₹60 per kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Recuperator tubes — stainless steel</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹250 per kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Recuperator tubes — mild steel</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹70 per kg</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p><em>Example: a 1,000 kg air–gas pipeline = 1,000 × ₹125 = ₹1,25,000.</em></p>
+</div>
+<div class="paragraph">
+<p><strong>3. Flow- or size-selected parts with their own rate.</strong> A couple of items are chosen by the duty and then take that row&#8217;s price:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Gas train</strong> — the system picks the gas train whose flow range covers the required gas flow, and takes its price.</p>
+</li>
+<li>
+<p><strong>Air–gas regulator</strong> — chosen by pipe size, connection type (threaded or flanged) and turndown ratio, and takes the matching row&#8217;s price.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>4. Built-up whole-assembly prices.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Heating &amp; Pumping Unit</strong> — add up the catalogue cost of all its parts and multiply by <strong>1.8</strong>. <em>Example: parts ₹1,00,000 → unit price ₹1,80,000.</em></p>
+</li>
+<li>
+<p><strong>Pumping Unit</strong> — the same skid without the heater; its price is already stored at the selling figure (it does not get the ×1.8 again).</p>
+</li>
+<li>
+<p><strong>Blower</strong> — the stored catalogue price, including the motor.</p>
+</li>
+<li>
+<p><strong>Burner</strong> — the stored catalogue price of the burner set. (Where a GAIL burner is built up from parts, the fabrication cost is multiplied by <strong>1.25</strong>.)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>5. Whole-offer mark-ups and adjustments.</strong> When a complete offer is assembled:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>in a ladle-preheater or tundish offer, the <strong>bought-out items are multiplied by 1.8</strong> before the ENCON-made items are added;</p>
+</li>
+<li>
+<p>a <strong>recuperator&#8217;s</strong> total cost is multiplied by <strong>1.8</strong> (cost-to-sale);</p>
+</li>
+<li>
+<p>then <strong>packaging &amp; forwarding, designing and negotiation</strong> are added as percentages (they add to the price), <strong>transport</strong> is added, and the result is <strong>rounded to the nearest ₹1,000</strong>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Each product page shows a full worked example of this chain.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_how_a_rate_becomes_a_price_in_an_offer"><a class="anchor" href="#_how_a_rate_becomes_a_price_in_an_offer"></a>How a rate becomes a price in an offer</h2>
 <div class="sectionbody">
 <div class="paragraph">

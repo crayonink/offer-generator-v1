@@ -63,3 +63,19 @@ The offer document carries the Scope of Supply (the equipment is named "Tundish 
 . *Price every line and total it up*, multiplying the per-burner items by the number of burners.
 . *Add the commercials* — packaging & forwarding, designing and negotiation as percentages, plus flat transport, rounded to the nearest ₹1,000.
 . *Produce the documents* — the all-inclusive price in the offer, transport on its own line, saved as Word and PDF.
+
+[NOTE]
+.Worked example — natural gas, 3 burners
+====
+The total heat and flow are worked out exactly as for the xref:products/vlph.adoc[vertical preheater]. For the same job (lining 650 → 1200 °C, 21,500 kg, 2 hours, NG at 8,500 kcal/Nm³) the total is:
+
+* Total gas ≈ *217 Nm³/hr*, total combustion air ≈ *2,180 Nm³/hr* (with the 10 % margin)
+
+Now the tundish split across *3 burners*:
+
+* Each burner is sized for 217 ÷ 3 ≈ *72 Nm³/hr* of gas
+* The *shared* equipment — blower, gas train, main line — is still sized for the full *217 Nm³/hr*
+* In the bill of materials, the burner and its pilot/ignition parts are *counted 3 times*; the shared equipment is counted once
+
+*Pricing:* the bought-out total (now including 3 burners) is multiplied by 1.8, the ENCON-made items added, and P&F / designing / negotiation and transport applied, rounded to the nearest ₹1,000.
+====

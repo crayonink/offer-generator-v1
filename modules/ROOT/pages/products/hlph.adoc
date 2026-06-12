@@ -95,3 +95,16 @@ The offer document carries the Scope of Supply, the Price Schedule (transport on
 . *Produce the documents* — the all-inclusive price in the offer, transport on its own line, saved as Word and PDF.
 
 There is also a *cost-comparison tool* that re-runs the calculation across single changes — swapping a vendor, turning ignition on or off, changing the pumping-unit type, or flipping between manual and automatic — so the effect of each choice on the price can be seen side by side.
+
+[NOTE]
+.Worked example — natural gas, calculate-from-process
+====
+The heat-and-flow figures are worked out exactly as for the xref:products/vlph.adoc[vertical preheater]. For the same job (lining 650 → 1200 °C, 21,500 kg, 2 hours, NG at 8,500 kcal/Nm³):
+
+* Average temperature to raise = (1200 − 650) ÷ 2 + 50 = *325 °C*
+* Firing rate = 21,500 × 0.25 × 325 = 17,46,875 kcal → heat load ÷ 0.52 → gas *≈ 217 Nm³/hr* (with the 10 % margin)
+* Combustion air ≈ *2,180 Nm³/hr*; blower air = 2,180 ÷ 1.7 ≈ *1,283 CFM*
+* Gas line ≈ *80 NB*; air line from the chosen blower ≈ *250 NB*
+
+The difference from the vertical unit is in the bill of materials: instead of a swivel hood there is a *trolley drive* (geared motor, wheels, plummer blocks, shafts, bearings, frame), and the *fabricated structure and pipeline are priced by weight* (weight × the per-kg rate). The bought-out total is then multiplied by 1.8, the ENCON-made items added, and the P&F / designing / negotiation percentages and transport applied, rounded to the nearest ₹1,000.
+====

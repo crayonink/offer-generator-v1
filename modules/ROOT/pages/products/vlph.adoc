@@ -109,3 +109,19 @@ A vertical ladle preheater dries and heats the refractory lining of a steel ladl
 . *Price every line and total it up* — bought-out items summed and multiplied by the mark-up, plus ENCON-made items, giving the grand total.
 . *Add the commercials* — packaging & forwarding, designing and negotiation added as percentages (they add to the price, they do not discount it), plus flat transport, rounded to the nearest ₹1,000.
 . *Produce the documents* — the all-inclusive price in the offer, transport shown on its own line, saved as Word and PDF.
+
+[NOTE]
+.Worked example — natural gas, calculate-from-process
+====
+Heating job: lining 650 → 1200 °C, refractory 21,500 kg, heat factor 0.25, efficiency 0.52, heated over 2 hours, natural gas at 8,500 kcal/Nm³.
+
+* Average temperature to raise = (1200 − 650) ÷ 2 + 50 = *325 °C*
+* Firing rate = 21,500 × 0.25 × 325 = *17,46,875 kcal*
+* Heat load = 17,46,875 ÷ 0.52 = *33,59,375 kcal*
+* Gas for the cycle = 33,59,375 ÷ 8,500 = *395 Nm³*; over 2 hours = 197.6 Nm³/hr; add a 10 % margin = *≈ 217 Nm³/hr*
+* Combustion air = 8,500 × 217 × 118 ÷ 1,00,000 = *≈ 2,180 Nm³/hr*
+* Blower air = 2,180 ÷ 1.7 = *≈ 1,283 CFM* → the next standard blower up is chosen
+* Gas line ≈ *80 NB*; air line sized from the chosen blower (≈ 1,300 CFM × 1.7 ≈ 2,210 Nm³/hr) ≈ *250 NB*
+
+*Pricing:* suppose the bought-out items add up to ₹6,00,000 and the ENCON-made items to ₹4,00,000. Grand total = 6,00,000 × 1.8 + 4,00,000 = *₹14,80,000*. With P&F 5 % + designing 5 % + negotiation 0 % (= +10 %): 14,80,000 × 1.10 = 16,28,000; add transport; round to the nearest ₹1,000.
+====

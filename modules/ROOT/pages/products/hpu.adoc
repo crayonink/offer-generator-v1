@@ -46,3 +46,14 @@ A running total updates live as you change the inputs, and the finished offer ca
 . *Add the commercials* — packaging & forwarding, designing and negotiation are each added as a percentage (they add to the price, they do not discount it), and the flat transport is added.
 . *Round* the total to the nearest ₹1,000 when any commercial figure has been applied.
 . *Produce the documents* — the all-inclusive price goes into the offer, transport is shown on its own line, and the Word file and PDF are created and filed.
+
+[NOTE]
+.Worked example
+====
+Suppose the unit's parts (pumps, motors, heater, filters, valves, gauges) add up to a catalogue cost of ₹1,00,000.
+
+* Unit price = 1,00,000 × *1.8* (standard mark-up) = *₹1,80,000*
+* Quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %): 1,80,000 × 1.15 = 2,07,000 → rounded to the nearest ₹1,000 = *₹2,07,000*
+
+Transport, if any, is added to that total and then shown on its own line in the price schedule.
+====

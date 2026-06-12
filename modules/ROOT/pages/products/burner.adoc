@@ -48,3 +48,15 @@ A running total updates live as you change the quantity or commercial figures, a
 . *Produce the documents* — the price goes into the offer, transport is shown on its own line, and the Word file and PDF are created and filed.
 
 NOTE: This standalone offer is purely a priced catalogue pick. It does not perform any firing-rate or fabrication calculation, and it does not add a pilot burner — those belong to the full preheater offers, where the burner is part of a larger system.
+
+[NOTE]
+.Worked example
+====
+Chosen burner catalogue price = ₹1,20,000, quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %).
+
+* 1,20,000 × 1 × 1.15 = 1,38,000 → rounded to the nearest ₹1,000 = *₹1,38,000*
+
+For 2 burners: 1,20,000 × 2 × 1.15 = 2,76,000 → *₹2,76,000*. Transport, if any, is added and then shown on its own line.
+
+(GAIL pre-assembled sets are priced the same way — straight from the catalogue. Where a GAIL burner is built up from parts elsewhere in the system, the fabrication cost is multiplied by 1.25, but this standalone offer uses the ready catalogue price.)
+====

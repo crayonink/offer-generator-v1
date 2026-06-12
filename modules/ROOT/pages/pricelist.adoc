@@ -153,6 +153,47 @@ On screen, the item name, its size and its model are shown in separate columns; 
 
 When you save a rate, the change *cascades* — it is automatically pushed into the related product tables that use that component, so the burners, pumping units and other assemblies all pick up the new figure. That is what the line at the top of the screen means: "Editable rates — changes cascade across every BOM table on save."
 
+== How each price is built
+
+Not every price is worked out the same way. There are five kinds:
+
+*1. Flat catalogue rates (most of the list).* Valves, regulators, solenoids, filters, hoses, gauges, pilot burners and so on are simply stored at the supplier's rate — there is no calculation. When an offer needs one, the system picks the row that matches the required pipe size (NB). _Example: a 80 NB ball valve is taken at its stored rate; no maths involved._
+
+*2. Per-kilogram rates.* Fabrication and steelwork are priced by weight × a rate:
+
+[cols="3,2"]
+|===
+|Item |Rate
+
+|Fabricated structure |about ₹70 per kg
+|Air–gas pipeline |₹125 per kg
+|Stock structural steel (channels, angles) |about ₹60 per kg
+|Recuperator tubes — stainless steel |₹250 per kg
+|Recuperator tubes — mild steel |₹70 per kg
+|===
+
+_Example: a 1,000 kg air–gas pipeline = 1,000 × ₹125 = ₹1,25,000._
+
+*3. Flow- or size-selected parts with their own rate.* A couple of items are chosen by the duty and then take that row's price:
+
+* *Gas train* — the system picks the gas train whose flow range covers the required gas flow, and takes its price.
+* *Air–gas regulator* — chosen by pipe size, connection type (threaded or flanged) and turndown ratio, and takes the matching row's price.
+
+*4. Built-up whole-assembly prices.*
+
+* *Heating & Pumping Unit* — add up the catalogue cost of all its parts and multiply by *1.8*. _Example: parts ₹1,00,000 → unit price ₹1,80,000._
+* *Pumping Unit* — the same skid without the heater; its price is already stored at the selling figure (it does not get the ×1.8 again).
+* *Blower* — the stored catalogue price, including the motor.
+* *Burner* — the stored catalogue price of the burner set. (Where a GAIL burner is built up from parts, the fabrication cost is multiplied by *1.25*.)
+
+*5. Whole-offer mark-ups and adjustments.* When a complete offer is assembled:
+
+* in a ladle-preheater or tundish offer, the *bought-out items are multiplied by 1.8* before the ENCON-made items are added;
+* a *recuperator's* total cost is multiplied by *1.8* (cost-to-sale);
+* then *packaging & forwarding, designing and negotiation* are added as percentages (they add to the price), *transport* is added, and the result is *rounded to the nearest ₹1,000*.
+
+Each product page shows a full worked example of this chain.
+
 == How a rate becomes a price in an offer
 
 When an offer is built, each item looks up its price *by name* in the master list:

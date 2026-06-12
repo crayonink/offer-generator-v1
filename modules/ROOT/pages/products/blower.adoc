@@ -44,3 +44,13 @@ While filling in the form, a running total updates live as you change the quanti
 . *Produce the documents* — the price goes into the offer, transport is shown on its own line, and the Word file and PDF are created and filed.
 
 NOTE: This standalone offer simply supplies the blower, motor and base frame — it does not size any air pipework. The air-line sizing rule (sized from the blower's airflow) only applies inside the full preheater offers.
+
+[NOTE]
+.Worked example
+====
+Chosen blower catalogue price (including motor) = ₹85,000, quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %).
+
+* 85,000 × 1 × 1.15 = 97,750 → rounded to the nearest ₹1,000 = *₹98,000*
+
+For 2 blowers: 85,000 × 2 × 1.15 = 1,95,500 → *₹1,96,000*. If transport were ₹4,000, it is added to the total and then shown on its own line in the price schedule.
+====

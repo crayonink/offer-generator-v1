@@ -84,3 +84,18 @@ A recuperator recovers heat from a furnace's hot waste flue gas and uses it to p
 . *Price the materials.* Price the tubes by weight, price the fabricated assemblies and structural steel, and add the bending, welding and drilling labour and the thermocouple — giving the grand total.
 . *Add the commercials.* Apply the cost-to-sale mark-up, then add packaging & forwarding, designing and negotiation as percentages and the flat transport, rounding up to the nearest ₹1,000.
 . *Produce the documents* — the price and all the sizing results go into the offer, which is saved as Word and PDF and filed.
+
+[NOTE]
+.Worked example
+====
+Heat duty: flue gas 1,900 Nm³/hr at 800 °C; combustion air 1,750 Nm³/hr to be heated from 35 °C to 400 °C; air specific heat 0.247, flue specific heat 0.23; heat-transfer coefficient 30.
+
+* Air mass = 1,750 × 1.2 = *2,100 kg/hr*
+* Heat to recover = 2,100 × 0.247 × (400 − 35) = *≈ 1,89,300 kcal/hr*
+* Flue mass = 1,900 × 1.2 = 2,280 kg/hr → flue gas leaves at 800 − 1,89,300 ÷ (2,280 × 0.23) = *≈ 439 °C*
+* Average temperature difference (with the 0.9 factor) ≈ *362 °C*
+* Surface area = 1,89,300 ÷ (362 × 30) = *≈ 17.4 m²*
+* Number of tubes = 17.4 ÷ (3.14 × 0.0483 m × 0.73 m) ≈ *158 tubes*, arranged into a near-square grid and split into two banks
+
+*Pricing:* the tube weight is priced at the steel rate (stainless ₹250/kg or mild steel ₹70/kg), then the fabricated assemblies, structural steel and labour are added to give the cost. That cost is multiplied by 1.8 (cost-to-sale), then P&F, designing and negotiation are added and the total is rounded up to the nearest ₹1,000.
+====

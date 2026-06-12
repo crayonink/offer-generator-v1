@@ -45,3 +45,13 @@ Compared with the Heating & Pumping Unit, there is *no oil pre-heater and no tem
 . *Add the commercials* — packaging & forwarding, designing and negotiation added as percentages (they add to the price, they do not discount it), plus flat transport.
 . *Round* the total to the nearest ₹1,000 when any commercial figure has been applied.
 . *Produce the documents* — the all-inclusive price goes into the offer, transport is shown on its own line, and the Word file and PDF are created and filed.
+
+[NOTE]
+.Worked example
+====
+The pumping unit's catalogue price already includes the mark-up and has no heater. Suppose it is ₹90,000.
+
+* Quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %): 90,000 × 1.15 = 1,03,500 → rounded to the nearest ₹1,000 = *₹1,04,000*
+
+(Compare the xref:products/hpu.adoc[Heating & Pumping Unit], where the price is built up from the parts and multiplied by 1.8 and a heater is included — which is why the heating unit costs more.)
+====
