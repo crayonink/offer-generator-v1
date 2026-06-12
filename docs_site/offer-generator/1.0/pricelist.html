@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Pricelist / Rates :: Offer Generator Documentation</title>
+    <meta name="description" content="The editable component-rate store, the viewer, and how rates cascade into every BOM.">
+    <meta name="generator" content="Antora 3.1.15">
+    <link rel="stylesheet" href="../../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="/docs">Offer Generator Documentation</a>
+      <button class="navbar-burger" aria-controls="topbar-nav" aria-expanded="false" aria-label="Toggle main menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="#">Home</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Products</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Product A</a>
+            <a class="navbar-item" href="#">Product B</a>
+            <a class="navbar-item" href="#">Product C</a>
+          </div>
+        </div>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">Services</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="#">Service A</a>
+            <a class="navbar-item" href="#">Service B</a>
+            <a class="navbar-item" href="#">Service C</a>
+          </div>
+        </div>
+        <div class="navbar-item">
+          <span class="control">
+            <a class="button is-primary" href="#">Download</a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="offer-generator" data-version="1.0">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <button class="nav-menu-toggle" aria-label="Toggle expand/collapse all" style="display: none"></button>
+    <h3 class="title"><a href="index.html">Offer Generator</a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="index.html">Home</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="product-scope.html">Product Scope &amp; Roadmap</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Completed Products</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/vlph.html">Vertical Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/hlph.html">Horizontal Ladle Preheater</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/tundish.html">Tundish Preheating System</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/blower.html">Blowers</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/burner.html">Burners</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/hpu.html">Heating &amp; Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/pu.html">Pumping Unit</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="products/recup.html">Recuperators</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item is-current-page" data-depth="1">
+    <a class="nav-link" href="pricelist.html">Pricelist &amp; Rates</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="rfq-integration.html">RFQ Tracker Integration</a>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <span class="nav-text">Technical Documentation</span>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="architecture.html">Architecture &amp; Overview</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="modules.html">Modules &amp; Equipment</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="api.html">API Reference</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="deployment.html">Deployment &amp; Operations</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+<div class="nav-panel-explore" data-panel="explore">
+  <div class="context">
+    <span class="title">Offer Generator</span>
+    <span class="version">1.0</span>
+  </div>
+  <ul class="components">
+    <li class="component is-current">
+      <div class="title"><a href="index.html">Offer Generator</a></div>
+      <ul class="versions">
+        <li class="version is-current is-latest">
+          <a href="index.html">1.0</a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+  <a href="index.html" class="home-link"></a>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">Offer Generator</a></li>
+    <li><a href="pricelist.html">Pricelist &amp; Rates</a></li>
+  </ul>
+</nav>
+<div class="edit-this-page"><a href="file:///C:/Users/RUPA/Downloads/offer_generator_structure/modules/ROOT/pages/pricelist.adoc">Edit this Page</a></div>
+</div>
+  <div class="content">
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+<article class="doc">
+<h1 class="page">Pricelist / Rates</h1>
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The single editable source of component rates that feeds every BOM and offer. Served at <code>/pricelist</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_overview"><a class="anchor" href="#_overview"></a>Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <strong>Pricelist / Rates</strong> subsystem is the single editable source of component rates that feed every BOM the generator produces. It has three parts:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The SQLite table <strong><code>component_price_master</code></strong> in <code>vlph.db</code> — one row per (item, company) priced component.</p>
+</li>
+<li>
+<p>The viewer UI <code>pricelist_viewer.html</code>, served at <code>/pricelist</code>, with a <strong>Rates</strong> and a <strong>Raw Material</strong> tab plus a dozen read-only product sheets.</p>
+</li>
+<li>
+<p>The editable rates: clicking a price in the Rates table issues a <code>PUT</code> that updates the master row and cascades the new rate into the per-product parts tables. The hero strip states the contract directly — "Editable rates — changes cascade across every BOM table on save" (<code>pricelist_viewer.html:486</code>).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When a BOM builder needs a unit price it looks the item up <strong>by name</strong> in <code>component_price_master</code> (<code>bom/price_master.py:14-31</code>), so a rate edited here is the price quoted in the next offer. The <code>category</code> column is purely a display grouping in the viewer; BOM lookups never key on it.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_data_model"><a class="anchor" href="#_data_model"></a>Data Model</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>component_price_master</code> has eleven columns and a uniqueness constraint:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 33.3333%;">
+<col style="width: 50.0001%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Column</th>
+<th class="tableblock halign-left valign-top">Meaning</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>item</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Component name — the lookup key.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TEXT NOT NULL</code>. BOM builders match on this exact string.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>category</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Display group (e.g. <code>Bought Out</code>, <code>Raw Material</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Display-only; drives section headings in the viewer, not BOM pricing.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>unit</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quote unit (<code>kg</code>, <code>nos</code>, <code>mtr</code>, …).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Structure rows are per-kg.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>price</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Current rate (₹).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>REAL</code>. The value cascaded into BOMs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>previous_price</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Prior rate, snapshotted on each edit.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Drives the "Change" % column.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>excel_row</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source cell row in the uploaded pricebook.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Used to re-apply Excel-derived prices.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>excel_col</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Source cell column.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>updated_at</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Last-edit timestamp <code>YYYY-MM-DD HH:MM</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set by the rate-update endpoint.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>company</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supplier/make.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Editable inline; used to fill the BOM "Make".</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>type</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Free type tag.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Carried for parser use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>specification</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Model / size code baked alongside the item.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Split out for the Size and Model columns in the viewer.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The table declares <code>UNIQUE(item, company)</code> — an item name may recur only under distinct companies, so a given supplier holds exactly one rate per item.</p>
+</div>
+<div class="paragraph">
+<p><strong>item / specification → displayed columns.</strong> The viewer does not store separate Size/Model fields; it derives them at render time from <code>item</code> + <code>specification</code> via <code>splitItem(item, specification)</code>, which returns <code>{name, size, model}</code> (<code>pricelist_viewer.html:710</code>). It strips a trailing <code>specification</code> off the name, then extracts a size token (NB suffix, <code>DN</code> prefix, inch marks, <code>kW</code> ratings, A-frame burner sizes, bearing codes, raw-material dimensions like <code>16mm × 10mm</code>) and a trailing model code. The full <code>item</code> string is still used as <code>data-item</code> for edits and BOM lookups, so the split is cosmetic only.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_viewer_display"><a class="anchor" href="#_viewer_display"></a>Viewer &amp; Display</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><code>pricelist_viewer.html</code> loads its feeds in parallel and renders pill tabs. The two that surface <code>component_price_master</code> are <strong>Rates</strong> and <strong>Raw Material</strong>; both render through one builder, <code>_renderRatesTable</code> (<code>pricelist_viewer.html:1026</code>), with Rates excluding <code>category === 'Raw Material'</code> and Raw Material showing only those rows.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Categories → section headings.</strong> Rows are bucketed by <code>category</code>; each category emits a navy <code>section-hdr</code> banner row, sorted alphabetically. Within a category the sort is usually by extracted NB size ascending, with special-cased ordering for grab-bag and valve categories.</p>
+</li>
+<li>
+<p><strong>Company sub-headers.</strong> For company-primary categories (Motorised / Pneumatic Control &amp; Shut-Off Valves, Pressure Switch) a <code>company-hdr</code> banner row is emitted each time the supplier changes, fencing each vendor&#8217;s block.</p>
+</li>
+<li>
+<p><strong>Short names.</strong> The Item cell shows <code>shortenName(parts.name)</code>: a curated <code>NAME_SHORTS</code> regex map collapses verbose / vendor-code names (e.g. <code>EVPCF…</code> → <code>Gas Reg + Slam (F)</code>, <code>TEMPERATURE TRANSMITTER</code> → <code>Temperature Transmitter</code>) to short, readable forms; the full name is the cell <code>title</code> tooltip.</p>
+</li>
+<li>
+<p><strong>Column set:</strong> row number, <strong>Item</strong>, <strong>Size</strong>, <strong>Model / Cat.</strong> (<code>parts.model</code> or the category), <strong>Company</strong> (colour-coded badge), <strong>Price (₹)</strong>, <strong>Prev. Price (₹)</strong>, <strong>Change</strong>, <strong>Last Updated</strong>.</p>
+</li>
+<li>
+<p><strong>Sticky header / freeze panes.</strong> The <code>thead</code> cells are <code>position: sticky; top: 0</code>; the row-number and Item columns are frozen left so headers and the item label stay visible while scrolling. (On the Rates/Raw Material tabs the panel is a flex column so the table wrapper scrolls internally and the header actually pins.)</p>
+</li>
+<li>
+<p><strong>Search.</strong> A global search box filters across sheets; each Rates table also has its own per-table filter input bound to <code>filterRatesTable</code>.</p>
+</li>
+<li>
+<p><strong>Duplicate flagging.</strong> Rows sharing name + size + model + company within a category are marked with a ⚠ <code>dup-flag</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_editing"><a class="anchor" href="#_editing"></a>Editing</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Two cell types in the Rates / Raw Material table are editable:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Price</strong> — <code>editable rates-price</code> cells carry <code>data-field="price"</code> and the full <code>data-item</code>. On commit the client `PUT`s the rate endpoint; a save shows the <strong>cascade overlay</strong> and re-fetches all sheets so computed prices refresh.</p>
+</li>
+<li>
+<p><strong>Company</strong> — <code>editable rates-company</code> cells edit inline and <code>PUT</code> <code>/api/pricelist/company</code>, updating <code>company</code> only with no cascade.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Endpoints and fields:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>PUT /api/pricelist/rate</code> (body <code>RateUpdateRequest{item, price}</code>, <code>main.py:621</code>) is the cascading rate edit. It snapshots the old price into <code>previous_price</code> in the same UPDATE — <code>SET previous_price=price, price=?, updated_at=?</code> — so "Change" is always relative to the value before this edit. It then cascades (see below).</p>
+</li>
+<li>
+<p><code>PUT /api/pricelist/item</code> (<code>ItemUpdateRequest{table, rowid, qty?, rate?, price?, list_price?, price_inr?}</code>, <code>main.py:629</code>) edits a row in any product master table, gated by <code>ALLOWED_EDIT_TABLES</code>. Only the fields present in the target table&#8217;s columns are written, and <code>amount</code> is recomputed as <code>qty × rate</code> when all three columns exist.</p>
+</li>
+<li>
+<p><code>PUT /api/pricelist/company</code> — supplier name only.</p>
+</li>
+<li>
+<p><code>PUT /api/pricelist/recup-rate</code> (<code>RecupRateUpdate{key, value}</code>) edits a single constant in the separate <code>recup_rates</code> table; <code>GET /api/pricelist/recup-rates</code> lists them (<code>main.py:1332</code>).</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><code>ALLOWED_EDIT_TABLES</code> covers the product master tables (<code>hpu_master</code>, the burner-parts masters, <code>horizontal_master</code>, <code>vertical_master</code>, <code>recuperator_master</code>, <code>blower_pricelist_master</code>, <code>rad_heat_master</code>, <code>rad_heat_tata_master</code>, <code>gail_gas_burner_master</code>, <code>rotary_joint_master</code>, plus <code>agr_master</code> and <code>gas_train_master</code>). <code>component_price_master</code> itself is edited through the dedicated <code>rate</code> / <code>company</code> endpoints, not the generic item endpoint.</p>
+</div>
+<div class="paragraph">
+<p><strong>The cascade.</strong> After writing the new price, the rate-update handler propagates it into the parts tables (<code>oil_burner_parts_master</code>, <code>hv_oil_burner_parts_master</code>, <code>gas_burner_parts_master</code>, <code>hpu_master</code>) by following exact links in <code>rate_cascade_map</code> and then fuzzy name-matching the remaining rows on a normalised/compacted item name, updating each matched row&#8217;s <code>rate</code> and recomputing <code>amount = qty × price</code>. The viewer reflects this as the spinner overlay and a full reload.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_how_prices_reach_offers"><a class="anchor" href="#_how_prices_reach_offers"></a>How Prices Reach Offers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>BOM builders never read <code>price</code> by rowid; they resolve a price <strong>from the item name</strong>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>get_price(item_name)</code> (<code>bom/price_master.py:14</code>) does a single exact-match <code>SELECT price … WHERE item = ? LIMIT 1</code> and raises <code>ValueError</code> on a miss.</p>
+</li>
+<li>
+<p>Builders wrap it in <code>_get_price_fuzzy</code> (<code>bom/vlph_builder.py:30</code>) — the name is a misnomer: it is <strong>exact match only</strong>, returning <code>0</code> on <code>ValueError</code>. The row helper then prints <code>WARNING: No price found for '{item}'</code> when the price comes back <code>0</code> (<code>bom/vlph_builder.py:55-58</code>).</p>
+</li>
+<li>
+<p>Two selectors read <code>component_price_master</code> directly and <strong>reconstruct</strong> the item name to find the editable rate, falling back to their own master table if no Rates row exists:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>AGR selector builds <code>f"AGR {nb} NB ({connection}) {ratio}"</code> and prefers the matching <code>component_price_master.price</code>, else <code>agr_master.list_price</code> (<code>bom/selectors/agr_selector.py:59-72</code>).</p>
+</li>
+<li>
+<p>NG gas-train selector builds <code>f"Gas Train {inlet} x {outlet}"</code> and prefers the Rates price, else <code>gas_train_master.price_inr</code> (<code>bom/selectors/ng_gas_train.py:46-59</code>).</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Zero-price caveat (the audit).</strong> Because resolution is exact-name, an item whose BOM-side name differs by even one character from its <code>component_price_master</code> key prices at <strong>0</strong> (and only logs a console warning) — it does not error or flag in the offer. This is the basis of the fuel × mode <strong>zero-price audit</strong>: after any pricing or naming change, every fuel/mode BOM should be regenerated to confirm no line silently fell back to <code>0</code>. The fix is to align the names (the DB key, the selector-reconstructed string, or the builder&#8217;s literal) so the exact match hits.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_operations"><a class="anchor" href="#_operations"></a>Operations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><strong>Committed-<code>vlph.db</code> deploy model.</strong> <code>vlph.db</code> is a regular file committed in the repo, not a Railway volume. A price edited through the UI mutates the local DB file, but that change reaches production <strong>only when the <code>.db</code> file itself is committed and pushed</strong> in the same change — code-only pushes leave production on the old rates.</p>
+</div>
+<div class="paragraph">
+<p><strong>Delta-apply vs full reset.</strong> <code>apply_pricebook_delta.py</code> is the safe way to take in a new pricebook Excel without clobbering manual rate edits: it parses the OLD and NEW workbooks into temp DBs, diffs each master table by key columns, and applies <strong>only</strong> changed/added rows to the live <code>vlph.db</code>; rows not in the delta (including hand-edited rates) are preserved. A full re-parse via the upload-pricelist route (which calls <code>parse_all</code> to rewrite all master tables) is the heavier-handed alternative that does not respect manual edits the way the delta script does.</p>
+</div>
+<div class="paragraph">
+<p><strong>Initial seed.</strong> <code>seed_price_master.py</code> is the one-off that populates <code>component_price_master</code> from the source workbook — a hard-coded list of <code>(item, category, unit, price, previous_price)</code> tuples. Run once to establish the table.</p>
+</div>
+</div>
+</div>
+</article>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <p>This page was built using the Antora default UI.</p>
+  <p>The source code for this UI is licensed under the terms of the MPL-2.0 license.</p>
+</footer>
+<script id="site-script" src="../../_/js/site.js" data-ui-root-path="../../_"></script>
+<script async src="../../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

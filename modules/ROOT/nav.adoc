@@ -9,6 +9,7 @@
 ** xref:products/hpu.adoc[Heating & Pumping Unit]
 ** xref:products/pu.adoc[Pumping Unit]
 ** xref:products/recup.adoc[Recuperators]
+* xref:pricelist.adoc[Pricelist & Rates]
 * xref:rfq-integration.adoc[RFQ Tracker Integration]
 * Technical Documentation
 ** xref:architecture.adoc[Architecture & Overview]

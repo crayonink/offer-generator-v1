@@ -1,0 +1,89 @@
+= Pricelist / Rates
+:description: The editable component-rate store, the viewer, and how rates cascade into every BOM.
+
+The single editable source of component rates that feeds every BOM and offer. Served at `/pricelist`.
+
+== Overview
+
+The *Pricelist / Rates* subsystem is the single editable source of component rates that feed every BOM the generator produces. It has three parts:
+
+* The SQLite table *`component_price_master`* in `vlph.db` — one row per (item, company) priced component.
+* The viewer UI `pricelist_viewer.html`, served at `/pricelist`, with a *Rates* and a *Raw Material* tab plus a dozen read-only product sheets.
+* The editable rates: clicking a price in the Rates table issues a `PUT` that updates the master row and cascades the new rate into the per-product parts tables. The hero strip states the contract directly — "Editable rates — changes cascade across every BOM table on save" (`pricelist_viewer.html:486`).
+
+When a BOM builder needs a unit price it looks the item up *by name* in `component_price_master` (`bom/price_master.py:14-31`), so a rate edited here is the price quoted in the next offer. The `category` column is purely a display grouping in the viewer; BOM lookups never key on it.
+
+== Data Model
+
+`component_price_master` has eleven columns and a uniqueness constraint:
+
+[cols="1,2,3"]
+|===
+| Column | Meaning | Notes
+
+| `item`           | Component name — the lookup key. | `TEXT NOT NULL`. BOM builders match on this exact string.
+| `category`       | Display group (e.g. `Bought Out`, `Raw Material`). | Display-only; drives section headings in the viewer, not BOM pricing.
+| `unit`           | Quote unit (`kg`, `nos`, `mtr`, …). | Structure rows are per-kg.
+| `price`          | Current rate (₹). | `REAL`. The value cascaded into BOMs.
+| `previous_price` | Prior rate, snapshotted on each edit. | Drives the "Change" % column.
+| `excel_row`      | Source cell row in the uploaded pricebook. | Used to re-apply Excel-derived prices.
+| `excel_col`      | Source cell column. | Same.
+| `updated_at`     | Last-edit timestamp `YYYY-MM-DD HH:MM`. | Set by the rate-update endpoint.
+| `company`        | Supplier/make. | Editable inline; used to fill the BOM "Make".
+| `type`           | Free type tag. | Carried for parser use.
+| `specification`  | Model / size code baked alongside the item. | Split out for the Size and Model columns in the viewer.
+|===
+
+The table declares `UNIQUE(item, company)` — an item name may recur only under distinct companies, so a given supplier holds exactly one rate per item.
+
+*item / specification → displayed columns.* The viewer does not store separate Size/Model fields; it derives them at render time from `item` + `specification` via `splitItem(item, specification)`, which returns `{name, size, model}` (`pricelist_viewer.html:710`). It strips a trailing `specification` off the name, then extracts a size token (NB suffix, `DN` prefix, inch marks, `kW` ratings, A-frame burner sizes, bearing codes, raw-material dimensions like `16mm × 10mm`) and a trailing model code. The full `item` string is still used as `data-item` for edits and BOM lookups, so the split is cosmetic only.
+
+== Viewer & Display
+
+`pricelist_viewer.html` loads its feeds in parallel and renders pill tabs. The two that surface `component_price_master` are *Rates* and *Raw Material*; both render through one builder, `_renderRatesTable` (`pricelist_viewer.html:1026`), with Rates excluding `category === 'Raw Material'` and Raw Material showing only those rows.
+
+* *Categories → section headings.* Rows are bucketed by `category`; each category emits a navy `section-hdr` banner row, sorted alphabetically. Within a category the sort is usually by extracted NB size ascending, with special-cased ordering for grab-bag and valve categories.
+* *Company sub-headers.* For company-primary categories (Motorised / Pneumatic Control & Shut-Off Valves, Pressure Switch) a `company-hdr` banner row is emitted each time the supplier changes, fencing each vendor's block.
+* *Short names.* The Item cell shows `shortenName(parts.name)`: a curated `NAME_SHORTS` regex map collapses verbose / vendor-code names (e.g. `EVPCF…` → `Gas Reg + Slam (F)`, `TEMPERATURE TRANSMITTER` → `Temperature Transmitter`) to short, readable forms; the full name is the cell `title` tooltip.
+* *Column set:* row number, *Item*, *Size*, *Model / Cat.* (`parts.model` or the category), *Company* (colour-coded badge), *Price (₹)*, *Prev. Price (₹)*, *Change*, *Last Updated*.
+* *Sticky header / freeze panes.* The `thead` cells are `position: sticky; top: 0`; the row-number and Item columns are frozen left so headers and the item label stay visible while scrolling. (On the Rates/Raw Material tabs the panel is a flex column so the table wrapper scrolls internally and the header actually pins.)
+* *Search.* A global search box filters across sheets; each Rates table also has its own per-table filter input bound to `filterRatesTable`.
+* *Duplicate flagging.* Rows sharing name + size + model + company within a category are marked with a ⚠ `dup-flag`.
+
+== Editing
+
+Two cell types in the Rates / Raw Material table are editable:
+
+* *Price* — `editable rates-price` cells carry `data-field="price"` and the full `data-item`. On commit the client `PUT`s the rate endpoint; a save shows the *cascade overlay* and re-fetches all sheets so computed prices refresh.
+* *Company* — `editable rates-company` cells edit inline and `PUT` `/api/pricelist/company`, updating `company` only with no cascade.
+
+*Endpoints and fields:*
+
+* `PUT /api/pricelist/rate` (body `RateUpdateRequest{item, price}`, `main.py:621`) is the cascading rate edit. It snapshots the old price into `previous_price` in the same UPDATE — `SET previous_price=price, price=?, updated_at=?` — so "Change" is always relative to the value before this edit. It then cascades (see below).
+* `PUT /api/pricelist/item` (`ItemUpdateRequest{table, rowid, qty?, rate?, price?, list_price?, price_inr?}`, `main.py:629`) edits a row in any product master table, gated by `ALLOWED_EDIT_TABLES`. Only the fields present in the target table's columns are written, and `amount` is recomputed as `qty × rate` when all three columns exist.
+* `PUT /api/pricelist/company` — supplier name only.
+* `PUT /api/pricelist/recup-rate` (`RecupRateUpdate{key, value}`) edits a single constant in the separate `recup_rates` table; `GET /api/pricelist/recup-rates` lists them (`main.py:1332`).
+
+`ALLOWED_EDIT_TABLES` covers the product master tables (`hpu_master`, the burner-parts masters, `horizontal_master`, `vertical_master`, `recuperator_master`, `blower_pricelist_master`, `rad_heat_master`, `rad_heat_tata_master`, `gail_gas_burner_master`, `rotary_joint_master`, plus `agr_master` and `gas_train_master`). `component_price_master` itself is edited through the dedicated `rate` / `company` endpoints, not the generic item endpoint.
+
+*The cascade.* After writing the new price, the rate-update handler propagates it into the parts tables (`oil_burner_parts_master`, `hv_oil_burner_parts_master`, `gas_burner_parts_master`, `hpu_master`) by following exact links in `rate_cascade_map` and then fuzzy name-matching the remaining rows on a normalised/compacted item name, updating each matched row's `rate` and recomputing `amount = qty × price`. The viewer reflects this as the spinner overlay and a full reload.
+
+== How Prices Reach Offers
+
+BOM builders never read `price` by rowid; they resolve a price *from the item name*:
+
+* `get_price(item_name)` (`bom/price_master.py:14`) does a single exact-match `SELECT price … WHERE item = ? LIMIT 1` and raises `ValueError` on a miss.
+* Builders wrap it in `_get_price_fuzzy` (`bom/vlph_builder.py:30`) — the name is a misnomer: it is *exact match only*, returning `0` on `ValueError`. The row helper then prints `WARNING: No price found for '{item}'` when the price comes back `0` (`bom/vlph_builder.py:55-58`).
+* Two selectors read `component_price_master` directly and *reconstruct* the item name to find the editable rate, falling back to their own master table if no Rates row exists:
+** AGR selector builds `f"AGR {nb} NB ({connection}) {ratio}"` and prefers the matching `component_price_master.price`, else `agr_master.list_price` (`bom/selectors/agr_selector.py:59-72`).
+** NG gas-train selector builds `f"Gas Train {inlet} x {outlet}"` and prefers the Rates price, else `gas_train_master.price_inr` (`bom/selectors/ng_gas_train.py:46-59`).
+
+*Zero-price caveat (the audit).* Because resolution is exact-name, an item whose BOM-side name differs by even one character from its `component_price_master` key prices at *0* (and only logs a console warning) — it does not error or flag in the offer. This is the basis of the fuel × mode *zero-price audit*: after any pricing or naming change, every fuel/mode BOM should be regenerated to confirm no line silently fell back to `0`. The fix is to align the names (the DB key, the selector-reconstructed string, or the builder's literal) so the exact match hits.
+
+== Operations
+
+*Committed-`vlph.db` deploy model.* `vlph.db` is a regular file committed in the repo, not a Railway volume. A price edited through the UI mutates the local DB file, but that change reaches production *only when the `.db` file itself is committed and pushed* in the same change — code-only pushes leave production on the old rates.
+
+*Delta-apply vs full reset.* `apply_pricebook_delta.py` is the safe way to take in a new pricebook Excel without clobbering manual rate edits: it parses the OLD and NEW workbooks into temp DBs, diffs each master table by key columns, and applies *only* changed/added rows to the live `vlph.db`; rows not in the delta (including hand-edited rates) are preserved. A full re-parse via the upload-pricelist route (which calls `parse_all` to rewrite all master tables) is the heavier-handed alternative that does not respect manual edits the way the delta script does.
+
+*Initial seed.* `seed_price_master.py` is the one-off that populates `component_price_master` from the source workbook — a hard-coded list of `(item, category, unit, price, previous_price)` tuples. Run once to establish the table.
