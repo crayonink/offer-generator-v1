@@ -3772,6 +3772,8 @@ class CombinedEquipment(BaseModel):
     name: str                          # e.g. "Vertical Ladle Preheater (10 T)"
     bom: List[dict] = []               # rows: {media?, item, ref?, qty, unit_price, total}
     total: Optional[float] = None      # equipment grand total (falls back to sum of rows)
+    qty: int = 1                       # number of this equipment (for per-unit breakdown)
+    unit_price: Optional[float] = None # sell price per unit (falls back to total / qty)
 
 
 class CombinedCostingRequest(BaseModel):
@@ -3866,8 +3868,123 @@ def combined_costing_excel(req: CombinedCostingRequest):
 
         ws.column_dimensions["A"].width = 8; ws.column_dimensions["B"].width = 46; ws.column_dimensions["C"].width = 18
 
+        # ── Cost Breakdown sheet (full build-up + additional-cost distribution) ──
+        import math as _math
+        wsb = wb.create_sheet("Cost Breakdown")
+        yellow  = PatternFill("solid", fgColor="FFF200")
+        redfill = PatternFill("solid", fgColor="FF0000")
+        right   = Alignment(horizontal="right")
+        ctr     = Alignment(horizontal="center", wrap_text=True)
+        SUBTOTAL_NAMES = {"BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL", "BOM TOTAL"}
+        _negp = float(req.neg_pct or 0); _pfp = float(req.pf_pct or 0)
+        _desp = float(req.design_pct or 0); _frt = float(req.transport_amt or 0)
+
+        def _yhead(r_, c_, v_):
+            cell = wsb.cell(r_, c_, v_); cell.fill = yellow
+            cell.font = Font(bold=True); cell.border = border; cell.alignment = ctr
+            return cell
+
+        # Per-equipment build-up: bought-out vs in-house split from the BOM media
+        # tags (preheaters/recup have them; catalogue picks fall to in-house).
+        rows_data = []
+        for eq in req.equipments:
+            q = max(1, int(eq.qty or 1))
+            bought = inhouse = 0.0; has_media = False
+            for b in (eq.bom or []):
+                if str(b.get("item", "")).strip().upper() in SUBTOTAL_NAMES:
+                    continue
+                t = float(b.get("total") or (float(b.get("qty") or 0) * float(b.get("unit_price") or 0)))
+                media = str(b.get("media", "")).strip().upper()
+                if media:
+                    has_media = True
+                if media == "ENCON ITEMS":
+                    inhouse += t
+                elif media:
+                    bought += t
+                else:
+                    inhouse += t          # catalogue pick — no split
+            unit = float(eq.unit_price if eq.unit_price is not None else ((eq.total or 0) / q))
+            if has_media and bought > 0:
+                sell_bought = unit - inhouse          # marked-up bought-out (reconciles to unit)
+                cost = bought + inhouse
+            else:
+                bought = sell_bought = 0.0; inhouse = cost = unit
+            neg_amt = unit * _negp / 100
+            sell_rounded = round((unit + neg_amt) / 10000) * 10000   # nearest Rs.10,000
+            rows_data.append(dict(name=eq.name, bought=bought, sell_bought=sell_bought,
+                inhouse=inhouse, cost=cost, unit=unit, neg=neg_amt,
+                sell=sell_rounded, qty=q, total=sell_rounded * q))
+
+        wsb["A1"] = "COMBINED COSTING — BREAKDOWN"; wsb["A1"].font = Font(bold=True, size=13, color=navy)
+        hr = 3
+        heads = ["S. No.", "Item Description", "Bought Out", "Sell Price", "In-house",
+                 "Cost Price", "Unit Price", f"Negotiation ({_negp:g}%)", "Sell Price", "Qty", "Total Price"]
+        for c, h in enumerate(heads, start=1):
+            _yhead(hr, c, h)
+        rr = hr + 1
+        basic = 0.0
+        for i, d in enumerate(rows_data, start=1):
+            basic += d["total"]
+            vals = [i, d["name"], d["bought"], d["sell_bought"], d["inhouse"], d["cost"],
+                    d["unit"], d["neg"], d["sell"], d["qty"], d["total"]]
+            for c, v in enumerate(vals, start=1):
+                cell = wsb.cell(rr, c, v); cell.border = border
+                if c in (3, 4, 5, 6, 7, 8, 9, 11):
+                    cell.number_format = money; cell.alignment = right
+                elif c in (1, 10):
+                    cell.alignment = Alignment(horizontal="center")
+            rr += 1
+        wsb.cell(rr, 2, "BASIC SELL PRICE").font = Font(bold=True)
+        bc = wsb.cell(rr, 11, basic); bc.font = Font(bold=True); bc.number_format = money; bc.fill = yellow
+        rr += 2
+
+        # Additional-cost summary
+        pf_amt  = basic * _pfp / 100
+        des_amt = basic * _desp / 100
+        total_add = pf_amt + des_amt + _frt
+        incr_ratio = (total_add / basic) if basic else 0.0
+        summ = [("Basic Sell Price", basic), (f"Additional Cost (P&F) ({_pfp:g}%)", pf_amt)]
+        if _desp:
+            summ.append((f"Designing ({_desp:g}%)", des_amt))
+        summ += [("Freight Charges", _frt), ("Total Additional Cost", total_add)]
+        for label, amt in summ:
+            lc = wsb.cell(rr, 2, label); lc.font = Font(bold=True); lc.border = border
+            vc = wsb.cell(rr, 3, amt); vc.number_format = money; vc.border = border; vc.alignment = right
+            rr += 1
+        ic = wsb.cell(rr, 2, "Increase Amount"); ic.font = Font(bold=True); ic.border = border
+        pc = wsb.cell(rr, 3, incr_ratio); pc.number_format = '0.000000%'; pc.border = border; pc.alignment = right
+        rr += 2
+
+        # Distribution of the additional cost back into per-equipment per-unit prices
+        for c, h in enumerate(["ITEMS", f"Increase ({incr_ratio * 100:.3f}%)",
+                               "P&F + Freight included", "Qty", "Per Unit", "Round Up"], start=1):
+            _yhead(rr, c, h)
+        rr += 1
+        grand_final = 0.0
+        for d in rows_data:
+            increase = d["total"] * incr_ratio
+            include = d["total"] + increase
+            grand_final += include
+            per_unit = include / d["qty"]
+            round_up = _math.ceil(per_unit / 1000) * 1000
+            vals = [d["name"], increase, include, d["qty"], per_unit, round_up]
+            for c, v in enumerate(vals, start=1):
+                cell = wsb.cell(rr, c, v); cell.border = border
+                if c in (2, 3, 5):
+                    cell.number_format = money; cell.alignment = right
+                elif c == 4:
+                    cell.alignment = Alignment(horizontal="center")
+                elif c == 6:
+                    cell.number_format = money; cell.alignment = right
+                    cell.fill = redfill; cell.font = Font(bold=True, color="FFFFFF")
+            rr += 1
+        wsb.cell(rr, 2, "GRAND TOTAL").font = Font(bold=True)
+        gf = wsb.cell(rr, 3, grand_final); gf.font = Font(bold=True); gf.number_format = money; gf.fill = yellow
+        for col, w in zip("ABCDEFGHIJK", [8, 34, 15, 15, 13, 15, 15, 16, 15, 7, 18]):
+            wsb.column_dimensions[col].width = w
+
         # ── One sheet per equipment (full BOM) ───────────────────────────
-        used = {"Summary"}
+        used = {"Summary", "Cost Breakdown"}
         for idx, eq in enumerate(req.equipments):
             base = "".join(ch for ch in eq.name if ch not in '[]:*?/\\').strip()[:28] or f"Equipment {idx+1}"
             name = base; n = 2
