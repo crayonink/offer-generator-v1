@@ -3871,8 +3871,7 @@ def combined_costing_excel(req: CombinedCostingRequest):
         # ── Cost Breakdown sheet (full build-up + additional-cost distribution) ──
         import math as _math
         wsb = wb.create_sheet("Cost Breakdown")
-        yellow  = PatternFill("solid", fgColor="FFF200")
-        redfill = PatternFill("solid", fgColor="FF0000")
+        lite    = PatternFill("solid", fgColor="EFF6FF")   # subtle navy-tint for totals
         right   = Alignment(horizontal="right")
         ctr     = Alignment(horizontal="center", wrap_text=True)
         SUBTOTAL_NAMES = {"BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL", "BOM TOTAL"}
@@ -3880,8 +3879,8 @@ def combined_costing_excel(req: CombinedCostingRequest):
         _desp = float(req.design_pct or 0); _frt = float(req.transport_amt or 0)
 
         def _yhead(r_, c_, v_):
-            cell = wsb.cell(r_, c_, v_); cell.fill = yellow
-            cell.font = Font(bold=True); cell.border = border; cell.alignment = ctr
+            cell = wsb.cell(r_, c_, v_); cell.fill = hdr_fill
+            cell.font = hdr_font; cell.border = border; cell.alignment = ctr
             return cell
 
         # Per-equipment build-up: bought-out vs in-house split from the BOM media
@@ -3935,7 +3934,7 @@ def combined_costing_excel(req: CombinedCostingRequest):
                     cell.alignment = Alignment(horizontal="center")
             rr += 1
         wsb.cell(rr, 2, "BASIC SELL PRICE").font = Font(bold=True)
-        bc = wsb.cell(rr, 11, basic); bc.font = Font(bold=True); bc.number_format = money; bc.fill = yellow
+        bc = wsb.cell(rr, 11, basic); bc.font = Font(bold=True); bc.number_format = money; bc.fill = lite
         rr += 2
 
         # Additional-cost summary
@@ -3976,10 +3975,10 @@ def combined_costing_excel(req: CombinedCostingRequest):
                     cell.alignment = Alignment(horizontal="center")
                 elif c == 6:
                     cell.number_format = money; cell.alignment = right
-                    cell.fill = redfill; cell.font = Font(bold=True, color="FFFFFF")
+                    cell.fill = lite; cell.font = Font(bold=True, color=navy)
             rr += 1
         wsb.cell(rr, 2, "GRAND TOTAL").font = Font(bold=True)
-        gf = wsb.cell(rr, 3, grand_final); gf.font = Font(bold=True); gf.number_format = money; gf.fill = yellow
+        gf = wsb.cell(rr, 3, grand_final); gf.font = Font(bold=True); gf.number_format = money; gf.fill = lite
         for col, w in zip("ABCDEFGHIJK", [8, 34, 15, 15, 13, 15, 15, 16, 15, 7, 18]):
             wsb.column_dimensions[col].width = w
 
