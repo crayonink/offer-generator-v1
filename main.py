@@ -4235,8 +4235,10 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 eq.name = f"{(eq.name or '').strip()} ({factor})"
 
         # Price schedule. Packaging & Forwarding, Designing and Negotiation are
-        # NOT shown as separate lines — their amounts are distributed EQUALLY
-        # across the equipment prices. Only Transport stays a separate line.
+        # NOT shown as separate lines — their combined amount is distributed
+        # across the equipment prices IN PROPORTION TO each equipment's own
+        # price (price ratio), so a costlier unit absorbs a bigger share. Only
+        # Transport stays a separate line.
         grand_base = 0.0
         _base_lines = []
         for i, eq in enumerate(req.equipments, start=1):
@@ -4248,10 +4250,17 @@ def generate_combined_offer(req: CombinedOfferRequest):
         _des   = grand_base * (req.design_pct or 0) / 100
         _neg   = grand_base * (req.neg_pct or 0) / 100
         _trn   = float(req.transport_amt or 0)
-        _share = (_pf + _des + _neg) / len(_base_lines) if _base_lines else 0.0
+        _extra = _pf + _des + _neg               # P&F + designing + negotiation lump
+        _n     = len(_base_lines)
         price_lines, grand = [], 0.0
         for i, eq, qty, base_total in _base_lines:
-            line_total = base_total + _share        # equal share of P&F+design+neg
+            # Proportional (price-ratio) share; if every price is zero fall back
+            # to an equal split so the total still distributes.
+            if grand_base > 0:
+                share = _extra * (base_total / grand_base)
+            else:
+                share = (_extra / _n) if _n else 0.0
+            line_total = base_total + share
             grand += line_total
             price_lines.append({
                 "sno":        f"{i}.",
