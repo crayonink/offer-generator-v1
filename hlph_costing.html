@@ -1023,6 +1023,7 @@
     <div class="action-row">
       <button class="btn-outline" onclick="goStep(2)">Back</button>
       <button class="btn-outline" id="xl-btn" onclick="downloadExcel()" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">⬇ Download Excel</button>
+      <button class="btn-outline" id="xl-cost-btn" onclick="downloadCostingExcel()" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">⬇ Download Excel (Cost Sheet)</button>
       <button class="btn-primary" onclick="goStep(4)">
         <span class="btn-txt">Generate Offer</span>
         <span>&rarr;</span>
@@ -1931,6 +1932,80 @@ async function downloadExcel() {
     URL.revokeObjectURL(url);
   } catch(e) { alert("Excel export failed: " + e.message); }
   finally { btn.disabled = false; btn.textContent = "⬇ Download Excel"; }
+}
+
+/* ── Download Cost Sheet Excel (POST /api/costing-excel) ── */
+async function downloadCostingExcel() {
+  if (!lastCalc || !lastCalc.bom) return;
+  // Make sure the live summary numbers (markup, P&F, designing, negotiation,
+  // transport, final total) are current before we read them.
+  recalcGrandTotal();
+  const btn = document.getElementById("xl-cost-btn");
+  const origLabel = "⬇ Download Excel (Cost Sheet)";
+  btn.disabled = true; btn.textContent = "Generating…";
+
+  // Skip the BOUGHT OUT / ENCON / GRAND TOTAL pseudo-rows.
+  const _SUBTOTAL_NAMES = new Set(["BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]);
+  const bom = lastCalc.bom
+    .filter(r => !_SUBTOTAL_NAMES.has(r["ITEM NAME"] || ""))
+    .map(r => ({
+      media:      r.MEDIA || "",
+      item:       r["ITEM NAME"] || "",
+      ref:        r.REFERENCE || "",
+      qty:        +r.QTY || 0,
+      unit_price: +r["UNIT PRICE"] || 0,
+      total:      +r.TOTAL || 0,
+    }));
+
+  // Reuse the same live values recalcGrandTotal() computes.
+  const markup    = parseFloat(document.getElementById("markup-factor")?.value) || 1.8;
+  const bought    = window._boughtRaw || 0;
+  const encon     = window._enconRaw  || 0;
+  const grand     = bought * markup + encon;
+  const pfPct     = parseFloat(document.getElementById("pf-pct")?.value)          || 0;
+  const designPct = parseFloat(document.getElementById("design-pct")?.value)      || 0;
+  const negPct    = parseFloat(document.getElementById("negotiation-pct")?.value) || 0;
+  const transAmt  = parseFloat(document.getElementById("transport-amt")?.value)   || 0;
+  const pfAmt     = grand * pfPct     / 100;
+  const designAmt = grand * designPct / 100;
+  const negAmt    = grand * negPct    / 100;
+  const finalTot  = Math.round((grand + pfAmt + designAmt + negAmt + transAmt) / 1000) * 1000;
+
+  const payload = {
+    product:      "Horizontal Ladle Preheater",
+    project_name: str("c-subject"),
+    company_name: str("c-company"),
+    bom: bom,
+    summary: {
+      subtotal_label:   "Grand Total",
+      subtotal:         grand,
+      pf_pct:           pfPct,
+      pf_amount:        pfAmt,
+      design_pct:       designPct,
+      design_amount:    designAmt,
+      neg_pct:          negPct,
+      neg_amount:       negAmt,
+      transport_amount: transAmt,
+      final_total:      finalTot,
+    },
+  };
+
+  try {
+    const res = await fetch(`${API}/api/costing-excel`, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.error || !data.success || !data.download_url) {
+      alert("Cost sheet export failed: " + (data.error || "no download link returned"));
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = `${API}${data.download_url}`;
+    a.download = "";
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch(e) { alert("Cost sheet export failed: " + e.message); }
+  finally { btn.disabled = false; btn.textContent = origLabel; }
 }
 
 function parseHP(str) {

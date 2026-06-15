@@ -542,9 +542,11 @@
       <div class="summary-row final"><span>Final Total</span><span id="s-final">&#8377; 0</span></div>
     </div>
 
-    <div style="display:flex; justify-content:flex-end; margin-top: 22px;">
+    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top: 22px;">
+      <button class="btn-primary" id="xlsxBtn" style="flex:0 0 auto;" onclick="downloadCostExcel()">Download Excel (Cost Sheet)</button>
       <button class="btn-primary" style="flex:0 0 auto;" onclick="goStep(4)">Continue to Generate Offer &rarr;</button>
     </div>
+    <span id="xlsxErr" class="err"></span>
   </div><!-- /resultsBody -->
   </div><!-- /panel-3 -->
 
@@ -976,6 +978,85 @@ function recalc() {
   // Stash for the offer generator
   lastCalc._final_total = finalRounded;
   lastCalc._grand_total = grand;
+}
+
+async function downloadCostExcel() {
+  $("xlsxErr").textContent = "";
+  if (!lastCalc || !lastCalc.bom) { $("xlsxErr").textContent = "Run Calculate first."; return; }
+
+  recalc(); // ensure _grand_total / _final_total are current
+
+  // Drop the subtotal rows that live inside the BOM array (mirrors _useInCombined).
+  const SUB = new Set(["BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]);
+  const bom = lastCalc.bom
+    .filter(r => !SUB.has((r["ITEM NAME"] || "").trim()))
+    .map(r => ({
+      media:      r.MEDIA || "",
+      item:       r["ITEM NAME"] || "",
+      ref:        r.REFERENCE || "",
+      qty:        +r.QTY || 0,
+      unit_price: +r["UNIT PRICE"] || 0,
+      total:      +r.TOTAL || 0,
+    }));
+
+  // Reuse the live cost-summary values computed by recalc()/the inputs.
+  const grand = +lastCalc._grand_total || 0;
+  const conv  = num("s-conv")  || 1.8;
+  const sale  = grand * conv;
+  const pfPct  = num("s-pf");
+  const desPct = num("s-design");
+  const negPct = num("s-nego");
+  const trans  = num("s-trans");
+
+  const summary = {
+    subtotal_label:   "Grand Total",
+    subtotal:         grand,
+    pf_pct:           pfPct,
+    pf_amount:        sale * pfPct / 100,
+    design_pct:       desPct,
+    design_amount:    sale * desPct / 100,
+    neg_pct:          negPct,
+    neg_amount:       sale * negPct / 100,
+    transport_amount: trans,
+    final_total:      +lastCalc._final_total || 0,
+  };
+
+  const payload = {
+    product:      "Recuperator",
+    project_name: "Recuperator",
+    company_name: $("c-company").value || "",
+    bom:          bom,
+    summary:      summary,
+  };
+
+  const btn = $("xlsxBtn");
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Preparing…";
+  try {
+    const res = await fetch("/api/costing-excel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.error) { $("xlsxErr").textContent = data.error; return; }
+    if (data.download_url) {
+      const a = document.createElement("a");
+      a.href = data.download_url;
+      a.download = "";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } else {
+      $("xlsxErr").textContent = "No download URL returned.";
+    }
+  } catch (e) {
+    $("xlsxErr").textContent = e.message || "Network error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
 }
 
 async function generateOffer() {

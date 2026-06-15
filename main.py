@@ -3886,6 +3886,130 @@ def combined_costing_excel(req: CombinedCostingRequest):
         return {"error": str(e), "trace": traceback.format_exc()}
 
 
+# ── Per-costing Excel: itemised BOM + the cost-summary box ─────────────────
+class CostingExcelRequest(BaseModel):
+    product: str = "Costing"               # equipment / product name
+    project_name: Optional[str] = ""
+    company_name: Optional[str] = ""
+    bom: List[dict] = []                   # [{media, item, ref|size, qty, unit_price, total}]
+    summary: dict = {}                     # subtotal_label, subtotal, pf_pct, pf_amount,
+                                           # design_pct, design_amount, neg_pct, neg_amount,
+                                           # transport_amount, final_total
+
+
+@app.post("/api/costing-excel")
+def costing_excel(req: CostingExcelRequest):
+    """Build a single-sheet .xlsx for one costing: the itemised bill of
+    materials, then the Grand Total / P&F / Designing / Negotiation / Transport
+    / Final Total summary box. Uniform across every product costing page."""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+        navy = "1A3A5C"
+        hdr_fill = PatternFill("solid", fgColor=navy)
+        hdr_font = Font(bold=True, color="FFFFFF")
+        bold = Font(bold=True)
+        grey = PatternFill("solid", fgColor="F8FAFC")
+        green = Font(bold=True, color="065F46", size=12)
+        green_bg = PatternFill("solid", fgColor="F0FDF4")
+        thin = Side(style="thin", color="D0D7DE")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        money = '#,##0.00'
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Costing"
+
+        ws["A1"] = req.product or "Costing"
+        ws["A1"].font = Font(bold=True, size=14, color=navy)
+        ws["A2"] = f"Project: {req.project_name or '—'}"
+        ws["A3"] = f"Client: {req.company_name or '—'}"
+        ws["A4"] = f"Date: {datetime.now().strftime('%d %b %Y')}"
+
+        r = 6
+        # ── Itemised BOM ────────────────────────────────────────────────
+        if req.bom:
+            ws.cell(r, 1, "BILL OF MATERIALS").font = Font(bold=True, color=navy, size=11)
+            r += 1
+            cols = ["S. No.", "Media", "Item", "Ref / Size", "Qty", "Unit Price", "Total"]
+            for c, h in enumerate(cols, start=1):
+                cell = ws.cell(r, c, h); cell.fill = hdr_fill; cell.font = hdr_font
+                cell.border = border; cell.alignment = Alignment(horizontal="center")
+            r += 1
+            sub = 0.0
+            for i, row in enumerate(req.bom, start=1):
+                tot = float(row.get("total") or 0); sub += tot
+                vals = [i, row.get("media", ""), row.get("item", ""),
+                        row.get("ref", row.get("size", "")),
+                        row.get("qty", ""), float(row.get("unit_price") or 0), tot]
+                for c, v in enumerate(vals, start=1):
+                    cell = ws.cell(r, c, v); cell.border = border
+                    if c in (6, 7):
+                        cell.number_format = money; cell.alignment = Alignment(horizontal="right")
+                r += 1
+            tc = ws.cell(r, 3, "BOM TOTAL"); tc.font = bold
+            vc = ws.cell(r, 7, sub); vc.font = bold; vc.number_format = money
+            vc.alignment = Alignment(horizontal="right")
+            r += 2
+
+        # ── Cost summary box ────────────────────────────────────────────
+        s = req.summary or {}
+        ws.cell(r, 1, "COST SUMMARY").font = Font(bold=True, color=navy, size=11)
+        r += 1
+
+        def _num(x):
+            try:
+                return float(x)
+            except (TypeError, ValueError):
+                return None
+
+        def _line(label, amount, is_total=False):
+            nonlocal r
+            bg = green_bg if is_total else grey
+            lc = ws.cell(r, 1, label)
+            lc.font = green if is_total else bold if is_total else Font(bold=False)
+            lc.fill = bg; lc.border = border
+            ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=6)
+            for c in range(2, 7):
+                ws.cell(r, c).fill = bg; ws.cell(r, c).border = border
+            vc = ws.cell(r, 7, _num(amount) if _num(amount) is not None else 0)
+            vc.number_format = money; vc.fill = bg; vc.border = border
+            vc.alignment = Alignment(horizontal="right")
+            vc.font = green if is_total else bold
+            r += 1
+
+        sub_label = s.get("subtotal_label") or "Grand Total"
+        if _num(s.get("subtotal")) is not None:
+            _line(sub_label, s.get("subtotal"))
+        if _num(s.get("pf_amount")) is not None:
+            _line(f"Packaging & Forwarding ({s.get('pf_pct', 0)} %)", s.get("pf_amount"))
+        if _num(s.get("design_amount")) is not None:
+            _line(f"Designing ({s.get('design_pct', 0)} %)", s.get("design_amount"))
+        if _num(s.get("neg_amount")) is not None:
+            _line(f"Negotiation ({s.get('neg_pct', 0)} %)", s.get("neg_amount"))
+        if _num(s.get("transport_amount")) is not None:
+            _line("Transport", s.get("transport_amount"))
+        _line("Final Total", s.get("final_total"), is_total=True)
+
+        for col, w in zip("ABCDEFG", [8, 16, 40, 18, 8, 14, 16]):
+            ws.column_dimensions[col].width = w
+
+        safe_company = "".join(ch for ch in (req.company_name or "Client")
+                               if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        safe_prod = "".join(ch for ch in (req.product or "Costing")
+                            if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Costing"
+        stamp = datetime.now().strftime("%d%b%Y_%H%M%S")
+        out_name = f"Costing_{safe_prod}_{safe_company}_{stamp}.xlsx"
+        out_path = os.path.join(QUOTES_FOLDER, out_name)
+        wb.save(out_path)
+        return {"success": True, "filename": out_name,
+                "download_url": f"/api/download-xlsx/{out_name}"}
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
 # ── Unified combined offer: one cover/customer/T&C, equipment sections ──────
 class CombinedOfferEquipment(BaseModel):
     name: str

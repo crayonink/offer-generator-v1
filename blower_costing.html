@@ -362,6 +362,7 @@
     </p>
     <div class="action-row" id="action-row-gen">
       <button class="btn-outline" id="back-btn" onclick="goStep(3)">Back</button>
+      <button class="btn-outline" id="excel-btn" onclick="downloadCostExcel()"><span class="excel-txt">Download Excel (Cost Sheet)</span></button>
       <button class="btn-primary" id="gen-btn" onclick="generateOffer()"><span class="btn-txt">Generate Offer</span></button>
     </div>
     <div class="quote-result" id="quote-result">
@@ -567,6 +568,77 @@ async function generateOffer() {
     errEl.style.display = 'block';
     btn.disabled = false;
     btn.querySelector('.btn-txt').textContent = 'Generate Offer';
+  }
+}
+
+// ── Download Excel cost sheet (catalog-pick: single line + commercials) ──────
+async function downloadCostExcel() {
+  const errEl = document.getElementById('gen-error');
+  const btn = document.getElementById('excel-btn');
+  const txt = btn.querySelector('.excel-txt');
+  errEl.style.display = 'none';
+
+  const model = document.getElementById('blower_model').value;
+  if (!model) {
+    errEl.textContent = 'Please select a blower model (Step 2).';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Reuse the same already-parsed values as recalcTotal().
+  const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+  const qty = Math.max(1, parseInt((document.getElementById('qty') || {}).value || '1', 10));
+  const pf = num('pf-pct'), des = num('design-pct'), neg = num('negotiation-pct'), trn = num('transport-amt');
+  const unit = _blowerUnit;
+  const base = unit * qty;
+  const pfA = base * pf / 100, desA = base * des / 100, negA = base * neg / 100;  // Negotiation ADDS.
+  let total = base + pfA + desA + negA + trn;
+  if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+
+  const cust = _customerPayload();
+  const summary = {
+    subtotal_label: 'Equipment Price',
+    subtotal: base,
+    final_total: Math.round(total),
+  };
+  if (pf)  { summary.pf_pct = pf;   summary.pf_amount = Math.round(pfA); }
+  if (des) { summary.design_pct = des; summary.design_amount = Math.round(desA); }
+  if (neg) { summary.neg_pct = neg; summary.neg_amount = Math.round(negA); }
+  if (trn) { summary.transport_amount = Math.round(trn); }
+
+  const payload = {
+    product: 'Blower',
+    project_name: cust.subject || '',
+    company_name: cust.company || '',
+    bom: [{
+      item: 'Centrifugal Blower ' + model,
+      qty: qty,
+      unit_price: Math.round(unit),
+      total: Math.round(base),
+    }],
+    summary: summary,
+  };
+
+  btn.disabled = true;
+  txt.textContent = 'Building…';
+  try {
+    const r = await fetch('/api/costing-excel', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || j.error || !j.download_url) throw new Error(j.error || `HTTP ${r.status}`);
+    const a = document.createElement('a');
+    a.href = j.download_url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e) {
+    errEl.textContent = 'Error: ' + (e.message || e);
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    txt.textContent = 'Download Excel (Cost Sheet)';
   }
 }
 

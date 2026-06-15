@@ -323,6 +323,7 @@
     </p>
     <div class="action-row" id="action-row-gen">
       <button class="btn-outline" id="back-btn" onclick="goStep(3)">Back</button>
+      <button class="btn-outline" id="xlsx-btn" onclick="downloadCostExcel()">Download Excel (Cost Sheet)</button>
       <button class="btn-primary" id="gen-btn" onclick="generateOffer()"><span class="btn-txt">Generate Offer</span></button>
     </div>
     <div class="quote-result" id="quote-result">
@@ -441,6 +442,68 @@ function recalcTotal() {
   set('cs-pf', f(pfA)); set('cs-design', f(desA));
   set('cs-neg', '+ ' + f(negA)); set('cs-trans', f(trn));
   set('cs-total', base ? f(total) : '—');
+}
+
+// ── Download Excel cost sheet (POST /api/costing-excel) ──────────────────────
+async function downloadCostExcel() {
+  const errEl = document.getElementById('gen-error');
+  const btn = document.getElementById('xlsx-btn');
+  errEl.style.display = 'none';
+
+  const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+  const qty = Math.max(1, parseInt((document.getElementById('qty') || {}).value || '1', 10));
+  const model = document.getElementById('burner_model').value;
+  if (!model || !_burnerUnit) {
+    errEl.textContent = 'Please select a burner type and model (Step 2) before downloading the cost sheet.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Mirror recalcTotal(): base + P&F + Designing + Negotiation (adds) + Transport, rounded to nearest 1000.
+  const pf = num('pf-pct'), des = num('design-pct'), neg = num('negotiation-pct'), trn = num('transport-amt');
+  const base = _burnerUnit * qty;
+  const pfA = base * pf / 100, desA = base * des / 100, negA = base * neg / 100;
+  let total = base + pfA + desA + negA + trn;
+  if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+
+  const cust = _customerPayload();
+  const summary = {
+    subtotal_label: 'Equipment Price',
+    subtotal: Math.round(base),
+    pf_pct: pf, pf_amount: Math.round(pfA),
+    design_pct: des, design_amount: Math.round(desA),
+    neg_pct: neg, neg_amount: Math.round(negA),
+    transport_amount: Math.round(trn),
+    final_total: Math.round(total),
+  };
+
+  const payload = {
+    product: 'Burner',
+    project_name: cust.subject || '',
+    company_name: cust.company || '',
+    bom: [{ item: model, qty: qty, unit_price: Math.round(_burnerUnit), total: Math.round(base) }],
+    summary: summary,
+  };
+
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparing…';
+  try {
+    const r = await fetch('/api/costing-excel', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || j.error || !j.download_url) throw new Error(j.error || `HTTP ${r.status}`);
+    const a = document.createElement('a');
+    a.href = j.download_url; a.download = '';
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) {
+    errEl.textContent = 'Error: ' + (e.message || e);
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
 }
 
 async function generateOffer() {

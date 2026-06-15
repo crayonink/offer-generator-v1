@@ -368,6 +368,7 @@
 
     <div class="action-row" id="action-row-step3">
       <button class="btn-outline" id="back-btn" onclick="goStep(3)">Back</button>
+      <button class="btn-outline" id="xls-btn" onclick="downloadCostExcel()">Download Excel (Cost Sheet)</button>
       <button class="btn-primary" id="gen-btn" onclick="generateOffer()">
         <span class="btn-txt">Generate Offer</span>
       </button>
@@ -498,6 +499,77 @@ function recalcTotal() {
   set('cs-pf', f(pfA)); set('cs-design', f(desA));
   set('cs-neg', '+ ' + f(negA)); set('cs-trans', f(trn));
   set('cs-total', base ? f(total) : '—');
+}
+
+// ── Download Excel cost sheet (catalog-pick: single equipment line) ─────────
+//    Mirrors recalcTotal()'s math exactly: base = _catalogUnit × qty,
+//    % adjustments off base, negotiation ADDS, then thousand-rounding.
+async function downloadCostExcel() {
+  const errEl = document.getElementById('hpu-error');
+  const btn   = document.getElementById('xls-btn');
+  errEl.style.display = 'none';
+  const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+
+  const variant = document.getElementById('hpu_variant').value;
+  const kw       = document.getElementById('hpu_kw').value;
+  const qty      = Math.max(1, parseInt((document.getElementById('qty') || {}).value || '1', 10));
+  const unit     = _catalogUnit;
+  const base     = unit * qty;
+  const pf = num('pf-pct'), des = num('design-pct'), neg = num('negotiation-pct'), trn = num('transport-amt');
+  const pfA = base * pf / 100, desA = base * des / 100, negA = base * neg / 100;
+  let total = base + pfA + desA + negA + trn;
+  if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+
+  const summary = {
+    subtotal_label: 'Equipment Price',
+    subtotal: base,
+    pf_pct: pf, pf_amount: pfA,
+    design_pct: des, design_amount: desA,
+    neg_pct: neg, neg_amount: negA,
+    transport_amount: trn,
+    final_total: total,
+  };
+
+  const payload = {
+    product: 'Heating & Pumping Unit',
+    project_name: document.getElementById('c-subject')?.value || '',
+    company_name: document.getElementById('c-company')?.value || '',
+    summary: summary,
+  };
+  // Only include the single-line BOM when the unit price is a real number.
+  if (unit > 0) {
+    payload.bom = [{
+      item: `Heating & Pumping Unit ${variant} ${kw} kW`,
+      qty: qty,
+      unit_price: unit,
+      total: base,
+    }];
+  }
+
+  btn.disabled = true;
+  const origTxt = btn.textContent;
+  btn.textContent = 'Preparing…';
+  try {
+    const r = await fetch('/api/costing-excel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || j.error || !j.download_url) throw new Error(j.error || `HTTP ${r.status}`);
+    const a = document.createElement('a');
+    a.href = j.download_url;
+    a.setAttribute('download', '');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e) {
+    errEl.textContent = 'Error: ' + (e.message || e);
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = origTxt;
+  }
 }
 
 async function generateOffer() {

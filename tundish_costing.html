@@ -1052,6 +1052,7 @@
     <div class="action-row">
       <button class="btn-outline" onclick="goStep(2)">Back</button>
       <button class="btn-outline" id="xl-btn" onclick="downloadExcel()" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">⬇ Download Excel</button>
+      <button class="btn-outline" id="xl-cost-btn" onclick="downloadCostSheet()" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">⬇ Download Excel (Cost Sheet)</button>
       <button class="btn-primary" onclick="goStep(4)">
         <span class="btn-txt">Generate Offer</span>
         <span>&rarr;</span>
@@ -1964,6 +1965,60 @@ async function downloadExcel() {
   finally { btn.disabled = false; btn.textContent = "⬇ Download Excel"; }
 }
 
+/* ── Download Excel (Cost Sheet) ── POST /api/costing-excel ── */
+async function downloadCostSheet() {
+  if (!lastCalc || !lastCalc.bom) { alert("Run a calculation first."); return; }
+  const btn = document.getElementById("xl-cost-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Generating…"; }
+  try {
+    // Ensure live summary numbers are current, then read them.
+    recalcGrandTotal();
+    const s = window._lastSummary || {};
+    // Same BOM data source the page uses for the combined offer export
+    // (filter subtotal rows, map to lowercase keys).
+    const SUB = new Set(["BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]);
+    const bom = lastCalc.bom
+      .filter(r => !SUB.has((r["ITEM NAME"] || "").trim()))
+      .map(r => ({
+        media:       r.MEDIA || "",
+        item:        r["ITEM NAME"] || "",
+        ref:         r.REFERENCE || "",
+        qty:         +r.QTY || 0,
+        unit_price:  +r["UNIT PRICE"] || 0,
+        total:       +r.TOTAL || 0,
+      }));
+    const payload = {
+      product:      "Tundish Preheater",
+      project_name: str("c-subject") || "",
+      company_name: str("c-company") || "",
+      bom: bom,
+      summary: {
+        subtotal_label:   "Grand Total",
+        subtotal:         +s.grand_total || 0,
+        pf_pct:           +s.pf_pct || 0,
+        pf_amount:        +s.pf_amount || 0,
+        design_pct:       +s.design_pct || 0,
+        design_amount:    +s.design_amount || 0,
+        neg_pct:          +s.neg_pct || 0,
+        neg_amount:       +s.neg_amount || 0,
+        transport_amount: +s.transport_amount || 0,
+        final_total:      +s.final_total || 0,
+      },
+    };
+    const res = await fetch(`${API}/api/costing-excel`, {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error || !data.download_url) {
+      throw new Error(data.error || ("HTTP " + res.status));
+    }
+    const a = document.createElement("a");
+    a.href = data.download_url; a.download = ""; a.click();
+  } catch(e) { alert("Cost sheet export failed: " + e.message); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "⬇ Download Excel (Cost Sheet)"; } }
+}
+
 function parseHP(str) {
   const m = String(str || "").match(/[\d.]+/);
   return m ? parseFloat(m[0]) : 0;
@@ -1993,6 +2048,15 @@ function recalcGrandTotal() {
   set("s-negotiation", "₹ " + fmt(negAmt, 0));
   set("s-transport",   "₹ " + fmt(transAmt, 0));
   set("s-final",       "₹ " + fmt(finalTot, 0));
+  // Stash live numeric values for the cost-sheet Excel export.
+  window._lastSummary = {
+    grand_total: grand,
+    pf_pct: pfPct,           pf_amount: pfAmt,
+    design_pct: designPct,   design_amount: designAmt,
+    neg_pct: negPct,         neg_amount: negAmt,
+    transport_amount: transAmt,
+    final_total: finalTot,
+  };
   if (lastCalc && lastCalc.cost_summary) {
     lastCalc.cost_summary.grand_total = grand;
     lastCalc.cost_summary.pf_amount = pfAmt;
