@@ -439,7 +439,9 @@ async function generateOffer() {
 async function generateExcel() {
   document.getElementById('err').style.display='none';
   if (!_eq.length) return showErr('Add at least one equipment.');
+  const a = adjVals();
   const payload = { project_name: document.getElementById('c-subject').value, company_name: document.getElementById('c-company').value,
+    pf_pct:a.pf, design_pct:a.design, neg_pct:a.neg, transport_amt:a.transport,
     equipments: _eq.map(e => ({ name:e.name||e.type, total:(+e.qty||1)*(+e.unit_price||0),
       bom:(e.bom.length?e.bom:[{item:e.name||e.type,qty:+e.qty||1,unit_price:+e.unit_price||0}]).map(b=>({media:b.media||'',item:b.item,ref:b.ref||'',qty:b.qty,unit_price:b.unit_price,total:(b.total!=null?b.total:(+b.qty||0)*(+b.unit_price||0))})) })) };
   const btn=document.getElementById('gen-xls'); btn.disabled=true; btn.textContent='Building…';

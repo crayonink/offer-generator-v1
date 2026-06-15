@@ -3778,6 +3778,13 @@ class CombinedCostingRequest(BaseModel):
     project_name: Optional[str] = ""
     company_name: Optional[str] = ""
     equipments: List[CombinedEquipment] = []
+    # Commercial adjustments (applied once to the combined grand total) so the
+    # costing Excel shows the same P&F / Designing / Negotiation / Transport /
+    # Final Total box the builder displays on screen.
+    pf_pct: float = 0
+    design_pct: float = 0
+    neg_pct: float = 0
+    transport_amt: float = 0
 
 
 @app.get("/api/download-xlsx/{filename}")
@@ -3833,6 +3840,30 @@ def combined_costing_excel(req: CombinedCostingRequest):
         gr = r + len(req.equipments) + 1
         ws.cell(gr, 2, "GRAND TOTAL").font = bold
         gc = ws.cell(gr, 3, grand); gc.font = bold; gc.number_format = money
+
+        # ── Commercial adjustments (same box the builder shows on screen) ──
+        _pf  = float(req.pf_pct or 0); _des = float(req.design_pct or 0)
+        _neg = float(req.neg_pct or 0); _trn = float(req.transport_amt or 0)
+        pf_amt  = grand * _pf / 100
+        des_amt = grand * _des / 100
+        neg_amt = grand * _neg / 100
+        final   = round((grand + pf_amt + des_amt + neg_amt + _trn) / 1000) * 1000
+        ar = gr + 2
+        ws.cell(ar, 2, "COMMERCIAL ADJUSTMENTS").font = Font(bold=True, color=navy)
+        ar += 1
+        for label, amt in [
+            (f"Packaging & Forwarding ({_pf:g} %)", pf_amt),
+            (f"Designing ({_des:g} %)",             des_amt),
+            (f"Negotiation ({_neg:g} %)",           neg_amt),
+            ("Transport",                           _trn),
+        ]:
+            ws.cell(ar, 2, label).border = border
+            ac = ws.cell(ar, 3, amt); ac.number_format = money; ac.border = border
+            ar += 1
+        ws.cell(ar, 2, "FINAL TOTAL").font = bold
+        fc = ws.cell(ar, 3, final); fc.font = bold; fc.number_format = money
+        fc.fill = PatternFill("solid", fgColor="F0FDF4")
+
         ws.column_dimensions["A"].width = 8; ws.column_dimensions["B"].width = 46; ws.column_dimensions["C"].width = 18
 
         # ── One sheet per equipment (full BOM) ───────────────────────────
