@@ -214,6 +214,9 @@
 
 <script>
 const CATALOG_TYPES = { 'Blower':'/api/blower/catalog', 'Burner':'/api/burner/catalog' };
+const PUMP_TYPES = { 'HPU':'hpu', 'Pumping Unit':'pu' };   // catalog-pick by variant + kW
+const VARIANTS = ['Simplex','Duplex 1','Duplex 2'];
+const PUMP_KWS = [3,6,9,12,16,20,24,30,36,48];
 const EMBED_SRC = {
   'Vertical Ladle Preheater':'/costing?embed=1', 'Horizontal Ladle Preheater':'/hlph?embed=1',
   'Tundish Preheater':'/tundish?embed=1', 'Recuperator':'/recup?embed=1',
@@ -221,7 +224,8 @@ const EMBED_SRC = {
 const TYPE_DESC = {
   'Vertical Ladle Preheater':'Full VLPH config + BOM', 'Horizontal Ladle Preheater':'Full HLPH config + BOM',
   'Tundish Preheater':'Full tundish config + BOM', 'Recuperator':'Full recuperator config + BOM',
-  'HPU':'Pumping unit — manual', 'Blower':'Pick a model from catalog', 'Burner':'Pick a model from catalog', 'Other':'Manual line item',
+  'HPU':'Pick variant + kW · auto price', 'Pumping Unit':'Pick variant + kW · auto price',
+  'Blower':'Pick a model · auto price', 'Burner':'Pick a model · auto price', 'Other':'Manual line item',
 };
 let _eq = [], _uid = 0, _active = 0, _step = 1, _builtFor = '';
 let _blowerCat = null, _burnerCat = null;
@@ -243,7 +247,7 @@ function goStep(n) {
 
 /* ── Step 2: selection ── */
 function renderTypes() {
-  document.getElementById('types').innerHTML = Object.keys(EMBED_SRC).concat(['HPU','Blower','Burner','Other']).map(t =>
+  document.getElementById('types').innerHTML = Object.keys(EMBED_SRC).concat(['HPU','Pumping Unit','Blower','Burner','Other']).map(t =>
     `<div class="type" onclick="addEquipment('${t}')"><div class="t">${t}</div><div class="d">${TYPE_DESC[t]||''}</div><div class="add">+ Add</div></div>`).join('');
   renderSelected();
 }
@@ -268,7 +272,10 @@ function buildConfig() {
     _eq.forEach((e, i) => {
       const d = document.createElement('div'); d.className = 'cfg' + (i===_active?' active':''); d.id = 'cfg-' + e.id;
       d.innerHTML = configHTML(e, i); host.appendChild(d);
-      if (!(e.type in EMBED_SRC)) renderBom(e);
+      if (e.type in EMBED_SRC) { /* iframe form posts back its BOM */ }
+      else if (e.type in PUMP_TYPES) onPumpSel(e.id);     // fetch catalog price
+      else if (e.type in CATALOG_TYPES) populateCatalog(e); // fill model dropdowns
+      else renderBom(e);                                   // 'Other' — manual lines
     });
   }
   renderPager();
@@ -282,13 +289,43 @@ function configHTML(e, i) {
       </div>
       <iframe id="iframe-${e.id}" src="${EMBED_SRC[e.type]}" style="width:100%;height:660px;border:1px solid var(--border);border-radius:10px;background:#fff"></iframe>`;
   }
-  const isCat = (e.type in CATALOG_TYPES);
+  // HPU / Pumping Unit — pick variant + kW, price comes from the catalog.
+  if (e.type in PUMP_TYPES) {
+    const variant = e.sel_variant || 'Duplex 1', kw = +(e.sel_kw || 9);
+    return `<div class="sec-label" style="margin-top:0">${i+1}. ${e.type}</div>
+      <div class="fg fg-4">
+        <div class="field"><label>Name (on offer)</label><input value="${esc(e.name)}" oninput="setEqName(${e.id},this.value)" placeholder="${e.type}"/></div>
+        <div class="field"><label>Qty</label><input type="number" min="1" value="${e.qty}" oninput="setEq(${e.id},'qty',this.value);onPumpSel(${e.id})"/></div>
+        <div class="field"><label>Variant</label><select onchange="setEq(${e.id},'sel_variant',this.value);onPumpSel(${e.id})">${VARIANTS.map(v=>`<option ${v===variant?'selected':''}>${v}</option>`).join('')}</select></div>
+        <div class="field"><label>Capacity (kW)</label><select onchange="setEq(${e.id},'sel_kw',this.value);onPumpSel(${e.id})">${PUMP_KWS.map(k=>`<option ${k===kw?'selected':''}>${k}</option>`).join('')}</select></div>
+      </div>
+      <div class="fg fg-4">
+        <div class="field"><label>Unit Price (₹) — from catalog</label><input id="price-${e.id}" type="number" value="${e.unit_price||0}" readonly style="background:#f1f5f9"/></div>
+        <div class="field" style="grid-column:span 3"><label>Specifications (on offer)</label><input value="${esc(e.specs)}" oninput="setEq(${e.id},'specs',this.value)"/></div>
+      </div>`;
+  }
+  // Blower / Burner — pick a model from the catalog, price auto-fills.
+  if (e.type in CATALOG_TYPES) {
+    const isBurner = e.type === 'Burner';
+    return `<div class="sec-label" style="margin-top:0">${i+1}. ${e.type}</div>
+      <div class="fg fg-4">
+        <div class="field"><label>Name (on offer)</label><input value="${esc(e.name)}" oninput="setEqName(${e.id},this.value)" placeholder="${e.type}"/></div>
+        <div class="field"><label>Qty</label><input type="number" min="1" value="${e.qty}" oninput="setEq(${e.id},'qty',this.value);recalc()"/></div>
+        ${isBurner?`<div class="field"><label>Type</label><select id="bgsel-${e.id}" onchange="onBurnerGroup(${e.id},this.value)"><option value="">— type —</option></select></div>`:`<div class="field"><label>&nbsp;</label><span></span></div>`}
+        <div class="field"><label>Model</label><select id="msel-${e.id}" onchange="${isBurner?`onBurnerModel(${e.id},this.value)`:`onBlowerSel(${e.id},this.value)`}"><option value="">— pick model —</option></select></div>
+      </div>
+      <div class="fg fg-4">
+        <div class="field"><label>Unit Price (₹) — from catalog</label><input id="price-${e.id}" type="number" value="${e.unit_price||0}" readonly style="background:#f1f5f9"/></div>
+        <div class="field" style="grid-column:span 3"><label>Specifications (on offer)</label><input value="${esc(e.specs)}" oninput="setEq(${e.id},'specs',this.value)"/></div>
+      </div>`;
+  }
+  // 'Other' — fully manual line item.
   return `<div class="sec-label" style="margin-top:0">${i+1}. ${e.type}</div>
     <div class="fg fg-4">
       <div class="field"><label>Name (on offer)</label><input value="${esc(e.name)}" oninput="setEqName(${e.id},this.value)" placeholder="${e.type}"/></div>
       <div class="field"><label>Qty</label><input type="number" min="1" value="${e.qty}" oninput="setEq(${e.id},'qty',this.value);recalc()"/></div>
       <div class="field"><label>Unit Price (₹)</label><input type="number" min="0" value="${e.unit_price}" oninput="setEq(${e.id},'unit_price',this.value);recalc()"/></div>
-      <div class="field"><label>&nbsp;</label>${isCat?`<button class="btn btn-ghost" onclick="pickCatalog(${e.id})">⌕ Pick from catalog…</button>`:'<span></span>'}</div>
+      <div class="field"><label>&nbsp;</label><span></span></div>
     </div>
     <div class="field"><label>Specifications (one line, on offer)</label><input value="${esc(e.specs)}" oninput="setEq(${e.id},'specs',this.value)" placeholder="e.g. ENCON Gas Burner 5A · PLC control"/></div>
     <div class="bom" id="bom-${e.id}"></div>
@@ -326,24 +363,63 @@ function addBom(id){ const e=eqById(id); e.bom.push({item:'',qty:1,unit_price:0}
 function rmBom(id,j){ const e=eqById(id); e.bom.splice(j,1); renderBom(e); recalc(); }
 function setBom(id,j,k,v){ const e=eqById(id); e.bom[j][k]=(k==='item')?v:(+v||0); if(k!=='item') renderBom(e); recalc(); }
 
-/* ── Catalog auto-fill (Blower / Burner) ── */
-async function pickCatalog(id) {
-  const e = eqById(id);
+/* ── Catalog / pump auto-fill (inline selectors, like the individual offers) ── */
+function _applyCatalog(e, name, specs, price, bomItem) {
+  if (!e.nameCustom) e.name = name;       // respect a user-typed name
+  e.specs = specs; e.unit_price = +price || 0; e.configured = true;
+  e.bom = [{ item: bomItem, qty: +e.qty || 1, unit_price: +price || 0 }];
+  const pr = document.getElementById('price-' + e.id); if (pr) pr.value = e.unit_price;
+  const st = document.getElementById('status-' + e.id); if (st) st.innerHTML = statusText(e);
+  renderPager(); renderSelected(); recalc();
+}
+
+// HPU / Pumping Unit — price from /api/hpu/price for the chosen variant + kW.
+async function onPumpSel(id) {
+  const e = eqById(id); if (!e) return;
+  const variant = e.sel_variant || 'Duplex 1', kw = +(e.sel_kw || 9), mode = PUMP_TYPES[e.type];
+  e.sel_variant = variant; e.sel_kw = kw;
+  const label = (e.type === 'HPU') ? 'Heating & Pumping Unit' : 'Pumping Unit';
+  const nm = `${label} ${variant} ${kw} kW`;
+  try {
+    const j = await (await fetch(`/api/hpu/price?kw=${kw}&variant=${encodeURIComponent(variant)}&mode=${mode}`)).json();
+    if (j && j.unit_price != null) { _applyCatalog(e, nm, `${variant} · ${kw} kW`, j.unit_price, nm); }
+    else { e.unit_price = 0; e.configured = false; const pr = document.getElementById('price-' + id); if (pr) pr.value = 0; recalc(); }
+  } catch (err) { /* network issue — leave the field as-is */ }
+}
+
+// Blower / Burner — populate the model dropdown(s) from the catalog.
+async function populateCatalog(e) {
   if (e.type === 'Blower') {
     if (!_blowerCat) _blowerCat = (await (await fetch('/api/blower/catalog')).json()).items || [];
-    const m = prompt('Blower models:\n'+_blowerCat.map(x=>`${x.model} — ₹${(x.price||0).toLocaleString('en-IN')}`).join('\n')+'\n\nType the model:');
-    const it = _blowerCat.find(x => x.model === (m||'').trim());
-    if (it) applyCatalog(e, `Centrifugal Blower – ${it.model}`, `${it.hp} HP · ${it.airflow} Nm³/hr · ${it.pressure}`, it.price, `Blower ${it.model}`);
+    const sel = document.getElementById('msel-' + e.id); if (!sel) return;
+    sel.innerHTML = '<option value="">— pick model —</option>' + _blowerCat.map(x =>
+      `<option value="${esc(x.model)}" ${x.model===e.sel_model?'selected':''}>${esc(x.model)} — ₹${(x.price||0).toLocaleString('en-IN')}</option>`).join('');
   } else if (e.type === 'Burner') {
     if (!_burnerCat) _burnerCat = (await (await fetch('/api/burner/catalog')).json()).groups || [];
-    const flat = _burnerCat.flatMap(g => g.items.map(it => ({...it, fuel:g.fuel, label:g.label})));
-    const m = prompt('Burner models:\n'+flat.map(x=>`${x.model} — ₹${(x.price||0).toLocaleString('en-IN')}`).join('\n')+'\n\nType the model:');
-    const it = flat.find(x => x.model === (m||'').trim());
-    if (it) applyCatalog(e, `${it.label} – ${it.model}`, `${it.fuel}${it.capacity?' · '+it.capacity:''}`, it.price, `Burner ${it.model}`);
+    const gs = document.getElementById('bgsel-' + e.id); if (!gs) return;
+    gs.innerHTML = '<option value="">— type —</option>' + _burnerCat.map((g, gi) =>
+      `<option value="${gi}" ${(''+gi)===(''+e.sel_group)?'selected':''}>${esc(g.label||g.fuel)}</option>`).join('');
+    if (e.sel_group !== undefined && e.sel_group !== '') _fillBurnerModels(e);
   }
-  _builtFor=''; buildConfig(); renderSelected(); recalc();
 }
-function applyCatalog(e,name,specs,price,bomItem){ e.name=name; e.specs=specs; e.unit_price=+price||0; e.configured=true; e.bom=[{item:bomItem,qty:e.qty||1,unit_price:+price||0}]; }
+function _fillBurnerModels(e) {
+  const g = _burnerCat[+e.sel_group], ms = document.getElementById('msel-' + e.id); if (!g || !ms) return;
+  ms.innerHTML = '<option value="">— model —</option>' + g.items.map(it =>
+    `<option value="${esc(it.model)}" ${it.model===e.sel_model?'selected':''}>${esc(it.model)} — ₹${(it.price||0).toLocaleString('en-IN')}</option>`).join('');
+}
+function onBurnerGroup(id, gi) { const e = eqById(id); if (!e) return; e.sel_group = gi; e.sel_model = ''; _fillBurnerModels(e); }
+function onBurnerModel(id, model) {
+  const e = eqById(id); if (!e || !_burnerCat) return;
+  const g = _burnerCat[+e.sel_group], it = g && g.items.find(x => x.model === model); if (!it) return;
+  e.sel_model = model;
+  _applyCatalog(e, `${g.label||g.fuel} – ${it.model}`, `${g.fuel||''}${it.capacity?' · '+it.capacity:''}`, it.price, `Burner ${it.model}`);
+}
+function onBlowerSel(id, model) {
+  const e = eqById(id); if (!e || !_blowerCat) return;
+  const it = _blowerCat.find(x => x.model === model); if (!it) return;
+  e.sel_model = model;
+  _applyCatalog(e, `Centrifugal Blower – ${it.model}`, `${it.hp} HP · ${it.airflow} Nm³/hr · ${it.pressure}`, it.price, `Blower ${it.model}`);
+}
 
 /* ── Embedded form → captured BOM ── */
 window.addEventListener('message', (ev) => {
