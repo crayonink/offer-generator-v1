@@ -56,12 +56,24 @@ def select_butterfly_valve(nb: int, vendor: str = "cair") -> dict:
             ORDER BY nb ASC
             LIMIT 1
         """, (model, nb)).fetchone()
-        conn.close()
         if not row:
+            conn.close()
             raise ValueError(f"No L&T {model} butterfly valve found for NB >= {nb}")
+        sel_nb, sel_price = int(row[0]), float(row[1])
+        # Prefer the editable pricelist rate ('BUTTERFLY VALVE {nb} NB' L&T in
+        # component_price_master) so edits there cascade into offers; fall back
+        # to the master-table price.
+        pl = conn.execute(
+            "SELECT price FROM component_price_master "
+            "WHERE item = ? AND category = 'Butterfly Valve' AND company = 'L&T'",
+            (f"BUTTERFLY VALVE {sel_nb} NB",),
+        ).fetchone()
+        conn.close()
+        if pl and pl[0] is not None:
+            sel_price = float(pl[0])
         return {
-            "nb":    int(row[0]),
-            "price": float(row[1]),
+            "nb":    sel_nb,
+            "price": sel_price,
             "make":  f"L&T {model} ({row[2]})",
         }
 
