@@ -137,6 +137,20 @@ def _folder_id_for_product(product_type: str) -> Optional[str]:
     return os.environ.get("GOOGLE_DRIVE_FOLDER_DEFAULT_ID", "").strip() or None
 
 
+def drive_status(product_type: str = "") -> dict:
+    """Whether a generated file for `product_type` will actually reach Drive.
+    Used to surface live feedback on the result screens. Upload itself runs
+    async, but if we're authorised AND a folder is configured it succeeds in
+    the background; otherwise it is skipped for the returned reason."""
+    if not is_authorized():
+        return {"ok": False, "reason": "not_connected",
+                "msg": "Drive not connected — files not uploaded"}
+    if not _folder_id_for_product(product_type):
+        return {"ok": False, "reason": "no_folder",
+                "msg": "Drive folder not configured — files not uploaded"}
+    return {"ok": True, "reason": "ok", "msg": "Saved to Google Drive"}
+
+
 def upload_offer(local_path: str, filename: str, product_type: str) -> Optional[str]:
     """Upload one offer file to the appropriate Drive folder.
 

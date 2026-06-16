@@ -4017,9 +4017,11 @@ def combined_costing_excel(req: CombinedCostingRequest):
         out_name = f"Combined_Costing_{safe_company}_{stamp}.xlsx"
         out_path = os.path.join(QUOTES_FOLDER, out_name)
         wb.save(out_path)
+        _drv = {"ok": False, "reason": "error", "msg": "Drive status unknown"}
         try:                                   # mirror the costing sheet to Drive too
-            from engine.drive_uploader import upload_offer_async
+            from engine.drive_uploader import upload_offer_async, drive_status as _drive_status
             upload_offer_async(out_path, out_name, "combined")
+            _drv = _drive_status("combined")
         except Exception as _drv_err:
             print(f"WARN: combined costing Drive upload failed: {_drv_err}")
         return {
@@ -4028,6 +4030,7 @@ def combined_costing_excel(req: CombinedCostingRequest):
             "download_url": f"/api/download-xlsx/{out_name}",
             "sheets":       len(req.equipments) + 1,
             "grand_total":  grand,
+            "drive":        _drv,
         }
     except Exception as e:
         import traceback
@@ -4636,6 +4639,11 @@ def generate_combined_offer(req: CombinedOfferRequest):
         except Exception as _drv_err:
             print(f"WARN: drive upload kickoff failed: {_drv_err}")
 
+        try:
+            from engine.drive_uploader import drive_status as _drive_status
+            _drv = _drive_status("combined")
+        except Exception:
+            _drv = {"ok": False, "reason": "error", "msg": "Drive status unknown"}
         return {
             "success":      True,
             "filename":     docx_name,
@@ -4645,6 +4653,7 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "quote_no":     full_ref,
             "grand_total":  grand,
             "count":        len(req.equipments),
+            "drive":        _drv,
         }
     except Exception as e:
         import traceback

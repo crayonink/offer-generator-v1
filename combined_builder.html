@@ -492,8 +492,19 @@ function customer() {
 }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 function showErr(m){ const e=document.getElementById('err'); e.textContent='Error: '+m; e.style.display='block'; }
-function showResult(title, links){ document.getElementById('result-h').textContent=title;
-  document.getElementById('result-links').innerHTML=links.map(([t,u,x])=>`<a class="dl ${x?'x':''}" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
+function showResult(title, links, drive){ document.getElementById('result-h').textContent=title;
+  let html = links.map(([t,u,x])=>`<a class="dl ${x?'x':''}" href="${u}" target="_blank" rel="noopener">${t}</a>`).join('');
+  if (drive) {
+    const ok = !!drive.ok;
+    const bg = ok ? '#ecfdf5' : '#fef2f2', fg = ok ? '#15803d' : '#b91c1c', br = ok ? '#bbf7d0' : '#fecaca';
+    const txt = ok ? ('✓ ' + (drive.msg || 'Saved to Google Drive'))
+                   : ('⚠ ' + (drive.msg || 'Drive not connected — files not uploaded'));
+    html += `<div style="margin-top:10px;padding:8px 12px;border-radius:8px;font-size:.82rem;font-weight:600;`
+          + `background:${bg};color:${fg};border:1px solid ${br};display:inline-block">${txt}`
+          + (ok ? '' : ` &nbsp;<a href="/auth/drive/login" target="_blank" style="color:${fg};text-decoration:underline">Connect Drive</a>`)
+          + `</div>`;
+  }
+  document.getElementById('result-links').innerHTML = html;
   document.getElementById('result').style.display='block'; }
 
 async function generateOffer() {
@@ -510,7 +521,7 @@ async function generateOffer() {
   try {
     const j = await (await fetch('/api/generate-combined-offer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})).json();
     if (j.error) throw new Error(j.error);
-    showResult('Combined offer generated', [['Download .docx',j.download_url,false], j.pdf_url?['Download PDF',j.pdf_url,true]:null, j.preview_url?['Preview Offer',j.preview_url,false]:null].filter(Boolean));
+    showResult('Combined offer generated', [['Download .docx',j.download_url,false], j.pdf_url?['Download PDF',j.pdf_url,true]:null, j.preview_url?['Preview Offer',j.preview_url,false]:null].filter(Boolean), j.drive);
   } catch(e){ showErr(e.message||e); } finally { btn.disabled=false; btn.textContent='Generate Combined Offer (.docx)'; }
 }
 async function generateExcel() {
@@ -527,7 +538,7 @@ async function generateExcel() {
     if (j.error) throw new Error(j.error);
     // One click = download. Trigger it immediately; keep a fallback link in case the browser blocks it.
     const a=document.createElement('a'); a.href=j.download_url; a.download=''; document.body.appendChild(a); a.click(); a.remove();
-    showResult(`✓ Costing Excel downloaded — ${j.sheets} sheets`, [['Didn’t download? Click here',j.download_url,true]]);
+    showResult(`✓ Costing Excel downloaded — ${j.sheets} sheets`, [['Didn’t download? Click here',j.download_url,true]], j.drive);
   } catch(e){ showErr(e.message||e); } finally { btn.disabled=false; btn.textContent='Download Costing Excel'; }
 }
 
