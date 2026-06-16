@@ -412,7 +412,8 @@ function onBurnerModel(id, model) {
   const e = eqById(id); if (!e || !_burnerCat) return;
   const g = _burnerCat[+e.sel_group], it = g && g.items.find(x => x.model === model); if (!it) return;
   e.sel_model = model;
-  _applyCatalog(e, `${g.label||g.fuel} – ${it.model}`, `${g.fuel||''}${it.capacity?' · '+it.capacity:''}`, it.price, `Burner ${it.model}`);
+  const cap = it.capacity_kw || it.capacity;   // burner capacity in kW for the combined offer
+  _applyCatalog(e, `${g.label||g.fuel} – ${it.model}`, `${g.fuel||''}${cap?' · '+cap:''}`, it.price, `Burner ${it.model}`);
 }
 function onBlowerSel(id, model) {
   const e = eqById(id); if (!e || !_blowerCat) return;

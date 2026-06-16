@@ -3452,6 +3452,17 @@ def _burner_firing_capacity(conn, model: str) -> str:
     return ""
 
 
+def _burner_capacity_kw(conn, model: str) -> str:
+    """Max firing capacity in kW (= max kcal/hr / 860) for an ENCON burner size."""
+    row = conn.execute(
+        "SELECT max_firing_kcal_hr FROM burner_selection_master "
+        "WHERE model = ? AND pressure_wg = 24 LIMIT 1", (model,)
+    ).fetchone()
+    if row and row[0]:
+        return f"up to {_fmt_num(round(row[0] / 860 / 10) * 10)} kW"
+    return ""
+
+
 def _burner_lookup(group: str, model: str):
     """Return (price, fuel_text, capacity, label) for a burner pick, or None."""
     conn = sqlite3.connect(DB_PATH)
@@ -3503,7 +3514,8 @@ def burner_catalog():
             if price is None:
                 continue
             items.append({"model": r[0], "price": price,
-                          "capacity": _burner_firing_capacity(conn, r[0])})
+                          "capacity": _burner_firing_capacity(conn, r[0]),
+                          "capacity_kw": _burner_capacity_kw(conn, r[0])})
         groups.append({"key": key, "label": label, "fuel": fuel, "items": items})
     # GAIL pre-assembled sets
     gail_rows = conn.execute(
@@ -3518,7 +3530,8 @@ def burner_catalog():
             continue
         m = _re.search(r"(\d[\d,]*)\s*KW", sz or "", _re.I)
         gail_items.append({"model": sz, "price": price,
-                           "capacity": f"{m.group(1)} kW" if m else ""})
+                           "capacity": f"{m.group(1)} kW" if m else "",
+                           "capacity_kw": f"{m.group(1)} kW" if m else ""})
     groups.append({"key": "gail", "label": "GAIL Gas Burner",
                    "fuel": "Natural Gas", "items": gail_items})
     conn.close()
