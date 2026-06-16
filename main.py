@@ -4017,6 +4017,11 @@ def combined_costing_excel(req: CombinedCostingRequest):
         out_name = f"Combined_Costing_{safe_company}_{stamp}.xlsx"
         out_path = os.path.join(QUOTES_FOLDER, out_name)
         wb.save(out_path)
+        try:                                   # mirror the costing sheet to Drive too
+            from engine.drive_uploader import upload_offer_async
+            upload_offer_async(out_path, out_name, "combined")
+        except Exception as _drv_err:
+            print(f"WARN: combined costing Drive upload failed: {_drv_err}")
         return {
             "success":      True,
             "filename":     out_name,
@@ -4146,6 +4151,11 @@ def costing_excel(req: CostingExcelRequest):
         out_name = f"Costing_{safe_prod}_{safe_company}_{stamp}.xlsx"
         out_path = os.path.join(QUOTES_FOLDER, out_name)
         wb.save(out_path)
+        try:                                   # mirror the cost sheet to Drive too
+            from engine.drive_uploader import upload_offer_async
+            upload_offer_async(out_path, out_name, req.product or "costing")
+        except Exception as _drv_err:
+            print(f"WARN: costing Drive upload failed: {_drv_err}")
         return {"success": True, "filename": out_name,
                 "download_url": f"/api/download-xlsx/{out_name}"}
     except Exception as e:
