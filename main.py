@@ -3986,8 +3986,13 @@ def combined_costing_excel(req: CombinedCostingRequest):
                     cell = sh.cell(rr, c, v); cell.border = border
                     if c in (6, 7): cell.number_format = money
             tr = hr + len(eq.bom) + 1
+            # ORIGINAL total = unit price x qty (the equipment's own price, BEFORE
+            # any combined P&F / designing / negotiation / transport is distributed).
+            _q = max(1, int(eq.qty or 1))
+            _orig = (float(eq.unit_price) * _q) if eq.unit_price is not None \
+                    else (eq.total if eq.total is not None else sub)
             sh.cell(tr, 3, "TOTAL").font = bold
-            tc = sh.cell(tr, 7, eq.total if eq.total is not None else sub)
+            tc = sh.cell(tr, 7, _orig)
             tc.font = bold; tc.number_format = money
             widths = [8, 16, 40, 18, 8, 14, 16]
             for c, w in enumerate(widths, start=1):
