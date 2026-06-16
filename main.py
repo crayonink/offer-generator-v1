@@ -4375,7 +4375,7 @@ def generate_combined_offer(req: CombinedOfferRequest):
         _des   = grand_base * (req.design_pct or 0) / 100
         _neg   = grand_base * (req.neg_pct or 0) / 100
         _trn   = float(req.transport_amt or 0)
-        _extra = _pf + _des + _neg               # P&F + designing + negotiation lump
+        _extra = _pf + _des + _neg + _trn        # P&F + designing + negotiation + transport lump
         _n     = len(_base_lines)
         price_lines, grand = [], 0.0
         for i, eq, qty, base_total in _base_lines:
@@ -4514,9 +4514,10 @@ def generate_combined_offer(req: CombinedOfferRequest):
         spec_rows = [{"param": p, "values": [m.get(p, "") for m in _eq_maps]}
                      for p in _param_order]
 
-        # P&F, Designing and Negotiation are already distributed into the
-        # equipment prices above (grand). Only Transport is added separately.
-        _combined_final = grand + _trn
+        # P&F, Designing, Negotiation AND Transport are all distributed into the
+        # equipment prices above (grand), so the grand total is the final figure
+        # — no separate transport line.
+        _combined_final = grand
 
         from engine.quote_writer import _supervision_rates
         _sup_mech, _sup_plc = _supervision_rates()
@@ -4547,8 +4548,8 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "scope_rows":   scope_rows,
             "price_lines":  price_lines,
             "grand_total":  _format_inr(grand),
-            # P&F, Designing and Negotiation are distributed into the equipment
-            # prices (not shown as separate lines) — only Transport is shown.
+            # P&F, Designing, Negotiation and Transport are all distributed into
+            # the equipment prices — none shown as a separate price-schedule line.
             "pf_amount":         _format_inr(_pf),
             "design_amount":     _format_inr(_des),
             "neg_amount":        _format_inr(_neg),
@@ -4556,7 +4557,7 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "show_pf":           False,
             "show_design":       False,
             "show_neg":          False,
-            "show_transport":    _trn > 0,
+            "show_transport":    False,
             "final_total":       _format_inr(_combined_final),
             "grand_total_in_words": f"INR. {amount_in_words_indian(round(_combined_final))} ONLY.",
             # Supervision charges — pulled from the price master (component_price_master).
