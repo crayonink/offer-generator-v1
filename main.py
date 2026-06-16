@@ -413,6 +413,32 @@ def drive_oauth_status():
     return {"authorized": is_authorized()}
 
 
+@app.get("/api/drive/ensure-combined")
+def api_drive_ensure_combined():
+    """Diagnostic / manual trigger: create (or find) the 'Combined Offers'
+    folder now and report exactly what happened, so we can see why it isn't
+    auto-creating (usually: Drive not connected on this deploy)."""
+    from engine.drive_uploader import is_authorized, _get_service, _ensure_combined_folder
+    if not is_authorized():
+        return {"authorized": False,
+                "error": "Drive not connected. Open /auth/drive/login first, "
+                         "then set GOOGLE_DRIVE_REFRESH_TOKEN in Railway."}
+    svc = _get_service()
+    if svc is None:
+        return {"authorized": True,
+                "error": "Drive service unavailable — missing GOOGLE_OAUTH_CLIENT_ID/SECRET?"}
+    try:
+        fid = _ensure_combined_folder(svc)
+        if fid:
+            return {"authorized": True, "folder_id": fid,
+                    "link": f"https://drive.google.com/drive/folders/{fid}"}
+        return {"authorized": True,
+                "error": "Folder could not be created (check Railway logs for the WARN line)."}
+    except Exception as e:
+        import traceback
+        return {"authorized": True, "error": str(e), "trace": traceback.format_exc()}
+
+
 @app.get("/api/last-pricebook-update")
 def last_pricebook_update():
     try:
