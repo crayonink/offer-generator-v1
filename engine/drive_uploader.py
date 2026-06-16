@@ -124,6 +124,10 @@ def _folder_id_for_product(product_type: str) -> Optional[str]:
     """Map a product_type string to the Drive folder ID it belongs in.
     Env vars take precedence over the hard-coded fallback below."""
     pt = (product_type or "").lower()
+    if "combined" in pt:
+        # Dedicated "Combined Offers" folder. Env override wins; otherwise the
+        # uploader auto-creates/finds it by name (see _ensure_combined_folder).
+        return os.environ.get("GOOGLE_DRIVE_FOLDER_COMBINED_ID", "").strip() or None
     if "vertical" in pt or "horizontal" in pt or "ladle" in pt:
         return os.environ.get("GOOGLE_DRIVE_FOLDER_LADLE_ID", "").strip() or None
     if "tundish" in pt:
@@ -145,10 +149,45 @@ def drive_status(product_type: str = "") -> dict:
     if not is_authorized():
         return {"ok": False, "reason": "not_connected",
                 "msg": "Drive not connected — files not uploaded"}
+    # Combined offers get a dedicated 'Combined Offers' folder that is
+    # auto-created if absent, so a folder is always available once authorised.
+    if "combined" in (product_type or "").lower():
+        return {"ok": True, "reason": "ok", "msg": "Saved to Google Drive (Combined Offers)"}
     if not _folder_id_for_product(product_type):
         return {"ok": False, "reason": "no_folder",
                 "msg": "Drive folder not configured — files not uploaded"}
     return {"ok": True, "reason": "ok", "msg": "Saved to Google Drive"}
+
+
+_COMBINED_FOLDER_NAME = "Combined Offers"
+_combined_folder_id = None   # cached app-created folder id
+
+
+def _ensure_combined_folder(service) -> Optional[str]:
+    """Find (or create) the 'Combined Offers' folder and return its id.
+    Cached for the process; survives redeploys because the search finds the
+    folder this app created last time (drive.file scope sees app-created files)."""
+    global _combined_folder_id
+    if _combined_folder_id:
+        return _combined_folder_id
+    try:
+        q = ("mimeType='application/vnd.google-apps.folder' and trashed=false "
+             f"and name='{_COMBINED_FOLDER_NAME}'")
+        res = service.files().list(q=q, spaces="drive", pageSize=1,
+                                   fields="files(id,name)").execute()
+        files = res.get("files", [])
+        if files:
+            _combined_folder_id = files[0]["id"]
+        else:
+            meta = {"name": _COMBINED_FOLDER_NAME,
+                    "mimeType": "application/vnd.google-apps.folder"}
+            created = service.files().create(body=meta, fields="id").execute()
+            _combined_folder_id = created.get("id")
+            print(f"INFO: created Drive folder '{_COMBINED_FOLDER_NAME}' id={_combined_folder_id}")
+        return _combined_folder_id
+    except Exception as e:
+        print(f"WARN: could not ensure '{_COMBINED_FOLDER_NAME}' folder: {e}")
+        return None
 
 
 def upload_offer(local_path: str, filename: str, product_type: str) -> Optional[str]:
@@ -160,14 +199,16 @@ def upload_offer(local_path: str, filename: str, product_type: str) -> Optional[
         print(f"WARN: drive upload skipped - file not found: {local_path}")
         return None
 
-    folder_id = _folder_id_for_product(product_type)
-    if not folder_id:
-        print(f"WARN: drive upload skipped - no folder configured for product_type={product_type!r}")
-        return None
-
     service = _get_service()
     if service is None:
         print(f"WARN: drive upload skipped - service unavailable (not authorised or missing client creds)")
+        return None
+
+    folder_id = _folder_id_for_product(product_type)
+    if not folder_id and "combined" in (product_type or "").lower():
+        folder_id = _ensure_combined_folder(service)   # auto-create the dedicated folder
+    if not folder_id:
+        print(f"WARN: drive upload skipped - no folder configured for product_type={product_type!r}")
         return None
 
     print(f"INFO: drive upload starting - filename={filename!r} product_type={product_type!r} folder_id={folder_id[:8]}...")
