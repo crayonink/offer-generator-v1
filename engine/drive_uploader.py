@@ -165,29 +165,62 @@ _combined_folder_id = None   # cached app-created folder id
 
 def _ensure_combined_folder(service) -> Optional[str]:
     """Find (or create) the 'Combined Offers' folder and return its id.
-    Cached for the process; survives redeploys because the search finds the
-    folder this app created last time (drive.file scope sees app-created files)."""
+
+    Placed under the same parent (OFFERS > 2026) that holds the other offer
+    folders — derived from the Recuperator folder's parent, or an explicit
+    GOOGLE_DRIVE_FOLDER_PARENT_ID. Falls back to My Drive root if that parent
+    can't be used. Cached for the process; the search reuses the folder this
+    app created last time (drive.file scope sees app-created files)."""
     global _combined_folder_id
     if _combined_folder_id:
         return _combined_folder_id
+
+    # Work out the 2026 parent folder.
+    parent_id = os.environ.get("GOOGLE_DRIVE_FOLDER_PARENT_ID", "").strip() or None
+    if not parent_id:
+        recup = _folder_id_for_product("recuperator")
+        if recup:
+            try:
+                meta = service.files().get(fileId=recup, fields="parents",
+                                           supportsAllDrives=True).execute()
+                p = meta.get("parents") or []
+                parent_id = p[0] if p else None
+            except Exception as e:
+                print(f"WARN: could not read parent of recup folder: {e}")
+
+    # Reuse an existing 'Combined Offers' folder if the app can see one.
     try:
         q = ("mimeType='application/vnd.google-apps.folder' and trashed=false "
              f"and name='{_COMBINED_FOLDER_NAME}'")
+        if parent_id:
+            q += f" and '{parent_id}' in parents"
         res = service.files().list(q=q, spaces="drive", pageSize=1,
-                                   fields="files(id,name)").execute()
+                                   fields="files(id,name)",
+                                   supportsAllDrives=True,
+                                   includeItemsFromAllDrives=True).execute()
         files = res.get("files", [])
         if files:
             _combined_folder_id = files[0]["id"]
-        else:
-            meta = {"name": _COMBINED_FOLDER_NAME,
-                    "mimeType": "application/vnd.google-apps.folder"}
-            created = service.files().create(body=meta, fields="id").execute()
-            _combined_folder_id = created.get("id")
-            print(f"INFO: created Drive folder '{_COMBINED_FOLDER_NAME}' id={_combined_folder_id}")
-        return _combined_folder_id
+            return _combined_folder_id
     except Exception as e:
-        print(f"WARN: could not ensure '{_COMBINED_FOLDER_NAME}' folder: {e}")
-        return None
+        print(f"WARN: combined-folder search failed: {e}")
+
+    # Create it — under the 2026 parent if possible, else My Drive root.
+    base = {"name": _COMBINED_FOLDER_NAME,
+            "mimeType": "application/vnd.google-apps.folder"}
+    attempts = ([{**base, "parents": [parent_id]}] if parent_id else []) + [base]
+    for meta in attempts:
+        try:
+            created = service.files().create(body=meta, fields="id",
+                                             supportsAllDrives=True).execute()
+            _combined_folder_id = created.get("id")
+            print(f"INFO: created Drive folder '{_COMBINED_FOLDER_NAME}' "
+                  f"parent={meta.get('parents')} id={_combined_folder_id}")
+            return _combined_folder_id
+        except Exception as e:
+            print(f"WARN: create '{_COMBINED_FOLDER_NAME}' "
+                  f"(parents={meta.get('parents')}) failed: {e}")
+    return None
 
 
 def upload_offer(local_path: str, filename: str, product_type: str) -> Optional[str]:
