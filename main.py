@@ -4377,33 +4377,33 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 factor = _maps[_i].get(_chosen, "") if _chosen else f"Unit {_i + 1}"
                 eq.name = f"{(eq.name or '').strip()} ({factor})"
 
-        # Price schedule. Packaging & Forwarding, Designing and Negotiation are
-        # NOT shown as separate lines — their combined amount is distributed
-        # across the equipment prices IN PROPORTION TO each equipment's own
-        # price (price ratio), so a costlier unit absorbs a bigger share. Only
-        # Transport stays a separate line.
-        grand_base = 0.0
-        _base_lines = []
+        # Price schedule — uses the SAME math as the costing Excel's Cost
+        # Breakdown sheet so the offer's grand total matches it exactly:
+        #   1. each equipment's sell = unit x (1 + negotiation%), rounded to the
+        #      nearest Rs.10,000;  basic = sum of (sell x qty)
+        #   2. P&F% + Designing% (of basic) + Transport(=Freight) = additional cost
+        #   3. that additional cost is spread across the equipments in proportion
+        #      to their price; grand total = basic + additional cost.
+        # Packaging & Forwarding, Designing, Negotiation and Transport are NOT
+        # shown as separate lines — they are baked into the equipment prices.
+        _negp = float(req.neg_pct or 0); _pfp = float(req.pf_pct or 0)
+        _desp = float(req.design_pct or 0); _trn = float(req.transport_amt or 0)
+        _subs = []
+        basic = 0.0
         for i, eq in enumerate(req.equipments, start=1):
             qty = max(1, int(eq.qty or 1))
-            base_total = float(eq.unit_price or 0) * qty
-            grand_base += base_total
-            _base_lines.append((i, eq, qty, base_total))
-        _pf    = grand_base * (req.pf_pct or 0) / 100
-        _des   = grand_base * (req.design_pct or 0) / 100
-        _neg   = grand_base * (req.neg_pct or 0) / 100
-        _trn   = float(req.transport_amt or 0)
-        _extra = _pf + _des + _neg + _trn        # P&F + designing + negotiation + transport lump
-        _n     = len(_base_lines)
+            unit = float(eq.unit_price or 0)
+            sell = round((unit * (1 + _negp / 100)) / 10000) * 10000   # nearest Rs.10,000
+            sub = sell * qty
+            basic += sub
+            _subs.append((i, eq, qty, sub))
+        _addl  = basic * _pfp / 100 + basic * _desp / 100 + _trn       # P&F + designing + freight
+        _ratio = (_addl / basic) if basic else 0.0
+        # amounts kept for the (hidden) context fields / words
+        _pf, _des, _neg = basic * _pfp / 100, basic * _desp / 100, 0.0
         price_lines, grand = [], 0.0
-        for i, eq, qty, base_total in _base_lines:
-            # Proportional (price-ratio) share; if every price is zero fall back
-            # to an equal split so the total still distributes.
-            if grand_base > 0:
-                share = _extra * (base_total / grand_base)
-            else:
-                share = (_extra / _n) if _n else 0.0
-            line_total = base_total + share
+        for i, eq, qty, sub in _subs:
+            line_total = sub * (1 + _ratio)        # equipment's share of the additional cost
             grand += line_total
             price_lines.append({
                 "sno":        f"{i}.",
