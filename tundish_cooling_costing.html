@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON – Tundish Cooling System Costing</title>
+<style>
+  :root{--navy:#1a3a5c;--border:#e2e8f0;--muted:#64748b;--bg:#f8fafc;--green:#15803d;}
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1e293b;margin:0;background:#fff;font-size:14px;}
+  .wrap{max-width:760px;margin:0 auto;padding:24px;}
+  h1{font-size:1.4rem;color:var(--navy);margin:0 0 4px;}
+  .lead{color:var(--muted);font-size:.86rem;margin:0 0 18px;}
+  .card{border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;}
+  .sec-label{font-size:.74rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;}
+  .fg{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field label{display:block;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+  .field input,.field select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font:inherit;font-size:.86rem;background:var(--bg);outline:none;}
+  .field input:focus,.field select:focus{border-color:var(--navy);background:#fff;}
+  table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:6px;}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left;}
+  th{background:#f1f5f9;color:var(--navy);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;}
+  td.r,th.r{text-align:right;}
+  .tot td{font-weight:800;background:#f8fafc;}
+  .grand{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,var(--navy),#1e4a7a);color:#fff;padding:12px 18px;border-radius:10px;margin-top:8px;font-weight:700;}
+  .note{font-size:.74rem;color:var(--muted);margin-top:8px;}
+  /* embed mode */
+  .embed .wrap{padding:14px;} .embed h1{font-size:1.15rem;}
+  #combine-bar{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tundish Cooling System</h1>
+  <p class="lead">Cooling fans (qty 2) + MS frame (by weight) + a manual damper.</p>
+
+  <div class="card">
+    <div class="sec-label">Configuration</div>
+    <div class="fg">
+      <div class="field">
+        <label>Cooling Fan (× 2)</label>
+        <select id="fan" onchange="recalc()"></select>
+      </div>
+      <div class="field">
+        <label>MS Structure for Frame (kg)</label>
+        <input id="ms_kg" type="number" min="0" value="800" oninput="recalc()"/>
+      </div>
+    </div>
+    <p class="note">Damper (manual) is a fixed line item. Fan qty is always 2. Rates are editable in the pricelist under "Tundish Cooling".</p>
+  </div>
+
+  <div class="card">
+    <div class="sec-label">Bill of Materials</div>
+    <table id="bom-tbl"><thead><tr><th>Media</th><th>Item</th><th>Ref</th><th class="r">Qty</th><th class="r">Unit ₹</th><th class="r">Total ₹</th></tr></thead><tbody id="bom-body"></tbody></table>
+    <div class="grand"><span>Sell Price (cost × <span id="mk">1.8</span>)</span><span id="sell">₹ 0</span></div>
+    <p class="note" id="cost-note"></p>
+  </div>
+</div>
+
+<script>
+const API = "";
+const EMBED = new URLSearchParams(location.search).get('embed') === '1';
+let OPT = { fans: [], fan_qty: 2, ms_rate: 75, damper_price: 50000, markup: 1.8 };
+const fmt = v => '₹ ' + Math.round(v).toLocaleString('en-IN');
+
+async function load() {
+  try { OPT = await (await fetch(`${API}/api/tundish-cooling/options`)).json(); } catch (e) {}
+  const sel = document.getElementById('fan');
+  sel.innerHTML = (OPT.fans || []).map((f, i) =>
+    `<option value="${i}">${f.item} — ₹${(f.price || 0).toLocaleString('en-IN')}</option>`).join('');
+  document.getElementById('mk').textContent = OPT.markup;
+  recalc();
+}
+
+function _bom() {
+  const fi = +document.getElementById('fan').value || 0;
+  const fan = (OPT.fans || [])[fi] || { item: 'Cooling Fan', price: 0 };
+  const kg = +document.getElementById('ms_kg').value || 0;
+  const q = OPT.fan_qty || 2;
+  return [
+    { media: 'COMB AIR',   item: fan.item,                 ref: '4" WC', qty: q, unit_price: fan.price,      total: q * fan.price },
+    { media: 'MISC ITEMS', item: 'MS Structure for Frame', ref: 'MS',    qty: kg, unit_price: OPT.ms_rate,   total: kg * OPT.ms_rate },
+    { media: 'MISC ITEMS', item: 'Damper (Manual)',        ref: '',      qty: 1, unit_price: OPT.damper_price, total: OPT.damper_price },
+  ];
+}
+
+function recalc() {
+  const bom = _bom();
+  const cost = bom.reduce((s, b) => s + b.total, 0);
+  const sell = Math.round(cost * (OPT.markup || 1.8));
+  document.getElementById('bom-body').innerHTML = bom.map((b, i) =>
+    `<tr><td>${b.media}</td><td>${b.item}</td><td>${b.ref}</td><td class="r">${b.qty}</td><td class="r">${(b.unit_price||0).toLocaleString('en-IN')}</td><td class="r">${(b.total||0).toLocaleString('en-IN')}</td></tr>`).join('') +
+    `<tr class="tot"><td colspan="5">BOUGHT OUT (cost)</td><td class="r">${cost.toLocaleString('en-IN')}</td></tr>`;
+  document.getElementById('sell').textContent = fmt(sell);
+  document.getElementById('cost-note').textContent = `Cost ₹${cost.toLocaleString('en-IN')} × ${OPT.markup} markup = sell ₹${sell.toLocaleString('en-IN')}.`;
+  return { bom, cost, sell };
+}
+
+/* ── Combined-builder embed ───────────────────────────────────────────── */
+function _useInCombined() {
+  const { bom, sell } = recalc();
+  const fan = (OPT.fans || [])[+document.getElementById('fan').value || 0] || {};
+  const kg = +document.getElementById('ms_kg').value || 0;
+  const spec_rows = [
+    { label: 'Cooling Fans', value: `${fan.item || ''} × ${OPT.fan_qty || 2}` },
+    { label: 'Frame', value: `${kg} kg MS structure` },
+    { label: 'Damper', value: 'Manual' },
+  ];
+  parent.postMessage({
+    source: 'encon-combined-equipment', type: 'TUNDISH_COOLING',
+    name: 'Tundish Cooling System',
+    specs: spec_rows.map(s => s.value).join(' · '), spec_rows,
+    total: sell, bom, quote_payload: {},
+  }, '*');
+  const b = document.getElementById('_use-btn');
+  if (b) { b.textContent = '✓ Added — ₹ ' + sell.toLocaleString('en-IN') + ' (click to update)'; b.style.background = '#15803d'; }
+}
+
+function _initEmbed() {
+  if (!EMBED) return;
+  document.body.classList.add('embed');
+  const bar = document.createElement('div');
+  bar.id = 'combine-bar';
+  bar.style.cssText = 'display:flex;position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px;justify-content:flex-end';
+  bar.innerHTML = '<button id="_use-btn" style="background:#1a3a5c;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer">Use in Combined Offer ↑</button>';
+  document.body.insertBefore(bar, document.body.firstChild);
+  bar.querySelector('button').addEventListener('click', _useInCombined);
+}
+
+window.addEventListener('DOMContentLoaded', () => { _initEmbed(); load(); });
+</script>
+</body>
+</html>

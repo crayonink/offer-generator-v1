@@ -823,6 +823,31 @@ def tundish_dryer_costing_form():
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+@app.get("/tundish-cooling", response_class=HTMLResponse)
+def tundish_cooling_costing_form():
+    html_path = os.path.join(BASE_DIR, "tundish_cooling_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+@app.get("/api/tundish-cooling/options")
+def tundish_cooling_options():
+    """Cooling-fan choices + rates for the Tundish Cooling module (editable in
+    the pricelist under category 'Tundish Cooling')."""
+    conn = sqlite3.connect(DB_PATH)
+    fans = [{"item": it, "price": float(pr)} for it, pr in conn.execute(
+        "SELECT item, price FROM component_price_master "
+        "WHERE category='Tundish Cooling' AND item LIKE 'COOLING FAN%' ORDER BY price")]
+    def _one(name, default):
+        r = conn.execute("SELECT price FROM component_price_master "
+                         "WHERE category='Tundish Cooling' AND item=? LIMIT 1", (name,)).fetchone()
+        return float(r[0]) if r and r[0] is not None else default
+    out = {"fans": fans, "fan_qty": 2,
+           "ms_rate": _one("MS STRUCTURE (Cooling Frame)", 75.0),
+           "damper_price": _one("DAMPER MANUAL", 50000.0),
+           "markup": 1.8}
+    conn.close()
+    return out
+
 @app.get("/equipment-offer", response_class=HTMLResponse)
 def equipment_offer_hub():
     """Hub page that lets the user pick which stand-alone equipment
