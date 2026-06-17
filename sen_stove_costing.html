@@ -43,7 +43,11 @@
 
 <script>
 const API = "";
-const EMBED = new URLSearchParams(location.search).get('embed') === '1';
+const _qp = new URLSearchParams(location.search);
+const EMBED = _qp.get('embed') === '1';
+const KIND = _qp.get('kind') === 'oven'
+  ? { name: 'SES Preheating Oven', type: 'SES_OVEN', title: 'SES Preheating Oven' }
+  : { name: 'SEN Preheating Stove', type: 'SEN_STOVE', title: 'SEN Preheating Stove' };
 let ROWS = [], MK = 1.8;
 const fmt = v => '₹ ' + Math.round(v).toLocaleString('en-IN');
 const inr = v => (Math.round(v)||0).toLocaleString('en-IN');
@@ -83,14 +87,14 @@ function _useInCombined() {
     item: r.item, ref: r.ref || '', qty: r.qty, unit_price: r.basic, total: r.total,
   }));
   const spec_rows = [
-    { label: 'Type', value: 'SEN Preheating Stove' },
+    { label: 'Type', value: KIND.name },
     { label: 'Temperature', value: '1200 °C' },
     { label: 'Preheating Time', value: '60 min' },
     { label: 'Pilot Burners', value: '2 × 90 kW' },
   ];
   parent.postMessage({
-    source: 'encon-combined-equipment', type: 'SEN_STOVE',
-    name: 'SEN Preheating Stove',
+    source: 'encon-combined-equipment', type: KIND.type,
+    name: KIND.name,
     specs: spec_rows.map(s => s.value).join(' · '), spec_rows,
     total: sell, bom, quote_payload: {},
   }, '*');
@@ -108,7 +112,11 @@ function _initEmbed() {
   bar.querySelector('button').addEventListener('click', _useInCombined);
 }
 
-window.addEventListener('DOMContentLoaded', () => { _initEmbed(); load(); });
+window.addEventListener('DOMContentLoaded', () => {
+  document.title = 'ENCON – ' + KIND.title + ' Costing';
+  document.querySelector('h1').textContent = KIND.title;
+  _initEmbed(); load();
+});
 </script>
 </body>
 </html>
