@@ -873,6 +873,12 @@ def sen_stove_bom():
                 "SELECT price FROM component_price_master WHERE category='Ball Valve' "
                 "AND item LIKE ? ORDER BY price ASC LIMIT 1", (f"BALL VALVE {nb} NB%",)).fetchone()
             return float(r[0]) if r and r[0] is not None else float(fallback or 0)
+        if pk and pk.startswith("@PILOT:"):
+            kw = pk.split(":", 1)[1]
+            r = conn.execute(
+                "SELECT price FROM component_price_master WHERE category='Pilot Burner' "
+                "AND item LIKE ? ORDER BY price ASC LIMIT 1", (f"%{kw} KW%",)).fetchone()
+            return float(r[0]) if r and r[0] is not None else float(fallback or 0)
         return prices.get(pk, float(fallback or 0))
 
     rows = []
