@@ -817,6 +817,12 @@ def tundish_costing_form():
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+@app.get("/tundish-dryer", response_class=HTMLResponse)
+def tundish_dryer_costing_form():
+    html_path = os.path.join(BASE_DIR, "tundish_dryer_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
 @app.get("/equipment-offer", response_class=HTMLResponse)
 def equipment_offer_hub():
     """Hub page that lets the user pick which stand-alone equipment

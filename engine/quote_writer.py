@@ -210,7 +210,8 @@ def _build_equipment_name(customer, quote_data):
         pt = (item.get("product_type") or "").lower()
         if "tundish" in pt:
             tons = _fmt_int_if_whole(customer.get("ladle_tons"))
-            return f"Tundish Preheater – {tons} Ton" if tons else "Tundish Preheater"
+            label = "Tundish Dryer" if "dry" in pt else "Tundish Preheater"
+            return f"{label} – {tons} Ton" if tons else label
         elif "horizontal" in pt:
             tons = _fmt_int_if_whole(customer.get("ladle_tons"))
             return f"Horizontal Ladle Preheater – {tons} Ton" if tons else "Horizontal Ladle Preheater"
