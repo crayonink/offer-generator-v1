@@ -226,6 +226,8 @@ const TYPE_DESC = {
   'Vertical Ladle Preheater':'Full VLPH config + BOM', 'Horizontal Ladle Preheater':'Full HLPH config + BOM',
   'Tundish Preheater':'Full tundish config + BOM', 'Recuperator':'Full recuperator config + BOM',
   'Tundish Dryer':'Full tundish dryer config + BOM',
+  'Tundish Cooling System':'Cooling fans + frame (manual for now)',
+  'SEN Preheating':'SEN preheating stove (manual for now)',
   'HPU':'Pick variant + kW · auto price', 'Pumping Unit':'Pick variant + kW · auto price',
   'Blower':'Pick a model · auto price', 'Burner':'Pick a model · auto price', 'Other':'Manual line item',
 };
@@ -248,12 +250,18 @@ function goStep(n) {
 }
 
 /* ── Step 2: selection ── */
+const TUNDISH_SYSTEM = ['Tundish Preheater', 'Tundish Dryer', 'Tundish Cooling System', 'SEN Preheating'];
 function renderTypes() {
-  document.getElementById('types').innerHTML = Object.keys(EMBED_SRC).concat(['HPU','Pumping Unit','Blower','Burner','Other']).map(t =>
+  const combo = `<div class="type" onclick="addTundishSystem()" style="border:2px solid var(--navy);background:#f0f6ff;grid-column:1/-1">
+      <div class="t">Complete Tundish System <span style="font-size:.7rem;font-weight:700;color:var(--navy);background:#dbeafe;padding:2px 8px;border-radius:20px;margin-left:6px">4-in-1</span></div>
+      <div class="d">Adds all four together: Tundish Preheater + Tundish Dryer + Tundish Cooling System + SEN Preheating</div>
+      <div class="add">+ Add all 4</div></div>`;
+  document.getElementById('types').innerHTML = combo + Object.keys(EMBED_SRC).concat(['HPU','Pumping Unit','Blower','Burner','Other']).map(t =>
     `<div class="type" onclick="addEquipment('${t}')"><div class="t">${t}</div><div class="d">${TYPE_DESC[t]||''}</div><div class="add">+ Add</div></div>`).join('');
   renderSelected();
 }
 function addEquipment(t) { _eq.push({ id:++_uid, type:t, name:'', specs:'', qty:1, unit_price:0, bom:[], configured:false }); renderSelected(); recalc(); }
+function addTundishSystem() { TUNDISH_SYSTEM.forEach(t => _eq.push({ id:++_uid, type:t, name:'', specs:'', qty:1, unit_price:0, bom:[], configured:false })); renderSelected(); recalc(); }
 function removeEq(id) { _eq = _eq.filter(e => e.id !== id); renderSelected(); if (_step===3) buildConfig(); recalc(); }
 function eqById(id) { return _eq.find(e => e.id === id); }
 function renderSelected() {
