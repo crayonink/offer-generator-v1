@@ -4510,13 +4510,17 @@ def generate_combined_offer(req: CombinedOfferRequest):
         _desp = float(req.design_pct or 0); _trn = float(req.transport_amt or 0)
         _subs = []
         basic = 0.0
-        for i, eq in enumerate(req.equipments, start=1):
-            qty = max(1, int(eq.qty or 1))
+        _sn = 0
+        for eq in req.equipments:
             unit = float(eq.unit_price or 0)
+            if unit <= 0:
+                continue          # skip unconfigured / zero-price equipment — no blank ₹0 line
+            _sn += 1
+            qty = max(1, int(eq.qty or 1))
             sell = round((unit * (1 + _negp / 100)) / 10000) * 10000   # nearest Rs.10,000
             sub = sell * qty
             basic += sub
-            _subs.append((i, eq, qty, sub))
+            _subs.append((_sn, eq, qty, sub))
         _addl  = basic * _pfp / 100 + basic * _desp / 100 + _trn       # P&F + designing + freight
         _ratio = (_addl / basic) if basic else 0.0
         # amounts kept for the (hidden) context fields / words
