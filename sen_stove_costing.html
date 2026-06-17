@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON – SEN Preheating Stove Costing</title>
+<style>
+  :root{--navy:#1a3a5c;--border:#e2e8f0;--muted:#64748b;--bg:#f8fafc;--green:#15803d;}
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',system-ui,sans-serif;color:#1e293b;margin:0;background:#fff;font-size:14px;}
+  .wrap{max-width:820px;margin:0 auto;padding:24px;}
+  h1{font-size:1.4rem;color:var(--navy);margin:0 0 4px;}
+  .lead{color:var(--muted);font-size:.86rem;margin:0 0 18px;}
+  .card{border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px;}
+  .sec-label{font-size:.74rem;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;}
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  th,td{border:1px solid var(--border);padding:6px 9px;text-align:left;}
+  th{background:#f1f5f9;color:var(--navy);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;}
+  td.r,th.r{text-align:right;white-space:nowrap;}
+  tr.grp td{background:#eef2f7;font-weight:800;color:var(--navy);text-transform:uppercase;font-size:.7rem;letter-spacing:.04em;}
+  tr.sub td{font-weight:800;background:#f8fafc;}
+  .grand{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,var(--navy),#1e4a7a);color:#fff;padding:12px 18px;border-radius:10px;margin-top:10px;font-weight:700;}
+  .note{font-size:.74rem;color:var(--muted);margin-top:8px;}
+  .embed .wrap{padding:14px;} .embed h1{font-size:1.15rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SEN Preheating Stove</h1>
+  <p class="lead">Fixed BOM — compressed-air & NG lines (bought-out) + ENCON-built items. Temp 1200 °C, 60 min.</p>
+
+  <div class="card">
+    <div class="sec-label">Bill of Materials</div>
+    <table><thead><tr><th>Media</th><th>Item</th><th>Ref</th><th class="r">Qty</th><th>Unit</th><th>Make</th><th class="r">Basic ₹</th><th class="r">Total ₹</th></tr></thead>
+      <tbody id="bom-body"></tbody></table>
+    <div class="grand">
+      <span>Unit Sell Price = bought-out × <input id="markup" type="number" step="0.01" min="1" value="1.8" oninput="recalc()" style="width:62px;padding:3px 6px;border:none;border-radius:6px;font:inherit;font-weight:800;text-align:center;color:var(--navy)"/> + ENCON items</span>
+      <span id="sell">₹ 0</span>
+    </div>
+    <p class="note" id="note"></p>
+  </div>
+</div>
+
+<script>
+const API = "";
+const EMBED = new URLSearchParams(location.search).get('embed') === '1';
+let ROWS = [], MK = 1.8;
+const fmt = v => '₹ ' + Math.round(v).toLocaleString('en-IN');
+const inr = v => (Math.round(v)||0).toLocaleString('en-IN');
+
+async function load() {
+  try { const d = await (await fetch(`${API}/api/sen-stove/bom`)).json(); ROWS = d.rows || []; MK = d.markup || 1.8; } catch (e) {}
+  document.getElementById('markup').value = MK;
+  recalc();
+}
+function _markup() { return +document.getElementById('markup').value || MK || 1.8; }
+
+function recalc() {
+  const bought = ROWS.filter(r => r.section === 'bought');
+  const encon  = ROWS.filter(r => r.section === 'encon');
+  const bSum = bought.reduce((s, r) => s + r.total, 0);
+  const eSum = encon.reduce((s, r) => s + r.total, 0);
+  const mk = _markup();
+  const sell = Math.round(bSum * mk + eSum);
+  const rowHtml = r => `<tr><td>${r.media}</td><td>${r.item}</td><td>${r.ref||''}</td><td class="r">${r.qty}</td><td>${r.unit||''}</td><td>${r.make||''}</td><td class="r">${inr(r.basic)}</td><td class="r">${inr(r.total)}</td></tr>`;
+  document.getElementById('bom-body').innerHTML =
+    `<tr class="grp"><td colspan="8">Bought-out items</td></tr>` + bought.map(rowHtml).join('') +
+    `<tr class="sub"><td colspan="7">BOUGHT OUT (cost)</td><td class="r">${inr(bSum)}</td></tr>` +
+    `<tr class="grp"><td colspan="8">ENCON-built items</td></tr>` + encon.map(rowHtml).join('') +
+    `<tr class="sub"><td colspan="7">ENCON ITEMS</td><td class="r">${inr(eSum)}</td></tr>`;
+  document.getElementById('sell').textContent = fmt(sell);
+  document.getElementById('note').textContent = `Bought-out ₹${inr(bSum)} × ${mk} + ENCON ₹${inr(eSum)} = unit sell ₹${inr(sell)}.`;
+  return { bSum, eSum, sell };
+}
+
+/* ── Combined-builder embed ───────────────────────────────────────────── */
+function _useInCombined() {
+  const { sell } = recalc();
+  // Bought-out lines keep their media; ENCON lines tagged 'ENCON ITEMS' so the
+  // combined cost breakdown treats them as in-house (no markup).
+  const bom = ROWS.map(r => ({
+    media: r.section === 'encon' ? 'ENCON ITEMS' : r.media,
+    item: r.item, ref: r.ref || '', qty: r.qty, unit_price: r.basic, total: r.total,
+  }));
+  const spec_rows = [
+    { label: 'Type', value: 'SEN Preheating Stove' },
+    { label: 'Temperature', value: '1200 °C' },
+    { label: 'Preheating Time', value: '60 min' },
+    { label: 'Pilot Burners', value: '2 × 90 kW' },
+  ];
+  parent.postMessage({
+    source: 'encon-combined-equipment', type: 'SEN_STOVE',
+    name: 'SEN Preheating Stove',
+    specs: spec_rows.map(s => s.value).join(' · '), spec_rows,
+    total: sell, bom, quote_payload: {},
+  }, '*');
+  const b = document.getElementById('_use-btn');
+  if (b) { b.textContent = '✓ Added — ₹ ' + sell.toLocaleString('en-IN') + ' (click to update)'; b.style.background = '#15803d'; }
+}
+
+function _initEmbed() {
+  if (!EMBED) return;
+  document.body.classList.add('embed');
+  const bar = document.createElement('div');
+  bar.style.cssText = 'display:flex;position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--border);padding:10px 14px;justify-content:flex-end';
+  bar.innerHTML = '<button id="_use-btn" style="background:#1a3a5c;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer">Use in Combined Offer ↑</button>';
+  document.body.insertBefore(bar, document.body.firstChild);
+  bar.querySelector('button').addEventListener('click', _useInCombined);
+}
+
+window.addEventListener('DOMContentLoaded', () => { _initEmbed(); load(); });
+</script>
+</body>
+</html>

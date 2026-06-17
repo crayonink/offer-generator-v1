@@ -848,6 +848,26 @@ def tundish_cooling_options():
     conn.close()
     return out
 
+@app.get("/sen-stove", response_class=HTMLResponse)
+def sen_stove_costing_form():
+    html_path = os.path.join(BASE_DIR, "sen_stove_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+@app.get("/api/sen-stove/bom")
+def sen_stove_bom():
+    """Fixed BOM for the SEN Preheating Stove (editable in the sen_stove_bom
+    table). Bought-out lines are marked up; ENCON lines added at face."""
+    conn = sqlite3.connect(DB_PATH)
+    rows = [{"section": s, "media": m, "item": it, "ref": rf,
+             "qty": q, "unit": u, "make": mk, "basic": float(b or 0),
+             "total": float(q or 0) * float(b or 0)}
+            for s, m, it, rf, q, u, mk, b in conn.execute(
+                "SELECT section, media, item, ref, qty, unit, make, basic "
+                "FROM sen_stove_bom ORDER BY sno")]
+    conn.close()
+    return {"rows": rows, "markup": 1.8}
+
 @app.get("/equipment-offer", response_class=HTMLResponse)
 def equipment_offer_hub():
     """Hub page that lets the user pick which stand-alone equipment
