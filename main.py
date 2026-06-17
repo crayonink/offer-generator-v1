@@ -856,15 +856,21 @@ def sen_stove_costing_form():
 
 @app.get("/api/sen-stove/bom")
 def sen_stove_bom():
-    """Fixed BOM for the SEN Preheating Stove (editable in the sen_stove_bom
-    table). Bought-out lines are marked up; ENCON lines added at face."""
+    """Fixed BOM for the SEN Preheating Stove. Each line's unit cost is pulled
+    LIVE from the pricelist (component_price_master, category 'SEN Preheating
+    Stove') via its price_key, so pricelist edits cascade; falls back to the
+    stored basic. Bought-out lines are marked up; ENCON lines added at face."""
     conn = sqlite3.connect(DB_PATH)
-    rows = [{"section": s, "media": m, "item": it, "ref": rf,
-             "qty": q, "unit": u, "make": mk, "basic": float(b or 0),
-             "total": float(q or 0) * float(b or 0)}
-            for s, m, it, rf, q, u, mk, b in conn.execute(
-                "SELECT section, media, item, ref, qty, unit, make, basic "
-                "FROM sen_stove_bom ORDER BY sno")]
+    prices = {it: float(pr) for it, pr in conn.execute(
+        "SELECT item, price FROM component_price_master WHERE category='SEN Preheating Stove'")}
+    rows = []
+    for s, m, it, rf, q, u, mk, b, pk in conn.execute(
+            "SELECT section, media, item, ref, qty, unit, make, basic, price_key "
+            "FROM sen_stove_bom ORDER BY sno"):
+        basic = prices.get(pk, float(b or 0))      # live pricelist cost
+        rows.append({"section": s, "media": m, "item": it, "ref": rf,
+                     "qty": q, "unit": u, "make": mk, "basic": basic,
+                     "total": float(q or 0) * basic})
     conn.close()
     return {"rows": rows, "markup": 1.8}
 
