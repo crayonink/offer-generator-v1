@@ -862,28 +862,30 @@ def sen_stove_bom():
     Stove') via its price_key, so pricelist edits cascade; falls back to the
     stored basic. Bought-out lines are marked up; ENCON lines added at face."""
     conn = sqlite3.connect(DB_PATH)
-    prices = {it: float(pr) for it, pr in conn.execute(
-        "SELECT item, price FROM component_price_master WHERE category='SEN Preheating Stove'")}
 
     def _resolve(pk, fallback):
-        # '@BALLVALVE:<nb>' -> cheapest general Ball Valve for that NB; otherwise
-        # a SEN-specific pricelist item; else the stored basic.
+        # Every line's cost comes from the main pricelist (no SEN-only category):
+        #  '@BALLVALVE:<nb>' -> cheapest Ball Valve for that NB
+        #  '@PILOT:<kw>'     -> cheapest <kw> Pilot Burner (COG/LPG/NG)
+        #  '@FABRICATION'    -> the single shared FABRICATION RATE
+        #  anything else     -> that exact item name (cheapest if it recurs)
         if pk and pk.startswith("@BALLVALVE:"):
             nb = pk.split(":", 1)[1]
             r = conn.execute(
                 "SELECT price FROM component_price_master WHERE category='Ball Valve' "
                 "AND item LIKE ? ORDER BY price ASC LIMIT 1", (f"BALL VALVE {nb} NB%",)).fetchone()
-            return float(r[0]) if r and r[0] is not None else float(fallback or 0)
-        if pk and pk.startswith("@PILOT:"):
+        elif pk and pk.startswith("@PILOT:"):
             kw = pk.split(":", 1)[1]
             r = conn.execute(
                 "SELECT price FROM component_price_master WHERE category='Pilot Burner' "
                 "AND item LIKE ? ORDER BY price ASC LIMIT 1", (f"%{kw} KW%",)).fetchone()
-            return float(r[0]) if r and r[0] is not None else float(fallback or 0)
-        if pk == "@FABRICATION":            # the single shared fabrication rate
+        elif pk == "@FABRICATION":
             r = conn.execute("SELECT price FROM component_price_master WHERE item='FABRICATION RATE' LIMIT 1").fetchone()
-            return float(r[0]) if r and r[0] is not None else float(fallback or 0)
-        return prices.get(pk, float(fallback or 0))
+        elif pk:
+            r = conn.execute("SELECT price FROM component_price_master WHERE item=? ORDER BY price ASC LIMIT 1", (pk,)).fetchone()
+        else:
+            r = None
+        return float(r[0]) if r and r[0] is not None else float(fallback or 0)
 
     rows = []
     for s, m, it, rf, q, u, mk, b, pk in conn.execute(
