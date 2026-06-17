@@ -228,7 +228,7 @@ const TYPE_DESC = {
   'Tundish Preheater':'Full tundish config + BOM', 'Recuperator':'Full recuperator config + BOM',
   'Tundish Dryer':'Full tundish dryer config + BOM',
   'Tundish Cooling System':'Cooling fans × 2 + MS frame + damper',
-  'SEN Preheating':'SEN preheating stove (manual for now)',
+  'SEN Preheating Stove':'SEN preheating stove (manual for now)',
   'HPU':'Pick variant + kW · auto price', 'Pumping Unit':'Pick variant + kW · auto price',
   'Blower':'Pick a model · auto price', 'Burner':'Pick a model · auto price', 'Other':'Manual line item',
 };
@@ -251,11 +251,11 @@ function goStep(n) {
 }
 
 /* ── Step 2: selection ── */
-const TUNDISH_SYSTEM = ['Tundish Preheater', 'Tundish Dryer', 'Tundish Cooling System', 'SEN Preheating'];
+const TUNDISH_SYSTEM = ['Tundish Preheater', 'Tundish Dryer', 'Tundish Cooling System', 'SEN Preheating Stove'];
 function renderTypes() {
   const combo = `<div class="type" onclick="addTundishSystem()" style="border:2px solid var(--navy);background:#f0f6ff;grid-column:1/-1">
       <div class="t">Complete Tundish System <span style="font-size:.7rem;font-weight:700;color:var(--navy);background:#dbeafe;padding:2px 8px;border-radius:20px;margin-left:6px">4-in-1</span></div>
-      <div class="d">Adds all four together: Tundish Preheater + Tundish Dryer + Tundish Cooling System + SEN Preheating</div>
+      <div class="d">Adds all four together: Tundish Preheater + Tundish Dryer + Tundish Cooling System + SEN Preheating Stove</div>
       <div class="add">+ Add all 4</div></div>`;
   document.getElementById('types').innerHTML = combo + Object.keys(EMBED_SRC).concat(['HPU','Pumping Unit','Blower','Burner','Other']).map(t =>
     `<div class="type" onclick="addEquipment('${t}')"><div class="t">${t}</div><div class="d">${TYPE_DESC[t]||''}</div><div class="add">+ Add</div></div>`).join('');
