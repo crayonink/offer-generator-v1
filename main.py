@@ -4649,6 +4649,19 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 if lbl not in _param_order:
                     _param_order.append(lbl)
             _eq_maps.append(m)
+        # Drop equipment columns that carry no spec data at all — so an
+        # equipment that isn't part of this offer (or wasn't configured) doesn't
+        # leave a blank column in the Technical Specifications table.
+        _kept = [(n, m) for n, m in zip(spec_columns, _eq_maps)
+                 if any((v or "").strip() for v in m.values())]
+        if _kept:
+            spec_columns = [n for n, _ in _kept]
+            _eq_maps = [m for _, m in _kept]
+        _param_order = []
+        for m in _eq_maps:
+            for lbl in m:
+                if lbl not in _param_order:
+                    _param_order.append(lbl)
         spec_rows = [{"param": p, "values": [m.get(p, "") for m in _eq_maps]}
                      for p in _param_order]
 
