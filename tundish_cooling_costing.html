@@ -52,7 +52,7 @@
   <div class="card">
     <div class="sec-label">Bill of Materials</div>
     <table id="bom-tbl"><thead><tr><th>Media</th><th>Item</th><th>Ref</th><th class="r">Qty</th><th class="r">Unit ₹</th><th class="r">Total ₹</th></tr></thead><tbody id="bom-body"></tbody></table>
-    <div class="grand"><span>Sell Price (cost × <span id="mk">1.8</span>)</span><span id="sell">₹ 0</span></div>
+    <div class="grand"><span>Sell Price (cost × <input id="markup" type="number" step="0.01" min="1" value="1.8" oninput="recalc()" style="width:62px;padding:3px 6px;border:none;border-radius:6px;font:inherit;font-weight:800;text-align:center;color:var(--navy)"/>)</span><span id="sell">₹ 0</span></div>
     <p class="note" id="cost-note"></p>
   </div>
 </div>
@@ -68,7 +68,7 @@ async function load() {
   const sel = document.getElementById('fan');
   sel.innerHTML = (OPT.fans || []).map((f, i) =>
     `<option value="${i}">${f.item} — ₹${(f.price || 0).toLocaleString('en-IN')}</option>`).join('');
-  document.getElementById('mk').textContent = OPT.markup;
+  document.getElementById('markup').value = OPT.markup || 1.8;
   recalc();
 }
 
@@ -84,15 +84,17 @@ function _bom() {
   ];
 }
 
+function _markup() { return +document.getElementById('markup').value || OPT.markup || 1.8; }
 function recalc() {
   const bom = _bom();
   const cost = bom.reduce((s, b) => s + b.total, 0);
-  const sell = Math.round(cost * (OPT.markup || 1.8));
+  const mk = _markup();
+  const sell = Math.round(cost * mk);
   document.getElementById('bom-body').innerHTML = bom.map((b, i) =>
     `<tr><td>${b.media}</td><td>${b.item}</td><td>${b.ref}</td><td class="r">${b.qty}</td><td class="r">${(b.unit_price||0).toLocaleString('en-IN')}</td><td class="r">${(b.total||0).toLocaleString('en-IN')}</td></tr>`).join('') +
     `<tr class="tot"><td colspan="5">BOUGHT OUT (cost)</td><td class="r">${cost.toLocaleString('en-IN')}</td></tr>`;
   document.getElementById('sell').textContent = fmt(sell);
-  document.getElementById('cost-note').textContent = `Cost ₹${cost.toLocaleString('en-IN')} × ${OPT.markup} markup = sell ₹${sell.toLocaleString('en-IN')}.`;
+  document.getElementById('cost-note').textContent = `Cost ₹${cost.toLocaleString('en-IN')} × ${mk} markup = sell ₹${sell.toLocaleString('en-IN')}.`;
   return { bom, cost, sell };
 }
 
