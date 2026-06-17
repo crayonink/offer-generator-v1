@@ -346,7 +346,7 @@ function statusText(e) { return e.configured
   : `<span style="color:var(--muted)">set parameters below, then “Use in Combined Offer ↑”</span>`; }
 function renderPager() {
   document.getElementById('pager').innerHTML = _eq.map((e,i) =>
-    `<div class="pchip ${i===_active?'active':''} ${e.configured?'ok':''}" onclick="showEq(${i})">${i+1}. ${e.type.split(' ')[0]}${e.configured?' ✓':''}</div>`).join('');
+    `<div class="pchip ${i===_active?'active':''} ${e.configured?'ok':''}" onclick="showEq(${i})">${i+1}. ${esc(e.name||e.type)}${e.configured?' ✓':''}</div>`).join('');
 }
 function showEq(i) {
   _active = i;
