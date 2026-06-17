@@ -863,11 +863,23 @@ def sen_stove_bom():
     conn = sqlite3.connect(DB_PATH)
     prices = {it: float(pr) for it, pr in conn.execute(
         "SELECT item, price FROM component_price_master WHERE category='SEN Preheating Stove'")}
+
+    def _resolve(pk, fallback):
+        # '@BALLVALVE:<nb>' -> cheapest general Ball Valve for that NB; otherwise
+        # a SEN-specific pricelist item; else the stored basic.
+        if pk and pk.startswith("@BALLVALVE:"):
+            nb = pk.split(":", 1)[1]
+            r = conn.execute(
+                "SELECT price FROM component_price_master WHERE category='Ball Valve' "
+                "AND item LIKE ? ORDER BY price ASC LIMIT 1", (f"BALL VALVE {nb} NB%",)).fetchone()
+            return float(r[0]) if r and r[0] is not None else float(fallback or 0)
+        return prices.get(pk, float(fallback or 0))
+
     rows = []
     for s, m, it, rf, q, u, mk, b, pk in conn.execute(
             "SELECT section, media, item, ref, qty, unit, make, basic, price_key "
             "FROM sen_stove_bom ORDER BY sno"):
-        basic = prices.get(pk, float(b or 0))      # live pricelist cost
+        basic = _resolve(pk, b)      # live pricelist cost
         rows.append({"section": s, "media": m, "item": it, "ref": rf,
                      "qty": q, "unit": u, "make": mk, "basic": basic,
                      "total": float(q or 0) * basic})
