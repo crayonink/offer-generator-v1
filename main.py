@@ -841,8 +841,9 @@ def tundish_cooling_options():
         r = conn.execute("SELECT price FROM component_price_master "
                          "WHERE category='Tundish Cooling' AND item=? LIMIT 1", (name,)).fetchone()
         return float(r[0]) if r and r[0] is not None else default
+    fr = conn.execute("SELECT price FROM component_price_master WHERE item='FABRICATION RATE' LIMIT 1").fetchone()
     out = {"fans": fans, "fan_qty": 2,
-           "ms_rate": _one("MS STRUCTURE (Cooling Frame)", 75.0),
+           "ms_rate": float(fr[0]) if fr and fr[0] is not None else 110.0,  # single shared fabrication rate
            "damper_price": _one("DAMPER MANUAL", 50000.0),
            "markup": 1.8}
     conn.close()
@@ -878,6 +879,9 @@ def sen_stove_bom():
             r = conn.execute(
                 "SELECT price FROM component_price_master WHERE category='Pilot Burner' "
                 "AND item LIKE ? ORDER BY price ASC LIMIT 1", (f"%{kw} KW%",)).fetchone()
+            return float(r[0]) if r and r[0] is not None else float(fallback or 0)
+        if pk == "@FABRICATION":            # the single shared fabrication rate
+            r = conn.execute("SELECT price FROM component_price_master WHERE item='FABRICATION RATE' LIMIT 1").fetchone()
             return float(r[0]) if r and r[0] is not None else float(fallback or 0)
         return prices.get(pk, float(fallback or 0))
 
