@@ -187,8 +187,8 @@
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Sizing method</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">"Calculate from process" (default) or "Enter burner size directly"</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">How the burner is sized</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Calculate from process</strong> (default) — works out the burner from the heating details below; or <strong>Enter burner size directly</strong> — type a known burner capacity (taken <strong>per burner</strong>)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Lining start / finish temperature</p></td>
@@ -351,39 +351,438 @@
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<div class="title">Worked example — natural gas, 3 burners</div>
+<div class="title">Worked example — start to finish (3 burners, every number)</div>
 <div class="paragraph">
-<p>The total heat and flow are worked out exactly as for the <a href="vlph.html" class="xref page">vertical preheater</a>. For the same job (lining 650 → 1200 °C, 21,500 kg, 2 hours, NG at 8,500 kcal/Nm³) the total is:</p>
+<p><strong>Given inputs:</strong> lining 650 → 1200 °C, refractory 21,500 kg, heat factor 0.25, efficiency 0.52, heating time 2 hr, natural gas at 8,500 kcal/Nm³, blower pressure 28″ WG, 10-ton, automatic (PLC + AGR) control, <strong>3 burners</strong>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Step 1 — Total fuel &amp; air</strong> (worked exactly as for the <a href="vlph.html" class="xref page">vertical preheater</a>):</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Total gas ≈ <strong>217 Nm³/hr</strong>, total combustion air ≈ <strong>2,180 Nm³/hr</strong> (with the 10 % margin)</p>
+<p>Average temperature to raise = (1200 − 650) ÷ 2 + 50 = <strong>325 °C</strong></p>
+</li>
+<li>
+<p>Firing rate = 21,500 × 0.25 × 325 = <strong>17,46,875 kcal</strong> → heat load ÷ 0.52 = <strong>33,59,375 kcal</strong></p>
+</li>
+<li>
+<p>Total gas = 33,59,375 ÷ 8,500 ÷ 2 hr × 1.1 margin = <strong>217.37 Nm³/hr</strong>; firing rate = <strong>2.15 MW</strong></p>
+</li>
+<li>
+<p>Total combustion air = 8,500 × 217.37 × 118 ÷ 1,00,000 = <strong>2,180.23 Nm³/hr</strong></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Now the tundish split across <strong>3 burners</strong>:</p>
+<p><strong>Step 2 — Split across the 3 burners.</strong> This is the tundish difference:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Each burner is sized for 217 ÷ 3 ≈ <strong>72 Nm³/hr</strong> of gas</p>
+<p>Each burner is sized for 217.37 ÷ 3 = <strong>72.46 Nm³/hr</strong> of gas (and 2,180.23 ÷ 3 = 726.74 Nm³/hr of air)</p>
 </li>
 <li>
-<p>The <strong>shared</strong> equipment — blower, gas train, main line — is still sized for the full <strong>217 Nm³/hr</strong></p>
+<p>The <strong>shared</strong> equipment — blower, gas train, main air &amp; gas lines — is still sized for the <strong>full</strong> 217.37 / 2,180.23 Nm³/hr</p>
 </li>
 <li>
-<p>In the bill of materials, the burner and its pilot/ignition parts are <strong>counted 3 times</strong>; the shared equipment is counted once</p>
+<p>The burner is re-selected for the <strong>per-burner</strong> flow → <strong>ENCON 5A</strong> (vs ENCON 7A if one burner carried the whole load), then counted <strong>3 times</strong> in the BOM along with its pilot/ignition parts</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p><strong>Pricing:</strong> the bought-out total (now including 3 burners) is multiplied by 1.8, the ENCON-made items added, and P&amp;F / designing / negotiation and transport applied, rounded to the nearest ₹1,000.</p>
+<p><strong>Step 3 — Equipment selected:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Burner = <strong>ENCON 5A × 3</strong>; shared Blower = <strong>ENCON 28/15</strong> (15 HP, 2,890 Nm³/hr, 1,700 CFM); shared Gas train = <strong>DN50 × DN65</strong> (total-flow band)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 4 — Pipe sizing</strong> (from total flow):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Gas line: 217.37 Nm³/hr at 12.7 m/s → <strong>80 NB</strong>; air line: blower 1,700 CFM × 1.7 = 2,890 Nm³/hr at 15 m/s → <strong>300 NB</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 5 — BOM totals</strong> (per-burner items × 3, shared items × 1):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bought-out items total = <strong>₹8,30,900.90</strong></p>
+</li>
+<li>
+<p>ENCON-made items total = <strong>₹11,23,855.32</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 6 — Commercials</strong> (mark-up 1.8, P&amp;F 5 %, designing 5 %, negotiation 0 %):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Grand Total = 8,30,900.90 × 1.8 + 11,23,855.32 = 14,95,621.62 + 11,23,855.32 = <strong>₹26,19,477</strong></p>
+</li>
+<li>
+<p>+ P&amp;F 5 % + Designing 5 % (= +10 %) + Transport ₹0 = 28,81,424</p>
+</li>
+<li>
+<p>Round up to nearest ₹1,000 = <strong>₹28,81,000</strong> (the single all-inclusive price; transport, if any, on its own line)</p>
+</li>
+</ul>
 </div>
 </td>
 </tr>
 </table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_full_calculation_reference_every_step"><a class="anchor" href="#_full_calculation_reference_every_step"></a>Full calculation reference (every step)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Tundish Preheater uses the <strong>same sizing math</strong> as the <a href="vlph.html" class="xref page">vertical ladle preheater</a> (<code>calculations/burner.py</code>, <code>calculations/pipes.py</code>, <code>bom/selectors/selection_engine.py</code>). The one structural difference is <strong>multiple burners</strong>: the shared equipment is sized for the total flow, each burner for its share, and the burner-related lines are counted once per burner. This section documents every formula with the 3-burner worked values above.</p>
+</div>
+<div class="sect2">
+<h3 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 60%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sizing mode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Calculate-from-process (or Direct: enter burner kW per burner / total heat input)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Lining start / finish temperature (Ti / Tf)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">650 / 1200 °C</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Refractory weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21,500 kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heat factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.25</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.52</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heating time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 hr</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fuel + calorific value</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Natural Gas, 8,500 kcal/Nm³</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blower pressure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">28″ WG (→ burner 24″ WG; 40″ → 36″)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tundish capacity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10 tons</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Number of burners</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 (set to the actual count, e.g. 3)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Control mode</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automatic — PLC / PLC+AGR / PID, or Manual</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_constants_rates"><a class="anchor" href="#_constants_rates"></a>Constants &amp; rates</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 60%;">
+<col style="width: 40%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heat factor / efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.25 / 0.52 (editable inputs)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Firing-rate safety margin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">× 1.1 (10 %)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kcal/hr → MW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">÷ (860 × 1000)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combustion-air factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">air = CV × firing × 118 ÷ 1,00,000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CFM from air</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">air Nm³/hr ÷ 1.7</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Blower HP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CFM × pressure(″WG) ÷ 3,200</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gas pipe velocity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12.7 m/s</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air pipe velocity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">15 m/s</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air-line flow</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">selected blower CFM × 1.7</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fabrication rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹110/kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air-gas pipeline rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹125/kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bought-out mark-up</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">× 1.8 (editable)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_a_sizing"><a class="anchor" href="#_a_sizing"></a>A. Sizing</h3>
+<div class="sect3">
+<h4 id="_average_temperature_to_raise"><a class="anchor" href="#_average_temperature_to_raise"></a>Average temperature to raise</h4>
+<div class="paragraph">
+<p>The number that drives the burner size is picked by <strong>two branches</strong> depending on how hot the tundish lining is at the start (<code>Ti</code>):</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Lining state</th>
+<th class="tableblock halign-left valign-top">Formula</th>
+<th class="tableblock halign-left valign-top">Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Warm start</strong> — Ti &gt; 100 °C (already in cycle)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Tf − Ti) / 2 + 50</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Take <strong>half the temperature span</strong> — heating ramps up rather than jumping straight to Tf — plus a <strong>+50 °C</strong> offset. A reheated lining needs less energy than its absolute temperatures suggest, so this delta-based figure is more realistic than a plain mean.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cold start</strong> — Ti ≤ 100 °C (from ambient)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Tf + Ti) / 2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A plain mean of start and finish temperatures.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Warm-start example (defaults):</strong> Ti 650, Tf 1200 → (1200 − 650) / 2 + 50 = <strong>325 °C</strong></p>
+</li>
+<li>
+<p><strong>Cold-start example:</strong> Ti 30, Tf 1200 → (1200 + 30) / 2 = <strong>615 °C</strong></p>
+</li>
+</ul>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 57.1428%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">#</th>
+<th class="tableblock halign-left valign-top">Formula</th>
+<th class="tableblock halign-left valign-top">Worked (total)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Average temp rise</strong> — warm (Ti &gt; 100): (Tf − Ti)/2 + 50; cold (Ti ≤ 100): (Tf + Ti)/2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(1200−650)/2 + 50 = <strong>325 °C</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Firing rate</strong> (kcal) = weight × heat factor × avg-temp-rise</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21,500 × 0.25 × 325 = <strong>17,46,875</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Heat load</strong> = firing rate ÷ efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 0.52 = <strong>33,59,375 kcal</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Fuel consumption</strong> = heat load ÷ CV</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 8,500 = <strong>395.22 Nm³</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Calculated firing rate</strong> = fuel ÷ time</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 2 = <strong>197.61 Nm³/hr</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>+10 % margin</strong> → total gas flow</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">× 1.1 = <strong>217.37 Nm³/hr</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Firing rate (MW)</strong> = flow × CV ÷ (860 × 1000)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">= <strong>2.15 MW</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Combustion air</strong> = CV × flow × 118 ÷ 1,00,000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">= <strong>2,180.23 Nm³/hr</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>CFM</strong> = air ÷ 1.7; <strong>blower HP</strong> = CFM × pressure ÷ 3,200</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,282.49 CFM; <strong>11.22 HP</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_multi_burner_handling"><a class="anchor" href="#_multi_burner_handling"></a>Multi-burner handling</h4>
+<div class="paragraph">
+<p>This is the only thing that sets the tundish apart from the ladle preheaters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Direct mode</strong> takes the burner capacity as <strong>per burner</strong>: total heat = burner kW × 860 × number-of-burners. (An entered total heat-input figure overrides this.)</p>
+</li>
+<li>
+<p>The <strong>blower, gas train and main lines</strong> are selected and sized for the <strong>total</strong> gas/air flow.</p>
+</li>
+<li>
+<p>The <strong>burner</strong> is then re-selected for the <strong>per-burner</strong> flow (total ÷ number-of-burners) — here 72.46 Nm³/hr → <strong>ENCON 5A</strong> instead of the 7A a single burner would need.</p>
+</li>
+<li>
+<p>In the BOM, the burner and its pilot/ignition parts are <strong>counted once per burner</strong>; everything shared is counted once.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Pipe sizing</strong> (<code>pipes.py</code>) — area = (flow ÷ 3600) ÷ velocity; inner dia = √(4·area/π) × 1000, rounded up to the next standard NB. Gas line at 12.7 m/s → 80 NB; air line uses the selected blower&#8217;s CFM × 1.7 (2,890 Nm³/hr) at 15 m/s → 300 NB. (Pipes use the <strong>total</strong> flow — they feed the shared mains.)</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_b_costing_bomvlph_builder_py_tundish_mode"><a class="anchor" href="#_b_costing_bomvlph_builder_py_tundish_mode"></a>B. Costing (<code>bom/vlph_builder.py</code>, tundish mode)</h3>
+<div class="paragraph">
+<p>Each <code>_row</code> is priced by a computed override or an exact pricelist lookup:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Fabrication / structure</strong> = MS structure kg × ₹110/kg</p>
+</li>
+<li>
+<p><strong>Air-gas pipeline</strong> = pipeline kg × ₹125/kg</p>
+</li>
+<li>
+<p><strong>Ceramic fibre</strong> = roll count × ceramic rate</p>
+</li>
+<li>
+<p><strong>Burner + pilot + ignition</strong> = selector price × <strong>number of burners</strong></p>
+</li>
+<li>
+<p><strong>Blower, gas train, AGR, valves, rotary joint, HPU</strong> = selector / pricelist prices, counted once</p>
+</li>
+<li>
+<p><strong>Bought-out instruments &amp; panel</strong> = exact pricelist lookups</p>
+</li>
+<li>
+<p>Rows are split into <strong>bought-out</strong> and <strong>ENCON</strong> items.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_c_totals_commercial_chain"><a class="anchor" href="#_c_totals_commercial_chain"></a>C. Totals &amp; commercial chain</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Step</th>
+<th class="tableblock halign-left valign-top">Formula</th>
+<th class="tableblock halign-left valign-top">Worked (3 burners)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bought-out total</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Σ bought-out rows</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹8,30,900.90</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ENCON total</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Σ ENCON rows</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹11,23,855.32</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grand Total</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bought-out × mark-up (1.8) + ENCON</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹26,19,477</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Final Total</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">round-to-₹1,000( Grand × (1 + P&amp;F% + Designing% + Negotiation%) + Transport )</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">26,19,477 × 1.10 = 28,81,424 → <strong>₹28,81,000</strong></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+P&amp;F, designing and negotiation are all <strong>added</strong> (negotiation does not discount); the rounded Final Total is the single price in the schedule, with transport pulled onto its own line afterwards. The mark-up and percentages are all editable on the costing page.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 </div>

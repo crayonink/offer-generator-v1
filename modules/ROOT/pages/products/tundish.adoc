@@ -11,7 +11,7 @@ The same details as the vertical ladle preheater:
 |===
 |What you enter |Typical value / options
 
-|Sizing method |"Calculate from process" (default) or "Enter burner size directly"
+|How the burner is sized |*Calculate from process* (default) — works out the burner from the heating details below; or *Enter burner size directly* — type a known burner capacity (taken *per burner*)
 |Lining start / finish temperature |650 °C / 1200 °C
 |Refractory weight |21,500 kg
 |Heating time |2 hours
@@ -65,17 +65,146 @@ The offer document carries the Scope of Supply (the equipment is named "Tundish 
 . *Produce the documents* — the all-inclusive price in the offer, transport on its own line, saved as Word and PDF.
 
 [NOTE]
-.Worked example — natural gas, 3 burners
+.Worked example — start to finish (3 burners, every number)
 ====
-The total heat and flow are worked out exactly as for the xref:products/vlph.adoc[vertical preheater]. For the same job (lining 650 → 1200 °C, 21,500 kg, 2 hours, NG at 8,500 kcal/Nm³) the total is:
+*Given inputs:* lining 650 → 1200 °C, refractory 21,500 kg, heat factor 0.25, efficiency 0.52, heating time 2 hr, natural gas at 8,500 kcal/Nm³, blower pressure 28″ WG, 10-ton, automatic (PLC + AGR) control, *3 burners*.
 
-* Total gas ≈ *217 Nm³/hr*, total combustion air ≈ *2,180 Nm³/hr* (with the 10 % margin)
+*Step 1 — Total fuel & air* (worked exactly as for the xref:products/vlph.adoc[vertical preheater]):
 
-Now the tundish split across *3 burners*:
+* Average temperature to raise = (1200 − 650) ÷ 2 + 50 = *325 °C*
+* Firing rate = 21,500 × 0.25 × 325 = *17,46,875 kcal* → heat load ÷ 0.52 = *33,59,375 kcal*
+* Total gas = 33,59,375 ÷ 8,500 ÷ 2 hr × 1.1 margin = *217.37 Nm³/hr*; firing rate = *2.15 MW*
+* Total combustion air = 8,500 × 217.37 × 118 ÷ 1,00,000 = *2,180.23 Nm³/hr*
 
-* Each burner is sized for 217 ÷ 3 ≈ *72 Nm³/hr* of gas
-* The *shared* equipment — blower, gas train, main line — is still sized for the full *217 Nm³/hr*
-* In the bill of materials, the burner and its pilot/ignition parts are *counted 3 times*; the shared equipment is counted once
+*Step 2 — Split across the 3 burners.* This is the tundish difference:
 
-*Pricing:* the bought-out total (now including 3 burners) is multiplied by 1.8, the ENCON-made items added, and P&F / designing / negotiation and transport applied, rounded to the nearest ₹1,000.
+* Each burner is sized for 217.37 ÷ 3 = *72.46 Nm³/hr* of gas (and 2,180.23 ÷ 3 = 726.74 Nm³/hr of air)
+* The *shared* equipment — blower, gas train, main air & gas lines — is still sized for the *full* 217.37 / 2,180.23 Nm³/hr
+* The burner is re-selected for the *per-burner* flow → *ENCON 5A* (vs ENCON 7A if one burner carried the whole load), then counted *3 times* in the BOM along with its pilot/ignition parts
+
+*Step 3 — Equipment selected:*
+
+* Burner = *ENCON 5A × 3*; shared Blower = *ENCON 28/15* (15 HP, 2,890 Nm³/hr, 1,700 CFM); shared Gas train = *DN50 × DN65* (total-flow band)
+
+*Step 4 — Pipe sizing* (from total flow):
+
+* Gas line: 217.37 Nm³/hr at 12.7 m/s → *80 NB*; air line: blower 1,700 CFM × 1.7 = 2,890 Nm³/hr at 15 m/s → *300 NB*
+
+*Step 5 — BOM totals* (per-burner items × 3, shared items × 1):
+
+* Bought-out items total = *₹8,30,900.90*
+* ENCON-made items total = *₹11,23,855.32*
+
+*Step 6 — Commercials* (mark-up 1.8, P&F 5 %, designing 5 %, negotiation 0 %):
+
+* Grand Total = 8,30,900.90 × 1.8 + 11,23,855.32 = 14,95,621.62 + 11,23,855.32 = *₹26,19,477*
+* + P&F 5 % + Designing 5 % (= +10 %) + Transport ₹0 = 28,81,424
+* Round up to nearest ₹1,000 = *₹28,81,000* (the single all-inclusive price; transport, if any, on its own line)
 ====
+
+== Full calculation reference (every step)
+
+The Tundish Preheater uses the *same sizing math* as the xref:products/vlph.adoc[vertical ladle preheater] (`calculations/burner.py`, `calculations/pipes.py`, `bom/selectors/selection_engine.py`). The one structural difference is *multiple burners*: the shared equipment is sized for the total flow, each burner for its share, and the burner-related lines are counted once per burner. This section documents every formula with the 3-burner worked values above.
+
+=== Inputs
+
+[cols="3,2",options="header"]
+|===
+| Input | Default
+| Sizing mode | Calculate-from-process (or Direct: enter burner kW per burner / total heat input)
+| Lining start / finish temperature (Ti / Tf) | 650 / 1200 °C
+| Refractory weight | 21,500 kg
+| Heat factor | 0.25
+| Efficiency | 0.52
+| Heating time | 2 hr
+| Fuel + calorific value | Natural Gas, 8,500 kcal/Nm³
+| Blower pressure | 28″ WG (→ burner 24″ WG; 40″ → 36″)
+| Tundish capacity | 10 tons
+| *Number of burners* | 1 (set to the actual count, e.g. 3)
+| Control mode | Automatic — PLC / PLC+AGR / PID, or Manual
+|===
+
+=== Constants & rates
+
+[cols="3,2"]
+|===
+| Heat factor / efficiency | 0.25 / 0.52 (editable inputs)
+| Firing-rate safety margin | × 1.1 (10 %)
+| kcal/hr → MW | ÷ (860 × 1000)
+| Combustion-air factor | air = CV × firing × 118 ÷ 1,00,000
+| CFM from air | air Nm³/hr ÷ 1.7
+| Blower HP | CFM × pressure(″WG) ÷ 3,200
+| Gas pipe velocity | 12.7 m/s
+| Air pipe velocity | 15 m/s
+| Air-line flow | selected blower CFM × 1.7
+| Fabrication rate | ₹110/kg
+| Air-gas pipeline rate | ₹125/kg
+| Bought-out mark-up | × 1.8 (editable)
+|===
+
+=== A. Sizing
+
+==== Average temperature to raise
+
+The number that drives the burner size is picked by *two branches* depending on how hot the tundish lining is at the start (`Ti`):
+
+[cols="2,3,3",options="header"]
+|===
+| Lining state | Formula | Why
+| *Warm start* — Ti > 100 °C (already in cycle) | (Tf − Ti) / 2 + 50 | Take *half the temperature span* — heating ramps up rather than jumping straight to Tf — plus a *+50 °C* offset. A reheated lining needs less energy than its absolute temperatures suggest, so this delta-based figure is more realistic than a plain mean.
+| *Cold start* — Ti ≤ 100 °C (from ambient) | (Tf + Ti) / 2 | A plain mean of start and finish temperatures.
+|===
+
+* *Warm-start example (defaults):* Ti 650, Tf 1200 → (1200 − 650) / 2 + 50 = *325 °C*
+* *Cold-start example:* Ti 30, Tf 1200 → (1200 + 30) / 2 = *615 °C*
+
+[cols="1,4,2",options="header"]
+|===
+| # | Formula | Worked (total)
+
+| 1 | *Average temp rise* — warm (Ti > 100): (Tf − Ti)/2 + 50; cold (Ti ≤ 100): (Tf + Ti)/2 | (1200−650)/2 + 50 = *325 °C*
+| 2 | *Firing rate* (kcal) = weight × heat factor × avg-temp-rise | 21,500 × 0.25 × 325 = *17,46,875*
+| 3 | *Heat load* = firing rate ÷ efficiency | ÷ 0.52 = *33,59,375 kcal*
+| 4 | *Fuel consumption* = heat load ÷ CV | ÷ 8,500 = *395.22 Nm³*
+| 5 | *Calculated firing rate* = fuel ÷ time | ÷ 2 = *197.61 Nm³/hr*
+| 6 | *+10 % margin* → total gas flow | × 1.1 = *217.37 Nm³/hr*
+| 7 | *Firing rate (MW)* = flow × CV ÷ (860 × 1000) | = *2.15 MW*
+| 8 | *Combustion air* = CV × flow × 118 ÷ 1,00,000 | = *2,180.23 Nm³/hr*
+| 9 | *CFM* = air ÷ 1.7; *blower HP* = CFM × pressure ÷ 3,200 | 1,282.49 CFM; *11.22 HP*
+|===
+
+==== Multi-burner handling
+
+This is the only thing that sets the tundish apart from the ladle preheaters:
+
+* *Direct mode* takes the burner capacity as *per burner*: total heat = burner kW × 860 × number-of-burners. (An entered total heat-input figure overrides this.)
+* The *blower, gas train and main lines* are selected and sized for the *total* gas/air flow.
+* The *burner* is then re-selected for the *per-burner* flow (total ÷ number-of-burners) — here 72.46 Nm³/hr → *ENCON 5A* instead of the 7A a single burner would need.
+* In the BOM, the burner and its pilot/ignition parts are *counted once per burner*; everything shared is counted once.
+
+*Pipe sizing* (`pipes.py`) — area = (flow ÷ 3600) ÷ velocity; inner dia = √(4·area/π) × 1000, rounded up to the next standard NB. Gas line at 12.7 m/s → 80 NB; air line uses the selected blower's CFM × 1.7 (2,890 Nm³/hr) at 15 m/s → 300 NB. (Pipes use the *total* flow — they feed the shared mains.)
+
+=== B. Costing (`bom/vlph_builder.py`, tundish mode)
+
+Each `_row` is priced by a computed override or an exact pricelist lookup:
+
+* *Fabrication / structure* = MS structure kg × ₹110/kg
+* *Air-gas pipeline* = pipeline kg × ₹125/kg
+* *Ceramic fibre* = roll count × ceramic rate
+* *Burner + pilot + ignition* = selector price × *number of burners*
+* *Blower, gas train, AGR, valves, rotary joint, HPU* = selector / pricelist prices, counted once
+* *Bought-out instruments & panel* = exact pricelist lookups
+* Rows are split into *bought-out* and *ENCON* items.
+
+=== C. Totals & commercial chain
+
+[cols="3,3,2",options="header"]
+|===
+| Step | Formula | Worked (3 burners)
+| Bought-out total | Σ bought-out rows | *₹8,30,900.90*
+| ENCON total | Σ ENCON rows | *₹11,23,855.32*
+| Grand Total | bought-out × mark-up (1.8) + ENCON | *₹26,19,477*
+| Final Total | round-to-₹1,000( Grand × (1 + P&F% + Designing% + Negotiation%) + Transport ) | 26,19,477 × 1.10 = 28,81,424 → *₹28,81,000*
+|===
+
+NOTE: P&F, designing and negotiation are all *added* (negotiation does not discount); the rounded Final Total is the single price in the schedule, with transport pulled onto its own line afterwards. The mark-up and percentages are all editable on the costing page.
