@@ -413,9 +413,12 @@
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-<div class="title">Worked example</div>
+<div class="title">Worked example — start to finish (every number)</div>
 <div class="paragraph">
-<p>Heat duty: flue gas 1,900 Nm³/hr at 800 °C; combustion air 1,750 Nm³/hr to be heated from 35 °C to 400 °C; air specific heat 0.247, flue specific heat 0.23; heat-transfer coefficient 30.</p>
+<p><strong>Given inputs:</strong> flue gas 1,900 Nm³/hr at 800 °C; combustion air 1,750 Nm³/hr to be heated 35 → 400 °C; cp,air 0.247, cp,flue 0.23; heat-transfer coefficient U = 30; SS304 tubes both banks. (All rates are the pricelist defaults.)</p>
+</div>
+<div class="paragraph">
+<p><strong>Step 1 — Heat balance.</strong></p>
 </div>
 <div class="ulist">
 <ul>
@@ -423,24 +426,140 @@
 <p>Air mass = 1,750 × 1.2 = <strong>2,100 kg/hr</strong></p>
 </li>
 <li>
-<p>Heat to recover = 2,100 × 0.247 × (400 − 35) = <strong>≈ 1,89,300 kcal/hr</strong></p>
+<p>Heat to recover, Q = 2,100 × 0.247 × (400 − 35) = 2,100 × 0.247 × 365 = <strong>1,89,325.5 kcal/hr</strong></p>
 </li>
 <li>
-<p>Flue mass = 1,900 × 1.2 = 2,280 kg/hr → flue gas leaves at 800 − 1,89,300 ÷ (2,280 × 0.23) = <strong>≈ 439 °C</strong></p>
+<p>Flue mass = 1,900 × 1.2 = <strong>2,280 kg/hr</strong></p>
 </li>
 <li>
-<p>Average temperature difference (with the 0.9 factor) ≈ <strong>362 °C</strong></p>
+<p>Flue-gas drop = Q ÷ (flue mass × cp,flue) = 1,89,325.5 ÷ (2,280 × 0.23) = 1,89,325.5 ÷ 524.4 = 361.0 °C</p>
 </li>
 <li>
-<p>Surface area = 1,89,300 ÷ (362 × 30) = <strong>≈ 17.4 m²</strong></p>
-</li>
-<li>
-<p>Number of tubes = 17.4 ÷ (3.14 × 0.0483 m × 0.73 m) ≈ <strong>158 tubes</strong>, arranged into a near-square grid and split into two banks</p>
+<p>Final flue temp = 800 − 361.0 = <strong>438.97 °C</strong></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p><strong>Pricing:</strong> the tube weight is priced at the steel rate (stainless ₹250/kg or mild steel ₹70/kg), then the fabricated assemblies, structural steel and labour are added to give the cost. That cost is multiplied by 1.8 (cost-to-sale), then P&amp;F, designing and negotiation are added and the total is rounded up to the nearest ₹1,000.</p>
+<p><strong>Step 2 — Surface area.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>dT1 = 800 − 400 = 400; dT2 = 438.97 − 35 = 403.97</p>
+</li>
+<li>
+<p>LMTD (raw) = (400 − 403.97) ÷ ln(400 ÷ 403.97) = (−3.97) ÷ (−0.009876) = 402.0; × 0.9 factor = <strong>361.78 °C</strong></p>
+</li>
+<li>
+<p>Surface area A = Q ÷ (LMTD × U) = 1,89,325.5 ÷ (361.78 × 30) = 1,89,325.5 ÷ 10,853.4 = <strong>17.44 m²</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 3 — Tube count &amp; grid.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Raw tubes = A ÷ (3.14 × 0.0483 × (0.63 + 0.1)) = 17.44 ÷ (3.14 × 0.0483 × 0.73) = 17.44 ÷ 0.110726 = 157.5</p>
+</li>
+<li>
+<p>Target = ⌈157.5⌉ = 158 → near-square even-column grid = <strong>14 rows × 12 cols = 168 tubes</strong></p>
+</li>
+<li>
+<p>Pipes per bank = 168 ÷ 2 = <strong>84</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 4 — Dimensions &amp; weights.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Bank length = (6.5 × 32) + (7 × 48.3) + 150 = 208 + 338.1 + 150 = <strong>696.1 mm</strong></p>
+</li>
+<li>
+<p>Bank width = (6 × 48.3) + (5.5 × 32) + 150 = 289.8 + 176 + 150 = <strong>615.8 mm</strong></p>
+</li>
+<li>
+<p>Weight per pipe = 3.16 × 0.63 = 1.9908 kg → hot bank = cold bank = 1.9908 × 84 = <strong>167.23 kg</strong> each</p>
+</li>
+<li>
+<p>MS structural weights: outer shell <strong>81.32 kg</strong>, air-inlet duct <strong>110.21 kg</strong>, hot-outlet duct <strong>121.44 kg</strong>, pipe-holding plate <strong>525.75 kg</strong>, bottom box <strong>160.93 kg</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 5 — Price the materials</strong> (each line = qty/weight × rate):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>SS304 tube — Hot bank: 167.23 kg × ₹250 = <strong>₹41,807.50</strong></p>
+</li>
+<li>
+<p>SS304 tube — Cold bank: 167.23 kg × ₹250 = <strong>₹41,807.50</strong></p>
+</li>
+<li>
+<p>MS Side Hood fabrication (flat) = <strong>₹75,000</strong></p>
+</li>
+<li>
+<p>MS Combustion Air Inlet Assembly = (81.32 + 110.21 + 121.44 + 525.75 + 160.93 + 100 flanges + 1,500 hood) × ₹70/kg = 2,599.65 × 70 = <strong>₹1,81,975.50</strong></p>
+</li>
+<li>
+<p>MS Channel 150×75×10: 10 × 17 × ₹51 = <strong>₹8,670</strong></p>
+</li>
+<li>
+<p>MS Angle 65×25: 25 × 8.8 × ₹51 = <strong>₹11,220</strong></p>
+</li>
+<li>
+<p>MS Angle 75×10: 9 × 10 × ₹51 = <strong>₹4,590</strong></p>
+</li>
+<li>
+<p>MS Angle 50×15: 4.5 × 15 × ₹51 = <strong>₹3,442.50</strong></p>
+</li>
+<li>
+<p>Pipe Bending: (14 + 12) × ₹350 = <strong>₹9,100</strong></p>
+</li>
+<li>
+<p>Welding Rods: 168 × 4 × ₹8 = <strong>₹5,376</strong></p>
+</li>
+<li>
+<p>Hole Fabrication: 168 × 2 × ₹100 = <strong>₹33,600</strong></p>
+</li>
+<li>
+<p>Thermocouple with TT (flat, the only bought-out line) = <strong>₹15,000</strong></p>
+</li>
+<li>
+<p>Bought-out total = <strong>₹15,000</strong> (the thermocouple)</p>
+</li>
+<li>
+<p>ENCON total = <strong>₹4,16,589</strong></p>
+</li>
+<li>
+<p><strong>Grand total = 15,000 + 4,16,589 = ₹4,31,589</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 6 — Commercials.</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Sale = Grand × 1.8 = 4,31,589 × 1.8 = <strong>₹7,76,860</strong></p>
+</li>
+<li>
+<p>Final = Sale × (1 + designing 0.10 + negotiation 0.10) = 7,76,860 × 1.20 = 9,32,232 → round <strong>up</strong> to nearest ₹1,000 = <strong>₹9,33,000</strong></p>
+</li>
+<li>
+<p>(If P&amp;F % or a flat Transport are entered in Step 3, they add on top before the round-up.)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 7 — Documents.</strong> The final price (₹9,33,000) plus all the sizing results above go into the offer, saved as Word + PDF and filed.</p>
 </div>
 </td>
 </tr>

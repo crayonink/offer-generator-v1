@@ -86,18 +86,62 @@ A recuperator recovers heat from a furnace's hot waste flue gas and uses it to p
 . *Produce the documents* — the price and all the sizing results go into the offer, which is saved as Word and PDF and filed.
 
 [NOTE]
-.Worked example
+.Worked example — start to finish (every number)
 ====
-Heat duty: flue gas 1,900 Nm³/hr at 800 °C; combustion air 1,750 Nm³/hr to be heated from 35 °C to 400 °C; air specific heat 0.247, flue specific heat 0.23; heat-transfer coefficient 30.
+*Given inputs:* flue gas 1,900 Nm³/hr at 800 °C; combustion air 1,750 Nm³/hr to be heated 35 → 400 °C; cp,air 0.247, cp,flue 0.23; heat-transfer coefficient U = 30; SS304 tubes both banks. (All rates are the pricelist defaults.)
+
+*Step 1 — Heat balance.*
 
 * Air mass = 1,750 × 1.2 = *2,100 kg/hr*
-* Heat to recover = 2,100 × 0.247 × (400 − 35) = *≈ 1,89,300 kcal/hr*
-* Flue mass = 1,900 × 1.2 = 2,280 kg/hr → flue gas leaves at 800 − 1,89,300 ÷ (2,280 × 0.23) = *≈ 439 °C*
-* Average temperature difference (with the 0.9 factor) ≈ *362 °C*
-* Surface area = 1,89,300 ÷ (362 × 30) = *≈ 17.4 m²*
-* Number of tubes = 17.4 ÷ (3.14 × 0.0483 m × 0.73 m) ≈ *158 tubes*, arranged into a near-square grid and split into two banks
+* Heat to recover, Q = 2,100 × 0.247 × (400 − 35) = 2,100 × 0.247 × 365 = *1,89,325.5 kcal/hr*
+* Flue mass = 1,900 × 1.2 = *2,280 kg/hr*
+* Flue-gas drop = Q ÷ (flue mass × cp,flue) = 1,89,325.5 ÷ (2,280 × 0.23) = 1,89,325.5 ÷ 524.4 = 361.0 °C
+* Final flue temp = 800 − 361.0 = *438.97 °C*
 
-*Pricing:* the tube weight is priced at the steel rate (stainless ₹250/kg or mild steel ₹70/kg), then the fabricated assemblies, structural steel and labour are added to give the cost. That cost is multiplied by 1.8 (cost-to-sale), then P&F, designing and negotiation are added and the total is rounded up to the nearest ₹1,000.
+*Step 2 — Surface area.*
+
+* dT1 = 800 − 400 = 400; dT2 = 438.97 − 35 = 403.97
+* LMTD (raw) = (400 − 403.97) ÷ ln(400 ÷ 403.97) = (−3.97) ÷ (−0.009876) = 402.0; × 0.9 factor = *361.78 °C*
+* Surface area A = Q ÷ (LMTD × U) = 1,89,325.5 ÷ (361.78 × 30) = 1,89,325.5 ÷ 10,853.4 = *17.44 m²*
+
+*Step 3 — Tube count & grid.*
+
+* Raw tubes = A ÷ (3.14 × 0.0483 × (0.63 + 0.1)) = 17.44 ÷ (3.14 × 0.0483 × 0.73) = 17.44 ÷ 0.110726 = 157.5
+* Target = ⌈157.5⌉ = 158 → near-square even-column grid = *14 rows × 12 cols = 168 tubes*
+* Pipes per bank = 168 ÷ 2 = *84*
+
+*Step 4 — Dimensions & weights.*
+
+* Bank length = (6.5 × 32) + (7 × 48.3) + 150 = 208 + 338.1 + 150 = *696.1 mm*
+* Bank width = (6 × 48.3) + (5.5 × 32) + 150 = 289.8 + 176 + 150 = *615.8 mm*
+* Weight per pipe = 3.16 × 0.63 = 1.9908 kg → hot bank = cold bank = 1.9908 × 84 = *167.23 kg* each
+* MS structural weights: outer shell *81.32 kg*, air-inlet duct *110.21 kg*, hot-outlet duct *121.44 kg*, pipe-holding plate *525.75 kg*, bottom box *160.93 kg*
+
+*Step 5 — Price the materials* (each line = qty/weight × rate):
+
+* SS304 tube — Hot bank: 167.23 kg × ₹250 = *₹41,807.50*
+* SS304 tube — Cold bank: 167.23 kg × ₹250 = *₹41,807.50*
+* MS Side Hood fabrication (flat) = *₹75,000*
+* MS Combustion Air Inlet Assembly = (81.32 + 110.21 + 121.44 + 525.75 + 160.93 + 100 flanges + 1,500 hood) × ₹70/kg = 2,599.65 × 70 = *₹1,81,975.50*
+* MS Channel 150×75×10: 10 × 17 × ₹51 = *₹8,670*
+* MS Angle 65×25: 25 × 8.8 × ₹51 = *₹11,220*
+* MS Angle 75×10: 9 × 10 × ₹51 = *₹4,590*
+* MS Angle 50×15: 4.5 × 15 × ₹51 = *₹3,442.50*
+* Pipe Bending: (14 + 12) × ₹350 = *₹9,100*
+* Welding Rods: 168 × 4 × ₹8 = *₹5,376*
+* Hole Fabrication: 168 × 2 × ₹100 = *₹33,600*
+* Thermocouple with TT (flat, the only bought-out line) = *₹15,000*
+* Bought-out total = *₹15,000* (the thermocouple)
+* ENCON total = *₹4,16,589*
+* *Grand total = 15,000 + 4,16,589 = ₹4,31,589*
+
+*Step 6 — Commercials.*
+
+* Sale = Grand × 1.8 = 4,31,589 × 1.8 = *₹7,76,860*
+* Final = Sale × (1 + designing 0.10 + negotiation 0.10) = 7,76,860 × 1.20 = 9,32,232 → round *up* to nearest ₹1,000 = *₹9,33,000*
+* (If P&F % or a flat Transport are entered in Step 3, they add on top before the round-up.)
+
+*Step 7 — Documents.* The final price (₹9,33,000) plus all the sizing results above go into the offer, saved as Word + PDF and filed.
 ====
 
 == Full calculation reference (every step)
