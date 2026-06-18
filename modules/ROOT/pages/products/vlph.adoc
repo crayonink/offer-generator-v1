@@ -11,7 +11,7 @@ A vertical ladle preheater dries and heats the refractory lining of a steel ladl
 |===
 |What you enter |Typical value / options
 
-|Sizing method |"Calculate from process" (default) or "Enter burner size directly"
+|How the burner is sized |*Calculate from process* (default) — works out the burner from the heating details below; or *Enter burner size directly* — skip the process figures and type a known burner capacity
 |Lining start temperature |650 °C
 |Lining finish temperature |1200 °C
 |Refractory weight |21,500 kg
