@@ -99,3 +99,114 @@ Heat duty: flue gas 1,900 Nm³/hr at 800 °C; combustion air 1,750 Nm³/hr to be
 
 *Pricing:* the tube weight is priced at the steel rate (stainless ₹250/kg or mild steel ₹70/kg), then the fabricated assemblies, structural steel and labour are added to give the cost. That cost is multiplied by 1.8 (cost-to-sale), then P&F, designing and negotiation are added and the total is rounded up to the nearest ₹1,000.
 ====
+
+== Full calculation reference (every step)
+
+This documents *every* formula in the recuperator sizing (`calculations/recup.py`) and costing (`bom/recup_builder.py`), the constants behind them, and a complete worked example. The `E…` / `F…` tags are the cells in the source workbook (`Recuperator_Excel.xlsx`) that each step mirrors. The worked-example column uses the default inputs below.
+
+=== Inputs
+
+[cols="3,2,1",options="header"]
+|===
+| Input | Default | Cell
+| Total flue-gas flow | 1,900 Nm³/hr | E3
+| Flue-gas inlet temperature | 800 °C | E6
+| Specific heat of flue gas (cp,flue) | 0.23 kcal/kg·°C | E5
+| Combustion-air volume | 1,750 Nm³/hr | E9
+| Air inlet temperature | 35 °C | E10
+| Air outlet (target) temperature | 400 °C | E11
+| Specific heat of air (cp,air) | 0.247 kcal/kg·°C | E12
+| Heat-transfer coefficient (U) | 30 kcal/m²·°C | E8
+| Tube outer diameter | 48.3 mm | E23
+| Tube weight per metre | 3.16 kg/m | E26
+| Tube length per bank | 0.63 m (0.55 + 0.08) | E24
+| Density factor (Nm³→kg) | 1.2 | —
+| Pipe pitch / end margin | 32 mm / 150 mm | —
+| LMTD correction factor | 0.9 | E14
+|===
+
+=== Rates & constants (editable in pricelist → Recup Rates)
+
+[cols="3,2"]
+|===
+| Key | Value
+| SS304 tube rate | ₹250/kg
+| MS tube rate | ₹70/kg
+| MS fabrication rate (CAI assembly) | ₹70/kg
+| MS stock-steel rate | ₹51/kg
+| Flanges (machining) weight | 100 kg
+| Side-hood material weight | 1,500 kg
+| Side-hood fabrication (flat) | ₹75,000
+| Thermocouple with TT (flat) | ₹15,000
+| Pipe-bending rate | ₹350 per (row+col) line
+| Welding | 4 rods/pipe × ₹8/rod
+| Hole fabrication | 2 holes/pipe × ₹100/hole
+| Conversion (cost→sale) markup | 1.8
+| Designing / Negotiation | 10 % / 10 % (additive)
+|===
+
+=== A. Sizing — `calculations/recup.py`
+
+[cols="1,4,2",options="header"]
+|===
+| # | Formula | Worked (defaults)
+
+| 1 (E4) | *Flue mass* = flue_flow × 1.2 | 1,900 × 1.2 = *2,280 kg/hr*
+| 2 (E13) | *Heat to recover* Q = (air_vol × 1.2) × cp,air × (T_air,out − T_air,in) | 2,100 × 0.247 × 365 = *1,89,325.5 kcal/hr*
+| 3 (E7) | *Final flue temp* = T_flue,in − Q ÷ (flue_mass × cp,flue) | 800 − 189325.5 ÷ (2,280 × 0.23) = *438.97 °C*
+| 4 (E14) | *LMTD*: dT1 = T_flue,in − T_air,out; dT2 = T_flue,out − T_air,in; LMTD = ((dT1 − dT2) ÷ ln(dT1/dT2)) × 0.9 | dT1 = 400, dT2 = 403.97 → 402.0 × 0.9 = *361.78 °C* (if dT1≤0, dT2≤0 or dT1=dT2, falls back to the arithmetic mean)
+| 5 (E15) | *Surface area* A = Q ÷ (LMTD × U) | 189325.5 ÷ (361.78 × 30) = *17.44 m²*
+| 6 (E19) | *Raw pipe count* = A ÷ (3.14 × (dia/1000) × (length + 0.1)) — literal 3.14, matching the sheet | 17.44 ÷ (3.14 × 0.0483 × 0.73) = *157.5*
+| 7 (E20/E21) | *Grid*: target = override, else ⌈raw⌉. `_best_grid` searches rows in [√n−8, √n+8], cols = ⌈n/rows⌉ forced *even*, scoring `aspect% + 3×waste%`, tie-break toward rows = 14 | ⌈157.5⌉ = 158 → *14 rows × 12 cols = 168 tubes*
+| 8 | *Pipes per bank* = total ÷ 2 | 168 ÷ 2 = *84*
+| 9 (E16) | *Bank length* = ((rows−1)/2)×pitch + (rows/2)×dia + margin | (6.5×32) + (7×48.3) + 150 = *696.1 mm*
+| 10 (E17) | *Bank width* = (cols/2)×48.3 + ((cols−1)/2)×pitch + margin | (6×48.3) + (5.5×32) + 150 = *615.8 mm*
+| 11 (E27) | *Weight per pipe* = kg/m × length | 3.16 × 0.63 = *1.9908 kg*
+| 12 (E28/E35) | *Hot bank = Cold bank* = per-pipe × pipes-per-bank | 1.9908 × 84 = *167.23 kg* each (total 334.46 kg)
+|===
+
+*MS structural weights (E41–E45)* — each is volume(mm³) × density ÷ 1e9 (Excel's kg/mm³ convention). `L` = bank length, `W` = bank width:
+
+[cols="1,4,2",options="header"]
+|===
+| Cell | Formula (density) | Worked
+| E41 outer shell | [((2L)+100) × (length×1000) × 5] × (8650) × 2 | *81.32 kg*
+| E42 air-inlet duct | duct_vol × (7850), duct_vol = (3.14×700×800×5) + 2×[(200×L×5×2)+(W×200×5×2)] | 14,039,600 mm³ → *110.21 kg*
+| E43 hot-outlet duct | duct_vol × (8650) | *121.44 kg*
+| E44 pipe-holding plate | [((2L)+gap) × W × 16 × 4] × (8650) | *525.75 kg*
+| E45 bottom box | [((2L+250)×600×5×2) + (W×600×2×5) + ((2L+250)×W×5)] × (8650) | *160.93 kg*
+|===
+
+=== B. Costing — `bom/recup_builder.py`
+
+[cols="2,4,2",options="header"]
+|===
+| Line | Formula | Worked (defaults, both banks SS)
+
+| Tubes — Hot (F40) | hot_bank_kg × tube_rate (SS ₹250 / MS ₹70 per bank) | 167.23 × 250 = *₹41,807.50*
+| Tubes — Cold (F40) | cold_bank_kg × tube_rate | *₹41,807.50*
+| MS Side Hood fab (F48) | flat | *₹75,000*
+| MS Combustion Air Inlet Assembly (F49) | (shell + air-inlet + hot-outlet + holding + bottom-box + flanges 100 + side-hood 1500) × CAI rate (override, else ₹70/kg) | 2,599.65 kg × 70 = *₹1,81,975*
+| MS Channel 150×75×10 (F50) | length × kg/m × MS rate | 10 × 17 × 51 = *₹8,670*
+| MS Angle 65×25 (F51) | 25 × 8.8 × 51 | *₹11,220*
+| MS Angle 75×10 (F52) | 9 × 10 × 51 | *₹4,590*
+| MS Angle 50×15 (F53) | 4.5 × 15 × 51 | *₹3,442.50*
+| Pipe Bending (F55) | (rows + cols) × ₹350 | 26 × 350 = *₹9,100*
+| Welding Rods (F56) | total × 4 × ₹8 | 168 × 32 = *₹5,376*
+| Hole Fabrication (F57) | total × 2 × ₹100 | 168 × 200 = *₹33,600*
+| Thermocouple with TT (F58) | flat — the only bought-out line | *₹15,000*
+|===
+
+=== C. Totals & mark-up chain (F59–F64)
+
+[cols="3,3,2",options="header"]
+|===
+| Step | Formula | Worked
+| Bought-out total | Σ non-ENCON lines | *₹15,000*
+| ENCON total | Σ ENCON lines | *₹4,16,588.50*
+| Grand total (F59) | bought-out + ENCON | *₹4,31,588.50*
+| Sale (F60) | Grand × Conversion (1.8) | *₹7,76,859*
+| Final (F64) | Sale × (1 + Designing + Negotiation) — *additive*, 1 + 0.10 + 0.10 = 1.20 | 7,76,859 × 1.2 = 9,32,231 → round up to ₹1,000 = *₹9,33,000*
+|===
+
+NOTE: The Step-3 cost panel can override conversion, designing and negotiation per quote, and adds *Packaging & Forwarding (%)* and a flat *Transport* on top client-side; the final `final_total` it posts is what the offer quotes. Every rate above lives in `recup_rates` and is editable from the pricelist, so the figures retune without a code change.

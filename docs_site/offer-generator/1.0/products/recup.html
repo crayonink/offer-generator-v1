@@ -448,6 +448,428 @@
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_full_calculation_reference_every_step"><a class="anchor" href="#_full_calculation_reference_every_step"></a>Full calculation reference (every step)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This documents <strong>every</strong> formula in the recuperator sizing (<code>calculations/recup.py</code>) and costing (<code>bom/recup_builder.py</code>), the constants behind them, and a complete worked example. The <code>E…</code> / <code>F…</code> tags are the cells in the source workbook (<code>Recuperator_Excel.xlsx</code>) that each step mirrors. The worked-example column uses the default inputs below.</p>
+</div>
+<div class="sect2">
+<h3 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 33.3333%;">
+<col style="width: 16.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Default</th>
+<th class="tableblock halign-left valign-top">Cell</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Total flue-gas flow</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,900 Nm³/hr</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E3</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Flue-gas inlet temperature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">800 °C</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E6</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specific heat of flue gas (cp,flue)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.23 kcal/kg·°C</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E5</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combustion-air volume</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,750 Nm³/hr</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E9</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air inlet temperature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">35 °C</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E10</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Air outlet (target) temperature</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">400 °C</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E11</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Specific heat of air (cp,air)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.247 kcal/kg·°C</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E12</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Heat-transfer coefficient (U)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30 kcal/m²·°C</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tube outer diameter</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">48.3 mm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E23</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tube weight per metre</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3.16 kg/m</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E26</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tube length per bank</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.63 m (0.55 + 0.08)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E24</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Density factor (Nm³→kg)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">—</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pipe pitch / end margin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32 mm / 150 mm</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">—</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LMTD correction factor</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0.9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E14</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_rates_constants_editable_in_pricelist_recup_rates"><a class="anchor" href="#_rates_constants_editable_in_pricelist_recup_rates"></a>Rates &amp; constants (editable in pricelist → Recup Rates)</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 60%;">
+<col style="width: 40%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Key</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SS304 tube rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹250/kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS tube rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹70/kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS fabrication rate (CAI assembly)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹70/kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS stock-steel rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹51/kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Flanges (machining) weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">100 kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Side-hood material weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,500 kg</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Side-hood fabrication (flat)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹75,000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Thermocouple with TT (flat)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹15,000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pipe-bending rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">₹350 per (row+col) line</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Welding</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4 rods/pipe × ₹8/rod</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hole fabrication</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 holes/pipe × ₹100/hole</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Conversion (cost→sale) markup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Designing / Negotiation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10 % / 10 % (additive)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_a_sizing_calculationsrecup_py"><a class="anchor" href="#_a_sizing_calculationsrecup_py"></a>A. Sizing — <code>calculations/recup.py</code></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 57.1428%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">#</th>
+<th class="tableblock halign-left valign-top">Formula</th>
+<th class="tableblock halign-left valign-top">Worked (defaults)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1 (E4)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Flue mass</strong> = flue_flow × 1.2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1,900 × 1.2 = <strong>2,280 kg/hr</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2 (E13)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Heat to recover</strong> Q = (air_vol × 1.2) × cp,air × (T_air,out − T_air,in)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2,100 × 0.247 × 365 = <strong>1,89,325.5 kcal/hr</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3 (E7)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Final flue temp</strong> = T_flue,in − Q ÷ (flue_mass × cp,flue)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">800 − 189325.5 ÷ (2,280 × 0.23) = <strong>438.97 °C</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4 (E14)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>LMTD</strong>: dT1 = T_flue,in − T_air,out; dT2 = T_flue,out − T_air,in; LMTD = dT1 − dT2) ÷ ln(dT1/dT2 × 0.9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dT1 = 400, dT2 = 403.97 → 402.0 × 0.9 = <strong>361.78 °C</strong> (if dT1≤0, dT2≤0 or dT1=dT2, falls back to the arithmetic mean)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5 (E15)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Surface area</strong> A = Q ÷ (LMTD × U)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">189325.5 ÷ (361.78 × 30) = <strong>17.44 m²</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6 (E19)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Raw pipe count</strong> = A ÷ (3.14 × (dia/1000) × (length + 0.1)) — literal 3.14, matching the sheet</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">17.44 ÷ (3.14 × 0.0483 × 0.73) = <strong>157.5</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7 (E20/E21)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Grid</strong>: target = override, else ⌈raw⌉. <code>_best_grid</code> searches rows in [√n−8, √n+8], cols = ⌈n/rows⌉ forced <strong>even</strong>, scoring <code>aspect% + 3×waste%</code>, tie-break toward rows = 14</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">⌈157.5⌉ = 158 → <strong>14 rows × 12 cols = 168 tubes</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Pipes per bank</strong> = total ÷ 2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">168 ÷ 2 = <strong>84</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9 (E16)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Bank length</strong> = ((rows−1)/2)×pitch + (rows/2)×dia + margin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(6.5×32) + (7×48.3) + 150 = <strong>696.1 mm</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10 (E17)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Bank width</strong> = (cols/2)×48.3 + ((cols−1)/2)×pitch + margin</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(6×48.3) + (5.5×32) + 150 = <strong>615.8 mm</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">11 (E27)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Weight per pipe</strong> = kg/m × length</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3.16 × 0.63 = <strong>1.9908 kg</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12 (E28/E35)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hot bank = Cold bank</strong> = per-pipe × pipes-per-bank</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1.9908 × 84 = <strong>167.23 kg</strong> each (total 334.46 kg)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p><strong>MS structural weights (E41–E45)</strong> — each is volume(mm³) × density ÷ 1e9 (Excel&#8217;s kg/mm³ convention). <code>L</code> = bank length, <code>W</code> = bank width:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 57.1428%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Cell</th>
+<th class="tableblock halign-left valign-top">Formula (density)</th>
+<th class="tableblock halign-left valign-top">Worked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E41 outer shell</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">[((2L)+100) × (length×1000) × 5] × (8650) × 2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>81.32 kg</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E42 air-inlet duct</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">duct_vol × (7850), duct_vol = (3.14×700×800×5) + 2×[(200×L×5×2)+(W×200×5×2)]</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">14,039,600 mm³ → <strong>110.21 kg</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E43 hot-outlet duct</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">duct_vol × (8650)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>121.44 kg</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E44 pipe-holding plate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">[((2L)+gap) × W × 16 × 4] × (8650)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>525.75 kg</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">E45 bottom box</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">[((2L+250)×600×5×2) + (W×600×2×5) + ((2L+250)×W×5)] × (8650)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>160.93 kg</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_b_costing_bomrecup_builder_py"><a class="anchor" href="#_b_costing_bomrecup_builder_py"></a>B. Costing — <code>bom/recup_builder.py</code></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Line</th>
+<th class="tableblock halign-left valign-top">Formula</th>
+<th class="tableblock halign-left valign-top">Worked (defaults, both banks SS)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tubes — Hot (F40)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hot_bank_kg × tube_rate (SS ₹250 / MS ₹70 per bank)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">167.23 × 250 = <strong>₹41,807.50</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tubes — Cold (F40)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cold_bank_kg × tube_rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹41,807.50</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS Side Hood fab (F48)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹75,000</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS Combustion Air Inlet Assembly (F49)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(shell + air-inlet + hot-outlet + holding + bottom-box + flanges 100 + side-hood 1500) × CAI rate (override, else ₹70/kg)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2,599.65 kg × 70 = <strong>₹1,81,975</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS Channel 150×75×10 (F50)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">length × kg/m × MS rate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10 × 17 × 51 = <strong>₹8,670</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS Angle 65×25 (F51)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">25 × 8.8 × 51</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹11,220</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS Angle 75×10 (F52)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9 × 10 × 51</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹4,590</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MS Angle 50×15 (F53)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4.5 × 15 × 51</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹3,442.50</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pipe Bending (F55)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(rows + cols) × ₹350</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">26 × 350 = <strong>₹9,100</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Welding Rods (F56)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">total × 4 × ₹8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">168 × 32 = <strong>₹5,376</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hole Fabrication (F57)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">total × 2 × ₹100</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">168 × 200 = <strong>₹33,600</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Thermocouple with TT (F58)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">flat — the only bought-out line</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹15,000</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_c_totals_mark_up_chain_f59f64"><a class="anchor" href="#_c_totals_mark_up_chain_f59f64"></a>C. Totals &amp; mark-up chain (F59–F64)</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Step</th>
+<th class="tableblock halign-left valign-top">Formula</th>
+<th class="tableblock halign-left valign-top">Worked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bought-out total</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Σ non-ENCON lines</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹15,000</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ENCON total</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Σ ENCON lines</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹4,16,588.50</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grand total (F59)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bought-out + ENCON</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹4,31,588.50</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sale (F60)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grand × Conversion (1.8)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹7,76,859</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Final (F64)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sale × (1 + Designing + Negotiation) — <strong>additive</strong>, 1 + 0.10 + 0.10 = 1.20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7,76,859 × 1.2 = 9,32,231 → round up to ₹1,000 = <strong>₹9,33,000</strong></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The Step-3 cost panel can override conversion, designing and negotiation per quote, and adds <strong>Packaging &amp; Forwarding (%)</strong> and a flat <strong>Transport</strong> on top client-side; the final <code>final_total</code> it posts is what the offer quotes. Every rate above lives in <code>recup_rates</code> and is editable from the pricelist, so the figures retune without a code change.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
 </article>
   </div>
 </main>
