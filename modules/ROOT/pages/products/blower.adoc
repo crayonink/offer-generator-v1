@@ -46,11 +46,64 @@ While filling in the form, a running total updates live as you change the quanti
 NOTE: This standalone offer simply supplies the blower, motor and base frame — it does not size any air pipework. The air-line sizing rule (sized from the blower's airflow) only applies inside the full preheater offers.
 
 [NOTE]
-.Worked example
+.Worked example — standalone offer
 ====
-Chosen blower catalogue price (including motor) = ₹85,000, quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %).
+Chosen blower = *ENCON 28/15* (15 HP, 2,890 Nm³/hr); catalogue price *with motor* = ₹1,48,000; quantity 1; P&F 5 % + designing 10 % + negotiation 0 % (= +15 %).
 
-* 85,000 × 1 × 1.15 = 97,750 → rounded to the nearest ₹1,000 = *₹98,000*
+* 1,48,000 × 1 × 1.15 = 1,70,200 → rounded to the nearest ₹1,000 = *₹1,70,000*
 
-For 2 blowers: 85,000 × 2 × 1.15 = 1,95,500 → *₹1,96,000*. If transport were ₹4,000, it is added to the total and then shown on its own line in the price schedule.
+For 2 blowers: 1,48,000 × 2 × 1.15 = 3,40,400 → *₹3,40,000*. If transport were ₹4,000, it is added to the total and then shown on its own line in the price schedule.
 ====
+
+== Full calculation reference (every step)
+
+A standalone blower offer is a *catalogue pick* — no sizing is done. But the same blower catalogue and the *selection rule* are what the preheater offers use internally, so both are documented here.
+
+=== The blower catalogue (`blower_master`)
+
+Every model carries its own horsepower, airflow, CFM, pressure rating and two prices (*basic* = blower only; *premium* = with motor — the standalone offer always uses the premium "with-motor" price). Models are named `ENCON <pressure series>/<HP>`, e.g. *ENCON 28/15* = 28″ W.G. series, 15 HP.
+
+[cols="2,1,2,1,1,1",options="header"]
+|===
+| Model | HP | Airflow (Nm³/hr) | CFM | Basic ₹ | With motor ₹
+| ENCON 28/3   | 3   | 510    | 300  | 50,400  | 69,000
+| ENCON 28/5   | 5   | 930    | 550  | 51,500  | 76,000
+| ENCON 28/7.5 | 7.5 | 1,450  | 850  | 56,500  | 95,200
+| ENCON 28/10  | 10  | 2,040  | 1,200| 60,500  | 1,01,000
+| ENCON 28/15  | 15  | 2,890  | 1,700| 76,000  | 1,48,000
+| ENCON 28/20  | 20  | 3,740  | 2,200| 87,000  | 1,68,000
+| ENCON 28/25  | 25  | 5,100  | 3,000| 91,000  | 1,95,000
+| ENCON 28/30  | 30  | 5,950  | 3,500| 1,11,000| 2,30,000
+| ENCON 28/40  | 40  | 7,900  | 4,800| 1,31,000| 2,96,000
+| ENCON 28/50  | 50  | 9,850  | 5,950| 1,51,500| 3,39,000
+| ENCON 28/60  | 60  | 11,750 | 7,100| 1,75,000| 4,17,000
+|===
+
+A parallel *40″ W.G.* series (ENCON 40/5 … 40/60) carries the same HP steps at lower airflow for the same HP (higher pressure costs flow) and slightly higher prices. The 40″ series is chosen when blower pressure is set to 40 instead of 28.
+
+=== How a blower is selected (inside the preheater offers)
+
+[cols="1,4,2",options="header"]
+|===
+| # | Step | Worked (default VLPH job)
+| 1 | *Combustion air* needed (from the burner calc) | 2,180.23 Nm³/hr
+| 2 | *CFM* = air ÷ 1.7 | 2,180.23 ÷ 1.7 = *1,282.49 CFM*
+| 3 | *Required HP* = CFM × pressure(″WG) ÷ 3,200 | 1,282.49 × 28 ÷ 3,200 = *11.22 HP*
+| 4 | *Pick* the smallest model in the chosen pressure series with HP ≥ required | 28″ series, ≥ 11.22 HP → *ENCON 28/15* (15 HP, 2,890 Nm³/hr, 1,700 CFM)
+| 5 | *Air-line NB* = selected blower CFM × 1.7, sized at 15 m/s | 1,700 × 1.7 = 2,890 Nm³/hr → *300 NB*
+|===
+
+So the chosen blower is always *one size up* from the bare requirement (here 15 HP for an 11.22 HP need), and the air pipe is sized from the blower it will actually feed — not from the raw combustion-air figure — so the displayed flow and the pipe agree. For dual-fuel units the blower is sized for the *larger* of the two fuels' air demands; for oil, atomising-air CFM = equivalent LPH × 10.
+
+=== Pricing (standalone offer)
+
+[cols="3,3,2",options="header"]
+|===
+| Step | Formula | Worked
+| Unit price | catalogue *with-motor* price | ₹1,48,000 (ENCON 28/15)
+| Line total | unit × quantity | × 1 = ₹1,48,000
+| Commercials | × (1 + P&F% + Designing% + Negotiation%) | × 1.15 = ₹1,70,200
+| Final | round to nearest ₹1,000 (when any commercial applied) | *₹1,70,000*
+|===
+
+NOTE: This standalone offer simply supplies the blower, motor and base frame — it does *not* size any air pipework. The selection rule and air-line sizing above only run inside the full preheater offers. P&F, designing and negotiation are all *added* (negotiation does not discount); transport is added to the total and then shown on its own line.
