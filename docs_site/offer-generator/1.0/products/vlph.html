@@ -722,6 +722,50 @@
 </div>
 <div class="sect2">
 <h3 id="_a_sizing"><a class="anchor" href="#_a_sizing"></a>A. Sizing</h3>
+<div class="sect3">
+<h4 id="_average_temperature_to_raise"><a class="anchor" href="#_average_temperature_to_raise"></a>Average temperature to raise</h4>
+<div class="paragraph">
+<p>This is the single number that drives the burner size, and it is picked by <strong>two branches</strong> depending on how hot the ladle is at the start (<code>Ti</code>):</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 37.5%;">
+<col style="width: 37.5%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Ladle state</th>
+<th class="tableblock halign-left valign-top">Formula</th>
+<th class="tableblock halign-left valign-top">Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Warm start</strong> — Ti &gt; 100 °C (ladle already in cycle)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Tf − Ti) / 2 + 50</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Take <strong>half the temperature span</strong> — heating ramps up rather than jumping straight to Tf — plus a <strong>+50 °C</strong> offset. A reheated ladle needs less energy than its absolute temperatures suggest, so this delta-based figure is more realistic than a plain mean.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cold start</strong> — Ti ≤ 100 °C (effectively from ambient)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(Tf + Ti) / 2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A plain mean of start and finish temperatures.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Warm-start example (defaults):</strong> Ti 650, Tf 1200 → (1200 − 650) / 2 + 50 = 275 + 50 = <strong>325 °C</strong></p>
+</li>
+<li>
+<p><strong>Cold-start example:</strong> Ti 30, Tf 1200 → (1200 + 30) / 2 = <strong>615 °C</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>Ti &gt; 100</code> threshold is the switch between "warm / in-cycle ladle" and "cold start". The warm-start branch deliberately yields a <strong>smaller</strong> rise (and thus a smaller burner) than a naive mean would.</p>
+</div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 14.2857%;">
@@ -738,7 +782,7 @@
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Average temp rise</strong> = (Tf − Ti)/2 + 50 if Ti &gt; 100, else (Tf + Ti)/2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Average temp rise</strong> — warm start (Ti &gt; 100): (Tf − Ti)/2 + 50; cold start (Ti ≤ 100): (Tf + Ti)/2</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">(1200−650)/2 + 50 = <strong>325 °C</strong></p></td>
 </tr>
 <tr>
@@ -817,6 +861,7 @@
 <p><strong>Butterfly &amp; rotary joint</strong> — sized to the air-line NB.</p>
 </li>
 </ul>
+</div>
 </div>
 </div>
 <div class="sect2">

@@ -195,11 +195,27 @@ This documents *every* formula behind the Vertical Ladle Preheater — the sizin
 
 === A. Sizing
 
+==== Average temperature to raise
+
+This is the single number that drives the burner size, and it is picked by *two branches* depending on how hot the ladle is at the start (`Ti`):
+
+[cols="2,3,3",options="header"]
+|===
+| Ladle state | Formula | Why
+| *Warm start* — Ti > 100 °C (ladle already in cycle) | (Tf − Ti) / 2 + 50 | Take *half the temperature span* — heating ramps up rather than jumping straight to Tf — plus a *+50 °C* offset. A reheated ladle needs less energy than its absolute temperatures suggest, so this delta-based figure is more realistic than a plain mean.
+| *Cold start* — Ti ≤ 100 °C (effectively from ambient) | (Tf + Ti) / 2 | A plain mean of start and finish temperatures.
+|===
+
+* *Warm-start example (defaults):* Ti 650, Tf 1200 → (1200 − 650) / 2 + 50 = 275 + 50 = *325 °C*
+* *Cold-start example:* Ti 30, Tf 1200 → (1200 + 30) / 2 = *615 °C*
+
+The `Ti > 100` threshold is the switch between "warm / in-cycle ladle" and "cold start". The warm-start branch deliberately yields a *smaller* rise (and thus a smaller burner) than a naive mean would.
+
 [cols="1,4,2",options="header"]
 |===
 | # | Formula | Worked
 
-| 1 | *Average temp rise* = (Tf − Ti)/2 + 50 if Ti > 100, else (Tf + Ti)/2 | (1200−650)/2 + 50 = *325 °C*
+| 1 | *Average temp rise* — warm start (Ti > 100): (Tf − Ti)/2 + 50; cold start (Ti ≤ 100): (Tf + Ti)/2 | (1200−650)/2 + 50 = *325 °C*
 | 2 | *Firing rate* (kcal) = weight × heat factor × avg-temp-rise | 21,500 × 0.25 × 325 = *17,46,875*
 | 3 | *Heat load* = firing rate ÷ efficiency | ÷ 0.52 = *33,59,375 kcal*
 | 4 | *Fuel consumption* = heat load ÷ CV | ÷ 8,500 = *395.22 Nm³*
