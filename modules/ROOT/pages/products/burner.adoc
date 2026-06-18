@@ -50,13 +50,68 @@ A running total updates live as you change the quantity or commercial figures, a
 NOTE: This standalone offer is purely a priced catalogue pick. It does not perform any firing-rate or fabrication calculation, and it does not add a pilot burner — those belong to the full preheater offers, where the burner is part of a larger system.
 
 [NOTE]
-.Worked example
+.Worked example — standalone offer
 ====
-Chosen burner catalogue price = ₹1,20,000, quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %).
+Chosen burner = *ENCON 7A* (gas); catalogue price = ₹1,32,194; quantity 1; P&F 5 % + designing 10 % + negotiation 0 % (= +15 %).
 
-* 1,20,000 × 1 × 1.15 = 1,38,000 → rounded to the nearest ₹1,000 = *₹1,38,000*
+* 1,32,194 × 1 × 1.15 = 1,52,023 → rounded to the nearest ₹1,000 = *₹1,52,000*
 
-For 2 burners: 1,20,000 × 2 × 1.15 = 2,76,000 → *₹2,76,000*. Transport, if any, is added and then shown on its own line.
+For 2 burners: 1,32,194 × 2 × 1.15 = 3,04,047 → *₹3,04,000*. Transport, if any, is added and then shown on its own line.
 
 (GAIL pre-assembled sets are priced the same way — straight from the catalogue. Where a GAIL burner is built up from parts elsewhere in the system, the fabrication cost is multiplied by 1.25, but this standalone offer uses the ready catalogue price.)
 ====
+
+== Full calculation reference (every step)
+
+A standalone burner offer is a *catalogue pick* — no firing-rate calculation is done. But the same burner catalogue and the *selection rule* are what the preheater offers use internally to choose the right size, so both are documented here.
+
+=== The burner catalogue
+
+Burners come in four families, each pre-priced by size:
+
+* *ENCON Gas Burner* — for NG / LPG / COG
+* *ENCON Oil (Film) Burner* — for LDO / HSD / SKO
+* *ENCON Dual-Fuel Burner* — gas + oil in one head
+* *GAIL pre-assembled gas sets* — ready-built, named by kilowatt (e.g. "ENCON-500 KW")
+
+Each ENCON size carries a *maximum firing capacity* (shown in litres/hour at 24″ W.G., or its kilowatt equivalent) and a *set price*. Sizes run from the small `2A`/`3A` up to `7A`, with `HV-` (high-velocity) variants in between. The top size, *ENCON 7A*, is the open-ended "and above" size — it carries a very large capacity so it is always picked when a single burner must carry a big load.
+
+[cols="2,2,2,2",options="header"]
+|===
+| Gas size | Max firing (LPH) | ≈ Capacity | Set price ₹
+| ENCON 2A   | 20    | 210 kW    | 35,158
+| ENCON 3A   | 35    | 360 kW    | 35,758
+| ENCON 4A   | 65    | 670 kW    | 43,162
+| ENCON 5A   | 120   | 1,250 kW  | 67,059
+| ENCON 6A   | 180   | 1,870 kW  | 70,290
+| ENCON 7A   | (open-ended) | very large | 1,32,194
+|===
+
+(High-velocity `HV-3A … HV-7A` sizes sit between these on both capacity and price. Oil, dual-fuel and GAIL families have their own size/price lists.)
+
+=== How a burner size is selected (inside the preheater offers)
+
+The burner is chosen to *cover the required heat* at the burner pressure (24″ W.G. for a 28″ blower):
+
+[cols="1,4,2",options="header"]
+|===
+| # | Step | Worked
+| 1 | *Required heat* = gas flow × calorific value | 217.37 × 8,500 = *18,47,645 kcal/hr* (the default VLPH job)
+| 2 | *Pick* the smallest ENCON size whose max firing covers that heat | 6A tops out at 16,06,500 kcal/hr (too small) → *ENCON 7A*
+|===
+
+* *Tundish per-burner example:* with the load split across 3 burners each carries 72.46 Nm³/hr → 72.46 × 8,500 = 6,15,910 kcal/hr → 4A (5,80,125) is too small → *ENCON 5A*. This is why a 3-burner tundish uses three small 5A burners instead of one big 7A.
+* For *oil* fuels the size is matched on litres/hour instead of kcal/hr; for *dual-fuel* it must cover whichever fuel needs the larger burner.
+
+=== Pricing (standalone offer)
+
+[cols="3,3,2",options="header"]
+|===
+| Step | Formula | Worked
+| Unit price | catalogue set price | ₹1,32,194 (ENCON 7A gas)
+| Line total | unit × quantity | × 1 = ₹1,32,194
+| Commercials | × (1 + P&F% + Designing% + Negotiation%) | × 1.15 = ₹1,52,023
+| Final | round to nearest ₹1,000 (when any commercial applied) | *₹1,52,000*
+|===
+
+NOTE: This standalone offer is purely a priced catalogue pick — no firing-rate or fabrication calculation, and no pilot burner (those belong to the full preheater offers). The selection rule above only runs inside the preheaters. P&F, designing and negotiation are all *added* (negotiation does not discount); transport is added to the total and then shown on its own line.

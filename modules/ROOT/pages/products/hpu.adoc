@@ -48,12 +48,73 @@ A running total updates live as you change the inputs, and the finished offer ca
 . *Produce the documents* — the all-inclusive price goes into the offer, transport is shown on its own line, and the Word file and PDF are created and filed.
 
 [NOTE]
-.Worked example
+.Worked example — default unit
 ====
-Suppose the unit's parts (pumps, motors, heater, filters, valves, gauges) add up to a catalogue cost of ₹1,00,000.
+Chosen unit = *9 kW, Duplex 1* (model HPD-9, oil flow 120 LPH). Its parts (pumps, motors, heater, filters, valves, gauges) add up to a material cost that, with the standard 1.8 mark-up, gives a unit price of *₹1,13,798*.
 
-* Unit price = 1,00,000 × *1.8* (standard mark-up) = *₹1,80,000*
-* Quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %): 1,80,000 × 1.15 = 2,07,000 → rounded to the nearest ₹1,000 = *₹2,07,000*
+* Quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %): 1,13,798 × 1.15 = 1,30,867 → rounded to the nearest ₹1,000 = *₹1,31,000*
 
 Transport, if any, is added to that total and then shown on its own line in the price schedule.
 ====
+
+== Full calculation reference (every step)
+
+A heating-and-pumping unit offer is built from a *parts list* held in the catalogue. The unit price is the sum of its parts times the standard mark-up; everything else is the same commercial chain as the other offers. This section documents every step with the real catalogue figures.
+
+=== The three variants
+
+[cols="2,4",options="header"]
+|===
+| Variant | What's in it
+| *Simplex* (model HPS-) | One pump + motor, one electric oil pre-heater — no standby
+| *Duplex 1* (model HPD-, default) | *Two* pumps + motors (one running, one standby), one pre-heater
+| *Duplex 2* (model HPDD-) | Two pumps + motors *and two* pre-heaters — full redundancy
+|===
+
+The variant decides how many pumps and heaters are in the parts list, which is why Duplex costs more than Simplex for the same capacity.
+
+=== Capacity → oil flow, and the catalogue prices
+
+The capacity (kW) fixes the oil flow rate; you don't type the flow. These are the *unit prices* (parts cost already × 1.8 mark-up), per variant:
+
+[cols="1,1,1,1,1",options="header"]
+|===
+| Capacity | Oil flow (LPH) | Simplex ₹ | Duplex 1 ₹ | Duplex 2 ₹
+| 3 kW  | 40  | 85,302  | 1,10,223 | 1,27,794
+| 6 kW  | 80  | 88,113  | 1,13,493 | 1,34,294
+| 9 kW  | 120 | 88,922  | 1,13,798 | 1,36,290
+| 12 kW | 160 | 89,808  | 1,14,684 | 1,37,492
+| 16 kW | 200 | 93,097  | 1,18,045 | 1,43,810
+| 20 kW | 250 | 96,322  | 1,21,198 | 1,49,606
+| 24 kW | 300 | 97,335  | 1,22,211 | 1,55,659
+| 30 kW | 400 | 1,30,153| 1,63,957 | 2,10,211
+| 36 kW | 500 | 1,31,676| 1,64,868 | 2,12,619
+| 48 kW | 600 | 1,99,776| 2,56,278 | 3,17,687
+|===
+
+=== How the unit price is built
+
+[cols="1,5",options="header"]
+|===
+| # | Step
+| 1 | *Add up the parts.* Sum the catalogue cost of every part in the chosen variant — pumps, motors, pre-heater(s), duplex coarse & fine filters, pressure-regulating valve, pressure and temperature gauges, and the skid fabrication.
+| 2 | *Use live rates for raw materials.* Parts that are raw material (channels, plates, sheet, pipe, flats, fasteners) are re-costed at the current Rs/kg rates, so a pricebook update flows straight through to the unit price. Bought-out parts use their stored catalogue cost.
+| 3 | *Apply the mark-up.* Unit price = material cost × *1.8*. (This is the figure in the table above.)
+|===
+
+=== Selection inside the preheater offers
+
+When an oil-fuelled preheater needs an oil skid, the unit is picked automatically: take the burner's oil demand in litres/hour and choose the *smallest capacity whose flow rate covers it*. For example a burner needing 200 LPH picks the *16 kW* unit (200 LPH); 210 LPH would step up to the *20 kW* (250 LPH).
+
+=== Pricing (standalone offer)
+
+[cols="3,3,2",options="header"]
+|===
+| Step | Formula | Worked
+| Unit price | parts cost × 1.8 | ₹1,13,798 (9 kW Duplex 1)
+| Line total | unit × quantity | × 1 = ₹1,13,798
+| Commercials | × (1 + P&F% + Designing% + Negotiation%) | × 1.15 = ₹1,30,867
+| Final | round to nearest ₹1,000 (when any commercial applied) | *₹1,31,000*
+|===
+
+NOTE: There is no fuel drop-down or combustion setting here — this is purely the oil heating-and-pumping skid. P&F, designing and negotiation are all *added* (negotiation does not discount); transport is added to the total and then shown on its own line. For oils that are already hot enough and only need pumping, see the xref:products/pu.adoc[Pumping Unit].
