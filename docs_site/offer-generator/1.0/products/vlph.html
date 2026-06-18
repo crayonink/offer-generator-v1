@@ -863,6 +863,66 @@
 </ul>
 </div>
 </div>
+<div class="sect3">
+<h4 id="_combustion_air_cfm_and_the_air_line"><a class="anchor" href="#_combustion_air_cfm_and_the_air_line"></a>Combustion air, CFM and the air line</h4>
+<div class="paragraph">
+<p>CFM appears twice in the sizing — once to <strong>pick the blower</strong>, once to <strong>size the air pipe</strong> — and the same number, <strong>1.7</strong>, links them. This subsection sets out the whole chain because it is the part most often misread.</p>
+</div>
+<div class="paragraph">
+<p><strong>Why 1.7?</strong> It is simply the <strong>unit conversion</strong> between the two ways of measuring airflow: imperial <strong>CFM</strong> (cubic feet per minute, how blowers are rated) and metric <strong>Nm³/hr</strong> (normal cubic metres per hour, how the combustion calc produces the air figure). One CFM ≈ 1.7 Nm³/hr. So:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Nm³/hr → CFM: <strong>divide by 1.7</strong></p>
+</li>
+<li>
+<p>CFM → Nm³/hr: <strong>multiply by 1.7</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 1 — required air → CFM → blower.</strong> The combustion-air figure from step 8 is in Nm³/hr, but blowers are catalogued in CFM, so it is converted first:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Gas CFM</strong> = combustion air ÷ 1.7 → 2,180.23 ÷ 1.7 = <strong>1,282.49 CFM</strong></p>
+</li>
+<li>
+<p><strong>Oil CFM</strong> (atomising air, oil fuels only) = equivalent LPH × 10</p>
+</li>
+<li>
+<p><strong>Dual-fuel</strong> → take the <strong>larger</strong> of the gas and oil CFM</p>
+</li>
+<li>
+<p><strong>Required HP</strong> = CFM × blower pressure (″WG) ÷ 3,200 → 1,282.49 × 28 ÷ 3,200 = <strong>11.22 HP</strong></p>
+</li>
+<li>
+<p>The blower is the <strong>smallest catalogue model in the chosen pressure series at or above that HP</strong> → ENCON 28/15 (15 HP, rated 1,700 CFM / 2,890 Nm³/hr)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Step 2 — chosen blower → air-line flow → pipe NB.</strong> The air pipe is <strong>not</strong> sized from the raw 2,180 Nm³/hr requirement. It is sized from the airflow the <strong>selected</strong> blower actually moves — its <strong>rated</strong> CFM converted back to Nm³/hr:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Air-line flow</strong> = selected blower CFM × 1.7 → 1,700 × 1.7 = <strong>2,890 Nm³/hr</strong> (this is the "Air Flow" shown on screen)</p>
+</li>
+<li>
+<p>That flow runs through the pipe formula at 15 m/s → 261 mm → <strong>300 NB</strong></p>
+</li>
+<li>
+<p>The result is floored: <strong>air-line NB = max(125 NB, the pipe-formula NB, the air-duct NB)</strong> — the line is never smaller than 125 NB</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Why the round-trip?</strong> Because the chosen blower is always one size <strong>up</strong> from the bare requirement (15 HP / 1,700 CFM for an 11.22 HP / 1,282 CFM need), it actually delivers <strong>more</strong> air than the minimum. Sizing the pipe from the blower&#8217;s real output — rather than the smaller required figure — keeps the displayed Air Flow and the pipe diameter consistent, and ensures the line can carry everything the blower pushes. The butterfly valve and rotary joint then follow this same air-line NB.</p>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_b_costing_bomvlph_builder_py"><a class="anchor" href="#_b_costing_bomvlph_builder_py"></a>B. Costing (<code>bom/vlph_builder.py</code>)</h3>

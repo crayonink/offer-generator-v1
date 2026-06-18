@@ -184,6 +184,8 @@ This is the only thing that sets the tundish apart from the ladle preheaters:
 
 *Pipe sizing* (`pipes.py`) — area = (flow ÷ 3600) ÷ velocity; inner dia = √(4·area/π) × 1000, rounded up to the next standard NB. Gas line at 12.7 m/s → 80 NB; air line uses the selected blower's CFM × 1.7 (2,890 Nm³/hr) at 15 m/s → 300 NB. (Pipes use the *total* flow — they feed the shared mains.)
 
+For the full air → CFM → blower → air-line round-trip and why the *1.7* factor appears twice, see xref:products/vlph.adoc#_combustion_air_cfm_and_the_air_line[Combustion air, CFM and the air line] in the vertical-preheater reference — the logic is identical (sized on the *total* combustion air, since the blower feeds all burners).
+
 === B. Costing (`bom/vlph_builder.py`, tundish mode)
 
 Each `_row` is priced by a computed override or an exact pricelist lookup:

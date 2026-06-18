@@ -95,6 +95,8 @@ A parallel *40″ W.G.* series (ENCON 40/5 … 40/60) carries the same HP steps 
 
 So the chosen blower is always *one size up* from the bare requirement (here 15 HP for an 11.22 HP need), and the air pipe is sized from the blower it will actually feed — not from the raw combustion-air figure — so the displayed flow and the pipe agree. For dual-fuel units the blower is sized for the *larger* of the two fuels' air demands; for oil, atomising-air CFM = equivalent LPH × 10.
 
+NOTE: The *1.7* is just the unit conversion between *CFM* (cubic feet per minute — how blowers are rated) and *Nm³/hr* (how the combustion calc gives the air figure): 1 CFM ≈ 1.7 Nm³/hr. So required air ÷ 1.7 gives CFM to pick the blower, and the chosen blower's rated CFM × 1.7 gives the air-line flow to size the pipe. The full round-trip is documented in xref:products/vlph.adoc#_combustion_air_cfm_and_the_air_line[the vertical-preheater reference].
+
 === Pricing (standalone offer)
 
 [cols="3,3,2",options="header"]

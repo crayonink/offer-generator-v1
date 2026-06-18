@@ -222,6 +222,8 @@ The `Ti > 100` threshold is the switch between "warm / in-cycle ladle" and "cold
 * *Air-gas regulator* — only for Manual / PLC+AGR / PID; sized from the gas-train outlet NB.
 * *Butterfly & valves* — sized to the air-line NB.
 
+For the full air → CFM → blower → air-line round-trip and why the *1.7* factor appears twice, see xref:products/vlph.adoc#_combustion_air_cfm_and_the_air_line[Combustion air, CFM and the air line] in the vertical-preheater reference — the logic is identical.
+
 === B. Costing (`bom/hlph_builder.py`)
 
 Each `_row` is priced by a computed override or an exact pricelist lookup:

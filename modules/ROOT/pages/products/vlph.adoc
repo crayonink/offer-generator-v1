@@ -240,6 +240,31 @@ The `Ti > 100` threshold is the switch between "warm / in-cycle ladle" and "cold
 * *Air-gas regulator* — only for Manual / PLC+AGR / PID; sized from the gas-train outlet NB (Flanged ≥ 65 NB, else Threaded).
 * *Butterfly & rotary joint* — sized to the air-line NB.
 
+==== Combustion air, CFM and the air line
+
+CFM appears twice in the sizing — once to *pick the blower*, once to *size the air pipe* — and the same number, *1.7*, links them. This subsection sets out the whole chain because it is the part most often misread.
+
+*Why 1.7?* It is simply the *unit conversion* between the two ways of measuring airflow: imperial *CFM* (cubic feet per minute, how blowers are rated) and metric *Nm³/hr* (normal cubic metres per hour, how the combustion calc produces the air figure). One CFM ≈ 1.7 Nm³/hr. So:
+
+* Nm³/hr → CFM: *divide by 1.7*
+* CFM → Nm³/hr: *multiply by 1.7*
+
+*Step 1 — required air → CFM → blower.* The combustion-air figure from step 8 is in Nm³/hr, but blowers are catalogued in CFM, so it is converted first:
+
+* *Gas CFM* = combustion air ÷ 1.7 → 2,180.23 ÷ 1.7 = *1,282.49 CFM*
+* *Oil CFM* (atomising air, oil fuels only) = equivalent LPH × 10
+* *Dual-fuel* → take the *larger* of the gas and oil CFM
+* *Required HP* = CFM × blower pressure (″WG) ÷ 3,200 → 1,282.49 × 28 ÷ 3,200 = *11.22 HP*
+* The blower is the *smallest catalogue model in the chosen pressure series at or above that HP* → ENCON 28/15 (15 HP, rated 1,700 CFM / 2,890 Nm³/hr)
+
+*Step 2 — chosen blower → air-line flow → pipe NB.* The air pipe is **not** sized from the raw 2,180 Nm³/hr requirement. It is sized from the airflow the *selected* blower actually moves — its *rated* CFM converted back to Nm³/hr:
+
+* *Air-line flow* = selected blower CFM × 1.7 → 1,700 × 1.7 = *2,890 Nm³/hr* (this is the "Air Flow" shown on screen)
+* That flow runs through the pipe formula at 15 m/s → 261 mm → *300 NB*
+* The result is floored: *air-line NB = max(125 NB, the pipe-formula NB, the air-duct NB)* — the line is never smaller than 125 NB
+
+*Why the round-trip?* Because the chosen blower is always one size *up* from the bare requirement (15 HP / 1,700 CFM for an 11.22 HP / 1,282 CFM need), it actually delivers *more* air than the minimum. Sizing the pipe from the blower's real output — rather than the smaller required figure — keeps the displayed Air Flow and the pipe diameter consistent, and ensures the line can carry everything the blower pushes. The butterfly valve and rotary joint then follow this same air-line NB.
+
 === B. Costing (`bom/vlph_builder.py`)
 
 Each `_row` is priced either by a computed override or an exact pricelist lookup:
