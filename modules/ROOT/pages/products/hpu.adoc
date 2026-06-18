@@ -50,9 +50,9 @@ A running total updates live as you change the inputs, and the finished offer ca
 [NOTE]
 .Worked example — default unit
 ====
-Chosen unit = *9 kW, Duplex 1* (model HPD-9, oil flow 120 LPH). Its parts (pumps, motors, heater, filters, valves, gauges) add up to a material cost that, with the standard 1.8 mark-up, gives a unit price of *₹1,13,798*.
+Chosen unit = *9 kW, Duplex 1* (model HPD-9, oil flow 120 LPH). Its parts (pumps, motors, heater, filters, valves, gauges) add up to a material cost that, with the standard 1.8 mark-up, gives a unit price of *₹1,19,326*.
 
-* Quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %): 1,13,798 × 1.15 = 1,30,867 → rounded to the nearest ₹1,000 = *₹1,31,000*
+* Quantity 1, P&F 5 % + designing 10 % + negotiation 0 % (= +15 %): 1,19,326 × 1.15 = 1,37,224 → rounded to the nearest ₹1,000 = *₹1,37,000*
 
 Transport, if any, is added to that total and then shown on its own line in the price schedule.
 ====
@@ -80,16 +80,16 @@ The capacity (kW) fixes the oil flow rate; you don't type the flow. These are th
 [cols="1,1,1,1,1",options="header"]
 |===
 | Capacity | Oil flow (LPH) | Simplex ₹ | Duplex 1 ₹ | Duplex 2 ₹
-| 3 kW  | 40  | 85,302  | 1,10,223 | 1,27,794
-| 6 kW  | 80  | 88,113  | 1,13,493 | 1,34,294
-| 9 kW  | 120 | 88,922  | 1,13,798 | 1,36,290
-| 12 kW | 160 | 89,808  | 1,14,684 | 1,37,492
-| 16 kW | 200 | 93,097  | 1,18,045 | 1,43,810
-| 20 kW | 250 | 96,322  | 1,21,198 | 1,49,606
-| 24 kW | 300 | 97,335  | 1,22,211 | 1,55,659
-| 30 kW | 400 | 1,30,153| 1,63,957 | 2,10,211
-| 36 kW | 500 | 1,31,676| 1,64,868 | 2,12,619
-| 48 kW | 600 | 1,99,776| 2,56,278 | 3,17,687
+| 3 kW  | 40  | 86,956  | 1,12,192 | 1,31,993
+| 6 kW  | 80  | 90,516  | 1,16,211 | 1,39,991
+| 9 kW  | 120 | 93,685  | 1,19,326 | 1,46,249
+| 12 kW | 160 | 95,761  | 1,21,402 | 1,49,794
+| 16 kW | 200 | 1,01,305| 1,27,243 | 1,60,598
+| 20 kW | 250 | 1,06,945| 1,33,036 | 1,71,318
+| 24 kW | 300 | 1,07,146| 1,32,922 | 1,75,684
+| 30 kW | 400 | 1,40,463| 1,75,392 | 2,31,393
+| 36 kW | 500 | 1,45,171| 1,79,713 | 2,40,177
+| 48 kW | 600 | 2,11,228| 2,69,530 | 3,45,454
 |===
 
 === How the unit price is built
@@ -111,10 +111,10 @@ When an oil-fuelled preheater needs an oil skid, the unit is picked automaticall
 [cols="3,3,2",options="header"]
 |===
 | Step | Formula | Worked
-| Unit price | parts cost × 1.8 | ₹1,13,798 (9 kW Duplex 1)
-| Line total | unit × quantity | × 1 = ₹1,13,798
-| Commercials | × (1 + P&F% + Designing% + Negotiation%) | × 1.15 = ₹1,30,867
-| Final | round to nearest ₹1,000 (when any commercial applied) | *₹1,31,000*
+| Unit price | parts cost × 1.8 | ₹1,19,326 (9 kW Duplex 1)
+| Line total | unit × quantity | × 1 = ₹1,19,326
+| Commercials | × (1 + P&F% + Designing% + Negotiation%) | × 1.15 = ₹1,37,224
+| Final | round to nearest ₹1,000 (when any commercial applied) | *₹1,37,000*
 |===
 
 NOTE: There is no fuel drop-down or combustion setting here — this is purely the oil heating-and-pumping skid. P&F, designing and negotiation are all *added* (negotiation does not discount); transport is added to the total and then shown on its own line. For oils that are already hot enough and only need pumping, see the xref:products/pu.adoc[Pumping Unit].
