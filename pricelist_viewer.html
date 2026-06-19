@@ -1084,9 +1084,11 @@ function _renderRatesTable(data, opts) {
         const sb = parseFloat(splitItem(b.item, b.specification).size);
         return (isNaN(sa) ? Infinity : sa) - (isNaN(sb) ? Infinity : sb);
       });
-    } else if (cat === 'Safety Relief Valve' || cat === 'ID Fan') {
-      // Sort by price ascending — these are type variants with no NB size,
-      // so price is the meaningful order.
+    } else if (cat === 'Safety Relief Valve' || cat === 'ID Fan'
+               || cat === 'Gas Filter (Threaded)' || cat === 'Gas Filter (Flanged)') {
+      // Sort by price ascending. Safety Relief Valve / ID Fan are type variants
+      // with no NB size; gas filters do have NB sizes but are listed
+      // cheapest-first by request (price tracks size anyway).
       cats[cat].sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
     } else if (cat === 'Pressure Switch') {
       // Group by company (all MADAS together, all Switzer together), then by
