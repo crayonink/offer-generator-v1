@@ -1161,7 +1161,7 @@ def get_pricelist_rates():
             "FROM component_price_master "
             "WHERE item NOT LIKE 'FUEL DENSITY%' "
             "  AND (category IS NULL OR category != 'Fuel Density') "
-            "ORDER BY category, item"
+            "ORDER BY category, price, item"
         ).fetchall()
         conn.close()
         return [{"rowid": r[0], "item": r[1], "category": r[2],
