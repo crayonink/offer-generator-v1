@@ -1086,9 +1086,10 @@ function _renderRatesTable(data, opts) {
       });
     } else if (cat === 'Safety Relief Valve' || cat === 'ID Fan'
                || cat === 'Gas Filter (Threaded)' || cat === 'Gas Filter (Flanged)'
-               || cat === 'Gas Regulator (5 Bar Threaded)' || cat === 'Gas Regulator (5 Bar Flanged)') {
+               || cat === 'Gas Regulator (5 Bar Threaded)' || cat === 'Gas Regulator (5 Bar Flanged)'
+               || cat === 'Gas Regulator (2 Bar Threaded)' || cat === 'Gas Regulator (2 Bar Flanged)') {
       // Sort by price ascending. Safety Relief Valve / ID Fan are type variants
-      // with no NB size; gas filters and 5-bar regulators do have NB sizes but
+      // with no NB size; gas filters and 2/5-bar regulators do have NB sizes but
       // are listed cheapest-first by request (price tracks size anyway).
       cats[cat].sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
     } else if (cat === 'Pressure Switch') {
