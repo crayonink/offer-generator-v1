@@ -1048,8 +1048,48 @@ function _renderRatesTable(data, opts) {
       <th style="min-width:130px;">Last Updated</th>
     </tr></thead><tbody>`;
 
-  Object.keys(cats).sort().forEach(cat => {
-    html += `<tr class="section-hdr"><td class="rn"></td><td colspan="8">${esc(cat)}</td></tr>`;
+  // Categories that are two divisions of one parent (e.g. Gas Filter
+  // Threaded/Flanged) render under a SINGLE parent header with a sub-header
+  // for each division, instead of two separate top-level sections.
+  const CATEGORY_DIVISIONS = {
+    'Gas Filter (Flanged)':            ['Gas Filter', 'Flanged'],
+    'Gas Filter (Threaded)':           ['Gas Filter', 'Threaded'],
+    'Gas Regulator (5 Bar Flanged)':   ['Gas Regulator (5 Bar)', 'Flanged'],
+    'Gas Regulator (5 Bar Threaded)':  ['Gas Regulator (5 Bar)', 'Threaded'],
+    'Gas Regulator (2 Bar Flanged)':   ['Gas Regulator (2 Bar)', 'Flanged'],
+    'Gas Regulator (2 Bar Threaded)':  ['Gas Regulator (2 Bar)', 'Threaded'],
+  };
+  const _parentOf = (c) => CATEGORY_DIVISIONS[c] ? CATEGORY_DIVISIONS[c][0] : c;
+  // Build an iteration order where divisions of the same parent stay
+  // contiguous even if another category sorts alphabetically between them
+  // (e.g. "Gas Regulator (5 Bar Std)" falls between Flanged and Threaded).
+  const _sortedCats = Object.keys(cats).sort();
+  const _seenParents = new Set();
+  const _iterOrder = [];
+  _sortedCats.forEach(c => {
+    if (CATEGORY_DIVISIONS[c]) {
+      const p = _parentOf(c);
+      if (!_seenParents.has(p)) {
+        _seenParents.add(p);
+        _sortedCats.filter(x => CATEGORY_DIVISIONS[x] && _parentOf(x) === p).forEach(x => _iterOrder.push(x));
+      }
+    } else {
+      _iterOrder.push(c);
+    }
+  });
+  let _lastParent = null;
+  _iterOrder.forEach(cat => {
+    const _div = CATEGORY_DIVISIONS[cat];
+    if (_div) {
+      if (_div[0] !== _lastParent) {
+        html += `<tr class="section-hdr"><td class="rn"></td><td colspan="8">${esc(_div[0])}</td></tr>`;
+        _lastParent = _div[0];
+      }
+      html += `<tr class="company-hdr"><td class="rn"></td><td colspan="8">${esc(_div[1])}</td></tr>`;
+    } else {
+      _lastParent = null;
+      html += `<tr class="section-hdr"><td class="rn"></td><td colspan="8">${esc(cat)}</td></tr>`;
+    }
     // Bought Out is a grab-bag of mixed items, so sort purely alphabetically.
     // Every other category groups one product line, so sort by extracted size
     // ascending (50 NB precedes 100 NB instead of following lexicographic
