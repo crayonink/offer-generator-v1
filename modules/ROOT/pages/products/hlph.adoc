@@ -3,6 +3,8 @@
 
 A horizontal ladle preheater does the same job as the xref:products/vlph.adoc[vertical preheater] — drying and heating a ladle's refractory lining — but the ladle is heated lying on its side. The burner fires in from the side, and the ladle sits on a powered trolley instead of under a swivel hood.
 
+TIP: As with the vertical unit, a hot ladle (start temperature *above 600 °C*) switches to *Circulating Ladle Preheater* mode and sizes the burner for *half* the refractory weight. See xref:products/vlph.adoc#_circulating_ladle_preheater[Circulating Ladle Preheater].
+
 == What you enter
 
 *The heating job.*
@@ -101,44 +103,46 @@ There is also a *cost-comparison tool* that re-runs the calculation across singl
 ====
 *Given inputs (defaults):* lining 650 → 1200 °C, refractory 21,500 kg, heat factor 0.25, efficiency 0.52, heating time 2 hr, natural gas at 8,500 kcal/Nm³, blower pressure 28″ WG, 10-ton ladle, automatic (PLC + AGR) control, single burner.
 
+*Step 0 — Circulating check.* Ti = 650 °C is *above 600 °C*, so this is a *Circulating Ladle Preheater*: the hot, in-circulation ladle only needs topping up, so the effective weight is half the input = 21,500 ÷ 2 = *10,750 kg*. Every figure below uses it. (Same rule as the vertical unit — see xref:products/vlph.adoc#_circulating_ladle_preheater[Circulating Ladle Preheater].)
+
 *Step 1 — Fuel & air needed* (identical to the vertical unit — same burner math):
 
 * Average temperature to raise = (1200 − 650) ÷ 2 + 50 = *325 °C*
-* Firing rate = 21,500 × 0.25 × 325 = *17,46,875 kcal*
-* Heat load = 17,46,875 ÷ 0.52 = *33,59,375 kcal*
-* Fuel for the 2-hr cycle = 33,59,375 ÷ 8,500 = 395.22 Nm³ → ÷ 2 hr = 197.61 Nm³/hr → +10 % margin = *217.37 Nm³/hr* (gas flow)
-* Firing rate in MW = 217.37 × 8,500 ÷ (860 × 1000) = *2.15 MW*
-* Combustion air = 8,500 × 217.37 × 118 ÷ 1,00,000 = *2,180.23 Nm³/hr*
-* Blower air = 2,180.23 ÷ 1.7 = *1,282.49 CFM*; reference HP at 28″ = 1,282.49 × 28 ÷ 3,200 = *11.22 HP*
+* Firing rate = *10,750* × 0.25 × 325 = *8,73,437.5 kcal* (uses the effective weight)
+* Heat load = 8,73,437.5 ÷ 0.52 = *16,79,687.5 kcal*
+* Fuel for the 2-hr cycle = 16,79,687.5 ÷ 8,500 = 197.61 Nm³ → ÷ 2 hr = 98.81 Nm³/hr → +10 % margin = *108.69 Nm³/hr* (gas flow)
+* Firing rate in MW = 108.69 × 8,500 ÷ (860 × 1000) = *1.07 MW*
+* Combustion air = 8,500 × 108.69 × 118 ÷ 1,00,000 = *1,090.12 Nm³/hr*
+* Blower air = 1,090.12 ÷ 1.7 = *641.25 CFM*; reference HP at 28″ = 641.25 × 28 ÷ 3,200 = *5.61 HP*
 
 *Step 2 — Equipment selected from the catalogue:*
 
-* Burner = *ENCON 7A*; Blower = *ENCON 28/15* (15 HP, 2,890 Nm³/hr, 1,700 CFM); Gas train = *DN50 × DN65* (300 Nm³/hr band)
+* Burner = *ENCON 5A*; Blower = *ENCON 28/7.5* (7.5 HP, 1,450 Nm³/hr, 850 CFM); Gas train = *DN40 × DN40*
 
 *Step 3 — Pipe sizing:*
 
-* Gas line: 217.37 Nm³/hr at 12.7 m/s → 77.8 mm → *80 NB*
-* Air line: selected blower 1,700 CFM × 1.7 = 2,890 Nm³/hr at 15 m/s → 261.04 mm → *300 NB*
+* Gas line: 108.69 Nm³/hr at 12.7 m/s → *65 NB*
+* Air line: selected blower 850 CFM × 1.7 = 1,445 Nm³/hr at 15 m/s → *200 NB*
 
-*Step 4 — Structure, ceramic & trolley drive.* Auto-filled from the 10-ton *horizontal* ladle mapping (MS structure kg, ceramic-fibre rolls); these feed the per-kg ENCON lines (fabrication ₹110/kg, pipeline ₹125/kg). The trolley-drive group (geared motor, wheels, plummer blocks, shafts, bearings, frame) replaces the vertical unit's swivel hood and rotary joint.
+*Step 4 — Structure, ceramic & trolley drive.* Auto-filled from the 10-ton *horizontal* ladle mapping (MS structure kg, ceramic-fibre rolls); these feed the per-kg ENCON lines (fabrication ₹110/kg, pipeline ₹125/kg) and are *not* affected by the circulating halving. The trolley-drive group (geared motor, wheels, plummer blocks, shafts, bearings, frame) replaces the vertical unit's swivel hood and rotary joint.
 
 *Step 5 — BOM totals* (every line priced from the pricelist + selectors):
 
-* Bought-out items total = *₹7,50,900.90*
-* ENCON-made items total = *₹8,00,254.27*
+* Bought-out items total = *₹6,54,018.25*
+* ENCON-made items total = *₹6,82,319.21*
 
 *Step 6 — Commercials* (mark-up 1.8, P&F 5 %, designing 5 %, negotiation 0 %):
 
-* Grand Total = bought-out × 1.8 + ENCON = 7,50,900.90 × 1.8 + 8,00,254.27 = 13,51,621.62 + 8,00,254.27 = *₹21,51,876*
-* + P&F 5 % (₹1,07,594) + Designing 5 % (₹1,07,594) + Negotiation 0 % + Transport ₹0 = 23,67,063
-* Round up to nearest ₹1,000 = *₹23,67,000* (the single all-inclusive price; transport, if any, on its own line)
+* Grand Total = bought-out × 1.8 + ENCON = 6,54,018.25 × 1.8 + 6,82,319.21 = 11,77,232.85 + 6,82,319.21 = *₹18,59,552*
+* + P&F 5 % + Designing 5 % (= +10 %) + Negotiation 0 % + Transport ₹0 = 20,45,507
+* Round to nearest ₹1,000 = *₹20,46,000* (the single all-inclusive price; transport, if any, on its own line)
 
-The figures are *lower than the vertical unit* (≈ ₹29,53,000 for the same job) because the horizontal BOM has no rotary joint and a lighter ENCON structure.
+The figures are *lower than the vertical unit* (≈ ₹25,94,000 for the same circulating job) because the horizontal BOM has no rotary joint and a lighter ENCON structure.
 ====
 
 == Full calculation reference (every step)
 
-The Horizontal Ladle Preheater uses *exactly the same sizing math* as the xref:products/vlph.adoc[vertical preheater] (`calculations/burner.py`, `calculations/pipes.py`, `bom/selectors/selection_engine.py`). The only differences are in the bill of materials (`bom/hlph_builder.py`): a *trolley drive* instead of a swivel hood, and *no rotary joint*. This section documents every formula, with the worked values from the example above.
+The Horizontal Ladle Preheater uses *exactly the same sizing math* as the xref:products/vlph.adoc[vertical preheater] (`calculations/burner.py`, `calculations/pipes.py`, `bom/selectors/selection_engine.py`) — *including the Circulating Ladle Preheater rule*: when Ti > 600 °C the effective refractory weight is halved before sizing (the worked example above is circulating). The only differences are in the bill of materials (`bom/hlph_builder.py`): a *trolley drive* instead of a swivel hood, and *no rotary joint*. This section documents every formula, with the worked values from the example above.
 
 === Inputs
 
@@ -195,30 +199,33 @@ The `Ti > 100` threshold is the switch between "warm / in-cycle ladle" and "cold
 
 [cols="1,4,2",options="header"]
 |===
-| # | Formula | Worked
+| # | Formula | Worked (defaults — circulating, Ti 650)
 
+| 0 | *Effective weight* = entered weight ÷ 2 if Ti > 600 (circulating), else entered weight | 21,500 ÷ 2 = *10,750 kg*
 | 1 | *Average temp rise* — warm start (Ti > 100): (Tf − Ti)/2 + 50; cold start (Ti ≤ 100): (Tf + Ti)/2 | (1200−650)/2 + 50 = *325 °C*
-| 2 | *Firing rate* (kcal) = weight × heat factor × avg-temp-rise | 21,500 × 0.25 × 325 = *17,46,875*
-| 3 | *Heat load* = firing rate ÷ efficiency | ÷ 0.52 = *33,59,375 kcal*
-| 4 | *Fuel consumption* = heat load ÷ CV | ÷ 8,500 = *395.22 Nm³*
-| 5 | *Calculated firing rate* = fuel ÷ time | ÷ 2 = *197.61 Nm³/hr*
-| 6 | *+10 % margin* → gas flow | × 1.1 = *217.37 Nm³/hr*
-| 7 | *Firing rate (MW)* = flow × CV ÷ (860 × 1000) | = *2.15 MW*
-| 8 | *Combustion air* = CV × flow × 118 ÷ 1,00,000 | = *2,180.23 Nm³/hr*
-| 9 | *CFM* = air ÷ 1.7; *blower HP* = CFM × pressure ÷ 3,200 | 1,282.49 CFM; *11.22 HP*
+| 2 | *Firing rate* (kcal) = effective weight × heat factor × avg-temp-rise | 10,750 × 0.25 × 325 = *8,73,437.5*
+| 3 | *Heat load* = firing rate ÷ efficiency | ÷ 0.52 = *16,79,687.5 kcal*
+| 4 | *Fuel consumption* = heat load ÷ CV | ÷ 8,500 = *197.61 Nm³*
+| 5 | *Calculated firing rate* = fuel ÷ time | ÷ 2 = *98.81 Nm³/hr*
+| 6 | *+10 % margin* → gas flow | × 1.1 = *108.69 Nm³/hr*
+| 7 | *Firing rate (MW)* = flow × CV ÷ (860 × 1000) | = *1.07 MW*
+| 8 | *Combustion air* = CV × flow × 118 ÷ 1,00,000 | = *1,090.12 Nm³/hr*
+| 9 | *CFM* = air ÷ 1.7; *blower HP* = CFM × pressure ÷ 3,200 | 641.25 CFM; *5.61 HP*
 |===
 
-*Direct mode* (instead of steps 1–6): heat = burner kW × 860 (or the entered heat input); gas flow = heat ÷ CV; air = heat × 118 ÷ 1,00,000.
+*Circulating Ladle Preheater* — when Ti > 600 °C the effective weight in step 0 is halved (the hot ladle only needs topping up); only the burner/blower/pipe sizing uses it, not the structure/ceramic quantities. Identical rule to the xref:products/vlph.adoc#_circulating_ladle_preheater[vertical unit].
+
+*Direct mode* (instead of steps 0–6): heat = burner kW × 860 (or the entered heat input); gas flow = heat ÷ CV; air = heat × 118 ÷ 1,00,000.
 
 *Pipe sizing* (`pipes.py`) — area = (flow ÷ 3600) ÷ velocity; inner dia = √(4·area/π) × 1000, rounded up to the next standard NB:
 
-* Gas line at 12.7 m/s → 80 NB; air line uses the *selected blower's* CFM × 1.7 (2,890 Nm³/hr) at 15 m/s → 300 NB. Oil-fuel line NB: ≤ 250 LPH → 20 NB, else 25 NB.
+* Gas line at 12.7 m/s → 65 NB; air line uses the *selected blower's* CFM × 1.7 (1,445 Nm³/hr) at 15 m/s → 200 NB. Oil-fuel line NB: ≤ 250 LPH → 20 NB, else 25 NB.
 
 *Equipment selection* (`selection_engine.py`) — same as the vertical unit:
 
-* *Burner* — smallest ENCON size whose max firing covers the gas flow at the burner pressure (ENCON 7A).
-* *Blower* — required HP = CFM × pressure ÷ 3,200; pick the smallest blower in the chosen pressure series at or above it (ENCON 28/15). Dual-fuel sizes for the larger air demand.
-* *Gas train* — the row whose [min, max] flow band brackets the gas flow (DN50 × DN65).
+* *Burner* — smallest ENCON size whose max firing covers the gas flow at the burner pressure (ENCON 5A).
+* *Blower* — required HP = CFM × pressure ÷ 3,200; pick the smallest blower in the chosen pressure series at or above it (ENCON 28/7.5). Dual-fuel sizes for the larger air demand.
+* *Gas train* — the row whose [min, max] flow band brackets the gas flow (DN40 × DN40).
 * *Air-gas regulator* — only for Manual / PLC+AGR / PID; sized from the gas-train outlet NB.
 * *Butterfly & valves* — sized to the air-line NB.
 
@@ -241,10 +248,10 @@ Each `_row` is priced by a computed override or an exact pricelist lookup:
 [cols="3,3,2",options="header"]
 |===
 | Step | Formula | Worked
-| Bought-out total | Σ bought-out rows | *₹7,50,900.90*
-| ENCON total | Σ ENCON rows | *₹8,00,254.27*
-| Grand Total | bought-out × mark-up (1.8) + ENCON | *₹21,51,876*
-| Final Total | round-to-₹1,000( Grand × (1 + P&F% + Designing% + Negotiation%) + Transport ) | 21,51,876 × 1.10 = 23,67,063 → *₹23,67,000*
+| Bought-out total | Σ bought-out rows | *₹6,54,018.25*
+| ENCON total | Σ ENCON rows | *₹6,82,319.21*
+| Grand Total | bought-out × mark-up (1.8) + ENCON | *₹18,59,552*
+| Final Total | round-to-₹1,000( Grand × (1 + P&F% + Designing% + Negotiation%) + Transport ) | 18,59,552 × 1.10 = 20,45,507 → *₹20,46,000*
 |===
 
 NOTE: P&F, designing and negotiation are all *added* (negotiation does not discount); the rounded Final Total is the single price in the schedule, with transport pulled onto its own line afterwards. The mark-up, P&F, designing and negotiation are all editable on the costing page. A *cost-comparison tool* re-runs this whole calculation across single-variable swaps (vendor, ignition on/off, pumping-unit type, manual vs automatic) so each choice's price effect can be compared side by side.

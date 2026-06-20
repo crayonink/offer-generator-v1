@@ -166,6 +166,18 @@
 <div class="paragraph">
 <p>A horizontal ladle preheater does the same job as the <a href="vlph.html" class="xref page">vertical preheater</a> — drying and heating a ladle&#8217;s refractory lining — but the ladle is heated lying on its side. The burner fires in from the side, and the ladle sits on a powered trolley instead of under a swivel hood.</p>
 </div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+As with the vertical unit, a hot ladle (start temperature <strong>above 600 °C</strong>) switches to <strong>Circulating Ladle Preheater</strong> mode and sizes the burner for <strong>half</strong> the refractory weight. See <a href="vlph.html#_circulating_ladle_preheater" class="xref page">Circulating Ladle Preheater</a>.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -455,6 +467,9 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <p><strong>Given inputs (defaults):</strong> lining 650 → 1200 °C, refractory 21,500 kg, heat factor 0.25, efficiency 0.52, heating time 2 hr, natural gas at 8,500 kcal/Nm³, blower pressure 28″ WG, 10-ton ladle, automatic (PLC + AGR) control, single burner.</p>
 </div>
 <div class="paragraph">
+<p><strong>Step 0 — Circulating check.</strong> Ti = 650 °C is <strong>above 600 °C</strong>, so this is a <strong>Circulating Ladle Preheater</strong>: the hot, in-circulation ladle only needs topping up, so the effective weight is half the input = 21,500 ÷ 2 = <strong>10,750 kg</strong>. Every figure below uses it. (Same rule as the vertical unit — see <a href="vlph.html#_circulating_ladle_preheater" class="xref page">Circulating Ladle Preheater</a>.)</p>
+</div>
+<div class="paragraph">
 <p><strong>Step 1 — Fuel &amp; air needed</strong> (identical to the vertical unit — same burner math):</p>
 </div>
 <div class="ulist">
@@ -463,22 +478,22 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <p>Average temperature to raise = (1200 − 650) ÷ 2 + 50 = <strong>325 °C</strong></p>
 </li>
 <li>
-<p>Firing rate = 21,500 × 0.25 × 325 = <strong>17,46,875 kcal</strong></p>
+<p>Firing rate = <strong>10,750</strong> × 0.25 × 325 = <strong>8,73,437.5 kcal</strong> (uses the effective weight)</p>
 </li>
 <li>
-<p>Heat load = 17,46,875 ÷ 0.52 = <strong>33,59,375 kcal</strong></p>
+<p>Heat load = 8,73,437.5 ÷ 0.52 = <strong>16,79,687.5 kcal</strong></p>
 </li>
 <li>
-<p>Fuel for the 2-hr cycle = 33,59,375 ÷ 8,500 = 395.22 Nm³ → ÷ 2 hr = 197.61 Nm³/hr → +10 % margin = <strong>217.37 Nm³/hr</strong> (gas flow)</p>
+<p>Fuel for the 2-hr cycle = 16,79,687.5 ÷ 8,500 = 197.61 Nm³ → ÷ 2 hr = 98.81 Nm³/hr → +10 % margin = <strong>108.69 Nm³/hr</strong> (gas flow)</p>
 </li>
 <li>
-<p>Firing rate in MW = 217.37 × 8,500 ÷ (860 × 1000) = <strong>2.15 MW</strong></p>
+<p>Firing rate in MW = 108.69 × 8,500 ÷ (860 × 1000) = <strong>1.07 MW</strong></p>
 </li>
 <li>
-<p>Combustion air = 8,500 × 217.37 × 118 ÷ 1,00,000 = <strong>2,180.23 Nm³/hr</strong></p>
+<p>Combustion air = 8,500 × 108.69 × 118 ÷ 1,00,000 = <strong>1,090.12 Nm³/hr</strong></p>
 </li>
 <li>
-<p>Blower air = 2,180.23 ÷ 1.7 = <strong>1,282.49 CFM</strong>; reference HP at 28″ = 1,282.49 × 28 ÷ 3,200 = <strong>11.22 HP</strong></p>
+<p>Blower air = 1,090.12 ÷ 1.7 = <strong>641.25 CFM</strong>; reference HP at 28″ = 641.25 × 28 ÷ 3,200 = <strong>5.61 HP</strong></p>
 </li>
 </ul>
 </div>
@@ -488,7 +503,7 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <div class="ulist">
 <ul>
 <li>
-<p>Burner = <strong>ENCON 7A</strong>; Blower = <strong>ENCON 28/15</strong> (15 HP, 2,890 Nm³/hr, 1,700 CFM); Gas train = <strong>DN50 × DN65</strong> (300 Nm³/hr band)</p>
+<p>Burner = <strong>ENCON 5A</strong>; Blower = <strong>ENCON 28/7.5</strong> (7.5 HP, 1,450 Nm³/hr, 850 CFM); Gas train = <strong>DN40 × DN40</strong></p>
 </li>
 </ul>
 </div>
@@ -498,15 +513,15 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <div class="ulist">
 <ul>
 <li>
-<p>Gas line: 217.37 Nm³/hr at 12.7 m/s → 77.8 mm → <strong>80 NB</strong></p>
+<p>Gas line: 108.69 Nm³/hr at 12.7 m/s → <strong>65 NB</strong></p>
 </li>
 <li>
-<p>Air line: selected blower 1,700 CFM × 1.7 = 2,890 Nm³/hr at 15 m/s → 261.04 mm → <strong>300 NB</strong></p>
+<p>Air line: selected blower 850 CFM × 1.7 = 1,445 Nm³/hr at 15 m/s → <strong>200 NB</strong></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p><strong>Step 4 — Structure, ceramic &amp; trolley drive.</strong> Auto-filled from the 10-ton <strong>horizontal</strong> ladle mapping (MS structure kg, ceramic-fibre rolls); these feed the per-kg ENCON lines (fabrication ₹110/kg, pipeline ₹125/kg). The trolley-drive group (geared motor, wheels, plummer blocks, shafts, bearings, frame) replaces the vertical unit&#8217;s swivel hood and rotary joint.</p>
+<p><strong>Step 4 — Structure, ceramic &amp; trolley drive.</strong> Auto-filled from the 10-ton <strong>horizontal</strong> ladle mapping (MS structure kg, ceramic-fibre rolls); these feed the per-kg ENCON lines (fabrication ₹110/kg, pipeline ₹125/kg) and are <strong>not</strong> affected by the circulating halving. The trolley-drive group (geared motor, wheels, plummer blocks, shafts, bearings, frame) replaces the vertical unit&#8217;s swivel hood and rotary joint.</p>
 </div>
 <div class="paragraph">
 <p><strong>Step 5 — BOM totals</strong> (every line priced from the pricelist + selectors):</p>
@@ -514,10 +529,10 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <div class="ulist">
 <ul>
 <li>
-<p>Bought-out items total = <strong>₹7,50,900.90</strong></p>
+<p>Bought-out items total = <strong>₹6,54,018.25</strong></p>
 </li>
 <li>
-<p>ENCON-made items total = <strong>₹8,00,254.27</strong></p>
+<p>ENCON-made items total = <strong>₹6,82,319.21</strong></p>
 </li>
 </ul>
 </div>
@@ -527,18 +542,18 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <div class="ulist">
 <ul>
 <li>
-<p>Grand Total = bought-out × 1.8 + ENCON = 7,50,900.90 × 1.8 + 8,00,254.27 = 13,51,621.62 + 8,00,254.27 = <strong>₹21,51,876</strong></p>
+<p>Grand Total = bought-out × 1.8 + ENCON = 6,54,018.25 × 1.8 + 6,82,319.21 = 11,77,232.85 + 6,82,319.21 = <strong>₹18,59,552</strong></p>
 </li>
 <li>
-<p>+ P&amp;F 5 % (₹1,07,594) + Designing 5 % (₹1,07,594) + Negotiation 0 % + Transport ₹0 = 23,67,063</p>
+<p>+ P&amp;F 5 % + Designing 5 % (= +10 %) + Negotiation 0 % + Transport ₹0 = 20,45,507</p>
 </li>
 <li>
-<p>Round up to nearest ₹1,000 = <strong>₹23,67,000</strong> (the single all-inclusive price; transport, if any, on its own line)</p>
+<p>Round to nearest ₹1,000 = <strong>₹20,46,000</strong> (the single all-inclusive price; transport, if any, on its own line)</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The figures are <strong>lower than the vertical unit</strong> (≈ ₹29,53,000 for the same job) because the horizontal BOM has no rotary joint and a lighter ENCON structure.</p>
+<p>The figures are <strong>lower than the vertical unit</strong> (≈ ₹25,94,000 for the same circulating job) because the horizontal BOM has no rotary joint and a lighter ENCON structure.</p>
 </div>
 </td>
 </tr>
@@ -550,7 +565,7 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <h2 id="_full_calculation_reference_every_step"><a class="anchor" href="#_full_calculation_reference_every_step"></a>Full calculation reference (every step)</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The Horizontal Ladle Preheater uses <strong>exactly the same sizing math</strong> as the <a href="vlph.html" class="xref page">vertical preheater</a> (<code>calculations/burner.py</code>, <code>calculations/pipes.py</code>, <code>bom/selectors/selection_engine.py</code>). The only differences are in the bill of materials (<code>bom/hlph_builder.py</code>): a <strong>trolley drive</strong> instead of a swivel hood, and <strong>no rotary joint</strong>. This section documents every formula, with the worked values from the example above.</p>
+<p>The Horizontal Ladle Preheater uses <strong>exactly the same sizing math</strong> as the <a href="vlph.html" class="xref page">vertical preheater</a> (<code>calculations/burner.py</code>, <code>calculations/pipes.py</code>, <code>bom/selectors/selection_engine.py</code>) — <strong>including the Circulating Ladle Preheater rule</strong>: when Ti &gt; 600 °C the effective refractory weight is halved before sizing (the worked example above is circulating). The only differences are in the bill of materials (<code>bom/hlph_builder.py</code>): a <strong>trolley drive</strong> instead of a swivel hood, and <strong>no rotary joint</strong>. This section documents every formula, with the worked values from the example above.</p>
 </div>
 <div class="sect2">
 <h3 id="_inputs"><a class="anchor" href="#_inputs"></a>Inputs</h3>
@@ -724,10 +739,15 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <tr>
 <th class="tableblock halign-left valign-top">#</th>
 <th class="tableblock halign-left valign-top">Formula</th>
-<th class="tableblock halign-left valign-top">Worked</th>
+<th class="tableblock halign-left valign-top">Worked (defaults — circulating, Ti 650)</th>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Effective weight</strong> = entered weight ÷ 2 if Ti &gt; 600 (circulating), else entered weight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">21,500 ÷ 2 = <strong>10,750 kg</strong></p></td>
+</tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Average temp rise</strong> — warm start (Ti &gt; 100): (Tf − Ti)/2 + 50; cold start (Ti ≤ 100): (Tf + Ti)/2</p></td>
@@ -735,48 +755,51 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Firing rate</strong> (kcal) = weight × heat factor × avg-temp-rise</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">21,500 × 0.25 × 325 = <strong>17,46,875</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Firing rate</strong> (kcal) = effective weight × heat factor × avg-temp-rise</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10,750 × 0.25 × 325 = <strong>8,73,437.5</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Heat load</strong> = firing rate ÷ efficiency</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 0.52 = <strong>33,59,375 kcal</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 0.52 = <strong>16,79,687.5 kcal</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Fuel consumption</strong> = heat load ÷ CV</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 8,500 = <strong>395.22 Nm³</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 8,500 = <strong>197.61 Nm³</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">5</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Calculated firing rate</strong> = fuel ÷ time</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 2 = <strong>197.61 Nm³/hr</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">÷ 2 = <strong>98.81 Nm³/hr</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">6</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>+10 % margin</strong> → gas flow</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">× 1.1 = <strong>217.37 Nm³/hr</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">× 1.1 = <strong>108.69 Nm³/hr</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">7</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Firing rate (MW)</strong> = flow × CV ÷ (860 × 1000)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">= <strong>2.15 MW</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">= <strong>1.07 MW</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Combustion air</strong> = CV × flow × 118 ÷ 1,00,000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">= <strong>2,180.23 Nm³/hr</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">= <strong>1,090.12 Nm³/hr</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">9</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>CFM</strong> = air ÷ 1.7; <strong>blower HP</strong> = CFM × pressure ÷ 3,200</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1,282.49 CFM; <strong>11.22 HP</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">641.25 CFM; <strong>5.61 HP</strong></p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p><strong>Direct mode</strong> (instead of steps 1–6): heat = burner kW × 860 (or the entered heat input); gas flow = heat ÷ CV; air = heat × 118 ÷ 1,00,000.</p>
+<p><strong>Circulating Ladle Preheater</strong> — when Ti &gt; 600 °C the effective weight in step 0 is halved (the hot ladle only needs topping up); only the burner/blower/pipe sizing uses it, not the structure/ceramic quantities. Identical rule to the <a href="vlph.html#_circulating_ladle_preheater" class="xref page">vertical unit</a>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Direct mode</strong> (instead of steps 0–6): heat = burner kW × 860 (or the entered heat input); gas flow = heat ÷ CV; air = heat × 118 ÷ 1,00,000.</p>
 </div>
 <div class="paragraph">
 <p><strong>Pipe sizing</strong> (<code>pipes.py</code>) — area = (flow ÷ 3600) ÷ velocity; inner dia = √(4·area/π) × 1000, rounded up to the next standard NB:</p>
@@ -784,7 +807,7 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <div class="ulist">
 <ul>
 <li>
-<p>Gas line at 12.7 m/s → 80 NB; air line uses the <strong>selected blower&#8217;s</strong> CFM × 1.7 (2,890 Nm³/hr) at 15 m/s → 300 NB. Oil-fuel line NB: ≤ 250 LPH → 20 NB, else 25 NB.</p>
+<p>Gas line at 12.7 m/s → 65 NB; air line uses the <strong>selected blower&#8217;s</strong> CFM × 1.7 (1,445 Nm³/hr) at 15 m/s → 200 NB. Oil-fuel line NB: ≤ 250 LPH → 20 NB, else 25 NB.</p>
 </li>
 </ul>
 </div>
@@ -794,13 +817,13 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Burner</strong> — smallest ENCON size whose max firing covers the gas flow at the burner pressure (ENCON 7A).</p>
+<p><strong>Burner</strong> — smallest ENCON size whose max firing covers the gas flow at the burner pressure (ENCON 5A).</p>
 </li>
 <li>
-<p><strong>Blower</strong> — required HP = CFM × pressure ÷ 3,200; pick the smallest blower in the chosen pressure series at or above it (ENCON 28/15). Dual-fuel sizes for the larger air demand.</p>
+<p><strong>Blower</strong> — required HP = CFM × pressure ÷ 3,200; pick the smallest blower in the chosen pressure series at or above it (ENCON 28/7.5). Dual-fuel sizes for the larger air demand.</p>
 </li>
 <li>
-<p><strong>Gas train</strong> — the row whose [min, max] flow band brackets the gas flow (DN50 × DN65).</p>
+<p><strong>Gas train</strong> — the row whose [min, max] flow band brackets the gas flow (DN40 × DN40).</p>
 </li>
 <li>
 <p><strong>Air-gas regulator</strong> — only for Manual / PLC+AGR / PID; sized from the gas-train outlet NB.</p>
@@ -865,22 +888,22 @@ There is no hood choice here — a horizontal unit uses a trolley, not a swivel 
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Bought-out total</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Σ bought-out rows</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹7,50,900.90</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹6,54,018.25</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ENCON total</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Σ ENCON rows</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹8,00,254.27</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹6,82,319.21</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Grand Total</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bought-out × mark-up (1.8) + ENCON</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹21,51,876</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>₹18,59,552</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Final Total</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">round-to-₹1,000( Grand × (1 + P&amp;F% + Designing% + Negotiation%) + Transport )</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">21,51,876 × 1.10 = 23,67,063 → <strong>₹23,67,000</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">18,59,552 × 1.10 = 20,45,507 → <strong>₹20,46,000</strong></p></td>
 </tr>
 </tbody>
 </table>
