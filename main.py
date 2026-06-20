@@ -1494,6 +1494,16 @@ def vlph_calculate(req: VLPHCalcRequest):
 
         f1_cv = req.fuel1_cv if req.fuel1_cv > 0 else req.fuel_cv
 
+        # Circulating Ladle Preheater: a hot ladle (initial temperature above the
+        # threshold) is already in circulation, so it only needs topping up — the
+        # effective refractory mass to heat is HALF the input weight. Detected in
+        # calc mode only (direct mode enters burner capacity, not weight).
+        CIRCULATING_TI_THRESHOLD = 600
+        is_circulating = (req.mode == "calc") and (req.Ti > CIRCULATING_TI_THRESHOLD)
+        effective_refractory_weight = (
+            req.refractory_weight / 2 if is_circulating else req.refractory_weight
+        )
+
         if req.mode == "direct":
             # --- Direct mode: user enters burner capacity (kW) or heat input (kcal/hr) ---
             # For tundish: capacity is PER BURNER; total = capacity × num_burners.
@@ -1513,7 +1523,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             # --- Calc mode: calculate from process params ---
             br1 = calculate_burner(BurnerInputs(
                 Ti=req.Ti, Tf=req.Tf,
-                refractory_weight=req.refractory_weight,
+                refractory_weight=effective_refractory_weight,
                 fuel_cv=f1_cv,
                 time_taken_hr=req.time_taken_hr,
                 refractory_heat_factor=req.refractory_heat_factor,
@@ -1543,7 +1553,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             else:
                 br2_pre = calculate_burner(BurnerInputs(
                     Ti=req.Ti, Tf=req.Tf,
-                    refractory_weight=req.refractory_weight,
+                    refractory_weight=effective_refractory_weight,
                     fuel_cv=req.fuel2_cv,
                     time_taken_hr=req.time_taken_hr,
                     refractory_heat_factor=req.refractory_heat_factor,
@@ -1621,7 +1631,7 @@ def vlph_calculate(req: VLPHCalcRequest):
             else:
                 br2 = calculate_burner(BurnerInputs(
                     Ti=req.Ti, Tf=req.Tf,
-                    refractory_weight=req.refractory_weight,
+                    refractory_weight=effective_refractory_weight,
                     fuel_cv=req.fuel2_cv,
                     time_taken_hr=req.time_taken_hr,
                     refractory_heat_factor=req.refractory_heat_factor,
@@ -1723,6 +1733,9 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "Ti": req.Ti,
                 "Tf": req.Tf,
                 "refractory_weight": req.refractory_weight,
+                "is_circulating": is_circulating,
+                "preheater_type": "Circulating Ladle Preheater" if is_circulating else "Vertical Ladle Preheater",
+                "effective_refractory_weight": effective_refractory_weight,
                 "fuel_cv": f1_cv,
                 "fuel1_type": req.fuel1_type,
                 "fuel1_name": FUEL_NAMES.get(req.fuel1_type, req.fuel1_type),
