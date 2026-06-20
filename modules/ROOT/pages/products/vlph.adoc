@@ -3,6 +3,8 @@
 
 A vertical ladle preheater dries and heats the refractory lining of a steel ladle before molten metal is poured into it. A burner fires downward into the ladle from a hood on top, so the ladle is heated standing upright.
 
+TIP: If the lining is still hot when the ladle comes in (start temperature *above 600 °C*), it is already in circulation and only needs a top-up — the system automatically switches to *Circulating Ladle Preheater* mode and sizes the burner for *half* the refractory weight. See xref:products/vlph.adoc#_circulating_ladle_preheater[Circulating Ladle Preheater].
+
 == What you enter
 
 *The heating job* — either describe the process and let the system size the burner, or enter the burner size directly.
@@ -115,42 +117,44 @@ A vertical ladle preheater dries and heats the refractory lining of a steel ladl
 ====
 *Given inputs (defaults):* lining 650 → 1200 °C, refractory 21,500 kg, heat factor 0.25, efficiency 0.52, heating time 2 hr, natural gas at 8,500 kcal/Nm³, blower pressure 28″ WG, 10-ton ladle, automatic (PLC + AGR) control, single burner.
 
+*Step 0 — Circulating check.* The start temperature Ti = 650 °C is *above 600 °C*, so this is a *Circulating Ladle Preheater*: the ladle is already hot and in circulation, so only *half* the refractory mass needs heating. Effective weight = 21,500 ÷ 2 = *10,750 kg*. Every figure below uses this effective weight. (A ladle starting at 600 °C or below would use the full 21,500 kg — see xref:products/vlph.adoc#_circulating_ladle_preheater[Circulating Ladle Preheater].)
+
 *Step 1 — Fuel & air needed.*
 
 * Average temperature to raise = (1200 − 650) ÷ 2 + 50 = *325 °C*
-* Firing rate = 21,500 × 0.25 × 325 = *17,46,875 kcal*
-* Heat load = 17,46,875 ÷ 0.52 = *33,59,375 kcal*
-* Fuel for the 2-hr cycle = 33,59,375 ÷ 8,500 = 395.22 Nm³ → ÷ 2 hr = 197.61 Nm³/hr → +10 % margin = *217.37 Nm³/hr* (gas flow)
-* Firing rate in MW = 217.37 × 8,500 ÷ (860 × 1000) = *2.15 MW*
-* Combustion air = 8,500 × 217.37 × 118 ÷ 1,00,000 = *2,180.23 Nm³/hr*
-* Blower air = 2,180.23 ÷ 1.7 = *1,282.49 CFM*; reference HP at 28″ = 1,282.49 × 28 ÷ 3,200 = *11.22 HP*
+* Firing rate = *10,750* × 0.25 × 325 = *8,73,437.5 kcal* (uses the effective weight)
+* Heat load = 8,73,437.5 ÷ 0.52 = *16,79,687.5 kcal*
+* Fuel for the 2-hr cycle = 16,79,687.5 ÷ 8,500 = 197.61 Nm³ → ÷ 2 hr = 98.81 Nm³/hr → +10 % margin = *108.69 Nm³/hr* (gas flow)
+* Firing rate in MW = 108.69 × 8,500 ÷ (860 × 1000) = *1.07 MW*
+* Combustion air = 8,500 × 108.69 × 118 ÷ 1,00,000 = *1,090.12 Nm³/hr*
+* Blower air = 1,090.12 ÷ 1.7 = *641.25 CFM*; reference HP at 28″ = 641.25 × 28 ÷ 3,200 = *5.61 HP*
 
 *Step 2 — Equipment selected from the catalogue.*
 
-* Burner = *ENCON 7A* (smallest ENCON gas burner whose max firing covers the flow at 24″ WG)
-* Blower = *ENCON 28/15* — 15 HP, 2,890 Nm³/hr, 1,700 CFM (smallest in the 28″ series ≥ 11.22 HP)
-* Gas train = *DN50 × DN65* (its 300 Nm³/hr band covers 217 Nm³/hr)
+* Burner = *ENCON 5A* (smallest ENCON gas burner whose max firing covers the flow at 24″ WG)
+* Blower = *ENCON 28/7.5* — 7.5 HP, 1,450 Nm³/hr, 850 CFM (smallest in the 28″ series ≥ 5.61 HP)
+* Gas train = *DN40 × DN40* (its flow band covers 108.69 Nm³/hr)
 * Air-gas regulator included (automatic AGR control), sized from the gas-train outlet NB
 
 *Step 3 — Pipe sizing.*
 
-* Gas line: 217.37 Nm³/hr at 12.7 m/s → inner dia 77.8 mm → round up = *80 NB*
-* Air line: sized from the *selected blower's* airflow = 1,700 CFM × 1.7 = 2,890 Nm³/hr at 15 m/s → 261.04 mm → *300 NB*
+* Gas line: 108.69 Nm³/hr at 12.7 m/s → *65 NB*
+* Air line: sized from the *selected blower's* airflow = 850 CFM × 1.7 = 1,445 Nm³/hr at 15 m/s → *200 NB*
 
-*Step 4 — Structure & ceramic.* Auto-filled from the 10-ton ladle mapping (MS structure kg, ceramic-fibre roll count, air-gas pipeline kg); these feed the per-kg ENCON lines (fabrication ₹110/kg, pipeline ₹125/kg).
+*Step 4 — Structure & ceramic.* Auto-filled from the 10-ton ladle mapping (MS structure kg, ceramic-fibre roll count, air-gas pipeline kg); these feed the per-kg ENCON lines (fabrication ₹110/kg, pipeline ₹125/kg). These are *not* affected by the circulating halving — only the burner/blower/pipe sizing is.
 
 *Step 5 — BOM totals* (every line priced from the pricelist + selectors):
 
-* Bought-out items total = *₹8,30,900.90*
-* ENCON-made items total = *₹11,88,990.38*
+* Bought-out items total = *₹7,15,018.25*
+* ENCON-made items total = *₹10,71,055.32*
 
 *Step 6 — Commercials* (mark-up 1.8, P&F 5 %, designing 5 %, negotiation 0 %):
 
-* Grand Total = bought-out × 1.8 + ENCON = 8,30,900.90 × 1.8 + 11,88,990.38 = 14,95,621.62 + 11,88,990.38 = *₹26,84,612*
-* + P&F 5 % (₹1,34,231) + Designing 5 % (₹1,34,231) + Negotiation 0 % + Transport ₹0 = 29,53,073
-* Round up to nearest ₹1,000 = *₹29,53,000* (the single all-inclusive price; transport, if any, is then shown on its own line)
+* Grand Total = bought-out × 1.8 + ENCON = 7,15,018.25 × 1.8 + 10,71,055.32 = 12,87,032.85 + 10,71,055.32 = *₹23,58,088*
+* + P&F 5 % + Designing 5 % (= +10 %) + Negotiation 0 % + Transport ₹0 = 25,93,897
+* Round to nearest ₹1,000 = *₹25,94,000* (the single all-inclusive price; transport, if any, is then shown on its own line)
 
-*Step 7 — Documents.* The ₹29,53,000 price, the scope of supply, the itemised BOM and the terms go into the offer, saved as Word + PDF and filed.
+*Step 7 — Documents.* The ₹25,94,000 price, the scope of supply, the itemised BOM and the terms go into the offer, saved as Word + PDF and filed.
 ====
 
 == Full calculation reference (every step)
@@ -195,6 +199,17 @@ This documents *every* formula behind the Vertical Ladle Preheater — the sizin
 
 === A. Sizing
 
+==== Circulating Ladle Preheater
+
+A *hot* ladle — one whose lining is still above *600 °C* when it comes in — is already in circulation between casts. It does not need its whole refractory mass reheated, only a top-up. So when the start temperature *Ti is greater than 600 °C*, the vertical preheater switches to *Circulating Ladle Preheater* mode and uses an *effective refractory weight of half the entered weight* for all the sizing below.
+
+* *Trigger:* Ti > 600 °C (calculate-from-process mode only)
+* *Effect:* effective weight = entered weight ÷ 2 — this halved figure feeds the firing rate, and therefore the burner, blower and pipe sizes
+* *Not affected:* the structure, ceramic-fibre and pipeline quantities (those still come from the ladle-size mapping); only the heating calculation uses the halved weight
+* *Shown before costing:* the calculation panel flags "Circulating Ladle Preheater" and lists the effective weight
+
+*Example:* entered weight 21,500 kg at Ti 650 → effective *10,750 kg*. (The reference workbook's circulating case — 43,000 kg at Ti 800 → effective 21,500 kg → firing rate 13,43,750 kcal — matches exactly.) A ladle at 600 °C or below uses the full entered weight.
+
 ==== Average temperature to raise
 
 This is the single number that drives the burner size, and it is picked by *two branches* depending on how hot the ladle is at the start (`Ti`):
@@ -213,30 +228,31 @@ The `Ti > 100` threshold is the switch between "warm / in-cycle ladle" and "cold
 
 [cols="1,4,2",options="header"]
 |===
-| # | Formula | Worked
+| # | Formula | Worked (defaults — circulating, Ti 650)
 
+| 0 | *Effective weight* = entered weight ÷ 2 if Ti > 600 (circulating), else entered weight | 21,500 ÷ 2 = *10,750 kg*
 | 1 | *Average temp rise* — warm start (Ti > 100): (Tf − Ti)/2 + 50; cold start (Ti ≤ 100): (Tf + Ti)/2 | (1200−650)/2 + 50 = *325 °C*
-| 2 | *Firing rate* (kcal) = weight × heat factor × avg-temp-rise | 21,500 × 0.25 × 325 = *17,46,875*
-| 3 | *Heat load* = firing rate ÷ efficiency | ÷ 0.52 = *33,59,375 kcal*
-| 4 | *Fuel consumption* = heat load ÷ CV | ÷ 8,500 = *395.22 Nm³*
-| 5 | *Calculated firing rate* = fuel ÷ time | ÷ 2 = *197.61 Nm³/hr*
-| 6 | *+10 % margin* → gas flow | × 1.1 = *217.37 Nm³/hr*
-| 7 | *Firing rate (MW)* = flow × CV ÷ (860 × 1000) | = *2.15 MW*
-| 8 | *Combustion air* = CV × flow × 118 ÷ 1,00,000 | = *2,180.23 Nm³/hr*
-| 9 | *CFM* = air ÷ 1.7; *blower HP* = CFM × pressure ÷ 3,200 | 1,282.49 CFM; *11.22 HP*
+| 2 | *Firing rate* (kcal) = effective weight × heat factor × avg-temp-rise | 10,750 × 0.25 × 325 = *8,73,437.5*
+| 3 | *Heat load* = firing rate ÷ efficiency | ÷ 0.52 = *16,79,687.5 kcal*
+| 4 | *Fuel consumption* = heat load ÷ CV | ÷ 8,500 = *197.61 Nm³*
+| 5 | *Calculated firing rate* = fuel ÷ time | ÷ 2 = *98.81 Nm³/hr*
+| 6 | *+10 % margin* → gas flow | × 1.1 = *108.69 Nm³/hr*
+| 7 | *Firing rate (MW)* = flow × CV ÷ (860 × 1000) | = *1.07 MW*
+| 8 | *Combustion air* = CV × flow × 118 ÷ 1,00,000 | = *1,090.12 Nm³/hr*
+| 9 | *CFM* = air ÷ 1.7; *blower HP* = CFM × pressure ÷ 3,200 | 641.25 CFM; *5.61 HP*
 |===
 
-*Direct mode* (instead of steps 1–6): heat = burner kW × 860 × num-burners (or the entered heat input); gas flow = heat ÷ CV; air = heat × 118 ÷ 1,00,000.
+*Direct mode* (instead of steps 0–6): heat = burner kW × 860 (or the entered heat input); gas flow = heat ÷ CV; air = heat × 118 ÷ 1,00,000. (Direct mode enters burner capacity, not weight, so the circulating halving does not apply.)
 
 *Pipe sizing* (`pipes.py`) — area = (flow ÷ 3600) ÷ velocity; inner dia = √(4·area/π) × 1000, rounded up to the next standard NB:
 
-* Gas line at 12.7 m/s → 80 NB; air line uses the *selected blower's* CFM × 1.7 (2,890 Nm³/hr) at 15 m/s → 300 NB. Oil-fuel line NB: ≤ 250 LPH → 20 NB, else 25 NB.
+* Gas line at 12.7 m/s → 65 NB; air line uses the *selected blower's* CFM × 1.7 (1,445 Nm³/hr) at 15 m/s → 200 NB. Oil-fuel line NB: ≤ 250 LPH → 20 NB, else 25 NB.
 
 *Equipment selection* (`selection_engine.py`):
 
-* *Burner* — smallest ENCON size whose max firing covers the gas flow at the burner pressure (here ENCON 7A).
-* *Blower* — required HP = CFM × pressure ÷ 3,200; pick the smallest blower in the chosen pressure series at or above it (ENCON 28/15). (For oil, atomising-air CFM = equivalent LPH × 10; dual-fuel takes the larger air demand.)
-* *Gas train* — the row whose [min, max] flow band brackets the gas flow (DN50 × DN65 for 300 Nm³/hr).
+* *Burner* — smallest ENCON size whose max firing covers the gas flow at the burner pressure (here ENCON 5A).
+* *Blower* — required HP = CFM × pressure ÷ 3,200; pick the smallest blower in the chosen pressure series at or above it (ENCON 28/7.5). (For oil, atomising-air CFM = equivalent LPH × 10; dual-fuel takes the larger air demand.)
+* *Gas train* — the row whose [min, max] flow band brackets the gas flow (DN40 × DN40 for 108.69 Nm³/hr).
 * *Air-gas regulator* — only for Manual / PLC+AGR / PID; sized from the gas-train outlet NB (Flanged ≥ 65 NB, else Threaded).
 * *Butterfly & rotary joint* — sized to the air-line NB.
 
@@ -251,19 +267,19 @@ CFM appears twice in the sizing — once to *pick the blower*, once to *size the
 
 *Step 1 — required air → CFM → blower.* The combustion-air figure from step 8 is in Nm³/hr, but blowers are catalogued in CFM, so it is converted first:
 
-* *Gas CFM* = combustion air ÷ 1.7 → 2,180.23 ÷ 1.7 = *1,282.49 CFM*
+* *Gas CFM* = combustion air ÷ 1.7 → 1,090.12 ÷ 1.7 = *641.25 CFM*
 * *Oil CFM* (atomising air, oil fuels only) = equivalent LPH × 10
 * *Dual-fuel* → take the *larger* of the gas and oil CFM
-* *Required HP* = CFM × blower pressure (″WG) ÷ 3,200 → 1,282.49 × 28 ÷ 3,200 = *11.22 HP*
-* The blower is the *smallest catalogue model in the chosen pressure series at or above that HP* → ENCON 28/15 (15 HP, rated 1,700 CFM / 2,890 Nm³/hr)
+* *Required HP* = CFM × blower pressure (″WG) ÷ 3,200 → 641.25 × 28 ÷ 3,200 = *5.61 HP*
+* The blower is the *smallest catalogue model in the chosen pressure series at or above that HP* → ENCON 28/7.5 (7.5 HP, rated 850 CFM / 1,450 Nm³/hr)
 
-*Step 2 — chosen blower → air-line flow → pipe NB.* The air pipe is **not** sized from the raw 2,180 Nm³/hr requirement. It is sized from the airflow the *selected* blower actually moves — its *rated* CFM converted back to Nm³/hr:
+*Step 2 — chosen blower → air-line flow → pipe NB.* The air pipe is **not** sized from the raw 1,090 Nm³/hr requirement. It is sized from the airflow the *selected* blower actually moves — its *rated* CFM converted back to Nm³/hr:
 
-* *Air-line flow* = selected blower CFM × 1.7 → 1,700 × 1.7 = *2,890 Nm³/hr* (this is the "Air Flow" shown on screen)
-* That flow runs through the pipe formula at 15 m/s → 261 mm → *300 NB*
+* *Air-line flow* = selected blower CFM × 1.7 → 850 × 1.7 = *1,445 Nm³/hr* (this is the "Air Flow" shown on screen)
+* That flow runs through the pipe formula at 15 m/s → *200 NB*
 * The result is floored: *air-line NB = max(125 NB, the pipe-formula NB, the air-duct NB)* — the line is never smaller than 125 NB
 
-*Why the round-trip?* Because the chosen blower is always one size *up* from the bare requirement (15 HP / 1,700 CFM for an 11.22 HP / 1,282 CFM need), it actually delivers *more* air than the minimum. Sizing the pipe from the blower's real output — rather than the smaller required figure — keeps the displayed Air Flow and the pipe diameter consistent, and ensures the line can carry everything the blower pushes. The butterfly valve and rotary joint then follow this same air-line NB.
+*Why the round-trip?* Because the chosen blower is always one size *up* from the bare requirement (7.5 HP / 850 CFM for a 5.61 HP / 641 CFM need), it actually delivers *more* air than the minimum. Sizing the pipe from the blower's real output — rather than the smaller required figure — keeps the displayed Air Flow and the pipe diameter consistent, and ensures the line can carry everything the blower pushes. The butterfly valve and rotary joint then follow this same air-line NB.
 
 === B. Costing (`bom/vlph_builder.py`)
 
@@ -281,10 +297,10 @@ Each `_row` is priced either by a computed override or an exact pricelist lookup
 [cols="3,3,2",options="header"]
 |===
 | Step | Formula | Worked
-| Bought-out total | Σ bought-out rows | *₹8,30,900.90*
-| ENCON total | Σ ENCON rows | *₹11,88,990.38*
-| Grand Total | bought-out × mark-up (1.8) + ENCON | *₹26,84,612*
-| Final Total | round-to-₹1,000( Grand × (1 + P&F% + Designing% + Negotiation%) + Transport ) | 26,84,612 × 1.10 = 29,53,073 → *₹29,53,000*
+| Bought-out total | Σ bought-out rows | *₹7,15,018.25*
+| ENCON total | Σ ENCON rows | *₹10,71,055.32*
+| Grand Total | bought-out × mark-up (1.8) + ENCON | *₹23,58,088*
+| Final Total | round-to-₹1,000( Grand × (1 + P&F% + Designing% + Negotiation%) + Transport ) | 23,58,088 × 1.10 = 25,93,897 → *₹25,94,000*
 |===
 
 NOTE: P&F, designing and negotiation are all *added* (negotiation does not discount); the rounded Final Total is the single price in the schedule, with transport pulled onto its own line afterwards. The mark-up, P&F, designing and negotiation are all editable on the costing page.
