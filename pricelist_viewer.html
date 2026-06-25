@@ -999,6 +999,25 @@ function shortenName(name) {
   return s.length > 20 ? s.slice(0, 19) + '…' : s;
 }
 
+// Title-case a display name: each word starts with a capital, the rest lower
+// (e.g. "ELECTRODE ASSEMBLY" -> "Electrode Assembly"). Technical tokens are
+// preserved untouched: abbreviations with dots (M.S., S.S.), anything with a
+// digit (model/part fragments), and short all-caps acronyms (SS, ID, AGR,
+// NB, DN). Display only — the stored DB name is never altered.
+function titleCaseName(s) {
+  return String(s || '').split(/(\s+)/).map(tok => {
+    if (/^\s+$/.test(tok) || !tok) return tok;            // keep original spacing
+    if (tok.includes('.') || /\d/.test(tok)) return tok;  // M.S., part codes
+    if (/^[A-Z]+$/.test(tok) && tok.length <= 3) return tok; // SS, ID, AGR, NB, DN
+    let seen = false;
+    return tok.split('').map(ch => {
+      if (!/[A-Za-z]/.test(ch)) return ch;                // keep ( ) - / etc.
+      if (seen) return ch.toLowerCase();
+      seen = true; return ch.toUpperCase();
+    }).join('');
+  }).join('');
+}
+
 // ── Company badge ───────────────────────────────────────────────────────────
 // Known vendors get a fixed colour; anything else is hashed to a stable hue so
 // the same supplier always renders the same shade across the sheet.
@@ -1219,8 +1238,10 @@ function _renderRatesTable(data, opts) {
       // still uses the FULL r.item string so inline edits + BOM
       // lookups stay consistent with the DB.
       const parts = splitItem(r.item, r.specification);
-      const fullName  = parts.name || r.item;
-      const shortName = shortenName(parts.name);
+      // Display names in Title Case (e.g. "ELECTRODE ASSEMBLY" -> "Electrode
+      // Assembly"). DB names are NOT changed (BOM prices by exact name).
+      const fullName  = titleCaseName(parts.name || r.item);
+      const shortName = titleCaseName(shortenName(parts.name));
       const size      = parts.size;
       const catCell   = parts.model || r.category || '';
 
