@@ -1008,7 +1008,7 @@ function shortenName(name) {
     const m = s.match(pat);
     if (m) return (typeof rep === 'function') ? rep(...m) : rep;
   }
-  return s.length > 20 ? s.slice(0, 19) + '…' : s;
+  return s.length > 30 ? s.slice(0, 29) + '…' : s;
 }
 
 // Title-case a display name: each word starts with a capital, the rest lower
@@ -1196,10 +1196,11 @@ function _renderRatesTable(data, opts) {
         if (c !== 0) return c;
         return (a.item || '').localeCompare(b.item || '');
       });
-    } else if (cat === 'Raw Material') {
-      // Group raw materials by base item name (M.S. Sheet, S.S. Sheet,
-      // M.S. Plate, M.S. Tube, SS ASSLY, ID Fan, …), then ascend by size
-      // within each name so each material type sits in its own block.
+    } else if (cat === 'Raw Material' || cat === 'Instrumentation') {
+      // Group by base item name (Raw Material: M.S. Sheet, S.S. Sheet, …;
+      // Instrumentation: Orifice Plate, Pressure Gauge, Pressure Regulating
+      // Valve), then ascend by size — so same-named items stay together
+      // instead of interleaving by NB.
       cats[cat].sort((a, b) => {
         const pa = splitItem(a.item, a.specification);
         const pb = splitItem(b.item, b.specification);
