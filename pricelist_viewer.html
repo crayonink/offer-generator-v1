@@ -1575,19 +1575,18 @@ function renderBlowers(data) {
   var dmData    = data.filter(function(r){ return dmIdmSections[r.section]; });
 
   // ── ENCON breakdown table ────────────────────────────────────────
+  // Specs + final prices only. The internal cost build-up (body cost, motor
+  // price, Perkin w/ & w/o motor) is dropped \u2014 it's intermediate, not needed
+  // in the pricelist view, and made the table overflow.
   var eCols = [
-    { k:'model',                 lbl:'Model',                  num:false },
-    { k:'hp',                    lbl:'HP',                     num:true  },
-    { k:'cfm',                   lbl:'CFM',                    num:true  },
-    { k:'nm3_per_hr',            lbl:'NM\u00b3/hr',            num:true  },
-    { k:'pressure',              lbl:'Pressure',               num:false },
-    { k:'blower_weight',         lbl:'Weight (kg)',            num:true  },
-    { k:'per_kg_amount',         lbl:'Body Cost (\u20b9)',      num:true  },
-    { k:'motor_price_abb',       lbl:'Motor Price (\u20b9)',    num:true  },
-    { k:'perkin_price_wo_motor', lbl:'Perkin w/o Motor (\u20b9)', num:true },
-    { k:'perkin_price_w_motor',  lbl:'Perkin w/ Motor (\u20b9)',  num:true },
-    { k:'price_without_motor',   lbl:'Selling w/o Motor (\u20b9)', num:true, highlight:'#e3f2fd' },
-    { k:'price_with_motor',      lbl:'Selling w/ Motor (\u20b9)',  num:true, highlight:'#e8f5e9' },
+    { k:'model',               lbl:'Model',              num:false },
+    { k:'hp',                  lbl:'HP',                 num:true  },
+    { k:'cfm',                 lbl:'CFM',                num:true  },
+    { k:'nm3_per_hr',          lbl:'NM\u00b3/hr',        num:true  },
+    { k:'pressure',            lbl:'Pressure',           num:false },
+    { k:'blower_weight',       lbl:'Weight (kg)',        num:true  },
+    { k:'price_without_motor', lbl:'Price w/o Motor (\u20b9)', num:true, highlight:'#f1f5f9' },
+    { k:'price_with_motor',    lbl:'Price w/ Motor (\u20b9)',  num:true, highlight:'#eef2f7' },
   ];
 
   var hdr = '<th class="rn"></th>';
@@ -1615,7 +1614,7 @@ function renderBlowers(data) {
     rows += '</tr>';
   }
 
-  el.innerHTML = '<div class="section-label" style="margin-bottom:6px;">ENCON Blowers \u2014 Cost Breakdown</div>'
+  el.innerHTML = '<div class="section-label" style="margin-bottom:6px;">ENCON Blowers</div>'
     + '<div class="xl-wrap" style="margin-bottom:20px;"><table class="xl-table">'
     + '<thead><tr>' + hdr + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
