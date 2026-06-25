@@ -619,7 +619,6 @@ function renderAll() {
   renderPartsColumns('hv-parts',   s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
   renderPartsColumns('gas-parts',  s.gas_burner_parts || [], 'gas_burner_parts_master');
   renderBlowers(s.blowers || []);
-  renderBlowerDmIdm(s.blower_dm_idm || []);
   renderRecuperator(s.recuperator || {rows:[], rates:{}});
   renderRadHeat(s.rad_heat || {models:[],spares:[]}, s.rad_heat_tata || {models:[],spares:[]});
   renderGail(s.gail_gas_burner || []);
