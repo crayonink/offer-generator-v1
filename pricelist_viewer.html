@@ -306,6 +306,9 @@
       box-shadow: inset 3px 0 0 var(--accent);
     }
     .editable:hover { background: #dbeafe; }
+    /* Staff (non-admin): prices are read-only — no edit affordance. */
+    body.readonly .editable { cursor: default; box-shadow: none; background: transparent; }
+    body.readonly .editable:hover { background: transparent; }
     .editable.editing {
       background: #fff; padding: 0; z-index: 10; position: relative;
       box-shadow: inset 0 0 0 2px var(--accent), 0 4px 12px rgba(14,165,233,.18);
@@ -642,6 +645,7 @@ function setStatus(msg, rows) {
 
 // ── Cell editing ───────────────────────────────────────────────────────────
 function makeEditable(td, onSave) {
+  if (!window.IS_ADMIN) return;          // staff: prices are read-only
   const original = td.textContent.trim();
   const num = parseFloat(original.replace(/[^0-9.-]/g, '')) || 0;
   td.classList.add('editing');
@@ -1311,6 +1315,7 @@ function _renderRatesTable(data, opts) {
     td.title = 'Click to set supplier/company';
     td.addEventListener('click', () => {
       if (td.classList.contains('editing')) return;
+      if (!window.IS_ADMIN) return;        // staff: company is read-only
       const item = td.dataset.item;
       const orig = td.textContent.trim();
       td.classList.add('editing');
@@ -2459,9 +2464,14 @@ function clearSearch() {
 // Rates. The vendor-catalog tabs and Raw Material are admin-only.
 const ADMIN_ONLY_TABS = ['raw-material','hpu','oil-parts','hv-parts','gas-parts',
   'blowers','recuperator','rad-heat','gail','hlph','vlph','burner-prices'];
+window.IS_ADMIN = false;   // fail-safe: read-only until /api/me confirms admin
 function applyTabPermissions() {
   fetch('/api/me').then(r => r.json()).then(me => {
-    if (me && me.role === 'admin') return;     // admins see everything
+    const isAdmin = !!(me && me.role === 'admin');
+    window.IS_ADMIN = isAdmin;
+    // Staff: prices/company are read-only (also enforced server-side with 403).
+    document.body.classList.toggle('readonly', !isAdmin);
+    if (isAdmin) return;                        // admins see + edit everything
     ADMIN_ONLY_TABS.forEach(s => {
       const tab = document.querySelector(`.tab[data-sheet="${s}"]`);
       if (tab) tab.style.display = 'none';
