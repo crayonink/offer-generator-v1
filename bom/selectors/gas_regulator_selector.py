@@ -37,10 +37,30 @@ def select_gas_regulator(nb: int, category: str = "Standard 5 Bar") -> dict:
         )
 
     list_price = float(row[3])
+    part_code  = row[1]
+    # Fallback: 45% off the master list price.
     net_price  = list_price * (1 - GAS_REGULATOR_DISCOUNT)
+
+    # Prefer the editable pricelist (component_price_master) price, matched by
+    # part code, so pricelist edits flow straight into the BOM (the stored
+    # pricelist price is already the net figure). Falls back to list × 0.55.
+    try:
+        _c = sqlite3.connect(DB_PATH)
+        _r = _c.execute(
+            "SELECT price FROM component_price_master "
+            "WHERE category LIKE 'Gas Regulator%' AND item LIKE ? "
+            "AND price IS NOT NULL LIMIT 1",
+            ("%" + str(part_code),),
+        ).fetchone()
+        _c.close()
+        if _r and _r[0] is not None:
+            net_price = float(_r[0])
+    except Exception:
+        pass
+
     return {
         "nb":         row[0],
-        "part_code":  row[1],
+        "part_code":  part_code,
         "p2_range":   row[2],
         "list_price": list_price,
         "price":      round(net_price, 2),
