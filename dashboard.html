@@ -363,61 +363,6 @@
     </a>
   </div>
 
-  <!-- Management -->
-  <div class="section-label mt">Data &amp; Management</div>
-  <div class="secondary-grid">
-    <a class="srow" href="/price-master">
-      <div class="srow-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2"/><circle cx="12" cy="12" r="3"/></svg></div>
-      <div class="srow-body"><div class="srow-title">Price Master</div><div class="srow-desc">View all component prices and upload new pricebook.</div></div>
-      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-    </a>
-    <a class="srow" href="/quote">
-      <div class="srow-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-      <div class="srow-body"><div class="srow-title">Quote Builder</div><div class="srow-desc">Assemble customer offer documents from costing results.</div></div>
-      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-    </a>
-    <a class="srow" href="/viewer" data-admin-only>
-      <div class="srow-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
-      <div class="srow-body"><div class="srow-title">Database Viewer</div><div class="srow-desc">Browse all master tables — burners, blowers, HPU, gas trains, AGR.</div></div>
-      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-    </a>
-    <a class="srow" href="/price-master">
-      <div class="srow-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-      <div class="srow-body"><div class="srow-title">Upload Pricebook</div><div class="srow-desc">Refresh all 13 master tables from the latest Excel file.</div></div>
-      <div class="srow-arrow"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>
-    </a>
-  </div>
-
-  <!-- Health + Activity -->
-  <div class="bottom-grid">
-
-    <!-- Data Health -->
-    <div class="health-card">
-      <div class="health-header">
-        <div>
-          <div class="health-header-title">Data Health</div>
-          <div class="health-header-sub">Master tables that power BOM calculations</div>
-        </div>
-        <div class="health-summary" id="health-summary">Loading…</div>
-      </div>
-      <div class="health-groups" id="health-groups">
-        <!-- skeleton -->
-        <div style="padding:20px;text-align:center;color:var(--muted);font-size:.78rem">Loading…</div>
-      </div>
-    </div>
-
-    <!-- Activity -->
-    <div class="activity-card">
-      <div class="activity-header">
-        <div class="activity-header-title">Recent Updates</div>
-        <div class="activity-header-sub">Last pricebook table refreshes</div>
-      </div>
-      <div class="activity-list" id="activity-list">
-        <div class="activity-empty">Loading…</div>
-      </div>
-    </div>
-
-  </div>
 </div>
 
 <script>
@@ -436,71 +381,6 @@ async function load() {
     set('stat-updated', d.date ?? '—');
   } catch(e) { set('stat-updated', '—'); }
 
-  // Health + activity
-  try {
-    const r = await fetch('/api/system-health');
-    const d = await r.json();
-    renderHealth(d.tables || []);
-    renderActivity(d.activity || []);
-  } catch(e) {
-    document.getElementById('health-body').innerHTML =
-      '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted);font-size:.78rem">Could not load health data</td></tr>';
-    document.getElementById('activity-list').innerHTML =
-      '<div class="activity-empty">Could not load activity</div>';
-  }
-}
-
-function renderHealth(tables) {
-  const el = document.getElementById('health-groups');
-  const sumEl = document.getElementById('health-summary');
-  if (!tables.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.78rem">No data</div>'; return; }
-
-  const GROUPS = [
-    { name: 'Component Prices',  color: '#6366f1', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 6v2M12 16v2M6 12h2M16 12h2"/><circle cx="12" cy="12" r="3"/>', keys: ['component_price_master'] },
-    { name: 'Ladle Systems',     color: '#0891b2', icon: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/>', keys: ['vertical_master','horizontal_master'] },
-    { name: 'Burners',           color: '#dc2626', icon: '<path d="M12 2c0 6-6 8-6 14a6 6 0 0012 0c0-6-6-8-6-14z"/>', keys: ['burner_pricelist_master','gas_burner_parts_master','gail_gas_burner_master'] },
-    { name: 'HPU & Blowers',     color: '#059669', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>', keys: ['hpu_master','blower_master','blower_pricelist_master'] },
-    { name: 'Other Equipment',   color: '#d97706', icon: '<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>', keys: ['recuperator_master','ng_gas_train_master','agr_master','rotary_joint_master'] },
-  ];
-
-  const byKey = Object.fromEntries(tables.map(t => [t.table, t]));
-  const okCount = tables.filter(t => t.ok).length;
-  sumEl.textContent = `${okCount}/${tables.length} loaded`;
-  sumEl.className = 'health-summary' + (okCount < tables.length ? ' warn' : '');
-
-  el.innerHTML = GROUPS.map(g => {
-    const rows = g.keys.map(k => byKey[k]).filter(Boolean);
-    const allOk = rows.every(r => r.ok);
-    const rowsHtml = rows.map(r => `
-      <div class="hrow">
-        <div class="dot ${r.ok ? 'ok' : 'err'}"></div>
-        <div class="hrow-name">${r.label}</div>
-        <div class="hrow-count ${r.rows === 0 ? 'zero' : ''}">${r.rows.toLocaleString()}</div>
-        <div class="hrow-upd">${r.updated_at ?? '—'}</div>
-      </div>`).join('');
-    return `
-      <div class="hgroup">
-        <div class="hgroup-header">
-          <div class="hgroup-icon" style="background:${g.color}"><svg viewBox="0 0 24 24">${g.icon}</svg></div>
-          <div class="hgroup-name">${g.name}</div>
-          <span class="hgroup-badge ${allOk ? 'ok' : 'err'}">${allOk ? 'Ready' : 'Incomplete'}</span>
-        </div>
-        <div class="hgroup-rows">${rowsHtml}</div>
-      </div>`;
-  }).join('');
-}
-
-function renderActivity(items) {
-  const el = document.getElementById('activity-list');
-  if (!items.length) { el.innerHTML = '<div class="activity-empty">No upload activity yet.<br>Upload a pricebook to get started.</div>'; return; }
-  el.innerHTML = items.map(a => `
-    <div class="activity-item">
-      <div class="activity-dot"></div>
-      <div>
-        <div class="activity-text">${a.table} updated</div>
-        <div class="activity-time">${a.at}</div>
-      </div>
-    </div>`).join('');
 }
 
 function set(id, val) {
