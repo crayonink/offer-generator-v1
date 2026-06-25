@@ -1111,6 +1111,8 @@ function _renderRatesTable(data, opts) {
     'Gas Regulator (5 Bar Threaded)':  ['Gas Regulator (5 Bar)', 'Threaded'],
     'Gas Regulator (2 Bar Flanged)':   ['Gas Regulator (2 Bar)', 'Flanged'],
     'Gas Regulator (2 Bar Threaded)':  ['Gas Regulator (2 Bar)', 'Threaded'],
+    'Slam Shut Off Valve (Flanged)':   ['Slam Shut Off Valve', 'Flanged'],
+    'Slam Shut Off Valve (Threaded)':  ['Slam Shut Off Valve', 'Threaded'],
   };
   const _parentOf = (c) => CATEGORY_DIVISIONS[c] ? CATEGORY_DIVISIONS[c][0] : c;
   // Build an iteration order where divisions of the same parent stay
@@ -1180,10 +1182,11 @@ function _renderRatesTable(data, opts) {
     } else if (cat === 'Safety Relief Valve' || cat === 'ID Fan'
                || cat === 'Gas Filter (Threaded)' || cat === 'Gas Filter (Flanged)'
                || cat === 'Gas Regulator (5 Bar Threaded)' || cat === 'Gas Regulator (5 Bar Flanged)'
-               || cat === 'Gas Regulator (2 Bar Threaded)' || cat === 'Gas Regulator (2 Bar Flanged)') {
+               || cat === 'Gas Regulator (2 Bar Threaded)' || cat === 'Gas Regulator (2 Bar Flanged)'
+               || cat === 'Slam Shut Off Valve (Threaded)' || cat === 'Slam Shut Off Valve (Flanged)') {
       // Sort by price ascending. Safety Relief Valve / ID Fan are type variants
-      // with no NB size; gas filters and 2/5-bar regulators do have NB sizes but
-      // are listed cheapest-first by request (price tracks size anyway).
+      // with no NB size; gas filters, 2/5-bar regulators and slam shut off
+      // valves have NB sizes but are listed cheapest-first by request.
       cats[cat].sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
     } else if (cat === 'Pressure Switch') {
       // Group by company (all MADAS together, all Switzer together), then by
