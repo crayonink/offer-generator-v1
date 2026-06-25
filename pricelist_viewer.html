@@ -743,6 +743,18 @@ function splitItem(item, specification) {
     if (name.endsWith(' ' + spec)) name = name.slice(0, -1 - spec.length).trim();
     return { name, size: spec.trim(), model: '' };
   }
+  // Cooling fans: 'COOLING FAN 15500 Nm³/hr (4" WC)' → name 'Cooling Fan',
+  // size '4" WC' (static pressure), model '15500 Nm³/hr' (the flow shows in
+  // the Model/Cat column instead of being buried in a truncated name).
+  const _cf = name.match(/^(.*?)\s*(\d[\d,]*)\s*Nm[³3]\s*\/\s*hr\s*(?:\(([^)]*)\))?\s*$/i);
+  if (_cf) {
+    return {
+      name: _cf[1].trim(),
+      size: (_cf[3] || '').trim(),
+      model: _cf[2].replace(/,/g, '') + ' Nm³/hr',
+    };
+  }
+
   if (spec && name.endsWith(' ' + spec)) {
     name = name.slice(0, -1 - spec.length);
   }
