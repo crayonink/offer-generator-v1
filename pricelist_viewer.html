@@ -603,10 +603,12 @@ async function loadAll() {
   icon.classList.add('spin');
   setStatus('Fetching data...');
   try {
+    // Resilient: non-admins are blocked (403) from the vendor-catalog summary,
+    // so default it to {} instead of failing the whole load (Rates etc. still work).
     const [summary, rates, stock] = await Promise.all([
-      fetch('/api/pricelist-summary').then(r => r.json()),
-      fetch('/api/pricelist/rates').then(r => r.json()),
-      fetch('/api/stock-rates').then(r => r.json()),
+      fetch('/api/pricelist-summary').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch('/api/pricelist/rates').then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/stock-rates').then(r => r.ok ? r.json() : []).catch(() => []),
     ]);
     DATA.summary = summary;
     DATA.rates = rates;
@@ -2404,7 +2406,25 @@ function clearSearch() {
   }
 })();
 
+// ── Role-based tab visibility ───────────────────────────────────────────────
+// Non-admins (staff) only see Rates, Encon Purchase, Bought Out and Stock
+// Rates. The vendor-catalog tabs and Raw Material are admin-only.
+const ADMIN_ONLY_TABS = ['raw-material','hpu','oil-parts','hv-parts','gas-parts',
+  'blowers','recuperator','rad-heat','gail','hlph','vlph','burner-prices'];
+function applyTabPermissions() {
+  fetch('/api/me').then(r => r.json()).then(me => {
+    if (me && me.role === 'admin') return;     // admins see everything
+    ADMIN_ONLY_TABS.forEach(s => {
+      const tab = document.querySelector(`.tab[data-sheet="${s}"]`);
+      if (tab) tab.style.display = 'none';
+    });
+    const active = document.querySelector('.tab.active');
+    if (active && ADMIN_ONLY_TABS.includes(active.dataset.sheet)) switchTab('rates');
+  }).catch(() => {});
+}
+
 // ── Init ────────────────────────────────────────────────────────────────────
+applyTabPermissions();
 loadAll();
 </script>
 </body>

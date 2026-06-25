@@ -53,6 +53,8 @@ def _auth_is_admin_only(method: str, path: str) -> bool:
     """Endpoints that edit pricing/data or expose the raw DB are admin-only."""
     if path == "/viewer":                       # raw DB editor page
         return True
+    if path == "/api/pricelist-summary":        # vendor catalog prices (burner/blower/etc.)
+        return True
     if method in ("PUT", "DELETE"):             # all rate/data edits use PUT/DELETE
         return True
     if method == "POST" and (
