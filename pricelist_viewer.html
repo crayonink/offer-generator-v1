@@ -1244,9 +1244,15 @@ function _renderRatesTable(data, opts) {
     const showCompanyHdrs = (cat === 'Motorised Control Valve' || cat === 'Pneumatic Control Valve' || cat === 'Pneumatic Shut Off Valve' || cat === 'Motorised Shut Off Valve' || cat === 'Pressure Switch');
     let lastCompanyHdr = null;
     // Name sub-headers: Raw Material is grouped by base item name, so emit a
-    // banner each time the name changes (one block per material type).
+    // banner each time the name changes — but ONLY for names with more than
+    // one item (a single-item name doesn't need its own heading).
     const showNameHdrs = (cat === 'Raw Material');
     let lastNameHdr = null;
+    const nameCounts = {};
+    if (showNameHdrs) cats[cat].forEach(r => {
+      const k = (titleCaseName(splitItem(r.item, r.specification).name || r.item) || '').trim().toUpperCase() || 'OTHER';
+      nameCounts[k] = (nameCounts[k] || 0) + 1;
+    });
 
     cats[cat].forEach(r => {
       if (!r.item) return;
@@ -1271,7 +1277,7 @@ function _renderRatesTable(data, opts) {
 
       if (showNameHdrs) {
         const nm = (fullName || r.item || '').trim() || 'Other';
-        if (nm.toUpperCase() !== lastNameHdr) {
+        if (nm.toUpperCase() !== lastNameHdr && nameCounts[nm.toUpperCase()] > 1) {
           lastNameHdr = nm.toUpperCase();
           html += `<tr class="company-hdr"><td class="rn"></td><td colspan="8">${esc(nm)}</td></tr>`;
         }
