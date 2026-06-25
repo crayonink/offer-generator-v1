@@ -199,15 +199,17 @@
     /* Rates / Raw Material: let the panel fill the sheet area so the table's
        OWN wrapper scrolls (and its sticky column-header stays pinned), instead
        of the whole sheet-area scrolling and carrying the header off-screen. */
-    #sheet-rates.active, #sheet-raw-material.active, #sheet-encon-purchase.active {
+    #sheet-rates.active, #sheet-raw-material.active, #sheet-encon-purchase.active, #sheet-bought-out.active {
       display: flex; flex-direction: column; height: 100%; min-height: 0;
     }
     #sheet-rates.active > div:first-child,
     #sheet-raw-material.active > div:first-child,
-    #sheet-encon-purchase.active > div:first-child { flex: 0 0 auto; }
+    #sheet-encon-purchase.active > div:first-child,
+    #sheet-bought-out.active > div:first-child { flex: 0 0 auto; }
     #sheet-rates.active > .xl-wrap,
     #sheet-raw-material.active > .xl-wrap,
-    #sheet-encon-purchase.active > .xl-wrap { flex: 1 1 auto; min-height: 0; }
+    #sheet-encon-purchase.active > .xl-wrap,
+    #sheet-bought-out.active > .xl-wrap { flex: 1 1 auto; min-height: 0; }
     .model-block { margin-bottom: 22px; }
     .empty-msg { padding: 60px; text-align: center; color: #94a3b8; font-size: 0.88rem; }
 
@@ -504,6 +506,7 @@
   <div class="tab active" data-sheet="rates"        onclick="switchTab('rates')">Rates</div>
   <div class="tab"        data-sheet="raw-material" onclick="switchTab('raw-material')">Raw Material</div>
   <div class="tab"        data-sheet="encon-purchase" onclick="switchTab('encon-purchase')">Encon Purchase</div>
+  <div class="tab"        data-sheet="bought-out"    onclick="switchTab('bought-out')">Bought Out</div>
   <div class="tab"        data-sheet="hpu"          onclick="switchTab('hpu')">HPU</div>
   <div class="tab"        data-sheet="oil-parts"    onclick="switchTab('oil-parts')">Oil Burner</div>
   <div class="tab"        data-sheet="hv-parts"     onclick="switchTab('hv-parts')">HV Oil Burner</div>
@@ -523,6 +526,7 @@
   <div class="sheet-panel active" id="sheet-rates">       <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-raw-material"><div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-encon-purchase"><div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-bought-out"><div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hpu">         <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-oil-parts">   <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hv-parts">    <div class="empty-msg">Loading&hellip;</div></div>
@@ -620,6 +624,7 @@ function renderAll() {
   renderRates(DATA.rates || []);
   renderRawMaterials(DATA.rates || []);
   renderEnconPurchase(DATA.rates || []);
+  renderBoughtOut(DATA.rates || []);
   renderHPU(s.hpu || []);
   renderPartsColumns('oil-parts',  s.oil_burner_parts || [], 'oil_burner_parts_master');
   renderPartsColumns('hv-parts',   s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
@@ -1019,8 +1024,13 @@ function companyBadge(name) {
 // Both tabs render through one table builder. Rates excludes 'Raw Material'
 // rows; the Raw Material tab shows only those.
 function renderRates(data) {
-  _renderRatesTable((data || []).filter(r => r.category !== 'Raw Material' && r.category !== 'ENCON Purchase'),
+  _renderRatesTable((data || []).filter(r => r.category !== 'Raw Material' && r.category !== 'ENCON Purchase' && r.category !== 'Bought Out'),
     { elId: 'sheet-rates', tableId: 'rates-table', searchId: 'rates-search' });
+}
+
+function renderBoughtOut(data) {
+  _renderRatesTable((data || []).filter(r => r.category === 'Bought Out'),
+    { elId: 'sheet-bought-out', tableId: 'bought-table', searchId: 'bought-search' });
 }
 
 function renderRawMaterials(data) {
