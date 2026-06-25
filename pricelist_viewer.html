@@ -199,17 +199,23 @@
     /* Rates / Raw Material: let the panel fill the sheet area so the table's
        OWN wrapper scrolls (and its sticky column-header stays pinned), instead
        of the whole sheet-area scrolling and carrying the header off-screen. */
-    #sheet-rates.active, #sheet-raw-material.active, #sheet-encon-purchase.active, #sheet-bought-out.active {
+    #sheet-rates.active, #sheet-raw-material.active, #sheet-encon-purchase.active, #sheet-bought-out.active,
+    #sheet-blowers.active {
       display: flex; flex-direction: column; height: 100%; min-height: 0;
     }
     #sheet-rates.active > div:first-child,
     #sheet-raw-material.active > div:first-child,
     #sheet-encon-purchase.active > div:first-child,
-    #sheet-bought-out.active > div:first-child { flex: 0 0 auto; }
+    #sheet-bought-out.active > div:first-child,
+    #sheet-blowers.active > div:first-child { flex: 0 0 auto; }
     #sheet-rates.active > .xl-wrap,
     #sheet-raw-material.active > .xl-wrap,
     #sheet-encon-purchase.active > .xl-wrap,
-    #sheet-bought-out.active > .xl-wrap { flex: 1 1 auto; min-height: 0; }
+    #sheet-bought-out.active > .xl-wrap,
+    #sheet-blowers.active > .xl-wrap { flex: 1 1 auto; min-height: 0; }
+    /* HPU / Burner stack several tables — let the panel scroll vertically
+       while each wide table scrolls horizontally within its own wrapper. */
+    #sheet-hpu.active, #sheet-burner-prices.active { overflow: auto; }
     .model-block { margin-bottom: 22px; }
     .empty-msg { padding: 60px; text-align: center; color: #94a3b8; font-size: 0.88rem; }
 
