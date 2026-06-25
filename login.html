@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON Automation Portal — Sign in</title>
+<style>
+  :root{--navy:#1a3a5c;--border:#e2e8f0;--muted:#64748b;--bg:#f8fafc;--red:#c62828;}
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',system-ui,sans-serif;margin:0;min-height:100vh;display:flex;
+       align-items:center;justify-content:center;
+       background:linear-gradient(135deg,#1a3a5c,#0f2438);color:#1e293b;}
+  .card{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);
+        width:360px;max-width:92vw;padding:34px 32px;}
+  .brand{text-align:center;margin-bottom:22px;}
+  .brand h1{font-size:1.25rem;color:var(--navy);margin:0 0 4px;letter-spacing:.02em;}
+  .brand p{font-size:.78rem;color:var(--muted);margin:0;}
+  label{display:block;font-size:.72rem;font-weight:700;color:var(--muted);
+        text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px;}
+  input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;
+        font:inherit;font-size:.92rem;background:var(--bg);outline:none;}
+  input:focus{border-color:var(--navy);background:#fff;}
+  button{width:100%;margin-top:22px;padding:12px;border:none;border-radius:9px;
+         background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:.95rem;
+         cursor:pointer;transition:background .15s;}
+  button:hover{background:#234b75;}
+  .err{display:none;margin-top:14px;background:#fdecea;color:var(--red);
+       border:1px solid #f5c6cb;border-radius:8px;padding:9px 12px;font-size:.82rem;text-align:center;}
+  .err.show{display:block;}
+  .foot{margin-top:18px;text-align:center;font-size:.7rem;color:var(--muted);}
+</style>
+</head>
+<body>
+  <form class="card" method="POST" action="/login">
+    <div class="brand">
+      <h1>ENCON Automation Portal</h1>
+      <p>Sign in to continue</p>
+    </div>
+    <div id="err" class="err">Incorrect username or password.</div>
+    <input type="hidden" name="next" id="next" value="/"/>
+    <label for="username">Username</label>
+    <input type="text" id="username" name="username" autocomplete="username" autofocus required/>
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required/>
+    <button type="submit">Sign in</button>
+    <div class="foot">Authorised users only</div>
+  </form>
+<script>
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('error')) document.getElementById('err').classList.add('show');
+  const nxt = qs.get('next');
+  if (nxt && nxt.startsWith('/')) document.getElementById('next').value = nxt;
+</script>
+</body>
+</html>

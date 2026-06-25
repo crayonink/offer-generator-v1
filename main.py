@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import pandas as pd
@@ -36,6 +36,104 @@ QUOTES_FOLDER = os.path.join(BASE_DIR, "quotes")
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(QUOTES_FOLDER, exist_ok=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Authentication — login gate for the whole portal (two roles: admin / user).
+# ─────────────────────────────────────────────────────────────────────────────
+from engine.auth import (
+    SESSION_COOKIE, SESSION_MAX_AGE,
+    verify_credentials, make_token, verify_token,
+)
+
+# Reachable without logging in.
+_PUBLIC_PATHS = {"/login", "/logout", "/health", "/favicon.ico"}
+
+
+def _auth_is_admin_only(method: str, path: str) -> bool:
+    """Endpoints that edit pricing/data or expose the raw DB are admin-only."""
+    if path == "/viewer":                       # raw DB editor page
+        return True
+    if method in ("PUT", "DELETE"):             # all rate/data edits use PUT/DELETE
+        return True
+    if method == "POST" and (
+        path.startswith("/api/stock/") or path.startswith("/upload-excel")
+    ):
+        return True
+    return False
+
+
+@app.middleware("http")
+async def auth_gate(request: Request, call_next):
+    path = request.url.path
+    # CORS preflight, public pages and the docs/login assets pass straight through.
+    if request.method == "OPTIONS" or path in _PUBLIC_PATHS:
+        return await call_next(request)
+
+    payload = verify_token(request.cookies.get(SESSION_COOKIE))
+    if not payload:
+        accept = request.headers.get("accept", "")
+        # Browser page loads → redirect to the login screen; API calls → 401.
+        if request.method == "GET" and "text/html" in accept:
+            return RedirectResponse(url=f"/login?next={path}", status_code=303)
+        return JSONResponse({"detail": "Not authenticated"}, status_code=401)
+
+    role = payload.get("r")
+    if _auth_is_admin_only(request.method, path) and role != "admin":
+        return JSONResponse(
+            {"detail": "Admin access required for this action."}, status_code=403
+        )
+
+    request.state.user = payload.get("u")
+    request.state.role = role
+    return await call_next(request)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page():
+    with open(os.path.join(BASE_DIR, "login.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.post("/login")
+async def login_submit(request: Request):
+    form = await request.form()
+    username = (form.get("username") or "").strip()
+    password = form.get("password") or ""
+    next_url = form.get("next") or "/"
+    if not next_url.startswith("/"):
+        next_url = "/"
+    role = verify_credentials(username, password)
+    if not role:
+        sep = "&" if next_url != "/" else ""
+        nxt = f"&next={next_url}" if next_url != "/" else ""
+        return RedirectResponse(url=f"/login?error=1{nxt}", status_code=303)
+    resp = RedirectResponse(url=next_url, status_code=303)
+    resp.set_cookie(
+        SESSION_COOKIE, make_token(username, role),
+        max_age=SESSION_MAX_AGE, httponly=True, samesite="lax",
+    )
+    return resp
+
+
+@app.get("/logout")
+def logout():
+    resp = RedirectResponse(url="/login", status_code=303)
+    resp.delete_cookie(SESSION_COOKIE)
+    return resp
+
+
+@app.get("/api/me")
+def whoami(request: Request):
+    """Current session's user + role (for the UI to show/hide admin controls)."""
+    return {
+        "user": getattr(request.state, "user", None),
+        "role": getattr(request.state, "role", None),
+    }
 
 VALID_TABLES = None
 
