@@ -23,7 +23,49 @@ app.add_middleware(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "vlph.db")
+
+# ── Persistent database (survives Railway redeploys) ────────────────────────
+# Railway's container filesystem is ephemeral: the committed vlph.db ships in
+# the image, so every redeploy resets it — wiping any edits made through the
+# live UI. To make edits permanent, mount a Railway VOLUME and point
+# VLPH_DB_PATH at a file on it (e.g. /data/vlph.db). On first run the committed
+# vlph.db is copied to the volume as a SEED; after that the volume is the live
+# database and the in-repo vlph.db is symlinked to it, so every module (which
+# opens BASE_DIR/vlph.db or 'vlph.db') transparently uses the persistent copy.
+# Set VLPH_DB_RESEED=1 for one deploy to force-overwrite the volume from the
+# committed seed (e.g. to push a bulk data change). No env var = unchanged
+# behaviour (uses the in-repo vlph.db, as before).
+def _init_persistent_db():
+    vol = (os.environ.get("VLPH_DB_PATH") or "").strip()
+    seed = os.path.join(BASE_DIR, "vlph.db")
+    if not vol:
+        return
+    try:
+        os.makedirs(os.path.dirname(vol) or ".", exist_ok=True)
+        reseed = os.environ.get("VLPH_DB_RESEED") == "1"
+        # Seed the volume from the committed DB on first run (or forced reseed).
+        if os.path.exists(seed) and not os.path.islink(seed) and (not os.path.exists(vol) or reseed):
+            shutil.copy2(seed, vol)
+        # Point the in-repo path at the volume so all DB access is persistent.
+        if os.path.realpath(seed) != os.path.realpath(vol):
+            if os.path.islink(seed) or os.path.exists(seed):
+                os.remove(seed)
+            os.symlink(vol, seed)
+        print(f"[db] using persistent volume: {vol}")
+    except Exception as e:
+        # Never leave the app without a database: if the symlink couldn't be
+        # created (e.g. symlinks unsupported), restore a working copy at the
+        # in-repo path. Edits then won't persist across redeploys, but the app
+        # keeps running rather than failing to open a missing vlph.db.
+        if not os.path.exists(seed) and os.path.exists(vol):
+            try:
+                shutil.copy2(vol, seed)
+            except Exception:
+                pass
+        print(f"[db] persistent volume init failed ({e}); using in-repo vlph.db")
+
+_init_persistent_db()
+DB_PATH = os.path.join(BASE_DIR, "vlph.db")  # symlink → volume when VLPH_DB_PATH set
 
 # Documentation site (Antora, pre-built into ./docs_site) served at /docs.
 # Guarded so a missing build never breaks app start-up.
