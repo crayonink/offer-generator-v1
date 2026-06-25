@@ -188,16 +188,8 @@
     </div>
     <div class="header-stats">
       <div class="hstat">
-        <div class="hstat-val loading" id="stat-prices">—</div>
-        <div class="hstat-label">Priced Items</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-val loading" id="stat-covered">—</div>
-        <div class="hstat-label">BOM Covered</div>
-      </div>
-      <div class="hstat">
-        <div class="hstat-val loading" id="stat-updated">—</div>
-        <div class="hstat-label">Last Upload</div>
+        <div class="hstat-val" id="stat-today">—</div>
+        <div class="hstat-label">Today</div>
       </div>
     </div>
   </div>
@@ -367,26 +359,11 @@
 </div>
 
 <script>
-async function load() {
-  // Header stats
-  try {
-    const r = await fetch('/api/price-master/coverage');
-    const d = await r.json();
-    set('stat-prices',  d.total_in_db ?? '—');
-    set('stat-covered', d.total_bom ? (d.covered_count ?? '—') + '/' + d.total_bom : (d.covered_count ?? '—'));
-  } catch(e) {}
-
-  try {
-    const r = await fetch('/api/last-pricebook-update');
-    const d = await r.json();
-    set('stat-updated', d.date ?? '—');
-  } catch(e) { set('stat-updated', '—'); }
-
-}
-
-function set(id, val) {
-  const el = document.getElementById(id);
-  if (el) { el.textContent = val; el.classList.remove('loading'); }
+function load() {
+  // Today's date, e.g. "26 Mar 2026"
+  const d = new Date();
+  const el = document.getElementById('stat-today');
+  if (el) el.textContent = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 load();
