@@ -2401,6 +2401,20 @@ function applyFilter() {
       summary.style.display = '';
     }
   }
+
+  // Cross-tab relevance: a search spans every sheet, so if the tab you're on
+  // has no matches but another (visible) tab does, jump to the first visible
+  // tab that has matches — instead of leaving you on an empty sheet.
+  if (q) {
+    const activeTab = document.querySelector('.tab.active');
+    const activeId = activeTab && activeTab.dataset.sheet;
+    if (!(counters[activeId] > 0)) {
+      const target = Array.from(document.querySelectorAll('.tab')).find(t =>
+        (counters[t.dataset.sheet] || 0) > 0 &&
+        t.style.display !== 'none' && t.offsetParent !== null);
+      if (target && target.dataset.sheet !== activeId) switchTab(target.dataset.sheet);
+    }
+  }
 }
 
 function _onSearchInput(e) {
