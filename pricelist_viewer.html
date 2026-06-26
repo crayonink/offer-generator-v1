@@ -2377,8 +2377,17 @@ function applyFilter() {
   // matches show up (e.g. searching "DEMBLA" while parked on the CAIR pill).
   document.body.classList.toggle('searching', !!q);
   const counters = {};
+  const tabNameMatches = {};
   document.querySelectorAll('.sheet-panel').forEach(panel => {
     const sheetId = panel.id.replace(/^sheet-/, '');
+    // A tab whose LABEL matches the query reveals its whole sheet, so e.g.
+    // searching "HPU" / "Blower" / "Fabrication" highlights & opens that tab
+    // even when no individual row contains the text.
+    const _tabEl = document.querySelector(`.tab[data-sheet="${sheetId}"]`);
+    const _tabLabel = _tabEl ? Array.from(_tabEl.childNodes)
+      .filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
+    const tabNameMatch = !!q && _tabLabel.toLowerCase().includes(q);
+    tabNameMatches[sheetId] = tabNameMatch;
     let visible = 0;
     // Search matches EVERYTHING — item rows AND headings / sub-headings. When a
     // heading's text matches, the heading and all rows under it are shown.
@@ -2395,7 +2404,7 @@ function applyFilter() {
       if (tr.classList.contains('company-hdr')) {
         // Sub-header: searchable; also shown if its parent section matched.
         curSubMatch = !!q && tr.textContent.toLowerCase().includes(q);
-        const showHdr = curSubMatch || curSectionMatch;
+        const showHdr = curSubMatch || curSectionMatch || tabNameMatch;
         tr.classList.toggle('row-filtered', !!q && !showHdr);
         if (curSubMatch) _highlightRow(tr, q);
         return;
@@ -2404,9 +2413,10 @@ function applyFilter() {
       if (!q) { tr.classList.remove('row-filtered'); visible++; return; }
       const rowMatch = _rowItemText(tr).toLowerCase().includes(q);
       // Inherit a matching heading — tr-based (curSection/curSub) for standard
-      // tables, or a pivot section/group label for catalog tables.
+      // tables, or a pivot section/group label for catalog tables — or the tab
+      // name itself.
       const headMatch = !rowMatch && _rowHeadingText(tr).toLowerCase().includes(q);
-      const show = rowMatch || curSectionMatch || curSubMatch || headMatch;
+      const show = rowMatch || curSectionMatch || curSubMatch || headMatch || tabNameMatch;
       tr.classList.toggle('row-filtered', !show);
       if (show) { visible++; if (rowMatch) _highlightRow(tr, q); }
     });
@@ -2483,7 +2493,7 @@ function applyFilter() {
     }
     const n = counters[sheetId] || 0;
     badge.textContent = n;
-    t.classList.toggle('empty-match', n === 0);
+    t.classList.toggle('empty-match', n === 0 && !tabNameMatches[sheetId]);
   });
 
   // Hero summary chip
@@ -2493,7 +2503,7 @@ function applyFilter() {
     if (!q) { summary.style.display = 'none'; }
     else {
       const total = Object.values(counters).reduce((a, b) => a + b, 0);
-      const hitSheets = Object.values(counters).filter(n => n > 0).length;
+      const hitSheets = Object.keys(counters).filter(k => counters[k] > 0 || tabNameMatches[k]).length;
       summaryVal.textContent = `${total} match${total === 1 ? '' : 'es'} in ${hitSheets} sheet${hitSheets === 1 ? '' : 's'}`;
       summary.style.display = '';
     }
@@ -2505,9 +2515,9 @@ function applyFilter() {
   if (q) {
     const activeTab = document.querySelector('.tab.active');
     const activeId = activeTab && activeTab.dataset.sheet;
-    if (!(counters[activeId] > 0)) {
+    if (!(counters[activeId] > 0 || tabNameMatches[activeId])) {
       const target = Array.from(document.querySelectorAll('.tab')).find(t =>
-        (counters[t.dataset.sheet] || 0) > 0 &&
+        ((counters[t.dataset.sheet] || 0) > 0 || tabNameMatches[t.dataset.sheet]) &&
         t.style.display !== 'none' && t.offsetParent !== null);
       if (target && target.dataset.sheet !== activeId) switchTab(target.dataset.sheet);
     }
