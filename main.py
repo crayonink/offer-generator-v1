@@ -3591,6 +3591,9 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
             "is_dual":             False,
             # PU offer = pumping only (no heater); HPU offer = heating + pumping.
             "force_pumping_only":  (filename_infix == "PU"),
+            # Stand-alone equipment offer → use the detailed ENCON pumping-unit
+            # scope wording + rich price description (quote_writer gates on this).
+            "standalone_pumping":  True,
             "control_mode":        "manual",
             "auto_control_type":   "",
             "control_valve_type":  "",

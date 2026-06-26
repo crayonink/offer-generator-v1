@@ -1052,6 +1052,43 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         )),
     }
 
+    # Stand-alone HPU/PU equipment offers: detailed ENCON pumping-unit scope
+    # (model + flow rate + accessory bullets) and a rich price-table item
+    # description. Gated on 'standalone_pumping' so VLPH/HLPH stay untouched.
+    if customer.get("standalone_pumping"):
+        _pmodel = customer.get("hpu_model") or ""
+        _plph = customer.get("hpu_lph") or ""
+        _pvar = (customer.get("hpu_variant") or "").lower()
+        _pumps = ("a single gear pump with motor" if "simplex" in _pvar
+                  else "TWO gear pumps with motors")
+        if customer.get("force_pumping_only"):
+            _phead = f"PUMPING UNIT, MODEL {_pmodel}"
+            _pintro = (f"Supply ex-works of 1 no. ENCON make Oil Pumping unit, model {_pmodel}, "
+                       f"suitable for flow rate of {_plph} ltrs/hr, {_pumps} fitted with all "
+                       f"standard accessories (mounted on a common base frame) such as:")
+            _pitems = ["Constant pressure control valve", "Pressure relief valve",
+                       "Pressure gauge", "Fine filters, etc."]
+        else:
+            _phead = f"HEATING & PUMPING UNIT, MODEL {_pmodel}"
+            _pintro = (f"Supply ex-works of 1 no. ENCON make Oil Heating & Pumping unit, model "
+                       f"{_pmodel}, suitable for flow rate of {_plph} ltrs/hr, {_pumps} and an "
+                       f"in-built electric oil heater with thermostatic control, fitted with all "
+                       f"standard accessories (mounted on a common base frame) such as:")
+            _pitems = ["Electric oil pre-heater with thermostatic control",
+                       "Constant pressure control valve", "Pressure relief valve",
+                       "Pressure gauge", "Fine filters, etc."]
+        context["pumping_unit_intro"] = _pintro
+        context["pumping_unit_items"] = [{"item": x} for x in _pitems]
+        from docxtpl import RichText
+        _prt = RichText()
+        _prt.add(_phead + ":", bold=True)
+        _prt.add("\n" + _pintro)
+        for _pi in _pitems:
+            _prt.add("\n•  " + _pi)
+        context["item_desc"] = _prt
+    else:
+        context.setdefault("item_desc", context.get("equipment_name", ""))
+
     # All products (Vertical, Horizontal, Tundish) render from
     # Offer_Template.docx so they share hood / HPU / scope-of-supply
     # content. HPU stand-alone offers pass HPU_Offer_Template.docx via
