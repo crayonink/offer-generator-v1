@@ -3526,6 +3526,11 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     # ── 2. Enquiry ref (canonical ENCON pattern) ──────────────────────
     seq = next_quote_seq()
     auto_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
+    # OUR REF from the user's input (Enquiry / Ref No.) + today's date; the
+    # quote_writer splits "<ref> DT.<date>" into enquiry_ref_short / date.
+    _ref_in = (cust.ref_no or "").split(" DT.")[0].strip()
+    auto_ref = (f"{_ref_in} DT.{datetime.now().strftime('%d/%m/%Y')}"
+                if _ref_in else auto_ref)
 
     # ── 3. Build form_data mirroring VLPH/Tundish shape ──────────────
     equipment_name = (
@@ -3943,8 +3948,10 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
 
     seq = next_quote_seq()
     full_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
-    short_ref = full_ref.split(" DT.")[0]
-    date_str = full_ref.split(" DT.")[-1] if " DT." in full_ref else _dt.now().strftime("%d/%m/%Y")
+    # OUR REF comes from the user's input (Enquiry / Ref No.); falls back to the
+    # auto ENCON ref. DATE is always today.
+    short_ref = (cust.ref_no or "").split(" DT.")[0].strip() or full_ref.split(" DT.")[0]
+    date_str = _dt.now().strftime("%d/%m/%Y")
 
     company_address = ", ".join(filter(None, [
         (cust.address or "").strip(), (cust.city or "").strip(),
