@@ -658,11 +658,22 @@ function renderFabrication(data) {
   const block = (m) => {
     const rows = data.filter(m.match).sort((a, b) => a.ton - b.ton);
     if (!rows.length) return '';
+    // Pipeline: where the stored weight is 0, fall to the next non-zero weight
+    // down the list (then the previous non-zero if nothing comes after).
+    const pipe = rows.map(r => +r.pipeline_kg || 0);
+    const fill = pipe.slice();
+    for (let i = 0; i < fill.length; i++) {
+      if (fill[i] > 0) continue;
+      let j = i + 1; while (j < pipe.length && !(pipe[j] > 0)) j++;
+      if (j < pipe.length) { fill[i] = pipe[j]; continue; }
+      let k = i - 1; while (k >= 0 && !(fill[k] > 0)) k--;
+      if (k >= 0) fill[i] = fill[k];
+    }
     const body = rows.map((r, i) => `<tr>
         <td class="rn">${i + 1}</td>
         <td style="text-align:center;font-weight:600;color:var(--navy);">${r.ton}</td>
         <td style="text-align:right;">${fmt(r.fabrication_kg)}</td>
-        <td style="text-align:right;">${fmt(r.pipeline_kg)}</td>
+        <td style="text-align:right;">${fmt(fill[i])}</td>
         <td style="text-align:right;font-weight:600;">${r.ceramic_rolls}</td>
       </tr>`).join('');
     return `<div class="section-label" style="margin-bottom:6px;">${esc(m.label)}
@@ -688,7 +699,8 @@ function renderFabrication(data) {
   el.innerHTML = '<div style="padding:14px 4px 4px;">'
     + '<div style="font-size:.74rem;color:var(--muted);margin:0 4px 14px;line-height:1.5;">'
     + 'Ladle fabrication, air-gas pipeline and ceramic-fibre weights per capacity & mechanism. '
-    + 'Ceramic rolls = ⌈ kg ÷ 14 ⌉ (14 kg/roll, rounded up). Fabrication priced at ₹110/kg, pipeline at ₹125/kg.</div>'
+    + 'Ceramic rolls = ⌈ kg ÷ 14 ⌉ (14 kg/roll, rounded up). Fabrication priced at ₹110/kg, pipeline at ₹125/kg. '
+    + 'Where a pipeline weight isn’t stored for a ladle, it falls to the next ladle’s pipeline weight.</div>'
     + MECHS.map(block).join('') + note + '</div>';
 }
 
