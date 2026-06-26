@@ -4102,19 +4102,44 @@ def generate_burner_quote(req: BurnerQuoteRequest):
         unit_price, fuel, capacity, label = looked
         equipment_name = f"{label} – {req.burner_model}"
         _bqty = max(1, int(req.qty or 1))
-        _cap = f" of capacity {capacity}" if capacity else ""
-        scope_intro = (f"We will supply {_bqty} No. {label} ({req.burner_model}){_cap} to achieve "
-                       f"the desired temperature in the required time. The burner consists of the "
-                       f"following main components:")
-        scope_items = [{"item": x} for x in [
-            "Burner alone", "Ball valve", "CI burner mounting plate",
-            "Burner block", "Flexible hoses set", "Butterfly valve"]]
+        _bg = (req.burner_group or "oil").lower()
+        # Per fuel-type: display name, operation phrase, and component list
+        # (mirrors the standard ENCON burner scope wording).
+        _BNAME = {"dual": "ENCON Dual Fuel Burner", "oil": "IIP-ENCON Film Burner",
+                  "gas": "ENCON Gas Burner", "gail": "GAIL Gas Burner"}
+        _BOPER = {"dual": "dual operation using liquid fuel (LDO) and gaseous fuel (such as Natural Gas / LPG)",
+                  "oil": "operation using liquid fuel (LDO)",
+                  "gas": "operation using gaseous fuel (such as Natural Gas / LPG)",
+                  "gail": "operation using gaseous fuel (Natural Gas)"}
+        _BCOMP = {"dual": ["Burner Alone", "Micro Valve", "C.I Burner Plate", "Burner Block",
+                           "Flexible Hoses set", "Ball Valve", "\"Y\" type Strainer", "Butterfly Valve"],
+                  "oil": ["Burner Alone", "Micro Valve", "C.I Burner Plate", "Burner Block",
+                          "Flexible Hoses set", "\"Y\" type Strainer", "Butterfly Valve"],
+                  "gas": ["Burner Alone", "Ball Valve", "C.I Burner Plate", "Burner Block",
+                          "Flexible Hoses set", "Butterfly Valve"],
+                  "gail": ["Burner Alone", "Ball Valve", "C.I Burner Plate", "Burner Block",
+                           "Flexible Hoses set", "Butterfly Valve"]}
+        _bname = _BNAME.get(_bg, label)
+        _boper = _BOPER.get(_bg, "operation using the selected fuel")
+        _bcomp = _BCOMP.get(_bg, ["Burner Alone", "Ball Valve", "C.I Burner Plate",
+                                  "Burner Block", "Flexible Hoses set", "Butterfly Valve"])
+        _rate = f", having a firing rate of {capacity}" if capacity else ""
+        scope_intro = (f"Supply ex-works of {_bqty} no. {_bname}, Model {req.burner_model}, "
+                       f"suitable for {_boper}{_rate}, fitted with necessary accessories of "
+                       f"reputed make. Equipment with Burner:")
+        scope_items = [{"item": x} for x in _bcomp]
         specs = {
             "burner_model":    req.burner_model,
             "burner_fuel":     fuel,
             "burner_capacity": capacity,
             "scope_intro":     scope_intro,
             "scope_items":     scope_items,
+            "price_desc": {
+                "heading": _bname.upper(),
+                "body":    scope_intro,
+                "bullets": _bcomp,
+                "notes":   [],
+            },
         }
         result = _generate_equipment_offer(
             req.customer, equipment_name=equipment_name, specs=specs,
