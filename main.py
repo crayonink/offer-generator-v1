@@ -3510,162 +3510,49 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     catalog_lph = float(flow_row[0]) if flow_row and flow_row[0] is not None \
                   else (req.fuel_lph or 0.0)
     qty = max(1, int(req.qty or 1))
-    # Commercial adjustments applied to the catalog price: Packaging & Forwarding
-    # and Designing add, Negotiation all add; Transport is a flat amount shown
-    # on its own price-schedule line. The per-unit offer price folds Transport in
-    # (so _break_out_transport can split it back out below). Final total rounded
-    # to the nearest Rs.1000, matching the other equipment offers.
-    _pf  = float(getattr(req, "pf_pct", 0) or 0)
-    _des = float(getattr(req, "design_pct", 0) or 0)
-    _neg = float(getattr(req, "neg_pct", 0) or 0)
-    _trn = float(getattr(req, "transport_amt", 0) or 0)
-    _adj_total  = unit_price * qty * (1 + (_pf + _des + _neg) / 100) + _trn
-    _final_incl = (round(_adj_total / 1000) * 1000) if (_pf or _des or _neg or _trn) else _adj_total
-    offer_unit  = _final_incl / qty
-
-    # ── 2. Enquiry ref (canonical ENCON pattern) ──────────────────────
-    seq = next_quote_seq()
-    auto_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
-
-    # ── 3. Build form_data mirroring VLPH/Tundish shape ──────────────
+    # Commercial adjustments (P&F / Designing / Negotiation / Transport) and the
+    # enquiry ref/seq are applied inside _generate_equipment_offer below — don't
+    # pre-compute them here (next_quote_seq() would otherwise burn a number).
     equipment_name = (
         f"{equipment_label} – {req.hpu_variant}, "
         f"{req.hpu_kw:g} kW @ {catalog_lph:g} LPH"
     )
-    form_data = {
-        "quote_seq": seq,
-        "customer": {
-            "company_name":     cust.company or "",
-            "company_city":     cust.city or "",
-            "company_state":    cust.state or "",
-            "address":          ", ".join(filter(None, [
-                                    cust.address or "",
-                                    cust.city or "",
-                                    cust.state or "",
-                                    cust.pin or "",
-                                ])),
-            "poc_name":         _with_salutation(cust.salutation, cust.name),
-            "poc_designation":  cust.designation or "",
-            "mobile_no":        cust.phone or "",
-            "email":            cust.email or "",
-            "project_name":     cust.subject or equipment_name,
-            "subject":          cust.subject or equipment_name,
-            "ref_no":           auto_ref,
-            "your_ref":         cust.ref_no or auto_ref,
-            "enquiry_ref":      auto_ref,
-            "marketing_person": _with_salutation(cust.marketing_salutation, cust.marketing),
-            "marketing_phone":  cust.marketing_phone or "",
-            "marketing_email":  cust.marketing_email or "",
-            "technical_person": _with_salutation(cust.technical_salutation, cust.technical),
-            "technical_phone":  cust.technical_phone or "",
-            "technical_email":  cust.technical_email or "",
-            "gstin":            cust.gstin or "",
-            # Picked up by _build_equipment_name + by the HPU/PU template
-            # via {{ hpu_variant }} / {{ hpu_kw }} / {{ hpu_lph }} /
-            # {{ hpu_qty }} (the PU template reuses the hpu_* keys so a
-            # single context dict serves both).
-            "equipment_name_override": equipment_name,
-            "hpu_variant":      req.hpu_variant,
-            "hpu_kw":           f"{req.hpu_kw:g}",
-            "hpu_lph":          f"{catalog_lph:g}",
-            "hpu_model":        model_code,
-            "hpu_qty":          str(qty),
-            # Preheater-specific tech-data: blank so _strip_empty_tech_rows
-            # drops the rows entirely.
-            "ladle_tons":          "", "ladle_dim":           "",
-            "ladle_drawing_no":    "", "refractory_weight_kg": "",
-            "heating_schedule":    "", "heating_time":        "",
-            "fuel_cv":             "", "fuel_consumption":    "",
-            "fuel2_cv":            "", "fuel2_consumption":   "",
-            "burner_model":        "", "blower_model":        "",
-            "blower_size":         "", "blower_capacity":     "",
-            "hydraulic_motor_hp":  "", "max_electrical_load": "",
-            "fuel_name":           req.fuel_type or "",
-            "burner_capacity_range": "",
-            "pumping_unit":        f"{req.hpu_variant}, {req.hpu_kw:g} kW",
-            "hood_movement":       "", "hood_type":           "",
-            "pilot_gas_type":      "", "ignition_method":     "",
-            "num_burners":         "",
-            "max_fuel_consumption1": "", "max_fuel_consumption2": "",
-            "is_oil":              True,
-            "is_dual":             False,
-            # PU offer = pumping only (no heater); HPU offer = heating + pumping.
-            "force_pumping_only":  (filename_infix == "PU"),
-            "control_mode":        "manual",
-            "auto_control_type":   "",
-            "control_valve_type":  "",
-            "special_auto_ignition": False,
-            "special_auto_controls": False,
-            "vertical_qty":        qty,
-            "horizontal_qty":      0,
-            "nitrogen_purging":    False,
-            "burner_kw_value":     "",
-            "bom_items":           [],
-            # Annexure IV — T&Cs sourced from Step 3 (mirrors VLPH).
-            "tnc_prices":             cust.tnc_prices or "",
-            "tnc_delivery":           cust.tnc_delivery or "",
-            "tnc_gst":                cust.tnc_gst or "",
-            "tnc_hsn_code":           cust.tnc_hsn_code or "",
-            "tnc_pan_gst":            cust.tnc_pan_gst or "",
-            "tnc_payment_terms":      cust.tnc_payment_terms or "",
-            "tnc_packing_forwarding": cust.tnc_packing_forwarding or "",
-            "tnc_freight":            cust.tnc_freight or "",
-            "tnc_transit_insurance":  cust.tnc_transit_insurance or "",
-            "tnc_validity":           cust.tnc_validity or "",
-            "tnc_inspection":         cust.tnc_inspection or "",
-            "tnc_guarantee":          cust.tnc_guarantee or "",
-        },
-        # Single-line price schedule. The product_type isn't 'Vertical
-        # Ladle Preheater' / 'Horizontal Ladle Preheater' / 'Tundish'
-        # so quote_writer's is_vertical / is_horizontal / is_tundish
-        # flags stay False and the preheater scope sections are
-        # suppressed; the total still pours into the vertical price
-        # slot via the 'else' branch at quote_writer:692.
-        "items": [{
-            "product_type": item_product_type,
-            "model":        f"{req.hpu_variant} {req.hpu_kw:g} kW",
-            "description":  equipment_name,
-            "qty":          qty,
-            # Sell price with Packaging & Forwarding, Designing, Negotiation and
-            # Transport applied (Transport is broken onto its own line below).
-            "unit_price":   offer_unit,
-        }],
-        "valid_days": 30,
+
+    # ── Render via the shared equipment-offer template (same look as the
+    #    blower/burner stand-alone offers). HPU/PU are simple equipment, so
+    #    they use Equipment_Offer_Template.docx with a single price line and
+    #    the "Heating & Pumping Units" advantages block — NOT the heavier
+    #    VLPH-style quote_writer path (the legacy block below is bypassed).
+    _scope = (f"We will supply {qty} No. {equipment_label} ({model_code}), "
+              f"{req.hpu_kw:g} kW @ {catalog_lph:g} LPH — a skid-mounted unit "
+              f"complete with a standard electric motor, pump, valves and oil tank"
+              + (", an in-built electric oil heater and thermostatic control"
+                 if mode == "hpu" else "")
+              + ". The unit comprises:")
+    _comp = ["1 No. standard electric drive motor (ABB / Crompton or equiv.)",
+             "1 No. standard oil pump (Tushaco / Apex or equiv.)",
+             "Audco or equivalent valves with ISI pipework",
+             "Heavy-duty base frame and oil tank"]
+    if mode == "hpu":
+        _comp.insert(0, "1 No. in-built electric oil heater with thermostat")
+    _specs = {
+        "pumping_variant": req.hpu_variant, "pumping_kw": f"{req.hpu_kw:g}",
+        "pumping_lph": f"{catalog_lph:g}", "pumping_model": model_code,
+        "scope_intro": _scope, "scope_items": [{"item": x} for x in _comp],
     }
-
-    quote_data = calculate_quote(form_data)
-    total_price = float(quote_data.get("grand_total") or offer_unit * qty)
-
-    # ── 4. Filename: {YYYY-MM-DD}_{Customer}_{HPU|PU}-{kW}kW-{variant}.docx ─
-    _safe_company = "".join(ch for ch in (cust.company or "Client")
-                            if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
-    _safe_variant = req.hpu_variant.replace(" ", "")
-    _date = datetime.now().strftime("%Y-%m-%d")
-    filename = f"{_date}_{_safe_company}_{filename_infix}-{kw_int}kW-{_safe_variant}.docx"
-    output_path = os.path.join(QUOTES_FOLDER, filename)
-
-    template_path = os.path.join(BASE_DIR, template_name)
-    generate_quote_docx(quote_data, output_path, template_path=template_path)
-    # Pull Transport onto its own price-schedule line (no-op if 0).
-    try:
-        _break_out_transport(output_path, req.transport_amt)
-    except Exception as _trn_err:
-        print(f"WARN: recup transport line break-out failed: {_trn_err}")
-
-    return {
-        "success":      True,
-        "filename":     filename,
-        "download_url": f"/api/download-quote/{filename}",
-        "preview_url":  f"/api/preview-quote/{filename}",
-        "unit_price":   offer_unit,
-        "total_price":  total_price,
-        "variant":      req.hpu_variant,
-        "kw":           req.hpu_kw,
-        "lph":          catalog_lph,
-        "model_code":   model_code,
-        "qty":          qty,
-        "mode":         mode,
-    }
+    _res = _generate_equipment_offer(
+        cust, equipment_name=equipment_name, specs=_specs,
+        unit_price=unit_price, qty=qty,
+        template_name="Equipment_Offer_Template.docx",
+        filename_infix=filename_infix, drive_product=mode,
+        pf_pct=getattr(req, "pf_pct", 0) or 0,
+        design_pct=getattr(req, "design_pct", 0) or 0,
+        neg_pct=getattr(req, "neg_pct", 0) or 0,
+        transport_amt=getattr(req, "transport_amt", 0) or 0)
+    if isinstance(_res, dict) and _res.get("success"):
+        _res.update({"variant": req.hpu_variant, "kw": req.hpu_kw,
+                     "lph": catalog_lph, "model_code": model_code, "mode": mode})
+    return _res
 
 
 @app.post("/api/generate-hpu-quote")
