@@ -3967,20 +3967,41 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     }
     ctx.update(specs)
 
+    # ── Equipment_Offer_Template.docx context: one price-table item +
+    #    per-equipment advantages flags. company_name carries no "M/s." (the
+    #    template already prints it). Transport is folded into the line total.
+    import re as _re
+    def _money(x):
+        s = _format_inr(round(float(x or 0)))
+        return "Rs. " + (s[:-3] if s.endswith(".00") else s)
+    ctx["company_name"] = _re.sub(r"^\s*M/?s\.?\s*", "", cust.company or "", flags=_re.I).strip()
+    ctx["grand_total"] = _money(total_price)
+    _comps = [str(s.get("item", "")).strip() for s in specs.get("scope_items", []) if s.get("item")]
+    _desc = (specs.get("scope_intro", "") or "").strip()
+    if _comps:
+        _desc = (_desc + " " if _desc else "") + "Comprising: " + "; ".join(_comps) + "."
+    ctx["items"] = [{
+        "sno":         "1.",
+        "description": _desc or equipment_name,
+        "qty":         f"{qty:02d} No.",
+        "rate":        _money(offer_unit),
+        "total":       _money(total_price),
+    }]
+    ctx["show_blower_adv"]  = (drive_product == "blower")
+    ctx["show_burner_adv"]  = (drive_product == "burner")
+    ctx["show_pumping_adv"] = (drive_product in ("hpu", "pu", "pumping"))
+
     tpl_path = os.path.join(BASE_DIR, template_name)
     tpl = DocxTemplate(tpl_path)
-    tpl.render(ctx)
+    tpl.render(ctx, autoescape=True)
 
     safe_company = "".join(ch for ch in (cust.company or "Client")
                            if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
     docx_name = f"{filename_infix}_Offer_{safe_company}_{seq}.docx"
     docx_path = os.path.join(QUOTES_FOLDER, docx_name)
     tpl.save(docx_path)
-    # Transport onto its own price-schedule line (no-op if 0).
-    try:
-        _break_out_transport(docx_path, _trn)
-    except Exception as _trn_err:
-        print(f"WARN: {filename_infix} transport break-out failed: {_trn_err}")
+    # (Transport is folded into the single line total above — the equipment
+    #  template has no separate price-schedule line to break it onto.)
 
     pdf_name = docx_name.replace(".docx", ".pdf")
     pdf_path = os.path.join(QUOTES_FOLDER, pdf_name)
@@ -4046,7 +4067,7 @@ def generate_blower_quote(req: BlowerQuoteRequest):
         result = _generate_equipment_offer(
             req.customer, equipment_name=equipment_name, specs=specs,
             unit_price=unit_price, qty=req.qty,
-            template_name="Blower_Offer_Template.docx",
+            template_name="Equipment_Offer_Template.docx",
             filename_infix="Blower", drive_product="blower",
             pf_pct=req.pf_pct, design_pct=req.design_pct,
             neg_pct=req.neg_pct, transport_amt=req.transport_amt)
@@ -4085,7 +4106,7 @@ def generate_burner_quote(req: BurnerQuoteRequest):
         result = _generate_equipment_offer(
             req.customer, equipment_name=equipment_name, specs=specs,
             unit_price=unit_price, qty=req.qty,
-            template_name="Burner_Offer_Template.docx",
+            template_name="Equipment_Offer_Template.docx",
             filename_infix="Burner", drive_product="burner",
             pf_pct=req.pf_pct, design_pct=req.design_pct,
             neg_pct=req.neg_pct, transport_amt=req.transport_amt)
