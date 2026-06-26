@@ -3967,6 +3967,25 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     }
     ctx.update(specs)
 
+    # Rich price-table item description: bold model heading + spec sentence +
+    # component bullets + notes, from specs['price_desc']. Falls back to the
+    # equipment name. RichText is inserted as XML so autoescape leaves it alone.
+    from docxtpl import RichText
+    _pd = specs.get("price_desc")
+    if _pd:
+        _rt = RichText()
+        if _pd.get("heading"):
+            _rt.add((_pd["heading"] + ":"), bold=True)
+        if _pd.get("body"):
+            _rt.add(("\n" if _pd.get("heading") else "") + _pd["body"])
+        for _b in _pd.get("bullets", []):
+            _rt.add("\n•  " + str(_b))
+        for _n in _pd.get("notes", []):
+            _rt.add("\n\n" + str(_n))
+        ctx["item_desc"] = _rt
+    else:
+        ctx["item_desc"] = ctx.get("equipment_name", "")
+
     tpl_path = os.path.join(BASE_DIR, template_name)
     tpl = DocxTemplate(tpl_path)
     tpl.render(ctx, autoescape=True)   # preserve '&' in values (e.g. "Steel & Alloys")
@@ -4014,34 +4033,49 @@ def generate_blower_quote(req: BlowerQuoteRequest):
     """Stand-alone Blower offer — catalog pick from blower_master
     (price = price_premium, i.e. with motor)."""
     try:
+        from engine.quote_writer import _format_inr as _finr
         conn = sqlite3.connect(DB_PATH)
         row = conn.execute(
-            "SELECT model, hp, airflow, pressure, price_premium "
+            "SELECT model, hp, airflow, cfm, pressure, price_basic, price_premium "
             "FROM blower_master WHERE model = ? LIMIT 1", (req.blower_model,)
         ).fetchone()
         conn.close()
         if not row:
             return {"error": f"unknown blower model: {req.blower_model}"}
-        model, hp, airflow, pressure, price = row
+        model, hp, airflow, cfm, pressure, price_basic, price = row
         unit_price = _finite_price(price)
         if unit_price is None:
             return {"error": f"blower '{model}' has no valid price in the catalog"}
+        import re as _re
+        _pm = _re.search(r"\d+", pressure or "")
+        ptype = "High" if (_pm and int(_pm.group()) >= 40) else "Medium"
+        _qty = max(1, int(req.qty or 1))
+        _model_short = (model or "").replace("ENCON", "").strip()
+        _press = (pressure or "").strip()
         equipment_name = f"Centrifugal Blower – {model}"
-        scope_intro = (f"To supply combustion air to the burner, we will supply a centrifugal "
-                       f"steel-plate air blower ({model}) of {_fmt_num(hp)} HP rated at "
-                       f"{_fmt_num(airflow)} Nm³/hr, complete with a suitable electric motor "
-                       f"mounted on a common base frame. The blower comprises:")
+        scope_intro = (f"Supply ex-works of {_qty} No. ENCON {ptype} Pressure Blower, "
+                       f"model {model}, having a capacity of {_fmt_num(cfm)} CFM at {_press} "
+                       f"pressure, fitted with a {_fmt_num(hp)} HP, 2900 rpm motor of reputed "
+                       f"make such as ABB, Crompton, etc.")
         scope_items = [{"item": x} for x in [
-            f"1 No. centrifugal steel-plate air blower – {_fmt_num(hp)} HP, {_fmt_num(airflow)} Nm³/hr.",
-            "1 No. suitable electric drive motor.",
-            "Common base frame with anti-vibration pads."]]
+            f"1 No. ENCON {ptype} pressure centrifugal blower, model {model}",
+            f"1 No. {_fmt_num(hp)} HP, 2900 rpm electric drive motor (ABB / Crompton or equivalent)",
+            "Common M.S. base frame with anti-vibration mounts"]]
+        _bf = _finite_price(price_basic)
+        _basic_fmt = ("Rs. " + (lambda s: s[:-3] if s.endswith(".00") else s)(_finr(_bf))) if _bf else None
         specs = {
             "blower_model":    model,
             "blower_hp":       _fmt_num(hp),
             "blower_airflow":  _fmt_num(airflow),
-            "blower_pressure": (pressure or "").strip(),
+            "blower_pressure": _press,
             "scope_intro":     scope_intro,
             "scope_items":     scope_items,
+            "price_desc": {
+                "heading": f"BLOWER, MODEL {_model_short}",
+                "body":    scope_intro,
+                "bullets": [],
+                "notes":   ([f"Price for the above blower WITHOUT MOTOR — {_basic_fmt}"] if _basic_fmt else []),
+            },
         }
         result = _generate_equipment_offer(
             req.customer, equipment_name=equipment_name, specs=specs,
