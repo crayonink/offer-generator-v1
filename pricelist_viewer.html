@@ -515,6 +515,7 @@
   <div class="tab"        data-sheet="hpu"          onclick="switchTab('hpu')">HPU</div>
   <div class="tab"        data-sheet="blowers"      onclick="switchTab('blowers')">Blower</div>
   <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner</div>
+  <div class="tab"        data-sheet="fabrication"   onclick="switchTab('fabrication')">Fabrication</div>
 </div>
 
 <!-- Sheet content area -->
@@ -534,6 +535,7 @@
   <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading&hellip;</div></div>
+  <div class="sheet-panel"        id="sheet-fabrication">  <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-stock-rates">   <div class="empty-msg">Loading&hellip;</div></div>
 </div>
 
@@ -601,14 +603,16 @@ async function loadAll() {
   try {
     // Resilient: non-admins are blocked (403) from the vendor-catalog summary,
     // so default it to {} instead of failing the whole load (Rates etc. still work).
-    const [summary, rates, stock] = await Promise.all([
+    const [summary, rates, stock, fabrication] = await Promise.all([
       fetch('/api/pricelist-summary').then(r => r.ok ? r.json() : {}).catch(() => ({})),
       fetch('/api/pricelist/rates').then(r => r.ok ? r.json() : []).catch(() => []),
       fetch('/api/stock-rates').then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/fabrication-mapping').then(r => r.ok ? r.json() : []).catch(() => []),
     ]);
     DATA.summary = summary;
     DATA.rates = rates;
     DATA.stock = stock;
+    DATA.fabrication = fabrication;
     renderAll();
     setStatus('Loaded', `${Array.isArray(rates) ? rates.length : 0} rate entries`);
   } catch (e) {
@@ -635,6 +639,57 @@ function renderAll() {
   renderLPH('vlph', s.vertical_lph || []);
   renderBurnerPivot('burner-prices', s.burners || {});
   renderStockRates(DATA.stock || {});
+  renderFabrication(DATA.fabrication || []);
+}
+
+// ── Fabrication weights (ladle structure / pipeline / ceramic by mechanism) ──
+function renderFabrication(data) {
+  const el = document.getElementById('sheet-fabrication');
+  if (!Array.isArray(data) || !data.length) { el.innerHTML = emptyMsg('No data'); return; }
+
+  const MECHS = [
+    { label: 'Swivel Manual', sub: 'Vertical preheater',
+      match: r => r.preheater === 'vertical' && r.hood === 'swivel_manual' },
+    { label: 'Up & Down', sub: 'Vertical preheater',
+      match: r => r.preheater === 'vertical' && r.hood === 'up_down' },
+    { label: 'Trolley', sub: 'Horizontal preheater',
+      match: r => r.preheater === 'horizontal' },
+  ];
+  const block = (m) => {
+    const rows = data.filter(m.match).sort((a, b) => a.ton - b.ton);
+    if (!rows.length) return '';
+    const body = rows.map((r, i) => `<tr>
+        <td class="rn">${i + 1}</td>
+        <td style="text-align:center;font-weight:600;color:var(--navy);">${r.ton}</td>
+        <td style="text-align:right;">${fmt(r.fabrication_kg)}</td>
+        <td style="text-align:right;">${fmt(r.pipeline_kg)}</td>
+        <td style="text-align:right;font-weight:600;">${r.ceramic_rolls}</td>
+      </tr>`).join('');
+    return `<div class="section-label" style="margin-bottom:6px;">${esc(m.label)}
+        <span style="font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0;">— ${esc(m.sub)}</span></div>
+      <div class="xl-wrap" style="margin-bottom:22px;"><table class="xl-table">
+        <thead><tr>
+          <th class="rn"></th>
+          <th style="min-width:90px;">Ladle (T)</th>
+          <th style="min-width:130px;text-align:right;">Fabrication (kg)</th>
+          <th style="min-width:120px;text-align:right;">Pipeline (kg)</th>
+          <th style="min-width:120px;text-align:right;">Ceramic (rolls)</th>
+        </tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+
+  const sg = data.find(r => r.preheater === 'vertical' && r.hood === 'swivel_geared');
+  const note = sg ? `<div style="margin:4px 4px 20px;padding:12px 16px;border:1px solid var(--border);
+      border-left:3px solid var(--navy);border-radius:8px;background:#f8fafc;font-size:.82rem;color:#334155;line-height:1.55;">
+      <strong>Note — Swivel-Geared variant:</strong> only one row exists (${sg.ton} T) →
+      Fabrication <strong>${fmt(sg.fabrication_kg)} kg</strong>,
+      Pipeline <strong>${fmt(sg.pipeline_kg)} kg</strong>,
+      Ceramic <strong>${sg.ceramic_rolls} rolls</strong>.</div>` : '';
+
+  el.innerHTML = '<div style="padding:14px 4px 4px;">'
+    + '<div style="font-size:.74rem;color:var(--muted);margin:0 4px 14px;line-height:1.5;">'
+    + 'Ladle fabrication, air-gas pipeline and ceramic-fibre weights per capacity & mechanism. '
+    + 'Ceramic rolls = ⌈ kg ÷ 14 ⌉ (14 kg/roll, rounded up). Fabrication priced at ₹110/kg, pipeline at ₹125/kg.</div>'
+    + MECHS.map(block).join('') + note + '</div>';
 }
 
 // ── Status bar ─────────────────────────────────────────────────────────────

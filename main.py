@@ -1313,6 +1313,28 @@ def get_pricelist_rates():
         return {"error": str(e)}
 
 
+@app.get("/api/fabrication-mapping")
+def fabrication_mapping():
+    """Ladle fabrication / pipeline / ceramic weights per capacity & mechanism,
+    for the pricelist 'Fabrication' tab. Ceramic rolls = ceil(ceramic_kg / 14)."""
+    import math
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            "SELECT ladle_capacity_ton, preheater_type, hood_type, "
+            "fabrication_kg, pipeline_kg, ceramic_kg "
+            "FROM fabrication_ladle_mapping ORDER BY ladle_capacity_ton"
+        ).fetchall()
+        conn.close()
+        return [{
+            "ton": t, "preheater": pt, "hood": ht or "",
+            "fabrication_kg": fab, "pipeline_kg": pipe, "ceramic_kg": cer,
+            "ceramic_rolls": int(math.ceil(cer / 14)) if cer else 0,
+        } for t, pt, ht, fab, pipe, cer in rows]
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.put("/api/pricelist/rate")
 def update_pricelist_rate(req: RateUpdateRequest):
     """Update a rate in component_price_master and cascade-recalculate all tables."""
