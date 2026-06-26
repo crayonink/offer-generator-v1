@@ -2180,8 +2180,8 @@ function renderBurnerPivot(sheetId, burners) {
       </div>`;
     }).join('');
 
-    return `<div style="margin-bottom:24px;">
-      <div style="font-size:15px;font-weight:700;color:#1a5276;padding:8px 12px;background:#d6eaf8;border-left:4px solid #2980b9;margin-bottom:8px;">${esc(group.label)}</div>
+    return `<div class="model-group" style="margin-bottom:24px;">
+      <div class="group-label" style="font-size:15px;font-weight:700;color:#1a5276;padding:8px 12px;background:#d6eaf8;border-left:4px solid #2980b9;margin-bottom:8px;">${esc(group.label)}</div>
       ${tables}
     </div>`;
   }).join('');
@@ -2314,6 +2314,20 @@ function _rowItemText(tr) {
   return txt;
 }
 
+// For pivot tables (burner/recup/…): the heading text above a row — its
+// .model-block section label and its group label — so a matching heading
+// reveals its rows instead of leaving an empty bar.
+function _rowHeadingText(tr) {
+  const block = tr.closest('.model-block');
+  if (!block) return '';
+  let t = '';
+  const sl = block.querySelector('.section-label');
+  if (sl) t += ' ' + sl.textContent;
+  const group = block.closest('.model-group');
+  if (group) { const gl = group.querySelector('.group-label'); if (gl) t += ' ' + gl.textContent; }
+  return t;
+}
+
 // ── Match highlighting ──────────────────────────────────────────────────────
 // Wrap the matched substring in <mark> inside a row's cells. Operates on text
 // nodes only, so existing markup (company badges, dup flags) is preserved.
@@ -2389,7 +2403,10 @@ function applyFilter() {
       if (!tr.querySelector('td')) { tr.classList.remove('row-filtered'); return; }
       if (!q) { tr.classList.remove('row-filtered'); visible++; return; }
       const rowMatch = _rowItemText(tr).toLowerCase().includes(q);
-      const show = rowMatch || curSectionMatch || curSubMatch;   // inherit a matching heading
+      // Inherit a matching heading — tr-based (curSection/curSub) for standard
+      // tables, or a pivot section/group label for catalog tables.
+      const headMatch = !rowMatch && _rowHeadingText(tr).toLowerCase().includes(q);
+      const show = rowMatch || curSectionMatch || curSubMatch || headMatch;
       tr.classList.toggle('row-filtered', !show);
       if (show) { visible++; if (rowMatch) _highlightRow(tr, q); }
     });
@@ -2431,6 +2448,12 @@ function applyFilter() {
     panel.querySelectorAll('.model-block').forEach(block => {
       const hasVisible = !!block.querySelector('.xl-wrap:not(.all-filtered), .ro-wrap:not(.all-filtered)');
       block.classList.toggle('all-filtered', !!q && !hasVisible);
+    });
+    // Pivot group wrappers (e.g. burner 'Oil Film Burners'): hide a group with
+    // no visible block — avoids stranded empty heading bars during a search.
+    panel.querySelectorAll('.model-group').forEach(group => {
+      const hasBlock = !!group.querySelector('.model-block:not(.all-filtered)');
+      group.classList.toggle('all-filtered', !!q && !hasBlock);
     });
 
     // Per-panel empty-state strip (only when this is the active panel)
