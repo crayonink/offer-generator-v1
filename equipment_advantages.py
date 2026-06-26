@@ -33,14 +33,6 @@ EQUIPMENT_ADVANTAGES = {
         "sub": [
             {"title": "Disadvantage Of IIP-ENCON “FILM” Burner",
              "items": ["Higher Price"]},
-            {"title": "Other advantages",
-             "items": [
-                 "Graded Castings used",
-                 "Better air control through air adjuster",
-                 "Nozzles fully of SS",
-                 "Swirlers / Lock nuts fully SS (so cleaning does not wear them off leading to longer life)",
-                 "Higher efficiency for a longer duration (other burners start consuming more oil in 3 months)",
-             ]},
         ],
     },
     "burner_gas": {
@@ -105,10 +97,7 @@ EQUIPMENT_ADVANTAGES = {
     },
 }
 
-CLOSING_LINES = [
-    "The extra money invested in our ENCON Equipment often gets paid off in just 2 weeks.",
-    "Do we need to say any more?",
-]
+CLOSING_LINES = []   # removed per request (no "extra money invested…" / "Do we need to say any more?")
 
 # drive_product / mode / explicit kind -> advantages key. Specific burner
 # kinds (burner_gas/dual/hv/film) fall through to themselves.
