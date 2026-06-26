@@ -4576,6 +4576,43 @@ def _build_narrative_scope_combined(combined_path, equipments, cust_base):
     doc.save(combined_path)
 
 
+# A combined offer counts as a "system" offer if ANY equipment is a process
+# system (ladle / tundish preheater, recuperator, SEN/SES) rather than plain
+# stand-alone equipment (blower / burner / HPU / PU). System names contain one
+# of these tokens; bias conservative — anything matching uses the full
+# system-style Combined_Offer_Template.
+_SYSTEM_NAME_KEYWORDS = (
+    "ladle", "vertical", "horizontal", "vlph", "hlph", "tundish", "recuperator",
+    "regen", "preheater", "dryer", "cooling", "sen", "ses",
+)
+
+
+def _combined_is_equipment_only(equipments) -> bool:
+    """True when every priced item is stand-alone equipment (no process system),
+    so the combined offer can use the simple equipment template."""
+    priced = [e for e in equipments if (getattr(e, "unit_price", 0) or 0) > 0]
+    if not priced:
+        return False
+    return not any(
+        any(k in (e.name or "").lower() for k in _SYSTEM_NAME_KEYWORDS)
+        for e in priced
+    )
+
+
+def _combined_adv_flags(equipments) -> dict:
+    """Which advantages blocks to show, from the equipment names present."""
+    f = {"show_blower_adv": False, "show_burner_adv": False, "show_pumping_adv": False}
+    for e in equipments:
+        nm = (e.name or "").lower()
+        if "blower" in nm:
+            f["show_blower_adv"] = True
+        if "burner" in nm:
+            f["show_burner_adv"] = True
+        if any(k in nm for k in ("pumping", "hpu", "heating", "pump unit")):
+            f["show_pumping_adv"] = True
+    return f
+
+
 @app.post("/api/generate-combined-offer")
 def generate_combined_offer(req: CombinedOfferRequest):
     """Render Combined_Offer_Template.docx — one shared cover/customer/T&C,
@@ -4669,6 +4706,65 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 "unit_price": _format_inr(line_total / qty),
                 "total":      _format_inr(line_total),
             })
+
+        # ── Equipment-only combined offer → simple equipment template ──────
+        # When every priced item is stand-alone equipment (no process system),
+        # follow the same look as the individual equipment offers: cover +
+        # letter + T&C + one price table + per-equipment advantages. Skips the
+        # heavy per-equipment Scope-of-Supply annexures below.
+        if _combined_is_equipment_only(req.equipments):
+            import re as _re2
+            def _money2(x):
+                s = _format_inr(round(float(x or 0)))
+                return "Rs. " + (s[:-3] if s.endswith(".00") else s)
+            _names = [eq.name for (_i, eq, _q, _s) in _subs]
+            ctx = {
+                "company_name":      _re2.sub(r"^\s*M/?s\.?\s*", "", cust.company or "", flags=_re2.I).strip(),
+                "company_address":   company_address,
+                "equipment_name":    (req.project_name or "; ".join(_names) or "ENCON Equipment").strip(),
+                "enquiry_ref_short": short_ref,
+                "enquiry_date_str":  date_str,
+                "client_enq_ref":    cust.ref_no or "",
+                "poc_name":          _with_salutation(cust.salutation, cust.name),
+                "poc_designation":   cust.designation or "",
+                "mobile_no":         cust.phone or "",
+                "grand_total":       _money2(grand),
+                "items": [{
+                    "sno":         f"{i}.",
+                    "description": eq.name + ((": " + eq.specs) if (eq.specs or "").strip() else ""),
+                    "qty":         f"{q:02d} No.",
+                    "rate":        _money2(sub * (1 + _ratio) / q),
+                    "total":       _money2(sub * (1 + _ratio)),
+                } for (i, eq, q, sub) in _subs],
+                **_combined_adv_flags(req.equipments),
+            }
+            tpl = DocxTemplate(os.path.join(BASE_DIR, "Equipment_Offer_Template.docx"))
+            tpl.render(ctx, autoescape=True)
+            safe_company = "".join(ch for ch in (cust.company or "Client")
+                                   if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+            docx_name = f"Combined_Offer_{safe_company}_{seq}.docx"
+            docx_path = os.path.join(QUOTES_FOLDER, docx_name)
+            tpl.save(docx_path)
+            pdf_name = docx_name.replace(".docx", ".pdf")
+            pdf_ok = _docx_to_pdf(docx_path, os.path.join(QUOTES_FOLDER, pdf_name))
+            try:
+                from engine.drive_uploader import upload_offer_async
+                upload_offer_async(docx_path, docx_name, "combined")
+                if pdf_ok:
+                    upload_offer_async(os.path.join(QUOTES_FOLDER, pdf_name), pdf_name, "combined")
+            except Exception as _drv_err:
+                print(f"WARN: drive upload kickoff failed: {_drv_err}")
+            return {
+                "success":      True,
+                "filename":     docx_name,
+                "download_url": f"/api/download-quote/{docx_name}",
+                "pdf_url":      f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
+                "preview_url":  f"/api/preview-quote/{docx_name}",
+                "quote_no":     full_ref,
+                "grand_total":  grand,
+                "count":        len(_subs),
+                "format":       "equipment",
+            }
 
         # Scope of Supply (Annexure I) — modelled on the reference offer:
         # per equipment, the BOM is grouped by system (Combustion Air Train,
