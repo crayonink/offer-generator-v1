@@ -1083,6 +1083,8 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         context["price_body"] = _pintro
         context["price_bullets"] = [{"item": x} for x in _pitems]
         context["price_notes"] = []
+        from equipment_advantages import build_advantages_ctx
+        context.update(build_advantages_ctx("pumping"))
     else:
         context.setdefault("price_heading", context.get("equipment_name", ""))
         context.setdefault("price_body", "")

@@ -3979,6 +3979,10 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     ctx["price_bullets"] = [{"item": b} for b in _pd.get("bullets", [])]
     ctx["price_notes"]   = [{"item": n} for n in _pd.get("notes", [])]
 
+    # Dynamic per-equipment Advantages section (blower / burner copy).
+    from equipment_advantages import build_advantages_ctx
+    ctx.update(build_advantages_ctx(drive_product))
+
     tpl_path = os.path.join(BASE_DIR, template_name)
     tpl = DocxTemplate(tpl_path)
     tpl.render(ctx, autoescape=True)   # preserve '&' in values (e.g. "Steel & Alloys")
