@@ -30,7 +30,9 @@ def generate_word_offer(
     """
 
     doc = DocxTemplate(template_path)
-    doc.render(context)
+    # autoescape=True so '&' (and < >) in values like "Steel & Alloys" survive —
+    # without it docxtpl emits a bare '&', which is invalid XML and gets dropped.
+    doc.render(context, autoescape=True)
 
     buffer = io.BytesIO()
     doc.save(buffer)

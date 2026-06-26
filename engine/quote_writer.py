@@ -752,6 +752,12 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         "ref_no":                customer.get("ref_no", ""),
         "your_ref":              customer.get("your_ref") or customer.get("ref_no", ""),
         "enquiry_ref":           customer.get("enquiry_ref") or customer.get("ref_no", ""),
+        # Short ref (no " DT.<date>" suffix) + the date, so the equipment cover
+        # letter's OUR REF / DATE block matches the blower/burner docxtpl path.
+        "enquiry_ref_short":     (customer.get("enquiry_ref") or customer.get("ref_no", "")).split(" DT.")[0],
+        "enquiry_date_str":      ((customer.get("enquiry_ref") or "").split(" DT.")[-1]
+                                  if " DT." in (customer.get("enquiry_ref") or "")
+                                  else quote_data.get("date", "")),
         "marketing_person":      customer.get("marketing_person", ""),
         "marketing_phone":       customer.get("marketing_phone", ""),
         "marketing_email":       customer.get("marketing_email", ""),

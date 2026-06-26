@@ -3969,7 +3969,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
 
     tpl_path = os.path.join(BASE_DIR, template_name)
     tpl = DocxTemplate(tpl_path)
-    tpl.render(ctx)
+    tpl.render(ctx, autoescape=True)   # preserve '&' in values (e.g. "Steel & Alloys")
 
     safe_company = "".join(ch for ch in (cust.company or "Client")
                            if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
