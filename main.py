@@ -35,6 +35,33 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Set VLPH_DB_RESEED=1 for one deploy to force-overwrite the volume from the
 # committed seed (e.g. to push a bulk data change). No env var = unchanged
 # behaviour (uses the in-repo vlph.db, as before).
+#
+# STATIC reference tables (edited in code, no in-app editor, NOT derived from
+# the price cascade) are refreshed from the committed seed on every deploy, so
+# code-side edits to them appear live without a full reseed. component_price_
+# master and its cascade-derived tables are deliberately NOT in this list — they
+# stay on the volume so live UI price edits persist.
+_SEED_REFRESH_TABLES = ["fabrication_ladle_mapping"]
+
+def _refresh_seed_tables(seed_path, vol_path, tables):
+    import sqlite3 as _sq
+    sc = _sq.connect(seed_path); vc = _sq.connect(vol_path)
+    try:
+        for tbl in tables:
+            ddl = sc.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name=?",
+                             (tbl,)).fetchone()
+            if not ddl or not ddl[0]:
+                continue
+            ncols = len(sc.execute(f"PRAGMA table_info({tbl})").fetchall())
+            rows = sc.execute(f"SELECT * FROM {tbl}").fetchall()
+            vc.execute(f"DROP TABLE IF EXISTS {tbl}")
+            vc.execute(ddl[0])
+            if rows:
+                vc.executemany(f"INSERT INTO {tbl} VALUES ({','.join(['?'] * ncols)})", rows)
+        vc.commit()
+    finally:
+        sc.close(); vc.close()
+
 def _init_persistent_db():
     vol = (os.environ.get("VLPH_DB_PATH") or "").strip()
     seed = os.path.join(BASE_DIR, "vlph.db")
@@ -43,15 +70,23 @@ def _init_persistent_db():
     try:
         os.makedirs(os.path.dirname(vol) or ".", exist_ok=True)
         reseed = os.environ.get("VLPH_DB_RESEED") == "1"
+        seed_is_real = os.path.exists(seed) and not os.path.islink(seed)
         # Seed the volume from the committed DB on first run (or forced reseed).
-        if os.path.exists(seed) and not os.path.islink(seed) and (not os.path.exists(vol) or reseed):
+        if seed_is_real and (not os.path.exists(vol) or reseed):
             shutil.copy2(seed, vol)
+        # Refresh the static reference tables from the committed seed (must run
+        # while `seed` is still the real committed file, before the symlink).
+        if seed_is_real and os.path.exists(vol) and os.path.realpath(seed) != os.path.realpath(vol):
+            try:
+                _refresh_seed_tables(seed, vol, _SEED_REFRESH_TABLES)
+            except Exception as _re:
+                print(f"[db] static-table refresh skipped: {_re}")
         # Point the in-repo path at the volume so all DB access is persistent.
         if os.path.realpath(seed) != os.path.realpath(vol):
             if os.path.islink(seed) or os.path.exists(seed):
                 os.remove(seed)
             os.symlink(vol, seed)
-        print(f"[db] using persistent volume: {vol}")
+        print(f"[db] using persistent volume: {vol} (refreshed {_SEED_REFRESH_TABLES})")
     except Exception as e:
         # Never leave the app without a database: if the symlink couldn't be
         # created (e.g. symlinks unsupported), restore a working copy at the
