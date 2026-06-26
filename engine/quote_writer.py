@@ -1083,8 +1083,26 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         context["price_body"] = _pintro
         context["price_bullets"] = [{"item": x} for x in _pitems]
         context["price_notes"] = []
-        from equipment_advantages import build_advantages_ctx
+        from equipment_advantages import build_advantages_ctx, tnc_value as _tncv
         context.update(build_advantages_ctx("pumping"))
+        # Whole-rupee prices (drop paise) in the price schedule.
+        def _w(s):
+            try:
+                v = float(str(s).replace(",", "").replace("₹", "").strip())
+            except (TypeError, ValueError):
+                return s
+            t = _format_inr(round(v))
+            return t[:-3] if t.endswith(".00") else t
+        for _pk in ("unit_price_vertical", "total_price_vertical",
+                    "unit_price_horizontal", "total_price_horizontal"):
+            if context.get(_pk) and context[_pk] != "N/A":
+                context[_pk] = _w(context[_pk])
+        # Standard ENCON T&C defaults when the form left a field blank.
+        for _tk in ("tnc_prices", "tnc_delivery", "tnc_gst", "tnc_hsn_code",
+                    "tnc_pan_gst", "tnc_payment_terms", "tnc_packing_forwarding",
+                    "tnc_freight", "tnc_transit_insurance", "tnc_validity",
+                    "tnc_inspection", "tnc_guarantee"):
+            context[_tk] = _tncv(_tk, context.get(_tk))
     else:
         context.setdefault("price_heading", context.get("equipment_name", ""))
         context.setdefault("price_body", "")

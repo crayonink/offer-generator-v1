@@ -3649,6 +3649,7 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
 
     template_path = os.path.join(BASE_DIR, template_name)
     generate_quote_docx(quote_data, output_path, template_path=template_path)
+    _drop_marketing_if_empty(output_path)
     # Pull Transport onto its own price-schedule line (no-op if 0).
     try:
         _break_out_transport(output_path, req.transport_amt)
@@ -3773,6 +3774,8 @@ _BURNER_SECTIONS = {
              "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"),
     "dual": ("ENCON Dual Fuel Burner",  "Dual Fuel (Gas + Oil)",
              "PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"),
+    "hv":   ("ENCON High Velocity Burner", "Oil (LDO / HSD)",
+             "PRICE LIST FOR HIGH VELOCITY OIL BURNERS"),
 }
 
 
@@ -3852,23 +3855,6 @@ def burner_catalog():
                           "capacity": _burner_firing_capacity(conn, r[0]),
                           "capacity_kw": _burner_capacity_kw(conn, r[0])})
         groups.append({"key": key, "label": label, "fuel": fuel, "items": items})
-    # GAIL pre-assembled sets
-    gail_rows = conn.execute(
-        "SELECT burner_size, burner_set FROM gail_gas_burner_master "
-        "WHERE burner_set IS NOT NULL AND section LIKE '%GAIL GAS BURNER%' ORDER BY burner_set"
-    ).fetchall()
-    import re as _re
-    gail_items = []
-    for sz, raw_price in gail_rows:
-        price = _finite_price(raw_price)
-        if price is None:
-            continue
-        m = _re.search(r"(\d[\d,]*)\s*KW", sz or "", _re.I)
-        gail_items.append({"model": sz, "price": price,
-                           "capacity": f"{m.group(1)} kW" if m else "",
-                           "capacity_kw": f"{m.group(1)} kW" if m else ""})
-    groups.append({"key": "gail", "label": "GAIL Gas Burner",
-                   "fuel": "Natural Gas", "items": gail_items})
     conn.close()
     return {"groups": groups}
 
@@ -3894,6 +3880,38 @@ class BurnerQuoteRequest(BaseModel):
     transport_amt: float = 0    # Transport (flat Rs., own price line)
 
 
+def _drop_marketing_if_empty(docx_path: str):
+    """Remove the 'MARKETING PERSON DETAILS' heading + table when its value
+    column is blank (equipment offers usually have no marketing contact)."""
+    try:
+        from docx import Document as _Doc
+        from docx.oxml.ns import qn as _qn
+        from docx.table import Table as _Tbl
+        d = _Doc(docx_path)
+        body = d.element.body
+        kids = list(body.iterchildren())
+        for i, ch in enumerate(kids):
+            if ch.tag != _qn("w:p"):
+                continue
+            txt = "".join(x.text or "" for x in ch.findall(".//" + _qn("w:t"))).strip()
+            if txt != "MARKETING PERSON DETAILS":
+                continue
+            for j in range(i + 1, len(kids)):
+                if kids[j].tag == _qn("w:tbl"):
+                    tbl = _Tbl(kids[j], d)
+                    if all(len(r.cells) < 2 or not r.cells[1].text.strip() for r in tbl.rows):
+                        for k in kids[i:j + 1]:
+                            body.remove(k)
+                        d.save(docx_path)
+                    return
+                if kids[j].tag == _qn("w:p") and "".join(
+                        x.text or "" for x in kids[j].findall(".//" + _qn("w:t"))).strip():
+                    return
+            return
+    except Exception as _e:
+        print(f"WARN: marketing-table drop failed: {_e}")
+
+
 def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
                               specs: dict, unit_price: float, qty: int,
                               template_name: str, filename_infix: str,
@@ -3907,6 +3925,11 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     from datetime import datetime as _dt
     from docxtpl import DocxTemplate
     from engine.quote_writer import amount_in_words_indian, _format_inr
+    from equipment_advantages import tnc_value as _tnc
+
+    def _fmt0(x):  # whole-rupee Indian format (no paise)
+        s = _format_inr(round(float(x or 0)))
+        return s[:-3] if s.endswith(".00") else s
 
     qty = max(1, int(qty or 1))
     # Commercial adjustments: P&F + Designing add, Negotiation all add; Transport
@@ -3950,23 +3973,23 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
         "technical_email":   cust.technical_email or cust.marketing_email or "",
         # Price schedule (single line)
         "item_qty":          f"{qty:02d} No.",
-        "unit_price":        _format_inr(offer_unit),
-        "total_price":       _format_inr(total_price),
-        "grand_total":       _format_inr(total_price),
+        "unit_price":        _fmt0(offer_unit),
+        "total_price":       _fmt0(total_price),
+        "grand_total":       _fmt0(total_price),
         "grand_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
-        # T&C (Annexure renumbered to III)
-        "tnc_prices":             cust.tnc_prices or "",
-        "tnc_delivery":           cust.tnc_delivery or "",
-        "tnc_gst":                cust.tnc_gst or "",
-        "tnc_hsn_code":           cust.tnc_hsn_code or "",
-        "tnc_pan_gst":            cust.tnc_pan_gst or "",
-        "tnc_payment_terms":      cust.tnc_payment_terms or "",
-        "tnc_packing_forwarding": cust.tnc_packing_forwarding or "",
-        "tnc_freight":            cust.tnc_freight or "",
-        "tnc_transit_insurance":  cust.tnc_transit_insurance or "",
-        "tnc_validity":           cust.tnc_validity or "",
-        "tnc_inspection":         cust.tnc_inspection or "",
-        "tnc_guarantee":          cust.tnc_guarantee or "",
+        # T&C (Annexure renumbered to III) — standard ENCON defaults when blank
+        "tnc_prices":             _tnc("tnc_prices", cust.tnc_prices),
+        "tnc_delivery":           _tnc("tnc_delivery", cust.tnc_delivery),
+        "tnc_gst":                _tnc("tnc_gst", cust.tnc_gst),
+        "tnc_hsn_code":           _tnc("tnc_hsn_code", cust.tnc_hsn_code),
+        "tnc_pan_gst":            _tnc("tnc_pan_gst", cust.tnc_pan_gst),
+        "tnc_payment_terms":      _tnc("tnc_payment_terms", cust.tnc_payment_terms),
+        "tnc_packing_forwarding": _tnc("tnc_packing_forwarding", cust.tnc_packing_forwarding),
+        "tnc_freight":            _tnc("tnc_freight", cust.tnc_freight),
+        "tnc_transit_insurance":  _tnc("tnc_transit_insurance", cust.tnc_transit_insurance),
+        "tnc_validity":           _tnc("tnc_validity", cust.tnc_validity),
+        "tnc_inspection":         _tnc("tnc_inspection", cust.tnc_inspection),
+        "tnc_guarantee":          _tnc("tnc_guarantee", cust.tnc_guarantee),
     }
     ctx.update(specs)
 
@@ -3979,9 +4002,9 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     ctx["price_bullets"] = [{"item": b} for b in _pd.get("bullets", [])]
     ctx["price_notes"]   = [{"item": n} for n in _pd.get("notes", [])]
 
-    # Dynamic per-equipment Advantages section (blower / burner copy).
+    # Dynamic per-equipment Advantages section (per fuel type for burners).
     from equipment_advantages import build_advantages_ctx
-    ctx.update(build_advantages_ctx(drive_product))
+    ctx.update(build_advantages_ctx(specs.get("advantages_kind") or drive_product))
 
     tpl_path = os.path.join(BASE_DIR, template_name)
     tpl = DocxTemplate(tpl_path)
@@ -3992,6 +4015,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     docx_name = f"{filename_infix}_Offer_{safe_company}_{seq}.docx"
     docx_path = os.path.join(QUOTES_FOLDER, docx_name)
     tpl.save(docx_path)
+    _drop_marketing_if_empty(docx_path)
     # Transport onto its own price-schedule line (no-op if 0).
     try:
         _break_out_transport(docx_path, _trn)
@@ -4103,19 +4127,22 @@ def generate_burner_quote(req: BurnerQuoteRequest):
         # Per fuel-type: display name, operation phrase, and component list
         # (mirrors the standard ENCON burner scope wording).
         _BNAME = {"dual": "ENCON Dual Fuel Burner", "oil": "IIP-ENCON Film Burner",
-                  "gas": "ENCON Gas Burner", "gail": "GAIL Gas Burner"}
+                  "gas": "ENCON Gas Burner", "hv": "ENCON High Velocity Burner"}
         _BOPER = {"dual": "dual operation using liquid fuel (LDO) and gaseous fuel (such as Natural Gas / LPG)",
                   "oil": "operation using liquid fuel (LDO)",
                   "gas": "operation using gaseous fuel (such as Natural Gas / LPG)",
-                  "gail": "operation using gaseous fuel (Natural Gas)"}
+                  "hv": "high-velocity operation using liquid fuel (LDO / HSD)"}
         _BCOMP = {"dual": ["Burner Alone", "Micro Valve", "C.I Burner Plate", "Burner Block",
                            "Flexible Hoses set", "Ball Valve", "\"Y\" type Strainer", "Butterfly Valve"],
                   "oil": ["Burner Alone", "Micro Valve", "C.I Burner Plate", "Burner Block",
                           "Flexible Hoses set", "\"Y\" type Strainer", "Butterfly Valve"],
                   "gas": ["Burner Alone", "Ball Valve", "C.I Burner Plate", "Burner Block",
                           "Flexible Hoses set", "Butterfly Valve"],
-                  "gail": ["Burner Alone", "Ball Valve", "C.I Burner Plate", "Burner Block",
-                           "Flexible Hoses set", "Butterfly Valve"]}
+                  "hv": ["Burner Alone", "Burner Block", "Micro Valve",
+                         "Flexible Hoses set", "\"Y\" type Strainer", "Butterfly Valve"]}
+        # Advantages copy per fuel type.
+        _BADV = {"dual": "burner_dual", "gas": "burner_gas",
+                 "hv": "burner_hv", "oil": "burner_film"}
         _bname = _BNAME.get(_bg, label)
         _boper = _BOPER.get(_bg, "operation using the selected fuel")
         _bcomp = _BCOMP.get(_bg, ["Burner Alone", "Ball Valve", "C.I Burner Plate",
@@ -4131,6 +4158,7 @@ def generate_burner_quote(req: BurnerQuoteRequest):
             "burner_capacity": capacity,
             "scope_intro":     scope_intro,
             "scope_items":     scope_items,
+            "advantages_kind": _BADV.get(_bg, "burner_film"),
             "price_desc": {
                 "heading": _bname.upper(),
                 "body":    scope_intro,
