@@ -1079,15 +1079,15 @@ def generate_quote_docx(quote_data: dict, output_path: str,
                        "Pressure gauge", "Fine filters, etc."]
         context["pumping_unit_intro"] = _pintro
         context["pumping_unit_items"] = [{"item": x} for x in _pitems]
-        from docxtpl import RichText
-        _prt = RichText()
-        _prt.add(_phead + ":", bold=True)
-        _prt.add("\n" + _pintro)
-        for _pi in _pitems:
-            _prt.add("\n•  " + _pi)
-        context["item_desc"] = _prt
+        context["price_heading"] = _phead + ":"
+        context["price_body"] = _pintro
+        context["price_bullets"] = [{"item": x} for x in _pitems]
+        context["price_notes"] = []
     else:
-        context.setdefault("item_desc", context.get("equipment_name", ""))
+        context.setdefault("price_heading", context.get("equipment_name", ""))
+        context.setdefault("price_body", "")
+        context.setdefault("price_bullets", [])
+        context.setdefault("price_notes", [])
 
     # All products (Vertical, Horizontal, Tundish) render from
     # Offer_Template.docx so they share hood / HPU / scope-of-supply

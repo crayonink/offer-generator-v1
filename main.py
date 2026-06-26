@@ -3970,24 +3970,14 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     }
     ctx.update(specs)
 
-    # Rich price-table item description: bold model heading + spec sentence +
-    # component bullets + notes, from specs['price_desc']. Falls back to the
-    # equipment name. RichText is inserted as XML so autoescape leaves it alone.
-    from docxtpl import RichText
-    _pd = specs.get("price_desc")
-    if _pd:
-        _rt = RichText()
-        if _pd.get("heading"):
-            _rt.add((_pd["heading"] + ":"), bold=True)
-        if _pd.get("body"):
-            _rt.add(("\n" if _pd.get("heading") else "") + _pd["body"])
-        for _b in _pd.get("bullets", []):
-            _rt.add("\n•  " + str(_b))
-        for _n in _pd.get("notes", []):
-            _rt.add("\n\n" + str(_n))
-        ctx["item_desc"] = _rt
-    else:
-        ctx["item_desc"] = ctx.get("equipment_name", "")
+    # Price-table item description: bold heading + spec sentence + component
+    # bullets (real bulleted paragraphs) + notes, from specs['price_desc'].
+    _pd = specs.get("price_desc") or {}
+    _ph = _pd.get("heading") or ctx.get("equipment_name", "")
+    ctx["price_heading"] = (_ph + ":") if _ph else ""
+    ctx["price_body"]    = _pd.get("body", "")
+    ctx["price_bullets"] = [{"item": b} for b in _pd.get("bullets", [])]
+    ctx["price_notes"]   = [{"item": n} for n in _pd.get("notes", [])]
 
     tpl_path = os.path.join(BASE_DIR, template_name)
     tpl = DocxTemplate(tpl_path)
