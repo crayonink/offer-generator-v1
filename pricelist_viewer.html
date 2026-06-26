@@ -2366,23 +2366,32 @@ function applyFilter() {
   document.querySelectorAll('.sheet-panel').forEach(panel => {
     const sheetId = panel.id.replace(/^sheet-/, '');
     let visible = 0;
+    // Search matches EVERYTHING — item rows AND headings / sub-headings. When a
+    // heading's text matches, the heading and all rows under it are shown.
+    let curSectionMatch = false, curSubMatch = false;
     panel.querySelectorAll('tbody tr').forEach(tr => {
-      // Per-vendor sub-headers are only meaningful when the full list shows —
-      // during a search they'd strand above filtered-out rows, so hide them.
+      const isSection = tr.classList.contains('section-hdr') || tr.classList.contains('sec-hdr') || tr.classList.contains('hdr2');
+      if (isSection) {
+        curSectionMatch = !!q && tr.textContent.toLowerCase().includes(q);
+        curSubMatch = false;
+        tr.classList.remove('row-filtered');     // shown/hidden by the empty-hide pass below
+        if (curSectionMatch) _highlightRow(tr, q);
+        return;
+      }
       if (tr.classList.contains('company-hdr')) {
-        tr.classList.toggle('row-filtered', !!q);
+        // Sub-header: searchable; also shown if its parent section matched.
+        curSubMatch = !!q && tr.textContent.toLowerCase().includes(q);
+        const showHdr = curSubMatch || curSectionMatch;
+        tr.classList.toggle('row-filtered', !!q && !showHdr);
+        if (curSubMatch) _highlightRow(tr, q);
         return;
       }
-      // Section / header rows always visible — they're navigation context, not data.
-      if (tr.classList.contains('section-hdr') || tr.classList.contains('sec-hdr') ||
-          tr.classList.contains('hdr2') || !tr.querySelector('td')) {
-        tr.classList.remove('row-filtered');
-        return;
-      }
+      if (!tr.querySelector('td')) { tr.classList.remove('row-filtered'); return; }
       if (!q) { tr.classList.remove('row-filtered'); visible++; return; }
-      const match = _rowItemText(tr).toLowerCase().includes(q);
-      tr.classList.toggle('row-filtered', !match);
-      if (match) { visible++; _highlightRow(tr, q); }
+      const rowMatch = _rowItemText(tr).toLowerCase().includes(q);
+      const show = rowMatch || curSectionMatch || curSubMatch;   // inherit a matching heading
+      tr.classList.toggle('row-filtered', !show);
+      if (show) { visible++; if (rowMatch) _highlightRow(tr, q); }
     });
     counters[sheetId] = visible;
 
@@ -2401,7 +2410,9 @@ function applyFilter() {
           if (r.classList.contains('company-hdr')) continue;
           if (!r.classList.contains('row-filtered') && r.querySelector('td:not(.rn)')) { anyVisible = true; break; }
         }
-        hdr.classList.toggle('row-filtered', !anyVisible);
+        // Keep the header if it has visible rows OR its own text matches the query.
+        const hdrMatches = q && hdr.textContent.toLowerCase().includes(q);
+        hdr.classList.toggle('row-filtered', !anyVisible && !hdrMatches);
       }
     }
 
