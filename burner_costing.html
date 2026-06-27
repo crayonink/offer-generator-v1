@@ -586,6 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
   _loadSticky();
   document.addEventListener('input', _saveSticky, true);
   document.addEventListener('change', _saveSticky, true);
+  window.addEventListener('pagehide', _saveSticky);   // capture final state before leaving
   document.getElementById('burner_group').addEventListener('change', _onGroupChange);
   document.getElementById('burner_model').addEventListener('change', _onModelChange);
   _generateRef();
