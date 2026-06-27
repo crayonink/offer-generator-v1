@@ -1,353 +1,354 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ENCON – Offer Generator</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      /* Uniform grayscale palette — every accent maps to one neutral dark so
-         badges, icons and tags render as the same shade (no blue/green drift). */
-      --navy:  #2b2b2b; --navy2: #1c1c1c; --navy3: #141414;
-      --green: #2b2b2b; --green2: #1c1c1c;
-      --amber: #2b2b2b;
-      --red:   #2b2b2b;
-      --border:#e5e7eb; --text:#0f172a; --muted:#64748b; --bg:#f1f5f9;
-    }
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0d1117; --bg2:#0a0e14; --panel:#151c28; --panel2:#1b2433;
+  --line:#222c3c; --line2:#2a3547;
+  --txt:#e8edf4; --muted:#8b97a8; --muted2:#5c6878;
+  --red:#e1232a; --redsoft:rgba(225,35,42,.14);
+  --blue:#3b82f6; --teal:#14b8a6; --green:#22c55e; --purple:#a855f7;
+  --amber:#f59e0b; --pink:#ec4899; --cyan:#06b6d4;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);
+  display:flex;min-height:100vh;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
 
-    /* ── HEADER ── */
-    .header{background:var(--navy3);background-image:radial-gradient(ellipse at 70% 50%,rgba(5,150,105,.18) 0%,transparent 60%),radial-gradient(ellipse at 10% 80%,rgba(26,58,92,.6) 0%,transparent 50%);padding:0 48px;}
-    .header-top{display:flex;align-items:center;justify-content:space-between;height:60px;border-bottom:1px solid rgba(255,255,255,.08);}
-    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;}
-    .brand-logo{width:34px;height:34px;background:var(--green);border-radius:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(5,150,105,.4);}
-    .brand-logo svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;}
-    .brand-name{font-size:.9rem;font-weight:800;color:#fff;letter-spacing:-.3px;}
-    .brand-sub{font-size:.72rem;color:rgba(255,255,255,.4);}
-    .header-tag{font-size:.72rem;font-weight:600;color:rgba(255,255,255,.35);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);padding:4px 12px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;}
-    .header-body{padding:44px 0 40px;display:flex;align-items:flex-end;justify-content:space-between;gap:32px;}
-    .header-title{font-size:2.4rem;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.05em;}
-    .header-title span{color:#ffffff;}
-    .header-sub{margin-top:10px;font-size:.88rem;color:rgba(255,255,255,.5);line-height:1.6;max-width:420px;}
-    .header-stats{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;flex-shrink:0;}
-    .hstat{padding:16px 24px;border-right:1px solid rgba(255,255,255,.08);min-width:110px;}
-    .hstat:last-child{border-right:none;}
-    .hstat-val{font-size:1.5rem;font-weight:900;color:#fff;letter-spacing:-.04em;line-height:1;}
-    .hstat-val.loading{color:rgba(255,255,255,.2);}
-    .hstat-label{font-size:.68rem;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-top:5px;}
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sidebar{width:236px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.brand{display:flex;align-items:center;gap:11px;padding:0 20px 20px;border-bottom:1px solid var(--line)}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:var(--red);display:flex;
+  align-items:center;justify-content:center;font-weight:900;font-size:1.15rem;color:#fff;
+  box-shadow:0 3px 12px rgba(225,35,42,.45)}
+.brand .bn{font-weight:800;font-size:.96rem;letter-spacing:.3px}
+.brand .bs{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.nav{flex:1;overflow-y:auto;padding:14px 12px}
+.nav-h{font-size:.64rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted2);
+  font-weight:700;padding:14px 12px 7px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;
+  font-size:.86rem;font-weight:600;color:var(--muted);margin-bottom:2px;transition:.13s;position:relative}
+.nav a svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.nav a:hover{background:var(--panel);color:var(--txt)}
+.nav a.active{background:var(--redsoft);color:#fff}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;
+  background:var(--red);border-radius:0 3px 3px 0}
+.nav a.soon{opacity:.5;cursor:default}
+.nav a.soon:hover{background:none;color:var(--muted)}
+.soon-pill{margin-left:auto;font-size:.56rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--muted2);border:1px solid var(--line2);border-radius:6px;padding:1px 5px}
+.side-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
+.uchip{display:flex;align-items:center;gap:9px;font-size:.78rem}
+.uchip .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--red),#ff5a5f);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;color:#fff}
+.uchip .un{font-weight:700;line-height:1.1}
+.uchip .ur{font-size:.66rem;color:var(--muted)}
 
-    /* ── MAIN ── */
-    .main{max-width:1080px;margin:0 auto;padding:40px 48px 80px;}
-    .section-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;}
-    .section-label.mt{margin-top:40px;}
+/* ── Main ────────────────────────────────────────────────── */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 30px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(13,17,23,.85);
+  backdrop-filter:blur(12px);z-index:20}
+.topbar h1{font-size:1.32rem;font-weight:800;letter-spacing:-.3px}
+.topbar .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.top-right{display:flex;align-items:center;gap:14px}
+.datebox{font-size:.8rem;color:var(--muted);font-weight:600;background:var(--panel);
+  padding:8px 14px;border-radius:9px;border:1px solid var(--line)}
+.btn{font-size:.78rem;font-weight:700;padding:8px 15px;border-radius:9px;border:1px solid var(--line2);
+  background:var(--panel);color:var(--txt);cursor:pointer;transition:.13s}
+.btn:hover{background:var(--panel2)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.red:hover{filter:brightness(1.08)}
+.content{padding:26px 30px 50px;max-width:1500px;width:100%}
+.sec-label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);
+  font-weight:700;margin:30px 2px 14px}
+.sec-label:first-child{margin-top:0}
 
-    /* ── HOW IT WORKS ── */
-    .pipeline{display:flex;align-items:stretch;gap:0;background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:36px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
-    .pipe-step{flex:1;padding:22px 20px;border-right:1.5px solid var(--border);position:relative;}
-    .pipe-step:last-child{border-right:none;}
-    .pipe-arrow{position:absolute;right:-12px;top:50%;transform:translateY(-50%);width:22px;height:22px;background:#fff;border:1.5px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:2;}
-    .pipe-arrow svg{width:10px;height:10px;stroke:var(--muted);fill:none;stroke-width:2.5;stroke-linecap:round;}
-    .pipe-step:last-child .pipe-arrow{display:none;}
-    .pipe-num{width:24px;height:24px;background:var(--navy);color:#fff;border-radius:6px;font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
-    .pipe-title{font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:4px;}
-    .pipe-detail{font-size:.74rem;color:var(--muted);line-height:1.5;}
-    .pipe-tag{margin-top:10px;display:inline-block;font-size:.65rem;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.05em;}
-    .pipe-tag.blue{background:#f1f5f9;color:var(--navy);}
-    .pipe-tag.green{background:#f1f5f9;color:var(--green);}
+/* ── KPI cards ───────────────────────────────────────────── */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:15px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:17px 17px 16px;
+  position:relative;overflow:hidden;transition:.15s}
+.kpi:hover{border-color:var(--line2);transform:translateY(-2px)}
+.kpi .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:13px}
+.kpi .ic svg{width:19px;height:19px;stroke-width:2;fill:none}
+.kpi .v{font-size:1.62rem;font-weight:800;letter-spacing:-.6px;line-height:1}
+.kpi .l{font-size:.74rem;color:var(--muted);font-weight:600;margin-top:6px}
+.kpi .sub{font-size:.66rem;color:var(--muted2);font-weight:600;margin-top:3px}
 
-    /* ── COSTING TOOLS — bento grid ── */
-    .bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:130px;gap:12px;margin-bottom:16px;}
-    .bento a{text-decoration:none;color:inherit;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column;overflow:hidden;position:relative;transition:border-color .15s,box-shadow .15s,transform .12s;}
-    .bento a:hover{border-color:#9ca3af;box-shadow:0 8px 24px rgba(0,0,0,.09);transform:translateY(-2px);}
-    .bento a.b-big{grid-column:span 2;grid-row:span 2;background:#1c1c1c;border-color:#1c1c1c;color:#fff;padding:28px;}
-    .b-big::after{content:'';position:absolute;top:-40%;right:-8%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);pointer-events:none;}
-    .b-wide{grid-column:span 2;}
-    .b-kicker{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-bottom:6px;}
-    .b-big .b-kicker{color:rgba(255,255,255,.5);font-size:.64rem;letter-spacing:.16em;margin-bottom:10px;}
-    .b-title{font-size:1rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;color:var(--text);}
-    .b-big .b-title{font-size:1.9rem;color:#fff;margin-bottom:10px;}
-    .b-wide .b-title{font-size:1.1rem;}
-    .b-desc{font-size:.73rem;color:var(--muted);line-height:1.5;margin-top:6px;}
-    .b-big .b-desc{font-size:.86rem;color:rgba(255,255,255,.72);max-width:46ch;}
-    .b-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:12px;}
-    .b-tag{font-size:.52rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:3px 8px;border-radius:20px;white-space:nowrap;}
-    .b-big .b-tag{color:rgba(255,255,255,.6);background:transparent;border-color:rgba(255,255,255,.25);font-size:.6rem;}
-    .b-open{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
-    .b-big .b-open{color:#fff;font-size:.74rem;letter-spacing:.12em;}
-    .b-open .ar{transition:transform .2s ease;}
-    .bento a:hover .b-open .ar{transform:translateX(4px);}
+/* ── Costing tool tiles ─────────────────────────────────── */
+.tools{display:grid;grid-template-columns:repeat(6,1fr);gap:13px}
+.tool{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px;
+  display:flex;flex-direction:column;gap:9px;transition:.15s;min-height:104px}
+.tool:hover{border-color:var(--red);background:var(--panel2);transform:translateY(-2px)}
+.tool .tic{width:34px;height:34px;border-radius:9px;background:var(--redsoft);display:flex;
+  align-items:center;justify-content:center;font-weight:800;font-size:.74rem;color:#ff7a7f;letter-spacing:.3px}
+.tool .tn{font-weight:700;font-size:.86rem;line-height:1.15}
+.tool .td{font-size:.68rem;color:var(--muted);font-weight:500;margin-top:auto}
 
-    /* ── MANAGEMENT ROWS ── */
-    .secondary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:0;}
-    .srow{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px 18px;text-decoration:none;color:inherit;display:flex;align-items:center;gap:14px;transition:border-color .15s,box-shadow .15s;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-    .srow:hover{border-color:var(--navy);box-shadow:0 3px 12px rgba(26,58,92,.09);}
-    .srow-icon{width:38px;height:38px;flex-shrink:0;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;display:flex;align-items:center;justify-content:center;}
-    .srow-icon svg{width:17px;height:17px;stroke:var(--navy);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-    .srow-body{flex:1;min-width:0;}
-    .srow-title{font-size:.85rem;font-weight:700;color:var(--text);}
-    .srow-desc{font-size:.73rem;color:var(--muted);margin-top:2px;line-height:1.4;}
-    .srow-arrow{flex-shrink:0;color:#cbd5e1;}
-    .srow-arrow svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
-    .srow:hover .srow-arrow{color:var(--navy);}
+/* ── Panels grid ─────────────────────────────────────────── */
+.grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;margin-top:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.panel h3{font-size:.95rem;font-weight:700;margin-bottom:3px}
+.panel .ph-sub{font-size:.72rem;color:var(--muted);margin-bottom:16px}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
 
-    /* ── BOTTOM GRID (health + activity) ── */
-    .bottom-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-top:40px;}
+/* recent quotes table */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.66rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2);
+  font-weight:700;padding:0 10px 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;font-size:.8rem;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--panel2)}
+.co{font-weight:700}
+.ref{font-size:.7rem;color:var(--muted);font-family:ui-monospace,monospace}
+.val{font-weight:800;text-align:right;white-space:nowrap}
+.pill{display:inline-block;font-size:.66rem;font-weight:700;padding:3px 9px;border-radius:20px;
+  background:var(--panel2);border:1px solid var(--line2)}
+.loc{font-size:.7rem;color:var(--muted);font-weight:600}
 
-    /* Data Health */
-    .health-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-    .health-header{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-    .health-header-title{font-size:.82rem;font-weight:800;color:var(--text);}
-    .health-header-sub{font-size:.72rem;color:var(--muted);}
-    .health-summary{font-size:.72rem;font-weight:700;padding:2px 10px;border-radius:20px;background:#f0fdf4;color:var(--green);}
-    .health-summary.warn{background:#fffbeb;color:var(--amber);}
-    /* grouped category cards */
-    .health-groups{padding:16px;}
-    .hgroup{border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
-    .hgroup:last-child{margin-bottom:0;}
-    .hgroup-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fafafa;border-bottom:1px solid var(--border);}
-    .hgroup-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .hgroup-icon svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;}
-    .hgroup-name{font-size:.78rem;font-weight:700;color:var(--text);flex:1;}
-    .hgroup-badge{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px;}
-    .hgroup-badge.ok{background:#f0fdf4;color:var(--green);}
-    .hgroup-badge.err{background:#fef2f2;color:var(--red);}
-    .hgroup-rows{display:flex;flex-direction:column;gap:0;}
-    .hrow{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #f8fafc;font-size:.75rem;}
-    .hrow:last-child{border-bottom:none;}
-    .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-    .dot.ok{background:var(--green);}
-    .dot.err{background:#e5e7eb;}
-    .hrow-name{flex:1;color:var(--text);font-weight:500;}
-    .hrow-count{font-weight:700;color:var(--navy);font-size:.72rem;min-width:28px;text-align:right;}
-    .hrow-count.zero{color:#cbd5e1;}
-    .hrow-upd{color:var(--muted);font-size:.68rem;white-space:nowrap;margin-left:8px;}
+/* donut */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut{position:relative;width:150px;height:150px;flex-shrink:0}
+.donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut .ctr b{font-size:1.5rem;font-weight:800;line-height:1}
+.donut .ctr span{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.legend{flex:1;display:flex;flex-direction:column;gap:9px;min-width:0}
+.legend .row{display:flex;align-items:center;gap:9px;font-size:.78rem}
+.legend .dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.legend .nm{font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend .ct{font-weight:800;color:var(--muted)}
 
-    /* Activity feed */
-    .activity-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-    .activity-header{padding:16px 20px 14px;border-bottom:1px solid var(--border);}
-    .activity-header-title{font-size:.82rem;font-weight:800;color:var(--text);}
-    .activity-header-sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
-    .activity-list{padding:8px 0;}
-    .activity-item{display:flex;align-items:flex-start;gap:12px;padding:10px 20px;}
-    .activity-dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:4px;flex-shrink:0;}
-    .activity-text{font-size:.78rem;color:var(--text);font-weight:600;line-height:1.3;}
-    .activity-time{font-size:.7rem;color:var(--muted);margin-top:2px;}
-    .activity-empty{padding:28px 20px;text-align:center;color:var(--muted);font-size:.8rem;}
+/* trend bar chart */
+.trend{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:10px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%}
+.bar-track{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.bar{width:62%;max-width:30px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--red),#7a1418);
+  min-height:3px;transition:.4s;position:relative}
+.bar:hover{filter:brightness(1.25)}
+.bar-lbl{font-size:.6rem;color:var(--muted2);font-weight:700;white-space:nowrap}
+.bar-val{font-size:.58rem;color:var(--muted);font-weight:700;height:12px}
 
-    /* Loading skeleton */
-    .skeleton{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}
-    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-    @media(max-width:900px){
-      .bottom-grid{grid-template-columns:1fr;}
-      .header{padding:0 24px;}
-      .header-body{flex-direction:column;align-items:flex-start;}
-      .header-stats{width:100%;}
-      .main{padding:28px 24px 60px;}
-      .bento{grid-template-columns:repeat(2,1fr);}
-      .pipeline{flex-direction:column;border-radius:12px;}
-      .pipe-step{border-right:none;border-bottom:1.5px solid var(--border);}
-      .pipe-step:last-child{border-bottom:none;}
-      .pipe-arrow{right:50%;top:auto;bottom:-12px;transform:translateX(50%) rotate(90deg);}
-    }
-    @media(max-width:560px){
-      .secondary-grid{grid-template-columns:1fr;}
-      .bento{grid-template-columns:1fr;grid-auto-rows:auto;}
-      .bento a{min-height:104px;}
-      .b-big,.b-wide{grid-column:auto;grid-row:auto;}
-      .b-big .b-title{font-size:1.5rem;}
-      .header-title{font-size:1.8rem;}
-      .header-stats{flex-direction:column;}
-      .hstat{border-right:none;border-bottom:1px solid rgba(255,255,255,.08);}
-      .hstat:last-child{border-bottom:none;}
-    }
-  </style>
-<style>/*bw-grayscale*/html{filter:grayscale(1);}</style>
+.empty{text-align:center;color:var(--muted);font-size:.82rem;padding:30px 10px}
+.empty b{color:var(--txt);display:block;margin-bottom:5px;font-size:.92rem}
+.banner{background:linear-gradient(90deg,var(--redsoft),transparent);border:1px solid var(--line2);
+  border-left:3px solid var(--red);border-radius:11px;padding:13px 17px;font-size:.78rem;color:var(--muted);margin-bottom:22px}
+.banner b{color:var(--txt)}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.tools{grid-template-columns:repeat(4,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:760px){.sidebar{display:none}.kpis{grid-template-columns:repeat(2,1fr)}.tools{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body>
 
-<!-- ── HEADER ── -->
-<header class="header">
-  <div class="header-top">
-    <a class="brand" href="/">
-      <div>
-        <div class="brand-name">Encon Thermal Engineers Pvt. Ltd.</div>
-      </div>
-    </a>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span id="user-chip" style="display:none;align-items:center;gap:6px;font-size:.74rem;font-weight:700;color:#1a3a5c;background:#eef2f7;border:1px solid #d8e0ea;border-radius:999px;padding:5px 12px;">
-        <span id="user-name">—</span>
-        <span id="user-role" style="font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-size:.64rem;"></span>
-      </span>
-      <a href="/logout" style="font-size:.74rem;font-weight:700;color:#fff;background:#1a3a5c;border-radius:999px;padding:6px 14px;text-decoration:none;">Logout</a>
-      <div class="header-tag">Internal Tool</div>
-    </div>
-  </div>
-  <div class="header-body">
-    <div>
-      <div class="header-title">Generate offers<br><span>in minutes.</span></div>
-      <div class="header-sub">Full BOM costing for Ladle Pre-Heaters and Regenerative Burners — driven live from your uploaded pricebook.</div>
-    </div>
-    <div class="header-stats">
-      <div class="hstat">
-        <div class="hstat-val" id="stat-today">—</div>
-        <div class="hstat-label">Today</div>
-      </div>
-    </div>
-  </div>
-</header>
+<!-- ── Sidebar ─────────────────────────────────────────── -->
+<aside class="sidebar">
+  <a class="brand" href="/">
+    <div class="logo">E</div>
+    <div><div class="bn">ENCON</div><div class="bs">Thermal Engineers</div></div>
+  </a>
+  <nav class="nav">
+    <div class="nav-h">Main</div>
+    <a class="active" href="/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a href="#tools"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg>Costing Tools</a>
+    <a href="#recent"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Quotations</a>
+    <a href="/pricelist"><svg viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Pricing</a>
 
-<!-- ── MAIN ── -->
+    <div class="nav-h">Data</div>
+    <a href="/viewer"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>Database</a>
+    <a href="/price-master" data-admin-only><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Price Master</a>
+
+    <div class="nav-h">CRM <span style="font-size:.58rem">· coming soon</span></div>
+    <a class="soon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries<span class="soon-pill">Soon</span></a>
+    <a class="soon"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects<span class="soon-pill">Soon</span></a>
+    <a class="soon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients<span class="soon-pill">Soon</span></a>
+    <a class="soon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports<span class="soon-pill">Soon</span></a>
+  </nav>
+  <div class="side-foot">
+    <div class="uchip" id="user-chip" style="display:none">
+      <div class="av" id="user-av">E</div>
+      <div><div class="un" id="user-name">—</div><div class="ur" id="user-role">User</div></div>
+    </div>
+    <a class="btn" href="/logout" style="text-align:center">Logout</a>
+  </div>
+</aside>
+
+<!-- ── Main ────────────────────────────────────────────── -->
 <div class="main">
+  <header class="topbar">
+    <div>
+      <h1>Dashboard</h1>
+      <div class="sub">Live quoting activity across all ENCON products</div>
+    </div>
+    <div class="top-right">
+      <div class="datebox" id="today">—</div>
+      <a class="btn red" href="#tools">+ New Offer</a>
+    </div>
+  </header>
 
-  <!-- How it Works -->
-  <div class="section-label" style="margin-top:0">How it works</div>
-  <div class="pipeline">
-    <div class="pipe-step">
-      <div class="pipe-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-      <div class="pipe-num">1</div>
-      <div class="pipe-title">Upload Pricebook</div>
-      <div class="pipe-detail">Upload the Pricelist WorkBook .xlsx. All 13 master tables (HPU, Burner, Blower, Rates, Vertical, Horizontal…) are refreshed in one shot.</div>
-      <span class="pipe-tag blue">Price Master page</span>
+  <div class="content">
+    <div class="banner" id="banner">
+      <b>Live data</b> — every KPI below is computed from offers you actually generate. Enquiry, project &amp; margin tracking arrive in the next phase.
     </div>
-    <div class="pipe-step">
-      <div class="pipe-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-      <div class="pipe-num">2</div>
-      <div class="pipe-title">Selection Engine Runs</div>
-      <div class="pipe-detail">Python auto-selects the right Burner model, Blower size, Gas Train, AGR, Motorized Valve, Rotary Joint — all from DB master tables based on firing rate and pressure.</div>
-      <span class="pipe-tag blue">Automatic</span>
+
+    <!-- KPIs -->
+    <div class="kpis" id="kpis"></div>
+
+    <!-- Costing Tools -->
+    <div class="sec-label" id="tools">Quick Costing Tools</div>
+    <div class="tools" id="tools-grid"></div>
+
+    <!-- Recent + Products -->
+    <div class="grid2">
+      <div class="panel" id="recent">
+        <div class="ph"><div><h3>Recent Quotations</h3><div class="ph-sub">Last 12 generated offers</div></div></div>
+        <div id="recent-wrap"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h3>Quotes by Product</h3><div class="ph-sub">Share of total offers</div></div></div>
+        <div id="donut-wrap"></div>
+      </div>
     </div>
-    <div class="pipe-step">
-      <div class="pipe-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-      <div class="pipe-num">3</div>
-      <div class="pipe-title">BOM is Built</div>
-      <div class="pipe-detail">MS Structure, HPU, Ceramic Fiber, Control Panel, Pipeline costs are read from the vertical/horizontal master. Every line item in the BOM gets a live price.</div>
-      <span class="pipe-tag green">Auto-calculated</span>
-    </div>
-    <div class="pipe-step">
-      <div class="pipe-num">4</div>
-      <div class="pipe-title">Offer is Generated</div>
-      <div class="pipe-detail">The cost summary (System Total, Bought Out, ENCON Items, Grand Total) is shown. Customer details + BOM are exported to a Word offer document.</div>
-      <span class="pipe-tag green">Word / Excel output</span>
+
+    <!-- Trend -->
+    <div class="panel" style="margin-top:18px">
+      <div class="ph"><div><h3>Monthly Quoting Trend</h3><div class="ph-sub">Quoted value per month · last 12 months</div></div></div>
+      <div class="trend" id="trend"></div>
     </div>
   </div>
-
-  <!-- Costing Tools -->
-  <div class="section-label">Costing Tools</div>
-  <div class="bento">
-    <a class="b-big" href="/costing">
-      <div class="b-kicker">Vertical &middot; Natural Gas</div>
-      <div class="b-title">VLPH Costing</div>
-      <div class="b-desc">Vertical Ladle Pre-Heater — MS structure, HPU, burner, blower, gas train, rotary joint and full instrumentation BOM.</div>
-      <div class="b-foot">
-        <span class="b-open">Open tool <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Natural Gas</span>
-      </div>
-    </a>
-    <a class="b-wide" href="/hlph">
-      <div class="b-kicker">Horizontal</div>
-      <div class="b-title">HLPH Costing</div>
-      <div class="b-desc">Horizontal Ladle Pre-Heater — full BOM, trolley drive.</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Natural Gas</span>
-      </div>
-    </a>
-    <a href="/tundish">
-      <div class="b-kicker">Tundish</div>
-      <div class="b-title">Tundish Preheater</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Natural Gas</span>
-      </div>
-    </a>
-    <a href="/equipment-offer">
-      <div class="b-kicker">Stand-alone</div>
-      <div class="b-title">Equipment Offer</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Word offer</span>
-      </div>
-    </a>
-    <a href="/combined-builder">
-      <div class="b-kicker">Multi-equipment</div>
-      <div class="b-title">Combined Offer</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Customer once</span>
-      </div>
-    </a>
-    <a href="/recup">
-      <div class="b-kicker">Heat Recovery</div>
-      <div class="b-title">Recuperator</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">LMTD</span>
-      </div>
-    </a>
-    <a href="/regen">
-      <div class="b-kicker">Regenerative</div>
-      <div class="b-title">Regen Costing</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Efficiency</span>
-      </div>
-    </a>
-    <a href="/btf">
-      <div class="b-kicker">Furnace</div>
-      <div class="b-title">Box Type Furnace</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Dual Mode</span>
-      </div>
-    </a>
-    <a class="b-wide" href="/snsf-brf">
-      <div class="b-kicker">Billet Reheat</div>
-      <div class="b-title">SNSF BRF 30 Ton</div>
-      <div class="b-desc">30 Ton billet reheating — dual fuel, mass flow control.</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">Dual Fuel</span>
-      </div>
-    </a>
-    <a class="b-wide" href="/pricelist">
-      <div class="b-kicker">Live Prices</div>
-      <div class="b-title">Pricelist Viewer</div>
-      <div class="b-desc">Live selling prices for every product.</div>
-      <div class="b-foot">
-        <span class="b-open">Open <span class="ar">&rarr;</span></span>
-        <span class="b-tag">All Products</span>
-      </div>
-    </a>
-  </div>
-
 </div>
 
 <script>
-function load() {
-  // Today's date, e.g. "26 Mar 2026"
-  const d = new Date();
-  const el = document.getElementById('stat-today');
-  if (el) el.textContent = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+const TOOLS = [
+  {n:"VLPH",        d:"Vertical Ladle Preheater", u:"/costing"},
+  {n:"HLPH",        d:"Horizontal Ladle Preheater", u:"/hlph"},
+  {n:"HPU / PU",    d:"Heating & Pumping Unit", u:"/hpu"},
+  {n:"Blower",      d:"Centrifugal blower offer", u:"/blower"},
+  {n:"Burner",      d:"Gas / Oil / Dual / HV", u:"/burner"},
+  {n:"Recuperator", d:"Heat recovery", u:"/recup"},
+  {n:"Regen",       d:"Regenerative costing", u:"/regen"},
+  {n:"Tundish",     d:"Tundish preheater", u:"/tundish"},
+  {n:"Box Furnace", d:"Box type furnace", u:"/btf"},
+  {n:"SNSF BRF",    d:"30T billet reheat", u:"/snsf-brf"},
+  {n:"Combined",    d:"Multi-equipment offer", u:"/combined-builder"},
+  {n:"Pricelist",   d:"Live selling prices", u:"/pricelist"},
+];
+const PROD_COLORS = ["#e1232a","#3b82f6","#14b8a6","#a855f7","#f59e0b","#22c55e","#ec4899","#06b6d4","#64748b"];
+const ICONS = {
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  rupee:'<path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3a5 5 0 0 0 0-10"/>',
+  trend:'<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  avg:'<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/>',
+  users:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/>',
+};
+function inr(n){
+  n = Number(n)||0;
+  if(n>=1e7) return "₹"+(n/1e7).toFixed(2)+" Cr";
+  if(n>=1e5) return "₹"+(n/1e5).toFixed(2)+" L";
+  if(n>=1e3) return "₹"+(n/1e3).toFixed(1)+"k";
+  return "₹"+n.toFixed(0);
+}
+function fmtDate(iso){
+  if(!iso) return "—";
+  const d=new Date(iso); if(isNaN(d)) return iso.slice(0,10);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+", "+
+         d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+function mLabel(ym){ const [y,m]=ym.split('-'); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]; }
+
+document.getElementById('today').textContent =
+  new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+
+// tool tiles
+document.getElementById('tools-grid').innerHTML = TOOLS.map(t=>`
+  <a class="tool" href="${t.u}">
+    <div class="tic">${t.n.split(/[ /]/)[0].slice(0,4).toUpperCase()}</div>
+    <div class="tn">${t.n}</div><div class="td">${t.d}</div>
+  </a>`).join('');
+
+// signed-in user + admin gating
+fetch('/api/me').then(r=>r.json()).then(me=>{
+  if(me && me.user){
+    document.getElementById('user-name').textContent = me.user;
+    document.getElementById('user-role').textContent = me.role==='admin'?'Admin':'User';
+    document.getElementById('user-av').textContent = (me.user[0]||'E').toUpperCase();
+    document.getElementById('user-chip').style.display='flex';
+  }
+  if(!me || me.role!=='admin') document.querySelectorAll('[data-admin-only]').forEach(el=>el.style.display='none');
+}).catch(()=>{});
+
+function kpiCard(ic,color,val,label,sub){
+  return `<div class="kpi">
+    <div class="ic" style="background:${color}22;color:${color}"><svg viewBox="0 0 24 24" stroke="${color}">${ICONS[ic]}</svg></div>
+    <div class="v">${val}</div><div class="l">${label}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
 }
 
-load();
-</script>
-<script>
-  // Show the signed-in user/role and hide admin-only entries for non-admins.
-  fetch('/api/me').then(r => r.json()).then(me => {
-    if (me && me.user) {
-      document.getElementById('user-name').textContent = me.user;
-      document.getElementById('user-role').textContent = me.role === 'admin' ? 'Admin' : 'User';
-      document.getElementById('user-chip').style.display = 'inline-flex';
-    }
-    if (!me || me.role !== 'admin') {
-      document.querySelectorAll('[data-admin-only]').forEach(el => el.style.display = 'none');
-    }
-  }).catch(() => {});
+fetch('/api/dashboard').then(r=>r.json()).then(d=>{
+  const k = d.kpis||{};
+  document.getElementById('kpis').innerHTML = [
+    kpiCard('doc','#3b82f6', k.total_quotes||0, 'Total Quotations', 'all time'),
+    kpiCard('cal','#14b8a6', k.month_quotes||0, 'This Month', d.month_label||''),
+    kpiCard('rupee','#22c55e', inr(k.total_value), 'Total Quoted Value', 'all time'),
+    kpiCard('trend','#a855f7', inr(k.month_value), 'Quoted This Month', d.month_label||''),
+    kpiCard('avg','#f59e0b', inr(k.avg_value), 'Avg Quote Value', 'per offer'),
+    kpiCard('users','#ec4899', k.companies||0, 'Clients', 'unique companies'),
+  ].join('');
+
+  // recent quotes
+  const rec = d.recent||[];
+  document.getElementById('recent-wrap').innerHTML = rec.length ? `
+    <table><thead><tr><th>Date</th><th>Client</th><th>Product</th><th>Location</th><th style="text-align:right">Value</th></tr></thead>
+    <tbody>${rec.map(r=>`<tr>
+      <td>${fmtDate(r.created_at)}<div class="ref">${(r.ref||'').split(' DT')[0]}</div></td>
+      <td class="co">${r.company||'—'}</td>
+      <td><span class="pill">${r.product||'—'}</span></td>
+      <td class="loc">${r.location||'—'}</td>
+      <td class="val">${inr(r.value)}</td></tr>`).join('')}</tbody></table>`
+    : `<div class="empty"><b>No quotes yet</b>Generate an offer from the costing tools above and it'll appear here.</div>`;
+
+  // donut by product
+  const bp = (d.by_product||[]).slice(0,8);
+  const total = bp.reduce((s,p)=>s+p.count,0);
+  const dw = document.getElementById('donut-wrap');
+  if(total){
+    const R=60, C=2*Math.PI*R; let off=0;
+    const segs = bp.map((p,i)=>{
+      const frac=p.count/total, len=frac*C;
+      const s=`<circle r="${R}" cx="75" cy="75" fill="none" stroke="${PROD_COLORS[i%PROD_COLORS.length]}"
+        stroke-width="18" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}"
+        transform="rotate(-90 75 75)"><title>${p.type}: ${p.count}</title></circle>`;
+      off+=len; return s;
+    }).join('');
+    dw.innerHTML = `<div class="donut-wrap">
+      <div class="donut"><svg viewBox="0 0 150 150" width="150" height="150">${segs}</svg>
+        <div class="ctr"><b>${total}</b><span>offers</span></div></div>
+      <div class="legend">${bp.map((p,i)=>`<div class="row">
+        <span class="dot" style="background:${PROD_COLORS[i%PROD_COLORS.length]}"></span>
+        <span class="nm">${p.type}</span><span class="ct">${p.count}</span></div>`).join('')}</div></div>`;
+  } else {
+    dw.innerHTML = `<div class="empty"><b>No data</b>Product mix shows once you generate offers.</div>`;
+  }
+
+  // monthly trend
+  const bm = d.by_month||[];
+  const max = Math.max(1, ...bm.map(m=>m.value));
+  document.getElementById('trend').innerHTML = bm.map(m=>{
+    const h = m.value>0 ? Math.max(4, m.value/max*100) : 0;
+    return `<div class="bar-col">
+      <div class="bar-val">${m.value>0?inr(m.value).replace('₹',''):''}</div>
+      <div class="bar-track"><div class="bar" style="height:${h}%"><title>${m.month}: ${inr(m.value)} · ${m.count} offers</title></div></div>
+      <div class="bar-lbl">${mLabel(m.month)}</div></div>`;
+  }).join('');
+}).catch(e=>{
+  document.getElementById('kpis').innerHTML = `<div class="empty" style="grid-column:1/-1"><b>Couldn't load dashboard</b>${e}</div>`;
+});
 </script>
 </body>
 </html>

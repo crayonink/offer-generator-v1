@@ -290,10 +290,71 @@ def ensure_log_table():
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""CREATE TABLE IF NOT EXISTS table_update_log (
         table_name TEXT PRIMARY KEY, updated_at TEXT, uploaded_by TEXT)""")
+    # Every generated offer is recorded here — the source for the dashboard.
+    conn.execute("""CREATE TABLE IF NOT EXISTS quotes_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quote_no TEXT, ref_no TEXT, company_name TEXT, poc_name TEXT,
+        email TEXT, mobile_no TEXT, project_name TEXT, equipment_type TEXT,
+        location TEXT, ladle_tons REAL, grand_total REAL,
+        marketing_person TEXT, technical_person TEXT, file_path TEXT,
+        margin_pct REAL, created_at TEXT)""")
+    # Self-heal an older quotes_log that predates these columns.
+    for col, decl in (("location", "TEXT"), ("margin_pct", "REAL")):
+        try:
+            conn.execute(f"ALTER TABLE quotes_log ADD COLUMN {col} {decl}")
+        except sqlite3.OperationalError:
+            pass
     conn.commit()
     conn.close()
 
 ensure_log_table()
+
+
+def _log_quote(*, quote_no="", ref_no="", company_name="", poc_name="",
+               email="", mobile_no="", project_name="", equipment_type="",
+               location="", ladle_tons=0.0, grand_total=0.0,
+               marketing_person="", technical_person="", file_path="",
+               margin_pct=None):
+    """Record a generated offer in quotes_log (dashboard source). Never raises
+    — a logging failure must never break offer generation."""
+    try:
+        from datetime import datetime as _dt
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("""
+            INSERT INTO quotes_log (
+                quote_no, ref_no, company_name, poc_name, email, mobile_no,
+                project_name, equipment_type, location, ladle_tons, grand_total,
+                marketing_person, technical_person, file_path, margin_pct, created_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            quote_no or "", ref_no or "", company_name or "", poc_name or "",
+            email or "", mobile_no or "", project_name or "", equipment_type or "",
+            location or "", float(ladle_tons or 0), float(grand_total or 0),
+            marketing_person or "", technical_person or "", file_path or "",
+            (float(margin_pct) if margin_pct is not None else None),
+            _dt.now().isoformat(timespec="seconds"),
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as log_err:
+        print(f"WARN: quotes_log insert failed: {log_err}")
+
+
+def _log_equipment_quote(cust, equipment_type: str, grand_total, file_path: str):
+    """quotes_log entry for an equipment offer (HPU/PU/Blower/Burner) whose
+    customer is an HpuCustomer. Wraps the field mapping in one place."""
+    _log_quote(
+        quote_no=getattr(cust, "ref_no", "") or "",
+        ref_no=getattr(cust, "ref_no", ""),
+        company_name=getattr(cust, "company", ""),
+        poc_name=_with_salutation(getattr(cust, "salutation", ""), getattr(cust, "name", "")),
+        email=getattr(cust, "email", ""), mobile_no=getattr(cust, "phone", ""),
+        project_name=getattr(cust, "subject", ""), equipment_type=equipment_type,
+        location=getattr(cust, "location", ""), grand_total=grand_total,
+        marketing_person=_with_salutation(getattr(cust, "marketing_salutation", ""), getattr(cust, "marketing", "")),
+        technical_person=_with_salutation(getattr(cust, "technical_salutation", ""), getattr(cust, "technical", "")),
+        file_path=file_path,
+    )
 
 
 def ensure_valve_sizes():
@@ -475,6 +536,71 @@ def root():
     html_path = os.path.join(BASE_DIR, "dashboard.html")
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
+
+@app.get("/api/dashboard")
+def api_dashboard():
+    """Live dashboard metrics, all derived from quotes_log (every generated
+    offer is recorded there). Never raises — returns empty buckets on error."""
+    from datetime import datetime as _dt
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        now = _dt.now()
+        ym = now.strftime("%Y-%m")
+
+        def scalar(sql, args=()):
+            r = conn.execute(sql, args).fetchone()
+            return (r[0] if r and r[0] is not None else 0)
+
+        total_quotes = scalar("SELECT COUNT(*) FROM quotes_log")
+        total_value  = scalar("SELECT SUM(grand_total) FROM quotes_log")
+        month_quotes = scalar("SELECT COUNT(*) FROM quotes_log WHERE substr(created_at,1,7)=?", (ym,))
+        month_value  = scalar("SELECT SUM(grand_total) FROM quotes_log WHERE substr(created_at,1,7)=?", (ym,))
+        avg_value    = scalar("SELECT AVG(grand_total) FROM quotes_log WHERE grand_total>0")
+        companies    = scalar("SELECT COUNT(DISTINCT company_name) FROM quotes_log WHERE company_name<>''")
+
+        by_product = [
+            {"type": (r["equipment_type"] or "Other"), "count": r["c"], "value": (r["v"] or 0)}
+            for r in conn.execute(
+                "SELECT equipment_type, COUNT(*) c, SUM(grand_total) v FROM quotes_log "
+                "GROUP BY equipment_type ORDER BY c DESC, v DESC")
+        ]
+
+        # Last 12 calendar months (oldest -> newest), zero-filled.
+        seq = []
+        for i in range(11, -1, -1):
+            mm, yy = now.month - i, now.year
+            while mm <= 0:
+                mm += 12; yy -= 1
+            seq.append(f"{yy:04d}-{mm:02d}")
+        mrows = {r["ym"]: (r["c"], r["v"] or 0) for r in conn.execute(
+            "SELECT substr(created_at,1,7) ym, COUNT(*) c, SUM(grand_total) v "
+            "FROM quotes_log GROUP BY ym")}
+        by_month = [{"month": k, "count": mrows.get(k, (0, 0))[0],
+                     "value": mrows.get(k, (0, 0))[1]} for k in seq]
+
+        recent = [
+            {"created_at": r["created_at"], "company": r["company_name"],
+             "product": r["equipment_type"], "ref": (r["ref_no"] or r["quote_no"] or ""),
+             "value": (r["grand_total"] or 0), "location": (r["location"] or ""),
+             "poc": (r["poc_name"] or ""), "file": os.path.basename(r["file_path"] or "")}
+            for r in conn.execute("SELECT * FROM quotes_log ORDER BY id DESC LIMIT 12")
+        ]
+        conn.close()
+        return {
+            "kpis": {
+                "total_quotes": total_quotes, "month_quotes": month_quotes,
+                "total_value": total_value, "month_value": month_value,
+                "avg_value": round(avg_value or 0), "companies": companies,
+            },
+            "by_product": by_product, "by_month": by_month, "recent": recent,
+            "month_label": now.strftime("%b %Y"),
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc(),
+                "kpis": {}, "by_product": [], "by_month": [], "recent": []}
 
 
 # ── Google Drive OAuth ────────────────────────────────────────────────────
@@ -3310,6 +3436,15 @@ def generate_recup_quote(req: RecupQuoteRequest):
         except Exception as _drv_err:
             print(f"WARN: drive upload kickoff failed: {_drv_err}")
 
+        _log_quote(
+            quote_no=full_ref, ref_no=req.client_enq_ref, company_name=req.company_name,
+            poc_name=_with_salutation(req.salutation, req.poc_name), email=req.email,
+            mobile_no=req.mobile_no, project_name=req.project_name,
+            equipment_type="Recuperator", location=req.location, grand_total=total_price,
+            marketing_person=req.marketing_person, technical_person=req.technical_person,
+            file_path=docx_path,
+        )
+
         return {
             "filename":     docx_name,
             "pdf_filename": pdf_name if pdf_ok else None,
@@ -3660,6 +3795,8 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
         _break_out_transport(output_path, req.transport_amt)
     except Exception as _trn_err:
         print(f"WARN: recup transport line break-out failed: {_trn_err}")
+
+    _log_equipment_quote(cust, mode.upper(), total_price, output_path)  # HPU / PU
 
     return {
         "success":      True,
@@ -4040,6 +4177,11 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
             upload_offer_async(pdf_path, pdf_name, drive_product)
     except Exception as _drv_err:
         print(f"WARN: drive upload kickoff failed: {_drv_err}")
+
+    _PROD_LABEL = {"blower": "Blower", "burner": "Burner"}
+    _log_equipment_quote(
+        cust, _PROD_LABEL.get((drive_product or "").lower(), (drive_product or "Equipment").title()),
+        total_price, docx_path)
 
     return {
         "success":      True,
@@ -5085,6 +5227,9 @@ def generate_combined_offer(req: CombinedOfferRequest):
             _drv = _drive_status("combined")
         except Exception:
             _drv = {"ok": False, "reason": "error", "msg": "Drive status unknown"}
+
+        _log_equipment_quote(cust, "Combined", grand, docx_path)
+
         return {
             "success":      True,
             "filename":     docx_name,
@@ -5337,33 +5482,16 @@ async def generate_quote(req: QuoteRequest):
             print(f"WARN: drive upload kickoff failed: {_drv_err}")
 
         # Persist to quotes_log so we can list/re-download past quotes later
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            conn.execute("""
-                INSERT INTO quotes_log (
-                    quote_no, ref_no, company_name, poc_name, email, mobile_no,
-                    project_name, equipment_type, ladle_tons, grand_total,
-                    marketing_person, technical_person, file_path
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
-            """, (
-                quote_data["quote_no"],
-                req.ref_no or "",
-                req.company_name or "",
-                req.poc_name or "",
-                req.email or "",
-                req.mobile_no or "",
-                req.project_name or "",
-                "VLPH" if not req.is_oil else "VLPH (Oil)",  # quick flag
-                float(req.ladle_tons or 0),
-                float(quote_data["grand_total"]),
-                req.marketing_person or "",
-                req.technical_person or "",
-                output_path,
-            ))
-            conn.commit()
-            conn.close()
-        except Exception as log_err:
-            print(f"WARN: quotes_log insert failed: {log_err}")
+        _pt = (req.items[0].product_type if req.items else "") or ""
+        _log_quote(
+            quote_no=quote_data["quote_no"], ref_no=req.ref_no,
+            company_name=req.company_name, poc_name=req.poc_name,
+            email=req.email, mobile_no=req.mobile_no, project_name=req.project_name,
+            equipment_type=("HLPH" if "horizontal" in _pt.lower() else "VLPH"),
+            location=getattr(req, "location", ""), ladle_tons=req.ladle_tons,
+            grand_total=quote_data["grand_total"], marketing_person=req.marketing_person,
+            technical_person=req.technical_person, file_path=output_path,
+        )
 
         return {
             "success": True,
