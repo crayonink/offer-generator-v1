@@ -354,12 +354,12 @@ function goStep(n) {
 function _generateRef() {
   const ref = document.getElementById('c-ref');
   if (_refDirty && ref.value) return;
-  const city = (document.getElementById('c-city').value || 'XXX').slice(0, 3).toUpperCase();
+  const loc = (document.getElementById('c-location').value || 'XXX').slice(0, 3).toUpperCase();
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yyyy = d.getFullYear();
-  if (!_refDirty || !ref.value) ref.value = `ENCON.04026.XXX/${city}/BRN DT.${dd}/${mm}/${yyyy}`;
+  if (!_refDirty || !ref.value) ref.value = `ENCON.04026.XXX/${loc}/BRN DT.${dd}/${mm}/${yyyy}`;
 }
 
 function _customerPayload() {
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('burner_group').addEventListener('change', _onGroupChange);
   document.getElementById('burner_model').addEventListener('change', _onModelChange);
   _generateRef();
-  document.getElementById('c-city').addEventListener('input', _generateRef);  // city → ref live
+  document.getElementById('c-location').addEventListener('change', _generateRef);  // Location → ref
   Promise.resolve(_loadCatalog()).then(() => {
     if (_stickyData['burner_group']) {
       const ge = document.getElementById('burner_group');

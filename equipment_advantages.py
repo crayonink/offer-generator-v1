@@ -30,10 +30,7 @@ EQUIPMENT_ADVANTAGES = {
             "Eliminates Choking",
             "Reduces Sulphur corrosion",
         ],
-        "sub": [
-            {"title": "Disadvantage Of IIP-ENCON “FILM” Burner",
-             "items": ["Higher Price"]},
-        ],
+        "sub": [],
     },
     "burner_gas": {
         "title": "ADVANTAGES OF ENCON GAS BURNERS",
