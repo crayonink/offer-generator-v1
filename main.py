@@ -4155,9 +4155,10 @@ def generate_burner_quote(req: BurnerQuoteRequest):
         _bcomp = _BCOMP.get(_bg, ["Burner Alone", "Ball Valve", "C.I Burner Plate",
                                   "Burner Block", "Flexible Hoses set", "Butterfly Valve"])
         _rate = f", having a firing rate of {capacity}" if capacity else ""
-        scope_intro = (f"Supply ex-works of {_bqty} no. {_bname}, Model {req.burner_model}, "
-                       f"suitable for {_boper}{_rate}, fitted with necessary accessories of "
-                       f"reputed make. Equipment with Burner:")
+        _bsentence = (f"Supply ex-works of {_bqty} no. {_bname}, Model {req.burner_model}, "
+                      f"suitable for {_boper}{_rate}, fitted with necessary accessories of "
+                      f"reputed make.")
+        scope_intro = _bsentence + " Equipment with Burner:"
         scope_items = [{"item": x} for x in _bcomp]
         specs = {
             "burner_model":    req.burner_model,
@@ -4166,10 +4167,10 @@ def generate_burner_quote(req: BurnerQuoteRequest):
             "scope_intro":     scope_intro,
             "scope_items":     scope_items,
             "advantages_kind": _BADV.get(_bg, "burner_film"),
-            "price_desc": {
+            "price_desc": {       # price cell: short sentence only, no bullets
                 "heading": _bname.upper(),
-                "body":    scope_intro,
-                "bullets": _bcomp,
+                "body":    _bsentence,
+                "bullets": [],
                 "notes":   [],
             },
         }

@@ -1061,27 +1061,32 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         _pvar = (customer.get("hpu_variant") or "").lower()
         _pumps = ("a single gear pump with motor" if "simplex" in _pvar
                   else "TWO gear pumps with motors")
+        _pumps_bullet = _pumps[0].upper() + _pumps[1:]   # "TWO gear pumps with motors"
         if customer.get("force_pumping_only"):
             _phead = f"PUMPING UNIT, MODEL {_pmodel}"
-            _pintro = (f"Supply ex-works of 1 no. ENCON make Oil Pumping unit, model {_pmodel}, "
-                       f"suitable for flow rate of {_plph} ltrs/hr, {_pumps} fitted with all "
+            _pname = "ENCON make Oil Pumping unit"
+            _pintro = (f"Supply ex-works of 1 no. {_pname}, model {_pmodel}, "
+                       f"suitable for flow rate of {_plph} ltrs/hr, fitted with all "
                        f"standard accessories (mounted on a common base frame) such as:")
             _pitems = ["Constant pressure control valve", "Pressure relief valve",
-                       "Pressure gauge", "Fine filters, etc."]
+                       "Pressure gauge", "Fine filters, etc.", _pumps_bullet]
         else:
             _phead = f"HEATING & PUMPING UNIT, MODEL {_pmodel}"
-            _pintro = (f"Supply ex-works of 1 no. ENCON make Oil Heating & Pumping unit, model "
-                       f"{_pmodel}, suitable for flow rate of {_plph} ltrs/hr, {_pumps} and an "
+            _pname = "ENCON make Oil Heating & Pumping unit"
+            _pintro = (f"Supply ex-works of 1 no. {_pname}, model "
+                       f"{_pmodel}, suitable for flow rate of {_plph} ltrs/hr, with an "
                        f"in-built electric oil heater with thermostatic control, fitted with all "
                        f"standard accessories (mounted on a common base frame) such as:")
             _pitems = ["Electric oil pre-heater with thermostatic control",
                        "Constant pressure control valve", "Pressure relief valve",
-                       "Pressure gauge", "Fine filters, etc."]
+                       "Pressure gauge", "Fine filters, etc.", _pumps_bullet]
         context["pumping_unit_intro"] = _pintro
         context["pumping_unit_items"] = [{"item": x} for x in _pitems]
         context["price_heading"] = _phead + ":"
-        context["price_body"] = _pintro
-        context["price_bullets"] = [{"item": x} for x in _pitems]
+        # Price cell: short one-line description only — full scope is Annexure I.
+        context["price_body"] = (f"Supply ex-works of 1 no. {_pname}, model {_pmodel}, "
+                                 f"suitable for flow rate of {_plph} ltrs/hr.")
+        context["price_bullets"] = []
         context["price_notes"] = []
         from equipment_advantages import build_advantages_ctx, tnc_value as _tncv
         context.update(build_advantages_ctx("pumping"))
