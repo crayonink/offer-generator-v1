@@ -304,6 +304,23 @@ def ensure_log_table():
             conn.execute(f"ALTER TABLE quotes_log ADD COLUMN {col} {decl}")
         except sqlite3.OperationalError:
             pass
+    # ── CRM (dashboard Phase 2) ──────────────────────────────────────────
+    conn.execute("""CREATE TABLE IF NOT EXISTS enquiries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        enquiry_no TEXT, company_name TEXT, contact_name TEXT, email TEXT,
+        phone TEXT, location TEXT, product TEXT, source TEXT,
+        stage TEXT DEFAULT 'new', value_est REAL DEFAULT 0, owner TEXT,
+        notes TEXT, created_at TEXT, updated_at TEXT)""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_no TEXT, company_name TEXT, title TEXT, product TEXT,
+        value REAL DEFAULT 0, status TEXT DEFAULT 'active',
+        progress INTEGER DEFAULT 0, owner TEXT, start_date TEXT,
+        target_date TEXT, enquiry_id INTEGER, notes TEXT,
+        created_at TEXT, updated_at TEXT)""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS activity_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT, kind TEXT, title TEXT, detail TEXT)""")
     conn.commit()
     conn.close()
 
@@ -336,6 +353,8 @@ def _log_quote(*, quote_no="", ref_no="", company_name="", poc_name="",
         ))
         conn.commit()
         conn.close()
+        _log_activity("quote", f"Quote · {company_name or 'Client'}",
+                      f"{equipment_type or 'Offer'} — ₹{float(grand_total or 0):,.0f}")
     except Exception as log_err:
         print(f"WARN: quotes_log insert failed: {log_err}")
 
@@ -355,6 +374,19 @@ def _log_equipment_quote(cust, equipment_type: str, grand_total, file_path: str)
         technical_person=_with_salutation(getattr(cust, "technical_salutation", ""), getattr(cust, "technical", "")),
         file_path=file_path,
     )
+
+
+def _log_activity(kind: str, title: str, detail: str = ""):
+    """Append to activity_log (dashboard feed). Never raises."""
+    try:
+        from datetime import datetime as _dt
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("INSERT INTO activity_log (ts, kind, title, detail) VALUES (?,?,?,?)",
+                     (_dt.now().isoformat(timespec="seconds"), kind, title, detail))
+        conn.commit()
+        conn.close()
+    except Exception as act_err:
+        print(f"WARN: activity_log insert failed: {act_err}")
 
 
 def ensure_valve_sizes():
@@ -538,6 +570,18 @@ def root():
         return HTMLResponse(content=f.read())
 
 
+@app.get("/enquiries", response_class=HTMLResponse)
+def enquiries_page():
+    with open(os.path.join(BASE_DIR, "enquiries.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/projects", response_class=HTMLResponse)
+def projects_page():
+    with open(os.path.join(BASE_DIR, "projects.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
 @app.get("/api/dashboard")
 def api_dashboard():
     """Live dashboard metrics, all derived from quotes_log (every generated
@@ -587,20 +631,269 @@ def api_dashboard():
              "poc": (r["poc_name"] or ""), "file": os.path.basename(r["file_path"] or "")}
             for r in conn.execute("SELECT * FROM quotes_log ORDER BY id DESC LIMIT 12")
         ]
+
+        # ── CRM metrics (Phase 2) ──
+        open_enquiries  = scalar("SELECT COUNT(*) FROM enquiries WHERE stage NOT IN ('won','lost')")
+        pending_rfq     = scalar("SELECT COUNT(*) FROM enquiries WHERE stage IN ('new','qualified')")
+        active_projects = scalar("SELECT COUNT(*) FROM projects WHERE status='active'")
+        stage_rows = {r["stage"]: (r["c"], r["v"] or 0) for r in conn.execute(
+            "SELECT stage, COUNT(*) c, SUM(value_est) v FROM enquiries GROUP BY stage")}
+        pipeline = [{"stage": st, "count": stage_rows.get(st, (0, 0))[0],
+                     "value": stage_rows.get(st, (0, 0))[1]} for st in ENQUIRY_STAGES]
+        activity = [dict(r) for r in conn.execute(
+            "SELECT ts, kind, title, detail FROM activity_log ORDER BY id DESC LIMIT 10")]
         conn.close()
         return {
             "kpis": {
                 "total_quotes": total_quotes, "month_quotes": month_quotes,
                 "total_value": total_value, "month_value": month_value,
                 "avg_value": round(avg_value or 0), "companies": companies,
+                "open_enquiries": open_enquiries, "active_projects": active_projects,
+                "pending_rfq": pending_rfq,
             },
             "by_product": by_product, "by_month": by_month, "recent": recent,
+            "pipeline": pipeline, "activity": activity,
             "month_label": now.strftime("%b %Y"),
         }
     except Exception as e:
         import traceback
         return {"error": str(e), "trace": traceback.format_exc(),
-                "kpis": {}, "by_product": [], "by_month": [], "recent": []}
+                "kpis": {}, "by_product": [], "by_month": [], "recent": [],
+                "pipeline": [], "activity": []}
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  CRM — Enquiries & Projects (dashboard Phase 2)
+# ══════════════════════════════════════════════════════════════════════════
+ENQUIRY_STAGES = ["new", "qualified", "quoted", "won", "lost"]
+PROJECT_STATUSES = ["active", "on_hold", "completed", "cancelled"]
+
+
+class EnquiryIn(BaseModel):
+    id: Optional[int] = None
+    company_name: str = ""
+    contact_name: str = ""
+    email: str = ""
+    phone: str = ""
+    location: str = ""
+    product: str = ""
+    source: str = ""
+    stage: str = "new"
+    value_est: float = 0
+    owner: str = ""
+    notes: str = ""
+
+
+class ProjectIn(BaseModel):
+    id: Optional[int] = None
+    company_name: str = ""
+    title: str = ""
+    product: str = ""
+    value: float = 0
+    status: str = "active"
+    progress: int = 0
+    owner: str = ""
+    start_date: str = ""
+    target_date: str = ""
+    enquiry_id: Optional[int] = None
+    notes: str = ""
+
+
+class IdIn(BaseModel):
+    id: int
+
+
+class StageIn(BaseModel):
+    id: int
+    stage: str
+
+
+class ProjStatusIn(BaseModel):
+    id: int
+    status: Optional[str] = None
+    progress: Optional[int] = None
+
+
+@app.post("/api/enquiry")
+def api_enquiry_save(e: EnquiryIn):
+    """Create (no id) or update (id) an enquiry."""
+    from datetime import datetime as _dt
+    now = _dt.now().isoformat(timespec="seconds")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        if e.id:
+            conn.execute("""UPDATE enquiries SET company_name=?,contact_name=?,email=?,phone=?,
+                location=?,product=?,source=?,stage=?,value_est=?,owner=?,notes=?,updated_at=?
+                WHERE id=?""", (e.company_name, e.contact_name, e.email, e.phone, e.location,
+                e.product, e.source, e.stage, e.value_est, e.owner, e.notes, now, e.id))
+            eid = e.id
+            created = False
+        else:
+            n = conn.execute("SELECT COUNT(*) FROM enquiries").fetchone()[0] + 1
+            cur = conn.execute("""INSERT INTO enquiries (enquiry_no,company_name,contact_name,email,
+                phone,location,product,source,stage,value_est,owner,notes,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (f"ENQ-{n:04d}", e.company_name,
+                e.contact_name, e.email, e.phone, e.location, e.product, e.source,
+                e.stage or "new", e.value_est, e.owner, e.notes, now, now))
+            eid = cur.lastrowid
+            created = True
+        conn.commit()
+        conn.close()
+        if created:   # log AFTER the write commits/closes (avoids a SQLite write-lock)
+            _log_activity("enquiry", f"Enquiry · {e.company_name or 'Client'}",
+                          f"{e.product or 'New enquiry'}{(' · ' + e.location) if e.location else ''}")
+        return {"success": True, "id": eid}
+    except Exception as ex:
+        return {"success": False, "error": str(ex)}
+
+
+@app.get("/api/enquiries")
+def api_enquiries():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute("SELECT * FROM enquiries ORDER BY id DESC")]
+        conn.close()
+        return {"enquiries": rows, "stages": ENQUIRY_STAGES}
+    except Exception as ex:
+        return {"enquiries": [], "stages": ENQUIRY_STAGES, "error": str(ex)}
+
+
+@app.post("/api/enquiry/stage")
+def api_enquiry_stage(s: StageIn):
+    from datetime import datetime as _dt
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        r = conn.execute("SELECT company_name FROM enquiries WHERE id=?", (s.id,)).fetchone()
+        conn.execute("UPDATE enquiries SET stage=?, updated_at=? WHERE id=?",
+                     (s.stage, _dt.now().isoformat(timespec="seconds"), s.id))
+        conn.commit()
+        conn.close()
+        _log_activity("enquiry", f"Enquiry → {s.stage}", (r["company_name"] if r else ""))
+        return {"success": True}
+    except Exception as ex:
+        return {"success": False, "error": str(ex)}
+
+
+@app.post("/api/enquiry/delete")
+def api_enquiry_delete(d: IdIn):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("DELETE FROM enquiries WHERE id=?", (d.id,))
+        conn.commit()
+        conn.close()
+        return {"success": True}
+    except Exception as ex:
+        return {"success": False, "error": str(ex)}
+
+
+@app.post("/api/enquiry/convert")
+def api_enquiry_convert(d: IdIn):
+    """Create a project from an enquiry and mark the enquiry 'won'."""
+    from datetime import datetime as _dt
+    now = _dt.now().isoformat(timespec="seconds")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        e = conn.execute("SELECT * FROM enquiries WHERE id=?", (d.id,)).fetchone()
+        if not e:
+            conn.close()
+            return {"success": False, "error": "enquiry not found"}
+        n = conn.execute("SELECT COUNT(*) FROM projects").fetchone()[0] + 1
+        pno = f"PRJ-{n:04d}"
+        cur = conn.execute("""INSERT INTO projects (project_no,company_name,title,product,value,
+            status,progress,owner,start_date,target_date,enquiry_id,notes,created_at,updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (pno, e["company_name"],
+            e["product"] or "Project", e["product"], e["value_est"] or 0, "active", 0,
+            e["owner"], now[:10], "", e["id"], e["notes"], now, now))
+        conn.execute("UPDATE enquiries SET stage='won', updated_at=? WHERE id=?", (now, d.id))
+        pid = cur.lastrowid
+        conn.commit()
+        conn.close()
+        _log_activity("project", f"Won → Project · {e['company_name']}", pno)
+        return {"success": True, "project_id": pid, "project_no": pno}
+    except Exception as ex:
+        return {"success": False, "error": str(ex)}
+
+
+@app.post("/api/project")
+def api_project_save(p: ProjectIn):
+    from datetime import datetime as _dt
+    now = _dt.now().isoformat(timespec="seconds")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        if p.id:
+            conn.execute("""UPDATE projects SET company_name=?,title=?,product=?,value=?,status=?,
+                progress=?,owner=?,start_date=?,target_date=?,notes=?,updated_at=? WHERE id=?""",
+                (p.company_name, p.title, p.product, p.value, p.status, p.progress, p.owner,
+                 p.start_date, p.target_date, p.notes, now, p.id))
+            pid = p.id
+            created = False
+        else:
+            n = conn.execute("SELECT COUNT(*) FROM projects").fetchone()[0] + 1
+            cur = conn.execute("""INSERT INTO projects (project_no,company_name,title,product,value,
+                status,progress,owner,start_date,target_date,enquiry_id,notes,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (f"PRJ-{n:04d}", p.company_name, p.title,
+                p.product, p.value, p.status or "active", p.progress, p.owner, p.start_date,
+                p.target_date, p.enquiry_id, p.notes, now, now))
+            pid = cur.lastrowid
+            created = True
+        conn.commit()
+        conn.close()
+        if created:   # log AFTER the write commits/closes (avoids a SQLite write-lock)
+            _log_activity("project", f"Project · {p.company_name or 'Client'}",
+                          f"{p.title or p.product or 'New project'}")
+        return {"success": True, "id": pid}
+    except Exception as ex:
+        return {"success": False, "error": str(ex)}
+
+
+@app.get("/api/projects")
+def api_projects():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute("SELECT * FROM projects ORDER BY id DESC")]
+        conn.close()
+        return {"projects": rows, "statuses": PROJECT_STATUSES}
+    except Exception as ex:
+        return {"projects": [], "statuses": PROJECT_STATUSES, "error": str(ex)}
+
+
+@app.post("/api/project/status")
+def api_project_status(s: ProjStatusIn):
+    from datetime import datetime as _dt
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        r = conn.execute("SELECT company_name FROM projects WHERE id=?", (s.id,)).fetchone()
+        sets, args = [], []
+        if s.status is not None:
+            sets.append("status=?"); args.append(s.status)
+        if s.progress is not None:
+            sets.append("progress=?"); args.append(s.progress)
+        sets.append("updated_at=?"); args.append(_dt.now().isoformat(timespec="seconds"))
+        args.append(s.id)
+        conn.execute(f"UPDATE projects SET {','.join(sets)} WHERE id=?", args)
+        conn.commit()
+        conn.close()
+        _log_activity("project", f"Project {s.status or 'updated'}", (r["company_name"] if r else ""))
+        return {"success": True}
+    except Exception as ex:
+        return {"success": False, "error": str(ex)}
+
+
+@app.post("/api/project/delete")
+def api_project_delete(d: IdIn):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("DELETE FROM projects WHERE id=?", (d.id,))
+        conn.commit()
+        conn.close()
+        return {"success": True}
+    except Exception as ex:
+        return {"success": False, "error": str(ex)}
 
 
 # ── Google Drive OAuth ────────────────────────────────────────────────────

@@ -141,6 +141,21 @@ tbody tr:hover{background:var(--panel2)}
 .banner{background:linear-gradient(90deg,var(--redsoft),transparent);border:1px solid var(--line2);
   border-left:3px solid var(--red);border-radius:11px;padding:13px 17px;font-size:.78rem;color:var(--muted);margin-bottom:22px}
 .banner b{color:var(--txt)}
+/* pipeline */
+.pipe-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.pipe-row .nm{width:78px;font-size:.78rem;font-weight:700;text-transform:capitalize}
+.pipe-row .track{flex:1;height:26px;background:var(--bg2);border-radius:7px;overflow:hidden}
+.pipe-row .fill{height:100%;border-radius:7px;min-width:3px;display:flex;align-items:center;padding-left:10px;
+  font-size:.72rem;font-weight:800;color:#fff;transition:.5s}
+.pipe-row .vv{width:62px;text-align:right;font-size:.72rem;color:var(--muted);font-weight:700}
+/* activity feed */
+.act{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+.act:last-child{border:none}
+.act .ai{width:31px;height:31px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.act .ai svg{width:15px;height:15px;stroke-width:2;fill:none}
+.act .at{font-size:.8rem;font-weight:600;line-height:1.2}
+.act .ad{font-size:.72rem;color:var(--muted);margin-top:2px}
+.act .atime{margin-left:auto;font-size:.66rem;color:var(--muted2);white-space:nowrap;font-weight:600}
 @media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.tools{grid-template-columns:repeat(4,1fr)}.grid2{grid-template-columns:1fr}}
 @media(max-width:760px){.sidebar{display:none}.kpis{grid-template-columns:repeat(2,1fr)}.tools{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -164,9 +179,9 @@ tbody tr:hover{background:var(--panel2)}
     <a href="/viewer"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>Database</a>
     <a href="/price-master" data-admin-only><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Price Master</a>
 
-    <div class="nav-h">CRM <span style="font-size:.58rem">· coming soon</span></div>
-    <a class="soon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries<span class="soon-pill">Soon</span></a>
-    <a class="soon"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects<span class="soon-pill">Soon</span></a>
+    <div class="nav-h">CRM</div>
+    <a href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
+    <a href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
     <a class="soon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients<span class="soon-pill">Soon</span></a>
     <a class="soon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports<span class="soon-pill">Soon</span></a>
   </nav>
@@ -204,8 +219,21 @@ tbody tr:hover{background:var(--panel2)}
     <div class="sec-label" id="tools">Quick Costing Tools</div>
     <div class="tools" id="tools-grid"></div>
 
+    <!-- Pipeline + Activity -->
+    <div class="grid2" style="margin-top:6px">
+      <div class="panel">
+        <div class="ph"><div><h3>Sales Pipeline</h3><div class="ph-sub">Enquiries by stage</div></div>
+          <a class="btn" href="/enquiries" style="font-size:.72rem;padding:7px 13px">Manage →</a></div>
+        <div id="pipeline"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h3>Recent Activity</h3><div class="ph-sub">Latest across quotes &amp; CRM</div></div></div>
+        <div id="activity"></div>
+      </div>
+    </div>
+
     <!-- Recent + Products -->
-    <div class="grid2">
+    <div class="grid2" style="margin-top:18px">
       <div class="panel" id="recent">
         <div class="ph"><div><h3>Recent Quotations</h3><div class="ph-sub">Last 12 generated offers</div></div></div>
         <div id="recent-wrap"></div>
@@ -247,6 +275,9 @@ const ICONS = {
   trend:'<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
   avg:'<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/>',
   users:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/>',
+  funnel:'<path d="M3 4h18l-7 9v5l-4 2v-7z"/>',
+  box:'<path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 };
 function inr(n){
   n = Number(n)||0;
@@ -262,6 +293,22 @@ function fmtDate(iso){
          d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 function mLabel(ym){ const [y,m]=ym.split('-'); return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]; }
+function relTime(iso){
+  if(!iso) return '';
+  const d=new Date(iso); if(isNaN(d)) return '';
+  const s=(Date.now()-d.getTime())/1000;
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  if(s<604800) return Math.floor(s/86400)+'d ago';
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+}
+const STAGE_COLOR={new:'#3b82f6',qualified:'#f59e0b',quoted:'#a855f7',won:'#22c55e',lost:'#64748b'};
+const A_ICON={
+  quote:['#22c55e','<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
+  enquiry:['#3b82f6','<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'],
+  project:['#14b8a6','<path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/>'],
+};
 
 document.getElementById('today').textContent =
   new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
@@ -293,11 +340,11 @@ function kpiCard(ic,color,val,label,sub){
 fetch('/api/dashboard').then(r=>r.json()).then(d=>{
   const k = d.kpis||{};
   document.getElementById('kpis').innerHTML = [
-    kpiCard('doc','#3b82f6', k.total_quotes||0, 'Total Quotations', 'all time'),
-    kpiCard('cal','#14b8a6', k.month_quotes||0, 'This Month', d.month_label||''),
-    kpiCard('rupee','#22c55e', inr(k.total_value), 'Total Quoted Value', 'all time'),
-    kpiCard('trend','#a855f7', inr(k.month_value), 'Quoted This Month', d.month_label||''),
-    kpiCard('avg','#f59e0b', inr(k.avg_value), 'Avg Quote Value', 'per offer'),
+    kpiCard('funnel','#3b82f6', k.open_enquiries||0, 'Open Enquiries', 'in the pipeline'),
+    kpiCard('box','#14b8a6', k.active_projects||0, 'Active Projects', 'in execution'),
+    kpiCard('doc','#a855f7', k.total_quotes||0, 'Quotations', (k.month_quotes||0)+' this month'),
+    kpiCard('rupee','#22c55e', inr(k.total_value), 'Quoted Value', inr(k.month_value)+' this month'),
+    kpiCard('clock','#f59e0b', k.pending_rfq||0, 'Pending RFQ', 'awaiting quote'),
     kpiCard('users','#ec4899', k.companies||0, 'Clients', 'unique companies'),
   ].join('');
 
@@ -346,6 +393,24 @@ fetch('/api/dashboard').then(r=>r.json()).then(d=>{
       <div class="bar-track"><div class="bar" style="height:${h}%"><title>${m.month}: ${inr(m.value)} · ${m.count} offers</title></div></div>
       <div class="bar-lbl">${mLabel(m.month)}</div></div>`;
   }).join('');
+
+  // sales pipeline
+  const pipe = d.pipeline||[];
+  const pmax = Math.max(1, ...pipe.map(p=>p.count));
+  document.getElementById('pipeline').innerHTML = pipe.some(p=>p.count>0) ? pipe.map(p=>`
+    <div class="pipe-row"><span class="nm">${p.stage}</span>
+      <div class="track"><div class="fill" style="width:${Math.max(3,p.count/pmax*100)}%;background:${STAGE_COLOR[p.stage]||'#888'}">${p.count||''}</div></div>
+      <span class="vv">${p.value>0?inr(p.value):''}</span></div>`).join('')
+    : `<div class="empty"><b>No enquiries yet</b>Add enquiries from the Enquiries page to build your pipeline.</div>`;
+
+  // activity feed
+  const acts = d.activity||[];
+  document.getElementById('activity').innerHTML = acts.length ? acts.map(a=>{
+    const [col,ic]=A_ICON[a.kind]||['#8b97a8',''];
+    return `<div class="act"><div class="ai" style="background:${col}22"><svg viewBox="0 0 24 24" stroke="${col}" fill="none">${ic}</svg></div>
+      <div><div class="at">${a.title||''}</div><div class="ad">${a.detail||''}</div></div>
+      <div class="atime">${relTime(a.ts)}</div></div>`;
+  }).join('') : `<div class="empty"><b>No activity yet</b>Quotes and CRM updates appear here.</div>`;
 }).catch(e=>{
   document.getElementById('kpis').innerHTML = `<div class="empty" style="grid-column:1/-1"><b>Couldn't load dashboard</b>${e}</div>`;
 });

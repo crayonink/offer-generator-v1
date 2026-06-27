@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON — Enquiries</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d1117;--bg2:#0a0e14;--panel:#151c28;--panel2:#1b2433;--line:#222c3c;--line2:#2a3547;
+  --txt:#e8edf4;--muted:#8b97a8;--muted2:#5c6878;--red:#e1232a;--redsoft:rgba(225,35,42,.14);
+  --blue:#3b82f6;--teal:#14b8a6;--green:#22c55e;--purple:#a855f7;--amber:#f59e0b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh}
+a{text-decoration:none;color:inherit}
+/* sidebar */
+.sidebar{width:236px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.brand{display:flex;align-items:center;gap:11px;padding:0 20px 20px;border-bottom:1px solid var(--line)}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:var(--red);display:flex;align-items:center;
+  justify-content:center;font-weight:900;font-size:1.15rem;color:#fff;box-shadow:0 3px 12px rgba(225,35,42,.45)}
+.brand .bn{font-weight:800;font-size:.96rem}.brand .bs{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.nav{flex:1;padding:14px 12px}.nav-h{font-size:.64rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted2);font-weight:700;padding:14px 12px 7px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:.86rem;font-weight:600;color:var(--muted);margin-bottom:2px;transition:.13s;position:relative}
+.nav a svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.nav a:hover{background:var(--panel);color:var(--txt)}
+.nav a.active{background:var(--redsoft);color:#fff}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;background:var(--red);border-radius:0 3px 3px 0}
+.side-foot{padding:12px 18px;border-top:1px solid var(--line)}
+/* main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 30px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:rgba(13,17,23,.85);backdrop-filter:blur(12px);z-index:20}
+.topbar h1{font-size:1.32rem;font-weight:800}.topbar .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.btn{font-size:.78rem;font-weight:700;padding:9px 16px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--txt);cursor:pointer;transition:.13s}
+.btn:hover{background:var(--panel2)}.btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{filter:brightness(1.08)}
+.content{padding:24px 30px 50px;max-width:1500px;width:100%}
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{padding:8px 16px;font-size:.78rem;font-weight:700;background:none;border:none;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--redsoft);color:#fff}
+.spacer{flex:1}
+/* form card */
+.formcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px;display:none}
+.formcard.open{display:block}
+.formcard h3{font-size:1rem;margin-bottom:16px}
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.wide{grid-column:span 2}
+.field label{font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--line2);border-radius:8px;
+  padding:9px 11px;color:var(--txt);font-size:.84rem;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--red)}
+.form-actions{display:flex;gap:10px;margin-top:18px}
+/* kanban */
+.kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start}
+.col{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:120px}
+.col-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 3px}
+.col-h .nm{font-size:.76rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px}
+.col-h .ct{font-size:.7rem;font-weight:800;color:var(--muted);background:var(--panel);padding:2px 8px;border-radius:20px}
+.col.s-new .nm{color:var(--blue)}.col.s-qualified .nm{color:var(--amber)}.col.s-quoted .nm{color:var(--purple)}
+.col.s-won .nm{color:var(--green)}.col.s-lost .nm{color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;transition:.13s}
+.card:hover{border-color:var(--line2)}
+.card .co{font-weight:700;font-size:.85rem}
+.card .pr{font-size:.74rem;color:var(--muted);margin-top:2px}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.tag{font-size:.64rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);color:var(--muted)}
+.tag.val{color:var(--green)}
+.card .acts{display:flex;align-items:center;gap:6px;margin-top:11px;border-top:1px solid var(--line);padding-top:9px}
+.ibtn{width:26px;height:26px;border-radius:7px;border:1px solid var(--line2);background:var(--bg);color:var(--muted);
+  cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;transition:.12s}
+.ibtn:hover{background:var(--panel2);color:var(--txt)}.ibtn:disabled{opacity:.3;cursor:not-allowed}
+.ibtn.conv{margin-left:auto;width:auto;padding:0 9px;font-size:.68rem;font-weight:700;gap:4px;color:var(--green)}
+.ibtn.del:hover{background:var(--redsoft);color:#ff6b70;border-color:var(--red)}
+.empty{text-align:center;color:var(--muted2);font-size:.74rem;padding:16px 8px}
+/* list table */
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th{text-align:left;font-size:.66rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2);font-weight:700;padding:12px;background:var(--bg2)}
+td{padding:12px;font-size:.82rem;border-top:1px solid var(--line)}
+.hide{display:none}
+@media(max-width:1100px){.kanban{grid-template-columns:repeat(2,1fr)}.fg{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.sidebar{display:none}.kanban{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/"><div class="logo">E</div><div><div class="bn">ENCON</div><div class="bs">Thermal Engineers</div></div></a>
+  <nav class="nav">
+    <div class="nav-h">Main</div>
+    <a href="/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a class="active" href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
+    <a href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
+    <a href="#" onclick="location.href='/#tools';return false"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg>Costing Tools</a>
+    <a href="/pricelist"><svg viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Pricing</a>
+  </nav>
+  <div class="side-foot"><a class="btn" href="/logout" style="display:block;text-align:center">Logout</a></div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div><h1>Enquiries</h1><div class="sub">Track every lead from first contact to won</div></div>
+    <button class="btn red" onclick="toggleForm()">+ New Enquiry</button>
+  </header>
+  <div class="content">
+
+    <div class="formcard" id="formcard">
+      <h3 id="form-title">New Enquiry</h3>
+      <input type="hidden" id="f-id"/>
+      <div class="fg">
+        <div class="field wide"><label>Company *</label><input id="f-company" placeholder="Client company"/></div>
+        <div class="field"><label>Contact Person</label><input id="f-contact"/></div>
+        <div class="field"><label>Owner</label><input id="f-owner" placeholder="Sales person"/></div>
+        <div class="field"><label>Email</label><input id="f-email"/></div>
+        <div class="field"><label>Phone</label><input id="f-phone"/></div>
+        <div class="field"><label>Location</label>
+          <select id="f-location"><option value="">—</option><option>Goa</option><option>Vadodara</option><option>Faridabad</option></select></div>
+        <div class="field"><label>Source</label>
+          <select id="f-source"><option value="">—</option><option>Email</option><option>Phone</option><option>Website</option><option>Referral</option><option>Exhibition</option></select></div>
+        <div class="field wide"><label>Product Interest</label><input id="f-product" placeholder="e.g. VLPH 12T / Blower / Recuperator"/></div>
+        <div class="field"><label>Est. Value (₹)</label><input id="f-value" type="number" value="0"/></div>
+        <div class="field"><label>Stage</label>
+          <select id="f-stage"><option value="new">New</option><option value="qualified">Qualified</option><option value="quoted">Quoted</option><option value="won">Won</option><option value="lost">Lost</option></select></div>
+        <div class="field wide" style="grid-column:span 4"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn red" onclick="saveEnquiry()">Save Enquiry</button>
+        <button class="btn" onclick="toggleForm(false)">Cancel</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="seg"><button id="v-board" class="on" onclick="setView('board')">Pipeline</button><button id="v-list" onclick="setView('list')">List</button></div>
+      <div class="spacer"></div>
+      <div class="sub" id="count-note" style="font-size:.78rem;color:var(--muted)"></div>
+    </div>
+
+    <div id="board"></div>
+    <div id="list" class="hide"></div>
+  </div>
+</div>
+
+<script>
+const STAGES=[["new","New"],["qualified","Qualified"],["quoted","Quoted"],["won","Won"],["lost","Lost"]];
+const STAGE_KEYS=STAGES.map(s=>s[0]);
+let DATA=[];
+function inr(n){n=Number(n)||0;if(n>=1e7)return"₹"+(n/1e7).toFixed(2)+"Cr";if(n>=1e5)return"₹"+(n/1e5).toFixed(2)+"L";if(n>=1e3)return"₹"+(n/1e3).toFixed(0)+"k";return"₹"+n}
+function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function load(){
+  fetch('/api/enquiries').then(r=>r.json()).then(d=>{DATA=d.enquiries||[];render()});
+}
+function render(){
+  document.getElementById('count-note').textContent = DATA.length+" enquiries · "+DATA.filter(e=>e.stage!=='won'&&e.stage!=='lost').length+" open";
+  // board
+  document.getElementById('board').innerHTML = `<div class="kanban">`+STAGES.map(([k,lbl])=>{
+    const items=DATA.filter(e=>e.stage===k);
+    return `<div class="col s-${k}"><div class="col-h"><span class="nm">${lbl}</span><span class="ct">${items.length}</span></div>
+      ${items.map(card).join('')||'<div class="empty">—</div>'}</div>`;
+  }).join('')+`</div>`;
+  // list
+  document.getElementById('list').innerHTML = DATA.length?`<table><thead><tr><th>No.</th><th>Company</th><th>Product</th><th>Owner</th><th>Location</th><th>Stage</th><th style="text-align:right">Est. Value</th><th></th></tr></thead><tbody>`+
+    DATA.map(e=>`<tr><td style="font-family:monospace;font-size:.74rem;color:var(--muted)">${e.enquiry_no||''}</td>
+      <td style="font-weight:700">${esc(e.company_name)}</td><td>${esc(e.product)||'—'}</td><td>${esc(e.owner)||'—'}</td>
+      <td>${esc(e.location)||'—'}</td><td><span class="tag">${e.stage}</span></td><td style="text-align:right;font-weight:700">${inr(e.value_est)}</td>
+      <td><button class="ibtn" onclick="editEnq(${e.id})">✎</button></td></tr>`).join('')+`</tbody></table>`
+    :`<div class="empty" style="padding:40px">No enquiries yet. Click “+ New Enquiry”.</div>`;
+}
+function card(e){
+  const idx=STAGE_KEYS.indexOf(e.stage);
+  return `<div class="card">
+    <div class="co">${esc(e.company_name)}</div>
+    <div class="pr">${esc(e.product)||'—'}</div>
+    <div class="meta">
+      ${e.value_est>0?`<span class="tag val">${inr(e.value_est)}</span>`:''}
+      ${e.location?`<span class="tag">${esc(e.location)}</span>`:''}
+      ${e.owner?`<span class="tag">${esc(e.owner)}</span>`:''}
+    </div>
+    <div class="acts">
+      <button class="ibtn" ${idx<=0?'disabled':''} title="Back" onclick="move(${e.id},-1)">◀</button>
+      <button class="ibtn" ${idx>=4?'disabled':''} title="Advance" onclick="move(${e.id},1)">▶</button>
+      <button class="ibtn" title="Edit" onclick="editEnq(${e.id})">✎</button>
+      ${e.stage==='won'?`<button class="ibtn conv" onclick="convert(${e.id})" title="Create project">⤳ Project</button>`:`<button class="ibtn del" style="margin-left:auto" title="Delete" onclick="del(${e.id})">✕</button>`}
+    </div></div>`;
+}
+function move(id,dir){
+  const e=DATA.find(x=>x.id===id); if(!e)return;
+  const idx=STAGE_KEYS.indexOf(e.stage)+dir; if(idx<0||idx>4)return;
+  fetch('/api/enquiry/stage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,stage:STAGE_KEYS[idx]})}).then(()=>load());
+}
+function del(id){ if(!confirm('Delete this enquiry?'))return;
+  fetch('/api/enquiry/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).then(()=>load()); }
+function convert(id){ if(!confirm('Create a project from this won enquiry?'))return;
+  fetch('/api/enquiry/convert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).then(r=>r.json()).then(d=>{
+    if(d.success){alert('Project '+d.project_no+' created.');load();}else alert('Error: '+d.error);}); }
+
+const F=id=>document.getElementById('f-'+id);
+function toggleForm(open){
+  const c=document.getElementById('formcard');
+  const show = open===undefined ? !c.classList.contains('open') : open;
+  c.classList.toggle('open',show);
+  if(show && !F('id').value){document.getElementById('form-title').textContent='New Enquiry';['company','contact','owner','email','phone','product','notes'].forEach(k=>F(k).value='');F('value').value=0;F('stage').value='new';F('location').value='';F('source').value='';}
+}
+function editEnq(id){
+  const e=DATA.find(x=>x.id===id); if(!e)return;
+  F('id').value=e.id;F('company').value=e.company_name||'';F('contact').value=e.contact_name||'';F('owner').value=e.owner||'';
+  F('email').value=e.email||'';F('phone').value=e.phone||'';F('location').value=e.location||'';F('source').value=e.source||'';
+  F('product').value=e.product||'';F('value').value=e.value_est||0;F('stage').value=e.stage||'new';F('notes').value=e.notes||'';
+  document.getElementById('form-title').textContent='Edit '+(e.enquiry_no||'Enquiry');
+  document.getElementById('formcard').classList.add('open');window.scrollTo({top:0,behavior:'smooth'});
+}
+function saveEnquiry(){
+  const company=F('company').value.trim(); if(!company){alert('Company is required');return;}
+  const body={id:F('id').value?+F('id').value:null,company_name:company,contact_name:F('contact').value,owner:F('owner').value,
+    email:F('email').value,phone:F('phone').value,location:F('location').value,source:F('source').value,
+    product:F('product').value,value_est:+F('value').value||0,stage:F('stage').value,notes:F('notes').value};
+  fetch('/api/enquiry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()).then(d=>{
+    if(d.success){F('id').value='';toggleForm(false);load();}else alert('Error: '+d.error);});
+}
+function setView(v){
+  document.getElementById('v-board').classList.toggle('on',v==='board');
+  document.getElementById('v-list').classList.toggle('on',v==='list');
+  document.getElementById('board').classList.toggle('hide',v!=='board');
+  document.getElementById('list').classList.toggle('hide',v!=='list');
+}
+load();
+</script>
+</body>
+</html>

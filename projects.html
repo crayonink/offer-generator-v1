@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON — Projects</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d1117;--bg2:#0a0e14;--panel:#151c28;--panel2:#1b2433;--line:#222c3c;--line2:#2a3547;
+  --txt:#e8edf4;--muted:#8b97a8;--muted2:#5c6878;--red:#e1232a;--redsoft:rgba(225,35,42,.14);
+  --blue:#3b82f6;--teal:#14b8a6;--green:#22c55e;--purple:#a855f7;--amber:#f59e0b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh}
+a{text-decoration:none;color:inherit}
+.sidebar{width:236px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.brand{display:flex;align-items:center;gap:11px;padding:0 20px 20px;border-bottom:1px solid var(--line)}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.15rem;color:#fff;box-shadow:0 3px 12px rgba(225,35,42,.45)}
+.brand .bn{font-weight:800;font-size:.96rem}.brand .bs{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.nav{flex:1;padding:14px 12px}.nav-h{font-size:.64rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted2);font-weight:700;padding:14px 12px 7px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:.86rem;font-weight:600;color:var(--muted);margin-bottom:2px;transition:.13s;position:relative}
+.nav a svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.nav a:hover{background:var(--panel);color:var(--txt)}
+.nav a.active{background:var(--redsoft);color:#fff}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;background:var(--red);border-radius:0 3px 3px 0}
+.side-foot{padding:12px 18px;border-top:1px solid var(--line)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 30px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(13,17,23,.85);backdrop-filter:blur(12px);z-index:20}
+.topbar h1{font-size:1.32rem;font-weight:800}.topbar .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.btn{font-size:.78rem;font-weight:700;padding:9px 16px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--txt);cursor:pointer;transition:.13s}
+.btn:hover{background:var(--panel2)}.btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{filter:brightness(1.08)}
+.content{padding:24px 30px 50px;max-width:1500px;width:100%}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+.stat .v{font-size:1.5rem;font-weight:800}.stat .l{font-size:.74rem;color:var(--muted);font-weight:600;margin-top:3px}
+.formcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px;display:none}
+.formcard.open{display:block}.formcard h3{font-size:1rem;margin-bottom:16px}
+.fg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.field{display:flex;flex-direction:column;gap:5px}.field.wide{grid-column:span 2}
+.field label{font-size:.7rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;color:var(--txt);font-size:.84rem;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--red)}
+.form-actions{display:flex;gap:10px;margin-top:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px}
+.pcard .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.pcard .no{font-family:monospace;font-size:.7rem;color:var(--muted)}
+.pcard .ti{font-weight:800;font-size:1rem;margin-top:2px}
+.pcard .co{font-size:.8rem;color:var(--muted);margin-top:2px}
+.badge{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:4px 9px;border-radius:7px;white-space:nowrap}
+.b-active{background:rgba(34,197,94,.16);color:#4ade80}.b-on_hold{background:rgba(245,158,11,.16);color:#fbbf24}
+.b-completed{background:rgba(59,130,246,.16);color:#60a5fa}.b-cancelled{background:rgba(139,151,168,.16);color:#9aa6b6}
+.pmeta{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 12px;font-size:.78rem}
+.pmeta b{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);font-weight:700;margin-bottom:2px}
+.prog{margin-top:6px}
+.prog-bar{height:7px;background:var(--bg2);border-radius:6px;overflow:hidden;margin-top:5px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--red),#ff6b70);border-radius:6px;transition:.3s}
+.prog-row{display:flex;align-items:center;justify-content:space-between;font-size:.72rem;color:var(--muted);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--red);margin-top:9px}
+.pacts{display:flex;align-items:center;gap:8px;margin-top:14px;border-top:1px solid var(--line);padding-top:13px}
+.pacts select{flex:1;background:var(--bg);border:1px solid var(--line2);border-radius:7px;padding:6px 9px;color:var(--txt);font-size:.76rem;font-weight:600}
+.ibtn{width:30px;height:30px;border-radius:7px;border:1px solid var(--line2);background:var(--bg);color:var(--muted);cursor:pointer;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+.ibtn:hover{background:var(--panel2);color:var(--txt)}
+.ibtn.del:hover{background:var(--redsoft);color:#ff6b70;border-color:var(--red)}
+.empty{text-align:center;color:var(--muted);font-size:.85rem;padding:50px 10px}
+@media(max-width:1100px){.fg{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.sidebar{display:none}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/"><div class="logo">E</div><div><div class="bn">ENCON</div><div class="bs">Thermal Engineers</div></div></a>
+  <nav class="nav">
+    <div class="nav-h">Main</div>
+    <a href="/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
+    <a class="active" href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
+    <a href="#" onclick="location.href='/#tools';return false"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg>Costing Tools</a>
+    <a href="/pricelist"><svg viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Pricing</a>
+  </nav>
+  <div class="side-foot"><a class="btn" href="/logout" style="display:block;text-align:center">Logout</a></div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div><h1>Projects</h1><div class="sub">Live execution status of won orders</div></div>
+    <button class="btn red" onclick="toggleForm()">+ New Project</button>
+  </header>
+  <div class="content">
+    <div class="stats" id="stats"></div>
+
+    <div class="formcard" id="formcard">
+      <h3 id="form-title">New Project</h3>
+      <input type="hidden" id="f-id"/>
+      <div class="fg">
+        <div class="field wide"><label>Company *</label><input id="f-company"/></div>
+        <div class="field wide"><label>Project Title</label><input id="f-title" placeholder="e.g. VLPH 12T supply & commissioning"/></div>
+        <div class="field"><label>Product</label><input id="f-product"/></div>
+        <div class="field"><label>Order Value (₹)</label><input id="f-value" type="number" value="0"/></div>
+        <div class="field"><label>Owner / PM</label><input id="f-owner"/></div>
+        <div class="field"><label>Status</label>
+          <select id="f-status"><option value="active">Active</option><option value="on_hold">On Hold</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
+        <div class="field"><label>Start Date</label><input id="f-start" type="date"/></div>
+        <div class="field"><label>Target Date</label><input id="f-target" type="date"/></div>
+        <div class="field"><label>Progress %</label><input id="f-progress" type="number" min="0" max="100" value="0"/></div>
+        <div class="field wide" style="grid-column:span 4"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn red" onclick="saveProject()">Save Project</button>
+        <button class="btn" onclick="toggleForm(false)">Cancel</button>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<script>
+const STATUSES=[["active","Active"],["on_hold","On Hold"],["completed","Completed"],["cancelled","Cancelled"]];
+let DATA=[];
+function inr(n){n=Number(n)||0;if(n>=1e7)return"₹"+(n/1e7).toFixed(2)+" Cr";if(n>=1e5)return"₹"+(n/1e5).toFixed(2)+" L";if(n>=1e3)return"₹"+(n/1e3).toFixed(0)+"k";return"₹"+n}
+function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function load(){ fetch('/api/projects').then(r=>r.json()).then(d=>{DATA=d.projects||[];render()}); }
+function render(){
+  const active=DATA.filter(p=>p.status==='active').length, done=DATA.filter(p=>p.status==='completed').length;
+  const val=DATA.filter(p=>p.status!=='cancelled').reduce((s,p)=>s+(+p.value||0),0);
+  document.getElementById('stats').innerHTML=[
+    ['Total Projects',DATA.length],['Active',active],['Completed',done],['Order Book',inr(val)]
+  ].map(([l,v])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  document.getElementById('grid').innerHTML = DATA.length? DATA.map(pcard).join('')
+    : `<div class="empty" style="grid-column:1/-1"><b>No projects yet.</b><br>Create one here, or convert a won enquiry into a project.</div>`;
+}
+function pcard(p){
+  const pr=Math.max(0,Math.min(100,+p.progress||0));
+  return `<div class="pcard">
+    <div class="top"><div><div class="no">${p.project_no||''}</div><div class="ti">${esc(p.title)||esc(p.product)||'Project'}</div><div class="co">${esc(p.company_name)}</div></div>
+      <span class="badge b-${p.status}">${(p.status||'').replace('_',' ')}</span></div>
+    <div class="pmeta">
+      <div><b>Value</b>${inr(p.value)}</div>
+      <div><b>Owner</b>${esc(p.owner)||'—'}</div>
+      <div><b>Target</b>${p.target_date||'—'}</div>
+    </div>
+    <div class="prog"><div class="prog-row"><span>Progress</span><span>${pr}%</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pr}%"></div></div>
+      <input type="range" min="0" max="100" value="${pr}" onchange="setProgress(${p.id},this.value)"/></div>
+    <div class="pacts">
+      <select onchange="setStatus(${p.id},this.value)">${STATUSES.map(([k,l])=>`<option value="${k}" ${p.status===k?'selected':''}>${l}</option>`).join('')}</select>
+      <button class="ibtn" title="Edit" onclick="editProj(${p.id})">✎</button>
+      <button class="ibtn del" title="Delete" onclick="del(${p.id})">✕</button>
+    </div></div>`;
+}
+function setStatus(id,status){ fetch('/api/project/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}).then(()=>load()); }
+function setProgress(id,progress){ fetch('/api/project/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,progress:+progress})}).then(()=>load()); }
+function del(id){ if(!confirm('Delete this project?'))return; fetch('/api/project/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).then(()=>load()); }
+
+const F=id=>document.getElementById('f-'+id);
+function toggleForm(open){
+  const c=document.getElementById('formcard');
+  const show=open===undefined?!c.classList.contains('open'):open;
+  c.classList.toggle('open',show);
+  if(show && !F('id').value){document.getElementById('form-title').textContent='New Project';['company','title','product','owner','start','target','notes'].forEach(k=>F(k).value='');F('value').value=0;F('progress').value=0;F('status').value='active';}
+}
+function editProj(id){
+  const p=DATA.find(x=>x.id===id); if(!p)return;
+  F('id').value=p.id;F('company').value=p.company_name||'';F('title').value=p.title||'';F('product').value=p.product||'';
+  F('value').value=p.value||0;F('owner').value=p.owner||'';F('status').value=p.status||'active';
+  F('start').value=p.start_date||'';F('target').value=p.target_date||'';F('progress').value=p.progress||0;F('notes').value=p.notes||'';
+  document.getElementById('form-title').textContent='Edit '+(p.project_no||'Project');
+  document.getElementById('formcard').classList.add('open');window.scrollTo({top:0,behavior:'smooth'});
+}
+function saveProject(){
+  const company=F('company').value.trim(); if(!company){alert('Company is required');return;}
+  const body={id:F('id').value?+F('id').value:null,company_name:company,title:F('title').value,product:F('product').value,
+    value:+F('value').value||0,owner:F('owner').value,status:F('status').value,start_date:F('start').value,
+    target_date:F('target').value,progress:+F('progress').value||0,notes:F('notes').value};
+  fetch('/api/project',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()).then(d=>{
+    if(d.success){F('id').value='';toggleForm(false);load();}else alert('Error: '+d.error);});
+}
+load();
+</script>
+</body>
+</html>
