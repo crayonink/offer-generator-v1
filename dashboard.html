@@ -58,21 +58,30 @@
     .pipe-tag.blue{background:#f1f5f9;color:var(--navy);}
     .pipe-tag.green{background:#f1f5f9;color:var(--green);}
 
-    /* ── COSTING TOOLS — bold editorial index (no cards) ── */
-    .tool-list{border-top:2px solid var(--text);margin-bottom:16px;}
-    .tool-row{display:grid;grid-template-columns:84px 1fr auto;align-items:start;column-gap:30px;padding:24px 12px 22px;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;transition:padding-left .2s ease,background .2s ease;}
-    .tool-row:hover{background:#fff;padding-left:24px;}
-    .tool-num{font-size:2.6rem;font-weight:800;line-height:.85;letter-spacing:-.05em;color:#ccd2da;font-variant-numeric:tabular-nums;transition:color .2s ease;}
-    .tool-row:hover .tool-num{color:var(--text);}
-    .tool-main{min-width:0;}
-    .tool-kicker{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);margin-bottom:7px;}
-    .tool-title{font-size:1.45rem;font-weight:800;letter-spacing:-.03em;line-height:1.05;color:var(--text);margin-bottom:9px;}
-    .tool-desc{font-size:.82rem;color:var(--muted);line-height:1.6;max-width:60ch;}
-    .tool-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;align-self:stretch;gap:18px;min-width:130px;text-align:right;}
-    .tool-tag{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);border:1px solid var(--border);padding:5px 10px;white-space:nowrap;}
-    .tool-open{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text);display:inline-flex;align-items:center;gap:9px;white-space:nowrap;}
-    .tool-open .ar{display:inline-block;font-size:1rem;transition:transform .2s ease;}
-    .tool-row:hover .tool-open .ar{transform:translateX(6px);}
+    /* ── COSTING TOOLS — featured hero + grid ── */
+    .tool-featured{display:block;background:#1c1c1c;color:#fff;border-radius:16px;padding:32px 34px;text-decoration:none;margin-bottom:14px;position:relative;overflow:hidden;transition:transform .15s ease,box-shadow .15s ease;}
+    .tool-featured::after{content:'';position:absolute;top:-40%;right:-8%;width:320px;height:320px;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);pointer-events:none;}
+    .tool-featured:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,0,0,.22);}
+    .tf-kicker{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.18em;color:rgba(255,255,255,.5);margin-bottom:12px;}
+    .tf-title{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:12px;}
+    .tf-desc{font-size:.9rem;line-height:1.6;color:rgba(255,255,255,.72);max-width:62ch;margin-bottom:22px;}
+    .tf-foot{display:flex;align-items:center;justify-content:space-between;}
+    .tf-open{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;display:inline-flex;align-items:center;gap:10px;}
+    .tf-open .ar{transition:transform .2s ease;}
+    .tool-featured:hover .tf-open .ar{transform:translateX(6px);}
+    .tf-tag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.25);padding:5px 12px;border-radius:20px;}
+
+    .tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;}
+    .tool-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px 20px 16px;text-decoration:none;color:inherit;display:flex;flex-direction:column;transition:border-color .15s,box-shadow .15s,transform .12s;}
+    .tool-card:hover{border-color:#9ca3af;box-shadow:0 6px 20px rgba(0,0,0,.09);transform:translateY(-2px);}
+    .tc-kicker{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:6px;}
+    .tc-title{font-size:1.05rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;color:var(--text);margin-bottom:7px;}
+    .tc-desc{font-size:.76rem;color:var(--muted);line-height:1.5;flex:1;margin-bottom:14px;}
+    .tc-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:11px;gap:8px;}
+    .tc-open{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+    .tc-open .ar{transition:transform .2s ease;}
+    .tool-card:hover .tc-open .ar{transform:translateX(4px);}
+    .tc-tag{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:3px 8px;border-radius:20px;white-space:nowrap;}
 
     /* ── MANAGEMENT ROWS ── */
     .secondary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:0;}
@@ -141,6 +150,7 @@
       .header-body{flex-direction:column;align-items:flex-start;}
       .header-stats{width:100%;}
       .main{padding:28px 24px 60px;}
+      .tool-grid{grid-template-columns:repeat(2,1fr);}
       .pipeline{flex-direction:column;border-radius:12px;}
       .pipe-step{border-right:none;border-bottom:1.5px solid var(--border);}
       .pipe-step:last-child{border-bottom:none;}
@@ -148,9 +158,8 @@
     }
     @media(max-width:560px){
       .secondary-grid{grid-template-columns:1fr;}
-      .tool-row{grid-template-columns:54px 1fr;row-gap:14px;}
-      .tool-num{font-size:2rem;}
-      .tool-right{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:space-between;align-self:auto;}
+      .tool-grid{grid-template-columns:1fr;}
+      .tf-title{font-size:1.6rem;}
       .header-title{font-size:1.8rem;}
       .header-stats{flex-direction:column;}
       .hstat{border-right:none;border-bottom:1px solid rgba(255,255,255,.08);}
@@ -229,125 +238,95 @@
 
   <!-- Costing Tools -->
   <div class="section-label">Costing Tools</div>
-  <div class="tool-list">
-    <a class="tool-row" href="/costing">
-      <div class="tool-num">01</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Vertical</div>
-        <div class="tool-title">VLPH Costing</div>
-        <div class="tool-desc">Vertical Ladle Pre-Heater — MS structure, HPU, burner, blower, gas train, rotary joint and full instrumentation BOM.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">Natural Gas</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
-      </div>
-    </a>
-    <a class="tool-row" href="/hlph">
-      <div class="tool-num">02</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Horizontal</div>
-        <div class="tool-title">HLPH Costing</div>
-        <div class="tool-desc">Horizontal Ladle Pre-Heater — same full BOM with trolley drive mechanism replacing the swirling assembly.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">Natural Gas</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+  <a class="tool-featured" href="/costing">
+    <div class="tf-kicker">Vertical &middot; Natural Gas</div>
+    <div class="tf-title">VLPH Costing</div>
+    <div class="tf-desc">Vertical Ladle Pre-Heater — MS structure, HPU, burner, blower, gas train, rotary joint and full instrumentation BOM.</div>
+    <div class="tf-foot">
+      <span class="tf-open">Open tool <span class="ar">&rarr;</span></span>
+      <span class="tf-tag">Natural Gas</span>
+    </div>
+  </a>
+  <div class="tool-grid">
+    <a class="tool-card" href="/hlph">
+      <div class="tc-kicker">Horizontal</div>
+      <div class="tc-title">HLPH Costing</div>
+      <div class="tc-desc">Horizontal Ladle Pre-Heater — same full BOM with trolley drive mechanism replacing the swirling assembly.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">Natural Gas</span>
       </div>
     </a>
-    <a class="tool-row" href="/tundish">
-      <div class="tool-num">03</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Tundish</div>
-        <div class="tool-title">Tundish Preheater</div>
-        <div class="tool-desc">Tundish preheater costing — burner, blower, gas train and full instrumentation BOM for steel-making tundish preheating.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">Natural Gas</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/tundish">
+      <div class="tc-kicker">Tundish</div>
+      <div class="tc-title">Tundish Preheater</div>
+      <div class="tc-desc">Burner, blower, gas train and full instrumentation BOM for steel-making tundish preheating.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">Natural Gas</span>
       </div>
     </a>
-    <a class="tool-row" href="/equipment-offer">
-      <div class="tool-num">04</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Stand-alone</div>
-        <div class="tool-title">Equipment Offer</div>
-        <div class="tool-desc">Stand-alone offers for individual equipment — HPU (Hydraulic / Oil Pumping Unit), Blower or Burner. Pick the equipment, fill specs, generate the Word offer.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">HPU / Blower / Burner</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/equipment-offer">
+      <div class="tc-kicker">Stand-alone</div>
+      <div class="tc-title">Equipment Offer</div>
+      <div class="tc-desc">Stand-alone offers for HPU, Blower or Burner — pick the equipment, fill specs, generate the Word offer.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">HPU / Blower / Burner</span>
       </div>
     </a>
-    <a class="tool-row" href="/combined-builder">
-      <div class="tool-num">05</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Multi-equipment</div>
-        <div class="tool-title">Combined Offer</div>
-        <div class="tool-desc">One offer for several equipment — fill customer &amp; terms once, add each equipment as its own section, then generate a single combined offer plus a costing Excel (one sheet per equipment).</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">Customer once</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/combined-builder">
+      <div class="tc-kicker">Multi-equipment</div>
+      <div class="tc-title">Combined Offer</div>
+      <div class="tc-desc">One offer for several equipment — fill customer &amp; terms once, add each as its own section.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">Customer once</span>
       </div>
     </a>
-    <a class="tool-row" href="/recup">
-      <div class="tool-num">06</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Heat Recovery</div>
-        <div class="tool-title">Recuperator</div>
-        <div class="tool-desc">SS304 tube recuperator sizing &mdash; LMTD heat-transfer, pipe count, fabrication BOM. Modelled on USK Exports.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">LMTD</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/recup">
+      <div class="tc-kicker">Heat Recovery</div>
+      <div class="tc-title">Recuperator</div>
+      <div class="tc-desc">SS304 tube recuperator sizing &mdash; LMTD heat-transfer, pipe count, fabrication BOM.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">LMTD</span>
       </div>
     </a>
-    <a class="tool-row" href="/regen">
-      <div class="tool-num">07</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Regenerative</div>
-        <div class="tool-title">Regen Costing</div>
-        <div class="tool-desc">Regenerative burner system costing with heat recovery calculations and recuperator sizing.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">High Efficiency</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/regen">
+      <div class="tc-kicker">Regenerative</div>
+      <div class="tc-title">Regen Costing</div>
+      <div class="tc-desc">Regenerative burner system costing with heat recovery calculations and recuperator sizing.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">High Efficiency</span>
       </div>
     </a>
-    <a class="tool-row" href="/btf">
-      <div class="tool-num">08</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Furnace</div>
-        <div class="tool-title">Box Type Furnace</div>
-        <div class="tool-desc">10 Ton reheating furnace — ON/OFF or Mass Flow combustion, recuperator, structure, refractory and full costing.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">Dual Mode</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/btf">
+      <div class="tc-kicker">Furnace</div>
+      <div class="tc-title">Box Type Furnace</div>
+      <div class="tc-desc">10 Ton reheating furnace — ON/OFF or Mass Flow combustion, recuperator, structure, refractory.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">Dual Mode</span>
       </div>
     </a>
-    <a class="tool-row" href="/snsf-brf">
-      <div class="tool-num">09</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Billet Reheat</div>
-        <div class="tool-title">SNSF BRF 30 Ton</div>
-        <div class="tool-desc">30 Ton billet reheating furnace — dual fuel burners, mass flow control, per-item markups with optional NG and client scope.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">Dual Fuel</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/snsf-brf">
+      <div class="tc-kicker">Billet Reheat</div>
+      <div class="tc-title">SNSF BRF 30 Ton</div>
+      <div class="tc-desc">30 Ton billet reheating furnace — dual fuel burners, mass flow control, per-item markups.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">Dual Fuel</span>
       </div>
     </a>
-    <a class="tool-row" href="/pricelist">
-      <div class="tool-num">10</div>
-      <div class="tool-main">
-        <div class="tool-kicker">Live Prices</div>
-        <div class="tool-title">Pricelist Viewer</div>
-        <div class="tool-desc">Live-computed selling prices for all products — HPU, burners, blowers, recuperator, rad heat, LPH and gas burner parts.</div>
-      </div>
-      <div class="tool-right">
-        <span class="tool-tag">All Products</span>
-        <span class="tool-open">Open <span class="ar">&rarr;</span></span>
+    <a class="tool-card" href="/pricelist">
+      <div class="tc-kicker">Live Prices</div>
+      <div class="tc-title">Pricelist Viewer</div>
+      <div class="tc-desc">Live-computed selling prices for all products — HPU, burners, blowers, recuperator, LPH and gas parts.</div>
+      <div class="tc-foot">
+        <span class="tc-open">Open <span class="ar">&rarr;</span></span>
+        <span class="tc-tag">All Products</span>
       </div>
     </a>
   </div>
