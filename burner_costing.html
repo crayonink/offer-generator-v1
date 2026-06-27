@@ -555,39 +555,50 @@ async function generateOffer() {
 }
 
 // ── Sticky Step-1 fields (shared with VLPH/HLPH/HPU forms) ───────────────────
-const _STICKY_FIELDS = [
-  'c-salutation','c-name','c-email','c-phone','c-company','c-designation','c-address',
-  'c-city','c-state','c-pin','c-gstin','c-ref','c-location','c-subject',
-  'c-marketing-salutation','c-marketing','c-marketing-email','c-marketing-phone',
-  'c-technical-salutation','c-technical','c-technical-email','c-technical-phone',
-];
-const _STICKY_KEY = 'encon_form_step1';
+// Persist EVERY field (customer + commercial + T&C + burner type/model) so
+// values survive Back / switching equipment. Shared key → customer block
+// carries across the HPU / Blower / Burner forms.
+const _STICKY_KEY = 'encon_equipment_form';
+const _STICKY_SKIP = new Set(['c-subject']);
+let _stickyData = {};
 function _saveSticky() {
   const obj = {};
-  for (const id of _STICKY_FIELDS) { const el = document.getElementById(id); if (el) obj[id] = el.value; }
+  document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+    if (!el.id || el.type === 'file') return;
+    obj[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
+  });
   try { localStorage.setItem(_STICKY_KEY, JSON.stringify(obj)); } catch (e) {}
 }
 function _loadSticky() {
   try {
     const raw = localStorage.getItem(_STICKY_KEY); if (!raw) return;
-    const obj = JSON.parse(raw);
-    for (const id of _STICKY_FIELDS) {
-      if (id === 'c-subject') continue;
-      const el = document.getElementById(id); if (el && obj[id] != null) el.value = obj[id];
-    }
+    _stickyData = JSON.parse(raw);
+    Object.keys(_stickyData).forEach(id => {
+      if (_STICKY_SKIP.has(id)) return;
+      const el = document.getElementById(id); if (!el) return;
+      if (el.type === 'checkbox') el.checked = _stickyData[id];
+      else if (_stickyData[id] != null) el.value = _stickyData[id];
+    });
+    if (_stickyData['c-ref']) _refDirty = true;
   } catch (e) {}
 }
 document.addEventListener('DOMContentLoaded', () => {
   _loadSticky();
-  for (const id of _STICKY_FIELDS) {
-    const el = document.getElementById(id); if (!el) continue;
-    el.addEventListener('input', _saveSticky);
-    el.addEventListener('change', _saveSticky);
-  }
+  document.addEventListener('input', _saveSticky, true);
+  document.addEventListener('change', _saveSticky, true);
   document.getElementById('burner_group').addEventListener('change', _onGroupChange);
   document.getElementById('burner_model').addEventListener('change', _onModelChange);
   _generateRef();
-  _loadCatalog();
+  Promise.resolve(_loadCatalog()).then(() => {
+    if (_stickyData['burner_group']) {
+      const ge = document.getElementById('burner_group');
+      ge.value = _stickyData['burner_group']; _onGroupChange();
+    }
+    if (_stickyData['burner_model']) {
+      const me = document.getElementById('burner_model');
+      if (me) { me.value = _stickyData['burner_model']; _onModelChange(); }
+    }
+  }).catch(() => {});
 });
 </script>
 </body>
