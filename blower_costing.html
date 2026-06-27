@@ -657,6 +657,7 @@ function _saveSticky() {
     if (!el.id || el.type === 'file') return;
     obj[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
   });
+  obj['_refDirty'] = _refDirty;   // remember only a USER-typed ref, not an auto one
   try { localStorage.setItem(_STICKY_KEY, JSON.stringify(obj)); } catch (e) {}
 }
 function _loadSticky() {
@@ -669,7 +670,7 @@ function _loadSticky() {
       if (el.type === 'checkbox') el.checked = _stickyData[id];
       else if (_stickyData[id] != null) el.value = _stickyData[id];
     });
-    if (_stickyData['c-ref']) _refDirty = true;   // keep the restored ref
+    _refDirty = !!_stickyData['_refDirty'];   // only block auto-regen if user edited the ref
   } catch (e) {}
 }
 document.addEventListener('DOMContentLoaded', () => {
@@ -678,6 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('change', _saveSticky, true);
   window.addEventListener('pagehide', _saveSticky);   // capture final state before leaving
   _generateRef();
+  document.getElementById('c-city').addEventListener('input', _generateRef);  // city → ref live
   _loadCatalog().then(() => {
     if (_stickyData['blower_model'] && typeof _selectModel === 'function')
       _selectModel(_stickyData['blower_model']);
