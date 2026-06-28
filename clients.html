@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON — Clients</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d1117;--bg2:#0a0e14;--panel:#151c28;--panel2:#1b2433;--line:#222c3c;--line2:#2a3547;
+  --txt:#e8edf4;--muted:#8b97a8;--muted2:#5c6878;--red:#e1232a;--redsoft:rgba(225,35,42,.14);--green:#22c55e;--teal:#14b8a6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh}
+a{text-decoration:none;color:inherit}
+.sidebar{width:236px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.brand{display:flex;align-items:center;gap:11px;padding:0 20px 20px;border-bottom:1px solid var(--line)}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.15rem;color:#fff;box-shadow:0 3px 12px rgba(225,35,42,.45)}
+.brand .bn{font-weight:800;font-size:.96rem}.brand .bs{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.nav{flex:1;padding:14px 12px}.nav-h{font-size:.64rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted2);font-weight:700;padding:14px 12px 7px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:.86rem;font-weight:600;color:var(--muted);margin-bottom:2px;transition:.13s;position:relative}
+.nav a svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.nav a:hover{background:var(--panel);color:var(--txt)}
+.nav a.active{background:var(--redsoft);color:#fff}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;background:var(--red);border-radius:0 3px 3px 0}
+.side-foot{padding:12px 18px;border-top:1px solid var(--line)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 30px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(13,17,23,.85);backdrop-filter:blur(12px);z-index:20}
+.topbar h1{font-size:1.32rem;font-weight:800}.topbar .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.content{padding:24px 30px 50px;max-width:1400px;width:100%}
+.search{width:280px;background:var(--panel);border:1px solid var(--line2);border-radius:9px;padding:9px 14px;color:var(--txt);font-size:.84rem;font-family:inherit}
+.search:focus{outline:none;border-color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+.stat .v{font-size:1.5rem;font-weight:800}.stat .l{font-size:.74rem;color:var(--muted);font-weight:600;margin-top:3px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.66rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2);font-weight:700;padding:13px 14px;background:var(--bg2);position:sticky;top:69px}
+td{padding:13px 14px;font-size:.83rem;border-top:1px solid var(--line)}
+tbody tr:hover{background:var(--panel2)}
+.co{font-weight:700}.avatar{width:30px;height:30px;border-radius:8px;background:var(--redsoft);color:#ff7a7f;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;margin-right:10px;vertical-align:middle}
+.num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.tag{font-size:.66rem;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--line2);color:var(--muted)}
+.badge{font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:20px}
+.b-g{background:rgba(34,197,94,.16);color:#4ade80}.b-t{background:rgba(20,184,166,.16);color:#5eead4}
+.muted{color:var(--muted)}.empty{text-align:center;color:var(--muted);font-size:.85rem;padding:50px}
+.btn{font-size:.78rem;font-weight:700;padding:9px 16px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--txt);cursor:pointer}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.sidebar{display:none}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/"><div class="logo">E</div><div><div class="bn">ENCON</div><div class="bs">Thermal Engineers</div></div></a>
+  <nav class="nav">
+    <div class="nav-h">Main</div>
+    <a href="/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
+    <a href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
+    <a class="active" href="/clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients</a>
+    <a href="/reports"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a>
+    <a href="/pricelist"><svg viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Pricing</a>
+  </nav>
+  <div class="side-foot"><a class="btn" href="/logout" style="display:block;text-align:center">Logout</a></div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <div><h1>Clients</h1><div class="sub">Every company you've quoted or are tracking</div></div>
+    <input class="search" id="search" placeholder="Search company…" oninput="render()"/>
+  </header>
+  <div class="content">
+    <div class="stats" id="stats"></div>
+    <div class="panel"><div id="tbl"></div></div>
+  </div>
+</div>
+<script>
+let DATA=[];
+function inr(n){n=Number(n)||0;if(n>=1e7)return"₹"+(n/1e7).toFixed(2)+" Cr";if(n>=1e5)return"₹"+(n/1e5).toFixed(2)+" L";if(n>=1e3)return"₹"+(n/1e3).toFixed(0)+"k";return"₹"+n}
+function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function fdate(iso){if(!iso)return"—";const d=new Date(iso);return isNaN(d)?iso.slice(0,10):d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})}
+function load(){fetch('/api/clients').then(r=>r.json()).then(d=>{DATA=d.clients||[];renderStats();render()})}
+function renderStats(){
+  const tv=DATA.reduce((s,c)=>s+c.quoted_value,0), oe=DATA.reduce((s,c)=>s+c.open_enq,0), ap=DATA.reduce((s,c)=>s+c.active_proj,0);
+  document.getElementById('stats').innerHTML=[['Clients',DATA.length],['Total Quoted',inr(tv)],['Open Enquiries',oe],['Active Projects',ap]]
+    .map(([l,v])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+function render(){
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const rows=DATA.filter(c=>c.company.toLowerCase().includes(q));
+  document.getElementById('tbl').innerHTML = rows.length?`<table><thead><tr>
+    <th>Company</th><th>Location</th><th class="num">Quotes</th><th class="num">Quoted Value</th>
+    <th class="num">Open Enq</th><th class="num">Projects</th><th>Last Quote</th></tr></thead><tbody>`+
+    rows.map(c=>`<tr>
+      <td><span class="avatar">${(c.company[0]||'?').toUpperCase()}</span><span class="co">${esc(c.company)}</span>${c.poc?`<div class="muted" style="font-size:.72rem;margin-left:40px">${esc(c.poc)}</div>`:''}</td>
+      <td>${c.location?`<span class="tag">${esc(c.location)}</span>`:'<span class="muted">—</span>'}</td>
+      <td class="num">${c.quotes||'—'}</td>
+      <td class="num">${c.quoted_value>0?inr(c.quoted_value):'—'}</td>
+      <td class="num">${c.open_enq>0?`<span class="badge b-t">${c.open_enq}</span>`:'<span class="muted">0</span>'}</td>
+      <td class="num">${c.active_proj>0?`<span class="badge b-g">${c.active_proj} active</span>`:(c.projects>0?c.projects:'<span class="muted">—</span>')}</td>
+      <td class="muted">${fdate(c.last_quote)}</td></tr>`).join('')+`</tbody></table>`
+    : `<div class="empty">${DATA.length?'No companies match your search.':'No clients yet — generate a quote or add an enquiry to populate this list.'}</div>`;
+}
+load();
+</script>
+</body>
+</html>

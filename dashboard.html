@@ -95,6 +95,8 @@ a{text-decoration:none;color:inherit}
 
 /* ── Panels grid ─────────────────────────────────────────── */
 .grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;margin-top:6px}
+.grid3{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:18px;margin-top:6px}
+@media(max-width:1200px){.grid3{grid-template-columns:1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
 .panel h3{font-size:.95rem;font-weight:700;margin-bottom:3px}
 .panel .ph-sub{font-size:.72rem;color:var(--muted);margin-bottom:16px}
@@ -182,8 +184,8 @@ tbody tr:hover{background:var(--panel2)}
     <div class="nav-h">CRM</div>
     <a href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
     <a href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
-    <a class="soon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients<span class="soon-pill">Soon</span></a>
-    <a class="soon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports<span class="soon-pill">Soon</span></a>
+    <a href="/clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients</a>
+    <a href="/reports"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a>
   </nav>
   <div class="side-foot">
     <div class="uchip" id="user-chip" style="display:none">
@@ -219,8 +221,8 @@ tbody tr:hover{background:var(--panel2)}
     <div class="sec-label" id="tools">Quick Costing Tools</div>
     <div class="tools" id="tools-grid"></div>
 
-    <!-- Pipeline + Activity -->
-    <div class="grid2" style="margin-top:6px">
+    <!-- Pipeline + Activity + Notifications -->
+    <div class="grid3">
       <div class="panel">
         <div class="ph"><div><h3>Sales Pipeline</h3><div class="ph-sub">Enquiries by stage</div></div>
           <a class="btn" href="/enquiries" style="font-size:.72rem;padding:7px 13px">Manage →</a></div>
@@ -229,6 +231,10 @@ tbody tr:hover{background:var(--panel2)}
       <div class="panel">
         <div class="ph"><div><h3>Recent Activity</h3><div class="ph-sub">Latest across quotes &amp; CRM</div></div></div>
         <div id="activity"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><div><h3>Notifications</h3><div class="ph-sub">Things that need attention</div></div></div>
+        <div id="notifications"></div>
       </div>
     </div>
 
@@ -308,6 +314,11 @@ const A_ICON={
   quote:['#22c55e','<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'],
   enquiry:['#3b82f6','<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'],
   project:['#14b8a6','<path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/>'],
+};
+const N_ICON={
+  warn:['#f59e0b','<path d="M12 2 2 21h20z"/><path d="M12 9v5M12 17.5v.01"/>'],
+  info:['#3b82f6','<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/>'],
+  good:['#22c55e','<path d="M20 6 9 17l-5-5"/>'],
 };
 
 document.getElementById('today').textContent =
@@ -411,6 +422,14 @@ fetch('/api/dashboard').then(r=>r.json()).then(d=>{
       <div><div class="at">${a.title||''}</div><div class="ad">${a.detail||''}</div></div>
       <div class="atime">${relTime(a.ts)}</div></div>`;
   }).join('') : `<div class="empty"><b>No activity yet</b>Quotes and CRM updates appear here.</div>`;
+
+  // notifications
+  const notes = d.notifications||[];
+  document.getElementById('notifications').innerHTML = notes.length ? notes.map(n=>{
+    const [col,ic]=N_ICON[n.kind]||['#8b97a8',''];
+    return `<div class="act"><div class="ai" style="background:${col}22"><svg viewBox="0 0 24 24" stroke="${col}" fill="none">${ic}</svg></div>
+      <div><div class="at">${n.title||''}</div><div class="ad">${n.detail||''}</div></div></div>`;
+  }).join('') : `<div class="empty"><b>All clear</b>No follow-ups or overdue items.</div>`;
 }).catch(e=>{
   document.getElementById('kpis').innerHTML = `<div class="empty" style="grid-column:1/-1"><b>Couldn't load dashboard</b>${e}</div>`;
 });

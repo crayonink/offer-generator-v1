@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON — Reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0d1117;--bg2:#0a0e14;--panel:#151c28;--panel2:#1b2433;--line:#222c3c;--line2:#2a3547;
+  --txt:#e8edf4;--muted:#8b97a8;--muted2:#5c6878;--red:#e1232a;--redsoft:rgba(225,35,42,.14);
+  --blue:#3b82f6;--teal:#14b8a6;--green:#22c55e;--purple:#a855f7;--amber:#f59e0b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh}
+a{text-decoration:none;color:inherit}
+.sidebar{width:236px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.brand{display:flex;align-items:center;gap:11px;padding:0 20px 20px;border-bottom:1px solid var(--line)}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.15rem;color:#fff;box-shadow:0 3px 12px rgba(225,35,42,.45)}
+.brand .bn{font-weight:800;font-size:.96rem}.brand .bs{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.nav{flex:1;padding:14px 12px}.nav-h{font-size:.64rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted2);font-weight:700;padding:14px 12px 7px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:.86rem;font-weight:600;color:var(--muted);margin-bottom:2px;transition:.13s;position:relative}
+.nav a svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.nav a:hover{background:var(--panel);color:var(--txt)}
+.nav a.active{background:var(--redsoft);color:#fff}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;background:var(--red);border-radius:0 3px 3px 0}
+.side-foot{padding:12px 18px;border-top:1px solid var(--line)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 30px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(13,17,23,.85);backdrop-filter:blur(12px);z-index:20}
+.topbar h1{font-size:1.32rem;font-weight:800}.topbar .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.exports{display:flex;gap:9px}
+.btn{font-size:.76rem;font-weight:700;padding:8px 14px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--txt);cursor:pointer;transition:.13s}
+.btn:hover{background:var(--panel2)}
+.content{padding:24px 30px 50px;max-width:1500px;width:100%}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:15px;margin-bottom:22px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px}
+.kpi .v{font-size:1.55rem;font-weight:800;letter-spacing:-.5px}
+.kpi .l{font-size:.74rem;color:var(--muted);font-weight:600;margin-top:5px}
+.kpi .ring{--p:0;width:46px;height:46px;border-radius:50%;background:conic-gradient(var(--green) calc(var(--p)*1%),var(--bg2) 0);display:flex;align-items:center;justify-content:center;margin-bottom:11px}
+.kpi .ring span{width:36px;height:36px;border-radius:50%;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:800}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.panel h3{font-size:.95rem;font-weight:700;margin-bottom:3px}.panel .sub{font-size:.72rem;color:var(--muted);margin-bottom:16px}
+.brow{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.brow .nm{width:120px;font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .track{flex:1;height:22px;background:var(--bg2);border-radius:6px;overflow:hidden}
+.brow .fill{height:100%;border-radius:6px;min-width:3px;transition:.5s}
+.brow .vv{width:88px;text-align:right;font-size:.74rem;color:var(--muted);font-weight:700}
+.trend{display:flex;align-items:flex-end;gap:7px;height:150px;padding-top:8px}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.btrack{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.bar{width:60%;max-width:26px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--red),#7a1418);min-height:3px}
+.blbl{font-size:.6rem;color:var(--muted2);font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.64rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700;padding:0 8px 9px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;font-size:.8rem;border-bottom:1px solid var(--line)}tr:last-child td{border:none}
+.num{text-align:right;font-weight:700}
+.empty{color:var(--muted2);font-size:.78rem;padding:16px;text-align:center}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:760px){.sidebar{display:none}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/"><div class="logo">E</div><div><div class="bn">ENCON</div><div class="bs">Thermal Engineers</div></div></a>
+  <nav class="nav">
+    <div class="nav-h">Main</div>
+    <a href="/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
+    <a href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
+    <a href="/clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients</a>
+    <a class="active" href="/reports"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a>
+    <a href="/pricelist"><svg viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Pricing</a>
+  </nav>
+  <div class="side-foot"><a class="btn" href="/logout" style="display:block;text-align:center">Logout</a></div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <div><h1>Reports</h1><div class="sub">Quoting & sales analytics</div></div>
+    <div class="exports">
+      <a class="btn" href="/api/export/quotes.csv">⤓ Quotes CSV</a>
+      <a class="btn" href="/api/export/enquiries.csv">⤓ Enquiries CSV</a>
+      <a class="btn" href="/api/export/projects.csv">⤓ Projects CSV</a>
+    </div>
+  </header>
+  <div class="content">
+    <div class="kpis" id="kpis"></div>
+    <div class="panel"><h3>Quoting Trend</h3><div class="sub">Quoted value per month · last 12 months</div><div class="trend" id="trend"></div></div>
+    <div class="grid2">
+      <div class="panel"><h3>By Product</h3><div class="sub">Quoted value &amp; count</div><div id="by_product"></div></div>
+      <div class="panel"><h3>By Location</h3><div class="sub">Branch split</div><div id="by_location"></div></div>
+      <div class="panel"><h3>By Owner</h3><div class="sub">Sales person performance</div><div id="by_owner"></div></div>
+      <div class="panel"><h3>Top Clients</h3><div class="sub">By quoted value</div><div id="top_clients"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const COLORS=["#e1232a","#3b82f6","#14b8a6","#a855f7","#f59e0b","#22c55e","#ec4899","#06b6d4","#64748b","#f97316"];
+function inr(n){n=Number(n)||0;if(n>=1e7)return"₹"+(n/1e7).toFixed(2)+"Cr";if(n>=1e5)return"₹"+(n/1e5).toFixed(2)+"L";if(n>=1e3)return"₹"+(n/1e3).toFixed(0)+"k";return"₹"+n}
+function esc(s){return(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function mLabel(ym){const m=ym.split('-')[1];return["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+m-1]}
+function bars(el,rows,byVal){
+  const box=document.getElementById(el);
+  if(!rows||!rows.length){box.innerHTML='<div class="empty">No data yet</div>';return}
+  const max=Math.max(1,...rows.map(r=>byVal?r.value:r.count));
+  box.innerHTML=rows.map((r,i)=>{
+    const m=byVal?r.value:r.count, w=Math.max(3,m/max*100);
+    return `<div class="brow"><span class="nm">${esc(r.label)}</span>
+      <div class="track"><div class="fill" style="width:${w}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <span class="vv">${byVal?inr(r.value):r.count}${byVal?` · ${r.count}`:''}</span></div>`;
+  }).join('');
+}
+fetch('/api/reports').then(r=>r.json()).then(d=>{
+  const k=d.kpis||{};
+  document.getElementById('kpis').innerHTML=[
+    {v:k.total_quotes||0,l:'Total Quotations'},
+    {v:inr(k.total_value),l:'Total Quoted Value'},
+    {v:(k.win_rate||0)+'%',l:'Win Rate',ring:k.win_rate},
+    {v:(k.conversion||0)+'%',l:'Enquiry Conversion',ring:k.conversion},
+    {v:inr(k.order_book),l:'Order Book'},
+  ].map(c=>`<div class="kpi">${c.ring!==undefined?`<div class="ring" style="--p:${c.ring}"><span>${c.v}</span></div><div class="l">${c.l}</div>`:`<div class="v">${c.v}</div><div class="l">${c.l}</div>`}</div>`).join('');
+
+  const bm=d.by_month||[], max=Math.max(1,...bm.map(m=>m.value));
+  document.getElementById('trend').innerHTML=bm.map(m=>{
+    const h=m.value>0?Math.max(4,m.value/max*100):0;
+    return `<div class="bcol"><div class="btrack"><div class="bar" style="height:${h}%"><title>${m.label}: ${inr(m.value)} · ${m.count}</title></div></div><div class="blbl">${mLabel(m.label)}</div></div>`;
+  }).join('');
+
+  bars('by_product',d.by_product,true);
+  bars('by_location',d.by_location,true);
+  bars('by_owner',d.by_owner,true);
+  const tc=d.top_clients||[];
+  document.getElementById('top_clients').innerHTML=tc.length?`<table><thead><tr><th>Client</th><th class="num">Quotes</th><th class="num">Value</th></tr></thead><tbody>`+
+    tc.map(c=>`<tr><td style="font-weight:600">${esc(c.label)}</td><td class="num">${c.count}</td><td class="num">${inr(c.value)}</td></tr>`).join('')+`</tbody></table>`
+    :'<div class="empty">No data yet</div>';
+});
+</script>
+</body>
+</html>

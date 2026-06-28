@@ -389,6 +389,36 @@ def _log_activity(kind: str, title: str, detail: str = ""):
         print(f"WARN: activity_log insert failed: {act_err}")
 
 
+def _compute_notifications(conn):
+    """Derived alerts for the dashboard — overdue projects, stale enquiries,
+    recent wins. `conn` is an open connection with row_factory=sqlite3.Row."""
+    from datetime import datetime as _dt, timedelta as _td
+    now = _dt.now()
+    out = []
+    try:
+        for r in conn.execute("SELECT project_no, company_name, target_date FROM projects "
+                              "WHERE status='active' AND IFNULL(target_date,'')<>''"):
+            try:
+                if _dt.fromisoformat(r["target_date"]) < now:
+                    out.append({"kind": "warn", "title": f"Project overdue · {r['company_name']}",
+                                "detail": f"{r['project_no']} · target {r['target_date']}"})
+            except Exception:
+                pass
+        cutoff = (now - _td(days=14)).isoformat()
+        for r in conn.execute("SELECT company_name FROM enquiries WHERE stage IN ('new','qualified') "
+                              "AND IFNULL(updated_at,'')<>'' AND updated_at<? ORDER BY updated_at LIMIT 8", (cutoff,)):
+            out.append({"kind": "info", "title": f"Follow up · {r['company_name']}",
+                        "detail": "No movement in 14+ days"})
+        recent = (now - _td(days=7)).isoformat()
+        for r in conn.execute("SELECT company_name FROM enquiries WHERE stage='won' "
+                              "AND updated_at>? ORDER BY updated_at DESC LIMIT 6", (recent,)):
+            out.append({"kind": "good", "title": f"Won · {r['company_name']}",
+                        "detail": "Ready to convert into a project"})
+    except Exception as e:
+        print(f"WARN: notifications failed: {e}")
+    return out[:12]
+
+
 def ensure_valve_sizes():
     """Ensure rotary joint table has entries up to 600 NB.
     (butterfly_valve_master was dropped — selector now reads from
@@ -642,6 +672,7 @@ def api_dashboard():
                      "value": stage_rows.get(st, (0, 0))[1]} for st in ENQUIRY_STAGES]
         activity = [dict(r) for r in conn.execute(
             "SELECT ts, kind, title, detail FROM activity_log ORDER BY id DESC LIMIT 10")]
+        notifications = _compute_notifications(conn)
         conn.close()
         return {
             "kpis": {
@@ -652,14 +683,14 @@ def api_dashboard():
                 "pending_rfq": pending_rfq,
             },
             "by_product": by_product, "by_month": by_month, "recent": recent,
-            "pipeline": pipeline, "activity": activity,
+            "pipeline": pipeline, "activity": activity, "notifications": notifications,
             "month_label": now.strftime("%b %Y"),
         }
     except Exception as e:
         import traceback
         return {"error": str(e), "trace": traceback.format_exc(),
                 "kpis": {}, "by_product": [], "by_month": [], "recent": [],
-                "pipeline": [], "activity": []}
+                "pipeline": [], "activity": [], "notifications": []}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -894,6 +925,137 @@ def api_project_delete(d: IdIn):
         return {"success": True}
     except Exception as ex:
         return {"success": False, "error": str(ex)}
+
+
+@app.get("/api/clients")
+def api_clients():
+    """Company-level rollup across quotes, enquiries and projects."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        q = {r["company_name"]: dict(r) for r in conn.execute(
+            "SELECT company_name, COUNT(*) quotes, SUM(grand_total) value, "
+            "MAX(created_at) last_quote, MAX(location) location, MAX(poc_name) poc "
+            "FROM quotes_log WHERE company_name<>'' GROUP BY company_name")}
+        enq = {r["company_name"]: dict(r) for r in conn.execute(
+            "SELECT company_name, COUNT(*) enquiries, "
+            "SUM(CASE WHEN stage NOT IN ('won','lost') THEN 1 ELSE 0 END) open_enq "
+            "FROM enquiries WHERE company_name<>'' GROUP BY company_name")}
+        prj = {r["company_name"]: dict(r) for r in conn.execute(
+            "SELECT company_name, COUNT(*) projects, "
+            "SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) active_proj, "
+            "SUM(value) proj_value FROM projects WHERE company_name<>'' GROUP BY company_name")}
+        conn.close()
+        clients = []
+        for nm in (set(q) | set(enq) | set(prj)):
+            qd, ed, pd = q.get(nm, {}), enq.get(nm, {}), prj.get(nm, {})
+            clients.append({
+                "company": nm, "location": qd.get("location") or "",
+                "poc": qd.get("poc") or "",
+                "quotes": qd.get("quotes", 0) or 0, "quoted_value": qd.get("value", 0) or 0,
+                "enquiries": ed.get("enquiries", 0) or 0, "open_enq": ed.get("open_enq", 0) or 0,
+                "projects": pd.get("projects", 0) or 0, "active_proj": pd.get("active_proj", 0) or 0,
+                "proj_value": pd.get("proj_value", 0) or 0, "last_quote": qd.get("last_quote") or "",
+            })
+        clients.sort(key=lambda c: (c["quoted_value"], c["quotes"]), reverse=True)
+        return {"clients": clients}
+    except Exception as ex:
+        return {"clients": [], "error": str(ex)}
+
+
+@app.get("/api/reports")
+def api_reports():
+    """Analytics aggregates for the Reports page."""
+    from datetime import datetime as _dt
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        now = _dt.now()
+
+        def scal(sql, a=()):
+            r = conn.execute(sql, a).fetchone()
+            return (r[0] if r and r[0] is not None else 0)
+
+        total_quotes = scal("SELECT COUNT(*) FROM quotes_log")
+        total_value = scal("SELECT SUM(grand_total) FROM quotes_log")
+        won = scal("SELECT COUNT(*) FROM enquiries WHERE stage='won'")
+        lost = scal("SELECT COUNT(*) FROM enquiries WHERE stage='lost'")
+        total_enq = scal("SELECT COUNT(*) FROM enquiries")
+        proj_value = scal("SELECT SUM(value) FROM projects WHERE status<>'cancelled'")
+        win_rate = round(won / (won + lost) * 100) if (won + lost) else 0
+        conversion = round(won / total_enq * 100) if total_enq else 0
+
+        def group(sql):
+            return [{"label": (r["k"] or "—"), "count": r["c"], "value": (r["v"] or 0)}
+                    for r in conn.execute(sql)]
+        by_product = group("SELECT equipment_type k, COUNT(*) c, SUM(grand_total) v "
+                           "FROM quotes_log GROUP BY equipment_type ORDER BY v DESC")
+        by_location = group("SELECT location k, COUNT(*) c, SUM(grand_total) v "
+                            "FROM quotes_log GROUP BY location ORDER BY c DESC")
+        by_owner = group("SELECT COALESCE(NULLIF(marketing_person,''),NULLIF(technical_person,'')) k, "
+                         "COUNT(*) c, SUM(grand_total) v FROM quotes_log GROUP BY k ORDER BY v DESC")
+        top_clients = group("SELECT company_name k, COUNT(*) c, SUM(grand_total) v FROM quotes_log "
+                            "WHERE company_name<>'' GROUP BY company_name ORDER BY v DESC LIMIT 10")
+
+        seq = []
+        for i in range(11, -1, -1):
+            mm, yy = now.month - i, now.year
+            while mm <= 0:
+                mm += 12; yy -= 1
+            seq.append(f"{yy:04d}-{mm:02d}")
+        mrows = {r["ym"]: (r["c"], r["v"] or 0) for r in conn.execute(
+            "SELECT substr(created_at,1,7) ym, COUNT(*) c, SUM(grand_total) v FROM quotes_log GROUP BY ym")}
+        by_month = [{"label": k, "count": mrows.get(k, (0, 0))[0],
+                     "value": mrows.get(k, (0, 0))[1]} for k in seq]
+        pipe = {r["stage"]: r["c"] for r in conn.execute(
+            "SELECT stage, COUNT(*) c FROM enquiries GROUP BY stage")}
+        pipeline = [{"label": st, "count": pipe.get(st, 0)} for st in ENQUIRY_STAGES]
+        conn.close()
+        return {
+            "kpis": {"total_quotes": total_quotes, "total_value": total_value,
+                     "win_rate": win_rate, "conversion": conversion,
+                     "total_enquiries": total_enq, "order_book": proj_value,
+                     "won": won, "lost": lost},
+            "by_product": by_product, "by_location": by_location, "by_owner": by_owner,
+            "by_month": by_month, "top_clients": top_clients, "pipeline": pipeline,
+        }
+    except Exception as ex:
+        import traceback
+        return {"error": str(ex), "trace": traceback.format_exc(), "kpis": {}}
+
+
+@app.get("/api/export/{kind}.csv")
+def api_export_csv(kind: str):
+    """Download quotes / enquiries / projects as CSV."""
+    import csv, io
+    from fastapi.responses import Response
+    tables = {"quotes": "quotes_log", "enquiries": "enquiries", "projects": "projects"}
+    tbl = tables.get(kind)
+    if not tbl:
+        return {"error": "unknown export"}
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    rows = [dict(r) for r in conn.execute(f"SELECT * FROM {tbl} ORDER BY id DESC")]
+    conn.close()
+    buf = io.StringIO()
+    if rows:
+        w = csv.DictWriter(buf, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    return Response(content=buf.getvalue(), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="encon_{kind}.csv"'})
+
+
+@app.get("/clients", response_class=HTMLResponse)
+def clients_page():
+    with open(os.path.join(BASE_DIR, "clients.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/reports", response_class=HTMLResponse)
+def reports_page():
+    with open(os.path.join(BASE_DIR, "reports.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 
 # ── Google Drive OAuth ────────────────────────────────────────────────────
