@@ -105,7 +105,7 @@ _KIND_MAP = {"blower": "blower", "burner": "burner_film",
 # Standard ENCON equipment Terms & Conditions — used as defaults when the
 # offer form leaves a field blank (so the T&C annexure is never empty).
 STANDARD_TNC = {
-    "tnc_prices":             "Ex-works Baghola, Dist. Palwal, Haryana, INDIA.",
+    "tnc_prices":             "Ex-works Bhagola, Dist. Palwal, Haryana, INDIA.",
     "tnc_delivery":           "4–6 weeks from the date of confirmed order along with the relevant advance.",
     "tnc_gst":                "GST @ 18% extra.",
     "tnc_hsn_code":           "",

@@ -254,10 +254,10 @@ def _person_initials(name: str) -> str:
     return "".join(p[0].upper() for p in parts)
 
 
-_LOCATION_CODES = {
+_LOCATION_CODES = {        # first-3 letters, matching the form's ref preview
     "goa":       "GOA",
-    "vadodara":  "VDD",
-    "faridabad": "FBD",
+    "vadodara":  "VAD",
+    "faridabad": "FAR",
 }
 
 
@@ -4540,9 +4540,11 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
 
     seq = next_quote_seq()
     full_ref = build_enquiry_ref(seq, cust.technical or "", cust.location or "")
-    # OUR REF comes from the user's input (Enquiry / Ref No.); falls back to the
-    # auto ENCON ref. DATE is always today.
-    short_ref = (cust.ref_no or "").split(" DT.")[0].strip() or full_ref.split(" DT.")[0]
+    # OUR REF = the backend ENCON ref (real sequence + branch + initials), the
+    # SAME value shown on the cover page. The client-side ref_no is only a form
+    # preview (literal "XXX" sequence), so we never use it here — that mismatch
+    # is exactly the bug we're avoiding. DATE is always today.
+    short_ref = full_ref.split(" DT.")[0]
     date_str = _dt.now().strftime("%d/%m/%Y")
 
     company_address = ", ".join(filter(None, [
