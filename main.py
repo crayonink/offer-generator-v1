@@ -4716,7 +4716,7 @@ def generate_blower_quote(req: BlowerQuoteRequest):
             "scope_intro":     scope_intro,
             "scope_items":     scope_items,
             "price_desc": {
-                "heading": f"BLOWER, MODEL {_model_short}",
+                "heading": f"{ptype.upper()} PRESSURE BLOWER, MODEL {_model_short}",
                 "body":    scope_intro,
                 "bullets": [],
                 "notes":   [],   # no WITHOUT-MOTOR price line in the price cell
