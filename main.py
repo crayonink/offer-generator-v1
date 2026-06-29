@@ -4722,7 +4722,7 @@ def generate_blower_quote(req: BlowerQuoteRequest):
                 "heading": f"BLOWER, MODEL {_model_short}",
                 "body":    scope_intro,
                 "bullets": [],
-                "notes":   ([f"Price for the above blower WITHOUT MOTOR — {_basic_fmt}"] if _basic_fmt else []),
+                "notes":   [],   # no WITHOUT-MOTOR price line in the price cell
             },
         }
         result = _generate_equipment_offer(
