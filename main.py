@@ -4619,11 +4619,8 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     # bullets (real bulleted paragraphs) + notes, from specs['price_desc'].
     _pd = specs.get("price_desc") or {}
     _ph = _pd.get("heading") or ctx.get("equipment_name", "")
-    # Blower price cell shows heading + description paragraph (colon precedes it);
-    # burner is heading-only, so no trailing colon and no body paragraph.
-    _has_body = (drive_product == "blower")
-    ctx["price_heading"] = ((_ph + ":") if _has_body else _ph) if _ph else ""
-    ctx["price_body"]    = _pd.get("body", "") if _has_body else ""
+    ctx["price_heading"] = _ph or ""   # price schedule shows the heading only
+    ctx["price_body"]    = ""
     ctx["price_bullets"] = [{"item": b} for b in _pd.get("bullets", [])]
     ctx["price_notes"]   = [{"item": n} for n in _pd.get("notes", [])]
 
