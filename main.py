@@ -4619,7 +4619,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     # bullets (real bulleted paragraphs) + notes, from specs['price_desc'].
     _pd = specs.get("price_desc") or {}
     _ph = _pd.get("heading") or ctx.get("equipment_name", "")
-    ctx["price_heading"] = _ph or ""   # no trailing colon (price body removed)
+    ctx["price_heading"] = (_ph + ":") if _ph else ""   # colon precedes the description paragraph
     ctx["price_body"]    = _pd.get("body", "")
     ctx["price_bullets"] = [{"item": b} for b in _pd.get("bullets", [])]
     ctx["price_notes"]   = [{"item": n} for n in _pd.get("notes", [])]
