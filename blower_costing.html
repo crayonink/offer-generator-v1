@@ -391,14 +391,16 @@ function goStep(n) {
 }
 
 function _generateRef() {
+  // Fetch the SAME ref the backend will stamp on the offer (real sequence,
+  // Location branch code, technical-person initials) — one source of truth.
   const ref = document.getElementById('c-ref');
   if (_refDirty && ref.value) return;
-  const loc = (document.getElementById('c-location').value || 'XXX').slice(0, 3).toUpperCase();
-  const d = new Date();
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  if (!_refDirty || !ref.value) ref.value = `ENCON.04026.XXX/${loc}/BLR DT.${dd}/${mm}/${yyyy}`;
+  const tech = (document.getElementById('c-technical') || {}).value || '';
+  const loc  = (document.getElementById('c-location') || {}).value || '';
+  fetch('/api/next-quote-ref?technical_person=' + encodeURIComponent(tech) + '&location=' + encodeURIComponent(loc))
+    .then(r => r.json())
+    .then(d => { if ((!_refDirty || !ref.value) && d && d.ref) ref.value = d.ref; })
+    .catch(() => {});
 }
 
 function _customerPayload() {
@@ -680,6 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('pagehide', _saveSticky);   // capture final state before leaving
   _generateRef();
   document.getElementById('c-location').addEventListener('change', _generateRef);  // Location → ref
+  { const _ct = document.getElementById('c-technical'); if (_ct) _ct.addEventListener('input', _generateRef); }  // initials → ref
   _loadCatalog().then(() => {
     if (_stickyData['blower_model'] && typeof _selectModel === 'function')
       _selectModel(_stickyData['blower_model']);
