@@ -22,6 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def _no_cache_html(request, call_next):
+    """Stop browsers serving a stale cached HTML page after a redeploy — the
+    form pages are inline-HTML+JS, so a cached copy hides new code until a hard
+    refresh. Force revalidation on every HTML response (JSON/assets untouched)."""
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── Persistent database (survives Railway redeploys) ────────────────────────
