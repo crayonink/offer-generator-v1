@@ -267,10 +267,10 @@ def _person_initials(name: str) -> str:
     return "".join(p[0].upper() for p in parts)
 
 
-_LOCATION_CODES = {        # first-3 letters, matching the form's ref preview
+_LOCATION_CODES = {        # ENCON branch codes used in the enquiry ref
     "goa":       "GOA",
     "vadodara":  "VAD",
-    "faridabad": "FAR",
+    "faridabad": "FBD",
 }
 
 
