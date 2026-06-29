@@ -1060,27 +1060,28 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         _pmodel = customer.get("hpu_model") or ""
         _plph = customer.get("hpu_lph") or ""
         _pvar = (customer.get("hpu_variant") or "").lower()
-        _pumps = ("a single gear pump with motor" if "simplex" in _pvar
-                  else "TWO gear pumps with motors")
-        _pumps_bullet = _pumps[0].upper() + _pumps[1:]   # "TWO gear pumps with motors"
+        # Pump count varies by variant: Simplex = 1 pump, Duplex = 2 pumps.
+        _pump_bullet = ("1 No. oil pump fitted with suitable electric motor."
+                        if "simplex" in _pvar
+                        else "2 Nos. oil pumps each fitted with suitable electric motor.")
         if customer.get("force_pumping_only"):
             _phead = f"PUMPING UNIT, MODEL {_pmodel}"
             _pname = "ENCON make Oil Pumping unit"
             _pintro = (f"Supply ex-works of 1 no. {_pname}, model {_pmodel}, "
                        f"suitable for flow rate of {_plph} ltrs/hr, fitted with all "
                        f"standard accessories (mounted on a common base frame) such as:")
-            _pitems = ["Constant pressure control valve", "Pressure relief valve",
-                       "Pressure gauge", "Fine filters, etc.", _pumps_bullet]
+            _pitems = [
+                _pump_bullet,
+                "1 No. Duplex type coarse filter for the cold oil side respectively.",
+                "1 No. Pressure regulating valve.",
+                "1 No. each of Pressure gauge & Temperature gauge.",
+            ]
         else:
             _phead = f"HEATING & PUMPING UNIT, MODEL {_pmodel}"
             _pname = "ENCON make Oil Heating & Pumping unit"
             _pintro = (f"Supply ex-works of 1 no. {_pname}, model "
                        f"{_pmodel}, suitable for flow rate of {_plph} ltrs/hr, fitted with all "
                        f"standard accessories (mounted on a common base frame) such as:")
-            # Pump count varies by variant: Simplex = 1 pump, Duplex = 2 pumps.
-            _pump_bullet = ("1 No. oil pump fitted with suitable electric motor."
-                            if "simplex" in _pvar
-                            else "2 Nos. oil pumps each fitted with suitable electric motor.")
             _pitems = [
                 _pump_bullet,
                 "1 No. electric Oil Preheater with thermostatic Control.",
