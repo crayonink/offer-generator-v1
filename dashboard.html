@@ -262,18 +262,18 @@ tbody tr:hover{background:var(--panel2)}
 
 <script>
 const TOOLS = [
-  {n:"VLPH",        d:"Vertical Ladle Preheater", u:"/costing"},
-  {n:"HLPH",        d:"Horizontal Ladle Preheater", u:"/hlph"},
-  {n:"HPU / PU",    d:"Heating & Pumping Unit", u:"/hpu"},
-  {n:"Blower",      d:"Centrifugal blower offer", u:"/blower"},
-  {n:"Burner",      d:"Gas / Oil / Dual / HV", u:"/burner"},
-  {n:"Recuperator", d:"Heat recovery", u:"/recup"},
-  {n:"Regen",       d:"Regenerative costing", u:"/regen"},
-  {n:"Tundish",     d:"Tundish preheater", u:"/tundish"},
-  {n:"Box Furnace", d:"Box type furnace", u:"/btf"},
-  {n:"SNSF BRF",    d:"30T billet reheat", u:"/snsf-brf"},
-  {n:"Combined",    d:"Multi-equipment offer", u:"/combined-builder"},
-  {n:"Pricelist",   d:"Live selling prices", u:"/pricelist"},
+  {c:"VLPH", n:"Vertical Ladle Preheater",   d:"Natural gas / oil",      u:"/costing"},
+  {c:"HLPH", n:"Horizontal Ladle Preheater", d:"Full BOM offer",         u:"/hlph"},
+  {c:"HPU",  n:"Heating &amp; Pumping Unit",     d:"HPU / PU skid",          u:"/hpu"},
+  {c:"BLOW", n:"Centrifugal Blower",         d:"Medium / High pressure", u:"/blower"},
+  {c:"BURN", n:"Burner",                     d:"Gas / Oil / Dual / HV",  u:"/burner"},
+  {c:"RECU", n:"Recuperator",                d:"Heat recovery",          u:"/recup"},
+  {c:"REGE", n:"Regenerative System",        d:"Regenerative costing",   u:"/regen"},
+  {c:"TUND", n:"Tundish Preheater",          d:"Natural gas",            u:"/tundish"},
+  {c:"BOX",  n:"Box Type Furnace",           d:"Dual mode",              u:"/btf"},
+  {c:"SNSF", n:"Billet Reheat Furnace",      d:"30T, dual fuel",         u:"/snsf-brf"},
+  {c:"COMB", n:"Combined Offer",             d:"Multi-equipment",        u:"/combined-builder"},
+  {c:"PRIC", n:"Pricelist",                  d:"Live selling prices",    u:"/pricelist"},
 ];
 const PROD_COLORS = ["#1a3a5c","#3b82f6","#14b8a6","#a855f7","#f59e0b","#22c55e","#ec4899","#06b6d4","#64748b"];
 const ICONS = {
@@ -329,7 +329,7 @@ document.getElementById('today').textContent =
 // tool tiles
 document.getElementById('tools-grid').innerHTML = TOOLS.map(t=>`
   <a class="tool" href="${t.u}">
-    <div class="tic">${t.n.split(/[ /]/)[0].slice(0,4).toUpperCase()}</div>
+    <div class="tic">${t.c}</div>
     <div class="tn">${t.n}</div><div class="td">${t.d}</div>
   </a>`).join('');
 
