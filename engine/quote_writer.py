@@ -745,6 +745,7 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         "email":                 customer.get("email") or "",
         "gstin":                 customer.get("gstin") or "",
         "poc_name":              customer.get("poc_name") or "",
+        "poc_greeting":          customer.get("poc_greeting") or "Sir",
         "poc_designation":       customer.get("poc_designation") or "",
         # Reference / enquiry
         "quote_no":              quote_data.get("quote_no", ""),
@@ -1082,7 +1083,7 @@ def generate_quote_docx(quote_data: dict, output_path: str,
                        "Pressure gauge", "Fine filters, etc.", _pumps_bullet]
         context["pumping_unit_intro"] = _pintro
         context["pumping_unit_items"] = [{"item": x} for x in _pitems]
-        context["price_heading"] = _phead + ":"
+        context["price_heading"] = _phead   # no trailing colon (price body removed)
         # Price cell: short one-line description only — full scope is Annexure I.
         context["price_body"] = (f"Supply ex-works of 1 no. {_pname}, model {_pmodel}, "
                                  f"suitable for flow rate of {_plph} ltrs/hr.")

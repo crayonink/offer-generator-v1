@@ -260,6 +260,11 @@ def _with_salutation(salutation: str, name: str) -> str:
     return n or s
 
 
+def _greeting(salutation: str) -> str:
+    """Cover-letter greeting word: 'Sir' for Mr., 'Ma'am' otherwise."""
+    return "Sir" if (salutation or "").strip().rstrip(".").lower() == "mr" else "Ma'am"
+
+
 def _person_initials(name: str) -> str:
     """First letter of each whitespace-separated word, uppercased.
     'Jyotirmoy Rabha' -> 'JR'. Returns '' for empty input."""
@@ -3791,6 +3796,7 @@ def generate_recup_quote(req: RecupQuoteRequest):
             "email":            req.email,
             "mobile_no":        req.mobile_no,
             "poc_name":         _with_salutation(req.salutation, req.poc_name),
+            "poc_greeting":     _greeting(req.salutation),
             "poc_designation":  req.poc_designation or "",
             "client_enq_ref":   req.client_enq_ref,
             "enquiry_ref":      full_ref,
@@ -4153,6 +4159,7 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
                                     cust.pin or "",
                                 ])),
             "poc_name":         _with_salutation(cust.salutation, cust.name),
+            "poc_greeting":     _greeting(cust.salutation),
             "poc_designation":  cust.designation or "",
             "mobile_no":        cust.phone or "",
             "email":            cust.email or "",
@@ -4574,6 +4581,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
         "email":             cust.email or "",
         "mobile_no":         cust.phone or "",
         "poc_name":          _with_salutation(cust.salutation, cust.name),
+        "poc_greeting":      _greeting(cust.salutation),
         "poc_designation":   cust.designation or "",
         "client_enq_ref":    "",
         "enquiry_ref":       full_ref,
@@ -4611,7 +4619,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     # bullets (real bulleted paragraphs) + notes, from specs['price_desc'].
     _pd = specs.get("price_desc") or {}
     _ph = _pd.get("heading") or ctx.get("equipment_name", "")
-    ctx["price_heading"] = (_ph + ":") if _ph else ""
+    ctx["price_heading"] = _ph or ""   # no trailing colon (price body removed)
     ctx["price_body"]    = _pd.get("body", "")
     ctx["price_bullets"] = [{"item": b} for b in _pd.get("bullets", [])]
     ctx["price_notes"]   = [{"item": n} for n in _pd.get("notes", [])]
