@@ -4705,10 +4705,7 @@ def generate_blower_quote(req: BlowerQuoteRequest):
                        f"model {model}, having a capacity of {_fmt_num(cfm)} CFM at {_press} "
                        f"pressure, fitted with a {_fmt_num(hp)} HP, 2900 rpm motor of reputed "
                        f"make such as ABB, Crompton, etc.")
-        scope_items = [{"item": x} for x in [
-            f"1 No. ENCON {ptype} pressure centrifugal blower, model {model}",
-            f"1 No. {_fmt_num(hp)} HP, 2900 rpm electric drive motor (ABB / Crompton or equivalent)",
-            "Common M.S. base frame with anti-vibration mounts"]]
+        scope_items = []   # blower scope is the intro sentence only — no bullets
         _bf = _finite_price(price_basic)
         _basic_fmt = ("Rs. " + (lambda s: s[:-3] if s.endswith(".00") else s)(_finr(_bf))) if _bf else None
         specs = {
