@@ -1370,6 +1370,9 @@ function _renderRatesTable(data, opts) {
         <td class="num-cell" style="${cs}">${change}</td>
         <td style="text-align:center;color:#555;font-size:11px;">${esc(updatedAt)}</td>
       </tr>`;
+      if ((r.item || '').toUpperCase() === 'CASTING BURNER PARTS') {
+        html += `<tr><td class="rn"></td><td colspan="8" style="font-size:11px;font-style:italic;color:#667;background:#f7f9fb;padding:5px 10px;">↳ <b style="font-style:normal;color:#333;">Casting Burner Parts</b> covers the fabricated MS parts of the burner: base plate · air tube · S.G. holder · air adjuster · burner plate</td></tr>`;
+      }
     });
   });
 
