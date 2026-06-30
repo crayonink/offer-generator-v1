@@ -445,6 +445,33 @@ RATE_CPM = {
     "ADP_OIL": "ADOPTER 15 NB*20 NB (Oil)", "ADP_AIR": "ADOPTER 15 NB*15 NB (Air)",
     "C22": "M.S. Tube B Class 1.5 in",
 }
+# C.I. Plate is priced directly in the Pricelist (Raw Material), per size — the
+# burner FETCHES it instead of deriving it from the burner-plate part.
+CIPLATE_CPM = {
+    "ENCON 2A": "C.I. PLATE 2A", "ENCON 3A": "C.I. PLATE 3A", "ENCON 4A": "C.I. PLATE 4A",
+    "ENCON 5A": "C.I. PLATE 5A", "ENCON 6A": "C.I. PLATE 6A", "ENCON 7A": "C.I. PLATE 7A",
+}
+CIPLATE_SEED = {"C.I. PLATE 2A": 5418, "C.I. PLATE 3A": 6518, "C.I. PLATE 4A": 7452,
+                "C.I. PLATE 5A": 9000, "C.I. PLATE 6A": 9000, "C.I. PLATE 7A": 9000}
+
+
+def ensure_ciplate_pricelist():
+    """Seed the per-size C.I. Plate prices into the Pricelist (component_price_
+    master, Raw Material) so the burner can fetch them. Idempotent."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        for item, price in CIPLATE_SEED.items():
+            if not conn.execute("SELECT 1 FROM component_price_master WHERE item=?", (item,)).fetchone():
+                conn.execute("INSERT INTO component_price_master (item, category, price, previous_price, "
+                             "specification) VALUES (?,?,?,?,?)",
+                             (item, "Raw Material", price, price, item.replace("C.I. PLATE ", "")))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: ensure_ciplate_pricelist failed: {e}")
+
+
+ensure_ciplate_pricelist()
 
 
 def ensure_rate_master():
@@ -856,10 +883,17 @@ def recompute_burner_prices(conn):
              ("ENCON 5A", "5A/6A", "A", 2.2, ("mult", 3.4)),
              ("ENCON 6A", "5A/6A", "A", 2.2, ("plus", "ENCON 5A", 200)),
              ("ENCON 7A", "7A",    "B", 2.0, ("mult", 2.0))]
-    INDEP = {("ENCON 3A", "BURNER ALONE"), ("ENCON 3A", "C.I.BURNER PLATE")}
+    INDEP = {("ENCON 3A", "BURNER ALONE")}
     FILMCOMPS = ["BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE",
                  "HIGH AL. WHYTEHEAT K BURNER BLOCK", "FLEXIBLE HOSES SET",
                  "Y TYPE STRAINER", "BUTTERFLY VALVE"]
+
+    def cpm_price(item):
+        if not item:
+            return 0.0
+        r = conn.execute("SELECT price FROM component_price_master WHERE item=?", (item,)).fetchone()
+        return f(r[0]) if r and r[0] is not None else 0.0
+
     sg_seen = {}
     for size, group, layout, bmult, sgcfg in SIZES:
         L = LAYOUTS[layout]
@@ -872,8 +906,10 @@ def recompute_burner_prices(conn):
         c["BURNER ALONE"] = (stored(FILM, size, "BURNER ALONE") if (size, "BURNER ALONE") in INDEP
                              else sum(g(i) for i in L["ba"]) * 2.5)
         c["MICRO VALVE"] = g(L["micro"]) * 2
-        c["C.I.BURNER PLATE"] = (stored(FILM, size, "C.I.BURNER PLATE") if (size, "C.I.BURNER PLATE") in INDEP
-                                 else g(L["ciplate"]) * 1.8)
+        # C.I. Plate fetched from the Pricelist (Raw Material); fall back to the
+        # old burner-plate × 1.8 formula only if the item isn't seeded yet.
+        _ci = cpm_price(CIPLATE_CPM.get(size))
+        c["C.I.BURNER PLATE"] = _ci if _ci else g(L["ciplate"]) * 1.8
         c["HIGH AL. WHYTEHEAT K BURNER BLOCK"] = g(L["block"]) * bmult
         c["FLEXIBLE HOSES SET"] = sum(g(i) for i in L["hoses"]) * 2
         c["Y TYPE STRAINER"] = stored(FILM, size, "Y TYPE STRAINER")
