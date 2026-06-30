@@ -891,10 +891,10 @@ def recompute_burner_prices(conn):
     # part index (1-based, within the group's ordered rows) for each role.
     # Layout A = the 16-row sizes (2A/3A, 4A, 5A/6A); B = the 20-row 7A.
     LAYOUTS = {
-        "A": {"ba": [1, 2, 3, 4, 5], "butterfly": 6, "hoses": [8, 9],
+        "A": {"ba": [1, 2, 3, 4, 5], "butterfly": 6, "ystrainer": 7, "hoses": [8, 9],
               "micro": 10, "ciplate": 13, "block": 14, "ssassy": 5},
         "B": {"ba": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "micro": 11, "hoses": [12, 13],
-              "butterfly": 14, "block": 16, "ciplate": 17, "ssassy": 10},
+              "butterfly": 14, "ystrainer": 15, "block": 16, "ciplate": 17, "ssassy": 10},
     }
     # (price size, parts group, layout, block markup, S.G.-Assembly rule)
     SIZES = [("ENCON 2A", "2A/3A", "A", 2.0, ("mult", 3.0)),
@@ -925,10 +925,10 @@ def recompute_burner_prices(conn):
                                  else g(L["ciplate"]) * 1.8)
         c["HIGH AL. WHYTEHEAT K BURNER BLOCK"] = g(L["block"]) * bmult
         c["FLEXIBLE HOSES SET"] = sum(g(i) for i in L["hoses"]) * 2
-        c["Y TYPE STRAINER"] = stored(FILM, size, "Y TYPE STRAINER")
+        c["Y TYPE STRAINER"] = g(L["ystrainer"]) * 2.5   # Y-strainer rate × 2.5
         c["BUTTERFLY VALVE"] = g(L["butterfly"]) * 2
-        for k in ("BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE",
-                  "HIGH AL. WHYTEHEAT K BURNER BLOCK", "FLEXIBLE HOSES SET", "BUTTERFLY VALVE"):
+        for k in ("BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE", "HIGH AL. WHYTEHEAT K BURNER BLOCK",
+                  "FLEXIBLE HOSES SET", "Y TYPE STRAINER", "BUTTERFLY VALVE"):
             if (size, k) not in INDEP:
                 put(FILM, size, k, c[k])
         put(FILM, size, "BURNER SET", sum(c[k] for k in FILMCOMPS))
