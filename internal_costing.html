@@ -111,7 +111,7 @@ function esc(s){ return String(s==null?'':s).replace(/"/g,'&quot;'); }
 // Which price cells are real inputs (everything else is computed from parts).
 function priceEditable(size, comp){
   if(comp==='Y TYPE STRAINER' || comp==='AIR RESISTOR') return true;          // from Rates / fixed
-  if(size==='ENCON 3A' && (comp==='BURNER ALONE' || comp==='C.I.BURNER PLATE')) return true;  // hand-set
+  if(size==='ENCON 3A' && comp==='C.I.BURNER PLATE') return true;  // 3A C.I. Plate hand-set; Burner Alone now computed
   return false;
 }
 
