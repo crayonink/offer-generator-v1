@@ -54,6 +54,14 @@ tr.totrow td{font-weight:800;border-top:2px solid var(--line2);background:var(--
 .muted{color:var(--muted2)}
 .co{font-weight:700}
 .setcol{font-weight:800;background:var(--bg)}
+td.ed{cursor:text}
+td.ed:hover{background:#eef4fb}
+td.ed:focus{outline:2px solid var(--red);outline-offset:-2px;background:#fff;border-radius:3px}
+td.ed.saved{background:#dcfce7}
+td.ed.err{background:#fee2e2}
+td.ed.saving{opacity:.55}
+.edit-note{font-size:.76rem;color:var(--muted);margin-bottom:16px}
+.edit-note b{color:var(--red)}
 </style>
 </head>
 <body>
@@ -85,24 +93,50 @@ tr.totrow td{font-weight:800;border-top:2px solid var(--line2);background:var(--
     <div class="tabs">
       <button class="tab active">Oil Burner</button>
     </div>
+    <div class="edit-note"><b>✎ Editable</b> — click any value to change it; edits save automatically to the database.</div>
     <div id="tab-content"></div>
   </div>
 </div>
 <script>
-function num(v){ if(v===null||v===undefined||v===''||v==='None') return '<span class="muted">—</span>';
-  return String(v).replace(/\.0$/,''); }
+function ev(v){ return (v===null||v===undefined||v===''||v==='None') ? '' : String(v).replace(/\.0$/,''); }
 function inr(n){ return (Number(n)||0).toLocaleString('en-IN'); }
+function esc(s){ return String(s==null?'':s).replace(/"/g,'&quot;'); }
+
+function save(el){
+  const v=el.textContent.trim();
+  const price = el.dataset.kind==='price';
+  const url  = price ? '/api/internal-costing/update-price' : '/api/internal-costing/update-part';
+  const body = price
+    ? {section:el.dataset.section, burner_size:el.dataset.size, component:el.dataset.comp, value:v}
+    : {rid:+el.dataset.rid, field:el.dataset.field, value:v};
+  el.classList.add('saving');
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.json()).then(d=>{
+      el.classList.remove('saving');
+      el.classList.add(d.success?'saved':'err');
+      setTimeout(()=>el.classList.remove('saved','err'),900);
+      if(d.success && el.dataset.field==='total_amount') recalc(el);
+    }).catch(()=>{ el.classList.remove('saving'); el.classList.add('err'); });
+}
+function recalc(el){
+  const grp=el.closest('.grp'); if(!grp) return;
+  let s=0; grp.querySelectorAll('td.rt').forEach(c=>{ s+=Number((c.textContent||'').replace(/[^0-9.\-]/g,''))||0; });
+  const t=grp.querySelector('.tot'); if(t) t.textContent='Total cost: ₹'+s.toLocaleString('en-IN');
+}
+
 function priceTable(t, title){
   if(!t || !t.rows || !t.rows.length) return '';
-  const cols=t.columns||[], last=cols.length-1;
+  const cols=t.columns||[], last=cols.length-1, sec=t.section;
   return `<div class="grp">
     <div class="grp-h"><span class="t">${title}</span></div>
-    <table><thead><tr><th>Burner Size</th>${cols.map((c,i)=>`<th class="num${i===last?' setcol':''}">${c}</th>`).join('')}</tr></thead>
+    <table><thead><tr><th>Burner Size</th>${cols.map((c,i)=>`<th class="num${i===last?' setcol':''}">${c.label}</th>`).join('')}</tr></thead>
     <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${r.cells.map((v,i)=>
-      `<td class="num${i===last?' setcol':''}">${v==null?'<span class="muted">—</span>':'₹'+inr(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      `<td class="num ed${i===last?' setcol':''}" contenteditable data-kind="price" data-section="${esc(sec)}" data-size="${esc(r.size)}" data-comp="${esc(cols[i].comp)}" onblur="save(this)">${ev(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
   </div>`;
 }
 function partsTable(grp){
+  const ec=(rid,f,v,extra='')=>`<td class="num ed ${extra}" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${ev(v)}</td>`;
+  const et=(rid,f,v)=>`<td class="ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${v||''}</td>`;
   return `<div class="grp">
     <div class="grp-h"><span class="t">ENCON ${grp.burner_type}</span>
       <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
@@ -111,27 +145,31 @@ function partsTable(grp){
       <th class="num">Rate</th><th class="num">Amount</th><th class="num">M/C Cost</th><th class="num">Total</th>
     </tr></thead><tbody>
       ${grp.items.map(it=>`<tr>
-        <td>${num(it.s_no)}</td><td>${it.particular||''}</td>
-        <td class="num">${num(it.qty)}</td><td>${it.unit||''}</td>
-        <td class="num">${num(it.rate)}</td><td class="num">${num(it.amount)}</td>
-        <td class="num">${num(it.mc_cost)}</td><td class="num">${num(it.row_total)}</td></tr>`).join('')}
+        ${ec(it._rid,'s_no',it.s_no)}${et(it._rid,'particular',it.particular)}
+        ${ec(it._rid,'qty',it.qty)}${et(it._rid,'unit',it.unit)}
+        ${ec(it._rid,'rate',it.rate)}${ec(it._rid,'amount',it.amount)}
+        ${ec(it._rid,'mc_cost',it.mc_cost)}${ec(it._rid,'total_amount',it.row_total,'rt')}
+      </tr>`).join('')}
       <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
 }
-Promise.all([
-  fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
-  fetch('/api/internal-costing/oil-burner').then(r=>r.json())
-]).then(([prices, parts])=>{
-  let html='';
-  html += priceTable(prices.film,   'Film Burner &amp; Accessories — price list (W.E.F Jul’22)');
-  html += priceTable(prices.spares, 'Spares — IIP ENCON Oil Film Burners');
-  const g=parts.groups||[];
-  if(g.length){
-    html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal)</div>';
-    html += g.map(partsTable).join('');
-  }
-  document.getElementById('tab-content').innerHTML = html || '<div class="stub"><h2>No oil-burner data found</h2></div>';
-}).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
+function load(){
+  Promise.all([
+    fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
+    fetch('/api/internal-costing/oil-burner').then(r=>r.json())
+  ]).then(([prices, parts])=>{
+    let html='';
+    html += priceTable(prices.film,   'Film Burner &amp; Accessories — price list (W.E.F Jul’22)');
+    html += priceTable(prices.spares, 'Spares — IIP ENCON Oil Film Burners');
+    const g=parts.groups||[];
+    if(g.length){
+      html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal)</div>';
+      html += g.map(partsTable).join('');
+    }
+    document.getElementById('tab-content').innerHTML = html || '<div class="stub"><h2>No oil-burner data found</h2></div>';
+  }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
+}
+load();
 </script>
 </body>
 </html>

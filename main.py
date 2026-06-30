@@ -702,7 +702,8 @@ def api_ic_oil_burner_prices():
             if r["component"] not in comps:
                 comps.append(r["component"])
             data.setdefault(r["burner_size"], {})[r["component"]] = r["price"]
-        return {"columns": [LABELS.get(c, c.title()) for c in comps],
+        return {"section": section,
+                "columns": [{"label": LABELS.get(c, c.title()), "comp": c} for c in comps],
                 "rows": [{"size": sz, "cells": [vals.get(c) for c in comps]}
                          for sz, vals in data.items()]}
     try:
@@ -711,6 +712,64 @@ def api_ic_oil_burner_prices():
     except Exception as e:
         return {"film": {"columns": [], "rows": []},
                 "spares": {"columns": [], "rows": []}, "error": str(e)}
+
+
+class _PartEdit(BaseModel):
+    rid: int
+    field: str
+    value: Optional[str] = ""
+
+
+@app.post("/api/internal-costing/update-part")
+def api_ic_update_part(u: _PartEdit):
+    """Edit one cell of oil_burner_master (internal parts costing)."""
+    allowed = {"s_no", "particular", "qty", "unit", "rate", "amount", "mc_cost", "total_amount"}
+    numeric = {"qty", "rate", "amount", "mc_cost", "total_amount"}
+    if u.field not in allowed:
+        return {"success": False, "error": "field not editable"}
+    try:
+        val = (u.value or "").strip()
+        if u.field in numeric:
+            val = val.replace(",", "")
+            try:
+                val = float(val)
+            except ValueError:
+                val = None if val == "" else val
+        else:
+            val = val or None
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(f"UPDATE oil_burner_master SET {u.field}=? WHERE rowid=?", (val, u.rid))
+        conn.commit()
+        conn.close()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+class _PriceEdit(BaseModel):
+    section: str
+    burner_size: str
+    component: str
+    value: Optional[str] = ""
+
+
+@app.post("/api/internal-costing/update-price")
+def api_ic_update_price(u: _PriceEdit):
+    """Edit one price cell of burner_pricelist_master (the film/spares tables)."""
+    try:
+        try:
+            price = float((u.value or "").replace(",", "").strip())
+        except ValueError:
+            price = None
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE burner_pricelist_master SET price=? "
+                     "WHERE section=? AND burner_size=? AND component=?",
+                     (price, u.section, u.burner_size, u.component))
+        conn.commit()
+        conn.close()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/internal-costing/oil-burner")
