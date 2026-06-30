@@ -447,6 +447,9 @@ RATE_CPM = {
     "C22": "M.S. Tube B Class 1.5 in",
     # butterfly: inch × 25.4 → nearest NB (2.5"→65, 4"→100, 6"→150)
     "K21": "BUTTERFLY VALVE 65 NB", "K22": "BUTTERFLY VALVE 100 NB", "K23": "BUTTERFLY VALVE 150 NB",
+    # flexible hoses — by NB size to the matching Pricelist hose
+    "K14": "FLEXIBLE HOSE 15 NB 1500mm", "K15": "FLEXIBLE HOSE 15 NB 1500mm",
+    "K16": "FLEXIBLE HOSE-20NB*1000MM (OIL)", "K17": "FLEXIBLE HOSE-25NB*1000MM (AIR)",
 }
 
 
