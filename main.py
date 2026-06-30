@@ -714,6 +714,91 @@ def api_ic_oil_burner_prices():
                 "spares": {"columns": [], "rows": []}, "error": str(e)}
 
 
+def recompute_burner_prices(conn):
+    """Recompute the derived BURNER prices from the oil_burner_master part totals,
+    exactly as the workbook formulas do (part totals x markup). Independent cells
+    — Y-Strainer, Air Resistor, and the 3A hand-set Burner Alone & C.I. Plate —
+    are read but never overwritten. Mirrors the ' Oil Burner'!->BURNER! formulas.
+
+      Burner Alone = Σ(first part totals) × 2.5      Butterfly   = part × 2
+      C.I. Plate   = burner-plate total × 1.8        Micro Valve = part × 2
+      Burner Block = block total × 2 (5A/6A ×2.2)    Flex Hoses  = Σ(2 hoses) × 2
+      Burner Set   = Σ(the 7 film components)        S.G. Assy   = S.S.Assy × n
+    """
+    FILM = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
+    SPARE = "PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS"
+
+    def f(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def part_totals(group):
+        rows = conn.execute("SELECT amount, mc_cost, total_amount FROM oil_burner_master "
+                            "WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()
+        return [(f(t) if t not in (None, "") else f(a) + f(m)) for a, m, t in rows]
+
+    def stored(section, size, comp):
+        r = conn.execute("SELECT price FROM burner_pricelist_master "
+                         "WHERE section=? AND burner_size=? AND component=?",
+                         (section, size, comp)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def put(section, size, comp, val):
+        conn.execute("UPDATE burner_pricelist_master SET price=? "
+                     "WHERE section=? AND burner_size=? AND component=?",
+                     (round(val, 2), section, size, comp))
+
+    # part index (1-based, within the group's ordered rows) for each role.
+    # Layout A = the 16-row sizes (2A/3A, 4A, 5A/6A); B = the 20-row 7A.
+    LAYOUTS = {
+        "A": {"ba": [1, 2, 3, 4, 5], "butterfly": 6, "hoses": [8, 9],
+              "micro": 10, "ciplate": 13, "block": 14, "ssassy": 5},
+        "B": {"ba": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "micro": 11, "hoses": [12, 13],
+              "butterfly": 14, "block": 16, "ciplate": 17, "ssassy": 10},
+    }
+    # (price size, parts group, layout, block markup, S.G.-Assembly rule)
+    SIZES = [("ENCON 2A", "2A/3A", "A", 2.0, ("mult", 3.0)),
+             ("ENCON 3A", "2A/3A", "A", 2.0, ("plus", "ENCON 2A", 250)),
+             ("ENCON 4A", "4A",    "A", 2.0, ("mult", 3.93)),
+             ("ENCON 5A", "5A/6A", "A", 2.2, ("mult", 3.4)),
+             ("ENCON 6A", "5A/6A", "A", 2.2, ("plus", "ENCON 5A", 200)),
+             ("ENCON 7A", "7A",    "B", 2.0, ("mult", 2.0))]
+    INDEP = {("ENCON 3A", "BURNER ALONE"), ("ENCON 3A", "C.I.BURNER PLATE")}
+    FILMCOMPS = ["BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE",
+                 "HIGH AL. WHYTEHEAT K BURNER BLOCK", "FLEXIBLE HOSES SET",
+                 "Y TYPE STRAINER", "BUTTERFLY VALVE"]
+    sg_seen = {}
+    for size, group, layout, bmult, sgcfg in SIZES:
+        L = LAYOUTS[layout]
+        T = part_totals(group)
+
+        def g(i, _T=T):
+            return _T[i - 1] if 0 < i <= len(_T) else 0.0
+
+        c = {}
+        c["BURNER ALONE"] = (stored(FILM, size, "BURNER ALONE") if (size, "BURNER ALONE") in INDEP
+                             else sum(g(i) for i in L["ba"]) * 2.5)
+        c["MICRO VALVE"] = g(L["micro"]) * 2
+        c["C.I.BURNER PLATE"] = (stored(FILM, size, "C.I.BURNER PLATE") if (size, "C.I.BURNER PLATE") in INDEP
+                                 else g(L["ciplate"]) * 1.8)
+        c["HIGH AL. WHYTEHEAT K BURNER BLOCK"] = g(L["block"]) * bmult
+        c["FLEXIBLE HOSES SET"] = sum(g(i) for i in L["hoses"]) * 2
+        c["Y TYPE STRAINER"] = stored(FILM, size, "Y TYPE STRAINER")
+        c["BUTTERFLY VALVE"] = g(L["butterfly"]) * 2
+        for k in ("BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE",
+                  "HIGH AL. WHYTEHEAT K BURNER BLOCK", "FLEXIBLE HOSES SET", "BUTTERFLY VALVE"):
+            if (size, k) not in INDEP:
+                put(FILM, size, k, c[k])
+        put(FILM, size, "BURNER SET", sum(c[k] for k in FILMCOMPS))
+
+        ssassy = g(L["ssassy"])
+        sgval = ssassy * sgcfg[1] if sgcfg[0] == "mult" else sg_seen[sgcfg[1]] + sgcfg[2]
+        sg_seen[size] = sgval
+        put(SPARE, size.replace("ENCON ", "ENCON-"), "S.G. ASSEMBLY", sgval)
+
+
 class _PartEdit(BaseModel):
     rid: int
     field: str
@@ -722,7 +807,8 @@ class _PartEdit(BaseModel):
 
 @app.post("/api/internal-costing/update-part")
 def api_ic_update_part(u: _PartEdit):
-    """Edit one cell of oil_burner_master (internal parts costing)."""
+    """Edit one cell of oil_burner_master, then cascade: recompute this row's
+    Amount (=Qty×Rate) and Total (=Amount+M/C), then the derived burner prices."""
     allowed = {"s_no", "particular", "qty", "unit", "rate", "amount", "mc_cost", "total_amount"}
     numeric = {"qty", "rate", "amount", "mc_cost", "total_amount"}
     if u.field not in allowed:
@@ -739,6 +825,22 @@ def api_ic_update_part(u: _PartEdit):
             val = val or None
         conn = sqlite3.connect(DB_PATH)
         conn.execute(f"UPDATE oil_burner_master SET {u.field}=? WHERE rowid=?", (val, u.rid))
+
+        def _f(x):
+            try:
+                return float(x)
+            except (TypeError, ValueError):
+                return 0.0
+        # rows that carry a Qty AND Rate are formula rows: Amount=Qty×Rate,
+        # Total=Amount+M/C. Lump rows (labour, paint) have neither — leave their
+        # hand-entered Total alone.
+        row = conn.execute("SELECT qty, rate, mc_cost FROM oil_burner_master WHERE rowid=?",
+                           (u.rid,)).fetchone()
+        if row and row[0] not in (None, "") and row[1] not in (None, ""):
+            amount = _f(row[0]) * _f(row[1])
+            conn.execute("UPDATE oil_burner_master SET amount=?, total_amount=? WHERE rowid=?",
+                         (amount, amount + _f(row[2]), u.rid))
+        recompute_burner_prices(conn)
         conn.commit()
         conn.close()
         return {"success": True}
@@ -765,6 +867,9 @@ def api_ic_update_price(u: _PriceEdit):
         conn.execute("UPDATE burner_pricelist_master SET price=? "
                      "WHERE section=? AND burner_size=? AND component=?",
                      (price, u.section, u.burner_size, u.component))
+        # an independent cell (Y-Strainer / Air Resistor / 3A inputs) feeds the
+        # Burner Set total, so re-roll the derived prices.
+        recompute_burner_prices(conn)
         conn.commit()
         conn.close()
         return {"success": True}

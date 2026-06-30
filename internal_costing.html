@@ -60,8 +60,10 @@ td.ed:focus{outline:2px solid var(--red);outline-offset:-2px;background:#fff;bor
 td.ed.saved{background:#dcfce7}
 td.ed.err{background:#fee2e2}
 td.ed.saving{opacity:.55}
+td.calc{background:#f6f8fa;color:#475569}
 .edit-note{font-size:.76rem;color:var(--muted);margin-bottom:16px}
 .edit-note b{color:var(--red)}
+.edit-note .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 10px}
 </style>
 </head>
 <body>
@@ -93,7 +95,7 @@ td.ed.saving{opacity:.55}
     <div class="tabs">
       <button class="tab active">Oil Burner</button>
     </div>
-    <div class="edit-note"><b>✎ Editable</b> — click any value to change it; edits save automatically to the database.</div>
+    <div class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>cells (Amount, Total, and the burner prices) recalculate from the parts automatically.</div>
     <div id="tab-content"></div>
   </div>
 </div>
@@ -102,27 +104,35 @@ function ev(v){ return (v===null||v===undefined||v===''||v==='None') ? '' : Stri
 function inr(n){ return (Number(n)||0).toLocaleString('en-IN'); }
 function esc(s){ return String(s==null?'':s).replace(/"/g,'&quot;'); }
 
-function save(el){
-  const v=el.textContent.trim();
+// Which price cells are real inputs (everything else is computed from parts).
+function priceEditable(size, comp){
+  if(comp==='Y TYPE STRAINER' || comp==='AIR RESISTOR') return true;          // from Rates / fixed
+  if(size==='ENCON 3A' && (comp==='BURNER ALONE' || comp==='C.I.BURNER PLATE')) return true;  // hand-set
+  return false;
+}
+
+function postField(el){
   const price = el.dataset.kind==='price';
   const url  = price ? '/api/internal-costing/update-price' : '/api/internal-costing/update-part';
+  const v=el.textContent.trim();
   const body = price
     ? {section:el.dataset.section, burner_size:el.dataset.size, component:el.dataset.comp, value:v}
     : {rid:+el.dataset.rid, field:el.dataset.field, value:v};
   el.classList.add('saving');
-  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(r=>r.json()).then(d=>{
-      el.classList.remove('saving');
-      el.classList.add(d.success?'saved':'err');
-      setTimeout(()=>el.classList.remove('saved','err'),900);
-      if(d.success && el.dataset.field==='total_amount') recalc(el);
-    }).catch(()=>{ el.classList.remove('saving'); el.classList.add('err'); });
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(r=>r.json())
+    .catch(()=>({success:false}));
 }
-function recalc(el){
-  const grp=el.closest('.grp'); if(!grp) return;
-  let s=0; grp.querySelectorAll('td.rt').forEach(c=>{ s+=Number((c.textContent||'').replace(/[^0-9.\-]/g,''))||0; });
-  const t=grp.querySelector('.tot'); if(t) t.textContent='Total cost: ₹'+s.toLocaleString('en-IN');
+// One edit cascades server-side (part Amount/Total → size total → burner prices),
+// so re-fetch everything and re-render, holding the user's scroll position.
+function save(el){
+  el.classList.remove('saved','err');
+  postField(el).then(d=>{
+    if(d && d.success){ reload(); }
+    else { el.classList.remove('saving'); el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); }
+  });
 }
+function reload(){ const y=window.scrollY; load().then(()=>window.scrollTo(0,y)); }
 
 function priceTable(t, title){
   if(!t || !t.rows || !t.rows.length) return '';
@@ -130,13 +140,18 @@ function priceTable(t, title){
   return `<div class="grp">
     <div class="grp-h"><span class="t">${title}</span></div>
     <table><thead><tr><th>Burner Size</th>${cols.map((c,i)=>`<th class="num${i===last?' setcol':''}">${c.label}</th>`).join('')}</tr></thead>
-    <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${r.cells.map((v,i)=>
-      `<td class="num ed${i===last?' setcol':''}" contenteditable data-kind="price" data-section="${esc(sec)}" data-size="${esc(r.size)}" data-comp="${esc(cols[i].comp)}" onblur="save(this)">${ev(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${r.cells.map((v,i)=>{
+      const comp=cols[i].comp, setc=(i===last?' setcol':'');
+      return priceEditable(r.size, comp)
+        ? `<td class="num ed${setc}" contenteditable data-kind="price" data-section="${esc(sec)}" data-size="${esc(r.size)}" data-comp="${esc(comp)}" onblur="save(this)">${ev(v)}</td>`
+        : `<td class="num calc${setc}" title="computed from parts">${ev(v)}</td>`;
+    }).join('')}</tr>`).join('')}</tbody></table>
   </div>`;
 }
 function partsTable(grp){
-  const ec=(rid,f,v,extra='')=>`<td class="num ed ${extra}" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${ev(v)}</td>`;
-  const et=(rid,f,v)=>`<td class="ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${v||''}</td>`;
+  const E =(rid,f,v)=>`<td class="num ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${ev(v)}</td>`;
+  const Et=(rid,f,v)=>`<td class="ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${v||''}</td>`;
+  const C =(v)=>`<td class="num calc" title="computed">${ev(v)}</td>`;
   return `<div class="grp">
     <div class="grp-h"><span class="t">ENCON ${grp.burner_type}</span>
       <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
@@ -144,26 +159,29 @@ function partsTable(grp){
       <th>S.No</th><th>Particular</th><th class="num">Qty</th><th>Unit</th>
       <th class="num">Rate</th><th class="num">Amount</th><th class="num">M/C Cost</th><th class="num">Total</th>
     </tr></thead><tbody>
-      ${grp.items.map(it=>`<tr>
-        ${ec(it._rid,'s_no',it.s_no)}${et(it._rid,'particular',it.particular)}
-        ${ec(it._rid,'qty',it.qty)}${et(it._rid,'unit',it.unit)}
-        ${ec(it._rid,'rate',it.rate)}${ec(it._rid,'amount',it.amount)}
-        ${ec(it._rid,'mc_cost',it.mc_cost)}${ec(it._rid,'total_amount',it.row_total,'rt')}
-      </tr>`).join('')}
-      <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num">₹${inr(grp.total)}</td></tr>
+      ${grp.items.map(it=>{
+        const hasQR=(it.qty!=null&&it.qty!=='')&&(it.rate!=null&&it.rate!=='');
+        return `<tr>
+          ${E(it._rid,'s_no',it.s_no)}${Et(it._rid,'particular',it.particular)}
+          ${E(it._rid,'qty',it.qty)}${Et(it._rid,'unit',it.unit)}
+          ${E(it._rid,'rate',it.rate)}${C(it.amount)}${E(it._rid,'mc_cost',it.mc_cost)}
+          ${hasQR ? C(it.row_total) : E(it._rid,'total_amount',it.row_total)}
+        </tr>`;
+      }).join('')}
+      <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
 }
 function load(){
-  Promise.all([
+  return Promise.all([
     fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
     fetch('/api/internal-costing/oil-burner').then(r=>r.json())
   ]).then(([prices, parts])=>{
     let html='';
-    html += priceTable(prices.film,   'Film Burner &amp; Accessories — price list (W.E.F Jul’22)');
+    html += priceTable(prices.film,   'Film Burner &amp; Accessories — price list (computed from parts)');
     html += priceTable(prices.spares, 'Spares — IIP ENCON Oil Film Burners');
     const g=parts.groups||[];
     if(g.length){
-      html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal)</div>';
+      html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal) — the source of every price above</div>';
       html += g.map(partsTable).join('');
     }
     document.getElementById('tab-content').innerHTML = html || '<div class="stub"><h2>No oil-burner data found</h2></div>';
