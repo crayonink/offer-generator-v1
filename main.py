@@ -903,9 +903,9 @@ def recompute_burner_prices(conn):
              ("ENCON 5A", "5A/6A", "A", 2.2, ("mult", 3.4)),
              ("ENCON 6A", "5A/6A", "A", 2.2, ("plus", "ENCON 5A", 200)),
              ("ENCON 7A", "7A",    "B", 2.0, ("mult", 2.0))]
-    # 3A Burner Alone is computed from the (shared 2A/3A) parts like 2A; only
-    # C.I. Plate stays a 3A hand-set override.
-    INDEP = {("ENCON 3A", "C.I.BURNER PLATE")}
+    # 2A and 3A share the 2A/3A part group, so every component (Burner Alone,
+    # C.I. Plate, …) computes identically — no 3A hand-set overrides remain.
+    INDEP = set()
     FILMCOMPS = ["BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE",
                  "HIGH AL. WHYTEHEAT K BURNER BLOCK", "FLEXIBLE HOSES SET",
                  "Y TYPE STRAINER", "BUTTERFLY VALVE"]
