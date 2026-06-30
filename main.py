@@ -618,6 +618,12 @@ def root():
         return HTMLResponse(content=f.read())
 
 
+@app.get("/internal-costing", response_class=HTMLResponse)
+def internal_costing_page():
+    with open(os.path.join(BASE_DIR, "internal_costing.html"), "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
 @app.get("/enquiries", response_class=HTMLResponse)
 def enquiries_page():
     with open(os.path.join(BASE_DIR, "enquiries.html"), "r", encoding="utf-8") as f:

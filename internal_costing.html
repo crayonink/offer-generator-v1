@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ENCON — Internal Costing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#f8fafc;--bg2:#ffffff;--panel:#ffffff;--panel2:#f1f5f9;--line:#e5e7eb;--line2:#cbd5e1;
+  --txt:#0f172a;--muted:#64748b;--muted2:#94a3b8;--red:#1a3a5c;--redsoft:rgba(26,58,92,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);display:flex;min-height:100vh}
+a{text-decoration:none;color:inherit}
+.sidebar{width:236px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:18px 0}
+.brand{display:flex;align-items:center;gap:11px;padding:0 20px 20px;border-bottom:1px solid var(--line)}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.15rem;color:#fff}
+.brand .bn{font-weight:800;font-size:.96rem}.brand .bs{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.nav{flex:1;overflow-y:auto;padding:14px 12px}.nav-h{font-size:.64rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted2);font-weight:700;padding:14px 12px 7px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:.86rem;font-weight:600;color:var(--muted);margin-bottom:2px;transition:.13s;position:relative}
+.nav a svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.nav a:hover{background:var(--panel2);color:var(--txt)}
+.nav a.active{background:var(--redsoft);color:var(--red)}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;background:var(--red);border-radius:0 3px 3px 0}
+.side-foot{padding:12px 18px;border-top:1px solid var(--line)}
+.btn{font-size:.78rem;font-weight:700;padding:9px 16px;border-radius:9px;border:1px solid var(--line2);background:var(--panel);color:var(--txt);cursor:pointer}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 30px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);z-index:20}
+.topbar h1{font-size:1.32rem;font-weight:800}.topbar .sub{font-size:.78rem;color:var(--muted);margin-top:2px}
+.content{padding:26px 30px 50px;max-width:1500px;width:100%}
+.stub{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:46px;text-align:center;box-shadow:0 1px 2px rgba(16,24,40,.05)}
+.stub .ic{width:60px;height:60px;border-radius:15px;background:var(--redsoft);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.stub .ic svg{width:28px;height:28px;stroke:var(--red);fill:none;stroke-width:2}
+.stub h2{font-size:1.25rem;font-weight:800}
+.stub p{color:var(--muted);font-size:.9rem;margin-top:8px;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.5}
+.tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:13px;margin-top:26px;text-align:left}
+.tool{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px;box-shadow:0 1px 2px rgba(16,24,40,.05);transition:.15s}
+.tool:hover{border-color:var(--red);transform:translateY(-2px)}
+.tool .tn{font-weight:700;font-size:.88rem}.tool .td{font-size:.7rem;color:var(--muted);margin-top:4px}
+.sec-label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:700;margin:30px 2px 14px}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/"><div class="logo">E</div><div><div class="bn">ENCON</div><div class="bs">Thermal Engineers</div></div></a>
+  <nav class="nav">
+    <div class="nav-h">Main</div>
+    <a href="/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a href="/#tools"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg>Costing Tools</a>
+    <a class="active" href="/internal-costing"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h8"/></svg>Internal Costing</a>
+    <a href="/#recent"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Quotations</a>
+    <a href="/pricelist"><svg viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Pricing</a>
+    <div class="nav-h">Data</div>
+    <a href="/viewer"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>Database</a>
+    <a href="/price-master"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Price Master</a>
+    <div class="nav-h">CRM</div>
+    <a href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
+    <a href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
+    <a href="/clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients</a>
+    <a href="/reports"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a>
+  </nav>
+  <div class="side-foot"><a class="btn" href="/logout" style="display:block;text-align:center">Logout</a></div>
+</aside>
+<div class="main">
+  <header class="topbar">
+    <div><h1>Internal Costing</h1><div class="sub">Cost-side view — BOM cost without customer markup</div></div>
+  </header>
+  <div class="content">
+    <div class="stub">
+      <div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h8"/></svg></div>
+      <h2>Internal Costing — being set up</h2>
+      <p>This section will show the internal cost breakdown (bought-out cost, ENCON-made cost, fabrication, etc.) for each product — the figures behind the offer, before markup. Tell me what you want here and I'll build it.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
