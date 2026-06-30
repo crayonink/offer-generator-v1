@@ -444,6 +444,8 @@ RATE_CPM = {
     "K24": "ENCON-Y-STRAINER 20 NB", "K25": "WHYTEHEAT K",
     "ADP_OIL": "ADOPTER 15 NB*20 NB (Oil)", "ADP_AIR": "ADOPTER 15 NB*15 NB (Air)",
     "C22": "M.S. Tube B Class 1.5 in",
+    # butterfly: inch × 25.4 → nearest NB (2.5"→65, 4"→100, 6"→150)
+    "K21": "BUTTERFLY VALVE 65 NB", "K22": "BUTTERFLY VALVE 100 NB", "K23": "BUTTERFLY VALVE 150 NB",
 }
 
 
