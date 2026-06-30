@@ -419,6 +419,7 @@ RATE_LABELS = {
     "K21": ('Butterfly Valve 2.5"', "", _BO), "K22": ('Butterfly Valve 4"', "", _BO),
     "K23": ('Butterfly Valve 6"', "", _BO), "K24": ("Y-Strainer 20NB", "", _BO),
     "K25": ("Whyteheat K (Burner Block)", "Per Kg", _BO),
+    "YSTR25": ("Y-Strainer 25NB", "", _BO),
     "ADP_OIL": ("Adopter 15x20 NB (Oil)", "", _BO),
     "ADP_AIR": ("Adopter 15x15 NB (Air)", "", _BO),
     "RM_PLATE": ("M.S. Plate / Round", "Per Kg", _RM),
@@ -432,7 +433,7 @@ PART_RATE_REFS = {
     "4A":    ["K5", "K5", "K5", "K5", "K7", "K22", "K24", "K14", "K14", "K11", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
     "5A/6A": ["K5", "K5", "K5", "K5", "K8", "K22", "K24", "K15", "K16", "K12", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
     "7A":    ["RM_FAB", "RM_PLATE", "C22", "RM_FAB", "RM_PLATE", "RM_FAB", "RM_PLATE", "RM_PLATE", "RM_PLATE",
-              "K9", "K13", "K16", "K17", "K23", "K24", "K25", "K5", "RM_FAB", None, None],
+              "K9", "K13", "K16", "K17", "K23", "YSTR25", "K25", "K5", "RM_FAB", None, None],
 }
 # rate cell -> component_price_master item: these rates are SOURCED LIVE from the
 # Pricelist (single source of truth). The rest (butterfly K21-23, hoses K14-17,
@@ -441,7 +442,7 @@ RATE_CPM = {
     "K5":  "CASTING BURNER PARTS",
     "K6":  "SS ASSLY 2A/3A", "K7": "SS ASSLY 4A", "K8": "SS ASSLY 5A/6A", "K9": "SS ASSLY 7A",
     "K10": "MICRO VALVE 2A/3A", "K11": "MICRO VALVE 4A", "K12": "MICRO VALVE 5A/6A", "K13": "MICRO VALVE 7A",
-    "K24": "ENCON-Y-STRAINER 20 NB", "K25": "WHYTEHEAT K",
+    "K24": "ENCON-Y-STRAINER 20 NB", "YSTR25": "ENCON-Y-STRAINER 25 NB", "K25": "WHYTEHEAT K",
     "ADP_OIL": "ADOPTER 15 NB*20 NB (Oil)", "ADP_AIR": "ADOPTER 15 NB*15 NB (Air)",
     "C22": "M.S. Tube B Class 1.5 in",
     # butterfly: inch × 25.4 → nearest NB (2.5"→65, 4"→100, 6"→150)
@@ -459,14 +460,14 @@ def ensure_rate_master():
         cols = [r[1] for r in conn.execute("PRAGMA table_info(oil_burner_master)").fetchall()]
         if "rate_ref" not in cols:
             conn.execute("ALTER TABLE oil_burner_master ADD COLUMN rate_ref TEXT")
-        # assign rate_ref by row position within each group, only where unset
+        # assign rate_ref by row position within each group (PART_RATE_REFS is
+        # authoritative, so re-mappings — e.g. 7A Y-strainer K24->YSTR25 — apply)
         for group, refs in PART_RATE_REFS.items():
             rids = [r[0] for r in conn.execute(
                 "SELECT rowid FROM oil_burner_master WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()]
             for i, rid in enumerate(rids):
                 ref = refs[i] if i < len(refs) else None
-                conn.execute("UPDATE oil_burner_master SET rate_ref=? WHERE rowid=? "
-                             "AND (rate_ref IS NULL OR rate_ref='')", (ref, rid))
+                conn.execute("UPDATE oil_burner_master SET rate_ref=? WHERE rowid=?", (ref, rid))
         conn.execute("CREATE TABLE IF NOT EXISTS rate_master "
                      "(cell TEXT PRIMARY KEY, name TEXT, value REAL, unit TEXT, sort INTEGER)")
         rmcols = [r[1] for r in conn.execute("PRAGMA table_info(rate_master)").fetchall()]
@@ -511,6 +512,29 @@ def cleanup_ciplate_pricelist():
 
 
 cleanup_ciplate_pricelist()
+
+
+# Pricelist (Bought Out) items the burner needs that the base Pricelist lacks —
+# seeded if missing, user edits preserved.
+BURNER_PRICELIST_SEED = [
+    ("ENCON-Y-STRAINER 25 NB", "Bought Out", 420),   # 7A uses a 25 NB Y-strainer
+]
+
+
+def ensure_burner_pricelist_seed():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        for item, cat, price in BURNER_PRICELIST_SEED:
+            if not conn.execute("SELECT 1 FROM component_price_master WHERE item=?", (item,)).fetchone():
+                conn.execute("INSERT INTO component_price_master (item, category, price, previous_price) "
+                             "VALUES (?,?,?,?)", (item, cat, price, price))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: ensure_burner_pricelist_seed failed: {e}")
+
+
+ensure_burner_pricelist_seed()
 
 
 def _log_quote(*, quote_no="", ref_no="", company_name="", poc_name="",
