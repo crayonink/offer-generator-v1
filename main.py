@@ -432,6 +432,16 @@ PART_RATE_REFS = {
     "7A":    ["RM_FAB", "RM_PLATE", "C22", "RM_FAB", "RM_PLATE", "RM_FAB", "RM_PLATE", "RM_PLATE", "RM_PLATE",
               "K9", "K13", "K16", "K17", "K23", "K24", "K25", "K5", "RM_FAB", None, None],
 }
+# rate cell -> component_price_master item: these rates are SOURCED LIVE from the
+# Pricelist (single source of truth). The rest (butterfly K21-23, hoses K14-17,
+# M.S. plate/sheet RM_*) stay burner-local until the Pricelist carries them 1:1.
+RATE_CPM = {
+    "K5":  "CASTING BURNER PARTS",
+    "K6":  "SS ASSLY 2A/3A", "K7": "SS ASSLY 4A", "K8": "SS ASSLY 5A/6A", "K9": "SS ASSLY 7A",
+    "K10": "MICRO VALVE 2A/3A", "K11": "MICRO VALVE 4A", "K12": "MICRO VALVE 5A/6A", "K13": "MICRO VALVE 7A",
+    "K24": "ENCON-Y-STRAINER 20 NB", "K25": "WHYTEHEAT K",
+    "C22": "M.S. Tube B Class 1.5 in",
+}
 
 
 def ensure_rate_master():
@@ -877,6 +887,43 @@ def recompute_burner_prices(conn):
         put(SPARE, size.replace("ENCON ", "ENCON-"), "S.G. ASSEMBLY", sgval)
 
 
+def sync_cpm_rates(conn):
+    """Pull the live Pricelist (component_price_master) into the burner for the
+    cleanly-mapped rates (RATE_CPM): refresh the rate-master value, repush into
+    every linked part (rate, Amount, Total), then recompute the burner prices.
+    Makes the Pricelist the single source of truth for those rates."""
+    def _f(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+    for cell, item in RATE_CPM.items():
+        r = conn.execute("SELECT price FROM component_price_master WHERE item=?", (item,)).fetchone()
+        if not r or r[0] is None:
+            continue
+        price = _f(r[0])
+        conn.execute("UPDATE rate_master SET value=? WHERE cell=?", (price, cell))
+        for rid, qty, mc in conn.execute(
+                "SELECT rowid, qty, mc_cost FROM oil_burner_master WHERE rate_ref=?", (cell,)).fetchall():
+            amount = _f(qty) * price
+            conn.execute("UPDATE oil_burner_master SET rate=?, amount=?, total_amount=? WHERE rowid=?",
+                         (price, amount, amount + _f(mc), rid))
+    recompute_burner_prices(conn)
+
+
+def _startup_cpm_sync():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        sync_cpm_rates(conn)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: startup sync_cpm_rates failed: {e}")
+
+
+_startup_cpm_sync()
+
+
 class _PartEdit(BaseModel):
     rid: int
     field: str
@@ -964,6 +1011,8 @@ def api_ic_rates():
         rows = [dict(r) for r in conn.execute(
             "SELECT cell, name, value, unit, category FROM rate_master ORDER BY sort")]
         conn.close()
+        for r in rows:                       # mark Pricelist-sourced rates
+            r["linked"] = r["cell"] in RATE_CPM
         return {"rates": rows}
     except Exception as e:
         return {"rates": [], "error": str(e)}
@@ -979,6 +1028,8 @@ def api_ic_update_rate(u: _RateEdit):
     """Edit a rate-master value, then cascade: push it into every part that
     references this rate (rate, Amount=Qty×rate, Total=Amount+M/C), then re-roll
     all derived burner prices."""
+    if u.cell in RATE_CPM:
+        return {"success": False, "error": "This rate is sourced from the Pricelist — edit it there."}
     try:
         try:
             newrate = float((u.value or "").replace(",", "").strip())
@@ -2480,6 +2531,14 @@ def update_pricelist_rate(req: RateUpdateRequest):
                 cascade_counts[table] = cascade_counts.get(table, 0) + updated
 
         conn.commit()
+
+        # also cascade into the internal-costing oil_burner_master (rate-master
+        # linked to the Pricelist) so the burner tab reflects the new rate.
+        try:
+            sync_cpm_rates(conn)
+            conn.commit()
+        except Exception as _e:
+            print(f"WARN: burner sync after pricelist edit failed: {_e}")
 
         conn.close()
         return {
