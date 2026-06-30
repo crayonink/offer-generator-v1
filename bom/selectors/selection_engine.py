@@ -76,7 +76,7 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
         agr = select_agr(
             nb=gt_outlet_nb,
             connection="Flanged" if gt_outlet_nb >= 65 else "Threaded",
-            ratio="1:1",
+            ratio="1:1 to 1:10",   # standardised: 1:1-to-1:10 is the only AGR offered
             compact="No",
         )
     else:

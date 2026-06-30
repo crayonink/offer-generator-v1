@@ -524,6 +524,28 @@ def cleanup_ciplate_pricelist():
 cleanup_ciplate_pricelist()
 
 
+def cleanup_agr_fixed_ratio():
+    """Standardise AGR on 1:1-to-1:10 (both threaded & flanged): drop the fixed
+    1:1 rows from the Pricelist (component_price_master) and the BOM source
+    (agr_master). Runs on startup so the live (volume) DB is cleaned. The gas
+    BOM selector now requests ratio='1:1 to 1:10'."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("DELETE FROM component_price_master "
+                     "WHERE category='Air Gas Regulator' AND specification='1:1'")
+        try:
+            conn.execute("DELETE FROM agr_master WHERE ratio='1:1'")
+        except sqlite3.OperationalError:
+            pass   # agr_master may not exist in some DBs
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: cleanup_agr_fixed_ratio failed: {e}")
+
+
+cleanup_agr_fixed_ratio()
+
+
 # Pricelist (Bought Out) items the burner needs that the base Pricelist lacks —
 # seeded if missing, user edits preserved.
 BURNER_PRICELIST_SEED = [
