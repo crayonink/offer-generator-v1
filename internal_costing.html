@@ -63,6 +63,7 @@ td.ed.saving{opacity:.55}
 td.calc{background:#f6f8fa;color:#475569}
 td.calc.lk{background:#eef4fb;color:#1a3a5c}
 td.calc.lk::after{content:" ◆";font-size:.7em;color:#94a3b8}
+tr.subhead td{background:var(--panel2);font-weight:700;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .edit-note{font-size:.76rem;color:var(--muted);margin-bottom:16px}
 .edit-note b{color:var(--red)}
 .edit-note .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 10px}
@@ -182,14 +183,15 @@ function partsTable(grp){
 }
 function ratesTable(rates){
   if(!rates || !rates.length) return '';
+  let body='', lastCat=null;
+  rates.forEach(r=>{
+    if((r.category||'')!==lastCat){ lastCat=r.category||''; body+=`<tr class="subhead"><td colspan="3">${lastCat||'Rates'}</td></tr>`; }
+    body+=`<tr><td class="co">${r.name||r.cell}</td><td>${r.unit||''}</td>
+      <td class="num ed" contenteditable data-kind="rate" data-cell="${esc(r.cell)}" onblur="save(this)">${ev(r.value)}</td></tr>`;
+  });
   return `<div class="grp">
     <div class="grp-h"><span class="t">Rate Master — raw-material &amp; bought-out rates</span></div>
-    <table><thead><tr><th>Rate Item</th><th>Unit</th><th class="num">Rate</th></tr></thead><tbody>
-      ${rates.map(r=>`<tr>
-        <td class="co">${r.name||r.cell}</td><td>${r.unit||''}</td>
-        <td class="num ed" contenteditable data-kind="rate" data-cell="${esc(r.cell)}" onblur="save(this)">${ev(r.value)}</td>
-      </tr>`).join('')}
-    </tbody></table></div>`;
+    <table><thead><tr><th>Rate Item</th><th>Unit</th><th class="num">Rate</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function load(){
   return Promise.all([

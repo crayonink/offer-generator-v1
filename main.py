@@ -403,26 +403,34 @@ ensure_oil_burner_master()
 
 
 # --- Oil-burner rate master (the ' Oil Burner' Rate column pulls from Rates!) ---
-# cell -> (display name, unit). Mirrors the Rates! sheet items the parts reference.
+# cell -> (display name, unit, category). Mirrors the Rates! sheet items the
+# parts reference: the "Bought-out / Casting" K-column, plus the M.S. raw
+# materials (the steel the fabricated parts are made from).
+_BO = "Bought-out / Casting"
+_RM = "Raw Material"
 RATE_LABELS = {
-    "K5":  ("Casting Burner Parts (MS)", "Per Kg"),
-    "K6":  ("SS Assembly 2A/3A", ""), "K7": ("SS Assembly 4A", ""),
-    "K8":  ("SS Assembly 5A/6A", ""), "K9": ("SS Assembly 7A", ""),
-    "K10": ("Micro Valve 2A/3A", ""), "K11": ("Micro Valve 4A", ""),
-    "K12": ("Micro Valve 5A/6A", ""), "K13": ("Micro Valve 7A", ""),
-    "K14": ("Flexible Hose 15NB x750 (Oil)", ""), "K15": ("Flexible Hose 15NB x1000 (Oil)", ""),
-    "K16": ("Flexible Hose 20NB x1000", ""), "K17": ("Flexible Hose 25NB x1000 (Air)", ""),
-    "K21": ('Butterfly Valve 2.5"', ""), "K22": ('Butterfly Valve 4"', ""),
-    "K23": ('Butterfly Valve 6"', ""), "K24": ("Y-Strainer 20NB", ""),
-    "K25": ("Whyteheat K (Burner Block)", "Per Kg"),
-    "C22": ('M.S. Tube "B" Class 1.5in', "Per Kg"),
+    "K5":  ("Casting Burner Parts (MS)", "Per Kg", _BO),
+    "K6":  ("SS Assembly 2A/3A", "", _BO), "K7": ("SS Assembly 4A", "", _BO),
+    "K8":  ("SS Assembly 5A/6A", "", _BO), "K9": ("SS Assembly 7A", "", _BO),
+    "K10": ("Micro Valve 2A/3A", "", _BO), "K11": ("Micro Valve 4A", "", _BO),
+    "K12": ("Micro Valve 5A/6A", "", _BO), "K13": ("Micro Valve 7A", "", _BO),
+    "K14": ("Flexible Hose 15NB x750 (Oil)", "", _BO), "K15": ("Flexible Hose 15NB x1000 (Oil)", "", _BO),
+    "K16": ("Flexible Hose 20NB x1000", "", _BO), "K17": ("Flexible Hose 25NB x1000 (Air)", "", _BO),
+    "K21": ('Butterfly Valve 2.5"', "", _BO), "K22": ('Butterfly Valve 4"', "", _BO),
+    "K23": ('Butterfly Valve 6"', "", _BO), "K24": ("Y-Strainer 20NB", "", _BO),
+    "K25": ("Whyteheat K (Burner Block)", "Per Kg", _BO),
+    "RM_PLATE": ("M.S. Plate / Round", "Per Kg", _RM),
+    "RM_FAB":   ("M.S. Sheet (fab. tube/pipe)", "Per Kg", _RM),
+    "C22":      ('M.S. Tube "B" Class 1.5in', "Per Kg", _RM),
 }
-# rate source per part, by position within each group (None = fixed/independent rate).
+# rate source per part, by position within each group (None = fixed/independent
+# rate, e.g. bought-out adopters). 7A's MS-fab parts link to the M.S. materials.
 PART_RATE_REFS = {
     "2A/3A": ["K5", "K5", "K5", "K5", "K6", "K21", "K24", "K14", "K14", "K10", None, None, "K5", "K25", None, None],
     "4A":    ["K5", "K5", "K5", "K5", "K7", "K22", "K24", "K14", "K14", "K11", None, None, "K5", "K25", None, None],
     "5A/6A": ["K5", "K5", "K5", "K5", "K8", "K22", "K24", "K15", "K16", "K12", None, None, "K5", "K25", None, None],
-    "7A":    [None, None, "C22", None, None, None, None, None, None, "K9", "K13", "K16", "K17", "K23", "K24", "K25", "K5", None, None, None],
+    "7A":    ["RM_FAB", "RM_PLATE", "C22", "RM_FAB", "RM_PLATE", "RM_FAB", "RM_PLATE", "RM_PLATE", "RM_PLATE",
+              "K9", "K13", "K16", "K17", "K23", "K24", "K25", "K5", "RM_FAB", None, None],
 }
 
 
@@ -446,18 +454,23 @@ def ensure_rate_master():
                              "AND (rate_ref IS NULL OR rate_ref='')", (ref, rid))
         conn.execute("CREATE TABLE IF NOT EXISTS rate_master "
                      "(cell TEXT PRIMARY KEY, name TEXT, value REAL, unit TEXT, sort INTEGER)")
+        rmcols = [r[1] for r in conn.execute("PRAGMA table_info(rate_master)").fetchall()]
+        if "category" not in rmcols:
+            conn.execute("ALTER TABLE rate_master ADD COLUMN category TEXT")
         for i, cell in enumerate(RATE_LABELS):
+            name, unit, cat = RATE_LABELS[cell]
             if conn.execute("SELECT 1 FROM rate_master WHERE cell=?", (cell,)).fetchone():
+                conn.execute("UPDATE rate_master SET name=?, unit=?, category=?, sort=? WHERE cell=?",
+                             (name, unit, cat, i, cell))   # refresh labels, keep edited value
                 continue
-            name, unit = RATE_LABELS[cell]
             r = conn.execute("SELECT rate FROM oil_burner_master WHERE rate_ref=? "
                              "AND rate IS NOT NULL LIMIT 1", (cell,)).fetchone()
             try:
                 val = float(r[0]) if r and r[0] not in (None, "") else None
             except (TypeError, ValueError):
                 val = None
-            conn.execute("INSERT INTO rate_master (cell, name, value, unit, sort) VALUES (?,?,?,?,?)",
-                         (cell, name, val, unit, i))
+            conn.execute("INSERT INTO rate_master (cell, name, value, unit, sort, category) "
+                         "VALUES (?,?,?,?,?,?)", (cell, name, val, unit, i, cat))
         conn.commit()
         conn.close()
     except Exception as e:
@@ -949,7 +962,7 @@ def api_ic_rates():
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         rows = [dict(r) for r in conn.execute(
-            "SELECT cell, name, value, unit FROM rate_master ORDER BY sort")]
+            "SELECT cell, name, value, unit, category FROM rate_master ORDER BY sort")]
         conn.close()
         return {"rates": rows}
     except Exception as e:
