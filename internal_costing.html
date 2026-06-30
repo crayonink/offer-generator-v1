@@ -104,7 +104,7 @@ fetch('/api/internal-costing/oil-burner').then(r=>r.json()).then(d=>{
           <td>${num(it.s_no)}</td><td>${it.particular||''}</td>
           <td class="num">${num(it.qty)}</td><td>${it.unit||''}</td>
           <td class="num">${num(it.rate)}</td><td class="num">${num(it.amount)}</td>
-          <td class="num">${num(it.mc_cost)}</td><td class="num">${num(it.total_amount)}</td></tr>`).join('')}
+          <td class="num">${num(it.mc_cost)}</td><td class="num">${num(it.row_total)}</td></tr>`).join('')}
         <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num">₹${inr(grp.total)}</td></tr>
       </tbody></table>
     </div>`).join('')

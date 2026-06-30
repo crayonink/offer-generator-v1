@@ -644,7 +644,12 @@ def api_ic_oil_burner():
             groups.setdefault(r["burner_type"] or "—", []).append(r)
         out = []
         for bt, items in groups.items():
-            total = sum(_f(i["total_amount"]) for i in items)
+            for it in items:
+                rt = _f(it["total_amount"])
+                if rt == 0.0:   # total not pre-summed — derive from amount + M/C cost
+                    rt = _f(it["amount"]) + _f(it["mc_cost"])
+                it["row_total"] = round(rt)
+            total = sum(i["row_total"] for i in items)
             out.append({"burner_type": bt, "items": items, "total": round(total)})
         return {"groups": out}
     except Exception as e:
