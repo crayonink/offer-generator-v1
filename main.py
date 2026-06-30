@@ -681,6 +681,38 @@ def internal_costing_page():
         return HTMLResponse(content=f.read())
 
 
+@app.get("/api/internal-costing/oil-burner-prices")
+def api_ic_oil_burner_prices():
+    """Oil-burner price tables from burner_pricelist_master: the Film Burner &
+    Accessories table and the Spares table, pivoted (sizes x components)."""
+    LABELS = {"BURNER ALONE": "Burner Alone", "MICRO VALVE": "Micro Valve",
+              "C.I.BURNER PLATE": "C.I. Plate", "HIGH AL. WHYTEHEAT K BURNER BLOCK": "Burner Block",
+              "FLEXIBLE HOSES SET": "Flex Hoses", "Y TYPE STRAINER": "Y-Strainer",
+              "BUTTERFLY VALVE": "Butterfly", "BURNER SET": "Burner Set",
+              "S.G. ASSEMBLY": "S.G. Assembly", "AIR RESISTOR": "Air Resistor"}
+
+    def table(section):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("SELECT burner_size, component, price FROM burner_pricelist_master "
+                            "WHERE section=? ORDER BY rowid", (section,)).fetchall()
+        conn.close()
+        comps, data = [], {}
+        for r in rows:
+            if r["component"] not in comps:
+                comps.append(r["component"])
+            data.setdefault(r["burner_size"], {})[r["component"]] = r["price"]
+        return {"columns": [LABELS.get(c, c.title()) for c in comps],
+                "rows": [{"size": sz, "cells": [vals.get(c) for c in comps]}
+                         for sz, vals in data.items()]}
+    try:
+        return {"film":   table("PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"),
+                "spares": table("PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS")}
+    except Exception as e:
+        return {"film": {"columns": [], "rows": []},
+                "spares": {"columns": [], "rows": []}, "error": str(e)}
+
+
 @app.get("/api/internal-costing/oil-burner")
 def api_ic_oil_burner():
     """Oil-burner internal parts costing (oil_burner_master), grouped by size."""
