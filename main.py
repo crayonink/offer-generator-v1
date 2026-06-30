@@ -624,6 +624,33 @@ def internal_costing_page():
         return HTMLResponse(content=f.read())
 
 
+@app.get("/api/internal-costing/oil-burner")
+def api_ic_oil_burner():
+    """Oil-burner internal parts costing (oil_burner_master), grouped by size."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute(
+            "SELECT rowid AS _rid, s_no, particular, qty, unit, rate, amount, "
+            "mc_cost, total_amount, burner_type FROM oil_burner_master ORDER BY burner_type, rowid")]
+        conn.close()
+        def _f(v):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return 0.0
+        groups = {}
+        for r in rows:
+            groups.setdefault(r["burner_type"] or "—", []).append(r)
+        out = []
+        for bt, items in groups.items():
+            total = sum(_f(i["total_amount"]) for i in items)
+            out.append({"burner_type": bt, "items": items, "total": round(total)})
+        return {"groups": out}
+    except Exception as e:
+        return {"groups": [], "error": str(e)}
+
+
 @app.get("/enquiries", response_class=HTMLResponse)
 def enquiries_page():
     with open(os.path.join(BASE_DIR, "enquiries.html"), "r", encoding="utf-8") as f:

@@ -38,6 +38,20 @@ a{text-decoration:none;color:inherit}
 .tool:hover{border-color:var(--red);transform:translateY(-2px)}
 .tool .tn{font-weight:700;font-size:.88rem}.tool .td{font-size:.7rem;color:var(--muted);margin-top:4px}
 .sec-label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:700;margin:30px 2px 14px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.tab{padding:11px 18px;font-size:.86rem;font-weight:700;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1px;transition:.13s}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab:hover{color:var(--txt)}
+.grp{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.05);margin-bottom:20px;overflow:hidden}
+.grp-h{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line)}
+.grp-h .t{font-weight:800;font-size:.98rem}
+.grp-h .tot{font-weight:800;color:var(--red)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);font-weight:700;padding:9px 16px;background:var(--bg)}
+td{padding:8px 16px;font-size:.8rem;border-top:1px solid var(--line)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.totrow td{font-weight:800;border-top:2px solid var(--line2);background:var(--bg)}
+.muted{color:var(--muted2)}
 </style>
 </head>
 <body>
@@ -66,12 +80,36 @@ a{text-decoration:none;color:inherit}
     <div><h1>Internal Costing</h1><div class="sub">Cost-side view — BOM cost without customer markup</div></div>
   </header>
   <div class="content">
-    <div class="stub">
-      <div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h8"/></svg></div>
-      <h2>Internal Costing — being set up</h2>
-      <p>This section will show the internal cost breakdown (bought-out cost, ENCON-made cost, fabrication, etc.) for each product — the figures behind the offer, before markup. Tell me what you want here and I'll build it.</p>
+    <div class="tabs">
+      <button class="tab active">Oil Burner</button>
     </div>
+    <div id="tab-content"></div>
   </div>
 </div>
+<script>
+function num(v){ if(v===null||v===undefined||v===''||v==='None') return '<span class="muted">—</span>';
+  let s=String(v).replace(/\.0$/,''); return s; }
+function inr(n){ return (Number(n)||0).toLocaleString('en-IN'); }
+fetch('/api/internal-costing/oil-burner').then(r=>r.json()).then(d=>{
+  const g=d.groups||[];
+  document.getElementById('tab-content').innerHTML = g.length ? g.map(grp=>`
+    <div class="grp">
+      <div class="grp-h"><span class="t">ENCON ${grp.burner_type}</span>
+        <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
+      <table><thead><tr>
+        <th>S.No</th><th>Particular</th><th class="num">Qty</th><th>Unit</th>
+        <th class="num">Rate</th><th class="num">Amount</th><th class="num">M/C Cost</th><th class="num">Total</th>
+      </tr></thead><tbody>
+        ${grp.items.map(it=>`<tr>
+          <td>${num(it.s_no)}</td><td>${it.particular||''}</td>
+          <td class="num">${num(it.qty)}</td><td>${it.unit||''}</td>
+          <td class="num">${num(it.rate)}</td><td class="num">${num(it.amount)}</td>
+          <td class="num">${num(it.mc_cost)}</td><td class="num">${num(it.total_amount)}</td></tr>`).join('')}
+        <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num">₹${inr(grp.total)}</td></tr>
+      </tbody></table>
+    </div>`).join('')
+    : '<div class="stub"><h2>No oil-burner cost data found</h2></div>';
+}).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
+</script>
 </body>
 </html>
