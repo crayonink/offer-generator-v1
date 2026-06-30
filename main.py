@@ -345,6 +345,63 @@ def ensure_log_table():
 ensure_log_table()
 
 
+def ensure_oil_burner_master():
+    """Self-heal oil_burner_master if it's mis-parsed: an earlier one-off import
+    grabbed the left blocks of the ' Oil Burner' sheet, ran past each block's
+    TOTAL into the junk below (S.G.-Assembly sub-table, stray H.V. rows), and
+    never reached the 7A block which sits in the offset columns AB–AI. Rebuild
+    cleanly from the four side-by-side blocks (start cols A/J/S/AB, rows 4 down
+    to each block's TOTAL). Idempotent — only runs when the table looks wrong."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        try:
+            need = conn.execute(
+                "SELECT (SELECT COUNT(*) FROM oil_burner_master WHERE burner_type='7A')=0 "
+                "OR EXISTS(SELECT 1 FROM oil_burner_master "
+                "WHERE particular='Burner Size' OR particular LIKE 'H.V.%')").fetchone()[0]
+        except sqlite3.OperationalError:
+            conn.close(); return            # table doesn't exist — nothing to heal
+        if not need:
+            conn.close(); return
+        src = os.path.join(BASE_DIR, "uploads", "Pricelist WorkBook 28-08-2025.xlsx")
+        if not os.path.exists(src):
+            conn.close(); return
+        import openpyxl
+        ws = openpyxl.load_workbook(src, data_only=True)[" Oil Burner"]
+
+        def cv(r, c):
+            v = ws.cell(r, c).value
+            return v.strip() if isinstance(v, str) else v
+
+        rows = []
+        for bt, sc in (("2A/3A", 1), ("4A", 10), ("5A/6A", 19), ("7A", 28)):
+            total_row = None
+            for r in range(3, 60):
+                if any(isinstance(ws.cell(r, c).value, str) and
+                       ws.cell(r, c).value.strip().upper() == "TOTAL"
+                       for c in range(sc, sc + 8)):
+                    total_row = r
+                    break
+            for r in range(4, total_row or 60):
+                s_no, particular = cv(r, sc), cv(r, sc + 1)
+                if not particular and s_no in (None, ""):
+                    continue
+                rows.append((s_no, particular, cv(r, sc + 2), cv(r, sc + 3),
+                             cv(r, sc + 4), cv(r, sc + 5), cv(r, sc + 6), cv(r, sc + 7), bt))
+        conn.execute("DELETE FROM oil_burner_master")
+        conn.executemany(
+            "INSERT INTO oil_burner_master (s_no,particular,qty,unit,rate,amount,"
+            "mc_cost,total_amount,burner_type) VALUES (?,?,?,?,?,?,?,?,?)", rows)
+        conn.commit()
+        conn.close()
+        print(f"ensure_oil_burner_master: rebuilt {len(rows)} clean rows (incl. 7A)")
+    except Exception as e:
+        print(f"WARN: ensure_oil_burner_master failed: {e}")
+
+
+ensure_oil_burner_master()
+
+
 def _log_quote(*, quote_no="", ref_no="", company_name="", poc_name="",
                email="", mobile_no="", project_name="", equipment_type="",
                location="", ladle_tons=0.0, grand_total=0.0,
