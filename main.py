@@ -493,6 +493,24 @@ def ensure_rate_master():
 ensure_rate_master()
 
 
+def cleanup_ciplate_pricelist():
+    """C.I. Plate was briefly (and wrongly) seeded into the Pricelist as a Raw
+    Material; it is a computed burner price (burner-plate × 1.8), not a rate.
+    Remove those rows on startup so the live (volume) DB is cleaned — deleting
+    the seeding code alone can't remove rows already written to the volume.
+    Idempotent no-op once gone."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("DELETE FROM component_price_master WHERE item LIKE 'C.I. PLATE %'")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: cleanup_ciplate_pricelist failed: {e}")
+
+
+cleanup_ciplate_pricelist()
+
+
 def _log_quote(*, quote_no="", ref_no="", company_name="", poc_name="",
                email="", mobile_no="", project_name="", equipment_type="",
                location="", ladle_tons=0.0, grand_total=0.0,
