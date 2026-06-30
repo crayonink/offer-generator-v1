@@ -434,7 +434,7 @@ PART_RATE_REFS = {
     "2A/3A": ["K5", "K5", "K5", "K5", "K6", "K21", "K24", "K14", "K14", "K10", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
     "4A":    ["K5", "K5", "K5", "K5", "K7", "K22", "K24", "K14", "K14", "K11", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
     "5A/6A": ["K5", "K5", "K5", "K5", "K8", "K22", "K24", "K15", "K16", "K12", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
-    "7A":    ["RM_FAB", "RM_PLATE", "C22", "RM_FAB", "TIKKY7A", "RM_FAB", "TIKKY7A", "TIKKY7A", "SPACER7A",
+    "7A":    ["K5", "RM_PLATE", "C22", "RM_FAB", "TIKKY7A", "K5", "TIKKY7A", "TIKKY7A", "SPACER7A",
               "K9", "K13", "K16", "K17", "K23", "YSTR25", "K25", "K5", "RM_FAB", None, None],
 }
 # rate cell -> component_price_master item: these rates are SOURCED LIVE from the
