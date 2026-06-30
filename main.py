@@ -424,6 +424,7 @@ RATE_LABELS = {
     "ADP_AIR": ("Adopter 15x15 NB (Air)", "", _BO),
     "RM_PLATE": ("M.S. Plate / Round", "Per Kg", _RM),
     "RM_FAB":   ("M.S. Sheet (fab. tube/pipe)", "Per Kg", _RM),
+    "SPACER7A": ("Burner Spacer", "Per Kg", _RM),
     "C22":      ('M.S. Tube "B" Class 1.5in', "Per Kg", _RM),
 }
 # rate source per part, by position within each group (None = fixed/independent
@@ -432,7 +433,7 @@ PART_RATE_REFS = {
     "2A/3A": ["K5", "K5", "K5", "K5", "K6", "K21", "K24", "K14", "K14", "K10", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
     "4A":    ["K5", "K5", "K5", "K5", "K7", "K22", "K24", "K14", "K14", "K11", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
     "5A/6A": ["K5", "K5", "K5", "K5", "K8", "K22", "K24", "K15", "K16", "K12", "ADP_OIL", "ADP_AIR", "K5", "K25", None, None],
-    "7A":    ["RM_FAB", "RM_PLATE", "C22", "RM_FAB", "RM_PLATE", "RM_FAB", "RM_PLATE", "RM_PLATE", "RM_PLATE",
+    "7A":    ["RM_FAB", "RM_PLATE", "C22", "RM_FAB", "RM_PLATE", "RM_FAB", "RM_PLATE", "RM_PLATE", "SPACER7A",
               "K9", "K13", "K16", "K17", "K23", "YSTR25", "K25", "K5", "RM_FAB", None, None],
 }
 # rate cell -> component_price_master item: these rates are SOURCED LIVE from the
@@ -443,6 +444,7 @@ RATE_CPM = {
     "K6":  "SS ASSLY 2A/3A", "K7": "SS ASSLY 4A", "K8": "SS ASSLY 5A/6A", "K9": "SS ASSLY 7A",
     "K10": "MICRO VALVE 2A/3A", "K11": "MICRO VALVE 4A", "K12": "MICRO VALVE 5A/6A", "K13": "MICRO VALVE 7A",
     "K24": "ENCON-Y-STRAINER 20 NB", "YSTR25": "ENCON-Y-STRAINER 25 NB", "K25": "WHYTEHEAT K",
+    "SPACER7A": "Burner Spacer",
     "ADP_OIL": "ADOPTER 15 NB*20 NB (Oil)", "ADP_AIR": "ADOPTER 15 NB*15 NB (Air)",
     "C22": "M.S. Tube B Class 1.5 in",
     # butterfly: inch × 25.4 → nearest NB (2.5"→65, 4"→100, 6"→150)
@@ -521,6 +523,7 @@ cleanup_ciplate_pricelist()
 # seeded if missing, user edits preserved.
 BURNER_PRICELIST_SEED = [
     ("ENCON-Y-STRAINER 25 NB", "Bought Out", 420),   # 7A uses a 25 NB Y-strainer
+    ("Burner Spacer", "Raw Material", 72),           # 7A spacer
 ]
 
 
