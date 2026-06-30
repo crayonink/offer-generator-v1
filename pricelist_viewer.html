@@ -374,16 +374,6 @@
     }
     .xl-table tr.is-dup td { background: #fffbeb; }
 
-    /* Oil-burner rows: items the burner BOM pulls from the Pricelist */
-    .xl-table tr.burner-used td { background: #eef4fb; }
-    .xl-table tr.burner-used td:first-child { box-shadow: inset 3px 0 0 #1a3a5c; }
-    .xl-table tr.burner-used.is-dup td { background: #f3f1e6; }
-    .burner-tag {
-      display: inline-block; margin-left: 8px; font-size: 0.62rem; font-weight: 700;
-      letter-spacing: .04em; text-transform: uppercase; color: #1a3a5c;
-      background: rgba(26,58,92,.10); padding: 1px 6px; border-radius: 5px; vertical-align: middle;
-    }
-
     /* Search match highlight */
     mark.search-hl { background: #fde68a; color: inherit; padding: 0 1px; border-radius: 2px; font-weight: 700; }
 
@@ -571,7 +561,6 @@
 
 let DATA = {};
 let currentTab = 'rates';
-let BURNER_USED = new Set();   // component_price_master items used by the oil burner (highlighted)
 
 // ── Formatting helpers ──────────────────────────────────────────────────────
 function fmt(v) {
@@ -614,18 +603,16 @@ async function loadAll() {
   try {
     // Resilient: non-admins are blocked (403) from the vendor-catalog summary,
     // so default it to {} instead of failing the whole load (Rates etc. still work).
-    const [summary, rates, stock, fabrication, burnerItems] = await Promise.all([
+    const [summary, rates, stock, fabrication] = await Promise.all([
       fetch('/api/pricelist-summary').then(r => r.ok ? r.json() : {}).catch(() => ({})),
       fetch('/api/pricelist/rates').then(r => r.ok ? r.json() : []).catch(() => []),
       fetch('/api/stock-rates').then(r => r.ok ? r.json() : []).catch(() => []),
       fetch('/api/fabrication-mapping').then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch('/api/burner-pricelist-items').then(r => r.ok ? r.json() : {items:[]}).catch(() => ({items:[]})),
     ]);
     DATA.summary = summary;
     DATA.rates = rates;
     DATA.stock = stock;
     DATA.fabrication = fabrication;
-    BURNER_USED = new Set((burnerItems.items || []).map(s => String(s).toUpperCase()));
     renderAll();
     setStatus('Loaded', `${Array.isArray(rates) ? rates.length : 0} rate entries`);
   } catch (e) {
@@ -1372,13 +1359,9 @@ function _renderRatesTable(data, opts) {
       const dupMark = isDup
         ? ` <span class="dup-flag" title="Duplicate: another ${esc(cat)} row has the same item, size &amp; company">⚠</span>`
         : '';
-      const burnerUsed = BURNER_USED.has((r.item || '').toUpperCase());
-      const burnerMark = burnerUsed
-        ? ` <span class="burner-tag" title="Used in the Oil Burner BOM">🔥 burner</span>` : '';
-      const rowCls = [isDup ? 'is-dup' : '', burnerUsed ? 'burner-used' : ''].filter(Boolean).join(' ');
-      html += `<tr${rowCls ? ` class="${rowCls}"` : ''}>
+      html += `<tr${isDup ? ' class="is-dup"' : ''}>
         <td class="rn">${rowNum}</td>
-        <td class="item-cell" title="${esc(fullName)}">${esc(shortName)}${dupMark}${burnerMark}</td>
+        <td class="item-cell" title="${esc(fullName)}">${esc(shortName)}${dupMark}</td>
         <td style="text-align:center;font-weight:600;color:#1a3a5c;">${esc(size)}</td>
         <td style="text-align:center;font-family:monospace;font-size:11px;color:#1a5276;">${esc(catCell)}</td>
         <td class="editable rates-company" data-item="${esc(r.item)}">${companyBadge(r.company)}</td>
