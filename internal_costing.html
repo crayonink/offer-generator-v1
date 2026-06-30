@@ -61,6 +61,8 @@ td.ed.saved{background:#dcfce7}
 td.ed.err{background:#fee2e2}
 td.ed.saving{opacity:.55}
 td.calc{background:#f6f8fa;color:#475569}
+td.calc.lk{background:#eef4fb;color:#1a3a5c}
+td.calc.lk::after{content:" ◆";font-size:.7em;color:#94a3b8}
 .edit-note{font-size:.76rem;color:var(--muted);margin-bottom:16px}
 .edit-note b{color:var(--red)}
 .edit-note .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 10px}
@@ -95,7 +97,7 @@ td.calc{background:#f6f8fa;color:#475569}
     <div class="tabs">
       <button class="tab active">Oil Burner</button>
     </div>
-    <div class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>cells (Amount, Total, and the burner prices) recalculate from the parts automatically.</div>
+    <div class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>(Amount, Total, prices) recalc automatically. <b>◆ Linked rate</b><span class="sw" style="background:#eef4fb;border:1px solid var(--line2)"></span>driven by the Rate Master at the bottom — edit it there to reprice every part at once.</div>
     <div id="tab-content"></div>
   </div>
 </div>
@@ -112,12 +114,18 @@ function priceEditable(size, comp){
 }
 
 function postField(el){
-  const price = el.dataset.kind==='price';
-  const url  = price ? '/api/internal-costing/update-price' : '/api/internal-costing/update-part';
-  const v=el.textContent.trim();
-  const body = price
-    ? {section:el.dataset.section, burner_size:el.dataset.size, component:el.dataset.comp, value:v}
-    : {rid:+el.dataset.rid, field:el.dataset.field, value:v};
+  const kind=el.dataset.kind, v=el.textContent.trim();
+  let url, body;
+  if(kind==='price'){
+    url='/api/internal-costing/update-price';
+    body={section:el.dataset.section, burner_size:el.dataset.size, component:el.dataset.comp, value:v};
+  } else if(kind==='rate'){
+    url='/api/internal-costing/update-rate';
+    body={cell:el.dataset.cell, value:v};
+  } else {
+    url='/api/internal-costing/update-part';
+    body={rid:+el.dataset.rid, field:el.dataset.field, value:v};
+  }
   el.classList.add('saving');
   return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(r=>r.json())
@@ -152,6 +160,7 @@ function partsTable(grp){
   const E =(rid,f,v)=>`<td class="num ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${ev(v)}</td>`;
   const Et=(rid,f,v)=>`<td class="ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${v||''}</td>`;
   const C =(v)=>`<td class="num calc" title="computed">${ev(v)}</td>`;
+  const Cl=(v,ref)=>`<td class="num calc lk" title="from rate master (${ref})">${ev(v)}</td>`;
   return `<div class="grp">
     <div class="grp-h"><span class="t">ENCON ${grp.burner_type}</span>
       <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
@@ -164,25 +173,42 @@ function partsTable(grp){
         return `<tr>
           ${E(it._rid,'s_no',it.s_no)}${Et(it._rid,'particular',it.particular)}
           ${E(it._rid,'qty',it.qty)}${Et(it._rid,'unit',it.unit)}
-          ${E(it._rid,'rate',it.rate)}${C(it.amount)}${E(it._rid,'mc_cost',it.mc_cost)}
+          ${it.rate_ref ? Cl(it.rate,it.rate_ref) : E(it._rid,'rate',it.rate)}${C(it.amount)}${E(it._rid,'mc_cost',it.mc_cost)}
           ${hasQR ? C(it.row_total) : E(it._rid,'total_amount',it.row_total)}
         </tr>`;
       }).join('')}
       <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
 }
+function ratesTable(rates){
+  if(!rates || !rates.length) return '';
+  return `<div class="grp">
+    <div class="grp-h"><span class="t">Rate Master — raw-material &amp; bought-out rates</span></div>
+    <table><thead><tr><th>Rate Item</th><th>Unit</th><th class="num">Rate</th></tr></thead><tbody>
+      ${rates.map(r=>`<tr>
+        <td class="co">${r.name||r.cell}</td><td>${r.unit||''}</td>
+        <td class="num ed" contenteditable data-kind="rate" data-cell="${esc(r.cell)}" onblur="save(this)">${ev(r.value)}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
 function load(){
   return Promise.all([
     fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
-    fetch('/api/internal-costing/oil-burner').then(r=>r.json())
-  ]).then(([prices, parts])=>{
+    fetch('/api/internal-costing/oil-burner').then(r=>r.json()),
+    fetch('/api/internal-costing/rates').then(r=>r.json())
+  ]).then(([prices, parts, rates])=>{
     let html='';
     html += priceTable(prices.film,   'Film Burner &amp; Accessories — price list (computed from parts)');
     html += priceTable(prices.spares, 'Spares — IIP ENCON Oil Film Burners');
     const g=parts.groups||[];
     if(g.length){
-      html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal) — the source of every price above</div>';
+      html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal) — drives every price above</div>';
       html += g.map(partsTable).join('');
+    }
+    const rr=(rates&&rates.rates)||[];
+    if(rr.length){
+      html += '<div class="sec-label" style="margin:6px 2px 14px">Rate Master — drives the linked Rate cells above (◆)</div>';
+      html += ratesTable(rr);
     }
     document.getElementById('tab-content').innerHTML = html || '<div class="stub"><h2>No oil-burner data found</h2></div>';
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });

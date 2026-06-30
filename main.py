@@ -402,6 +402,71 @@ def ensure_oil_burner_master():
 ensure_oil_burner_master()
 
 
+# --- Oil-burner rate master (the ' Oil Burner' Rate column pulls from Rates!) ---
+# cell -> (display name, unit). Mirrors the Rates! sheet items the parts reference.
+RATE_LABELS = {
+    "K5":  ("Casting Burner Parts (MS)", "Per Kg"),
+    "K6":  ("SS Assembly 2A/3A", ""), "K7": ("SS Assembly 4A", ""),
+    "K8":  ("SS Assembly 5A/6A", ""), "K9": ("SS Assembly 7A", ""),
+    "K10": ("Micro Valve 2A/3A", ""), "K11": ("Micro Valve 4A", ""),
+    "K12": ("Micro Valve 5A/6A", ""), "K13": ("Micro Valve 7A", ""),
+    "K14": ("Flexible Hose 15NB x750 (Oil)", ""), "K15": ("Flexible Hose 15NB x1000 (Oil)", ""),
+    "K16": ("Flexible Hose 20NB x1000", ""), "K17": ("Flexible Hose 25NB x1000 (Air)", ""),
+    "K21": ('Butterfly Valve 2.5"', ""), "K22": ('Butterfly Valve 4"', ""),
+    "K23": ('Butterfly Valve 6"', ""), "K24": ("Y-Strainer 20NB", ""),
+    "K25": ("Whyteheat K (Burner Block)", "Per Kg"),
+    "C22": ('M.S. Tube "B" Class 1.5in', "Per Kg"),
+}
+# rate source per part, by position within each group (None = fixed/independent rate).
+PART_RATE_REFS = {
+    "2A/3A": ["K5", "K5", "K5", "K5", "K6", "K21", "K24", "K14", "K14", "K10", None, None, "K5", "K25", None, None],
+    "4A":    ["K5", "K5", "K5", "K5", "K7", "K22", "K24", "K14", "K14", "K11", None, None, "K5", "K25", None, None],
+    "5A/6A": ["K5", "K5", "K5", "K5", "K8", "K22", "K24", "K15", "K16", "K12", None, None, "K5", "K25", None, None],
+    "7A":    [None, None, "C22", None, None, None, None, None, None, "K9", "K13", "K16", "K17", "K23", "K24", "K25", "K5", None, None, None],
+}
+
+
+def ensure_rate_master():
+    """Link the oil_burner_master Rate column to a rate master, so editing a rate
+    (e.g. MS/kg) reprices every part that uses it. Adds oil_burner_master.rate_ref
+    (assigned by position within each size), and seeds the rate_master table from
+    the parts' current rates. Idempotent; preserves user-edited master values."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(oil_burner_master)").fetchall()]
+        if "rate_ref" not in cols:
+            conn.execute("ALTER TABLE oil_burner_master ADD COLUMN rate_ref TEXT")
+        # assign rate_ref by row position within each group, only where unset
+        for group, refs in PART_RATE_REFS.items():
+            rids = [r[0] for r in conn.execute(
+                "SELECT rowid FROM oil_burner_master WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()]
+            for i, rid in enumerate(rids):
+                ref = refs[i] if i < len(refs) else None
+                conn.execute("UPDATE oil_burner_master SET rate_ref=? WHERE rowid=? "
+                             "AND (rate_ref IS NULL OR rate_ref='')", (ref, rid))
+        conn.execute("CREATE TABLE IF NOT EXISTS rate_master "
+                     "(cell TEXT PRIMARY KEY, name TEXT, value REAL, unit TEXT, sort INTEGER)")
+        for i, cell in enumerate(RATE_LABELS):
+            if conn.execute("SELECT 1 FROM rate_master WHERE cell=?", (cell,)).fetchone():
+                continue
+            name, unit = RATE_LABELS[cell]
+            r = conn.execute("SELECT rate FROM oil_burner_master WHERE rate_ref=? "
+                             "AND rate IS NOT NULL LIMIT 1", (cell,)).fetchone()
+            try:
+                val = float(r[0]) if r and r[0] not in (None, "") else None
+            except (TypeError, ValueError):
+                val = None
+            conn.execute("INSERT INTO rate_master (cell, name, value, unit, sort) VALUES (?,?,?,?,?)",
+                         (cell, name, val, unit, i))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: ensure_rate_master failed: {e}")
+
+
+ensure_rate_master()
+
+
 def _log_quote(*, quote_no="", ref_no="", company_name="", poc_name="",
                email="", mobile_no="", project_name="", equipment_type="",
                location="", ladle_tons=0.0, grand_total=0.0,
@@ -877,6 +942,57 @@ def api_ic_update_price(u: _PriceEdit):
         return {"success": False, "error": str(e)}
 
 
+@app.get("/api/internal-costing/rates")
+def api_ic_rates():
+    """The oil-burner rate master (Rates! items the part rates pull from)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute(
+            "SELECT cell, name, value, unit FROM rate_master ORDER BY sort")]
+        conn.close()
+        return {"rates": rows}
+    except Exception as e:
+        return {"rates": [], "error": str(e)}
+
+
+class _RateEdit(BaseModel):
+    cell: str
+    value: Optional[str] = ""
+
+
+@app.post("/api/internal-costing/update-rate")
+def api_ic_update_rate(u: _RateEdit):
+    """Edit a rate-master value, then cascade: push it into every part that
+    references this rate (rate, Amount=Qty×rate, Total=Amount+M/C), then re-roll
+    all derived burner prices."""
+    try:
+        try:
+            newrate = float((u.value or "").replace(",", "").strip())
+        except ValueError:
+            newrate = None
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE rate_master SET value=? WHERE cell=?", (newrate, u.cell))
+
+        def _f(x):
+            try:
+                return float(x)
+            except (TypeError, ValueError):
+                return 0.0
+        parts = conn.execute("SELECT rowid, qty, mc_cost FROM oil_burner_master "
+                             "WHERE rate_ref=?", (u.cell,)).fetchall()
+        for rid, qty, mc in parts:
+            amount = _f(qty) * (newrate or 0.0)
+            conn.execute("UPDATE oil_burner_master SET rate=?, amount=?, total_amount=? WHERE rowid=?",
+                         (newrate, amount, amount + _f(mc), rid))
+        recompute_burner_prices(conn)
+        conn.commit()
+        conn.close()
+        return {"success": True, "parts": len(parts)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.get("/api/internal-costing/oil-burner")
 def api_ic_oil_burner():
     """Oil-burner internal parts costing (oil_burner_master), grouped by size."""
@@ -885,7 +1001,8 @@ def api_ic_oil_burner():
         conn.row_factory = sqlite3.Row
         rows = [dict(r) for r in conn.execute(
             "SELECT rowid AS _rid, s_no, particular, qty, unit, rate, amount, "
-            "mc_cost, total_amount, burner_type FROM oil_burner_master ORDER BY burner_type, rowid")]
+            "mc_cost, total_amount, burner_type, rate_ref "
+            "FROM oil_burner_master ORDER BY burner_type, rowid")]
         conn.close()
         def _f(v):
             try:
