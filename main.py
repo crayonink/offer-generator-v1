@@ -1120,6 +1120,22 @@ def api_ic_rates():
         return {"rates": [], "error": str(e)}
 
 
+@app.get("/api/burner-pricelist-items")
+def api_burner_pricelist_items():
+    """component_price_master items the oil burner actually uses (a RATE_CPM
+    item with at least one part referencing its cell) — so the Pricelist can
+    highlight burner rows. Derived live, so it tracks new mappings."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        used = [item for cell, item in RATE_CPM.items()
+                if conn.execute("SELECT 1 FROM oil_burner_master WHERE rate_ref=? LIMIT 1",
+                                (cell,)).fetchone()]
+        conn.close()
+        return {"items": used}
+    except Exception as e:
+        return {"items": [], "error": str(e)}
+
+
 class _RateEdit(BaseModel):
     cell: str
     value: Optional[str] = ""
