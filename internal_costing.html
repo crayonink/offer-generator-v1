@@ -65,6 +65,8 @@ td.calc.lk{background:#eef4fb;color:#1a3a5c}
 td.calc.lk::after{content:" ◆";font-size:.7em;color:#94a3b8}
 tr.subhead td{background:var(--panel2);font-weight:700;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .plbadge{display:inline-block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--red);background:var(--redsoft);padding:1px 6px;border-radius:5px;margin-left:6px}
+tr.ratenote td{background:#fcfdfe;color:var(--muted);font-size:.72rem;font-style:italic;padding-top:4px;padding-bottom:8px}
+tr.ratenote b{color:var(--txt);font-style:normal}
 .edit-note{font-size:.76rem;color:var(--muted);margin-bottom:16px}
 .edit-note b{color:var(--red)}
 .edit-note .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 10px}
@@ -191,6 +193,7 @@ function ratesTable(rates){
       ? `<td class="num calc" title="live from the Pricelist — edit it there">${ev(r.value)}</td>`
       : `<td class="num ed" contenteditable data-kind="rate" data-cell="${esc(r.cell)}" onblur="save(this)">${ev(r.value)}</td>`;
     body+=`<tr><td class="co">${nm}</td><td>${r.unit||''}</td>${rc}</tr>`;
+    if(r.cell==='K5'){ body+=`<tr class="ratenote"><td colspan="3">↳ <b>Casting Burner Parts</b> covers the fabricated MS parts: base plate · air tube · S.G. holder · air adjuster · burner plate</td></tr>`; }
   });
   return `<div class="grp">
     <div class="grp-h"><span class="t">Rate Master — live Pricelist rates &amp; burner-local rates</span></div>

@@ -409,7 +409,6 @@ ensure_oil_burner_master()
 _BO = "Bought-out / Casting"
 _RM = "Raw Material"
 RATE_LABELS = {
-    "K5":  ("Casting Burner Parts (MS)", "Per Kg", _BO),
     "K6":  ("SS Assembly 2A/3A", "", _BO), "K7": ("SS Assembly 4A", "", _BO),
     "K8":  ("SS Assembly 5A/6A", "", _BO), "K9": ("SS Assembly 7A", "", _BO),
     "K10": ("Micro Valve 2A/3A", "", _BO), "K11": ("Micro Valve 4A", "", _BO),
@@ -422,6 +421,7 @@ RATE_LABELS = {
     "YSTR25": ("Y-Strainer 25NB", "", _BO),
     "ADP_OIL": ("Adopter 15x20 NB (Oil)", "", _BO),
     "ADP_AIR": ("Adopter 15x15 NB (Air)", "", _BO),
+    "K5":  ("Casting Burner Parts (MS)", "Per Kg", _RM),
     "RM_PLATE": ("M.S. Plate / Round", "Per Kg", _RM),
     "RM_FAB":   ("M.S. Sheet (fab. tube/pipe)", "Per Kg", _RM),
     "SPACER7A": ("Burner Spacer", "Per Kg", _RM),
@@ -550,6 +550,22 @@ def ensure_burner_pricelist_seed():
 
 
 ensure_burner_pricelist_seed()
+
+
+def ensure_casting_category():
+    """Casting Burner Parts is a per-kg MS rate — it belongs in Raw Material, not
+    Bought Out. Move it on startup so the live (volume) Pricelist reflects it."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE component_price_master SET category='Raw Material' "
+                     "WHERE item='CASTING BURNER PARTS' AND category!='Raw Material'")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: ensure_casting_category failed: {e}")
+
+
+ensure_casting_category()
 
 
 def _log_quote(*, quote_no="", ref_no="", company_name="", poc_name="",
