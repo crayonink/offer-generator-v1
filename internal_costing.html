@@ -208,7 +208,7 @@ function load(){
     html += priceTable(prices.film,   'ENCON Oil &ldquo;Film&rdquo; Burner &amp; Accessories — price list (computed from parts)');
     html += priceTable(prices.dual,   'ENCON Dual Fuel Burner &amp; Accessories — price list (computed from Film)');
     html += priceTable(prices.gas,    'ENCON Gas Burner &amp; Accessories — price list (computed from Film)');
-    html += priceTable(prices.spares, 'Spares — IIP ENCON Oil Film Burners');
+    // Spares (S.G. Assembly / Air Resistor) live in the Pricelist now, so not shown here.
     const g=parts.groups||[];
     if(g.length){
       html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal) — drives every price above</div>';
