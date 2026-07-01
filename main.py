@@ -653,14 +653,18 @@ BURNER_PRICELIST_SEED = [
     ("Air Resistor 5A", "Spare for ENCON Film Burner", 6600, "5A"),
     ("Air Resistor 6A", "Spare for ENCON Film Burner", 6600, "6A"),
     ("Air Resistor 7A", "Spare for ENCON Film Burner", 8100, "7A"),
-    # Burner Block for High Velocity Burners (per size) — placeholder values,
-    # user to confirm.
-    ("HV Burner Block 3A", "Burner Block for High Velocity Burners", 44000, "3A"),
-    ("HV Burner Block 4A", "Burner Block for High Velocity Burners", 59000, "4A"),
-    ("HV Burner Block 5A", "Burner Block for High Velocity Burners", 71500, "5A"),
-    ("HV Burner Block 6A", "Burner Block for High Velocity Burners", 161000, "6A"),
-    ("HV Burner Block 7A", "Burner Block for High Velocity Burners", 201300, "7A"),
+    # Burner Block for High Velocity Burners (per size) — placeholder ×1.2.
+    ("HV Burner Block 3A", "Burner Block for High Velocity Burners", 52800, "3A"),
+    ("HV Burner Block 4A", "Burner Block for High Velocity Burners", 70800, "4A"),
+    ("HV Burner Block 5A", "Burner Block for High Velocity Burners", 85800, "5A"),
+    ("HV Burner Block 6A", "Burner Block for High Velocity Burners", 193200, "6A"),
+    ("HV Burner Block 7A", "Burner Block for High Velocity Burners", 241560, "7A"),
 ]
+# one-time correction: HV burner blocks were seeded at the JUL'22 placeholder;
+# bump any still at the old value to the final ×1.2 (item -> old value).
+_HV_BLOCK_OLD = {"HV Burner Block 3A": 44000, "HV Burner Block 4A": 59000,
+                 "HV Burner Block 5A": 71500, "HV Burner Block 6A": 161000,
+                 "HV Burner Block 7A": 201300}
 
 
 def ensure_burner_pricelist_seed():
@@ -670,9 +674,13 @@ def ensure_burner_pricelist_seed():
             if not conn.execute("SELECT 1 FROM component_price_master WHERE item=?", (item,)).fetchone():
                 conn.execute("INSERT INTO component_price_master (item, category, price, previous_price, "
                              "specification) VALUES (?,?,?,?,?)", (item, cat, price, price, spec or None))
-            elif spec:   # backfill the size on rows seeded before spec was added
-                conn.execute("UPDATE component_price_master SET specification=? WHERE item=? "
-                             "AND (specification IS NULL OR specification='')", (spec, item))
+            else:
+                if spec:   # backfill the size on rows seeded before spec was added
+                    conn.execute("UPDATE component_price_master SET specification=? WHERE item=? "
+                                 "AND (specification IS NULL OR specification='')", (spec, item))
+                if item in _HV_BLOCK_OLD:   # one-time placeholder -> ×1.2 correction
+                    conn.execute("UPDATE component_price_master SET price=?, previous_price=? "
+                                 "WHERE item=? AND price=?", (price, price, item, _HV_BLOCK_OLD[item]))
         conn.commit()
         conn.close()
     except Exception as e:
