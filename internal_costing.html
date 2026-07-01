@@ -200,6 +200,7 @@ function ratesTable(rates){
 }
 function hvPartsTable(grp){
   const C=(v)=>`<td class="num calc">${ev(v)}</td>`;
+  const Cl=(v,ref)=>`<td class="num calc lk" title="from Pricelist rate (${ref})">${ev(v)}</td>`;
   return `<div class="grp">
     <div class="grp-h"><span class="t">ENCON HV ${grp.burner_type}</span>
       <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
@@ -208,7 +209,7 @@ function hvPartsTable(grp){
       <th class="num">Rate</th><th class="num">Amount</th><th class="num">M/C Cost</th><th class="num">Total</th>
     </tr></thead><tbody>
       ${grp.items.map(it=>`<tr>${C(it.s_no)}<td>${it.particular||''}</td>${C(it.qty)}<td>${it.unit||''}</td>
-        ${C(it.rate)}${C(it.amount)}${C(it.mc_cost)}${C(it.row_total)}</tr>`).join('')}
+        ${it.rate_ref?Cl(it.rate,it.rate_ref):C(it.rate)}${C(it.amount)}${C(it.mc_cost)}${C(it.row_total)}</tr>`).join('')}
       <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
 }

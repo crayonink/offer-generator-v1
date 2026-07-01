@@ -489,6 +489,15 @@ PART_RATE_REFS = {
     "7A":    ["K5", "FLANGE7A", "MSPIPE7A", "MIXER7A", "TIKKY7A", "K5", "TIKKY7A", "TIKKY7A", "SPACER7A",
               "K9", "K13", "K16", "K17", "K23", "YSTR25", "K25", "K5", "RM_FAB", None, None],
 }
+# HV oil-burner part -> rate cell, by position within each block. None = lump/HV-
+# specific (H.V. Burner, H.V. Burner block, labour, paint) — no rate link.
+PART_RATE_REFS_HV = {
+    "2A/3A": [None, None, "K21", "K24", "K14", "K14", "K10", "ADP_OIL", "ADP_AIR", None, None],
+    "4A":    [None, None, "K22", "K24", "K14", "K14", "K11", "ADP_OIL", "ADP_AIR", None, None],
+    "5A/6A": [None, None, "K22", "K24", "K15", "K16", "K14", "K12", "ADP_OIL", "ADP_AIR", None, None],
+    "7A":    ["K5", "FLANGE7A", "MSPIPE7A", "MIXER7A", "TIKKY7A", "K5", "TIKKY7A", "TIKKY7A", "SPACER7A",
+              "K9", "K13", "K16", "K17", "K23", "YSTR25", None, "RM_FAB", None, None],
+}
 # rate cell -> component_price_master item: these rates are SOURCED LIVE from the
 # Pricelist (single source of truth). The rest (butterfly K21-23, hoses K14-17,
 # M.S. plate/sheet RM_*) stay burner-local until the Pricelist carries them 1:1.
@@ -553,6 +562,31 @@ def ensure_rate_master():
 
 
 ensure_rate_master()
+
+
+def ensure_hv_rate_refs():
+    """Link the HV oil-burner parts to the same rate cells as the oil burner
+    (add hv_oil_burner_master.rate_ref, assigned by position). Authoritative."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(hv_oil_burner_master)").fetchall()]
+        if not cols:
+            conn.close(); return
+        if "rate_ref" not in cols:
+            conn.execute("ALTER TABLE hv_oil_burner_master ADD COLUMN rate_ref TEXT")
+        for group, refs in PART_RATE_REFS_HV.items():
+            rids = [r[0] for r in conn.execute(
+                "SELECT rowid FROM hv_oil_burner_master WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()]
+            for i, rid in enumerate(rids):
+                ref = refs[i] if i < len(refs) else None
+                conn.execute("UPDATE hv_oil_burner_master SET rate_ref=? WHERE rowid=?", (ref, rid))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: ensure_hv_rate_refs failed: {e}")
+
+
+ensure_hv_rate_refs()
 
 
 def cleanup_ciplate_pricelist():
@@ -1208,12 +1242,22 @@ def sync_cpm_rates(conn):
             continue
         price = _f(r[0])
         conn.execute("UPDATE rate_master SET value=? WHERE cell=?", (price, cell))
-        for rid, qty, mc in conn.execute(
-                "SELECT rowid, qty, mc_cost FROM oil_burner_master WHERE rate_ref=?", (cell,)).fetchall():
-            amount = _f(qty) * price
-            conn.execute("UPDATE oil_burner_master SET rate=?, amount=?, total_amount=? WHERE rowid=?",
-                         (price, amount, amount + _f(mc), rid))
+        _push_rate_to_parts(conn, cell, price, _f)
     recompute_burner_prices(conn)
+
+
+def _push_rate_to_parts(conn, cell, price, _f):
+    """Set rate/Amount/Total on every oil AND HV burner part linked to `cell`."""
+    for table in ("oil_burner_master", "hv_oil_burner_master"):
+        try:
+            parts = conn.execute(f"SELECT rowid, qty, mc_cost FROM {table} WHERE rate_ref=?",
+                                 (cell,)).fetchall()
+        except sqlite3.OperationalError:
+            continue   # table (or rate_ref column) not present
+        for rid, qty, mc in parts:
+            amount = _f(qty) * price
+            conn.execute(f"UPDATE {table} SET rate=?, amount=?, total_amount=? WHERE rowid=?",
+                         (price, amount, amount + _f(mc), rid))
 
 
 def _startup_cpm_sync():
@@ -1348,16 +1392,11 @@ def api_ic_update_rate(u: _RateEdit):
                 return float(x)
             except (TypeError, ValueError):
                 return 0.0
-        parts = conn.execute("SELECT rowid, qty, mc_cost FROM oil_burner_master "
-                             "WHERE rate_ref=?", (u.cell,)).fetchall()
-        for rid, qty, mc in parts:
-            amount = _f(qty) * (newrate or 0.0)
-            conn.execute("UPDATE oil_burner_master SET rate=?, amount=?, total_amount=? WHERE rowid=?",
-                         (newrate, amount, amount + _f(mc), rid))
+        _push_rate_to_parts(conn, u.cell, newrate or 0.0, _f)
         recompute_burner_prices(conn)
         conn.commit()
         conn.close()
-        return {"success": True, "parts": len(parts)}
+        return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -1403,7 +1442,7 @@ def api_ic_hv_oil_burner():
         conn.row_factory = sqlite3.Row
         rows = [dict(r) for r in conn.execute(
             "SELECT rowid AS _rid, s_no, particular, qty, unit, rate, amount, "
-            "mc_cost, total_amount, burner_type FROM hv_oil_burner_master ORDER BY burner_type, rowid")]
+            "mc_cost, total_amount, burner_type, rate_ref FROM hv_oil_burner_master ORDER BY burner_type, rowid")]
         conn.close()
 
         def _f(v):
