@@ -1130,7 +1130,7 @@ function renderBoughtOut(data) {
 }
 
 function renderRawMaterials(data) {
-  _renderRatesTable((data || []).filter(r => r.category === 'Raw Material' || r.category === 'Spare for ENCON Film Burner'),
+  _renderRatesTable((data || []).filter(r => r.category === 'Raw Material' || r.category === 'Spare for ENCON Film Burner' || r.category === 'Burner Block for High Velocity Burners'),
     { elId: 'sheet-raw-material', tableId: 'rawmat-table', searchId: 'rawmat-search' });
 }
 
@@ -1259,7 +1259,7 @@ function _renderRatesTable(data, opts) {
         if (c !== 0) return c;
         return (a.item || '').localeCompare(b.item || '');
       });
-    } else if (cat === 'Raw Material' || cat === 'Instrumentation' || cat === 'Spare for ENCON Film Burner') {
+    } else if (cat === 'Raw Material' || cat === 'Instrumentation' || cat === 'Spare for ENCON Film Burner' || cat === 'Burner Block for High Velocity Burners') {
       // Group by base item name (Raw Material: M.S. Sheet, S.S. Sheet, …;
       // Instrumentation: Orifice Plate, Pressure Gauge, Pressure Regulating
       // Valve), then ascend by size — so same-named items stay together
@@ -1309,7 +1309,7 @@ function _renderRatesTable(data, opts) {
     // Name sub-headers: Raw Material is grouped by base item name, so emit a
     // banner each time the name changes — but ONLY for names with more than
     // one item (a single-item name doesn't need its own heading).
-    const showNameHdrs = (cat === 'Raw Material' || cat === 'Spare for ENCON Film Burner');
+    const showNameHdrs = (cat === 'Raw Material' || cat === 'Spare for ENCON Film Burner' || cat === 'Burner Block for High Velocity Burners');
     let lastNameHdr = null;
     const nameCounts = {};
     if (showNameHdrs) cats[cat].forEach(r => {

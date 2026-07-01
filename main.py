@@ -653,6 +653,13 @@ BURNER_PRICELIST_SEED = [
     ("Air Resistor 5A", "Spare for ENCON Film Burner", 6600, "5A"),
     ("Air Resistor 6A", "Spare for ENCON Film Burner", 6600, "6A"),
     ("Air Resistor 7A", "Spare for ENCON Film Burner", 8100, "7A"),
+    # Burner Block for High Velocity Burners (per size) — placeholder values,
+    # user to confirm.
+    ("HV Burner Block 3A", "Burner Block for High Velocity Burners", 44000, "3A"),
+    ("HV Burner Block 4A", "Burner Block for High Velocity Burners", 59000, "4A"),
+    ("HV Burner Block 5A", "Burner Block for High Velocity Burners", 71500, "5A"),
+    ("HV Burner Block 6A", "Burner Block for High Velocity Burners", 161000, "6A"),
+    ("HV Burner Block 7A", "Burner Block for High Velocity Burners", 201300, "7A"),
 ]
 
 
