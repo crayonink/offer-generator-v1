@@ -916,9 +916,11 @@ def api_ic_oil_burner_prices():
     try:
         return {"film":   table("PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"),
                 "dual":   table("PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"),
+                "gas":    table("PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"),
                 "spares": table("PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS")}
     except Exception as e:
         return {"film": {"columns": [], "rows": []}, "dual": {"columns": [], "rows": []},
+                "gas": {"columns": [], "rows": []},
                 "spares": {"columns": [], "rows": []}, "error": str(e)}
 
 
@@ -1023,6 +1025,61 @@ def recompute_burner_prices(conn):
             put(SPARE, size.replace("ENCON ", "ENCON-"), "AIR RESISTOR", f(_arr[0]))
 
     recompute_dualfuel_prices(conn)
+    recompute_gas_prices(conn)
+
+
+# ball-valve item per size (2A/3A→20NB, 4A→25NB, 5A→32NB, 6A/7A→40NB) — shared by
+# the Dual Fuel and Gas builders; price = 2 × Pricelist NB ball-valve × 0.78.
+BURNER_BALL_ITEM = {"ENCON 2A": "BALL VALVE 20 NB #01 L3RBTC/L3RSWC",
+                    "ENCON 3A": "BALL VALVE 20 NB #01 L3RBTC/L3RSWC",
+                    "ENCON 4A": "BALL VALVE 25 NB #01 L3RBTC/L3RSWC",
+                    "ENCON 5A": "BALL VALVE 32 NB #01 L3RBTC/L3RSWC",
+                    "ENCON 6A": "BALL VALVE 40 NB #01 L3RBTC/L3RSWC",
+                    "ENCON 7A": "BALL VALVE 40 NB #01 L3RBTC/L3RSWC"}
+
+
+def recompute_gas_prices(conn):
+    """ENCON Gas burner = Film components + a Ball Valve (no micro valve / Y-
+    strainer), per the workbook. Derived from the live Film section.
+      Burner Alone / C.I. Plate / High Al / Flex Hoses / Butterfly = Film (same
+      size) ;  Ball Valve = 2 × Pricelist NB ball-valve × 0.78 ;  Burner Set = Σ"""
+    FILM = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
+    GAS = "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"
+    BLOCK = "HIGH AL. WHYTEHEAT K BURNER BLOCK"
+
+    def f(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def film(size, comp):
+        r = conn.execute("SELECT price FROM burner_pricelist_master WHERE section=? "
+                         "AND burner_size=? AND component=?", (FILM, size, comp)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def cpm(item):
+        r = conn.execute("SELECT price FROM component_price_master WHERE item=?", (item,)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def put(size, comp, val):
+        conn.execute("UPDATE burner_pricelist_master SET price=? WHERE section=? "
+                     "AND burner_size=? AND component=?", (round(val, 2), GAS, size, comp))
+
+    COMPS = ["BURNER ALONE", "BALL VALVE", "C.I.BURNER PLATE", BLOCK,
+             "FLEXIBLE HOSES SET", "BUTTERFLY VALVE"]
+    for size in ("ENCON 2A", "ENCON 3A", "ENCON 4A", "ENCON 5A", "ENCON 6A", "ENCON 7A"):
+        c = {
+            "BURNER ALONE": film(size, "BURNER ALONE"),
+            "BALL VALVE": 2 * cpm(BURNER_BALL_ITEM[size]) * 0.78,
+            "C.I.BURNER PLATE": film(size, "C.I.BURNER PLATE"),
+            BLOCK: film(size, BLOCK),
+            "FLEXIBLE HOSES SET": film(size, "FLEXIBLE HOSES SET"),
+            "BUTTERFLY VALVE": film(size, "BUTTERFLY VALVE"),
+        }
+        for comp in COMPS:
+            put(size, comp, c[comp])
+        put(size, "BURNER SET", sum(c[comp] for comp in COMPS))
 
 
 def recompute_dualfuel_prices(conn):
@@ -1063,12 +1120,6 @@ def recompute_dualfuel_prices(conn):
         conn.execute("UPDATE burner_pricelist_master SET price=? WHERE section=? "
                      "AND burner_size=? AND component=?", (round(val, 2), DUAL, size, comp))
 
-    BALL_ITEM = {"ENCON 2A": "BALL VALVE 20 NB #01 L3RBTC/L3RSWC",
-                 "ENCON 3A": "BALL VALVE 20 NB #01 L3RBTC/L3RSWC",
-                 "ENCON 4A": "BALL VALVE 25 NB #01 L3RBTC/L3RSWC",
-                 "ENCON 5A": "BALL VALVE 32 NB #01 L3RBTC/L3RSWC",
-                 "ENCON 6A": "BALL VALVE 40 NB #01 L3RBTC/L3RSWC",
-                 "ENCON 7A": "BALL VALVE 40 NB #01 L3RBTC/L3RSWC"}
     HIGH_AL_FIXED = {"ENCON 5A": 11850.0, "ENCON 6A": 11850.0}
     HOSE_SRC = {"ENCON 2A": ("ENCON 2A", -5), "ENCON 3A": ("ENCON 2A", -5), "ENCON 4A": ("ENCON 2A", -5),
                 "ENCON 5A": ("ENCON 5A", 0), "ENCON 6A": ("ENCON 5A", 0), "ENCON 7A": ("ENCON 7A", 0)}
@@ -1083,7 +1134,7 @@ def recompute_dualfuel_prices(conn):
             "C.I.BURNER PLATE": film(size, "C.I.BURNER PLATE"),
             BLOCK: HIGH_AL_FIXED.get(size, film(size, BLOCK)),
             "FLEXIBLE HOSES SET": film(hs_size, "FLEXIBLE HOSES SET") * 1.5 + hs_off,
-            "BALL VALVE": 2 * cpm(BALL_ITEM[size]) * 0.78,
+            "BALL VALVE": 2 * cpm(BURNER_BALL_ITEM[size]) * 0.78,
             "Y TYPE STRAINER": film(size, "Y TYPE STRAINER"),
             "BUTTERFLY VALVE": film(size, "BUTTERFLY VALVE"),
         }
