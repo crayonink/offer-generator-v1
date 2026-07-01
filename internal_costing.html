@@ -228,22 +228,6 @@ function partsTable(grp){
       <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
 }
-function ratesTable(rates){
-  if(!rates || !rates.length) return '';
-  let body='', lastCat=null;
-  rates.forEach(r=>{
-    if((r.category||'')!==lastCat){ lastCat=r.category||''; body+=`<tr class="subhead"><td colspan="3">${lastCat||'Rates'}</td></tr>`; }
-    const nm = r.linked ? `${r.name||r.cell} <a class="plbadge" href="/pricelist" title="sourced live from the Pricelist — edit it there">Pricelist ↗</a>` : (r.name||r.cell);
-    const rc = r.linked
-      ? `<td class="num calc" title="live from the Pricelist — edit it there">${ev(r.value)}</td>`
-      : `<td class="num ed" contenteditable data-kind="rate" data-cell="${esc(r.cell)}" onblur="save(this)">${ev(r.value)}</td>`;
-    body+=`<tr><td class="co">${nm}</td><td>${r.unit||''}</td>${rc}</tr>`;
-    if(r.cell==='K5'){ body+=`<tr class="ratenote"><td colspan="3">↳ <b>Casting Burner Parts</b> covers the fabricated MS parts: base plate · air tube · S.G. holder · air adjuster · burner plate</td></tr>`; }
-  });
-  return `<div class="grp">
-    <div class="grp-h"><span class="t">Rate Master — live Pricelist rates &amp; burner-local rates</span></div>
-    <table><thead><tr><th>Rate Item</th><th>Unit</th><th class="num">Rate</th></tr></thead><tbody>${body}</tbody></table></div>`;
-}
 function hvPartsTable(grp){
   const C=(v)=>`<td class="num calc">${ev(v)}</td>`;
   return `<div class="grp">
@@ -296,10 +280,9 @@ function load(){
   return Promise.all([
     fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
     fetch('/api/internal-costing/oil-burner').then(r=>r.json()),
-    fetch('/api/internal-costing/rates').then(r=>r.json()),
     fetch('/api/internal-costing/hv-oil-burner').then(r=>r.json()),
     fetch('/api/internal-costing/markups').then(r=>r.json())
-  ]).then(([prices, parts, rates, hv, markups])=>{
+  ]).then(([prices, parts, hv, markups])=>{
     let html='';
     html += formulasPanel();
     html += priceTable(prices.film,   'ENCON Oil &ldquo;Film&rdquo; Burner &amp; Accessories — price list (computed from parts)', 'film');
@@ -317,11 +300,6 @@ function load(){
     if(hvg.length){
       html += '<div class="sec-label" style="margin:6px 2px 14px">HV Oil Burner — Parts Costing</div>';
       html += hvg.map(hvPartsTable).join('');
-    }
-    const rr=(rates&&rates.rates)||[];
-    if(rr.length){
-      html += '<div class="sec-label" style="margin:6px 2px 14px">Rate Master — drives the linked Rate cells above (◆)</div>';
-      html += ratesTable(rr);
     }
     const mm=(markups&&markups.markups)||[];
     if(mm.length){
