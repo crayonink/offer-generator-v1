@@ -1025,6 +1025,57 @@ def api_ic_oil_burner_prices():
                 "spares": {"columns": [], "rows": []}, "error": str(e)}
 
 
+# Cost -> price markups baked into the burner tables, now editable (Markup Master).
+# key -> (label, default)
+BURNER_MARKUPS = [
+    ("ba",             "Burner Alone ×",             2.5),
+    ("micro",          "Micro Valve ×",              2.0),
+    ("ciplate",        "C.I. Plate ×",               1.8),
+    ("block",          "Burner Block ×",             2.0),
+    ("block_5a6a",     "Burner Block × (5A/6A)",     2.2),
+    ("hoses",          "Flexible Hoses ×",           2.0),
+    ("ystrainer",      "Y-Strainer ×",               2.5),
+    ("butterfly",      "Butterfly ×",                2.0),
+    ("ballvalve",      "Ball Valve ×",               2.0),
+    ("ballvalve_disc", "Ball Valve discount ×",      0.78),
+    ("dual_hoses",     "Dual Fuel Hoses ×",          1.5),
+    ("dual_hoses_off", "Dual Fuel Hoses offset (+)", -5.0),
+    ("hv_hoses",       "HV Oil Hoses ×",             2.0),
+]
+
+
+def ensure_burner_markups():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("CREATE TABLE IF NOT EXISTS burner_markup "
+                     "(key TEXT PRIMARY KEY, label TEXT, value REAL, sort INTEGER)")
+        for i, (k, label, default) in enumerate(BURNER_MARKUPS):
+            if conn.execute("SELECT 1 FROM burner_markup WHERE key=?", (k,)).fetchone():
+                conn.execute("UPDATE burner_markup SET label=?, sort=? WHERE key=?", (label, i, k))
+            else:
+                conn.execute("INSERT INTO burner_markup (key, label, value, sort) VALUES (?,?,?,?)",
+                             (k, label, default, i))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: ensure_burner_markups failed: {e}")
+
+
+ensure_burner_markups()
+
+
+def _load_markups(conn):
+    """Current markup factors as a dict (falls back to defaults)."""
+    m = {k: d for k, _, d in BURNER_MARKUPS}
+    try:
+        for k, v in conn.execute("SELECT key, value FROM burner_markup").fetchall():
+            if v is not None:
+                m[k] = v
+    except sqlite3.OperationalError:
+        pass
+    return m
+
+
 def recompute_burner_prices(conn):
     """Recompute the derived BURNER prices from the oil_burner_master part totals,
     exactly as the workbook formulas do (part totals x markup). Independent cells
@@ -1082,6 +1133,7 @@ def recompute_burner_prices(conn):
     FILMCOMPS = ["BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE",
                  "HIGH AL. WHYTEHEAT K BURNER BLOCK", "FLEXIBLE HOSES SET",
                  "Y TYPE STRAINER", "BUTTERFLY VALVE"]
+    MK = _load_markups(conn)
     sg_seen = {}
     for size, group, layout, bmult, sgcfg in SIZES:
         L = LAYOUTS[layout]
@@ -1092,14 +1144,14 @@ def recompute_burner_prices(conn):
 
         c = {}
         c["BURNER ALONE"] = (stored(FILM, size, "BURNER ALONE") if (size, "BURNER ALONE") in INDEP
-                             else sum(g(i) for i in L["ba"]) * 2.5)
-        c["MICRO VALVE"] = g(L["micro"]) * 2
+                             else sum(g(i) for i in L["ba"]) * MK["ba"])
+        c["MICRO VALVE"] = g(L["micro"]) * MK["micro"]
         c["C.I.BURNER PLATE"] = (stored(FILM, size, "C.I.BURNER PLATE") if (size, "C.I.BURNER PLATE") in INDEP
-                                 else g(L["ciplate"]) * 1.8)
-        c["HIGH AL. WHYTEHEAT K BURNER BLOCK"] = g(L["block"]) * bmult
-        c["FLEXIBLE HOSES SET"] = sum(g(i) for i in L["hoses"]) * 2
-        c["Y TYPE STRAINER"] = g(L["ystrainer"]) * 2.5   # Y-strainer rate × 2.5
-        c["BUTTERFLY VALVE"] = g(L["butterfly"]) * 2
+                                 else g(L["ciplate"]) * MK["ciplate"])
+        c["HIGH AL. WHYTEHEAT K BURNER BLOCK"] = g(L["block"]) * (MK["block_5a6a"] if group == "5A/6A" else MK["block"])
+        c["FLEXIBLE HOSES SET"] = sum(g(i) for i in L["hoses"]) * MK["hoses"]
+        c["Y TYPE STRAINER"] = g(L["ystrainer"]) * MK["ystrainer"]
+        c["BUTTERFLY VALVE"] = g(L["butterfly"]) * MK["butterfly"]
         for k in ("BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE", "HIGH AL. WHYTEHEAT K BURNER BLOCK",
                   "FLEXIBLE HOSES SET", "Y TYPE STRAINER", "BUTTERFLY VALVE"):
             if (size, k) not in INDEP:
@@ -1169,12 +1221,13 @@ def recompute_gas_prices(conn):
         conn.execute("UPDATE burner_pricelist_master SET price=? WHERE section=? "
                      "AND burner_size=? AND component=?", (round(val, 2), GAS, size, comp))
 
+    MK = _load_markups(conn)
     COMPS = ["BURNER ALONE", "BALL VALVE", "C.I.BURNER PLATE", BLOCK,
              "FLEXIBLE HOSES SET", "BUTTERFLY VALVE"]
     for size in ("ENCON 2A", "ENCON 3A", "ENCON 4A", "ENCON 5A", "ENCON 6A", "ENCON 7A"):
         c = {
             "BURNER ALONE": film(size, "BURNER ALONE"),
-            "BALL VALVE": 2 * cpm(BURNER_BALL_ITEM[size]) * 0.78,
+            "BALL VALVE": MK["ballvalve"] * cpm(BURNER_BALL_ITEM[size]) * MK["ballvalve_disc"],
             "C.I.BURNER PLATE": film(size, "C.I.BURNER PLATE"),
             BLOCK: film(size, BLOCK),
             "FLEXIBLE HOSES SET": film(size, "FLEXIBLE HOSES SET"),
@@ -1229,6 +1282,7 @@ def recompute_dualfuel_prices(conn):
     COMPS = ["BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE", BLOCK, "FLEXIBLE HOSES SET",
              "BALL VALVE", "Y TYPE STRAINER", "BUTTERFLY VALVE"]
 
+    MK = _load_markups(conn)
     for size in ("ENCON 2A", "ENCON 3A", "ENCON 4A", "ENCON 5A", "ENCON 6A", "ENCON 7A"):
         hs_size, hs_off = HOSE_SRC[size]
         c = {
@@ -1236,8 +1290,8 @@ def recompute_dualfuel_prices(conn):
             "MICRO VALVE": film(size, "MICRO VALVE"),
             "C.I.BURNER PLATE": film(size, "C.I.BURNER PLATE"),
             BLOCK: HIGH_AL_FIXED.get(size, film(size, BLOCK)),
-            "FLEXIBLE HOSES SET": film(hs_size, "FLEXIBLE HOSES SET") * 1.5 + hs_off,
-            "BALL VALVE": 2 * cpm(BURNER_BALL_ITEM[size]) * 0.78,
+            "FLEXIBLE HOSES SET": film(hs_size, "FLEXIBLE HOSES SET") * MK["dual_hoses"] + (MK["dual_hoses_off"] if hs_off else 0),
+            "BALL VALVE": MK["ballvalve"] * cpm(BURNER_BALL_ITEM[size]) * MK["ballvalve_disc"],
             "Y TYPE STRAINER": film(size, "Y TYPE STRAINER"),
             "BUTTERFLY VALVE": film(size, "BUTTERFLY VALVE"),
         }
@@ -1268,10 +1322,12 @@ def recompute_hv_oil_prices(conn):
         r = conn.execute("SELECT price FROM component_price_master WHERE item=?", (item,)).fetchone()
         return f(r[0]) if r else 0.0
 
+    MK = _load_markups(conn)
+
     def hose2x(block):
         rows = conn.execute("SELECT amount, mc_cost, total_amount FROM hv_oil_burner_master "
                             "WHERE burner_type=? AND particular LIKE '%FLEXIBLE HOSE%'", (block,)).fetchall()
-        return sum((f(t) if t not in (None, "") else f(a) + f(m)) for a, m, t in rows) * 2
+        return sum((f(t) if t not in (None, "") else f(a) + f(m)) for a, m, t in rows) * MK["hv_hoses"]
 
     def put(size, comp, val):
         conn.execute("UPDATE burner_pricelist_master SET price=? WHERE section=? "
@@ -1455,6 +1511,43 @@ def api_ic_update_price(u: _PriceEdit):
                      (price, u.section, u.burner_size, u.component))
         # an independent cell (Y-Strainer / Air Resistor / 3A inputs) feeds the
         # Burner Set total, so re-roll the derived prices.
+        recompute_burner_prices(conn)
+        conn.commit()
+        conn.close()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/internal-costing/markups")
+def api_ic_markups():
+    """The editable cost→price markup factors (Markup Master)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute(
+            "SELECT key, label, value FROM burner_markup ORDER BY sort")]
+        conn.close()
+        return {"markups": rows}
+    except Exception as e:
+        return {"markups": [], "error": str(e)}
+
+
+class _MarkupEdit(BaseModel):
+    key: str
+    value: Optional[str] = ""
+
+
+@app.post("/api/internal-costing/update-markup")
+def api_ic_update_markup(u: _MarkupEdit):
+    """Edit a markup factor, then recompute every burner price."""
+    try:
+        try:
+            val = float((u.value or "").replace(",", "").strip())
+        except ValueError:
+            val = None
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE burner_markup SET value=? WHERE key=?", (val, u.key))
         recompute_burner_prices(conn)
         conn.commit()
         conn.close()

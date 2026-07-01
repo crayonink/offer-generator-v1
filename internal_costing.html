@@ -143,6 +143,9 @@ function postField(el){
   } else if(kind==='rate'){
     url='/api/internal-costing/update-rate';
     body={cell:el.dataset.cell, value:v};
+  } else if(kind==='markup'){
+    url='/api/internal-costing/update-markup';
+    body={key:el.dataset.key, value:v};
   } else {
     url='/api/internal-costing/update-part';
     body={rid:+el.dataset.rid, field:el.dataset.field, value:v};
@@ -255,6 +258,14 @@ function hvPartsTable(grp){
       <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
 }
+function markupsTable(mks){
+  const body = mks.map(m=>`<tr>
+    <td class="co">${m.label}</td>
+    <td class="num ed" contenteditable data-kind="markup" data-key="${esc(m.key)}" onblur="save(this)">${ev(m.value)}</td></tr>`).join('');
+  return `<div class="grp">
+    <div class="grp-h"><span class="t">Markup Master — cost&rarr;price factors (edit to reprice every burner table above)</span></div>
+    <table><thead><tr><th>Markup</th><th class="num">&times;</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
 function formulasPanel(){
   return `<details class="grp fpanel">
     <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
@@ -286,8 +297,9 @@ function load(){
     fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
     fetch('/api/internal-costing/oil-burner').then(r=>r.json()),
     fetch('/api/internal-costing/rates').then(r=>r.json()),
-    fetch('/api/internal-costing/hv-oil-burner').then(r=>r.json())
-  ]).then(([prices, parts, rates, hv])=>{
+    fetch('/api/internal-costing/hv-oil-burner').then(r=>r.json()),
+    fetch('/api/internal-costing/markups').then(r=>r.json())
+  ]).then(([prices, parts, rates, hv, markups])=>{
     let html='';
     html += formulasPanel();
     html += priceTable(prices.film,   'ENCON Oil &ldquo;Film&rdquo; Burner &amp; Accessories — price list (computed from parts)', 'film');
@@ -310,6 +322,11 @@ function load(){
     if(rr.length){
       html += '<div class="sec-label" style="margin:6px 2px 14px">Rate Master — drives the linked Rate cells above (◆)</div>';
       html += ratesTable(rr);
+    }
+    const mm=(markups&&markups.markups)||[];
+    if(mm.length){
+      html += '<div class="sec-label" style="margin:6px 2px 14px">Markup Master — edit a factor to reprice every table above</div>';
+      html += markupsTable(mm);
     }
     document.getElementById('tab-content').innerHTML = html || '<div class="stub"><h2>No oil-burner data found</h2></div>';
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
