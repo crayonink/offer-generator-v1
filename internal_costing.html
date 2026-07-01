@@ -198,12 +198,27 @@ function ratesTable(rates){
     <div class="grp-h"><span class="t">Rate Master — live Pricelist rates &amp; burner-local rates</span></div>
     <table><thead><tr><th>Rate Item</th><th>Unit</th><th class="num">Rate</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
+function hvPartsTable(grp){
+  const C=(v)=>`<td class="num calc">${ev(v)}</td>`;
+  return `<div class="grp">
+    <div class="grp-h"><span class="t">ENCON HV ${grp.burner_type}</span>
+      <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
+    <table><thead><tr>
+      <th>S.No</th><th>Particular</th><th class="num">Qty</th><th>Unit</th>
+      <th class="num">Rate</th><th class="num">Amount</th><th class="num">M/C Cost</th><th class="num">Total</th>
+    </tr></thead><tbody>
+      ${grp.items.map(it=>`<tr>${C(it.s_no)}<td>${it.particular||''}</td>${C(it.qty)}<td>${it.unit||''}</td>
+        ${C(it.rate)}${C(it.amount)}${C(it.mc_cost)}${C(it.row_total)}</tr>`).join('')}
+      <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
+    </tbody></table></div>`;
+}
 function load(){
   return Promise.all([
     fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
     fetch('/api/internal-costing/oil-burner').then(r=>r.json()),
-    fetch('/api/internal-costing/rates').then(r=>r.json())
-  ]).then(([prices, parts, rates])=>{
+    fetch('/api/internal-costing/rates').then(r=>r.json()),
+    fetch('/api/internal-costing/hv-oil-burner').then(r=>r.json())
+  ]).then(([prices, parts, rates, hv])=>{
     let html='';
     html += priceTable(prices.film,   'ENCON Oil &ldquo;Film&rdquo; Burner &amp; Accessories — price list (computed from parts)');
     html += priceTable(prices.dual,   'ENCON Dual Fuel Burner &amp; Accessories — price list (computed from Film)');
@@ -213,6 +228,11 @@ function load(){
     if(g.length){
       html += '<div class="sec-label" style="margin:6px 2px 14px">Parts Costing (internal) — drives every price above</div>';
       html += g.map(partsTable).join('');
+    }
+    const hvg=(hv&&hv.groups)||[];
+    if(hvg.length){
+      html += '<div class="sec-label" style="margin:6px 2px 14px">HV Oil Burner — Parts Costing</div>';
+      html += hvg.map(hvPartsTable).join('');
     }
     const rr=(rates&&rates.rates)||[];
     if(rr.length){

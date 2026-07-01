@@ -402,6 +402,55 @@ def ensure_oil_burner_master():
 ensure_oil_burner_master()
 
 
+def ensure_hv_oil_burner_master():
+    """Build hv_oil_burner_master from the 'HV  Oil Burner' sheet — same 4-block
+    layout as the oil burner (2A/3A · 4A · 5A/6A · 7A at cols A/J/S/AB; header row
+    2, parts from row 3 down to each block's TOTAL). Built once (skips if non-empty)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("CREATE TABLE IF NOT EXISTS hv_oil_burner_master "
+                     "(s_no TEXT, particular TEXT, qty TEXT, unit TEXT, rate TEXT, "
+                     "amount TEXT, mc_cost TEXT, total_amount TEXT, burner_type TEXT)")
+        if conn.execute("SELECT COUNT(*) FROM hv_oil_burner_master").fetchone()[0] > 0:
+            conn.close(); return
+        src = os.path.join(BASE_DIR, "uploads", "Pricelist WorkBook 28-08-2025.xlsx")
+        if not os.path.exists(src):
+            conn.close(); return
+        import openpyxl
+        ws = openpyxl.load_workbook(src, data_only=True)["HV  Oil Burner"]
+
+        def cv(r, c):
+            v = ws.cell(r, c).value
+            return v.strip() if isinstance(v, str) else v
+
+        rows = []
+        for bt, sc in (("2A/3A", 1), ("4A", 10), ("5A/6A", 19), ("7A", 28)):
+            total_row = None
+            for r in range(3, 40):
+                if any(isinstance(ws.cell(r, c).value, str) and
+                       ws.cell(r, c).value.strip().upper() == "TOTAL"
+                       for c in range(sc, sc + 8)):
+                    total_row = r
+                    break
+            for r in range(3, total_row or 40):
+                s_no, particular = cv(r, sc), cv(r, sc + 1)
+                if not particular and s_no in (None, ""):
+                    continue
+                rows.append((s_no, particular, cv(r, sc + 2), cv(r, sc + 3),
+                             cv(r, sc + 4), cv(r, sc + 5), cv(r, sc + 6), cv(r, sc + 7), bt))
+        conn.executemany(
+            "INSERT INTO hv_oil_burner_master (s_no,particular,qty,unit,rate,amount,"
+            "mc_cost,total_amount,burner_type) VALUES (?,?,?,?,?,?,?,?,?)", rows)
+        conn.commit()
+        conn.close()
+        print(f"ensure_hv_oil_burner_master: built {len(rows)} rows")
+    except Exception as e:
+        print(f"WARN: ensure_hv_oil_burner_master failed: {e}")
+
+
+ensure_hv_oil_burner_master()
+
+
 # --- Oil-burner rate master (the ' Oil Burner' Rate column pulls from Rates!) ---
 # cell -> (display name, unit, category). Mirrors the Rates! sheet items the
 # parts reference: the "Bought-out / Casting" K-column, plus the M.S. raw
@@ -1341,6 +1390,39 @@ def api_ic_oil_burner():
                 it["row_total"] = round(rt)
             total = sum(i["row_total"] for i in items)
             out.append({"burner_type": bt, "items": items, "total": round(total)})
+        return {"groups": out}
+    except Exception as e:
+        return {"groups": [], "error": str(e)}
+
+
+@app.get("/api/internal-costing/hv-oil-burner")
+def api_ic_hv_oil_burner():
+    """HV oil-burner parts costing (hv_oil_burner_master), grouped by size."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute(
+            "SELECT rowid AS _rid, s_no, particular, qty, unit, rate, amount, "
+            "mc_cost, total_amount, burner_type FROM hv_oil_burner_master ORDER BY burner_type, rowid")]
+        conn.close()
+
+        def _f(v):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return 0.0
+        groups = {}
+        for r in rows:
+            groups.setdefault(r["burner_type"] or "—", []).append(r)
+        out = []
+        for bt, items in groups.items():
+            for it in items:
+                rt = _f(it["total_amount"])
+                if rt == 0.0:
+                    rt = _f(it["amount"]) + _f(it["mc_cost"])
+                it["row_total"] = round(rt)
+            out.append({"burner_type": bt, "items": items,
+                        "total": round(sum(i["row_total"] for i in items))})
         return {"groups": out}
     except Exception as e:
         return {"groups": [], "error": str(e)}
