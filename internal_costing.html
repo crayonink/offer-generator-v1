@@ -206,7 +206,8 @@ function load(){
     fetch('/api/internal-costing/rates').then(r=>r.json())
   ]).then(([prices, parts, rates])=>{
     let html='';
-    html += priceTable(prices.film,   'Film Burner &amp; Accessories — price list (computed from parts)');
+    html += priceTable(prices.film,   'ENCON Oil &ldquo;Film&rdquo; Burner &amp; Accessories — price list (computed from parts)');
+    html += priceTable(prices.dual,   'ENCON Dual Fuel Burner &amp; Accessories — price list (computed from Film)');
     html += priceTable(prices.spares, 'Spares — IIP ENCON Oil Film Burners');
     const g=parts.groups||[];
     if(g.length){

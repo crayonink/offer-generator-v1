@@ -895,6 +895,7 @@ def api_ic_oil_burner_prices():
               "C.I.BURNER PLATE": "C.I. Plate", "HIGH AL. WHYTEHEAT K BURNER BLOCK": "Burner Block",
               "FLEXIBLE HOSES SET": "Flex Hoses", "Y TYPE STRAINER": "Y-Strainer",
               "BUTTERFLY VALVE": "Butterfly", "BURNER SET": "Burner Set",
+              "BALL VALVE": "Ball Valve",
               "S.G. ASSEMBLY": "S.G. Assembly", "AIR RESISTOR": "Air Resistor"}
 
     def table(section):
@@ -914,9 +915,10 @@ def api_ic_oil_burner_prices():
                          for sz, vals in data.items()]}
     try:
         return {"film":   table("PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"),
+                "dual":   table("PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"),
                 "spares": table("PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS")}
     except Exception as e:
-        return {"film": {"columns": [], "rows": []},
+        return {"film": {"columns": [], "rows": []}, "dual": {"columns": [], "rows": []},
                 "spares": {"columns": [], "rows": []}, "error": str(e)}
 
 
