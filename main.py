@@ -548,37 +548,41 @@ cleanup_agr_fixed_ratio()
 
 # Pricelist (Bought Out) items the burner needs that the base Pricelist lacks —
 # seeded if missing, user edits preserved.
+#  (item, category, price, specification)  — spec = A-frame size for per-size rows
 BURNER_PRICELIST_SEED = [
-    ("ENCON-Y-STRAINER 25 NB", "Bought Out", 420),   # 7A uses a 25 NB Y-strainer
-    ("Burner Spacer", "Raw Material", 72),           # 7A spacer
-    ("M.S. Tikky", "Raw Material", 72),              # 7A tikkies (×3)
-    ("Air Mixer", "Raw Material", 80),               # 7A air mixer
-    ("M.S. Flange", "Raw Material", 72),             # 7A flange
-    ("M.S. Pipe", "Raw Material", 135),              # 7A M.S. pipe (100NB)
+    ("ENCON-Y-STRAINER 25 NB", "Bought Out", 420, ""),   # 7A uses a 25 NB Y-strainer
+    ("Burner Spacer", "Raw Material", 72, ""),           # 7A spacer
+    ("M.S. Tikky", "Raw Material", 72, ""),              # 7A tikkies (×3)
+    ("Air Mixer", "Raw Material", 80, ""),               # 7A air mixer
+    ("M.S. Flange", "Raw Material", 72, ""),             # 7A flange
+    ("M.S. Pipe", "Raw Material", 135, ""),              # 7A M.S. pipe (100NB)
     # Spare for ENCON Film Burner — S.G. Assembly + Air Resistor, per size
-    # (shown under its own heading inside the Raw Material tab)
-    ("S.G. Assembly 2A", "Spare for ENCON Film Burner", 7500),
-    ("S.G. Assembly 3A", "Spare for ENCON Film Burner", 7750),
-    ("S.G. Assembly 4A", "Spare for ENCON Film Burner", 10218),
-    ("S.G. Assembly 5A", "Spare for ENCON Film Burner", 17000),
-    ("S.G. Assembly 6A", "Spare for ENCON Film Burner", 17200),
-    ("S.G. Assembly 7A", "Spare for ENCON Film Burner", 52000),
-    ("Air Resistor 2A", "Spare for ENCON Film Burner", 2900),
-    ("Air Resistor 3A", "Spare for ENCON Film Burner", 2900),
-    ("Air Resistor 4A", "Spare for ENCON Film Burner", 3600),
-    ("Air Resistor 5A", "Spare for ENCON Film Burner", 6600),
-    ("Air Resistor 6A", "Spare for ENCON Film Burner", 6600),
-    ("Air Resistor 7A", "Spare for ENCON Film Burner", 8100),
+    # (shown under its own heading inside the Raw Material tab; size in Size col)
+    ("S.G. Assembly 2A", "Spare for ENCON Film Burner", 7500, "2A"),
+    ("S.G. Assembly 3A", "Spare for ENCON Film Burner", 7750, "3A"),
+    ("S.G. Assembly 4A", "Spare for ENCON Film Burner", 10218, "4A"),
+    ("S.G. Assembly 5A", "Spare for ENCON Film Burner", 17000, "5A"),
+    ("S.G. Assembly 6A", "Spare for ENCON Film Burner", 17200, "6A"),
+    ("S.G. Assembly 7A", "Spare for ENCON Film Burner", 52000, "7A"),
+    ("Air Resistor 2A", "Spare for ENCON Film Burner", 2900, "2A"),
+    ("Air Resistor 3A", "Spare for ENCON Film Burner", 2900, "3A"),
+    ("Air Resistor 4A", "Spare for ENCON Film Burner", 3600, "4A"),
+    ("Air Resistor 5A", "Spare for ENCON Film Burner", 6600, "5A"),
+    ("Air Resistor 6A", "Spare for ENCON Film Burner", 6600, "6A"),
+    ("Air Resistor 7A", "Spare for ENCON Film Burner", 8100, "7A"),
 ]
 
 
 def ensure_burner_pricelist_seed():
     try:
         conn = sqlite3.connect(DB_PATH)
-        for item, cat, price in BURNER_PRICELIST_SEED:
+        for item, cat, price, spec in BURNER_PRICELIST_SEED:
             if not conn.execute("SELECT 1 FROM component_price_master WHERE item=?", (item,)).fetchone():
-                conn.execute("INSERT INTO component_price_master (item, category, price, previous_price) "
-                             "VALUES (?,?,?,?)", (item, cat, price, price))
+                conn.execute("INSERT INTO component_price_master (item, category, price, previous_price, "
+                             "specification) VALUES (?,?,?,?,?)", (item, cat, price, price, spec or None))
+            elif spec:   # backfill the size on rows seeded before spec was added
+                conn.execute("UPDATE component_price_master SET specification=? WHERE item=? "
+                             "AND (specification IS NULL OR specification='')", (spec, item))
         conn.commit()
         conn.close()
     except Exception as e:
