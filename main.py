@@ -1006,6 +1006,75 @@ def recompute_burner_prices(conn):
         sg_seen[size] = sgval
         put(SPARE, size.replace("ENCON ", "ENCON-"), "S.G. ASSEMBLY", sgval)
 
+    recompute_dualfuel_prices(conn)
+
+
+def recompute_dualfuel_prices(conn):
+    """ENCON Dual Fuel burner = Film burner + S.G. Assembly + a Ball Valve, per
+    the workbook. Derived from the live Film section so it tracks rate edits.
+      Burner Alone = Film Burner Alone + S.G. Assembly
+      Micro/C.I.Plate/Y-type/Butterfly = Film ;  High Al = Film block (5A/6A 11850)
+      Flex Hoses = Film hoses × 1.5 (−5 for 2A/3A/4A, off the 2A hose)
+      Ball Valve = 2 × Pricelist NB ball-valve × 0.78 ;  Burner Set = Σ
+    """
+    FILM = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
+    SPARE = "PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS"
+    DUAL = "PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"
+    BLOCK = "HIGH AL. WHYTEHEAT K BURNER BLOCK"
+
+    def f(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def film(size, comp):
+        r = conn.execute("SELECT price FROM burner_pricelist_master WHERE section=? "
+                         "AND burner_size=? AND component=?", (FILM, size, comp)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def sg(size):
+        r = conn.execute("SELECT price FROM burner_pricelist_master WHERE section=? "
+                         "AND burner_size=? AND component='S.G. ASSEMBLY'",
+                         (SPARE, size.replace("ENCON ", "ENCON-"))).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def cpm(item):
+        r = conn.execute("SELECT price FROM component_price_master WHERE item=?", (item,)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def put(size, comp, val):
+        conn.execute("UPDATE burner_pricelist_master SET price=? WHERE section=? "
+                     "AND burner_size=? AND component=?", (round(val, 2), DUAL, size, comp))
+
+    BALL_ITEM = {"ENCON 2A": "BALL VALVE 20 NB #01 L3RBTC/L3RSWC",
+                 "ENCON 3A": "BALL VALVE 20 NB #01 L3RBTC/L3RSWC",
+                 "ENCON 4A": "BALL VALVE 25 NB #01 L3RBTC/L3RSWC",
+                 "ENCON 5A": "BALL VALVE 32 NB #01 L3RBTC/L3RSWC",
+                 "ENCON 6A": "BALL VALVE 40 NB #01 L3RBTC/L3RSWC",
+                 "ENCON 7A": "BALL VALVE 40 NB #01 L3RBTC/L3RSWC"}
+    HIGH_AL_FIXED = {"ENCON 5A": 11850.0, "ENCON 6A": 11850.0}
+    HOSE_SRC = {"ENCON 2A": ("ENCON 2A", -5), "ENCON 3A": ("ENCON 2A", -5), "ENCON 4A": ("ENCON 2A", -5),
+                "ENCON 5A": ("ENCON 5A", 0), "ENCON 6A": ("ENCON 5A", 0), "ENCON 7A": ("ENCON 7A", 0)}
+    COMPS = ["BURNER ALONE", "MICRO VALVE", "C.I.BURNER PLATE", BLOCK, "FLEXIBLE HOSES SET",
+             "BALL VALVE", "Y TYPE STRAINER", "BUTTERFLY VALVE"]
+
+    for size in ("ENCON 2A", "ENCON 3A", "ENCON 4A", "ENCON 5A", "ENCON 6A", "ENCON 7A"):
+        hs_size, hs_off = HOSE_SRC[size]
+        c = {
+            "BURNER ALONE": film(size, "BURNER ALONE") + sg(size),
+            "MICRO VALVE": film(size, "MICRO VALVE"),
+            "C.I.BURNER PLATE": film(size, "C.I.BURNER PLATE"),
+            BLOCK: HIGH_AL_FIXED.get(size, film(size, BLOCK)),
+            "FLEXIBLE HOSES SET": film(hs_size, "FLEXIBLE HOSES SET") * 1.5 + hs_off,
+            "BALL VALVE": 2 * cpm(BALL_ITEM[size]) * 0.78,
+            "Y TYPE STRAINER": film(size, "Y TYPE STRAINER"),
+            "BUTTERFLY VALVE": film(size, "BUTTERFLY VALVE"),
+        }
+        for comp in COMPS:
+            put(size, comp, c[comp])
+        put(size, "BURNER SET", sum(c[comp] for comp in COMPS))
+
 
 def sync_cpm_rates(conn):
     """Pull the live Pricelist (component_price_master) into the burner for the
