@@ -1076,6 +1076,37 @@ def _load_markups(conn):
     return m
 
 
+# HV burner block price cascades from the Whyteheat K refractory rate:
+#   block price = Whyteheat ₹/kg × block weight (kg)
+# so a 10% rise in the Whyteheat rate lifts every HV block 10%. The weights
+# are the kg implied by the JUL'25 block prices at the ₹60/kg Whyteheat rate.
+HV_BLOCK_WHYTE_ITEM = "WHYTEHEAT K"
+HV_BLOCK_WHYTE_KG = {
+    "HV Burner Block 3A": 880,
+    "HV Burner Block 4A": 1180,
+    "HV Burner Block 5A": 1430,
+    "HV Burner Block 6A": 3220,
+    "HV Burner Block 7A": 4026,
+}
+
+
+def recompute_hv_blocks(conn):
+    """HV burner block Pricelist prices = Whyteheat K ₹/kg × per-size weight."""
+    try:
+        row = conn.execute(
+            "SELECT price FROM component_price_master WHERE item=?",
+            (HV_BLOCK_WHYTE_ITEM,)).fetchone()
+        if not row or row[0] is None:
+            return
+        rate = float(row[0])
+        for item, kg in HV_BLOCK_WHYTE_KG.items():
+            conn.execute(
+                "UPDATE component_price_master SET price=? WHERE item=?",
+                (round(rate * kg), item))
+    except Exception as e:
+        print(f"WARN: recompute_hv_blocks failed: {e}")
+
+
 def recompute_burner_prices(conn):
     """Recompute the derived BURNER prices from the oil_burner_master part totals,
     exactly as the workbook formulas do (part totals x markup). Independent cells
@@ -1089,6 +1120,10 @@ def recompute_burner_prices(conn):
     """
     FILM = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
     SPARE = "PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS"
+
+    # Refresh the HV block Pricelist prices from the live Whyteheat rate first,
+    # so the HV oil/gas sections below read the cascaded values.
+    recompute_hv_blocks(conn)
 
     def f(x):
         try:
