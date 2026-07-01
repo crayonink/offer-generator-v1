@@ -555,6 +555,20 @@ BURNER_PRICELIST_SEED = [
     ("Air Mixer", "Raw Material", 80),               # 7A air mixer
     ("M.S. Flange", "Raw Material", 72),             # 7A flange
     ("M.S. Pipe", "Raw Material", 135),              # 7A M.S. pipe (100NB)
+    # Spare for ENCON Film Burner — S.G. Assembly + Air Resistor, per size
+    # (shown under its own heading inside the Raw Material tab)
+    ("S.G. Assembly 2A", "Spare for ENCON Film Burner", 7500),
+    ("S.G. Assembly 3A", "Spare for ENCON Film Burner", 7750),
+    ("S.G. Assembly 4A", "Spare for ENCON Film Burner", 10218),
+    ("S.G. Assembly 5A", "Spare for ENCON Film Burner", 17000),
+    ("S.G. Assembly 6A", "Spare for ENCON Film Burner", 17200),
+    ("S.G. Assembly 7A", "Spare for ENCON Film Burner", 52000),
+    ("Air Resistor 2A", "Spare for ENCON Film Burner", 2900),
+    ("Air Resistor 3A", "Spare for ENCON Film Burner", 2900),
+    ("Air Resistor 4A", "Spare for ENCON Film Burner", 3600),
+    ("Air Resistor 5A", "Spare for ENCON Film Burner", 6600),
+    ("Air Resistor 6A", "Spare for ENCON Film Burner", 6600),
+    ("Air Resistor 7A", "Spare for ENCON Film Burner", 8100),
 ]
 
 
