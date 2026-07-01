@@ -70,6 +70,24 @@ tr.ratenote b{color:var(--txt);font-style:normal}
 .edit-note{font-size:.76rem;color:var(--muted);margin-bottom:16px}
 .edit-note b{color:var(--red)}
 .edit-note .sw{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 10px}
+.fbar{position:sticky;top:66px;z-index:15;background:#0f172a;color:#e5e7eb;font-size:.82rem;padding:9px 14px;border-radius:9px;margin-bottom:16px;min-height:37px;display:flex;align-items:center;gap:8px;box-shadow:0 1px 3px rgba(16,24,40,.12)}
+.fbar .fx{font-style:italic;font-weight:800;color:#94a3b8;font-family:Georgia,serif}
+.fbar .fref{color:#93c5fd;font-weight:700}
+.fbar b{color:#fff;font-weight:700}
+.fbar .fval{color:#86efac;font-weight:700}
+td.fcell{cursor:pointer}
+td.fcell:hover{background:#eef4fb;outline:1px solid var(--line2)}
+td.sel{background:#1a3a5c!important;color:#fff!important;outline:2px solid #1a3a5c}
+td.sel.lk::after{color:#cbd5e1}
+details.fpanel{padding:0}
+details.fpanel>summary{padding:13px 20px;font-weight:800;font-size:.92rem;cursor:pointer;list-style:none}
+details.fpanel>summary::-webkit-details-marker{display:none}
+details.fpanel>summary .hint{font-weight:600;color:var(--muted);font-size:.78rem}
+details.fpanel[open]>summary{border-bottom:1px solid var(--line)}
+.fbody{padding:4px 20px 16px;font-size:.82rem;line-height:1.65}
+.fgrp{padding:9px 0;border-top:1px solid var(--line)}
+.fgrp:first-child{border-top:none}
+.fgrp b{color:var(--red)} .fgrp i{color:var(--muted)} .fgrp .dia{color:#1a3a5c;font-size:.8em}
 </style>
 </head>
 <body>
@@ -102,6 +120,7 @@ tr.ratenote b{color:var(--txt);font-style:normal}
       <button class="tab active">Oil Burner</button>
     </div>
     <div class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>(Amount, Total, prices) recalc automatically. <b>◆ Linked rate</b><span class="sw" style="background:#eef4fb;border:1px solid var(--line2)"></span>driven by the Rate Master at the bottom — edit it there to reprice every part at once.</div>
+    <div id="fbar" class="fbar"><span class="fx">ƒx</span> Click any computed cell to see how it's derived.</div>
     <div id="tab-content"></div>
   </div>
 </div>
@@ -144,25 +163,49 @@ function save(el){
 }
 function reload(){ const y=window.scrollY; load().then(()=>window.scrollTo(0,y)); }
 
-function priceTable(t, title){
+// per-table, per-column derivation shown in the formula bar on click.
+const FORMULA = {
+  film: {'BURNER ALONE':'Σ(first 5 oil-burner parts) × 2.5','MICRO VALVE':'micro-valve part × 2',
+    'C.I.BURNER PLATE':'burner-plate part × 1.8','HIGH AL. WHYTEHEAT K BURNER BLOCK':'block part × 2 (5A/6A × 2.2)',
+    'FLEXIBLE HOSES SET':'Σ(2 hose parts) × 2','Y TYPE STRAINER':'Y-strainer part × 2.5',
+    'BUTTERFLY VALVE':'butterfly part × 2','BURNER SET':'sum of the 7 columns'},
+  dual: {'BURNER ALONE':'Film Burner Alone + S.G. Assembly','MICRO VALVE':'= Film Micro Valve',
+    'C.I.BURNER PLATE':'= Film C.I. Plate','HIGH AL. WHYTEHEAT K BURNER BLOCK':'= Film block (5A/6A = 11,850 fixed)',
+    'FLEXIBLE HOSES SET':'Film hoses × 1.5 (−5 for 2A/3A/4A)','BALL VALVE':'2 × Pricelist NB ball-valve × 0.78',
+    'Y TYPE STRAINER':'= Film Y-Strainer','BUTTERFLY VALVE':'= Film Butterfly','BURNER SET':'sum of the 8 columns'},
+  gas: {'BURNER ALONE':'= Film Burner Alone','C.I.BURNER PLATE':'= Film C.I. Plate',
+    'HIGH AL. WHYTEHEAT K BURNER BLOCK':'= Film block','FLEXIBLE HOSES SET':'= Film hoses',
+    'BALL VALVE':'2 × Pricelist NB ball-valve × 0.78','BUTTERFLY VALVE':'= Film Butterfly','BURNER SET':'sum of the 6 columns'},
+  hv_oil: {'BURNER ALONE':'= Film Burner Alone (same size)','BURNER BLOCK':'Pricelist "Burner Block for High Velocity Burners"',
+    'MICRO VALVE':'= Film Micro Valve (one size down)','FLEXIBLE HOSES SET':'Σ(HV-oil hose parts) × 2',
+    'Y TYPE STRAINER':'= Film Y-Strainer','BUTTERFLY VALVE':'= Film Butterfly','BURNER SET':'sum of the 6 columns'},
+  hv_gas: {'BURNER ALONE':'= Film Burner Alone','BURNER BLOCK':'Pricelist HV Burner Block',
+    'BALL VALVE':'= Gas Ball Valve','FLEXIBLE HOSES SET':'= Film hoses','BUTTERFLY VALVE':'= Film Butterfly',
+    'BURNER SET':'sum of the 5 columns'},
+};
+function showF(el){
+  document.querySelectorAll('td.sel').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  const lbl=el.dataset.label||'', sz=el.dataset.size||'', f=el.dataset.f||'value', v=el.dataset.val;
+  document.getElementById('fbar').innerHTML =
+    `<span class="fref">${sz}${lbl?' · '+lbl:''}</span> = <b>${f}</b>`+(v!==undefined&&v!==''?` <span class="fval">→ ₹${v}</span>`:'');
+}
+function priceTable(t, title, fkey){
   if(!t || !t.rows || !t.rows.length) return '';
-  const cols=t.columns||[], last=cols.length-1, sec=t.section;
+  const cols=t.columns||[], last=cols.length-1, F=FORMULA[fkey]||{};
   return `<div class="grp">
     <div class="grp-h"><span class="t">${title}</span></div>
     <table><thead><tr><th>Burner Size</th>${cols.map((c,i)=>`<th class="num${i===last?' setcol':''}">${c.label}</th>`).join('')}</tr></thead>
-    <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${r.cells.map((v,i)=>{
-      const comp=cols[i].comp, setc=(i===last?' setcol':'');
-      return priceEditable(r.size, comp)
-        ? `<td class="num ed${setc}" contenteditable data-kind="price" data-section="${esc(sec)}" data-size="${esc(r.size)}" data-comp="${esc(comp)}" onblur="save(this)">${ev(v)}</td>`
-        : `<td class="num calc${setc}" title="computed from parts">${ev(v)}</td>`;
-    }).join('')}</tr>`).join('')}</tbody></table>
+    <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${r.cells.map((v,i)=>
+      `<td class="num calc fcell${i===last?' setcol':''}" onclick="showF(this)" data-label="${esc(cols[i].label)}" data-size="${esc(r.size)}" data-f="${esc(F[cols[i].comp]||'value')}" data-val="${ev(v)}">${ev(v)}</td>`
+    ).join('')}</tr>`).join('')}</tbody></table>
   </div>`;
 }
+function Cf(v,label,f){return `<td class="num calc fcell" onclick="showF(this)" data-label="${label}" data-f="${esc(f)}" data-val="${ev(v)}">${ev(v)}</td>`;}
+function Clk(v,ref){return `<td class="num calc lk fcell" onclick="showF(this)" data-label="Rate" data-f="from Pricelist rate (${esc(ref)})" data-val="${ev(v)}">${ev(v)}</td>`;}
 function partsTable(grp){
   const E =(rid,f,v)=>`<td class="num ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${ev(v)}</td>`;
   const Et=(rid,f,v)=>`<td class="ed" contenteditable data-kind="part" data-rid="${rid}" data-field="${f}" onblur="save(this)">${v||''}</td>`;
-  const C =(v)=>`<td class="num calc" title="computed">${ev(v)}</td>`;
-  const Cl=(v,ref)=>`<td class="num calc lk" title="from rate master (${ref})">${ev(v)}</td>`;
   return `<div class="grp">
     <div class="grp-h"><span class="t">ENCON ${grp.burner_type}</span>
       <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
@@ -175,8 +218,8 @@ function partsTable(grp){
         return `<tr>
           ${E(it._rid,'s_no',it.s_no)}${Et(it._rid,'particular',it.particular)}
           ${E(it._rid,'qty',it.qty)}${Et(it._rid,'unit',it.unit)}
-          ${it.rate_ref ? Cl(it.rate,it.rate_ref) : E(it._rid,'rate',it.rate)}${C(it.amount)}${E(it._rid,'mc_cost',it.mc_cost)}
-          ${hasQR ? C(it.row_total) : E(it._rid,'total_amount',it.row_total)}
+          ${it.rate_ref ? Clk(it.rate,it.rate_ref) : E(it._rid,'rate',it.rate)}${Cf(it.amount,'Amount','Qty × Rate')}${E(it._rid,'mc_cost',it.mc_cost)}
+          ${hasQR ? Cf(it.row_total,'Total','Amount + M/C Cost') : E(it._rid,'total_amount',it.row_total)}
         </tr>`;
       }).join('')}
       <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
@@ -200,7 +243,6 @@ function ratesTable(rates){
 }
 function hvPartsTable(grp){
   const C=(v)=>`<td class="num calc">${ev(v)}</td>`;
-  const Cl=(v,ref)=>`<td class="num calc lk" title="from Pricelist rate (${ref})">${ev(v)}</td>`;
   return `<div class="grp">
     <div class="grp-h"><span class="t">ENCON HV ${grp.burner_type}</span>
       <span class="tot">Total cost: ₹${inr(grp.total)}</span></div>
@@ -209,9 +251,35 @@ function hvPartsTable(grp){
       <th class="num">Rate</th><th class="num">Amount</th><th class="num">M/C Cost</th><th class="num">Total</th>
     </tr></thead><tbody>
       ${grp.items.map(it=>`<tr>${C(it.s_no)}<td>${it.particular||''}</td>${C(it.qty)}<td>${it.unit||''}</td>
-        ${it.rate_ref?Cl(it.rate,it.rate_ref):C(it.rate)}${C(it.amount)}${C(it.mc_cost)}${C(it.row_total)}</tr>`).join('')}
+        ${it.rate_ref?Clk(it.rate,it.rate_ref):C(it.rate)}${Cf(it.amount,'Amount','Qty × Rate')}${C(it.mc_cost)}${Cf(it.row_total,'Total','Amount + M/C Cost')}</tr>`).join('')}
       <tr class="totrow"><td colspan="7">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
+}
+function formulasPanel(){
+  return `<details class="grp fpanel">
+    <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
+    <div class="fbody">
+      <div class="fgrp"><b>Part cost — all burners</b><br>Amount = Qty × Rate &nbsp;·&nbsp; Total = Amount + M/C Cost &nbsp;·&nbsp; <span class="dia">◆</span> rates are pulled live from the Pricelist (Rate Master).</div>
+      <div class="fgrp"><b>Film Burner &amp; Accessories</b> — computed from the oil-burner parts<br>
+        Burner Alone = Σ(base plate + air tube + S.G. holder + air adjuster + S.S. assy) × 2.5<br>
+        Micro Valve = micro-valve part × 2 &nbsp;·&nbsp; C.I. Plate = burner-plate part × 1.8<br>
+        Burner Block = block part × 2 <i>(5A/6A × 2.2)</i> &nbsp;·&nbsp; Flex Hoses = Σ(2 hose parts) × 2<br>
+        Y-Strainer = Y-strainer part × 2.5 &nbsp;·&nbsp; Butterfly = butterfly part × 2 &nbsp;·&nbsp; <b>Burner Set = Σ of the 7</b></div>
+      <div class="fgrp"><b>Spares</b><br>S.G. Assembly &amp; Air Resistor = from the Pricelist ("Spare for ENCON Film Burner").</div>
+      <div class="fgrp"><b>Dual Fuel</b> — from Film<br>
+        Burner Alone = Film Burner Alone <b>+ S.G. Assembly</b><br>
+        Micro Valve / C.I. Plate / Y-Strainer / Butterfly = Film &nbsp;·&nbsp; High Al = Film block <i>(5A/6A = 11,850 fixed)</i><br>
+        Flex Hoses = Film hoses × 1.5 <i>(−5 for 2A/3A/4A)</i> &nbsp;·&nbsp; Ball Valve = 2 × Pricelist NB ball-valve × 0.78 &nbsp;·&nbsp; <b>Burner Set = Σ</b></div>
+      <div class="fgrp"><b>Gas</b> — from Film<br>
+        Burner Alone / C.I. Plate / High Al / Flex Hoses / Butterfly = Film &nbsp;·&nbsp; Ball Valve = 2 × Pricelist NB ball-valve × 0.78 &nbsp;·&nbsp; <b>Burner Set = Σ</b></div>
+      <div class="fgrp"><b>HV Oil</b> — from Film + HV parts<br>
+        Burner Alone / Y-Strainer / Butterfly = Film (same size) &nbsp;·&nbsp; Micro Valve = Film (−1 size)<br>
+        Burner Block = Pricelist "Burner Block for High Velocity Burners" &nbsp;·&nbsp; Flex Hoses = Σ(HV-oil hose parts) × 2 &nbsp;·&nbsp; <b>Burner Set = Σ</b></div>
+      <div class="fgrp"><b>HV Gas</b> — from Film + Gas<br>
+        Burner Alone / Flex Hoses / Butterfly = Film &nbsp;·&nbsp; Ball Valve = Gas &nbsp;·&nbsp; Burner Block = Pricelist HV block &nbsp;·&nbsp; <b>Burner Set = Σ</b></div>
+      <div class="fgrp"><b>Ball-valve NB by size</b> — 2A/3A → 20 NB · 4A → 25 NB · 5A → 32 NB · 6A/7A → 40 NB (rate from the Pricelist).</div>
+    </div>
+  </details>`;
 }
 function load(){
   return Promise.all([
@@ -221,11 +289,12 @@ function load(){
     fetch('/api/internal-costing/hv-oil-burner').then(r=>r.json())
   ]).then(([prices, parts, rates, hv])=>{
     let html='';
-    html += priceTable(prices.film,   'ENCON Oil &ldquo;Film&rdquo; Burner &amp; Accessories — price list (computed from parts)');
-    html += priceTable(prices.dual,   'ENCON Dual Fuel Burner &amp; Accessories — price list (computed from Film)');
-    html += priceTable(prices.gas,    'ENCON Gas Burner &amp; Accessories — price list (computed from Film)');
-    html += priceTable(prices.hv_oil, 'ENCON High Velocity Oil Burner — price list (computed)');
-    html += priceTable(prices.hv_gas, 'ENCON High Velocity Gas Burner — price list (computed)');
+    html += formulasPanel();
+    html += priceTable(prices.film,   'ENCON Oil &ldquo;Film&rdquo; Burner &amp; Accessories — price list (computed from parts)', 'film');
+    html += priceTable(prices.dual,   'ENCON Dual Fuel Burner &amp; Accessories — price list (computed from Film)', 'dual');
+    html += priceTable(prices.gas,    'ENCON Gas Burner &amp; Accessories — price list (computed from Film)', 'gas');
+    html += priceTable(prices.hv_oil, 'ENCON High Velocity Oil Burner — price list (computed)', 'hv_oil');
+    html += priceTable(prices.hv_gas, 'ENCON High Velocity Gas Burner — price list (computed)', 'hv_gas');
     // Spares (S.G. Assembly / Air Resistor) live in the Pricelist now, so not shown here.
     const g=parts.groups||[];
     if(g.length){
