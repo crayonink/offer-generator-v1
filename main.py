@@ -1015,10 +1015,13 @@ def api_ic_oil_burner_prices():
         return {"film":   table("PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"),
                 "dual":   table("PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"),
                 "gas":    table("PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"),
+                "hv_oil": table("PRICE LIST FOR HIGH VELOCITY OIL BURNERS"),
+                "hv_gas": table("PRICE LIST FOR HIGH VELOCITY GAS BURNERS"),
                 "spares": table("PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS")}
     except Exception as e:
         return {"film": {"columns": [], "rows": []}, "dual": {"columns": [], "rows": []},
-                "gas": {"columns": [], "rows": []},
+                "gas": {"columns": [], "rows": []}, "hv_oil": {"columns": [], "rows": []},
+                "hv_gas": {"columns": [], "rows": []},
                 "spares": {"columns": [], "rows": []}, "error": str(e)}
 
 
@@ -1124,6 +1127,8 @@ def recompute_burner_prices(conn):
 
     recompute_dualfuel_prices(conn)
     recompute_gas_prices(conn)
+    recompute_hv_oil_prices(conn)
+    recompute_hv_gas_prices(conn)
 
 
 # ball-valve item per size (2A/3A→20NB, 4A→25NB, 5A→32NB, 6A/7A→40NB) — shared by
@@ -1239,6 +1244,98 @@ def recompute_dualfuel_prices(conn):
         for comp in COMPS:
             put(size, comp, c[comp])
         put(size, "BURNER SET", sum(c[comp] for comp in COMPS))
+
+
+def recompute_hv_oil_prices(conn):
+    """HV Oil burner (HV-3A..7A): Burner Alone/Y-Strainer/Butterfly = Film (same
+    size), Micro Valve = Film (offset −1 size), Burner Block = Pricelist HV block,
+    Flex Hoses = Σ(HV-oil hose parts in the block) × 2. Burner Set = Σ."""
+    FILM = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
+    HVOIL = "PRICE LIST FOR HIGH VELOCITY OIL BURNERS"
+
+    def f(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def film(size, comp):
+        r = conn.execute("SELECT price FROM burner_pricelist_master WHERE section=? "
+                         "AND burner_size=? AND component=?", (FILM, size, comp)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def cpm(item):
+        r = conn.execute("SELECT price FROM component_price_master WHERE item=?", (item,)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def hose2x(block):
+        rows = conn.execute("SELECT amount, mc_cost, total_amount FROM hv_oil_burner_master "
+                            "WHERE burner_type=? AND particular LIKE '%FLEXIBLE HOSE%'", (block,)).fetchall()
+        return sum((f(t) if t not in (None, "") else f(a) + f(m)) for a, m, t in rows) * 2
+
+    def put(size, comp, val):
+        conn.execute("UPDATE burner_pricelist_master SET price=? WHERE section=? "
+                     "AND burner_size=? AND component=?", (round(val, 2), HVOIL, size, comp))
+
+    # hv size, Film size (BA/Ystr/Butterfly), Film size for Micro (offset), HV
+    # parts block for hoses, Pricelist HV-block item
+    HV_OIL = [("ENCON HV-3A", "ENCON 3A", "ENCON 2A", "2A/3A", "HV Burner Block 3A"),
+              ("ENCON HV-4A", "ENCON 4A", "ENCON 3A", "4A",    "HV Burner Block 4A"),
+              ("ENCON HV-5A", "ENCON 5A", "ENCON 4A", "4A",    "HV Burner Block 5A"),
+              ("ENCON HV-6A", "ENCON 6A", "ENCON 5A", "5A/6A", "HV Burner Block 6A"),
+              ("ENCON HV-7A", "ENCON 7A", "ENCON 7A", "7A",    "HV Burner Block 7A")]
+    for hv, fs, ms, hb, bi in HV_OIL:
+        c = {"BURNER ALONE": film(fs, "BURNER ALONE"),
+             "BURNER BLOCK": cpm(bi),
+             "MICRO VALVE": film(ms, "MICRO VALVE"),
+             "FLEXIBLE HOSES SET": hose2x(hb),
+             "Y TYPE STRAINER": film(fs, "Y TYPE STRAINER"),
+             "BUTTERFLY VALVE": film(fs, "BUTTERFLY VALVE")}
+        for comp, val in c.items():
+            put(hv, comp, val)
+        put(hv, "BURNER SET", sum(c.values()))
+
+
+def recompute_hv_gas_prices(conn):
+    """HV Gas burner (HV-3A..7A): Burner Alone/Hoses/Butterfly = Film (same size),
+    Ball Valve = Gas (same size), Burner Block = Pricelist HV block. Burner Set = Σ."""
+    FILM = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
+    GAS = "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"
+    HVGAS = "PRICE LIST FOR HIGH VELOCITY GAS BURNERS"
+
+    def f(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def price(section, size, comp):
+        r = conn.execute("SELECT price FROM burner_pricelist_master WHERE section=? "
+                         "AND burner_size=? AND component=?", (section, size, comp)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def cpm(item):
+        r = conn.execute("SELECT price FROM component_price_master WHERE item=?", (item,)).fetchone()
+        return f(r[0]) if r else 0.0
+
+    def put(size, comp, val):
+        conn.execute("UPDATE burner_pricelist_master SET price=? WHERE section=? "
+                     "AND burner_size=? AND component=?", (round(val, 2), HVGAS, size, comp))
+
+    HV_GAS = [("ENCON HV-3A", "ENCON 3A", "HV Burner Block 3A"),
+              ("ENCON HV-4A", "ENCON 4A", "HV Burner Block 4A"),
+              ("ENCON HV-5A", "ENCON 5A", "HV Burner Block 5A"),
+              ("ENCON HV-6A", "ENCON 6A", "HV Burner Block 6A"),
+              ("ENCON HV-7A", "ENCON 7A", "HV Burner Block 7A")]
+    for hv, fs, bi in HV_GAS:
+        c = {"BURNER ALONE": price(FILM, fs, "BURNER ALONE"),
+             "BURNER BLOCK": cpm(bi),
+             "BALL VALVE": price(GAS, fs, "BALL VALVE"),
+             "FLEXIBLE HOSES SET": price(FILM, fs, "FLEXIBLE HOSES SET"),
+             "BUTTERFLY VALVE": price(FILM, fs, "BUTTERFLY VALVE")}
+        for comp, val in c.items():
+            put(hv, comp, val)
+        put(hv, "BURNER SET", sum(c.values()))
 
 
 def sync_cpm_rates(conn):
