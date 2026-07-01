@@ -1003,10 +1003,24 @@ def recompute_burner_prices(conn):
                 put(FILM, size, k, c[k])
         put(FILM, size, "BURNER SET", sum(c[k] for k in FILMCOMPS))
 
-        ssassy = g(L["ssassy"])
-        sgval = ssassy * sgcfg[1] if sgcfg[0] == "mult" else sg_seen[sgcfg[1]] + sgcfg[2]
+        # S.G. Assembly + Air Resistor are sourced from the Pricelist ("Spare for
+        # ENCON Film Burner") so editing those rows cascades to the Spares table
+        # AND Dual Fuel (which adds S.G. Assembly). Fall back to the computed
+        # S.S.Assy × markup only if the Pricelist row is missing.
+        _short = size.replace("ENCON ", "")
+        _sgr = conn.execute("SELECT price FROM component_price_master WHERE item=?",
+                            ("S.G. Assembly " + _short,)).fetchone()
+        if _sgr and _sgr[0] is not None:
+            sgval = f(_sgr[0])
+        else:
+            ssassy = g(L["ssassy"])
+            sgval = ssassy * sgcfg[1] if sgcfg[0] == "mult" else sg_seen[sgcfg[1]] + sgcfg[2]
         sg_seen[size] = sgval
         put(SPARE, size.replace("ENCON ", "ENCON-"), "S.G. ASSEMBLY", sgval)
+        _arr = conn.execute("SELECT price FROM component_price_master WHERE item=?",
+                            ("Air Resistor " + _short,)).fetchone()
+        if _arr and _arr[0] is not None:
+            put(SPARE, size.replace("ENCON ", "ENCON-"), "AIR RESISTOR", f(_arr[0]))
 
     recompute_dualfuel_prices(conn)
 
