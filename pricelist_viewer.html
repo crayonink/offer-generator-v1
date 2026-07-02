@@ -1320,9 +1320,9 @@ function _renderRatesTable(data, opts) {
       // with no NB size; gas filters, 2/5-bar regulators and slam shut off
       // valves have NB sizes but are listed cheapest-first by request.
       cats[cat].sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
-    } else if (cat === 'Blower Alone (28 inch)' || cat === 'Blower Alone (40 inch)') {
-      // Blower models "ENCON 28/3" — sort by HP (the number after the slash).
-      const _bhp = x => { const m = (x.item || '').match(/\/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : Infinity; };
+    } else if (cat === 'Blower Alone (28 inch)' || cat === 'Blower Alone (40 inch)' || cat === 'Blower Motor') {
+      // Sort by HP — "ENCON 28/3" (after the slash) or "Blower Motor 3 HP".
+      const _bhp = x => { const m = (x.item || '').match(/\/(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*HP/i); return m ? parseFloat(m[1] || m[2]) : Infinity; };
       cats[cat].sort((a, b) => _bhp(a) - _bhp(b));
     } else if (cat === 'Pressure Switch') {
       // Group by company (all MADAS together, all Switzer together), then by

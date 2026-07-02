@@ -1509,12 +1509,15 @@ def _startup_seed_blower_alone():
     price is editable in the Rates tab and fetched by the Blower tab/offer.
     Idempotent; reaches the persistent volume on deploy."""
     try:
-        from bom.blower_pricelist import seed_blower_alone
+        from bom.blower_pricelist import seed_blower_alone, seed_blower_motor
         conn = sqlite3.connect(DB_PATH)
         n = seed_blower_alone(conn)
+        m = seed_blower_motor(conn)
         conn.close()
         if n:
             print(f"[db] seeded {n} 'Blower Alone' pricelist rows")
+        if m:
+            print(f"[db] seeded {m} 'Blower Motor' pricelist rows")
     except Exception as e:
         print(f"WARN: startup seed_blower_alone failed: {e}")
 

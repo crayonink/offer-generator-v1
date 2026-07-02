@@ -380,13 +380,12 @@ let BLOWER=null;
 function blowerPerkinTable(section, rows){
   const title = section==='MEDIUM PRESSURE' ? 'Medium Pressure (28&Prime; WG)'
               : section==='HIGH PRESSURE'   ? 'High Pressure (40&Prime; WG)' : section;
-  const E=(model,f,v)=>`<td class="num ed" contenteditable data-model="${esc(model)}" data-field="${f}" onblur="saveBlower(this)">${ev(v)}</td>`;
   const body = rows.map(m=>`<tr>
     <td class="co">${m.model||''}</td>
     <td class="num">${ev(m.hp)}</td>
     <td class="num">${ev(m.weight)}</td>
     <td class="num">${inr(m.amount)}</td>
-    ${E(m.model,'motor',m.motor)}
+    <td class="num lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Motor (ABB)" data-f="from Rates · Blower Motor ${ev(m.hp)} HP (ABB) — edit in Pricelist" data-val="${inr(m.motor)}">${inr(m.motor)}</td>
     <td class="num calc lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Blower Alone (w/o motor)" data-f="from Rates · Blower Alone (PERKINS) — edit in Pricelist" data-val="${inr(m.price_wo)}">${inr(m.price_wo)}</td>
     <td class="num calc setcol fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/ Motor" data-f="(Blower Alone ${inr(m.price_wo)}) + (Motor ${inr(m.motor)} × ${BLOWER.motor_markup})" data-val="${inr(m.price_w)}">${inr(m.price_w)}</td>
   </tr>`).join('');
@@ -402,9 +401,10 @@ function formulasPanelBlower(){
   return `<details class="grp fpanel">
     <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
     <div class="fbody">
-      <div class="fgrp"><b>Blower Alone (without motor)</b> — the sell price per model, edited in the Pricelist <a href="/pricelist">Rates</a> tab under <b>Blower Alone → 28&Prime; / 40&Prime;</b> (company PERKINS). Fetched here.</div>
-      <div class="fgrp"><b>Price with motor</b> = Blower Alone + (Motor ABB × ${BLOWER.motor_markup}).</div>
-      <div class="fgrp"><b>Motor</b> is editable here; <b>Amount</b> and <b>Weight</b> are the original cost reference (Blower Alone was seeded from Amount × ${BLOWER.without_markup}).</div>
+      <div class="fgrp"><b>Blower Alone (without motor)</b> — the sell price per model, edited in the Pricelist <a href="/pricelist">Rates</a> under <b>Blower Alone → 28&Prime; / 40&Prime;</b> (company PERKINS). Fetched here.</div>
+      <div class="fgrp"><b>Motor (ABB)</b> — the motor price by HP, edited in the Pricelist <a href="/pricelist">Rates</a> under <b>Blower Motor</b> (company ABB). Fetched here.</div>
+      <div class="fgrp"><b>Price with motor</b> = Blower Alone + (Motor × ${BLOWER.motor_markup}).</div>
+      <div class="fgrp"><b>Amount</b> and <b>Weight</b> are the original cost reference (Blower Alone was seeded from Amount × ${BLOWER.without_markup}).</div>
       <div class="fgrp"><b>Sections</b> — 28&Prime; = ENCON 28&Prime; WG series (Medium Pressure) &nbsp;·&nbsp; 40&Prime; = ENCON 40&Prime; WG series (High Pressure).</div>
       <div class="fgrp"><b>This is the basis for the blower equipment offer.</b></div>
     </div>
@@ -434,7 +434,7 @@ function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
   }
-  const note = `<div class="edit-note"><b>Blower Alone (w/o motor)</b> is fetched from the Pricelist <a href="/pricelist">Rates → Blower Alone (PERKINS)</a> — edit it there. <b>✎ Motor</b> is editable here. Price w/ motor = Blower Alone + (Motor × ${BLOWER.motor_markup}). This is the blower offer basis.</div>`;
+  const note = `<div class="edit-note"><b>Blower Alone</b> (PERKINS) and <b>Motor</b> (ABB) are fetched from the Pricelist <a href="/pricelist">Rates</a> — edit them there. Price w/ motor = Blower Alone + (Motor × ${BLOWER.motor_markup}). This is the blower offer basis.</div>`;
   let html = note + formulasPanelBlower();
   html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
   // Legacy DM/IDM fabrication tables (pricelist-linked cost reference).

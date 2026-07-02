@@ -12,10 +12,17 @@ Price is computed from those:
 MEDIUM PRESSURE = ENCON 28" WG series, HIGH PRESSURE = ENCON 40" WG series.
 """
 
+import re
 import sqlite3
 
 WITHOUT_MARKUP = 1.8   # Amount -> price without motor
 MOTOR_MARKUP   = 1.5   # motor added on top at ×1.5
+
+# The ABB motor price lives in the pricelist Rates tab under this category
+# (company ABB), keyed by HP (identical across the 28"/40" series), and is
+# fetched here. Editable in Rates.
+MOTOR_CATEGORY = "Blower Motor"
+MOTOR_COMPANY  = "ABB"
 
 # The two PERKIN tables, shown (and priced) in this order.
 SECTIONS = ["MEDIUM PRESSURE", "HIGH PRESSURE"]
@@ -52,6 +59,48 @@ def alone_prices(conn: sqlite3.Connection) -> dict:
     return {r[0]: _f(r[1]) for r in conn.execute(q, ALONE_CATEGORIES)}
 
 
+def motor_prices(conn: sqlite3.Connection) -> dict:
+    """{HP -> ABB motor price} from the pricelist Rates rows."""
+    out = {}
+    for item, spec, price in conn.execute(
+            "SELECT item, specification, price FROM component_price_master "
+            "WHERE category=?", (MOTOR_CATEGORY,)):
+        m = re.search(r"(\d+(?:\.\d+)?)", spec or item or "")
+        if m:
+            out[float(m.group(1))] = _f(price)
+    return out
+
+
+def seed_blower_motor(conn: sqlite3.Connection) -> int:
+    """Idempotently create the 'Blower Motor' pricelist rows (one per HP,
+    company ABB), seeded from motor_price_abb. The ABB motor is the same for
+    28"/40" of a given HP, so it's keyed by HP (no 28/40 duplication)."""
+    rows = conn.execute(
+        "SELECT hp, motor_price_abb FROM blower_pricelist_master "
+        "WHERE section IN ('MEDIUM PRESSURE','HIGH PRESSURE') "
+        "AND motor_price_abb IS NOT NULL").fetchall()
+    by_hp = {}
+    for hp, motor in rows:
+        h = _f(hp)
+        if h:
+            by_hp[h] = max(by_hp.get(h, 0.0), _f(motor))
+    inserted = 0
+    for h in sorted(by_hp):
+        hpstr = str(int(h) if h == int(h) else h)
+        item = f"Blower Motor {hpstr} HP"
+        if conn.execute("SELECT 1 FROM component_price_master WHERE item=? AND "
+                        "category=? LIMIT 1", (item, MOTOR_CATEGORY)).fetchone():
+            continue
+        price = round(by_hp[h])
+        conn.execute(
+            "INSERT INTO component_price_master (item, category, company, unit, "
+            "price, previous_price, specification) VALUES (?,?,?,?,?,?,?)",
+            (item, MOTOR_CATEGORY, MOTOR_COMPANY, "nos", price, price, f"{hpstr} HP"))
+        inserted += 1
+    conn.commit()
+    return inserted
+
+
 def seed_blower_alone(conn: sqlite3.Connection) -> int:
     """Idempotently create the 'Blower Alone' pricelist rows (one per model,
     company PERKINS), seeded with the without-motor price (Amount × 1.8). After
@@ -86,15 +135,18 @@ def blower_price(conn: sqlite3.Connection, model: str, with_motor: bool = False)
     pricelist Rates row; with_motor adds Motor × 1.5. Single source for every
     blower offer path."""
     r = conn.execute(
-        "SELECT per_kg_amount, motor_price_abb FROM blower_pricelist_master "
+        "SELECT hp, per_kg_amount, motor_price_abb FROM blower_pricelist_master "
         "WHERE model=? AND section IN ('MEDIUM PRESSURE','HIGH PRESSURE') LIMIT 1",
         (model,)).fetchone()
     if not r:
         return 0.0
-    amount, motor = r[0], r[1]
+    hp, amount, motor_col = r
     alone = alone_prices(conn).get(model)
     wo = alone if alone is not None else price_without_motor(amount)  # fallback pre-seed
-    return round(wo + (_f(motor) * MOTOR_MARKUP if with_motor else 0.0), 2)
+    motor = motor_prices(conn).get(_f(hp))
+    if motor is None:
+        motor = _f(motor_col)   # fallback pre-seed
+    return round(wo + (motor * MOTOR_MARKUP if with_motor else 0.0), 2)
 
 
 def blower_models(conn: sqlite3.Connection) -> dict:
@@ -106,20 +158,23 @@ def blower_models(conn: sqlite3.Connection) -> dict:
         "WHERE section IN ('MEDIUM PRESSURE','HIGH PRESSURE') "
         "ORDER BY section, CAST(hp AS REAL)").fetchall()
     alone = alone_prices(conn)   # blower-alone (without motor) from Rates
+    motors = motor_prices(conn)  # ABB motor by HP from Rates
     data = {}
-    for section, model, hp, weight, amount, motor, cfm, nm3, pressure in rows:
+    for section, model, hp, weight, amount, motor_col, cfm, nm3, pressure in rows:
         wo = alone.get(model)
         wo = round(wo) if wo is not None else round(price_without_motor(amount))
+        motor = motors.get(_f(hp))
+        motor = round(motor) if motor is not None else round(_f(motor_col))
         data.setdefault(section, []).append({
             "model":     model,
             "hp":        _f(hp),
             "weight":    _f(weight),
             "amount":    round(_f(amount)),
-            "motor":     round(_f(motor)),
+            "motor":     motor,
             "cfm":       _f(cfm),
             "nm3_per_hr": _f(nm3),
             "price_wo":  wo,
-            "price_w":   round(wo + _f(motor) * MOTOR_MARKUP),
+            "price_w":   round(wo + motor * MOTOR_MARKUP),
             "alone_cat": _SECTION_TO_ALONE_CAT.get(section, ""),
         })
     return data
