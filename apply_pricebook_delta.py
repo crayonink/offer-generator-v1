@@ -21,7 +21,7 @@ import tempfile
 from bom.pricelist_parser import parse_all
 
 OLD = "uploads/Pricelist WorkBook 28-08-2025.xlsx"
-NEW = "uploads/Pricelist WorkBook 18-05-2026.xlsx"
+NEW = "Pricelist_WorkBook_updated.xlsx"
 LIVE_DB = "vlph.db"
 
 
