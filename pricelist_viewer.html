@@ -549,9 +549,6 @@
   <div class="tab"        data-sheet="raw-material" onclick="switchTab('raw-material')">Raw Material</div>
   <div class="tab"        data-sheet="encon-purchase" onclick="switchTab('encon-purchase')">Encon Purchase</div>
   <div class="tab"        data-sheet="bought-out"    onclick="switchTab('bought-out')">Bought Out</div>
-  <div class="tab"        data-sheet="hpu"          onclick="switchTab('hpu')">HPU</div>
-  <div class="tab"        data-sheet="blowers"      onclick="switchTab('blowers')">Blower</div>
-  <div class="tab"        data-sheet="burner-prices" onclick="switchTab('burner-prices')">Burner</div>
   <div class="tab"        data-sheet="fabrication"   onclick="switchTab('fabrication')">Fabrication</div>
 </div>
 
@@ -561,17 +558,14 @@
   <div class="sheet-panel"        id="sheet-raw-material"><div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-encon-purchase"><div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-bought-out"><div class="empty-msg">Loading&hellip;</div></div>
-  <div class="sheet-panel"        id="sheet-hpu">         <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-oil-parts">   <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hv-parts">    <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-gas-parts">   <div class="empty-msg">Loading&hellip;</div></div>
-  <div class="sheet-panel"        id="sheet-blowers">     <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-recuperator"> <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-rad-heat">    <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-gail">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-hlph">        <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-vlph">        <div class="empty-msg">Loading&hellip;</div></div>
-  <div class="sheet-panel"        id="sheet-burner-prices"> <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-fabrication">  <div class="empty-msg">Loading&hellip;</div></div>
   <div class="sheet-panel"        id="sheet-stock-rates">   <div class="empty-msg">Loading&hellip;</div></div>
 </div>
@@ -622,12 +616,15 @@ function updateFormulaBar(cellName, val) {
 
 // ── Tab switching ──────────────────────────────────────────────────────────
 function switchTab(id) {
+  const tabEl = document.querySelector(`.tab[data-sheet="${id}"]`);
+  const panelEl = document.getElementById(`sheet-${id}`);
+  if (!tabEl || !panelEl) return;   // removed/unknown sheet — ignore
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.sheet-panel').forEach(p => p.classList.remove('active'));
-  document.querySelector(`.tab[data-sheet="${id}"]`).classList.add('active');
-  document.getElementById(`sheet-${id}`).classList.add('active');
+  tabEl.classList.add('active');
+  panelEl.classList.add('active');
   // scroll active tab into view
-  document.querySelector(`.tab[data-sheet="${id}"]`).scrollIntoView({block:'nearest',inline:'center'});
+  tabEl.scrollIntoView({block:'nearest',inline:'center'});
   document.getElementById('sheet-area').scrollTop = 0;
   currentTab = id;
   updateFormulaBar('—', 'Select a cell');
@@ -665,17 +662,14 @@ function renderAll() {
   renderRawMaterials(DATA.rates || []);
   renderEnconPurchase(DATA.rates || []);
   renderBoughtOut(DATA.rates || []);
-  renderHPU(s.hpu || []);
   renderPartsColumns('oil-parts',  s.oil_burner_parts || [], 'oil_burner_parts_master');
   renderPartsColumns('hv-parts',   s.hv_oil_burner_parts || [], 'hv_oil_burner_parts_master');
   renderPartsColumns('gas-parts',  s.gas_burner_parts || [], 'gas_burner_parts_master');
-  renderBlowers(s.blowers || []);
   renderRecuperator(s.recuperator || {rows:[], rates:{}});
   renderRadHeat(s.rad_heat || {models:[],spares:[]}, s.rad_heat_tata || {models:[],spares:[]});
   renderGail(s.gail_gas_burner || []);
   renderLPH('hlph', s.horizontal_lph || []);
   renderLPH('vlph', s.vertical_lph || []);
-  renderBurnerPivot('burner-prices', s.burners || {});
   renderStockRates(DATA.stock || {});
   renderFabrication(DATA.fabrication || []);
 }
