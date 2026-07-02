@@ -103,8 +103,9 @@ def seed_blower_motor(conn: sqlite3.Connection) -> int:
 
 def seed_blower_alone(conn: sqlite3.Connection) -> int:
     """Idempotently create the 'Blower Alone' pricelist rows (one per model,
-    company PERKINS), seeded with the without-motor price (Amount × 1.8). After
-    that the Rates row is the editable source that the Blower tab/offer fetch."""
+    company PERKINS), seeded with the blower-alone AMOUNT. The blower price is
+    derived: price without motor = Blower Alone × 1.8. The Rates row is the
+    editable source the Blower tab/offer fetch."""
     rows = conn.execute(
         "SELECT section, model, per_kg_amount, hp FROM blower_pricelist_master "
         "WHERE section IN ('MEDIUM PRESSURE','HIGH PRESSURE')").fetchall()
@@ -116,7 +117,7 @@ def seed_blower_alone(conn: sqlite3.Connection) -> int:
         if conn.execute("SELECT 1 FROM component_price_master WHERE item=? AND "
                         "category=? LIMIT 1", (model, cat)).fetchone():
             continue
-        price = price_without_motor(amount)
+        price = round(_f(amount))   # Blower Alone = the Amount
         hpv = _f(hp)
         spec = None
         if hpv:
@@ -140,9 +141,11 @@ def blower_price(conn: sqlite3.Connection, model: str, with_motor: bool = False)
         (model,)).fetchone()
     if not r:
         return 0.0
-    hp, amount, motor_col = r
-    alone = alone_prices(conn).get(model)
-    wo = alone if alone is not None else price_without_motor(amount)  # fallback pre-seed
+    hp, amount_col, motor_col = r
+    alone = alone_prices(conn).get(model)          # Blower Alone = the Amount
+    if alone is None:
+        alone = _f(amount_col)                     # fallback pre-seed
+    wo = alone * WITHOUT_MARKUP                     # price w/o motor = Blower Alone × 1.8
     motor = motor_prices(conn).get(_f(hp))
     if motor is None:
         motor = _f(motor_col)   # fallback pre-seed
@@ -157,21 +160,20 @@ def blower_models(conn: sqlite3.Connection) -> dict:
         "cfm, nm3_per_hr, pressure FROM blower_pricelist_master "
         "WHERE section IN ('MEDIUM PRESSURE','HIGH PRESSURE') "
         "ORDER BY section, CAST(hp AS REAL)").fetchall()
-    alone = alone_prices(conn)   # blower-alone (without motor) from Rates
+    alone = alone_prices(conn)   # Blower Alone = the Amount, from Rates
     motors = motor_prices(conn)  # ABB motor by HP from Rates
     data = {}
-    for section, model, hp, weight, amount, motor_col, cfm, nm3, pressure in rows:
-        wo = alone.get(model)
-        wo = round(wo) if wo is not None else round(price_without_motor(amount))
+    for section, model, hp, weight, amount_col, motor_col, cfm, nm3, pressure in rows:
+        amt = alone.get(model)
+        amt = round(amt) if amt is not None else round(_f(amount_col))  # fallback pre-seed
         motor = motors.get(_f(hp))
         motor = round(motor) if motor is not None else round(_f(motor_col))
+        wo = round(amt * WITHOUT_MARKUP)          # price w/o motor = Blower Alone × 1.8
         data.setdefault(section, []).append({
             "model":     model,
             "hp":        _f(hp),
             "weight":    _f(weight),
-            # Amount is derived from the pricelist blower-alone price
-            # (Blower Alone = Amount × 1.8), so it tracks the Rates value.
-            "amount":    round(wo / WITHOUT_MARKUP) if WITHOUT_MARKUP else round(_f(amount)),
+            "amount":    amt,                       # Blower Alone (from Rates)
             "motor":     motor,
             "cfm":       _f(cfm),
             "nm3_per_hr": _f(nm3),

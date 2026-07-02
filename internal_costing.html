@@ -402,16 +402,16 @@ function blowerPerkinTable(section, rows){
     <td class="co">${m.model||''}</td>
     <td class="num">${ev(m.hp)}</td>
     <td class="num ed" contenteditable data-model="${esc(m.model)}" data-field="weight" onblur="saveBlower(this)">${ev(m.weight)}</td>
-    <td class="num calc fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Amount" data-f="Blower Alone ${inr(m.price_wo)} ÷ ${BLOWER.without_markup} (from pricelist)" data-val="${inr(m.amount)}">${inr(m.amount)}</td>
+    <td class="num lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Blower Alone" data-f="from Rates · Blower Alone (PERKINS) — edit in Pricelist" data-val="${inr(m.amount)}">${inr(m.amount)}</td>
     <td class="num lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Motor (ABB)" data-f="from Rates · Blower Motor ${ev(m.hp)} HP (ABB) — edit in Pricelist" data-val="${inr(m.motor)}">${inr(m.motor)}</td>
-    <td class="num calc lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Blower Alone (w/o motor)" data-f="from Rates · Blower Alone (PERKINS) — edit in Pricelist" data-val="${inr(m.price_wo)}">${inr(m.price_wo)}</td>
-    <td class="num calc setcol fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/ Motor" data-f="(Blower Alone ${inr(m.price_wo)}) + (Motor ${inr(m.motor)} × ${BLOWER.motor_markup})" data-val="${inr(m.price_w)}">${inr(m.price_w)}</td>
+    <td class="num calc fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/o Motor" data-f="Blower Alone ${inr(m.amount)} × ${BLOWER.without_markup}" data-val="${inr(m.price_wo)}">${inr(m.price_wo)}</td>
+    <td class="num calc setcol fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/ Motor" data-f="(Blower Alone ${inr(m.amount)} × ${BLOWER.without_markup}) + (Motor ${inr(m.motor)} × ${BLOWER.motor_markup})" data-val="${inr(m.price_w)}">${inr(m.price_w)}</td>
   </tr>`).join('');
   return `<div class="grp">
     <div class="grp-h"><span class="t">PERKIN Rates — ${title}</span></div>
     <table><thead><tr>
       <th>Model</th><th class="num">HP</th><th class="num">Weight (kg)</th>
-      <th class="num">Amount (₹)</th><th class="num">Motor ABB (₹)</th>
+      <th class="num">Blower Alone (₹)</th><th class="num">Motor ABB (₹)</th>
       <th class="num">Price w/o Motor</th><th class="num setcol">Price w/ Motor</th>
     </tr></thead><tbody>${body}</tbody></table></div>`;
 }
@@ -419,10 +419,10 @@ function formulasPanelBlower(){
   return `<details class="grp fpanel">
     <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
     <div class="fbody">
-      <div class="fgrp"><b>Blower Alone (without motor)</b> — the sell price per model, edited in the Pricelist <a href="/pricelist">Rates</a> under <b>Blower Alone → 28&Prime; / 40&Prime;</b> (company PERKINS). Fetched here.</div>
+      <div class="fgrp"><b>Blower Alone</b> — the per-model amount, edited in the Pricelist <a href="/pricelist">Rates</a> under <b>Blower Alone → 28&Prime; / 40&Prime;</b> (company PERKINS). Fetched here.</div>
       <div class="fgrp"><b>Motor (ABB)</b> — the motor price by HP, edited in the Pricelist <a href="/pricelist">Rates</a> under <b>Blower Motor</b> (company ABB). Fetched here.</div>
-      <div class="fgrp"><b>Price with motor</b> = Blower Alone + (Motor × ${BLOWER.motor_markup}).</div>
-      <div class="fgrp"><b>Amount</b> and <b>Weight</b> are the original cost reference (Blower Alone was seeded from Amount × ${BLOWER.without_markup}).</div>
+      <div class="fgrp"><b>Price without motor</b> = Blower Alone × ${BLOWER.without_markup}.</div>
+      <div class="fgrp"><b>Price with motor</b> = (Blower Alone × ${BLOWER.without_markup}) + (Motor × ${BLOWER.motor_markup}).</div>
       <div class="fgrp"><b>Sections</b> — 28&Prime; = ENCON 28&Prime; WG series (Medium Pressure) &nbsp;·&nbsp; 40&Prime; = ENCON 40&Prime; WG series (High Pressure).</div>
       <div class="fgrp"><b>This is the basis for the blower equipment offer.</b></div>
     </div>
@@ -452,7 +452,7 @@ function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
   }
-  const note = `<div class="edit-note"><b>✎ Weight</b> is editable here. <b>Blower Alone</b> (PERKINS) and <b>Motor</b> (ABB) come from the Pricelist <a href="/pricelist">Rates</a> — edit them there; <b>Amount</b> is derived (Blower Alone ÷ ${BLOWER.without_markup}). Price w/ motor = Blower Alone + (Motor × ${BLOWER.motor_markup}). Click any cell to see its formula/source.</div>`;
+  const note = `<div class="edit-note"><b>✎ Weight</b> is editable here. <b>Blower Alone</b> (PERKINS) and <b>Motor</b> (ABB) come from the Pricelist <a href="/pricelist">Rates</a> — edit them there. Price w/o motor = Blower Alone × ${BLOWER.without_markup}; w/ motor = + (Motor × ${BLOWER.motor_markup}). Click any cell to see its formula/source.</div>`;
   let html = note + formulasPanelBlower();
   html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
   // Legacy DM/IDM fabrication tables (pricelist-linked cost reference).

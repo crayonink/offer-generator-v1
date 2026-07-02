@@ -1534,6 +1534,15 @@ _PRICE_OPS = [
      "UPDATE component_price_master SET previous_price=price, "
      "price=ROUND(price*0.55, 2) "
      "WHERE category='Pneumatic Shut Off Valve' AND UPPER(company)='DEMBLA'"),
+    # Blower Alone rows now hold the AMOUNT (not the ×1.8 price); price is
+    # derived as Blower Alone × 1.8. Convert any existing ×1.8-price rows.
+    ("blower_alone_store_amount",
+     "Store Amount (not the x1.8 price) in Blower Alone rates rows",
+     "UPDATE component_price_master SET previous_price=price, price=ROUND("
+     "(SELECT b.per_kg_amount FROM blower_pricelist_master b "
+     " WHERE b.model=component_price_master.item "
+     " AND b.section IN ('MEDIUM PRESSURE','HIGH PRESSURE') LIMIT 1)) "
+     "WHERE category IN ('Blower Alone (28 inch)','Blower Alone (40 inch)')"),
 ]
 
 
