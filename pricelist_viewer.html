@@ -1118,9 +1118,11 @@ function companyBadge(name) {
 
 // ── RATES + RAW MATERIAL sheets ─────────────────────────────────────────────
 // Both tabs render through one table builder. Rates excludes 'Raw Material'
-// rows; the Raw Material tab shows only those.
+// rows; the Raw Material tab shows only those. HPU_* categories (the HPU
+// raw-materials / components catalogue) live under the Raw Material tab.
+const _isHpuCat = c => (c || '').startsWith('HPU');
 function renderRates(data) {
-  _renderRatesTable((data || []).filter(r => r.category !== 'Raw Material' && r.category !== 'ENCON Purchase' && r.category !== 'Bought Out'),
+  _renderRatesTable((data || []).filter(r => r.category !== 'Raw Material' && r.category !== 'ENCON Purchase' && r.category !== 'Bought Out' && !_isHpuCat(r.category)),
     { elId: 'sheet-rates', tableId: 'rates-table', searchId: 'rates-search' });
 }
 
@@ -1130,7 +1132,7 @@ function renderBoughtOut(data) {
 }
 
 function renderRawMaterials(data) {
-  _renderRatesTable((data || []).filter(r => r.category === 'Raw Material' || r.category === 'Spare for ENCON Film Burner' || r.category === 'Burner Block for High Velocity Burners'),
+  _renderRatesTable((data || []).filter(r => r.category === 'Raw Material' || r.category === 'Spare for ENCON Film Burner' || r.category === 'Burner Block for High Velocity Burners' || _isHpuCat(r.category)),
     { elId: 'sheet-raw-material', tableId: 'rawmat-table', searchId: 'rawmat-search' });
 }
 
