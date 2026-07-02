@@ -1525,6 +1525,42 @@ def _startup_seed_blower_alone():
 _startup_seed_blower_alone()
 
 
+def _startup_seed_markups():
+    """Editable cost→price markups for HPU and Blower (like the burner Markup
+    Master). Seeded once; the tabs AND the offers read from here."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("CREATE TABLE IF NOT EXISTS product_markup ("
+                     "product TEXT, key TEXT, label TEXT, value REAL, sort INTEGER, "
+                     "PRIMARY KEY(product, key))")
+        defaults = [
+            ("hpu",    "markup",        "Selling markup — Material cost ×", 1.8, 1),
+            ("blower", "without_motor", "Price w/o motor — Blower Alone ×", 1.8, 1),
+            ("blower", "motor",         "Motor add-on — Motor ×",           1.5, 2),
+        ]
+        for product, key, label, value, sort in defaults:
+            conn.execute("INSERT OR IGNORE INTO product_markup "
+                         "(product, key, label, value, sort) VALUES (?,?,?,?,?)",
+                         (product, key, label, value, sort))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"WARN: startup seed_markups failed: {e}")
+
+
+_startup_seed_markups()
+
+
+def _product_markup(conn, product: str, key: str, default: float) -> float:
+    """Read one product markup value, falling back to `default`."""
+    try:
+        r = conn.execute("SELECT value FROM product_markup WHERE product=? AND key=?",
+                         (product, key)).fetchone()
+        return float(r[0]) if r and r[0] is not None else default
+    except Exception:
+        return default
+
+
 # One-off pricelist adjustments, applied exactly once per database (tracked in
 # _price_ops) so they reach the persistent Railway volume on the next deploy
 # without re-applying on every boot.
@@ -1683,6 +1719,42 @@ def api_ic_update_markup(u: _MarkupEdit):
         return {"success": False, "error": str(e)}
 
 
+@app.get("/api/internal-costing/product-markups")
+def api_ic_product_markups(product: str):
+    """Editable markups for a product (hpu / blower) — its Markup Master."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute(
+            "SELECT key, label, value FROM product_markup WHERE product=? ORDER BY sort",
+            (product,))]
+        conn.close()
+        return {"markups": rows}
+    except Exception as e:
+        return {"markups": [], "error": str(e)}
+
+
+class _ProductMarkupEdit(BaseModel):
+    product: str
+    key: str
+    value: float
+
+
+@app.post("/api/internal-costing/product-markup")
+def api_ic_update_product_markup(u: _ProductMarkupEdit):
+    """Edit an HPU/Blower markup factor. Prices recompute on next read (tab +
+    offer both read from product_markup)."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        n = conn.execute("UPDATE product_markup SET value=? WHERE product=? AND key=?",
+                         (u.value, u.product, u.key)).rowcount
+        conn.commit()
+        conn.close()
+        return {"success": n > 0}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.get("/api/internal-costing/rates")
 def api_ic_rates():
     """The oil-burner rate master (Rates! items the part rates pull from)."""
@@ -1817,6 +1889,7 @@ def api_ic_hpu():
             "SELECT rowid AS _rid, unit_kw, variant, item, qty, unit, rate, amount "
             "FROM hpu_master ORDER BY unit_kw, rowid")]
         rates = _hp.load_rates(conn)
+        HPU_MARKUP = _product_markup(conn, "hpu", "markup", 1.8)   # editable
         conn.close()
 
         def _f(v):
@@ -1906,13 +1979,14 @@ def api_ic_blower():
         conn = sqlite3.connect(DB_PATH)
         data = _bp.blower_models(conn)
         legacy = _bp.legacy_models(conn)
+        wo_mk, motor_mk = _bp.blower_markups(conn)   # editable Markup Master
         conn.close()
         sections = [s for s in _bp.SECTIONS if s in data] + \
                    [s for s in data if s not in _bp.SECTIONS]
         legacy_sections = [s for s in _bp.LEGACY_SECTIONS if s in legacy] + \
                           [s for s in legacy if s not in _bp.LEGACY_SECTIONS]
         return {"sections": sections, "data": data,
-                "without_markup": _bp.WITHOUT_MARKUP, "motor_markup": _bp.MOTOR_MARKUP,
+                "without_markup": wo_mk, "motor_markup": motor_mk,
                 "legacy_sections": legacy_sections, "legacy": legacy,
                 "legacy_overhead": _bp.LEGACY_OVERHEAD, "legacy_markup": _bp.LEGACY_MARKUP}
     except Exception as e:
@@ -5367,9 +5441,9 @@ def hpu_price(kw: float, variant: str, mode: str = "hpu"):
     total before generating. HPU = SUM(hpu_master.amount) × 1.8;
     PU = pumping_unit_price.sell_price."""
     try:
-        from bom.hpu_calculator import HPU_MARKUP
         kw_int = int(round(kw))
         conn = sqlite3.connect(DB_PATH)
+        HPU_MARKUP = _product_markup(conn, "hpu", "markup", 1.8)   # editable
         if (mode or "hpu").lower() == "pu":
             row = conn.execute(
                 "SELECT sell_price FROM pumping_unit_price WHERE unit_kw = ? AND variant = ? LIMIT 1",
@@ -5398,7 +5472,6 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     """
     from engine.quote_engine import calculate_quote
     from engine.quote_writer import generate_quote_docx
-    from bom.hpu_calculator import HPU_MARKUP
     from bom.selectors.hpu_selector import VARIANT_PREFIX, PU_VARIANT_PREFIX
 
     cust = req.customer
@@ -5408,6 +5481,7 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     # Flow rate (LPH) is identical for HPU and PU since the pump skid
     # is the same — read from pumping_unit_price.flow_lph either way.
     conn = sqlite3.connect(DB_PATH)
+    HPU_MARKUP = _product_markup(conn, "hpu", "markup", 1.8)   # editable
     flow_row = conn.execute(
         "SELECT flow_lph FROM pumping_unit_price "
         "WHERE unit_kw = ? AND variant = ? LIMIT 1",
@@ -5415,7 +5489,7 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     ).fetchone()
 
     if mode == "hpu":
-        # HPU sell price = pricelist-linked material cost × HPU_MARKUP (1.8).
+        # HPU sell price = pricelist-linked material cost × HPU_MARKUP.
         # Material cost is Σ(qty × live pricelist rate) + labour, shared with
         # the Internal-Costing HPU tab (bom/hpu_pricelist.hpu_material_cost).
         from bom.hpu_pricelist import hpu_material_cost

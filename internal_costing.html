@@ -384,13 +384,39 @@ function renderHPU(){
   const day = HPU.data[String(HPU_KW)]||{};
   let html = note + formulasPanelHPU() + picker;
   html += HPU.variants.map(v=>hpuVariantTable(HPU_KW, v, day[v])).join('');
+  html += markupPanel('hpu', HPU.mks||[]);
   document.getElementById('tab-content').innerHTML = html;
 }
 function pickHPU(kw){ HPU_KW=kw; renderHPU(); }
 function loadHPU(){
-  return fetch('/api/internal-costing/hpu').then(r=>r.json()).then(d=>{
-    HPU=d; renderHPU();
+  return Promise.all([
+    fetch('/api/internal-costing/hpu').then(r=>r.json()),
+    fetch('/api/internal-costing/product-markups?product=hpu').then(r=>r.json())
+  ]).then(([d,mk])=>{ HPU=d; HPU.mks=(mk&&mk.markups)||[]; renderHPU();
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
+}
+
+// ---------- shared editable Markup Master (HPU / Blower) ----------
+function markupPanel(product, mks){
+  if(!mks || !mks.length) return '';
+  const body = mks.map(m=>`<tr>
+    <td class="co">${m.label||m.key}</td>
+    <td class="num ed" contenteditable data-mkproduct="${product}" data-mkkey="${esc(m.key)}" onblur="saveProductMarkup(this)">${ev(m.value)}</td></tr>`).join('');
+  return `<div class="grp">
+    <div class="grp-h"><span class="t">Markup Master — edit a factor to reprice the ${product==='hpu'?'HPU':'blower'} (tab &amp; offer)</span></div>
+    <table><thead><tr><th>Markup</th><th class="num">&times;</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function saveProductMarkup(el){
+  el.classList.remove('saved','err');
+  const product=el.dataset.mkproduct, key=el.dataset.mkkey;
+  const v=parseFloat(String(el.textContent).replace(/,/g,'').trim());
+  if(isNaN(v)){ el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); return; }
+  el.classList.add('saving');
+  fetch('/api/internal-costing/product-markup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product,key,value:v})})
+    .then(r=>r.json()).then(d=>{ el.classList.remove('saving');
+      if(d&&d.success){ const y=window.scrollY; (product==='hpu'?loadHPU():loadBlower()).then(()=>window.scrollTo(0,y)); }
+      else { el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); }
+    }).catch(()=>{ el.classList.remove('saving'); el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); });
 }
 
 // ---------- Blower tab (PERKIN Rates basis) ----------
@@ -455,6 +481,8 @@ function renderBlower(){
   const note = `<div class="edit-note"><b>✎ Weight</b> is editable here. <b>Blower Alone</b> (PERKINS) and <b>Motor</b> (ABB) come from the Pricelist <a href="/pricelist">Rates</a> — edit them there. Price w/o motor = Blower Alone × ${BLOWER.without_markup}; w/ motor = + (Motor × ${BLOWER.motor_markup}). Click any cell to see its formula/source.</div>`;
   let html = note + formulasPanelBlower();
   html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
+  // Editable Markup Master — below the two PERKIN tables, before Legacy.
+  html += markupPanel('blower', BLOWER.mks||[]);
   // Legacy DM/IDM fabrication tables (pricelist-linked cost reference).
   const legSecs = BLOWER.legacy_sections||[];
   if(legSecs.length){
@@ -481,8 +509,10 @@ function saveBlower(el){
     }).catch(()=>{ el.classList.remove('saving'); el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); });
 }
 function loadBlower(){
-  return fetch('/api/internal-costing/blower').then(r=>r.json()).then(d=>{
-    BLOWER=d; renderBlower();
+  return Promise.all([
+    fetch('/api/internal-costing/blower').then(r=>r.json()),
+    fetch('/api/internal-costing/product-markups?product=blower').then(r=>r.json())
+  ]).then(([d,mk])=>{ BLOWER=d; BLOWER.mks=(mk&&mk.markups)||[]; renderBlower();
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
 }
 

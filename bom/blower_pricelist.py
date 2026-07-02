@@ -35,6 +35,24 @@ def _f(v):
         return 0.0
 
 
+def blower_markups(conn: sqlite3.Connection):
+    """(without_motor, motor) markups from product_markup (editable Markup
+    Master); falls back to the module defaults."""
+    wo, mo = WITHOUT_MARKUP, MOTOR_MARKUP
+    try:
+        for k, v in conn.execute(
+                "SELECT key, value FROM product_markup WHERE product='blower'"):
+            if v is None:
+                continue
+            if k == "without_motor":
+                wo = float(v)
+            elif k == "motor":
+                mo = float(v)
+    except Exception:
+        pass
+    return wo, mo
+
+
 def price_without_motor(amount) -> float:
     return round(_f(amount) * WITHOUT_MARKUP, 2)
 
@@ -142,14 +160,15 @@ def blower_price(conn: sqlite3.Connection, model: str, with_motor: bool = False)
     if not r:
         return 0.0
     hp, amount_col, motor_col = r
+    wo_mk, motor_mk = blower_markups(conn)         # editable Markup Master
     alone = alone_prices(conn).get(model)          # Blower Alone = the Amount
     if alone is None:
         alone = _f(amount_col)                     # fallback pre-seed
-    wo = alone * WITHOUT_MARKUP                     # price w/o motor = Blower Alone × 1.8
+    wo = alone * wo_mk                             # price w/o motor = Blower Alone × markup
     motor = motor_prices(conn).get(_f(hp))
     if motor is None:
         motor = _f(motor_col)   # fallback pre-seed
-    return round(wo + (motor * MOTOR_MARKUP if with_motor else 0.0), 2)
+    return round(wo + (motor * motor_mk if with_motor else 0.0), 2)
 
 
 def blower_models(conn: sqlite3.Connection) -> dict:
@@ -162,13 +181,14 @@ def blower_models(conn: sqlite3.Connection) -> dict:
         "ORDER BY section, CAST(hp AS REAL)").fetchall()
     alone = alone_prices(conn)   # Blower Alone = the Amount, from Rates
     motors = motor_prices(conn)  # ABB motor by HP from Rates
+    wo_mk, motor_mk = blower_markups(conn)   # editable Markup Master
     data = {}
     for section, model, hp, weight, amount_col, motor_col, cfm, nm3, pressure in rows:
         amt = alone.get(model)
         amt = round(amt) if amt is not None else round(_f(amount_col))  # fallback pre-seed
         motor = motors.get(_f(hp))
         motor = round(motor) if motor is not None else round(_f(motor_col))
-        wo = round(amt * WITHOUT_MARKUP)          # price w/o motor = Blower Alone × 1.8
+        wo = round(amt * wo_mk)                    # price w/o motor = Blower Alone × markup
         data.setdefault(section, []).append({
             "model":     model,
             "hp":        _f(hp),
@@ -178,7 +198,7 @@ def blower_models(conn: sqlite3.Connection) -> dict:
             "cfm":       _f(cfm),
             "nm3_per_hr": _f(nm3),
             "price_wo":  wo,
-            "price_w":   round(wo + motor * MOTOR_MARKUP),
+            "price_w":   round(wo + motor * motor_mk),
             "alone_cat": _SECTION_TO_ALONE_CAT.get(section, ""),
         })
     return data
