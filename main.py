@@ -1504,6 +1504,40 @@ def _startup_seed_hpu_catalog():
 _startup_seed_hpu_catalog()
 
 
+# One-off pricelist adjustments, applied exactly once per database (tracked in
+# _price_ops) so they reach the persistent Railway volume on the next deploy
+# without re-applying on every boot.
+_PRICE_OPS = [
+    ("dembla_psov_discount_45",
+     "45% discount on DEMBLA Pneumatic Shut Off Valve prices",
+     "UPDATE component_price_master SET previous_price=price, "
+     "price=ROUND(price*0.55, 2) "
+     "WHERE category='Pneumatic Shut Off Valve' AND UPPER(company)='DEMBLA'"),
+]
+
+
+def _startup_price_ops():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("CREATE TABLE IF NOT EXISTS _price_ops "
+                     "(op_id TEXT PRIMARY KEY, applied_at TEXT)")
+        for op_id, desc, sql in _PRICE_OPS:
+            if conn.execute("SELECT 1 FROM _price_ops WHERE op_id=?",
+                            (op_id,)).fetchone():
+                continue
+            n = conn.execute(sql).rowcount
+            conn.execute("INSERT INTO _price_ops(op_id, applied_at) "
+                         "VALUES (?, datetime('now'))", (op_id,))
+            conn.commit()
+            print(f"[db] price op '{op_id}' applied to {n} rows ({desc})")
+        conn.close()
+    except Exception as e:
+        print(f"WARN: startup price ops failed: {e}")
+
+
+_startup_price_ops()
+
+
 class _PartEdit(BaseModel):
     rid: int
     field: str
