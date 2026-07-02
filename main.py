@@ -1483,12 +1483,15 @@ def _startup_seed_hpu_catalog():
     how the catalogue reaches the persistent Railway volume, which is never
     seed-refreshed."""
     try:
-        from bom.hpu_pricelist import seed_hpu_catalog, consolidate_raw_materials
+        from bom.hpu_pricelist import (seed_hpu_catalog, consolidate_raw_materials,
+                                        apply_hpu_renames, reclassify_bought_sources)
         conn = sqlite3.connect(DB_PATH)
         n = seed_hpu_catalog(conn)
         # One-time: de-duplicate HPU raw materials against the generic rows and
         # fix the "M.S. Chanel" -> "M.S. Channel" spelling (higher rate wins).
         merged = consolidate_raw_materials(conn)
+        apply_hpu_renames(conn)          # e.g. "TEMP. GAUGE 0 -150 *C" -> "TEMPERATURE GAUGE"
+        reclassify_bought_sources(conn)  # HPU pressure gauge -> small HGURU (Instrumentation)
         conn.close()
         if n:
             print(f"[db] seeded {n} HPU catalogue rows into component_price_master")

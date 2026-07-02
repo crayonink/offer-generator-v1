@@ -76,6 +76,19 @@ _GENERIC_HOMED = ["M.S. Channel", "M.S. Plate 16/20mm", "H.R. Sheet 3mm",
                   "H.R. Sheet 5mm", "Nut / Bolt", "M.S. Pipe", "M.S. Flat",
                   "M.S. Plate 5mm"]
 
+# HPU bought-out lines priced from a row OUTSIDE the HPU categories (clubbed
+# into a shared vendor group). BOM item -> catalogue row it's priced from.
+# The HPU pressure gauge is the small HGURU gauge, kept with the BAUMER/HGURU
+# gauges in the Instrumentation group.
+BOUGHT_SOURCE = {
+    "PRESSURE GAUGE 0 -7 KG": "PRESSURE GAUGE SMALL (HGURU)",
+}
+# One-time reclass of those rows into their shared group (item/make/spec/cat).
+_BOUGHT_RECLASS = [
+    {"old": "PRESSURE GAUGE 0 -7 KG", "new": "PRESSURE GAUGE SMALL (HGURU)",
+     "company": "HGURU", "spec": "Small", "category": "Instrumentation"},
+]
+
 
 def normalize(name: str) -> str:
     """Upper-cased, whitespace-collapsed key so 'HAMMER TON ' == 'HAMMER TON'."""
@@ -149,12 +162,16 @@ def build_catalog(conn: sqlite3.Connection):
         catalog.append({"item": label, "unit": "kg",
                         "price": rate, "category": "Raw Material"})
 
-    # Bought-out SKUs — max rate per normalized name.
+    # Bought-out SKUs — max rate per normalized name. Items sourced from an
+    # external group (BOUGHT_SOURCE) are not seeded as HPU rows.
+    ext = {normalize(k) for k in BOUGHT_SOURCE}
     seen = {}
     for r in rows:
         if is_labour(r["item"]) or is_raw(r["unit"]):
             continue
         key = normalize(r["item"])
+        if key in ext:
+            continue
         rate = r["rate"] or 0.0
         if key not in seen or rate > seen[key]["price"]:
             seen[key] = {"item": key, "unit": (r["unit"] or "Nos").strip(),
@@ -166,7 +183,7 @@ def build_catalog(conn: sqlite3.Connection):
 def load_rates(conn: sqlite3.Connection) -> dict:
     """Load {normalized item -> price} for the HPU catalogue rows PLUS the
     generic raw-material rows that HPU lines are priced from (RAW_SOURCE)."""
-    names = tuple(dict.fromkeys(RAW_SOURCE.values()))
+    names = tuple(dict.fromkeys(list(RAW_SOURCE.values()) + list(BOUGHT_SOURCE.values())))
     q = ("SELECT item, price FROM component_price_master "
          "WHERE category IN (%s) OR item IN (%s)"
          % (",".join("?" * len(HPU_CATEGORIES)), ",".join("?" * len(names))))
@@ -191,6 +208,11 @@ def resolve_rate(item: str, unit: str, rates: dict):
         # kg line that isn't a known raw material (e.g. a mislabelled unit) —
         # fall through to the bought-out catalogue by name.
     key = normalize(item)
+    # Externally-sourced bought-out lines (clubbed into a shared vendor group).
+    ext = {normalize(k): v for k, v in BOUGHT_SOURCE.items()}
+    if key in ext:
+        src = ext[key]
+        return rates.get(normalize(src), 0.0), src
     if key in rates:
         return rates[key], key
     return 0.0, None
@@ -248,6 +270,57 @@ def consolidate_raw_materials(conn: sqlite3.Connection) -> int:
     return 1
 
 
+# Cosmetic item renames applied to BOTH hpu_master and component_price_master
+# (kept in sync so the resolver still matches by exact name). old -> new.
+# Stored UPPER-CASE to match the other HPU bought-out rows (the viewer
+# title-cases names for display, so this shows as "Temperature Gauge").
+_HPU_RENAMES = {
+    "TEMP. GAUGE 0 -150 *C": "TEMPERATURE GAUGE",
+}
+
+
+def apply_hpu_renames(conn: sqlite3.Connection) -> int:
+    """Rename HPU items in both the BOM and the pricelist. Idempotent (the old
+    name is gone after the first run). Returns rows touched."""
+    n = 0
+    for old, new in _HPU_RENAMES.items():
+        for tbl in ("component_price_master", "hpu_master"):
+            try:
+                n += conn.execute(
+                    f"UPDATE {tbl} SET item=? WHERE item=?", (new, old)).rowcount
+            except sqlite3.OperationalError:
+                pass
+    conn.commit()
+    return n
+
+
+def reclassify_bought_sources(conn: sqlite3.Connection) -> int:
+    """Move HPU bought-out rows that belong in a shared vendor group (e.g. the
+    HPU pressure gauge -> small HGURU gauge in the Instrumentation group).
+    Idempotent: once the old name is gone it's a no-op. Returns rows touched."""
+    n = 0
+    for m in _BOUGHT_RECLASS:
+        old = conn.execute(
+            "SELECT rowid FROM component_price_master WHERE item=? COLLATE NOCASE",
+            (m["old"],)).fetchone()
+        if not old:
+            continue
+        tgt = conn.execute(
+            "SELECT rowid FROM component_price_master WHERE item=? COLLATE NOCASE",
+            (m["new"],)).fetchone()
+        if tgt and tgt[0] != old[0]:
+            # target already present — drop the stray HPU row to avoid a dupe.
+            conn.execute("DELETE FROM component_price_master WHERE rowid=?", (old[0],))
+        else:
+            conn.execute(
+                "UPDATE component_price_master SET item=?, company=?, "
+                "specification=?, category=? WHERE rowid=?",
+                (m["new"], m["company"], m["spec"], m["category"], old[0]))
+        n += 1
+    conn.commit()
+    return n
+
+
 def seed_hpu_catalog(conn: sqlite3.Connection) -> int:
     """Idempotently insert the HPU catalogue into component_price_master.
     Existing rows (matched by item name) are left untouched so live Price-Master
@@ -256,7 +329,7 @@ def seed_hpu_catalog(conn: sqlite3.Connection) -> int:
     inserted = 0
     for row in catalog:
         exists = conn.execute(
-            "SELECT 1 FROM component_price_master WHERE item = ? LIMIT 1",
+            "SELECT 1 FROM component_price_master WHERE item = ? COLLATE NOCASE LIMIT 1",
             (row["item"],)).fetchone()
         if exists:
             continue
