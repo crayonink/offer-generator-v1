@@ -1821,7 +1821,8 @@ def api_ic_hpu():
         for r in rows:
             kw = r["unit_kw"]
             var = r["variant"] or "—"
-            if _hp.is_labour(r["item"]):
+            r["labour"] = _hp.is_labour(r["item"])
+            if r["labour"]:
                 # Labour is not a material — keep its stored amount, no link.
                 amount = _f(r["amount"])
                 r["rate"] = None
@@ -1859,6 +1860,31 @@ def api_ic_hpu():
     except Exception as e:
         return {"ratings": [], "variants": [], "markup": HPU_MARKUP,
                 "data": {}, "error": str(e)}
+
+
+class _HpuEdit(BaseModel):
+    rid: int
+    field: str          # 'qty' | 'amount'
+    value: float
+
+
+@app.post("/api/internal-costing/hpu-update")
+def api_ic_hpu_update(req: _HpuEdit):
+    """Edit a per-line HPU BOM value that isn't from the pricelist — the line
+    Qty, or the LABOUR amount. Rates stay pricelist-linked; amount recomputes
+    from qty × rate on next read."""
+    if req.field not in ("qty", "amount"):
+        return {"success": False, "error": f"bad field {req.field!r}"}
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        n = conn.execute(
+            f"UPDATE hpu_master SET {req.field}=? WHERE rowid=?",
+            (req.value, req.rid)).rowcount
+        conn.commit()
+        conn.close()
+        return {"success": n > 0}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/internal-costing/blower")

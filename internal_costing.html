@@ -317,17 +317,23 @@ let HPU=null, HPU_KW=null;
 function hpuVariantTable(kw, variant, grp){
   if(!grp) return '';
   const rows = grp.items.map(it=>{
-    // Rate is pulled live from the pricelist (◆ linked); labour has no rate.
+    // Qty is an editable BOM value (not from the pricelist).
+    const qtyCell = `<td class="num ed" contenteditable data-rid="${it._rid}" data-field="qty" onblur="saveHpu(this)">${ev(it.qty)}</td>`;
+    // Rate: pulled live from the pricelist (◆ linked) for materials; labour none.
     const rateCell = it.rate_ref
       ? `<td class="num lk fcell" onclick="showF(this)" data-label="Rate" data-size="${esc(it.item)}" data-f="from Pricelist (${esc(it.rate_ref)})" data-val="${ev(it.rate)}">${ev(it.rate)}</td>`
-      : `<td class="num">${ev(it.rate)}</td>`;
+      : `<td class="num" title="labour — not a material">—</td>`;
+    // Amount: computed (Qty × Rate) for materials; editable lump for labour.
+    const amtCell = it.labour
+      ? `<td class="num ed" contenteditable data-rid="${it._rid}" data-field="amount" onblur="saveHpu(this)">${ev(Math.round(it.amount))}</td>`
+      : `<td class="num calc fcell" onclick="showF(this)" data-size="${esc(it.item)}" data-label="Amount" data-f="Qty ${ev(it.qty)} × Rate ${ev(it.rate)}" data-val="${inr(Math.round(it.amount))}">${inr(Math.round(it.amount))}</td>`;
     return `<tr>
       <td class="num">${it.s_no}</td>
       <td>${it.item||''}</td>
-      <td class="num">${ev(it.qty)}</td>
+      ${qtyCell}
       <td>${it.unit||''}</td>
       ${rateCell}
-      <td class="num calc">${inr(Math.round(it.amount))}</td>
+      ${amtCell}
     </tr>`;
   }).join('');
   return `<div class="grp">
@@ -338,8 +344,20 @@ function hpuVariantTable(kw, variant, grp){
       <th class="num">Rate</th><th class="num">Amount</th>
     </tr></thead><tbody>
       ${rows}
-      <tr class="totrow"><td colspan="5">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
+      <tr class="totrow"><td colspan="5">TOTAL COST</td><td class="num grandtot fcell" onclick="showF(this)" data-size="HPD-${kw} · ${variant}" data-label="Total cost (material)" data-f="Σ line amounts" data-val="${inr(grp.total)}">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
+}
+function saveHpu(el){
+  el.classList.remove('saved','err');
+  const rid=+el.dataset.rid, field=el.dataset.field;
+  const v=parseFloat(String(el.textContent).replace(/,/g,'').trim());
+  if(isNaN(v)){ el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); return; }
+  el.classList.add('saving');
+  fetch('/api/internal-costing/hpu-update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rid,field,value:v})})
+    .then(r=>r.json()).then(d=>{ el.classList.remove('saving');
+      if(d&&d.success){ const y=window.scrollY; loadHPU().then(()=>window.scrollTo(0,y)); }
+      else { el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); }
+    }).catch(()=>{ el.classList.remove('saving'); el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); });
 }
 function formulasPanelHPU(){
   return `<details class="grp fpanel">
@@ -359,7 +377,7 @@ function renderHPU(){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No HPU data found</h2></div>'; return;
   }
   if(HPU_KW===null) HPU_KW=HPU.ratings[0];
-  const note = `<div class="edit-note"><span class="dia">◆</span> <b>Rates are linked to the Pricelist</b> — every HPU line pulls its rate from the raw-materials / components pricelist (<a href="/price-master">Price Master</a>, HPU categories). Amount = Qty × Rate. Edit a rate there to reprice every HPU that uses it. Labour is a fixed line.</div>`;
+  const note = `<div class="edit-note"><b>✎ Qty</b> and the <b>Labour</b> amount are editable here — click a cell. <span class="dia">◆</span> <b>Rates are linked to the Pricelist</b> (edit in <a href="/price-master">Price Master</a>). Click any computed cell to see its formula. Amount = Qty × Rate.</div>`;
   const picker = `<div class="sec-label" style="margin:2px 2px 12px">HPU rating &nbsp;
     ${HPU.ratings.map(k=>`<button class="tab${k===HPU_KW?' active':''}" style="padding:6px 13px;border:1px solid var(--line2);border-radius:6px;margin:0 3px 4px 0;border-bottom-width:1px" onclick="pickHPU(${k})">${k} KW</button>`).join('')}
   </div>`;
@@ -383,8 +401,8 @@ function blowerPerkinTable(section, rows){
   const body = rows.map(m=>`<tr>
     <td class="co">${m.model||''}</td>
     <td class="num">${ev(m.hp)}</td>
-    <td class="num">${ev(m.weight)}</td>
-    <td class="num">${inr(m.amount)}</td>
+    <td class="num ed" contenteditable data-model="${esc(m.model)}" data-field="weight" onblur="saveBlower(this)">${ev(m.weight)}</td>
+    <td class="num ed" contenteditable data-model="${esc(m.model)}" data-field="amount" onblur="saveBlower(this)">${ev(m.amount)}</td>
     <td class="num lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Motor (ABB)" data-f="from Rates · Blower Motor ${ev(m.hp)} HP (ABB) — edit in Pricelist" data-val="${inr(m.motor)}">${inr(m.motor)}</td>
     <td class="num calc lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Blower Alone (w/o motor)" data-f="from Rates · Blower Alone (PERKINS) — edit in Pricelist" data-val="${inr(m.price_wo)}">${inr(m.price_wo)}</td>
     <td class="num calc setcol fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/ Motor" data-f="(Blower Alone ${inr(m.price_wo)}) + (Motor ${inr(m.motor)} × ${BLOWER.motor_markup})" data-val="${inr(m.price_w)}">${inr(m.price_w)}</td>
@@ -427,14 +445,14 @@ function blowerLegacyTable(model, grp){
       <th class="num">Rate</th><th class="num">Amount</th>
     </tr></thead><tbody>
       ${rows}
-      <tr class="totrow"><td colspan="5">MATERIAL SUBTOTAL</td><td class="num grandtot">₹${inr(grp.subtotal)}</td></tr>
+      <tr class="totrow"><td colspan="5">MATERIAL SUBTOTAL</td><td class="num grandtot fcell" onclick="showF(this)" data-size="Model ${esc(model)}" data-label="Material subtotal" data-f="Σ line amounts" data-val="${inr(grp.subtotal)}">₹${inr(grp.subtotal)}</td></tr>
     </tbody></table></div>`;
 }
 function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
   }
-  const note = `<div class="edit-note"><b>Blower Alone</b> (PERKINS) and <b>Motor</b> (ABB) are fetched from the Pricelist <a href="/pricelist">Rates</a> — edit them there. Price w/ motor = Blower Alone + (Motor × ${BLOWER.motor_markup}). This is the blower offer basis.</div>`;
+  const note = `<div class="edit-note"><b>✎ Weight &amp; Amount</b> are editable here (cost reference). <b>Blower Alone</b> (PERKINS) and <b>Motor</b> (ABB) are fetched from the Pricelist <a href="/pricelist">Rates</a> — edit them there. Price w/ motor = Blower Alone + (Motor × ${BLOWER.motor_markup}). Click any price cell to see its formula/source.</div>`;
   let html = note + formulasPanelBlower();
   html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
   // Legacy DM/IDM fabrication tables (pricelist-linked cost reference).
