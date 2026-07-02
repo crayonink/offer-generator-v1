@@ -66,14 +66,11 @@ def select_hpu(required_lph: float, variant: str = "Duplex 1") -> dict:
 
     unit_kw = _hpu_kw_for_lph(required_lph)
 
+    from bom.hpu_pricelist import hpu_material_cost
     conn = sqlite3.connect(DB_PATH)
-    row = conn.execute(
-        "SELECT SUM(amount) FROM hpu_master WHERE unit_kw = ? AND variant = ?",
-        (unit_kw, variant),
-    ).fetchone()
+    total = hpu_material_cost(conn, unit_kw, variant)   # pricelist-linked
     conn.close()
 
-    total = float(row[0]) if row and row[0] is not None else 0
     if total == 0:
         raise ValueError(f"No HPU pricing rows for {unit_kw} kW / {variant}")
 

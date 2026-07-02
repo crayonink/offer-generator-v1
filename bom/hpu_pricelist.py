@@ -191,6 +191,26 @@ def load_rates(conn: sqlite3.Connection) -> dict:
             for r in conn.execute(q, (*HPU_CATEGORIES, *names))}
 
 
+def hpu_material_cost(conn: sqlite3.Connection, unit_kw, variant: str) -> float:
+    """Pricelist-linked material cost for one HPU unit_kw + variant:
+    Σ(qty × live pricelist rate) + labour (fixed stored amount). This is the
+    single source of truth used by BOTH the Internal-Costing HPU tab and the
+    HPU/PU offers, so editing a pricelist rate reprices the offer too.
+    Mirrors the SUM(hpu_master.amount) it replaces, but from live rates."""
+    rates = load_rates(conn)
+    rows = conn.execute(
+        "SELECT item, qty, unit, amount FROM hpu_master WHERE unit_kw=? AND variant=?",
+        (unit_kw, variant)).fetchall()
+    total = 0.0
+    for item, qty, unit, stored_amount in rows:
+        if is_labour(item):
+            total += float(stored_amount or 0.0)
+            continue
+        rate, _src = resolve_rate(item or "", unit or "", rates)
+        total += float(qty or 0.0) * rate
+    return round(total, 2)
+
+
 def resolve_rate(item: str, unit: str, rates: dict):
     """Return (rate, source_label) for a BOM line, pulling from `rates`
     (a dict from load_rates). source_label is the pricelist row the rate came

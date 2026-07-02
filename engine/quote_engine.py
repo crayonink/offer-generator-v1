@@ -40,12 +40,8 @@ def _lookup_price(cursor, item: dict) -> float:
         return float(row[0]) if row and row[0] else 0.0
 
     elif product_type == "HPU":
-        cursor.execute(
-            "SELECT COALESCE(SUM(amount), 0) FROM hpu_master "
-            "WHERE unit_kw=? AND variant=? AND amount IS NOT NULL",
-            (model, variant),
-        )
-        return float(cursor.fetchone()[0])
+        from bom.hpu_pricelist import hpu_material_cost
+        return hpu_material_cost(cursor.connection, model, variant)  # pricelist-linked
 
     elif "Burner" in product_type:
         section_filter = "FILM" if "Film" in product_type else "DUAL"

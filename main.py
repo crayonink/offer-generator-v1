@@ -2604,10 +2604,9 @@ def get_price(product_type: str, model: str, qty: int = 1,
                 breakdown = [{"item": f"{model} ({'with' if with_motor else 'without'} motor)", "amount": price}]
 
         elif product_type == "HPU":
-            cursor.execute("SELECT SUM(amount) FROM hpu_master WHERE unit_kw=? AND variant=? AND amount IS NOT NULL", (model, variant))
-            row = cursor.fetchone()
-            if row and row[0]:
-                price = float(row[0])
+            from bom.hpu_pricelist import hpu_material_cost
+            price = hpu_material_cost(conn, model, variant)   # pricelist-linked
+            if price:
                 breakdown = [{"item": f"HPU {model} KW ({variant})", "amount": price}]
 
         elif "Burner" in product_type:
@@ -5276,13 +5275,12 @@ def hpu_price(kw: float, variant: str, mode: str = "hpu"):
             if not row or row[0] is None:
                 return {"error": "no price", "unit_price": None}
             return {"unit_price": float(row[0])}
-        row = conn.execute(
-            "SELECT SUM(amount) FROM hpu_master WHERE unit_kw = ? AND variant = ?",
-            (kw_int, variant)).fetchone()
+        from bom.hpu_pricelist import hpu_material_cost
+        material = hpu_material_cost(conn, kw_int, variant)   # pricelist-linked
         conn.close()
-        if not row or row[0] is None:
+        if not material:
             return {"error": "no price", "unit_price": None}
-        return {"unit_price": round(float(row[0]) * HPU_MARKUP, 2)}
+        return {"unit_price": round(material * HPU_MARKUP, 2)}
     except Exception as e:
         return {"error": str(e), "unit_price": None}
 
@@ -5314,18 +5312,16 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
     ).fetchone()
 
     if mode == "hpu":
-        # HPU sell price = SUM(hpu_master.amount) × HPU_MARKUP (1.8).
-        # See bom/hpu_calculator.py for the formula source.
-        cost_row = conn.execute(
-            "SELECT SUM(amount) FROM hpu_master "
-            "WHERE unit_kw = ? AND variant = ?",
-            (kw_int, req.hpu_variant),
-        ).fetchone()
+        # HPU sell price = pricelist-linked material cost × HPU_MARKUP (1.8).
+        # Material cost is Σ(qty × live pricelist rate) + labour, shared with
+        # the Internal-Costing HPU tab (bom/hpu_pricelist.hpu_material_cost).
+        from bom.hpu_pricelist import hpu_material_cost
+        material = hpu_material_cost(conn, kw_int, req.hpu_variant)
         conn.close()
-        if not cost_row or cost_row[0] is None:
+        if not material:
             return {"error": f"No HPU rows in hpu_master for "
                              f"{req.hpu_variant} @ {req.hpu_kw} kW."}
-        unit_price = round(float(cost_row[0]) * HPU_MARKUP, 2)
+        unit_price = round(material * HPU_MARKUP, 2)
         model_code = f"{VARIANT_PREFIX[req.hpu_variant]}-{kw_int}"
         equipment_label   = "Heating and Pumping Unit"
         item_product_type = "Hydraulic Pumping Unit"   # gates preheater scope
