@@ -341,6 +341,19 @@ function hpuVariantTable(kw, variant, grp){
       <tr class="totrow"><td colspan="5">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
     </tbody></table></div>`;
 }
+function formulasPanelHPU(){
+  return `<details class="grp fpanel">
+    <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
+    <div class="fbody">
+      <div class="fgrp"><b>Every line</b><br>Amount = Qty × Rate &nbsp;·&nbsp; <span class="dia">◆</span> the Rate is pulled live from the Pricelist (<a href="/price-master">Price Master</a>). Edit it there to reprice every HPU that uses it.</div>
+      <div class="fgrp"><b>Raw materials</b> (kg) — priced per-kg from the raw-material rows: M.S. Channel, Pipe, Flat, Plate 3/5/16-20mm, H.R. Sheet 3/5mm, Gasket, Nut/Bolt.</div>
+      <div class="fgrp"><b>Bought-out parts</b> (Nos / Ltr / Mtr) — each SKU priced from its own pricelist row: pipe fittings, valves &amp; filters, motor / oil pump / heater, instrumentation, consumables.<br>Where a part had two rates across variants, the <b>higher rate wins</b>.</div>
+      <div class="fgrp"><b>Labour</b> — a fixed line (not a material), carried at its stored amount.</div>
+      <div class="fgrp"><b>Variants</b> — Simplex / Duplex 1 / Duplex 2 differ only in quantities; the rates are the same shared pricelist rates.</div>
+      <div class="fgrp"><b>Totals</b><br>Material cost = Σ(Qty × Rate) &nbsp;·&nbsp; <b>Selling = Material × ${HPU.markup}</b>.</div>
+    </div>
+  </details>`;
+}
 function renderHPU(){
   if(!HPU || !HPU.ratings.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No HPU data found</h2></div>'; return;
@@ -351,7 +364,7 @@ function renderHPU(){
     ${HPU.ratings.map(k=>`<button class="tab${k===HPU_KW?' active':''}" style="padding:6px 13px;border:1px solid var(--line2);border-radius:6px;margin:0 3px 4px 0;border-bottom-width:1px" onclick="pickHPU(${k})">${k} KW</button>`).join('')}
   </div>`;
   const day = HPU.data[String(HPU_KW)]||{};
-  let html = note + picker;
+  let html = note + formulasPanelHPU() + picker;
   html += HPU.variants.map(v=>hpuVariantTable(HPU_KW, v, day[v])).join('');
   document.getElementById('tab-content').innerHTML = html;
 }
@@ -384,6 +397,17 @@ function blowerTable(model, grp){
       <tr class="totrow"><td colspan="5">MATERIAL SUBTOTAL</td><td class="num grandtot">₹${inr(grp.subtotal)}</td></tr>
     </tbody></table></div>`;
 }
+function formulasPanelBlower(){
+  return `<details class="grp fpanel">
+    <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
+    <div class="fbody">
+      <div class="fgrp"><b>Every line</b><br>Amount = Qty × Rate &nbsp;·&nbsp; <span class="dia">◆</span> the Rate is pulled live from the Pricelist (<a href="/price-master">Price Master</a> / Raw Material). Edit it there to reprice every blower that uses it.</div>
+      <div class="fgrp"><b>Components</b> — M.S. Angle 65,50, Sheet 8/4/2mm, Flat, C.I. Hub, Hardware Bolt (all blowers) &nbsp;·&nbsp; IDM adds M.S. Round, Channel, Coupling and Plumber Block with Bearing for the belt drive.</div>
+      <div class="fgrp"><b>Sections</b> — DM 28 / DM 40 are direct-mount; IDM is the independent (belt) drive. Models within a section differ only in quantities.</div>
+      <div class="fgrp"><b>Totals</b><br>Material subtotal = Σ(Qty × Rate) &nbsp;·&nbsp; <b>Factory cost = Material × ${BLOWER.overhead}</b> (30% overhead) &nbsp;·&nbsp; <b>Selling = Factory × ${BLOWER.markup}</b>.</div>
+    </div>
+  </details>`;
+}
 function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
@@ -394,7 +418,7 @@ function renderBlower(){
   const picker = `<div class="sec-label" style="margin:2px 2px 12px">Blower type &nbsp;
     ${BLOWER.sections.map(s=>`<button class="tab${s===BLOWER_SEC?' active':''}" style="padding:6px 13px;border:1px solid var(--line2);border-radius:6px;margin:0 3px 4px 0;border-bottom-width:1px" onclick="pickBlower('${esc(s)}')">${lbl(s)}</button>`).join('')}
   </div>`;
-  let html = note + picker;
+  let html = note + formulasPanelBlower() + picker;
   html += (BLOWER.data[BLOWER_SEC]||[]).map(m=>blowerTable(m.model, m)).join('');
   document.getElementById('tab-content').innerHTML = html;
 }
