@@ -169,7 +169,9 @@ def blower_models(conn: sqlite3.Connection) -> dict:
             "model":     model,
             "hp":        _f(hp),
             "weight":    _f(weight),
-            "amount":    round(_f(amount)),
+            # Amount is derived from the pricelist blower-alone price
+            # (Blower Alone = Amount × 1.8), so it tracks the Rates value.
+            "amount":    round(wo / WITHOUT_MARKUP) if WITHOUT_MARKUP else round(_f(amount)),
             "motor":     motor,
             "cfm":       _f(cfm),
             "nm3_per_hr": _f(nm3),
