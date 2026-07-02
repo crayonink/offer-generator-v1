@@ -1849,14 +1849,20 @@ def api_ic_blower():
     try:
         conn = sqlite3.connect(DB_PATH)
         data = _bp.blower_models(conn)
+        legacy = _bp.legacy_models(conn)
         conn.close()
         sections = [s for s in _bp.SECTIONS if s in data] + \
                    [s for s in data if s not in _bp.SECTIONS]
+        legacy_sections = [s for s in _bp.LEGACY_SECTIONS if s in legacy] + \
+                          [s for s in legacy if s not in _bp.LEGACY_SECTIONS]
         return {"sections": sections, "data": data,
-                "without_markup": _bp.WITHOUT_MARKUP, "motor_markup": _bp.MOTOR_MARKUP}
+                "without_markup": _bp.WITHOUT_MARKUP, "motor_markup": _bp.MOTOR_MARKUP,
+                "legacy_sections": legacy_sections, "legacy": legacy,
+                "legacy_overhead": _bp.LEGACY_OVERHEAD, "legacy_markup": _bp.LEGACY_MARKUP}
     except Exception as e:
         return {"sections": [], "data": {}, "without_markup": 1.8,
-                "motor_markup": 1.5, "error": str(e)}
+                "motor_markup": 1.5, "legacy_sections": [], "legacy": {},
+                "legacy_overhead": 1.3, "legacy_markup": 1.8, "error": str(e)}
 
 
 class _BlowerEdit(BaseModel):

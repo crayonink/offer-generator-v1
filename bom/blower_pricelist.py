@@ -71,3 +71,72 @@ def blower_models(conn: sqlite3.Connection) -> dict:
             "price_w":   round(price_with_motor(amount, motor)),
         })
     return data
+
+
+# ── Legacy: DM/IDM fabrication cost (pricelist-linked) ──────────────────────
+# The fabricated mounting/drive structure from blower_dm_idm_master, priced
+# from raw materials. Shown as "Legacy tables" below the PERKIN tables — a cost
+# reference only; NOT the blower offer basis.
+LEGACY_OVERHEAD = 1.3   # material subtotal -> factory cost
+LEGACY_MARKUP   = 1.8   # factory cost -> selling
+LEGACY_SECTIONS = ["BLOWER DM 28", "BLOWER DM 40", "BLOWER IDM"]
+
+# blower_dm_idm_master column prefix -> (pricelist item, display label, unit)
+LEGACY_COMPONENTS = [
+    ("angle65_50",    "M.S. Angle 65,50",            "M.S. Angle 65,50",           "kg"),
+    ("channel",       "M.S. Channel",                "M.S. Channel",               "kg"),
+    ("sheet8mm",      "M.S. Sheet 8mm",              "M.S. Sheet 8mm",             "kg"),
+    ("sheet4mm",      "M.S. Sheet 4mm",              "M.S. Sheet 4mm",             "kg"),
+    ("sheet2mm",      "M.S. Sheet 2mm",              "M.S. Sheet 2mm",             "kg"),
+    ("flat",          "M.S. Flat",                   "M.S. Flat",                  "kg"),
+    ("ms_round",      "M.S. Round",                  "M.S. Round",                 "kg"),
+    ("ci_hub",        "C.I. Hub",                    "C.I. Hub",                   "kg"),
+    ("coupling",      "Coupling",                    "Coupling",                   "kg"),
+    ("plumber_block", "Plumber block with Bearing",  "Plumber Block with Bearing", "nos"),
+    ("hardware",      "Hardware Bolt",               "Hardware Bolt",              "kg"),
+]
+
+
+def legacy_rates(conn: sqlite3.Connection) -> dict:
+    names = tuple(dict.fromkeys(c[1] for c in LEGACY_COMPONENTS))
+    q = ("SELECT item, price FROM component_price_master WHERE item IN (%s)"
+         % ",".join("?" * len(names)))
+    return {r[0]: (r[1] or 0.0) for r in conn.execute(q, names)}
+
+
+def legacy_compute(row: dict, rates: dict) -> dict:
+    items = []
+    subtotal = 0.0
+    for prefix, price_item, label, unit in LEGACY_COMPONENTS:
+        qty = _f(row.get(prefix + "_qty"))
+        if qty <= 0:
+            continue
+        rate = rates.get(price_item, 0.0)
+        amount = qty * rate
+        subtotal += amount
+        items.append({"s_no": len(items) + 1, "item": label, "qty": round(qty, 2),
+                      "unit": unit, "rate": round(rate, 2), "rate_ref": price_item,
+                      "amount": round(amount, 2)})
+    factory = subtotal * LEGACY_OVERHEAD
+    return {"model": row.get("model"), "items": items, "subtotal": round(subtotal),
+            "factory_cost": round(factory), "selling": round(factory * LEGACY_MARKUP)}
+
+
+def legacy_models(conn: sqlite3.Connection) -> dict:
+    """DM/IDM fabrication breakdown per model, grouped by section, HP-sorted."""
+    rates = legacy_rates(conn)
+    cur = conn.execute("SELECT * FROM blower_dm_idm_master")
+    cols = [d[0] for d in cur.description]
+    data = {}
+    for r in cur.fetchall():
+        row = dict(zip(cols, r))
+        data.setdefault(row.get("section") or "—", []).append(legacy_compute(row, rates))
+
+    def _hp(m):
+        try:
+            return float(str(m.get("model") or "").split("/")[0])
+        except (TypeError, ValueError):
+            return float("inf")
+    for sec in data:
+        data[sec].sort(key=_hp)
+    return data

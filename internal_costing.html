@@ -410,6 +410,26 @@ function formulasPanelBlower(){
     </div>
   </details>`;
 }
+function blowerLegacyTable(model, grp){
+  const rows = grp.items.map(it=>`<tr>
+    <td class="num">${it.s_no}</td>
+    <td>${it.item||''}</td>
+    <td class="num">${ev(it.qty)}</td>
+    <td>${it.unit||''}</td>
+    <td class="num lk fcell" onclick="showF(this)" data-label="Rate" data-size="${esc(it.item)}" data-f="from Pricelist (${esc(it.rate_ref)})" data-val="${ev(it.rate)}">${ev(it.rate)}</td>
+    <td class="num calc">${inr(Math.round(it.amount))}</td>
+  </tr>`).join('');
+  return `<div class="grp">
+    <div class="grp-h"><span class="t">Model ${model}</span>
+      <span class="tot">Material: ₹${inr(grp.subtotal)} &nbsp;·&nbsp; Factory (×${BLOWER.legacy_overhead}): ₹${inr(grp.factory_cost)} &nbsp;·&nbsp; Selling (×${BLOWER.legacy_markup}): ₹${inr(grp.selling)}</span></div>
+    <table><thead><tr>
+      <th class="num">S.No</th><th>Item</th><th class="num">Qty</th><th>Unit</th>
+      <th class="num">Rate</th><th class="num">Amount</th>
+    </tr></thead><tbody>
+      ${rows}
+      <tr class="totrow"><td colspan="5">MATERIAL SUBTOTAL</td><td class="num grandtot">₹${inr(grp.subtotal)}</td></tr>
+    </tbody></table></div>`;
+}
 function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
@@ -417,6 +437,16 @@ function renderBlower(){
   const note = `<div class="edit-note"><b>✎ Weight, Amount &amp; Motor are editable</b> — click a cell to change &amp; auto-save; the prices recompute. <b>PERKIN Rates — basis for the blower offer.</b> Price w/o motor = Amount × ${BLOWER.without_markup} &nbsp;·&nbsp; Price w/ motor = (Amount × ${BLOWER.without_markup}) + (Motor × ${BLOWER.motor_markup}).</div>`;
   let html = note + formulasPanelBlower();
   html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
+  // Legacy DM/IDM fabrication tables (pricelist-linked cost reference).
+  const legSecs = BLOWER.legacy_sections||[];
+  if(legSecs.length){
+    html += `<div class="sec-label" style="margin:26px 2px 6px;font-size:1rem;font-weight:800">Legacy tables</div>
+      <div class="edit-note" style="margin-bottom:14px">DM / IDM fabrication cost (mounting &amp; drive structure), priced live from the raw-materials pricelist. Reference only — <b>not</b> the blower offer basis. Material → Factory (×${BLOWER.legacy_overhead}) → Selling (×${BLOWER.legacy_markup}).</div>`;
+    legSecs.forEach(s=>{
+      html += `<div class="sec-label" style="margin:8px 2px 10px">${esc(s.replace(/^BLOWER\s+/i,''))}</div>`;
+      html += (BLOWER.legacy[s]||[]).map(m=>blowerLegacyTable(m.model, m)).join('');
+    });
+  }
   document.getElementById('tab-content').innerHTML = html;
 }
 function saveBlower(el){
