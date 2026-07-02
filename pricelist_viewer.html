@@ -882,6 +882,15 @@ function splitItem(item, specification) {
     }
   }
 
+  // 5a3. Oil-pump model: 'OIL PUMP AGP -15' -> name 'OIL PUMP', size 'AGP 15'.
+  if (!size) {
+    const agp = name.match(/\bAGP\s*-?\s*(\d+)\b/i);
+    if (agp) {
+      size = 'AGP ' + agp[1];
+      name = (name.slice(0, agp.index) + name.slice(agp.index + agp[0].length)).trim();
+    }
+  }
+
   // 5b. Bearing designation: 'BEARING (22222)' -> name='BEARING', size='22222'
   //     The parenthesized number is a standard bearing code (e.g. SKF 22222),
   //     so it disambiguates rows the same way kW disambiguates pilot burners.
