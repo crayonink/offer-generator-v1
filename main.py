@@ -1806,6 +1806,34 @@ def api_ic_hpu():
                 "data": {}, "error": str(e)}
 
 
+@app.get("/api/internal-costing/blower")
+def api_ic_blower():
+    """Blower internal parts costing (blower_dm_idm_master), grouped by section
+    (DM 28 / DM 40 / IDM). Every component's RATE is pulled live from the
+    pricelist via bom/blower_pricelist; qty stays per-model, amount = qty × rate.
+    material subtotal → ×1.3 factory cost → ×1.8 selling (mirrors the HPU tab)."""
+    from bom import blower_pricelist as _bp
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute("SELECT * FROM blower_dm_idm_master")]
+        rates = _bp.load_rates(conn)
+        conn.close()
+
+        data = {}
+        for r in rows:
+            sec = r.get("section") or "—"
+            data.setdefault(sec, []).append(_bp.compute_blower(r, rates))
+
+        sections = [s for s in _bp.SECTION_ORDER if s in data] + \
+                   [s for s in data if s not in _bp.SECTION_ORDER]
+        return {"sections": sections, "data": data,
+                "overhead": _bp.OVERHEAD, "markup": _bp.MARKUP}
+    except Exception as e:
+        return {"sections": [], "data": {}, "overhead": 1.3, "markup": 1.8,
+                "error": str(e)}
+
+
 @app.get("/enquiries", response_class=HTMLResponse)
 def enquiries_page():
     with open(os.path.join(BASE_DIR, "enquiries.html"), "r", encoding="utf-8") as f:
