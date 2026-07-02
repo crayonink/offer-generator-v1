@@ -16,7 +16,7 @@ PRICES = [
     ("M.S. Angle 100,100",            "Raw Material", "kg",   71.00,    71.00),
     ("M.S. Angle 50*6",               "Raw Material", "kg",   71.00,    71.00),
     ("M.S. Angle 65,50",              "Raw Material", "kg",   71.00,    71.00),
-    ("M.S. Chanel",                   "Raw Material", "kg",   71.00,    71.00),
+    ("M.S. Channel",                  "Raw Material", "kg",   71.00,    71.00),
     ("M.S. Flat",                     "Raw Material", "kg",   71.00,    71.00),
     ("M.S. Plate 16mm*5mm",           "Raw Material", "kg",   72.00,    72.00),
     ("M.S. Plate 16mm*10mm",          "Raw Material", "kg",   72.00,    72.00),

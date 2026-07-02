@@ -29,8 +29,8 @@ MERGES = [
     ('M.S. Tube B Class 1.5 in', ['M.S. Tube "B" Class 1.5 in']),
     ('M.S. Tube C Class 1.5 in', ['M.S. Tube "C" Class 1.5 in']),
 
-    # MS Chanel — with/without dot-space
-    ("M.S. Chanel", ["M.S.Chanel"]),
+    # MS Channel — fix misspelling + dot-space variant
+    ("M.S. Channel", ["M.S. Chanel", "M.S.Chanel"]),
 
     # Plumber block / Pulley — case
     ("Plumber block with Bearing", ["Plumber Block with Bearing"]),

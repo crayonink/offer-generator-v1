@@ -1703,7 +1703,7 @@ def parse_recuperator(xl, conn):
         'ang_100':   _rate('M.S. Angle 100,100'),
         'plate_5mm': _rate('M.S. Plate 16mm* 5mm'),
         'bolt':      _rate('Hardware Bolt'),
-        'channel':   _rate('M.S. Chanel'),
+        'channel':   _rate('M.S. Channel'),
         'plate_10mm':_rate('M.S. Plate 16mm*10mm'),
         'plate_5mm2':_rate('M.S. Plate 5mm'),
         'ang_50':    _rate('M.S. Angle 50*6'),

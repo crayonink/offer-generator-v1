@@ -33,6 +33,7 @@ CAT_CONSUM = "HPU Consumable & Misc"
 HPU_CATEGORIES = (CAT_RAW, CAT_PIPE, CAT_VALVE, CAT_ELEC, CAT_INST, CAT_CONSUM)
 
 # Canonical raw materials: label -> per-kg rate (the max seen in the BOM).
+# Used as a fallback rate when the pricelist row is missing.
 RAW_MATERIALS = {
     "M.S. Channel":        51.4,
     "M.S. Pipe":           135.0,
@@ -45,6 +46,35 @@ RAW_MATERIALS = {
     "Gasket":              120.0,
     "Nut / Bolt":          100.0,
 }
+
+# Each canonical raw material is priced from ONE row in component_price_master
+# (deduped — no HPU-specific twin). Most map to the pre-existing generic
+# raw-material rows; two have no generic equivalent and are HPU-owned.
+RAW_SOURCE = {
+    "M.S. Channel":        "M.S. Channel",          # renamed from "M.S. Chanel"
+    "M.S. Pipe":           "M.S. Pipe",
+    "M.S. Flat":           "M.S. Flat",
+    "M.S. Plate 5mm":      "M.S. Plate 5mm",
+    "M.S. Plate 16/20mm":  "M.S. Plate 16mm*5mm",
+    "H.R. Sheet 3mm":      "M.S. Sheet 3mm",
+    "H.R. Sheet 5mm":      "M.S. Sheet 5mm",
+    "Nut / Bolt":          "Hardware Bolt",
+    "M.S. Plate 3mm":      "M.S. Plate 3mm",         # HPU-owned (no generic row)
+    "Gasket":              "Gasket",                 # HPU-owned (no generic row)
+}
+
+# HPU-owned raw materials (no generic equivalent) — seeded under 'Raw Material'.
+RAW_OWNED = {"M.S. Plate 3mm": 77.0, "Gasket": 120.0}
+
+# One-time consolidation (higher rate wins) applied to the shared generic rows
+# whose HPU BOM rate was higher than the pre-existing pricelist rate.
+_RAW_BUMPS = {"M.S. Flat": 71.0, "M.S. Sheet 3mm": 77.0, "M.S. Plate 5mm": 51.7}
+
+# HPU raw rows this module used to create that duplicate a generic row — removed
+# during consolidation so each material has a single source.
+_GENERIC_HOMED = ["M.S. Channel", "M.S. Plate 16/20mm", "H.R. Sheet 3mm",
+                  "H.R. Sheet 5mm", "Nut / Bolt", "M.S. Pipe", "M.S. Flat",
+                  "M.S. Plate 5mm"]
 
 
 def normalize(name: str) -> str:
@@ -112,10 +142,12 @@ def build_catalog(conn: sqlite3.Connection):
         "SELECT item, unit, rate FROM hpu_master")]
 
     catalog = []
-    # Raw materials — fixed canonical rates.
-    for label, rate in RAW_MATERIALS.items():
+    # Only the HPU-owned raw materials (no generic pricelist row) are seeded,
+    # under 'Raw Material'. The rest are priced from the existing generic rows
+    # (see RAW_SOURCE) so there are no duplicate raw-material rows.
+    for label, rate in RAW_OWNED.items():
         catalog.append({"item": label, "unit": "kg",
-                        "price": rate, "category": CAT_RAW})
+                        "price": rate, "category": "Raw Material"})
 
     # Bought-out SKUs — max rate per normalized name.
     seen = {}
@@ -132,29 +164,88 @@ def build_catalog(conn: sqlite3.Connection):
 
 
 def load_rates(conn: sqlite3.Connection) -> dict:
-    """Load {normalized item -> price} for all HPU catalogue rows."""
-    q = ("SELECT item, price FROM component_price_master WHERE category IN (%s)"
-         % ",".join("?" * len(HPU_CATEGORIES)))
+    """Load {normalized item -> price} for the HPU catalogue rows PLUS the
+    generic raw-material rows that HPU lines are priced from (RAW_SOURCE)."""
+    names = tuple(dict.fromkeys(RAW_SOURCE.values()))
+    q = ("SELECT item, price FROM component_price_master "
+         "WHERE category IN (%s) OR item IN (%s)"
+         % (",".join("?" * len(HPU_CATEGORIES)), ",".join("?" * len(names))))
     return {normalize(r[0]): (r[1] or 0.0)
-            for r in conn.execute(q, HPU_CATEGORIES)}
+            for r in conn.execute(q, (*HPU_CATEGORIES, *names))}
 
 
 def resolve_rate(item: str, unit: str, rates: dict):
     """Return (rate, source_label) for a BOM line, pulling from `rates`
-    (a dict from load_rates). source_label is the catalogue SKU the rate came
+    (a dict from load_rates). source_label is the pricelist row the rate came
     from (for the ◆ linked-rate tooltip); None for labour / unresolved."""
     if is_labour(item):
         return None, None
     if is_raw(unit):
         label = raw_material_of(item)
         if label is not None:
-            return rates.get(normalize(label), RAW_MATERIALS.get(label, 0.0)), label
+            src = RAW_SOURCE.get(label, label)
+            rate = rates.get(normalize(src))
+            if rate is None:
+                rate = RAW_MATERIALS.get(label, 0.0)
+            return rate, src
         # kg line that isn't a known raw material (e.g. a mislabelled unit) —
         # fall through to the bought-out catalogue by name.
     key = normalize(item)
     if key in rates:
         return rates[key], key
     return 0.0, None
+
+
+def consolidate_raw_materials(conn: sqlite3.Connection) -> int:
+    """One-time de-duplication of HPU raw materials against the generic rows.
+
+    Idempotent and self-guarding (via the presence of 'M.S. Chanel' or a
+    left-over HPU raw twin). On the run that finds work to do it:
+      1. deletes the HPU raw rows that duplicate a generic row,
+      2. collapses 'M.S. Chanel' / 'M.S. Channel' into a single
+         'M.S. Channel' row (correct spelling) at the higher rate,
+      3. bumps the shared rows whose HPU rate was higher (higher wins),
+      4. moves the HPU-owned raws (Plate 3mm, Gasket) into 'Raw Material'.
+    Returns 1 if it acted, else 0.
+    """
+    cur = conn.cursor()
+    ph = ",".join("?" * len(_GENERIC_HOMED))
+    need = cur.execute(
+        "SELECT 1 FROM component_price_master WHERE item='M.S. Chanel' "
+        "OR (category='HPU Raw Material' AND item IN (%s)) LIMIT 1" % ph,
+        _GENERIC_HOMED,
+    ).fetchone()
+    if not need:
+        return 0
+
+    # 1. drop HPU raw rows that duplicate a generic row.
+    cur.execute(
+        "DELETE FROM component_price_master WHERE category='HPU Raw Material' "
+        "AND item IN (%s)" % ph, _GENERIC_HOMED)
+
+    # 2. collapse Chanel/Channel into one correctly-spelled row at the max rate.
+    prices = [r[0] for r in cur.execute(
+        "SELECT price FROM component_price_master WHERE item IN "
+        "('M.S. Chanel','M.S. Channel') AND price IS NOT NULL")]
+    rate = max(prices + [RAW_MATERIALS["M.S. Channel"]])
+    cur.execute("DELETE FROM component_price_master WHERE item IN ('M.S. Chanel','M.S. Channel')")
+    cur.execute(
+        "INSERT INTO component_price_master (item, category, unit, price, previous_price) "
+        "VALUES ('M.S. Channel','Raw Material','kg',?,?)", (rate, rate))
+
+    # 3. higher-rate-wins on the shared generic rows.
+    for name, r in _RAW_BUMPS.items():
+        cur.execute(
+            "UPDATE component_price_master SET previous_price=price, price=? "
+            "WHERE item=? AND price<?", (r, name, r))
+
+    # 4. keep the HPU-owned raws but file them under 'Raw Material'.
+    cur.execute(
+        "UPDATE component_price_master SET category='Raw Material' "
+        "WHERE category='HPU Raw Material' AND item IN ('M.S. Plate 3mm','Gasket')")
+
+    conn.commit()
+    return 1
 
 
 def seed_hpu_catalog(conn: sqlite3.Connection) -> int:

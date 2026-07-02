@@ -839,7 +839,7 @@ _RATE_DUPLICATES = [
     ("M.S. Plate 16mm*5mm",  ["M.S. Plate 16mm* 5mm"]),
     ("M.S. Tube B Class 1.5 in", ['M.S. Tube "B" Class 1.5 in']),
     ("M.S. Tube C Class 1.5 in", ['M.S. Tube "C" Class 1.5 in']),
-    ("M.S. Chanel",          ["M.S.Chanel"]),
+    ("M.S. Channel",         ["M.S. Chanel", "M.S.Chanel"]),
     ("Plumber block with Bearing", ["Plumber Block with Bearing"]),
     ("Pulley with V belt",   ["Pulley with V Belt"]),
     ("SS Pipe 304 60x3mm (per mtr)",  ["SS Pipe 304 60x3mm",  "SS Pipe 304 60 X 3mm"]),
@@ -1483,12 +1483,17 @@ def _startup_seed_hpu_catalog():
     how the catalogue reaches the persistent Railway volume, which is never
     seed-refreshed."""
     try:
-        from bom.hpu_pricelist import seed_hpu_catalog
+        from bom.hpu_pricelist import seed_hpu_catalog, consolidate_raw_materials
         conn = sqlite3.connect(DB_PATH)
         n = seed_hpu_catalog(conn)
+        # One-time: de-duplicate HPU raw materials against the generic rows and
+        # fix the "M.S. Chanel" -> "M.S. Channel" spelling (higher rate wins).
+        merged = consolidate_raw_materials(conn)
         conn.close()
         if n:
             print(f"[db] seeded {n} HPU catalogue rows into component_price_master")
+        if merged:
+            print("[db] consolidated HPU raw materials onto generic rows")
     except Exception as e:
         print(f"WARN: startup seed_hpu_catalog failed: {e}")
 
@@ -2985,7 +2990,7 @@ def pricelist_summary():
                 'ang_100100': "M.S. Angle 100,100",
                 'plate_16_5': "M.S. Plate 16mm*",
                 'bolt':       "Hardware Bolt",
-                'channel':    "M.S. Chanel",
+                'channel':    "M.S. Channel",
                 'plate_16_10':"M.S. Plate 16mm*10mm",
                 'plate_5':    "M.S. Plate 5mm",
                 'ang_50':     "M.S. Angle 50*6",
@@ -7328,6 +7333,7 @@ def get_stock_rates():
 _STOCK_PRICE_MAP = {
     # MS structural
     "M.S. Angle 65,50":       "M.S Angle 50x50x6 mm",
+    "M.S. Channel":           "M.S Channel 100x50",
     "M.S.Chanel":             "M.S Channel 100x50",
     "M.S. Chanel":            "M.S Channel 100x50",
     "M.S. Angle 100,100":     "M.S Angle 100X100X10",
