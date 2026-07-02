@@ -872,6 +872,16 @@ function splitItem(item, specification) {
     }
   }
 
+  // 5a2. Motor rating: 'MOTOR 0.5 HP , 1440 RPM' -> name 'MOTOR',
+  //      size '0.5 HP, 1440 RPM'. HP/RPM is the motor's spec, not its name.
+  if (!size) {
+    const hp = name.match(/\b\d+(?:\.\d+)?\s*HP\b.*$/i);
+    if (hp) {
+      size = hp[0].replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ').trim();
+      name = name.slice(0, hp.index).trim();
+    }
+  }
+
   // 5b. Bearing designation: 'BEARING (22222)' -> name='BEARING', size='22222'
   //     The parenthesized number is a standard bearing code (e.g. SKF 22222),
   //     so it disambiguates rows the same way kW disambiguates pilot burners.
