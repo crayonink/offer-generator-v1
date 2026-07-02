@@ -882,8 +882,9 @@ function splitItem(item, specification) {
       size = parseInt(m[1], 10) + ' NB';
       name = (name.slice(0, m.index) + name.slice(m.index + m[0].length)).trim();
     } else {
-      // 3. Inch sizes: 2.5", 4", 1/2"
-      m = name.match(/(\d+(?:\.\d+)?|\d+\/\d+)\s*"/);
+      // 3. Inch sizes: 2.5", 4", 1/2" — accept a real double-quote or the
+      //    two-apostrophe form ('') used in some names (e.g. "Cross TEE 1''").
+      m = name.match(/(\d+(?:\.\d+)?|\d+\/\d+)\s*(?:"|'')/);
       if (m) {
         size = m[1] + '"';
         name = (name.slice(0, m.index) + name.slice(m.index + m[0].length)).trim();
