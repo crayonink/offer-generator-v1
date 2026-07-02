@@ -43,21 +43,29 @@ def select_blower(required_hp: float, series: str = "28") -> dict:
     """, (f"ENCON {series}/%", required_hp))
 
     row = cursor.fetchone()
-    conn.close()
 
     if not row:
+        conn.close()
         raise ValueError(
             f"No ENCON {series}\" WG blower found for HP >= {required_hp:.2f}"
         )
 
+    # Price on the PERKIN basis (Amount × 1.8; with-motor + Motor × 1.5) — the
+    # same source as the Internal-Costing Blower tab and the equipment offer.
+    from bom.blower_pricelist import blower_price
+    model = row[0]
+    price_basic   = blower_price(conn, model, with_motor=False)
+    price_premium = blower_price(conn, model, with_motor=True)
+    conn.close()
+
     return {
-        "model":         row[0],
+        "model":         model,
         "hp":            row[1],
         "airflow_nm3hr": row[2],
         "cfm":           row[3],
         "pressure":      row[4],
-        "price_basic":   row[5],
-        "price_premium": row[6],
+        "price_basic":   price_basic,
+        "price_premium": price_premium,
     }
 
 

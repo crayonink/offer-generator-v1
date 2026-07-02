@@ -375,36 +375,37 @@ function loadHPU(){
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
 }
 
-// ---------- Blower tab ----------
-let BLOWER=null, BLOWER_SEC=null;
-function blowerTable(model, grp){
-  const rows = grp.items.map(it=>`<tr>
-    <td class="num">${it.s_no}</td>
-    <td>${it.item||''}</td>
-    <td class="num">${ev(it.qty)}</td>
-    <td>${it.unit||''}</td>
-    <td class="num lk fcell" onclick="showF(this)" data-label="Rate" data-size="${esc(it.item)}" data-f="from Pricelist (${esc(it.rate_ref)})" data-val="${ev(it.rate)}">${ev(it.rate)}</td>
-    <td class="num calc">${inr(Math.round(it.amount))}</td>
+// ---------- Blower tab (PERKIN Rates basis) ----------
+let BLOWER=null;
+function blowerPerkinTable(section, rows){
+  const title = section==='MEDIUM PRESSURE' ? 'Medium Pressure (28&Prime; WG)'
+              : section==='HIGH PRESSURE'   ? 'High Pressure (40&Prime; WG)' : section;
+  const body = rows.map(m=>`<tr>
+    <td class="co">${m.model||''}</td>
+    <td class="num">${ev(m.hp)}</td>
+    <td class="num">${ev(m.weight)}</td>
+    <td class="num">${inr(m.amount)}</td>
+    <td class="num">${inr(m.motor)}</td>
+    <td class="num calc">${inr(m.price_wo)}</td>
+    <td class="num calc setcol">${inr(m.price_w)}</td>
   </tr>`).join('');
   return `<div class="grp">
-    <div class="grp-h"><span class="t">Model ${model}</span>
-      <span class="tot">Material: ₹${inr(grp.subtotal)} &nbsp;·&nbsp; Factory (×${BLOWER.overhead}): ₹${inr(grp.factory_cost)} &nbsp;·&nbsp; Selling (×${BLOWER.markup}): ₹${inr(grp.selling)}</span></div>
+    <div class="grp-h"><span class="t">PERKIN Rates — ${title}</span></div>
     <table><thead><tr>
-      <th class="num">S.No</th><th>Item</th><th class="num">Qty</th><th>Unit</th>
-      <th class="num">Rate</th><th class="num">Amount</th>
-    </tr></thead><tbody>
-      ${rows}
-      <tr class="totrow"><td colspan="5">MATERIAL SUBTOTAL</td><td class="num grandtot">₹${inr(grp.subtotal)}</td></tr>
-    </tbody></table></div>`;
+      <th>Model</th><th class="num">HP</th><th class="num">Weight (kg)</th>
+      <th class="num">Amount (₹)</th><th class="num">Motor ABB (₹)</th>
+      <th class="num">Price w/o Motor</th><th class="num setcol">Price w/ Motor</th>
+    </tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function formulasPanelBlower(){
   return `<details class="grp fpanel">
     <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
     <div class="fbody">
-      <div class="fgrp"><b>Every line</b><br>Amount = Qty × Rate &nbsp;·&nbsp; <span class="dia">◆</span> the Rate is pulled live from the Pricelist (<a href="/price-master">Price Master</a> / Raw Material). Edit it there to reprice every blower that uses it.</div>
-      <div class="fgrp"><b>Components</b> — M.S. Angle 65,50, Sheet 8/4/2mm, Flat, C.I. Hub, Hardware Bolt (all blowers) &nbsp;·&nbsp; IDM adds M.S. Round, Channel, Coupling and Plumber Block with Bearing for the belt drive.</div>
-      <div class="fgrp"><b>Sections</b> — DM 28 / DM 40 are direct-mount; IDM is the independent (belt) drive. Models within a section differ only in quantities.</div>
-      <div class="fgrp"><b>Totals</b><br>Material subtotal = Σ(Qty × Rate) &nbsp;·&nbsp; <b>Factory cost = Material × ${BLOWER.overhead}</b> (30% overhead) &nbsp;·&nbsp; <b>Selling = Factory × ${BLOWER.markup}</b>.</div>
+      <div class="fgrp"><b>Amount</b> — the blower cost (weight-based) per model, from the PERKIN Rates sheet.</div>
+      <div class="fgrp"><b>Price without motor</b> = Amount × ${BLOWER.without_markup}.</div>
+      <div class="fgrp"><b>Price with motor</b> = (Amount × ${BLOWER.without_markup}) + (Motor ABB × ${BLOWER.motor_markup}).</div>
+      <div class="fgrp"><b>Sections</b> — Medium Pressure = ENCON 28&Prime; WG series &nbsp;·&nbsp; High Pressure = ENCON 40&Prime; WG series.</div>
+      <div class="fgrp"><b>This is the basis for the blower equipment offer.</b></div>
     </div>
   </details>`;
 }
@@ -412,17 +413,11 @@ function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
   }
-  if(BLOWER_SEC===null) BLOWER_SEC=BLOWER.sections[0];
-  const lbl = s => s.replace(/^BLOWER\s+/i,'');
-  const note = `<div class="edit-note"><span class="dia">◆</span> <b>Rates are linked to the Pricelist</b> — every blower line pulls its rate from the raw-materials pricelist (<a href="/price-master">Price Master</a> / Raw Material). Amount = Qty × Rate &nbsp;·&nbsp; Factory = Material × ${BLOWER.overhead} &nbsp;·&nbsp; Selling = Factory × ${BLOWER.markup}.</div>`;
-  const picker = `<div class="sec-label" style="margin:2px 2px 12px">Blower type &nbsp;
-    ${BLOWER.sections.map(s=>`<button class="tab${s===BLOWER_SEC?' active':''}" style="padding:6px 13px;border:1px solid var(--line2);border-radius:6px;margin:0 3px 4px 0;border-bottom-width:1px" onclick="pickBlower('${esc(s)}')">${lbl(s)}</button>`).join('')}
-  </div>`;
-  let html = note + formulasPanelBlower() + picker;
-  html += (BLOWER.data[BLOWER_SEC]||[]).map(m=>blowerTable(m.model, m)).join('');
+  const note = `<div class="edit-note"><b>PERKIN Rates — basis for the blower offer.</b> Price w/o motor = Amount × ${BLOWER.without_markup} &nbsp;·&nbsp; Price w/ motor = (Amount × ${BLOWER.without_markup}) + (Motor × ${BLOWER.motor_markup}).</div>`;
+  let html = note + formulasPanelBlower();
+  html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
   document.getElementById('tab-content').innerHTML = html;
 }
-function pickBlower(sec){ BLOWER_SEC=sec; renderBlower(); }
 function loadBlower(){
   return fetch('/api/internal-costing/blower').then(r=>r.json()).then(d=>{
     BLOWER=d; renderBlower();

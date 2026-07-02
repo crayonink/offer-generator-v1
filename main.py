@@ -1808,40 +1808,21 @@ def api_ic_hpu():
 
 @app.get("/api/internal-costing/blower")
 def api_ic_blower():
-    """Blower internal parts costing (blower_dm_idm_master), grouped by section
-    (DM 28 / DM 40 / IDM). Every component's RATE is pulled live from the
-    pricelist via bom/blower_pricelist; qty stays per-model, amount = qty × rate.
-    material subtotal → ×1.3 factory cost → ×1.8 selling (mirrors the HPU tab)."""
+    """Blower pricing on the PERKIN Rates basis (blower_pricelist_master,
+    MEDIUM / HIGH PRESSURE). Price without motor = Amount × 1.8; with motor
+    = + Motor × 1.5. This is the basis for the blower equipment offer too."""
     from bom import blower_pricelist as _bp
     try:
         conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        rows = [dict(r) for r in conn.execute("SELECT * FROM blower_dm_idm_master")]
-        rates = _bp.load_rates(conn)
+        data = _bp.blower_models(conn)
         conn.close()
-
-        data = {}
-        for r in rows:
-            sec = r.get("section") or "—"
-            data.setdefault(sec, []).append(_bp.compute_blower(r, rates))
-
-        # Order models within a section by HP (the leading number of "5/28"),
-        # so 5, 7.5 sort before 10 rather than following DB insert order.
-        def _hp(m):
-            try:
-                return float(str(m.get("model") or "").split("/")[0])
-            except (TypeError, ValueError):
-                return float("inf")
-        for sec in data:
-            data[sec].sort(key=_hp)
-
-        sections = [s for s in _bp.SECTION_ORDER if s in data] + \
-                   [s for s in data if s not in _bp.SECTION_ORDER]
+        sections = [s for s in _bp.SECTIONS if s in data] + \
+                   [s for s in data if s not in _bp.SECTIONS]
         return {"sections": sections, "data": data,
-                "overhead": _bp.OVERHEAD, "markup": _bp.MARKUP}
+                "without_markup": _bp.WITHOUT_MARKUP, "motor_markup": _bp.MOTOR_MARKUP}
     except Exception as e:
-        return {"sections": [], "data": {}, "overhead": 1.3, "markup": 1.8,
-                "error": str(e)}
+        return {"sections": [], "data": {}, "without_markup": 1.8,
+                "motor_markup": 1.5, "error": str(e)}
 
 
 @app.get("/enquiries", response_class=HTMLResponse)
@@ -2596,11 +2577,9 @@ def get_price(product_type: str, model: str, qty: int = 1,
                     price += float(amount)
 
         elif product_type == "Blower":
-            col = "price_with_motor" if with_motor else "price_without_motor"
-            cursor.execute(f"SELECT {col} FROM blower_pricelist_master WHERE model=? AND {col} IS NOT NULL LIMIT 1", (model,))
-            row = cursor.fetchone()
-            if row and row[0]:
-                price = float(row[0])
+            from bom.blower_pricelist import blower_price
+            price = blower_price(conn, model, with_motor=with_motor)   # PERKIN basis
+            if price:
                 breakdown = [{"item": f"{model} ({'with' if with_motor else 'without'} motor)", "amount": price}]
 
         elif product_type == "HPU":

@@ -31,13 +31,8 @@ def _lookup_price(cursor, item: dict) -> float:
         return float(cursor.fetchone()[0])
 
     elif product_type == "Blower":
-        col = "price__with_motor" if with_motor else "price_without_motor"
-        cursor.execute(
-            f"SELECT {col} FROM blower_pricelist_master WHERE model=? AND {col} IS NOT NULL LIMIT 1",
-            (model,),
-        )
-        row = cursor.fetchone()
-        return float(row[0]) if row and row[0] else 0.0
+        from bom.blower_pricelist import blower_price
+        return blower_price(cursor.connection, model, with_motor)   # PERKIN basis
 
     elif product_type == "HPU":
         from bom.hpu_pricelist import hpu_material_cost
