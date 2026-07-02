@@ -380,12 +380,13 @@ let BLOWER=null;
 function blowerPerkinTable(section, rows){
   const title = section==='MEDIUM PRESSURE' ? 'Medium Pressure (28&Prime; WG)'
               : section==='HIGH PRESSURE'   ? 'High Pressure (40&Prime; WG)' : section;
+  const E=(model,f,v)=>`<td class="num ed" contenteditable data-model="${esc(model)}" data-field="${f}" onblur="saveBlower(this)">${ev(v)}</td>`;
   const body = rows.map(m=>`<tr>
     <td class="co">${m.model||''}</td>
     <td class="num">${ev(m.hp)}</td>
-    <td class="num">${ev(m.weight)}</td>
-    <td class="num">${inr(m.amount)}</td>
-    <td class="num">${inr(m.motor)}</td>
+    ${E(m.model,'weight',m.weight)}
+    ${E(m.model,'amount',m.amount)}
+    ${E(m.model,'motor',m.motor)}
     <td class="num calc">${inr(m.price_wo)}</td>
     <td class="num calc setcol">${inr(m.price_w)}</td>
   </tr>`).join('');
@@ -413,10 +414,23 @@ function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
   }
-  const note = `<div class="edit-note"><b>PERKIN Rates — basis for the blower offer.</b> Price w/o motor = Amount × ${BLOWER.without_markup} &nbsp;·&nbsp; Price w/ motor = (Amount × ${BLOWER.without_markup}) + (Motor × ${BLOWER.motor_markup}).</div>`;
+  const note = `<div class="edit-note"><b>✎ Weight, Amount &amp; Motor are editable</b> — click a cell to change &amp; auto-save; the prices recompute. <b>PERKIN Rates — basis for the blower offer.</b> Price w/o motor = Amount × ${BLOWER.without_markup} &nbsp;·&nbsp; Price w/ motor = (Amount × ${BLOWER.without_markup}) + (Motor × ${BLOWER.motor_markup}).</div>`;
   let html = note + formulasPanelBlower();
   html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
   document.getElementById('tab-content').innerHTML = html;
+}
+function saveBlower(el){
+  el.classList.remove('saved','err');
+  const model=el.dataset.model, field=el.dataset.field;
+  const v=parseFloat(String(el.textContent).replace(/,/g,'').trim());
+  if(isNaN(v)){ el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); return; }
+  el.classList.add('saving');
+  fetch('/api/internal-costing/blower-update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,field,value:v})})
+    .then(r=>r.json()).then(d=>{
+      el.classList.remove('saving');
+      if(d && d.success){ const y=window.scrollY; loadBlower().then(()=>window.scrollTo(0,y)); }
+      else { el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); }
+    }).catch(()=>{ el.classList.remove('saving'); el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); });
 }
 function loadBlower(){
   return fetch('/api/internal-costing/blower').then(r=>r.json()).then(d=>{

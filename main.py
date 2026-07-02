@@ -1859,6 +1859,34 @@ def api_ic_blower():
                 "motor_markup": 1.5, "error": str(e)}
 
 
+class _BlowerEdit(BaseModel):
+    model: str
+    field: str          # 'weight' | 'amount' | 'motor'
+    value: float
+
+
+@app.post("/api/internal-costing/blower-update")
+def api_ic_blower_update(req: _BlowerEdit):
+    """Edit a PERKIN blower field (Weight / Amount / Motor) in
+    blower_pricelist_master. Price w/o & w/ motor recompute on next read."""
+    COLS = {"weight": "blower_weight", "amount": "per_kg_amount",
+            "motor": "motor_price_abb"}
+    col = COLS.get(req.field)
+    if not col:
+        return {"success": False, "error": f"bad field {req.field!r}"}
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        n = conn.execute(
+            f"UPDATE blower_pricelist_master SET {col}=? "
+            "WHERE model=? AND section IN ('MEDIUM PRESSURE','HIGH PRESSURE')",
+            (req.value, req.model)).rowcount
+        conn.commit()
+        conn.close()
+        return {"success": n > 0}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.get("/enquiries", response_class=HTMLResponse)
 def enquiries_page():
     with open(os.path.join(BASE_DIR, "enquiries.html"), "r", encoding="utf-8") as f:
