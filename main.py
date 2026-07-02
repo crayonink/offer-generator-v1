@@ -1825,6 +1825,16 @@ def api_ic_blower():
             sec = r.get("section") or "—"
             data.setdefault(sec, []).append(_bp.compute_blower(r, rates))
 
+        # Order models within a section by HP (the leading number of "5/28"),
+        # so 5, 7.5 sort before 10 rather than following DB insert order.
+        def _hp(m):
+            try:
+                return float(str(m.get("model") or "").split("/")[0])
+            except (TypeError, ValueError):
+                return float("inf")
+        for sec in data:
+            data[sec].sort(key=_hp)
+
         sections = [s for s in _bp.SECTION_ORDER if s in data] + \
                    [s for s in data if s not in _bp.SECTION_ORDER]
         return {"sections": sections, "data": data,
