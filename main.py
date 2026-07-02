@@ -1504,6 +1504,24 @@ def _startup_seed_hpu_catalog():
 _startup_seed_hpu_catalog()
 
 
+def _startup_seed_blower_alone():
+    """Create the 'Blower Alone' pricelist rows (PERKINS) so the blower-alone
+    price is editable in the Rates tab and fetched by the Blower tab/offer.
+    Idempotent; reaches the persistent volume on deploy."""
+    try:
+        from bom.blower_pricelist import seed_blower_alone
+        conn = sqlite3.connect(DB_PATH)
+        n = seed_blower_alone(conn)
+        conn.close()
+        if n:
+            print(f"[db] seeded {n} 'Blower Alone' pricelist rows")
+    except Exception as e:
+        print(f"WARN: startup seed_blower_alone failed: {e}")
+
+
+_startup_seed_blower_alone()
+
+
 # One-off pricelist adjustments, applied exactly once per database (tracked in
 # _price_ops) so they reach the persistent Railway volume on the next deploy
 # without re-applying on every boot.

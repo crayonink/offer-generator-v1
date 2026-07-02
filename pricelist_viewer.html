@@ -1241,6 +1241,8 @@ function _renderRatesTable(data, opts) {
     'Gas Regulator (2 Bar Threaded)':  ['Gas Regulator (2 Bar)', 'Threaded'],
     'Slam Shut Off Valve (Flanged)':   ['Slam Shut Off Valve', 'Flanged'],
     'Slam Shut Off Valve (Threaded)':  ['Slam Shut Off Valve', 'Threaded'],
+    'Blower Alone (28 inch)':          ['Blower Alone', '28 inch'],
+    'Blower Alone (40 inch)':          ['Blower Alone', '40 inch'],
   };
   const _parentOf = (c) => CATEGORY_DIVISIONS[c] ? CATEGORY_DIVISIONS[c][0] : c;
   // Build an iteration order where divisions of the same parent stay
@@ -1318,6 +1320,10 @@ function _renderRatesTable(data, opts) {
       // with no NB size; gas filters, 2/5-bar regulators and slam shut off
       // valves have NB sizes but are listed cheapest-first by request.
       cats[cat].sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+    } else if (cat === 'Blower Alone (28 inch)' || cat === 'Blower Alone (40 inch)') {
+      // Blower models "ENCON 28/3" — sort by HP (the number after the slash).
+      const _bhp = x => { const m = (x.item || '').match(/\/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : Infinity; };
+      cats[cat].sort((a, b) => _bhp(a) - _bhp(b));
     } else if (cat === 'Pressure Switch') {
       // Group by company (all MADAS together, all Switzer together), then by
       // item label (High / Low) within each company.

@@ -384,11 +384,11 @@ function blowerPerkinTable(section, rows){
   const body = rows.map(m=>`<tr>
     <td class="co">${m.model||''}</td>
     <td class="num">${ev(m.hp)}</td>
-    ${E(m.model,'weight',m.weight)}
-    ${E(m.model,'amount',m.amount)}
+    <td class="num">${ev(m.weight)}</td>
+    <td class="num">${inr(m.amount)}</td>
     ${E(m.model,'motor',m.motor)}
-    <td class="num calc fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/o Motor" data-f="Amount ${inr(m.amount)} × ${BLOWER.without_markup}" data-val="${inr(m.price_wo)}">${inr(m.price_wo)}</td>
-    <td class="num calc setcol fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/ Motor" data-f="(Amount ${inr(m.amount)} × ${BLOWER.without_markup}) + (Motor ${inr(m.motor)} × ${BLOWER.motor_markup})" data-val="${inr(m.price_w)}">${inr(m.price_w)}</td>
+    <td class="num calc lk fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Blower Alone (w/o motor)" data-f="from Rates · Blower Alone (PERKINS) — edit in Pricelist" data-val="${inr(m.price_wo)}">${inr(m.price_wo)}</td>
+    <td class="num calc setcol fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/ Motor" data-f="(Blower Alone ${inr(m.price_wo)}) + (Motor ${inr(m.motor)} × ${BLOWER.motor_markup})" data-val="${inr(m.price_w)}">${inr(m.price_w)}</td>
   </tr>`).join('');
   return `<div class="grp">
     <div class="grp-h"><span class="t">PERKIN Rates — ${title}</span></div>
@@ -402,10 +402,10 @@ function formulasPanelBlower(){
   return `<details class="grp fpanel">
     <summary>📐 How every price is computed — formulas <span class="hint">(click to expand)</span></summary>
     <div class="fbody">
-      <div class="fgrp"><b>Amount</b> — the blower cost (weight-based) per model, from the PERKIN Rates sheet.</div>
-      <div class="fgrp"><b>Price without motor</b> = Amount × ${BLOWER.without_markup}.</div>
-      <div class="fgrp"><b>Price with motor</b> = (Amount × ${BLOWER.without_markup}) + (Motor ABB × ${BLOWER.motor_markup}).</div>
-      <div class="fgrp"><b>Sections</b> — Medium Pressure = ENCON 28&Prime; WG series &nbsp;·&nbsp; High Pressure = ENCON 40&Prime; WG series.</div>
+      <div class="fgrp"><b>Blower Alone (without motor)</b> — the sell price per model, edited in the Pricelist <a href="/pricelist">Rates</a> tab under <b>Blower Alone → 28&Prime; / 40&Prime;</b> (company PERKINS). Fetched here.</div>
+      <div class="fgrp"><b>Price with motor</b> = Blower Alone + (Motor ABB × ${BLOWER.motor_markup}).</div>
+      <div class="fgrp"><b>Motor</b> is editable here; <b>Amount</b> and <b>Weight</b> are the original cost reference (Blower Alone was seeded from Amount × ${BLOWER.without_markup}).</div>
+      <div class="fgrp"><b>Sections</b> — 28&Prime; = ENCON 28&Prime; WG series (Medium Pressure) &nbsp;·&nbsp; 40&Prime; = ENCON 40&Prime; WG series (High Pressure).</div>
       <div class="fgrp"><b>This is the basis for the blower equipment offer.</b></div>
     </div>
   </details>`;
@@ -434,7 +434,7 @@ function renderBlower(){
   if(!BLOWER || !BLOWER.sections.length){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No blower data found</h2></div>'; return;
   }
-  const note = `<div class="edit-note"><b>✎ Weight, Amount &amp; Motor are editable</b> — click a cell to change &amp; auto-save; the prices recompute. <b>PERKIN Rates — basis for the blower offer.</b> Price w/o motor = Amount × ${BLOWER.without_markup} &nbsp;·&nbsp; Price w/ motor = (Amount × ${BLOWER.without_markup}) + (Motor × ${BLOWER.motor_markup}).</div>`;
+  const note = `<div class="edit-note"><b>Blower Alone (w/o motor)</b> is fetched from the Pricelist <a href="/pricelist">Rates → Blower Alone (PERKINS)</a> — edit it there. <b>✎ Motor</b> is editable here. Price w/ motor = Blower Alone + (Motor × ${BLOWER.motor_markup}). This is the blower offer basis.</div>`;
   let html = note + formulasPanelBlower();
   html += BLOWER.sections.map(s=>blowerPerkinTable(s, BLOWER.data[s]||[])).join('');
   // Legacy DM/IDM fabrication tables (pricelist-linked cost reference).

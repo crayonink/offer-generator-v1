@@ -36,9 +36,55 @@ def price_with_motor(amount, motor) -> float:
     return round(_f(amount) * WITHOUT_MARKUP + _f(motor) * MOTOR_MARKUP, 2)
 
 
+# The blower-alone (without-motor) price lives in the pricelist Rates tab under
+# these categories (company PERKINS), so it's editable there and fetched here.
+ALONE_CATEGORIES = ["Blower Alone (28 inch)", "Blower Alone (40 inch)"]
+_SECTION_TO_ALONE_CAT = {
+    "MEDIUM PRESSURE": "Blower Alone (28 inch)",
+    "HIGH PRESSURE":   "Blower Alone (40 inch)",
+}
+
+
+def alone_prices(conn: sqlite3.Connection) -> dict:
+    """{model -> blower-alone price} from the pricelist Rates rows."""
+    q = ("SELECT item, price FROM component_price_master WHERE category IN (%s)"
+         % ",".join("?" * len(ALONE_CATEGORIES)))
+    return {r[0]: _f(r[1]) for r in conn.execute(q, ALONE_CATEGORIES)}
+
+
+def seed_blower_alone(conn: sqlite3.Connection) -> int:
+    """Idempotently create the 'Blower Alone' pricelist rows (one per model,
+    company PERKINS), seeded with the without-motor price (Amount × 1.8). After
+    that the Rates row is the editable source that the Blower tab/offer fetch."""
+    rows = conn.execute(
+        "SELECT section, model, per_kg_amount, hp FROM blower_pricelist_master "
+        "WHERE section IN ('MEDIUM PRESSURE','HIGH PRESSURE')").fetchall()
+    inserted = 0
+    for section, model, amount, hp in rows:
+        cat = _SECTION_TO_ALONE_CAT.get(section)
+        if not cat:
+            continue
+        if conn.execute("SELECT 1 FROM component_price_master WHERE item=? AND "
+                        "category=? LIMIT 1", (model, cat)).fetchone():
+            continue
+        price = price_without_motor(amount)
+        hpv = _f(hp)
+        spec = None
+        if hpv:
+            spec = f"{int(hpv) if hpv == int(hpv) else hpv} HP"
+        conn.execute(
+            "INSERT INTO component_price_master (item, category, company, unit, "
+            "price, previous_price, specification) VALUES (?,?,?,?,?,?,?)",
+            (model, cat, "PERKINS", "nos", price, price, spec))
+        inserted += 1
+    conn.commit()
+    return inserted
+
+
 def blower_price(conn: sqlite3.Connection, model: str, with_motor: bool = False) -> float:
-    """PERKIN price for a blower model. with_motor adds the motor at ×1.5.
-    Single source used by every blower offer path."""
+    """Blower price for a model. Blower-alone (without motor) is fetched from the
+    pricelist Rates row; with_motor adds Motor × 1.5. Single source for every
+    blower offer path."""
     r = conn.execute(
         "SELECT per_kg_amount, motor_price_abb FROM blower_pricelist_master "
         "WHERE model=? AND section IN ('MEDIUM PRESSURE','HIGH PRESSURE') LIMIT 1",
@@ -46,7 +92,9 @@ def blower_price(conn: sqlite3.Connection, model: str, with_motor: bool = False)
     if not r:
         return 0.0
     amount, motor = r[0], r[1]
-    return price_with_motor(amount, motor) if with_motor else price_without_motor(amount)
+    alone = alone_prices(conn).get(model)
+    wo = alone if alone is not None else price_without_motor(amount)  # fallback pre-seed
+    return round(wo + (_f(motor) * MOTOR_MARKUP if with_motor else 0.0), 2)
 
 
 def blower_models(conn: sqlite3.Connection) -> dict:
@@ -57,8 +105,11 @@ def blower_models(conn: sqlite3.Connection) -> dict:
         "cfm, nm3_per_hr, pressure FROM blower_pricelist_master "
         "WHERE section IN ('MEDIUM PRESSURE','HIGH PRESSURE') "
         "ORDER BY section, CAST(hp AS REAL)").fetchall()
+    alone = alone_prices(conn)   # blower-alone (without motor) from Rates
     data = {}
     for section, model, hp, weight, amount, motor, cfm, nm3, pressure in rows:
+        wo = alone.get(model)
+        wo = round(wo) if wo is not None else round(price_without_motor(amount))
         data.setdefault(section, []).append({
             "model":     model,
             "hp":        _f(hp),
@@ -67,8 +118,9 @@ def blower_models(conn: sqlite3.Connection) -> dict:
             "motor":     round(_f(motor)),
             "cfm":       _f(cfm),
             "nm3_per_hr": _f(nm3),
-            "price_wo":  round(price_without_motor(amount)),
-            "price_w":   round(price_with_motor(amount, motor)),
+            "price_wo":  wo,
+            "price_w":   round(wo + _f(motor) * MOTOR_MARKUP),
+            "alone_cat": _SECTION_TO_ALONE_CAT.get(section, ""),
         })
     return data
 
