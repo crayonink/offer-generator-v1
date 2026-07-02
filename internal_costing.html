@@ -387,8 +387,8 @@ function blowerPerkinTable(section, rows){
     ${E(m.model,'weight',m.weight)}
     ${E(m.model,'amount',m.amount)}
     ${E(m.model,'motor',m.motor)}
-    <td class="num calc">${inr(m.price_wo)}</td>
-    <td class="num calc setcol">${inr(m.price_w)}</td>
+    <td class="num calc fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/o Motor" data-f="Amount ${inr(m.amount)} × ${BLOWER.without_markup}" data-val="${inr(m.price_wo)}">${inr(m.price_wo)}</td>
+    <td class="num calc setcol fcell" onclick="showF(this)" data-size="${esc(m.model)}" data-label="Price w/ Motor" data-f="(Amount ${inr(m.amount)} × ${BLOWER.without_markup}) + (Motor ${inr(m.motor)} × ${BLOWER.motor_markup})" data-val="${inr(m.price_w)}">${inr(m.price_w)}</td>
   </tr>`).join('');
   return `<div class="grp">
     <div class="grp-h"><span class="t">PERKIN Rates — ${title}</span></div>
