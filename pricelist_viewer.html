@@ -929,6 +929,17 @@ function splitItem(item, specification) {
     }
   }
 
+  // 5a4. Star-coupling model: 'STAR COUPLING L -95' -> name 'STAR COUPLING',
+  //      size 'L 95' (also 'L 110'). Gated on COUPLING so the trailing 'L -NN'
+  //      isn't mistaken for a leftover suffix on other items.
+  if (!size) {
+    const sc = name.match(/\bL\s*-?\s*(\d+)\s*$/i);
+    if (sc && /COUPLING/i.test(name)) {
+      size = 'L ' + sc[1];
+      name = name.slice(0, sc.index).trim();
+    }
+  }
+
   // 5b. Bearing designation: 'BEARING (22222)' -> name='BEARING', size='22222'
   //     The parenthesized number is a standard bearing code (e.g. SKF 22222),
   //     so it disambiguates rows the same way kW disambiguates pilot burners.
