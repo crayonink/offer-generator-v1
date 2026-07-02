@@ -417,7 +417,7 @@ function blowerLegacyTable(model, grp){
     <td class="num">${ev(it.qty)}</td>
     <td>${it.unit||''}</td>
     <td class="num lk fcell" onclick="showF(this)" data-label="Rate" data-size="${esc(it.item)}" data-f="from Pricelist (${esc(it.rate_ref)})" data-val="${ev(it.rate)}">${ev(it.rate)}</td>
-    <td class="num calc">${inr(Math.round(it.amount))}</td>
+    <td class="num calc fcell" onclick="showF(this)" data-size="${esc(it.item)}" data-label="Amount" data-f="Qty ${ev(it.qty)} × Rate ${ev(it.rate)}" data-val="${inr(Math.round(it.amount))}">${inr(Math.round(it.amount))}</td>
   </tr>`).join('');
   return `<div class="grp">
     <div class="grp-h"><span class="t">Model ${model}</span>
