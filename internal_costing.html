@@ -117,9 +117,10 @@ details.fpanel[open]>summary{border-bottom:1px solid var(--line)}
   </header>
   <div class="content">
     <div class="tabs">
-      <button class="tab active">Oil Burner</button>
+      <button class="tab active" data-tab="burner" onclick="switchTab('burner',this)">Oil Burner</button>
+      <button class="tab" data-tab="hpu" onclick="switchTab('hpu',this)">HPU</button>
     </div>
-    <div class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>(Amount, Total, prices) recalc automatically. <b>◆ Linked rate</b><span class="sw" style="background:#eef4fb;border:1px solid var(--line2)"></span>driven by the Rate Master at the bottom — edit it there to reprice every part at once.</div>
+    <div id="note" class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>(Amount, Total, prices) recalc automatically. <b>◆ Linked rate</b><span class="sw" style="background:#eef4fb;border:1px solid var(--line2)"></span>driven by the Rate Master at the bottom — edit it there to reprice every part at once.</div>
     <div id="fbar" class="fbar"><span class="fx">ƒx</span> Click any computed cell to see how it's derived.</div>
     <div id="tab-content"></div>
   </div>
@@ -164,7 +165,7 @@ function save(el){
     else { el.classList.remove('saving'); el.classList.add('err'); setTimeout(()=>el.classList.remove('err'),1200); }
   });
 }
-function reload(){ const y=window.scrollY; load().then(()=>window.scrollTo(0,y)); }
+function reload(){ const y=window.scrollY; loadBurner().then(()=>window.scrollTo(0,y)); }
 
 // per-table, per-column derivation shown in the formula bar on click.
 const FORMULA = {
@@ -276,7 +277,7 @@ function formulasPanel(){
     </div>
   </details>`;
 }
-function load(){
+function loadBurner(){
   return Promise.all([
     fetch('/api/internal-costing/oil-burner-prices').then(r=>r.json()),
     fetch('/api/internal-costing/oil-burner').then(r=>r.json()),
@@ -309,7 +310,63 @@ function load(){
     document.getElementById('tab-content').innerHTML = html || '<div class="stub"><h2>No oil-burner data found</h2></div>';
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
 }
-load();
+
+// ---------- HPU tab ----------
+let HPU=null, HPU_KW=null;
+function hpuVariantTable(kw, variant, grp){
+  if(!grp) return '';
+  const rows = grp.items.map(it=>`<tr>
+    <td class="num">${it.s_no}</td>
+    <td>${it.item||''}</td>
+    <td class="num">${ev(it.qty)}</td>
+    <td>${it.unit||''}</td>
+    <td class="num">${ev(it.rate)}</td>
+    <td class="num calc">${inr(Math.round(it.amount))}</td>
+  </tr>`).join('');
+  return `<div class="grp">
+    <div class="grp-h"><span class="t">${variant} — HPD-${kw} KW</span>
+      <span class="tot">Cost: ₹${inr(grp.total)} &nbsp;·&nbsp; Selling (×${HPU.markup}): ₹${inr(grp.selling)}</span></div>
+    <table><thead><tr>
+      <th class="num">S.No</th><th>Item</th><th class="num">Qty</th><th>Unit</th>
+      <th class="num">Rate</th><th class="num">Amount</th>
+    </tr></thead><tbody>
+      ${rows}
+      <tr class="totrow"><td colspan="5">TOTAL COST</td><td class="num grandtot">₹${inr(grp.total)}</td></tr>
+    </tbody></table></div>`;
+}
+function renderHPU(){
+  if(!HPU || !HPU.ratings.length){
+    document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No HPU data found</h2></div>'; return;
+  }
+  if(HPU_KW===null) HPU_KW=HPU.ratings[0];
+  const picker = `<div class="sec-label" style="margin:2px 2px 12px">HPU rating &nbsp;
+    ${HPU.ratings.map(k=>`<button class="tab${k===HPU_KW?' active':''}" style="padding:6px 13px;border:1px solid var(--line2);border-radius:6px;margin:0 3px 4px 0;border-bottom-width:1px" onclick="pickHPU(${k})">${k} KW</button>`).join('')}
+  </div>`;
+  const day = HPU.data[String(HPU_KW)]||{};
+  let html = picker;
+  html += HPU.variants.map(v=>hpuVariantTable(HPU_KW, v, day[v])).join('');
+  document.getElementById('tab-content').innerHTML = html;
+}
+function pickHPU(kw){ HPU_KW=kw; renderHPU(); }
+function loadHPU(){
+  return fetch('/api/internal-costing/hpu').then(r=>r.json()).then(d=>{
+    HPU=d; renderHPU();
+  }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
+}
+
+// ---------- tab switching ----------
+function switchTab(tab, btn){
+  document.querySelectorAll('.tab[data-tab]').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const isBurner = tab==='burner';
+  // Editable-legend + formula bar are burner-only.
+  document.getElementById('note').style.display  = isBurner ? '' : 'none';
+  document.getElementById('fbar').style.display   = isBurner ? '' : 'none';
+  document.getElementById('tab-content').innerHTML = '<div class="stub"><h2>Loading…</h2></div>';
+  (isBurner ? loadBurner() : loadHPU());
+}
+
+loadBurner();
 </script>
 </body>
 </html>

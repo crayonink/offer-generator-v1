@@ -1707,6 +1707,66 @@ def api_ic_hv_oil_burner():
         return {"groups": [], "error": str(e)}
 
 
+@app.get("/api/internal-costing/hpu")
+def api_ic_hpu():
+    """HPU (Heating & Pumping Unit) internal parts costing (hpu_master).
+    Grouped by KW rating, then by variant (Simplex / Duplex 1 / Duplex 2),
+    each variant a full BOM breakdown. Selling price = cost × 1.8 (see
+    bom/hpu_calculator.HPU_MARKUP)."""
+    HPU_MARKUP = 1.8
+    VARIANT_ORDER = ["Simplex", "Duplex 1", "Duplex 2"]
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = [dict(r) for r in conn.execute(
+            "SELECT rowid AS _rid, unit_kw, variant, item, qty, unit, rate, amount "
+            "FROM hpu_master ORDER BY unit_kw, rowid")]
+        conn.close()
+
+        def _f(v):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return 0.0
+
+        # data[kw][variant] = {items, total, selling}
+        data = {}
+        for r in rows:
+            kw = r["unit_kw"]
+            var = r["variant"] or "—"
+            amount = _f(r["amount"])
+            if amount == 0.0:            # not pre-computed → derive from qty × rate
+                amount = _f(r["qty"]) * _f(r["rate"])
+            r["amount"] = round(amount, 2)
+            bucket = data.setdefault(kw, {})
+            grp = bucket.setdefault(var, {"items": [], "total": 0.0})
+            grp["items"].append(r)
+            grp["total"] += amount
+
+        ratings = sorted(data.keys())
+        # Number each variant's rows and finalise totals/selling in fixed order.
+        out = {}
+        for kw in ratings:
+            out[str(kw)] = {}
+            for var in VARIANT_ORDER:
+                grp = data[kw].get(var)
+                if not grp:
+                    continue
+                for i, it in enumerate(grp["items"], 1):
+                    it["s_no"] = i
+                total = round(grp["total"])
+                out[str(kw)][var] = {
+                    "items":   grp["items"],
+                    "total":   total,
+                    "selling": round(total * HPU_MARKUP),
+                }
+        return {"ratings": ratings, "variants": VARIANT_ORDER,
+                "markup": HPU_MARKUP, "data": out}
+    except Exception as e:
+        return {"ratings": [], "variants": [], "markup": HPU_MARKUP,
+                "data": {}, "error": str(e)}
+
+
 @app.get("/enquiries", response_class=HTMLResponse)
 def enquiries_page():
     with open(os.path.join(BASE_DIR, "enquiries.html"), "r", encoding="utf-8") as f:
