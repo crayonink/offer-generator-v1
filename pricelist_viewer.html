@@ -27,9 +27,31 @@
     body {
       font-family: 'Inter', system-ui, sans-serif; font-size: 14px;
       background: var(--bg); color: var(--text);
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: row;
       -webkit-font-smoothing: antialiased;
     }
+    /* App sidebar (matches the rest of the portal) — sticky/full-height so it
+       stays visible while the sheet area scrolls. */
+    .app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .sidebar { width: 236px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; padding: 18px 0; }
+    .sidebar .brand { display: flex; align-items: center; gap: 11px; padding: 0 20px 18px; margin: 0 0 6px;
+      border-bottom: 1px solid var(--border); text-decoration: none; }
+    .sidebar .logo { width: 38px; height: 38px; border-radius: 10px; background: var(--navy); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.15rem; }
+    .sidebar .bn { font-weight: 800; font-size: 1rem; color: var(--text); letter-spacing: .02em; }
+    .sidebar .bs { font-size: .64rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .09em; }
+    .sidebar .nav { flex: 1; overflow-y: auto; padding: 4px 14px 0; }
+    .sidebar .nav-h { font-size: .64rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; padding: 14px 8px 6px; }
+    .sidebar .nav a { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 9px;
+      font-size: .86rem; font-weight: 600; color: var(--muted); margin-bottom: 2px; transition: .13s; text-decoration: none; }
+    .sidebar .nav a:hover { background: var(--tint); color: var(--text); }
+    .sidebar .nav a.active { background: var(--tint); color: var(--navy); }
+    .sidebar .nav a svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .sidebar .side-foot { padding: 12px 18px 0; border-top: 1px solid var(--border); }
+    .sidebar .side-foot .btn { display: block; text-align: center; padding: 9px; border: 1px solid var(--border);
+      border-radius: 9px; font-weight: 700; font-size: .85rem; color: var(--text); text-decoration: none; }
+    .sidebar .side-foot .btn:hover { background: var(--bg); }
 
     /* ── TOP HEADER ─────────────────────────────────────────── */
     .topnav {
@@ -63,7 +85,7 @@
     .topnav-links a:hover  { background: #f1f5f9; color: var(--navy); border-color: var(--border); }
     .topnav-links a.active { background: var(--navy); color: #fff; font-weight: 600; border-color: var(--navy); }
 
-    .topnav-actions { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
+    .topnav-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
     .iconbtn {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 8px 14px; border-radius: 9px;
@@ -457,19 +479,34 @@
 </head>
 <body>
 
+<!-- App sidebar (shared portal nav) -->
+<aside class="sidebar">
+  <a class="brand" href="/"><div class="logo">E</div><div><div class="bn">ENCON</div><div class="bs">Thermal Engineers</div></div></a>
+  <nav class="nav">
+    <div class="nav-h">Main</div>
+    <a href="/"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+    <a href="/#tools"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg>Costing Tools</a>
+    <a href="/internal-costing"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h8"/></svg>Internal Costing</a>
+    <a href="/#recent"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>Quotations</a>
+    <a class="active" href="/pricelist"><svg viewBox="0 0 24 24"><path d="M20.6 13.4 12 22l-9-9V3h10z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Pricelist</a>
+    <div class="nav-h">Data</div>
+    <a href="/viewer"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>Database</a>
+    <a href="/price-master"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Price Master</a>
+    <div class="nav-h">CRM</div>
+    <a href="/enquiries"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Enquiries</a>
+    <a href="/projects"><svg viewBox="0 0 24 24"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg>Projects</a>
+    <a href="/clients"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.1a4 4 0 0 1 0 7.8"/></svg>Clients</a>
+    <a href="/reports"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Reports</a>
+  </nav>
+  <div class="side-foot"><a class="btn" href="/logout">Logout</a></div>
+</aside>
+
+<div class="app-main">
 <!-- Top header -->
 <nav class="topnav">
-  <a class="brand" href="/">
-    <div class="brand-mark">EN</div>
-    <span class="brand-name">ENCON</span>
-  </a>
   <div class="crumb">
     <span class="dot"></span>
     <span class="here">Pricelist</span>
-  </div>
-  <div class="topnav-links">
-    <a href="/pricelist" class="active">Pricelist</a>
-    <a href="/">Dashboard</a>
   </div>
   <div class="topnav-actions">
     <button class="iconbtn" onclick="loadAll()">
@@ -546,6 +583,7 @@
   <div class="group spacer"><span class="lbl">Cell</span><span class="val" id="name-box">&mdash;</span></div>
   <div class="group"><span class="lbl">Value</span><span class="val" id="formula-val">Select a cell</span></div>
 </div>
+</div><!-- /.app-main -->
 
 <!-- Cascade overlay -->
 <div id="cascade-overlay">
