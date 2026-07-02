@@ -315,14 +315,20 @@ function loadBurner(){
 let HPU=null, HPU_KW=null;
 function hpuVariantTable(kw, variant, grp){
   if(!grp) return '';
-  const rows = grp.items.map(it=>`<tr>
-    <td class="num">${it.s_no}</td>
-    <td>${it.item||''}</td>
-    <td class="num">${ev(it.qty)}</td>
-    <td>${it.unit||''}</td>
-    <td class="num">${ev(it.rate)}</td>
-    <td class="num calc">${inr(Math.round(it.amount))}</td>
-  </tr>`).join('');
+  const rows = grp.items.map(it=>{
+    // Rate is pulled live from the pricelist (◆ linked); labour has no rate.
+    const rateCell = it.rate_ref
+      ? `<td class="num lk fcell" onclick="showF(this)" data-label="Rate" data-size="${esc(it.item)}" data-f="from Pricelist (${esc(it.rate_ref)})" data-val="${ev(it.rate)}">${ev(it.rate)}</td>`
+      : `<td class="num">${ev(it.rate)}</td>`;
+    return `<tr>
+      <td class="num">${it.s_no}</td>
+      <td>${it.item||''}</td>
+      <td class="num">${ev(it.qty)}</td>
+      <td>${it.unit||''}</td>
+      ${rateCell}
+      <td class="num calc">${inr(Math.round(it.amount))}</td>
+    </tr>`;
+  }).join('');
   return `<div class="grp">
     <div class="grp-h"><span class="t">${variant} — HPD-${kw} KW</span>
       <span class="tot">Cost: ₹${inr(grp.total)} &nbsp;·&nbsp; Selling (×${HPU.markup}): ₹${inr(grp.selling)}</span></div>
@@ -339,11 +345,12 @@ function renderHPU(){
     document.getElementById('tab-content').innerHTML='<div class="stub"><h2>No HPU data found</h2></div>'; return;
   }
   if(HPU_KW===null) HPU_KW=HPU.ratings[0];
+  const note = `<div class="edit-note"><span class="dia">◆</span> <b>Rates are linked to the Pricelist</b> — every HPU line pulls its rate from the raw-materials / components pricelist (<a href="/price-master">Price Master</a>, HPU categories). Amount = Qty × Rate. Edit a rate there to reprice every HPU that uses it. Labour is a fixed line.</div>`;
   const picker = `<div class="sec-label" style="margin:2px 2px 12px">HPU rating &nbsp;
     ${HPU.ratings.map(k=>`<button class="tab${k===HPU_KW?' active':''}" style="padding:6px 13px;border:1px solid var(--line2);border-radius:6px;margin:0 3px 4px 0;border-bottom-width:1px" onclick="pickHPU(${k})">${k} KW</button>`).join('')}
   </div>`;
   const day = HPU.data[String(HPU_KW)]||{};
-  let html = picker;
+  let html = note + picker;
   html += HPU.variants.map(v=>hpuVariantTable(HPU_KW, v, day[v])).join('');
   document.getElementById('tab-content').innerHTML = html;
 }
@@ -359,9 +366,9 @@ function switchTab(tab, btn){
   document.querySelectorAll('.tab[data-tab]').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   const isBurner = tab==='burner';
-  // Editable-legend + formula bar are burner-only.
+  // Burner-only editable legend; formula bar is used by both tabs.
   document.getElementById('note').style.display  = isBurner ? '' : 'none';
-  document.getElementById('fbar').style.display   = isBurner ? '' : 'none';
+  document.getElementById('fbar').style.display  = '';
   document.getElementById('tab-content').innerHTML = '<div class="stub"><h2>Loading…</h2></div>';
   (isBurner ? loadBurner() : loadHPU());
 }

@@ -1476,6 +1476,26 @@ def _startup_cpm_sync():
 _startup_cpm_sync()
 
 
+def _startup_seed_hpu_catalog():
+    """Insert the HPU raw-material / component catalogue into component_price_
+    master if missing. Idempotent and non-destructive (existing rows and live
+    Price-Master edits are preserved), so it can run on every deploy — this is
+    how the catalogue reaches the persistent Railway volume, which is never
+    seed-refreshed."""
+    try:
+        from bom.hpu_pricelist import seed_hpu_catalog
+        conn = sqlite3.connect(DB_PATH)
+        n = seed_hpu_catalog(conn)
+        conn.close()
+        if n:
+            print(f"[db] seeded {n} HPU catalogue rows into component_price_master")
+    except Exception as e:
+        print(f"WARN: startup seed_hpu_catalog failed: {e}")
+
+
+_startup_seed_hpu_catalog()
+
+
 class _PartEdit(BaseModel):
     rid: int
     field: str
@@ -1711,8 +1731,11 @@ def api_ic_hv_oil_burner():
 def api_ic_hpu():
     """HPU (Heating & Pumping Unit) internal parts costing (hpu_master).
     Grouped by KW rating, then by variant (Simplex / Duplex 1 / Duplex 2),
-    each variant a full BOM breakdown. Selling price = cost × 1.8 (see
-    bom/hpu_calculator.HPU_MARKUP)."""
+    each variant a full BOM breakdown. Every line's RATE is pulled live from
+    the pricelist (component_price_master, HPU_* categories) via the resolver;
+    qty stays per-line, amount = qty × rate. Selling price = cost × 1.8 (see
+    bom/hpu_calculator.HPU_MARKUP). LABOUR is a fixed line (stored amount)."""
+    from bom import hpu_pricelist as _hp
     HPU_MARKUP = 1.8
     VARIANT_ORDER = ["Simplex", "Duplex 1", "Duplex 2"]
     try:
@@ -1721,6 +1744,7 @@ def api_ic_hpu():
         rows = [dict(r) for r in conn.execute(
             "SELECT rowid AS _rid, unit_kw, variant, item, qty, unit, rate, amount "
             "FROM hpu_master ORDER BY unit_kw, rowid")]
+        rates = _hp.load_rates(conn)
         conn.close()
 
         def _f(v):
@@ -1734,9 +1758,16 @@ def api_ic_hpu():
         for r in rows:
             kw = r["unit_kw"]
             var = r["variant"] or "—"
-            amount = _f(r["amount"])
-            if amount == 0.0:            # not pre-computed → derive from qty × rate
-                amount = _f(r["qty"]) * _f(r["rate"])
+            if _hp.is_labour(r["item"]):
+                # Labour is not a material — keep its stored amount, no link.
+                amount = _f(r["amount"])
+                r["rate"] = None
+                r["rate_ref"] = None
+            else:
+                rate, src = _hp.resolve_rate(r["item"], r["unit"], rates)
+                r["rate"] = round(rate, 2)
+                r["rate_ref"] = src          # pricelist SKU the rate came from
+                amount = _f(r["qty"]) * rate
             r["amount"] = round(amount, 2)
             bucket = data.setdefault(kw, {})
             grp = bucket.setdefault(var, {"items": [], "total": 0.0})
