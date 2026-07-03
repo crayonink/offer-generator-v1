@@ -238,7 +238,7 @@
     <div class="step-heading">Step 2 — Blower Selection</div>
 
     <div class="sec-label">Model</div>
-    <div class="fg fg-2">
+    <div class="fg fg-3">
       <div class="field">
         <label>Blower Model <span class="req">*</span></label>
         <div class="bd" id="bd">
@@ -248,6 +248,13 @@
           <div class="bd-menu" id="bd-menu"><div class="bd-loading">Loading…</div></div>
         </div>
         <input type="hidden" id="blower_model" value=""/>
+      </div>
+      <div class="field">
+        <label>Motor</label>
+        <select id="b-motor" onchange="_onMotorChange()">
+          <option value="1">With Motor</option>
+          <option value="0">Without Motor</option>
+        </select>
       </div>
       <div class="field">
         <label>Quantity</label>
@@ -497,16 +504,20 @@ function _selectModel(model) {
   _closeDD();
 }
 
+function _withMotor() { return (document.getElementById('b-motor') || {}).value !== '0'; }
+function _onMotorChange() { _onModelChange(); }
 function _onModelChange() {
   const m = document.getElementById('blower_model').value;
   const it = _catalog.find(x => x.model === m);
   const set = (id, val) => document.getElementById(id).value = val;
   if (!it) { set('b-hp','—'); set('b-airflow','—'); set('b-pressure','—'); set('b-price','—'); return; }
-  set('b-hp', it.hp + ' HP');
+  const wm = _withMotor();
+  const price = wm ? (it.price_with_motor ?? it.price) : (it.price_without_motor ?? it.price);
+  set('b-hp', it.hp + ' HP' + (wm ? '' : ' (motor excl.)'));
   set('b-airflow', it.airflow + ' Nm³/hr');
   set('b-pressure', it.pressure);
-  set('b-price', '₹ ' + (it.price || 0).toLocaleString('en-IN'));
-  _blowerUnit = it.price || 0;
+  set('b-price', '₹ ' + (price || 0).toLocaleString('en-IN'));
+  _blowerUnit = price || 0;
   recalcTotal();
 }
 
@@ -543,6 +554,7 @@ async function generateOffer() {
   const payload = {
     customer: _customerPayload(),
     blower_model: model,
+    with_motor: _withMotor(),
     qty: parseInt(document.getElementById('qty').value || '1', 10),
     pf_pct: parseFloat(document.getElementById('pf-pct')?.value) || 0,
     design_pct: parseFloat(document.getElementById('design-pct')?.value) || 0,

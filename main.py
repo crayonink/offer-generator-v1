@@ -5768,25 +5768,31 @@ def _fmt_num(v) -> str:
 
 @app.get("/api/blower/catalog")
 def blower_catalog():
-    """ENCON blower models for the offer dropdown (price = with-motor)."""
+    """ENCON blower models for the offer dropdown. Prices on the PERKIN basis
+    (Blower Alone × 1.8; with-motor + Motor × 1.5) — both are returned so the
+    client can pick with or without motor."""
+    from bom.blower_pricelist import blower_price
     conn = sqlite3.connect(DB_PATH)
     rows = conn.execute(
-        "SELECT model, hp, airflow, pressure, price_premium "
+        "SELECT model, hp, airflow, pressure "
         "FROM blower_master ORDER BY pressure, CAST(hp AS REAL)"
     ).fetchall()
-    conn.close()
     items = []
     for r in rows:
-        price = _finite_price(r[4])
-        if price is None:
-            continue  # skip incomplete / NaN-priced rows (unsellable)
+        pw = blower_price(conn, r[0], with_motor=True)
+        po = blower_price(conn, r[0], with_motor=False)
+        if not pw and not po:
+            continue  # no price → unsellable
         items.append({
-            "model":    r[0],
-            "hp":       _fmt_num(r[1]),
-            "airflow":  _fmt_num(r[2]),
-            "pressure": (r[3] or "").strip(),
-            "price":    price,
+            "model":               r[0],
+            "hp":                  _fmt_num(r[1]),
+            "airflow":             _fmt_num(r[2]),
+            "pressure":            (r[3] or "").strip(),
+            "price":               pw,      # default (with motor), back-compat
+            "price_with_motor":    pw,
+            "price_without_motor": po,
         })
+    conn.close()
     return {"items": items}
 
 
@@ -5886,6 +5892,7 @@ def burner_catalog():
 class BlowerQuoteRequest(BaseModel):
     customer: HpuCustomer
     blower_model: str
+    with_motor: bool = True     # supply blower with (True) or without (False) motor
     qty: int = 1
     pf_pct:        float = 0    # Packaging & Forwarding (%)
     design_pct:    float = 0    # Designing (%)
@@ -5904,12 +5911,15 @@ class BurnerQuoteRequest(BaseModel):
     transport_amt: float = 0    # Transport (flat Rs., own price line)
 
 
-def _fill_blower_specs(docx_path: str, spec_rows: list):
+def _fill_blower_specs(docx_path: str, spec_rows: list, note: str = ""):
     """Populate the 'Blower Specifications' table with the detailed spec rows
-    (label / value), reusing the existing row's formatting. Runs after render,
-    like the other docx post-processors."""
+    (label / value), reusing the existing row's formatting. If `note` is given
+    (e.g. the recommended motor when the blower is quoted without motor), add it
+    as an italic paragraph right after the table. Runs after render."""
     import copy
     from docx import Document as _Doc
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn as _qn
     d = _Doc(docx_path)
     tbl = None
     for t in d.tables:
@@ -5937,6 +5947,21 @@ def _fill_blower_specs(docx_path: str, spec_rows: list):
         row = tbl.rows[-1]
         _set_cell(row.cells[0], str(s.get("label", "")))
         _set_cell(row.cells[1], str(s.get("value", "")))
+
+    if note:
+        p_el = OxmlElement("w:p")
+        r_el = OxmlElement("w:r")
+        rpr = OxmlElement("w:rPr")
+        rpr.append(OxmlElement("w:b"))
+        rpr.append(OxmlElement("w:i"))
+        r_el.append(rpr)
+        t_el = OxmlElement("w:t")
+        t_el.text = note
+        t_el.set(_qn("xml:space"), "preserve")
+        r_el.append(t_el)
+        p_el.append(r_el)
+        tbl._tbl.addnext(p_el)
+
     d.save(docx_path)
 
 
@@ -6082,7 +6107,8 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     tpl.save(docx_path)
     if specs.get("blower_specs"):
         try:
-            _fill_blower_specs(docx_path, specs["blower_specs"])
+            _fill_blower_specs(docx_path, specs["blower_specs"],
+                               specs.get("blower_specs_note") or "")
         except Exception as _bs_err:
             print(f"WARN: blower spec fill failed: {_bs_err}")
     _drop_marketing_if_empty(docx_path)
@@ -6139,8 +6165,11 @@ def generate_blower_quote(req: BlowerQuoteRequest):
         if not row:
             return {"error": f"unknown blower model: {req.blower_model}"}
         model, hp, airflow, cfm, pressure, price_basic, price = row
-        unit_price = _finite_price(price)
-        if unit_price is None:
+        from bom.blower_pricelist import blower_price, blower_spec_rows
+        conn2 = sqlite3.connect(DB_PATH)
+        unit_price = blower_price(conn2, model, with_motor=req.with_motor)  # PERKIN basis
+        conn2.close()
+        if not unit_price:
             return {"error": f"blower '{model}' has no valid price in the catalog"}
         import re as _re
         _pm = _re.search(r"\d+", pressure or "")
@@ -6148,30 +6177,37 @@ def generate_blower_quote(req: BlowerQuoteRequest):
         _qty = max(1, int(req.qty or 1))
         _model_short = (model or "").replace("ENCON", "").strip()
         _press = (pressure or "").strip()
-        equipment_name = f"Centrifugal Blower – {model}"
+        _wm = bool(req.with_motor)
+        _motor_clause = (f"fitted with a {_fmt_num(hp)} HP, 2900 rpm motor of reputed "
+                         f"make such as ABB, Crompton, etc."
+                         if _wm else
+                         f"suitable for a {_fmt_num(hp)} HP motor (motor NOT included — "
+                         f"in customer's scope).")
+        _motor_tag = "with Motor" if _wm else "without Motor"
+        equipment_name = f"Centrifugal Blower – {model} ({_motor_tag})"
         scope_intro = (f"Supply ex-works of {_qty} No. ENCON {ptype} Pressure Blower, "
                        f"model {model}, having a capacity of {_fmt_num(cfm)} CFM at {_press} "
-                       f"pressure, fitted with a {_fmt_num(hp)} HP, 2900 rpm motor of reputed "
-                       f"make such as ABB, Crompton, etc.")
+                       f"pressure, {_motor_clause}")
         scope_items = []   # blower scope is the intro sentence only — no bullets
-        _bf = _finite_price(price_basic)
-        _basic_fmt = ("Rs. " + (lambda s: s[:-3] if s.endswith(".00") else s)(_finr(_bf))) if _bf else None
-        from bom.blower_pricelist import blower_spec_rows
-        _spec_rows = blower_spec_rows(model, hp, cfm, pressure)
+        _spec_rows = blower_spec_rows(model, hp, cfm, pressure, with_motor=_wm)
         _spec_rows.append({"label": "Quantity", "value": f"{_qty:02d} No."})
+        _specs_note = ("" if _wm else
+                       f"Recommended motor to use: {_fmt_num(hp)} HP, 4-Pole "
+                       f"(≈ 1440 rpm), 3-Phase, 415 V AC — to be supplied by the customer.")
         specs = {
             "blower_model":    model,
             "blower_hp":       _fmt_num(hp),
             "blower_airflow":  _fmt_num(airflow),
             "blower_pressure": _press,
             "blower_specs":    _spec_rows,
+            "blower_specs_note": _specs_note,
             "scope_intro":     scope_intro,
             "scope_items":     scope_items,
             "price_desc": {
-                "heading": f"{ptype.upper()} PRESSURE BLOWER, MODEL {_model_short}",
+                "heading": f"{ptype.upper()} PRESSURE BLOWER, MODEL {_model_short} ({_motor_tag.upper()})",
                 "body":    scope_intro,
                 "bullets": [],
-                "notes":   [],   # no WITHOUT-MOTOR price line in the price cell
+                "notes":   [],
             },
         }
         result = _generate_equipment_offer(

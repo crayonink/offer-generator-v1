@@ -16,7 +16,7 @@ import re
 import sqlite3
 
 
-def blower_spec_rows(model, hp, cfm, pressure):
+def blower_spec_rows(model, hp, cfm, pressure, with_motor=True):
     """Detailed blower technical-specification rows for the offer, mapped from
     the PERKINS blower datasheets onto our ENCON models. Derived per model:
     Air Quantity (CFM→CMH), Static Pressure (WG→mmWC), Motor rating, Fan BHP
@@ -68,8 +68,11 @@ def blower_spec_rows(model, hp, cfm, pressure):
         ("Bearing Plumber Block",              "Cast Iron, 600 series, with seal, ZKL make"),
         ("MOC – Casing / Pedestal / Impeller", "MS IS-2062; 6 / 20-10 / (10-8-6) mm thick"),
         ("Painting",                           "Primer & Epoxy / Powder Coat"),
-        ("Motor Rating",                       (hp_str + " HP") if hp_str else GA),
-        ("Motor Make",                         "ABB / Crompton / CGL / BBL"),
+        ("Motor Rating",
+         ((hp_str + " HP") if hp_str else GA) if with_motor
+         else ((hp_str + " HP — in customer's scope") if hp_str else "In customer's scope")),
+        ("Motor Make",
+         "ABB / Crompton / CGL / BBL" if with_motor else "By customer (motor not included)"),
         ("Drive Set",                          "Pulleys & V-Belt set, Fanner make"),
     ]
     return [{"label": lbl, "value": val} for lbl, val in rows]
