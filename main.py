@@ -5904,6 +5904,42 @@ class BurnerQuoteRequest(BaseModel):
     transport_amt: float = 0    # Transport (flat Rs., own price line)
 
 
+def _fill_blower_specs(docx_path: str, spec_rows: list):
+    """Populate the 'Blower Specifications' table with the detailed spec rows
+    (label / value), reusing the existing row's formatting. Runs after render,
+    like the other docx post-processors."""
+    import copy
+    from docx import Document as _Doc
+    d = _Doc(docx_path)
+    tbl = None
+    for t in d.tables:
+        if t.rows and t.rows[0].cells and \
+           t.rows[0].cells[0].text.strip().lower().startswith("blower specification"):
+            tbl = t
+            break
+    if tbl is None or len(tbl.rows) < 2:
+        return
+
+    def _set_cell(cell, text):
+        p = cell.paragraphs[0]
+        if p.runs:
+            p.runs[0].text = text
+            for r in p.runs[1:]:
+                r.text = ""
+        else:
+            p.add_run(text)
+
+    template_tr = copy.deepcopy(tbl.rows[1]._tr)      # a data row → keeps borders/fonts
+    for row in list(tbl.rows[1:]):                    # clear everything but the header
+        row._tr.getparent().remove(row._tr)
+    for s in spec_rows:
+        tbl._tbl.append(copy.deepcopy(template_tr))
+        row = tbl.rows[-1]
+        _set_cell(row.cells[0], str(s.get("label", "")))
+        _set_cell(row.cells[1], str(s.get("value", "")))
+    d.save(docx_path)
+
+
 def _drop_marketing_if_empty(docx_path: str):
     """Remove the 'MARKETING PERSON DETAILS' heading + table when its value
     column is blank (equipment offers usually have no marketing contact)."""
@@ -6044,6 +6080,11 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     docx_name = f"{filename_infix}_Offer_{safe_company}_{seq}.docx"
     docx_path = os.path.join(QUOTES_FOLDER, docx_name)
     tpl.save(docx_path)
+    if specs.get("blower_specs"):
+        try:
+            _fill_blower_specs(docx_path, specs["blower_specs"])
+        except Exception as _bs_err:
+            print(f"WARN: blower spec fill failed: {_bs_err}")
     _drop_marketing_if_empty(docx_path)
     # Transport onto its own price-schedule line (no-op if 0).
     try:
@@ -6115,11 +6156,15 @@ def generate_blower_quote(req: BlowerQuoteRequest):
         scope_items = []   # blower scope is the intro sentence only — no bullets
         _bf = _finite_price(price_basic)
         _basic_fmt = ("Rs. " + (lambda s: s[:-3] if s.endswith(".00") else s)(_finr(_bf))) if _bf else None
+        from bom.blower_pricelist import blower_spec_rows
+        _spec_rows = blower_spec_rows(model, hp, cfm, pressure)
+        _spec_rows.append({"label": "Quantity", "value": f"{_qty:02d} No."})
         specs = {
             "blower_model":    model,
             "blower_hp":       _fmt_num(hp),
             "blower_airflow":  _fmt_num(airflow),
             "blower_pressure": _press,
+            "blower_specs":    _spec_rows,
             "scope_intro":     scope_intro,
             "scope_items":     scope_items,
             "price_desc": {

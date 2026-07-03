@@ -15,6 +15,65 @@ MEDIUM PRESSURE = ENCON 28" WG series, HIGH PRESSURE = ENCON 40" WG series.
 import re
 import sqlite3
 
+
+def blower_spec_rows(model, hp, cfm, pressure):
+    """Detailed blower technical-specification rows for the offer, mapped from
+    the PERKINS blower datasheets onto our ENCON models. Derived per model:
+    Air Quantity (CFM→CMH), Static Pressure (WG→mmWC), Motor rating, Fan BHP
+    (≈ Q·P/η). Standard/constant rows come from the datasheets as-is; fields we
+    can't derive from the reference sheets read 'As per approved GA drawing'.
+    Returns [{label, value}, ...]."""
+    def _n(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+
+    GA = "As per approved GA drawing"
+    cfm_v = _n(cfm)
+    cmh = round(cfm_v * 1.699) if cfm_v else 0          # CFM → CMH
+    wgm = re.search(r"\d+", str(pressure or ""))
+    wg = int(wgm.group()) if wgm else 0
+    mmwc = round(wg * 25.4) if wg else 0                # inch WG → mm WC
+    hp_v = _n(hp)
+    hp_str = (str(int(hp_v)) if hp_v == int(hp_v) else str(hp_v)) if hp_v else ""
+    bhp = ""
+    if cmh and mmwc:                                    # fan shaft power ≈ Q·P/η
+        q = cmh / 3600.0
+        p = mmwc * 9.80665
+        bhp = round(q * p / 0.65 / 746.0, 1)
+
+    rows = [
+        ("Model No.",                          model or ""),
+        ("Basic Material of Construction",     "Mild Steel (MS) IS-2062; MIG-Welded"),
+        ("Drive Arrangement",                  "Indirect – (V-Belt) Driven"),
+        ("Fan Inlet / Outlet Size",            GA),
+        ("Air Quantity (CMH at NTP)",          str(cmh) if cmh else GA),
+        ("Static Pressure (mm WC)",            str(mmwc) if mmwc else GA),
+        ("Total Pressure (mm WC)",             GA),
+        ("Operating Air Temperature (°C)",     "40"),
+        ("Maximum Air Temperature (°C)",       "120"),
+        ("Air Density (Kg/m³)",                "1.2"),
+        ("Fan Break Horse Power (BHP)",        str(bhp) if bhp else GA),
+        ("Impeller OD (mm)",                   GA),
+        ("Fan Rated RPM",                      GA),
+        ("Fan Critical RPM",                   "1.4 × rated RPM"),
+        ("Fan Efficiency (%)",                 GA),
+        ("Air Handling Quality",               "< 100 mg/m³ (clean air)"),
+        ("Recommended Motor RPM",              "1400 – 1500"),
+        ("Fan Duty Type",                      "Continuous"),
+        ("Noise Level (1.5 m, ducted)",        "< 85 dBA"),
+        ("Drive Shaft",                        "EN-8, grinded, taper-fitted with impeller"),
+        ("Bearing (DE & NDE)",                 "Double Ball/Roller, K-series taper sleeve, NTN/FAG make"),
+        ("Bearing Plumber Block",              "Cast Iron, 600 series, with seal, ZKL make"),
+        ("MOC – Casing / Pedestal / Impeller", "MS IS-2062; 6 / 20-10 / (10-8-6) mm thick"),
+        ("Painting",                           "Primer & Epoxy / Powder Coat"),
+        ("Motor Rating",                       (hp_str + " HP") if hp_str else GA),
+        ("Motor Make",                         "ABB / Crompton / CGL / BBL"),
+        ("Drive Set",                          "Pulleys & V-Belt set, Fanner make"),
+    ]
+    return [{"label": lbl, "value": val} for lbl, val in rows]
+
 WITHOUT_MARKUP = 1.8   # Amount -> price without motor
 MOTOR_MARKUP   = 1.5   # motor added on top at ×1.5
 
