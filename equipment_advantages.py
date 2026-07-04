@@ -8,9 +8,9 @@ EQUIPMENT_ADVANTAGES = {
         "items": [
             "Only CRC Sheets used",
             "Only Steel from Standard companies such as SAIL used",
-            "Maneuverability available (Blower can be positioned in any direction).",
+            "Manoeuvrability available (Blower can be positioned in any direction).",
             "Only Standard Motors used (ABB, Crompton, etc.)",
-            "Heavy Duty as thicker sheets used giving it strength for a longer life",
+            "Heavy Duty as thicker sheets used to give it strength for a longer life",
             "Designing superiority (which also adds to additional cost) ensures better performance",
         ],
         "sub": [],
