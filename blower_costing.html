@@ -185,15 +185,10 @@
     <div class="fg fg-4">
       <div class="field">
         <label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label>
-        <input id="c-ref" type="text" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY" oninput="_refDirty = true"/>
+        <input id="c-ref" type="text" class="ro" readonly placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/>
       </div>
       <div class="field"><label>Location</label>
-        <select id="c-location">
-          <option value="">— Select —</option>
-          <option value="Goa" selected>Goa</option>
-          <option value="Vadodara">Vadodara</option>
-          <option value="Faridabad">Faridabad</option>
-        </select>
+        <input id="c-location" type="text" class="ro" value="Faridabad" readonly/>
       </div>
       <div class="field" style="grid-column: span 2">
         <label>Subject</label>

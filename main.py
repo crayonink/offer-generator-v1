@@ -295,7 +295,9 @@ def build_enquiry_ref(seq: str, technical_person: str,
     from datetime import datetime as _dt
     today = _dt.now()
     ini = _person_initials(technical_person)
-    loc = _location_code(location)
+    # ENCON operates from Faridabad only — the location code is always FBD,
+    # regardless of any location passed in.
+    loc = "FBD"
     # Assemble the slash segment: include only the parts we have.
     parts = [seq]
     if loc: parts.append(loc)
