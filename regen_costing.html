@@ -330,33 +330,88 @@
 
   <!-- ═══════════════════════════════════════════ STEP 1 ═══ -->
   <div class="step active" id="step-1">
+    <!-- Customer & Enquiry — same layout as the Vertical (VLPH) offer. -->
+    <style>
+      .sec-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:22px 0 10px;}
+      .sec-label:first-child{margin-top:0;}
+      .fg{display:grid;gap:16px;margin-bottom:16px;}
+      .fg-2{grid-template-columns:1fr 1fr;}
+      .fg-3{grid-template-columns:1fr 1fr 1fr;}
+      .fg-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+      @media (max-width:640px){.fg-3,.fg-4{grid-template-columns:1fr 1fr;}.fg-2{grid-template-columns:1fr;}}
+      @media (max-width:480px){.fg-2,.fg-3,.fg-4{grid-template-columns:1fr;}}
+      .field label .req{color:var(--red);}
+      .field input.ro{background:#f1f5f9;color:var(--muted);}
+      .field textarea{resize:vertical;min-height:64px;}
+    </style>
     <div class="card">
-      <div class="card-title">Customer Details</div>
-      <div class="field-grid">
-        <div class="field full"><label>Company Name *</label><input id="company_name" placeholder="e.g. DSP Steel Ltd."/></div>
-        <div class="field full"><label>Address</label><input id="company_address" placeholder="Street / Area"/></div>
-        <div class="field"><label>City</label><input id="company_city" placeholder="City"/></div>
-        <div class="field"><label>State</label><input id="company_state" placeholder="State"/></div>
-        <div class="field"><label>PIN</label><input id="company_pin" placeholder="PIN Code"/></div>
-        <div class="field"><label>GSTIN</label><input id="company_gstin" placeholder="22XXXXX..."/></div>
-      </div>
-    </div>
+      <div class="card-title">Customer &amp; Enquiry Details</div>
 
-    <div class="card">
-      <div class="card-title">Point of Contact</div>
-      <div class="field-grid">
-        <div class="field"><label>Contact Name</label><input id="poc_name" placeholder="Mr / Ms …"/></div>
-        <div class="field"><label>Designation</label><input id="poc_designation" placeholder="Purchase Manager"/></div>
-        <div class="field"><label>Mobile</label><input id="mobile_no" placeholder="+91 …"/></div>
-        <div class="field"><label>Email</label><input id="email" placeholder="name@company.com"/></div>
+      <div class="sec-label">Contact Person</div>
+      <div class="fg fg-3">
+        <div class="field">
+          <label>Full Name <span class="req">*</span></label>
+          <div style="display:flex;gap:6px">
+            <select id="poc_salutation" style="flex:0 0 78px">
+              <option value="">—</option>
+              <option value="Mr." selected>Mr.</option>
+              <option value="Mrs.">Mrs.</option>
+              <option value="Miss">Miss</option>
+              <option value="Dr.">Dr.</option>
+            </select>
+            <input id="poc_name" type="text" placeholder="Full Name" style="flex:1"/>
+          </div>
+        </div>
+        <div class="field"><label>Email Address</label><input id="email" type="email" placeholder="name@company.com"/></div>
+        <div class="field"><label>Phone / Mobile</label><input id="mobile_no" type="tel" placeholder="+91 98765 43210"/></div>
       </div>
-    </div>
 
-    <div class="card">
-      <div class="card-title">Enquiry Details</div>
-      <div class="field-grid">
-        <div class="field"><label>Project Name</label><input id="project_name" placeholder="Furnace No. 3 Upgrade"/></div>
-        <div class="field"><label>Ref. No.</label><input id="ref_no" placeholder="ENQ-2026-…"/></div>
+      <div class="sec-label">Company</div>
+      <div class="fg fg-2">
+        <div class="field"><label>Company Name <span class="req">*</span></label><input id="company_name" type="text" placeholder="e.g. DSP Steel Ltd."/></div>
+        <div class="field"><label>Designation / Department</label><input id="poc_designation" type="text" placeholder="Purchase Manager"/></div>
+      </div>
+      <div class="fg fg-2">
+        <div class="field"><label>Address</label><textarea id="company_address" placeholder="Street, Area, Landmark"></textarea></div>
+        <div class="fg fg-2" style="margin-bottom:0;align-content:start;">
+          <div class="field"><label>City</label><input id="company_city" type="text" placeholder="City"/></div>
+          <div class="field"><label>State</label><input id="company_state" type="text" placeholder="State"/></div>
+          <div class="field"><label>PIN Code</label><input id="company_pin" type="text" placeholder="PIN Code"/></div>
+          <div class="field"><label>GSTIN</label><input id="company_gstin" type="text" placeholder="22XXXXX..."/></div>
+        </div>
+      </div>
+
+      <div class="sec-label">Enquiry</div>
+      <div class="fg fg-4">
+        <div class="field"><label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label><input id="ref_no" type="text" class="ro" readonly placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/></div>
+        <div class="field"><label>Location</label><input id="location" type="text" class="ro" value="Faridabad" readonly/></div>
+        <div class="field" style="grid-column:span 2"><label>Subject</label><input id="subject" type="text" value="Offer for Regenerative Burner System" placeholder="Supply of Regenerative Burner System"/></div>
+      </div>
+      <div class="fg fg-2">
+        <div class="field">
+          <label>Marketing Person</label>
+          <div style="display:flex;gap:6px">
+            <select id="marketing_salutation" style="flex:0 0 78px">
+              <option value="">—</option><option value="Mr." selected>Mr.</option><option value="Mrs.">Mrs.</option><option value="Miss">Miss</option><option value="Dr.">Dr.</option>
+            </select>
+            <input id="marketing_person" type="text" placeholder="ENCON sales/marketing rep" style="flex:1"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Technical Person</label>
+          <div style="display:flex;gap:6px">
+            <select id="technical_salutation" style="flex:0 0 78px">
+              <option value="">—</option><option value="Mr." selected>Mr.</option><option value="Mrs.">Mrs.</option><option value="Miss">Miss</option><option value="Dr.">Dr.</option>
+            </select>
+            <input id="technical_person" type="text" placeholder="ENCON technical contact" style="flex:1"/>
+          </div>
+        </div>
+      </div>
+      <div class="fg fg-4">
+        <div class="field"><label>Marketing Email</label><input id="marketing_email" type="email" placeholder="e.g. atul@encon.co.in"/></div>
+        <div class="field"><label>Marketing Phone</label><input id="marketing_phone" type="text" placeholder="e.g. +91 98765 43210"/></div>
+        <div class="field"><label>Technical Email</label><input id="technical_email" type="email" placeholder="e.g. jyotirmoy@encon.co.in"/></div>
+        <div class="field"><label>Technical Phone</label><input id="technical_phone" type="text" placeholder="e.g. +91 98765 43210"/></div>
       </div>
     </div>
 
@@ -657,6 +712,38 @@
   function fmtN(n) {
     return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+
+  // ── Auto enquiry reference (same behaviour as the Vertical offer) ─────────
+  // Shown read-only as a preview; the backend (/api/generate-quote) always
+  // regenerates the canonical ENCON ref from the technical person + location.
+  let _autoRefSeq = '001';
+  const _LOC_CODES = { goa: 'GOA', vadodara: 'VDD', faridabad: 'FBD' };
+  function _personInitials(name) {
+    return (name || '').trim().split(/\s+/).filter(Boolean).map(p => p[0].toUpperCase()).join('');
+  }
+  function _locationCode(loc) { return _LOC_CODES[(loc || '').trim().toLowerCase()] || ''; }
+  function updateAutoRef() {
+    const ref = document.getElementById('ref_no'); if (!ref) return;
+    const ini  = _personInitials((document.getElementById('technical_person') || {}).value);
+    const code = _locationCode((document.getElementById('location') || {}).value);
+    const parts = [_autoRefSeq];
+    if (code) parts.push(code);
+    if (ini)  parts.push(ini);
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    ref.value = `ENCON.04026.${parts.join('/')} DT.${dd}/${mm}/${d.getFullYear()}`;
+  }
+  async function fetchAutoRefSeq() {
+    try { const r = await fetch('/api/next-quote-ref'); const j = await r.json(); if (j && j.seq) _autoRefSeq = j.seq; }
+    catch (e) { /* keep default */ }
+    updateAutoRef();
+  }
+  window.addEventListener('DOMContentLoaded', () => {
+    const t = document.getElementById('technical_person');
+    if (t) t.addEventListener('input', updateAutoRef);
+    fetchAutoRefSeq();
+  });
 
   // ── Run calculation ──────────────────────────────────────────────────────
   async function runCalculation() {
@@ -1110,7 +1197,7 @@
         <div style="background:#f8fafc; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Customer</div>
           <div style="font-weight:700;">${document.getElementById('company_name').value || '—'}</div>
-          <div style="font-size:.82rem; color:var(--muted);">${document.getElementById('project_name').value || ''}</div>
+          <div style="font-size:.82rem; color:var(--muted);">${document.getElementById('subject').value || ''}</div>
         </div>
         <div style="background:#f8fafc; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">System</div>
@@ -1174,7 +1261,7 @@
             poc_designation: document.getElementById('poc_designation').value,
             mobile_no:       document.getElementById('mobile_no').value,
             email:           document.getElementById('email').value,
-            project_name:    document.getElementById('project_name').value,
+            project_name:    document.getElementById('subject').value,
             ref_no:          document.getElementById('ref_no').value,
           },
           calculations: calcData.calculations,
@@ -1228,13 +1315,23 @@
       company_state:   val('company_state'),
       company_pin:     val('company_pin'),
       company_gstin:   val('company_gstin'),
+      poc_salutation:  val('poc_salutation'),
       poc_name:        val('poc_name'),
       poc_designation: val('poc_designation'),
       mobile_no:       val('mobile_no'),
       email:           val('email'),
-      project_name:    val('project_name'),
-      subject:         val('project_name'),
+      project_name:    val('subject'),
+      subject:         val('subject'),
       ref_no:          val('ref_no'),
+      location:        val('location'),
+      marketing_salutation: val('marketing_salutation'),
+      marketing_person:     val('marketing_person'),
+      marketing_email:      val('marketing_email'),
+      marketing_phone:      val('marketing_phone'),
+      technical_salutation: val('technical_salutation'),
+      technical_person:     val('technical_person'),
+      technical_email:      val('technical_email'),
+      technical_phone:      val('technical_phone'),
       items,
       transport_amt:   parseFloat(val('transport-amt')) || 0,
       valid_days: 30,
