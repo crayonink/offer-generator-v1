@@ -171,14 +171,16 @@ _BURNER_WEIGHTS = {
     6000: dict(burner_ms=645.28, burner_refrac=771.89, regen_ms=660.56, regen_ss=55.30,  regen_refrac=2152.18, regen_ceramic=3193.34, block_refrac=635.85),
 }
 
-# Material cost rates (with 10% wastage applied)
-# Updated from Stock 28.02.26 Final.xlsx — actual ENCON purchase rates
-# Formula: (material_purchase_rate + 25 labour) × 1.10 wastage
+# Material cost rates (with 10% wastage applied) — FALLBACK ONLY.
+# Production overrides these from DB regen_material_rates (parsed from the REGEN
+# costing workbook, "Costing Consideration" block) in main.py. Kept in sync with
+# that workbook so the fallback can't diverge if the DB read fails.
+# Formula: (material_cost + 25 labour) × 1.10 wastage
 _RATES = dict(
-    ms_total=90.20,        # MS ~57/kg (stock avg) + 25 labour × 1.10
-    ss_total=243.10,       # SS ~196/kg (stock: plates 195, rounds 192-200) + 25 labour × 1.10
-    refrac_total=1928.78,  # Ceramic Fiber 128 Kg/m3 = 1728.89/kg (stock) + 25 labour × 1.10
-    ceramic_total=137.50,  # Ceramic balls — not in stock file, retained from legacy Excel
+    ms_total=82.50,        # MS: (50 + 25 labour) × 1.10
+    ss_total=82.50,        # SS: (50 + 25 labour) × 1.10
+    refrac_total=89.10,    # Refractory (Whyte Heat K castable): (56 + 25 labour) × 1.10
+    ceramic_total=137.50,  # Ceramic balls: 125 × 1.10 (no labour line)
 )
 
 # ── Pipe sizes per KW model (Natural Gas, 0.05 barg) ─────────────────────────
