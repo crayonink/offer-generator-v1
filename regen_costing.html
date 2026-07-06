@@ -504,6 +504,34 @@
       </div>
     </div>
 
+    <!-- Commercial Summary — Packaging & Forwarding / Designing / Negotiation /
+         Transport → Final Total (same buildup as the Vertical offer). -->
+    <style>
+      .cs-table{width:100%;border-collapse:collapse;font-size:.9rem;}
+      .cs-table td{padding:8px 10px;border-top:1px solid var(--border);}
+      .cs-table td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
+      .cs-table tr:first-child td{border-top:none;}
+      .cs-table tr.cs-sub td{background:#f1f5f9;font-weight:700;}
+      .cs-table tr.cs-final td{background:#e2efda;color:#375623;font-weight:800;font-size:1rem;}
+      .cs-inp{width:56px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;font:inherit;text-align:center;}
+    </style>
+    <div class="card" id="commercialCard" style="margin-top:20px;">
+      <div class="card-title">Commercial Summary</div>
+      <table class="cs-table">
+        <tr><td>Total Cost Price</td><td id="cs-cost">—</td></tr>
+        <tr><td>Markup</td><td id="cs-markup">—</td></tr>
+        <tr class="cs-sub"><td>Grand Total (Selling)</td><td id="cs-grand">—</td></tr>
+        <tr><td>Packaging &amp; Forwarding <input id="pf-pct" type="number" value="5" step="0.5" min="0" class="cs-inp" oninput="recalcFinal()"/> %</td><td id="cs-pf">—</td></tr>
+        <tr><td>Designing <input id="design-pct" type="number" value="5" step="0.5" min="0" class="cs-inp" oninput="recalcFinal()"/> %</td><td id="cs-design">—</td></tr>
+        <tr><td>Negotiation <input id="negotiation-pct" type="number" value="0" step="0.5" min="0" max="20" class="cs-inp" oninput="recalcFinal()"/> %</td><td id="cs-neg">—</td></tr>
+        <tr><td>Transport <input id="transport-amt" type="number" value="0" step="1000" min="0" class="cs-inp" style="width:90px;text-align:right;" oninput="recalcFinal()"/> ₹</td><td id="cs-transport">—</td></tr>
+        <tr class="cs-final"><td>Final Total</td><td id="cs-final">—</td></tr>
+      </table>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:8px;line-height:1.5;">
+        Final Total = Grand Total + P&amp;F + Designing − Negotiation + Transport, rounded to the nearest ₹1,000. GST charged extra as per Terms &amp; Conditions.
+      </div>
+    </div>
+
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(2)">← Back</button>
       <button id="xl-btn" onclick="downloadExcel()" style="padding:11px 22px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">&#8659; Download Excel</button>
@@ -520,6 +548,69 @@
       </p>
 
       <div id="offerSummary" style="margin-bottom:24px;"></div>
+
+      <!-- Annexure IV — Terms & Conditions (same set as the Vertical offer) -->
+      <style>
+        #tnc-table{width:100%;border-collapse:collapse;margin-bottom:24px;}
+        #tnc-table td{padding:10px 12px;vertical-align:middle;border-top:1px solid var(--border);}
+        #tnc-table tr:first-child td{border-top:none;}
+        #tnc-table td.tnc-lbl{width:30%;background:#f8fafc;font-weight:600;color:var(--text);}
+        #tnc-table input[type=text],#tnc-table select,#tnc-table textarea{
+          width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);
+          border-radius:6px;font-family:inherit;font-size:.9rem;color:var(--text);background:#fff;}
+        #tnc-table textarea{resize:vertical;line-height:1.4;min-height:48px;}
+        #tnc-table select{appearance:auto;cursor:pointer;}
+      </style>
+      <div class="card-title" style="margin-top:4px;">Terms &amp; Conditions</div>
+      <table id="tnc-table">
+        <tbody>
+          <tr><td class="tnc-lbl">Prices</td>
+              <td><select id="tnc_prices">
+                <option value="EX Bhagola (Ex-Works)" selected>EX Bhagola (Ex-Works)</option>
+                <option value="FOR (Free on Road / Free on Rail)">FOR (Free on Road / Free on Rail)</option>
+                <option value="FOB (Free On Board)">FOB (Free On Board)</option>
+              </select></td></tr>
+          <tr><td class="tnc-lbl">Delivery</td>
+              <td><textarea id="tnc_delivery" rows="2">10 – 12 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later.</textarea></td></tr>
+          <tr><td class="tnc-lbl">GST</td>
+              <td><select id="tnc_gst">
+                <option value="18% extra." selected>18% extra.</option>
+                <option value="28% extra.">28% extra.</option>
+                <option value="12% extra.">12% extra.</option>
+                <option value="5% extra.">5% extra.</option>
+                <option value="Inclusive">Inclusive</option>
+                <option value="Exempt">Exempt</option>
+              </select></td></tr>
+          <tr><td class="tnc-lbl">HSN Code</td>
+              <td><input id="tnc_hsn_code" type="text" value="84541000"/></td></tr>
+          <tr><td class="tnc-lbl">PAN / GST No.</td>
+              <td><input id="tnc_pan_gst" type="text" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
+          <tr><td class="tnc-lbl">Terms of Payment</td>
+              <td><textarea id="tnc_payment_terms" rows="2">30% advance with the purchase order
+70% against proforma invoice prior to dispatch</textarea></td></tr>
+          <tr><td class="tnc-lbl">Packing &amp; Forwarding</td>
+              <td><select id="tnc_packing_forwarding">
+                <option value="4% and 2% respectively." selected>4% and 2% respectively.</option>
+                <option value="In ENCON's scope.">In ENCON's scope.</option>
+              </select></td></tr>
+          <tr><td class="tnc-lbl">Freight Charges</td>
+              <td><select id="tnc_freight">
+                <option value="In client's scope." selected>In client's scope.</option>
+                <option value="In ENCON's scope.">In ENCON's scope.</option>
+              </select></td></tr>
+          <tr><td class="tnc-lbl">Transit Insurance</td>
+              <td><select id="tnc_transit_insurance">
+                <option value="To be arranged by the client." selected>To be arranged by the client.</option>
+                <option value="In ENCON's scope.">In ENCON's scope.</option>
+              </select></td></tr>
+          <tr><td class="tnc-lbl">Validity</td>
+              <td><input id="tnc_validity" type="text" value="45 days from the date of our offer."/></td></tr>
+          <tr><td class="tnc-lbl">Inspection</td>
+              <td><textarea id="tnc_inspection" rows="2">If required, materials can be inspected at our works before dispatch, at the client's cost and with prior intimation.</textarea></td></tr>
+          <tr><td class="tnc-lbl">Guarantee</td>
+              <td><textarea id="tnc_guarantee" rows="2">Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier — against any manufacturing defects or poor workmanship.</textarea></td></tr>
+        </tbody>
+      </table>
 
       <button class="btn-primary" id="genBtn" onclick="generateOffer()">Generate Offer Document</button>
       <div id="genError" class="error-box hidden" style="margin-top:12px;"></div>
@@ -1027,11 +1118,44 @@
           <div style="font-size:.82rem; color:var(--muted);">${c.Ti}°C → ${c.Tf}°C</div>
         </div>
         <div style="background:#eff6ff; border-radius:10px; padding:16px;">
-          <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Selling Price</div>
-          <div style="font-weight:800; color:#1d4ed8; font-size:1.1rem;">${fmt(s.total_selling)}</div>
-          <div style="font-size:.82rem; color:var(--muted);">excl. GST</div>
+          <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Final Total</div>
+          <div style="font-weight:800; color:#1d4ed8; font-size:1.1rem;" id="offer-final">${fmt(s.total_selling)}</div>
+          <div style="font-size:.82rem; color:var(--muted);">excl. GST · P&amp;F/Designing/Transport incl.</div>
         </div>
       </div>`;
+
+    // Compute the commercial buildup (P&F / Designing / Negotiation / Transport
+    // → Final Total) now that cost_summary is loaded.
+    recalcFinal();
+  }
+
+  // ── Commercial buildup: Grand Total (Selling) → Final Total ────────────────
+  function recalcFinal() {
+    if (!calcData || !calcData.cost_summary) return;
+    const s = calcData.cost_summary;
+    const grand = +s.total_selling || 0;
+    const pfPct = parseFloat(document.getElementById('pf-pct')?.value)         || 0;
+    const dPct  = parseFloat(document.getElementById('design-pct')?.value)     || 0;
+    const nPct  = parseFloat(document.getElementById('negotiation-pct')?.value) || 0;
+    const trans = parseFloat(document.getElementById('transport-amt')?.value)   || 0;
+    const pf = grand * pfPct / 100, dz = grand * dPct / 100, ng = grand * nPct / 100;
+    // Round Final Total to the nearest ₹1,000 (commercial cleanliness), as Vertical does.
+    const final = Math.round((grand + pf + dz - ng + trans) / 1000) * 1000;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('cs-cost',      fmt(s.total_cost));
+    set('cs-markup',    s.markup.toFixed(2) + '×');
+    set('cs-grand',     fmt(grand));
+    set('cs-pf',        fmt(pf));
+    set('cs-design',    fmt(dz));
+    set('cs-neg',       '− ' + fmt(ng));
+    set('cs-transport', fmt(trans));
+    set('cs-final',     fmt(final));
+    set('offer-final',  fmt(final));
+    // Persist on cost_summary so generateOffer sends the same numbers.
+    s.pf_pct = pfPct;   s.pf_amount = pf;
+    s.design_pct = dPct; s.design_amount = dz;
+    s.negotiation_pct = nPct; s.negotiation_amount = ng;
+    s.transport_amount = trans; s.final_total = final;
   }
 
   // ── Export Excel ────────────────────────────────────────────────────────
@@ -1082,33 +1206,51 @@
     const c = calcData.calculations;
     const s = calcData.cost_summary;
 
-    // Build items list for quote engine
+    recalcFinal();                                   // ensure final_total is current
+    const finalTotal = s.final_total ?? s.total_selling;
+
+    // Build items list for quote engine — priced at the Final Total (P&F /
+    // Designing / Negotiation / Transport folded in, like the Vertical offer).
     const items = [{
       product_type: 'Regenerative Burner System',
       model: `${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}`,
       description: `${c.Ti}°C → ${c.Tf}°C | ${c.material_weight_kg.toLocaleString('en-IN')} kg charge | ${c.cycle_time_hr} hr cycle`,
       qty: 1,
-      unit_price: s.total_selling,
-      total: s.total_selling,
+      unit_price: finalTotal,
+      total: finalTotal,
     }];
 
+    const val = id => (document.getElementById(id) || {}).value || '';
     const payload = {
-      company_name:    document.getElementById('company_name').value,
-      company_address: document.getElementById('company_address').value,
-      company_city:    document.getElementById('company_city').value,
-      company_state:   document.getElementById('company_state').value,
-      company_pin:     document.getElementById('company_pin').value,
-      company_gstin:   document.getElementById('company_gstin').value,
-      poc_name:        document.getElementById('poc_name').value,
-      poc_designation: document.getElementById('poc_designation').value,
-      mobile_no:       document.getElementById('mobile_no').value,
-      email:           document.getElementById('email').value,
-      project_name:    document.getElementById('project_name').value,
-      ref_no:          document.getElementById('ref_no').value,
+      company_name:    val('company_name'),
+      company_address: val('company_address'),
+      company_city:    val('company_city'),
+      company_state:   val('company_state'),
+      company_pin:     val('company_pin'),
+      company_gstin:   val('company_gstin'),
+      poc_name:        val('poc_name'),
+      poc_designation: val('poc_designation'),
+      mobile_no:       val('mobile_no'),
+      email:           val('email'),
+      project_name:    val('project_name'),
+      subject:         val('project_name'),
+      ref_no:          val('ref_no'),
       items,
-      gst_percent: 18,
-      freight: 0,
+      transport_amt:   parseFloat(val('transport-amt')) || 0,
       valid_days: 30,
+      // Annexure IV — Terms & Conditions
+      tnc_prices:             val('tnc_prices'),
+      tnc_delivery:           val('tnc_delivery'),
+      tnc_gst:                val('tnc_gst'),
+      tnc_hsn_code:           val('tnc_hsn_code'),
+      tnc_pan_gst:            val('tnc_pan_gst'),
+      tnc_payment_terms:      val('tnc_payment_terms'),
+      tnc_packing_forwarding: val('tnc_packing_forwarding'),
+      tnc_freight:            val('tnc_freight'),
+      tnc_transit_insurance:  val('tnc_transit_insurance'),
+      tnc_validity:           val('tnc_validity'),
+      tnc_inspection:         val('tnc_inspection'),
+      tnc_guarantee:          val('tnc_guarantee'),
     };
 
     try {
@@ -1130,7 +1272,7 @@
           ↓ Download ${data.quote_no}
         </a>
         <div style="margin-top:10px; font-size:.82rem; color:var(--muted);">
-          Grand Total (incl. 18% GST):
+          Final Total (excl. GST — charged extra as per Terms):
           <strong>₹ ${Number(data.summary.total).toLocaleString('en-IN', {minimumFractionDigits:2})}</strong>
         </div>`;
     } catch (e) {
