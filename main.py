@@ -1527,6 +1527,25 @@ def _startup_seed_blower_alone():
 _startup_seed_blower_alone()
 
 
+def _startup_seed_regen_pricelist():
+    """Seed the REGEN_* pricelist rows (component_price_master) so every regen
+    offer line price is editable in the Price-Master UI and sourced live by
+    build_regen_df. Idempotent and non-destructive; reaches the persistent
+    volume on deploy."""
+    try:
+        from bom.regen_pricelist import seed_regen_pricelist
+        conn = sqlite3.connect(DB_PATH)
+        n = seed_regen_pricelist(conn)
+        conn.close()
+        if n:
+            print(f"[db] seeded {n} REGEN pricelist rows into component_price_master")
+    except Exception as e:
+        print(f"WARN: startup seed_regen_pricelist failed: {e}")
+
+
+_startup_seed_regen_pricelist()
+
+
 def _startup_seed_markups():
     """Editable cost→price markups for HPU and Blower (like the burner Markup
     Master). Seeded once; the tabs AND the offers read from here."""
@@ -4281,7 +4300,7 @@ def regen_calculate(req: RegenCalcRequest):
         model_kw    = select_model(kw_per_pair)
         model_markup = req.markup if req.markup != 1.80 else None  # None → use model default
 
-        bom_df = build_regen_df(model_kw, model_markup, num_pairs=result.num_pairs)
+        bom_df = build_regen_df(model_kw, model_markup, num_pairs=result.num_pairs, db_path=DB_PATH)
         supplementary = get_supplementary_data(model_kw)
 
         # Augment supplementary with full sizing + nozzle + legacy rates from DB

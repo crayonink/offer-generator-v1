@@ -157,6 +157,36 @@ MODEL_KWS = sorted(REGEN_MODELS.keys())  # [500, 1000, 1500, 2000, 2500, 3000, 4
 # PLC cost by num_pairs (Siemens S7-1200 for 1-2 pairs, S7-1500 for 3+)
 _PLC_COST = {1: 300000, 2: 300000, 3: 600000, 4: 750000, 5: 800000, 6: 900000}
 
+# ── Flat line-item prices (same across all KW models) ────────────────────────
+# These, REGEN_MODELS, _PLC_COST and _GAS_SKID_6000 are the code-side source of
+# truth; they seed the Pricelist (component_price_master, REGEN_* categories) and
+# are the fallback build_regen_df uses when no DB price is supplied. See
+# bom/regen_pricelist.py.
+_FLAT = {
+    "pilot_burner":         10000,
+    "burner_controller":     3600,
+    "ignition_transformer":  3300,
+    "uv_sensor":             5500,
+    "pilot_regulator":       4400,
+    "pilot_solenoid":        4300,
+    "pilot_pg_500":          3000,
+    "ball_valve_nb15":       1400,
+    "flex_hose_nb15":        1500,
+    "air_pg_1000":           4000,
+    "thermocouple_tt":       5000,
+    "furnace_thermocouple": 25000,
+    "dpt":                  45000,
+    "manual_damper":        40000,
+}
+
+# 6000 KW custom gas skid (used instead of a packaged gas train)
+_GAS_SKID_6000 = {
+    "gate_valve":      275000,
+    "pg_cock":           4000,
+    "pneu_sov":        177000,
+    "pressure_switch":  12000,
+}
+
 # ── Burner + Regenerator material weights (kg) per KW model ──────────────────
 # Source: "Burner Sizing and costing" sheet, rows 35-42
 # Columns: burner_ms, burner_refrac, regen_ms, regen_ss, regen_refrac, regen_ceramic, block_refrac
@@ -277,15 +307,31 @@ def select_model(required_kw: float) -> int:
     return MODEL_KWS[-1]
 
 
-def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1) -> pd.DataFrame:
+def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
+                   db_path: str = None) -> pd.DataFrame:
     """
     Build full BOM DataFrame for the given KW model.
 
     kw        : one of MODEL_KWS (500, 1000, 1500, 2000, 2500, 3000, 4500, 6000)
     markup    : selling price multiplier; if None uses model default (1.8 or 2.0)
     num_pairs : number of pairs — affects PLC selection only (default 1)
+    db_path   : if given, every line price is sourced LIVE from the Pricelist
+                (component_price_master, REGEN_* categories), falling back to the
+                code constant per field. If None, the code constants are used.
     """
-    m  = REGEN_MODELS[kw]
+    # Resolve prices — DB (editable Pricelist) wins over code constants.
+    flat, plc_map, skid = _FLAT, _PLC_COST, _GAS_SKID_6000
+    m = REGEN_MODELS[kw]
+    if db_path:
+        try:
+            import sqlite3 as _sql
+            from bom.regen_pricelist import load_regen_prices
+            with _sql.connect(db_path) as _c:
+                _pr = load_regen_prices(_c, kw)
+            m, flat, plc_map, skid = _pr['model'], _pr['flat'], _pr['plc'], _pr['gas_skid']
+        except Exception:
+            m, flat, plc_map, skid = REGEN_MODELS[kw], _FLAT, _PLC_COST, _GAS_SKID_6000
+
     mk = markup if markup is not None else m['markup']
     rows = []
 
@@ -295,17 +341,17 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1) -> pd.Data
     # ── 1. BURNER SET ─────────────────────────────────────────────────────────
     add("BURNER SET", f"Burner with Regenerator ({kw} KW)",
         f"Regenerative burner with heat-storage media, complete",         2, m['burner_cost'])
-    add("BURNER SET", "Pilot Burner",        "7 KW",                     2, 10000)
-    add("BURNER SET", "Burner Controller",   "",                          2,  3600)
-    add("BURNER SET", "Ignition Transformer","",                          2,  3300)
-    add("BURNER SET", "UV Sensor",           "",                          2,  5500)
+    add("BURNER SET", "Pilot Burner",        "7 KW",                     2, flat['pilot_burner'])
+    add("BURNER SET", "Burner Controller",   "",                          2, flat['burner_controller'])
+    add("BURNER SET", "Ignition Transformer","",                          2, flat['ignition_transformer'])
+    add("BURNER SET", "UV Sensor",           "",                          2, flat['uv_sensor'])
 
     # ── 2. GAS LINE — Pilot ───────────────────────────────────────────────────
-    add("GAS LINE — PILOT", "Pilot Regulator",       "NB15",             2,  4400)
-    add("GAS LINE — PILOT", "Pilot Solenoid Valve",  "NB15",             2,  4300)
-    add("GAS LINE — PILOT", "Flexible Hose",         "NB15",             2,  1500)
-    add("GAS LINE — PILOT", "Ball Valve",            "NB15",             2,  1400)
-    add("GAS LINE — PILOT", "Pressure Gauge 0-500",  "",                 2,  3000)
+    add("GAS LINE — PILOT", "Pilot Regulator",       "NB15",             2, flat['pilot_regulator'])
+    add("GAS LINE — PILOT", "Pilot Solenoid Valve",  "NB15",             2, flat['pilot_solenoid'])
+    add("GAS LINE — PILOT", "Flexible Hose",         "NB15",             2, flat['flex_hose_nb15'])
+    add("GAS LINE — PILOT", "Ball Valve",            "NB15",             2, flat['ball_valve_nb15'])
+    add("GAS LINE — PILOT", "Pressure Gauge 0-500",  "",                 2, flat['pilot_pg_500'])
 
     # ── 3. GAS LINE — Burner ──────────────────────────────────────────────────
     # 6000 KW uses shut-off valve + butterfly valve (not solenoid + ball valve × 10)
@@ -320,20 +366,20 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1) -> pd.Data
     add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
 
     # ── 4. AIR LINE — Pilot / UV / UV Cooling ─────────────────────────────────
-    add("AIR LINE — PILOT/UV", "Ball Valve UV",       "NB15",            8,  1400)
-    add("AIR LINE — PILOT/UV", "Flexible Hose UV",    "NB15",            4,  1500)
-    add("AIR LINE — PILOT/UV", "Ball Valve Pilot",    "NB15",            4,  1400)
-    add("AIR LINE — PILOT/UV", "Flexible Hose Pilot", "NB15",            4,  1500)
+    add("AIR LINE — PILOT/UV", "Ball Valve UV",       "NB15",            8, flat['ball_valve_nb15'])
+    add("AIR LINE — PILOT/UV", "Flexible Hose UV",    "NB15",            4, flat['flex_hose_nb15'])
+    add("AIR LINE — PILOT/UV", "Ball Valve Pilot",    "NB15",            4, flat['ball_valve_nb15'])
+    add("AIR LINE — PILOT/UV", "Flexible Hose Pilot", "NB15",            4, flat['flex_hose_nb15'])
 
     # ── 5. AIR LINE — Burner ──────────────────────────────────────────────────
     add("AIR LINE — BURNER", "Shut-Off Valve Air",
         f"DN{m['air_sov_nb']}",              2,                          m['air_sov_cost'])
     add("AIR LINE — BURNER", "Manual Butterfly Valve Air",
         f"DN{m['air_mbv_nb']}",              2,                          m['air_mbv_cost'])
-    add("AIR LINE — BURNER", "Pressure Gauge 0-1000", "",                2,  4000)
+    add("AIR LINE — BURNER", "Pressure Gauge 0-1000", "",                2, flat['air_pg_1000'])
     add("AIR LINE — BURNER", "Shut-Off Valve Flue Gas",
         f"DN{m['flue_sov_nb']}",             2,                          m['flue_sov_cost'])
-    add("AIR LINE — BURNER", "Thermocouple with TT",  "",                4,  5000)
+    add("AIR LINE — BURNER", "Thermocouple with TT",  "",                4, flat['thermocouple_tt'])
 
     # ── 6. TEMPERATURE CONTROL ────────────────────────────────────────────────
     add("TEMP CONTROL", "Air Control Valve",
@@ -344,18 +390,18 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1) -> pd.Data
         f"DN{m['gas_cv_nb']}",               1,                          m['gas_cv_cost'])
     add("TEMP CONTROL", "Gas Flow Meter (DPT)",
         f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
-    add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1,  25000)
-    add("TEMP CONTROL", "DPT",               "",                         1,  45000)
+    add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1, flat['furnace_thermocouple'])
+    add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'])
     add("TEMP CONTROL", "Pneumatic Damper",
         f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
-    add("TEMP CONTROL", "Manual Damper",     "",                         1,  40000)
+    add("TEMP CONTROL", "Manual Damper",     "",                         1, flat['manual_damper'])
 
     # ── 7. BLOWER ─────────────────────────────────────────────────────────────
     add("BLOWER", "Combustion Blower (40\" WG)",
         f"With motor, for {kw} KW",           2,                          m['blower_cost'])
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
-    plc_cost = _PLC_COST.get(num_pairs, 900000)
+    plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
     add("CONTROLS", "PLC with HMI",
         "Siemens S7-1200/1500 with touch panel",  1,                     plc_cost)
     add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'])
@@ -366,10 +412,10 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1) -> pd.Data
             f"Complete, for {kw} KW",             1,                     m['gas_train_cost'])
     else:
         # 6000 KW uses a custom gas skid instead of a packaged gas train
-        add("GAS TRAIN", "Gate Valve",                "DN350",            1, 275000)
-        add("GAS TRAIN", "Pressure Gauge with Manual Cock", "",           1,   4000)
-        add("GAS TRAIN", "Pneumatic Shut-Off Valve",  "DN350",            1, 177000)
-        add("GAS TRAIN", "Pressure Switch Low/High",  "",                 2,  12000)
+        add("GAS TRAIN", "Gate Valve",                "DN350",            1, skid['gate_valve'])
+        add("GAS TRAIN", "Pressure Gauge with Manual Cock", "",           1, skid['pg_cock'])
+        add("GAS TRAIN", "Pneumatic Shut-Off Valve",  "DN350",            1, skid['pneu_sov'])
+        add("GAS TRAIN", "Pressure Switch Low/High",  "",                 2, skid['pressure_switch'])
 
     return pd.DataFrame(rows)
 
