@@ -6194,8 +6194,8 @@ def generate_blower_quote(req: BlowerQuoteRequest):
         _spec_rows = blower_spec_rows(model, hp, cfm, pressure, with_motor=_wm)
         _spec_rows.append({"label": "Quantity", "value": f"{_qty:02d} No."})
         _specs_note = ("" if _wm else
-                       f"Recommended motor to use: {_fmt_num(hp)} HP, 4-Pole "
-                       f"(≈ 1440 rpm), 3-Phase, 415 V AC — to be supplied by the customer.")
+                       f"Recommended motor to use: {_fmt_num(hp)} HP, 2-Pole "
+                       f"(≈ 2880 rpm), 3-Phase, 415 V AC — to be supplied by the customer.")
         specs = {
             "blower_model":    model,
             "blower_hp":       _fmt_num(hp),

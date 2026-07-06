@@ -46,7 +46,7 @@ def blower_spec_rows(model, hp, cfm, pressure, with_motor=True):
     rows = [
         ("Model No.",                          model or ""),
         ("Basic Material of Construction",     "Mild Steel (MS) IS-2062; MIG-Welded"),
-        ("Drive Arrangement",                  "Indirect – (V-Belt) Driven"),
+        ("Drive Arrangement",                  "Direct Driven Arrangement"),
         ("Fan Inlet / Outlet Size",            GA),
         ("Air Quantity (CMH at NTP)",          str(cmh) if cmh else GA),
         ("Static Pressure (mm WC)",            str(mmwc) if mmwc else GA),
@@ -56,14 +56,14 @@ def blower_spec_rows(model, hp, cfm, pressure, with_motor=True):
         ("Air Density (Kg/m³)",                "1.2"),
         ("Fan Break Horse Power (BHP)",        str(bhp) if bhp else GA),
         ("Impeller OD (mm)",                   GA),
-        ("Fan Rated RPM",                      GA),
+        ("Fan Rated RPM",                      "≈ 2880 (direct — equals 2-Pole motor speed)"),
         ("Fan Critical RPM",                   "1.4 × rated RPM"),
         ("Fan Efficiency (%)",                 GA),
         ("Air Handling Quality",               "< 100 mg/m³ (clean air)"),
-        ("Recommended Motor RPM",              "1400 – 1500"),
+        ("Recommended Motor RPM",              "2880 – 2900 (2-Pole)"),
         ("Fan Duty Type",                      "Continuous"),
         ("Noise Level (1.5 m, ducted)",        "< 85 dBA"),
-        ("Drive Shaft",                        "EN-8, grinded, taper-fitted with impeller"),
+        ("Drive Shaft",                        "EN-8, grinded; impeller mounted directly on drive shaft"),
         ("Bearing (DE & NDE)",                 "Double Ball/Roller, K-series taper sleeve, NTN/FAG make"),
         ("Bearing Plumber Block",              "Cast Iron, 600 series, with seal, ZKL make"),
         ("MOC – Casing / Pedestal / Impeller", "MS IS-2062; 6 / 20-10 / (10-8-6) mm thick"),
@@ -73,7 +73,7 @@ def blower_spec_rows(model, hp, cfm, pressure, with_motor=True):
          else ((hp_str + " HP — in customer's scope") if hp_str else "In customer's scope")),
         ("Motor Make",
          "ABB / Crompton / CGL / BBL" if with_motor else "By customer (motor not included)"),
-        ("Drive Set",                          "Pulleys & V-Belt set, Fanner make"),
+        ("Drive Set",                          "Direct coupled — motor & impeller on common MS base frame (no V-belt / pulleys)"),
     ]
     return [{"label": lbl, "value": val} for lbl, val in rows]
 
