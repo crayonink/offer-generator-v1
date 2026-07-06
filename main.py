@@ -901,9 +901,13 @@ def _find_latest_pricebook():
     return sorted(candidates, reverse=True)[0][1] if candidates else None
 
 def _find_regen_file():
-    """Find the Regen Standard Costing workbook in BASE_DIR."""
+    """Find the Regen Standard Costing workbook in BASE_DIR. Skips Excel
+    lock/temp stubs (~$…) so a stray open-file lock can't be picked and crash
+    the parser."""
     for f in glob.glob(os.path.join(BASE_DIR, "*.xlsx")):
         bn = os.path.basename(f).lower()
+        if bn.startswith("~$"):
+            continue
         if "regen" in bn and "costing" in bn:
             return f
     return None
