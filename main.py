@@ -2048,6 +2048,56 @@ def api_ic_blower_update(req: _BlowerEdit):
         return {"success": False, "error": str(e)}
 
 
+@app.get("/api/internal-costing/regen")
+def api_ic_regen():
+    """Regenerative-burner sizing & costing breakdown — the 'Burner Sizing and
+    costing' sheet: per-KW material weights × material rates → burner cost.
+    Weights are from regen_builder._BURNER_WEIGHTS; the material rates are the
+    editable regen_material_rates (MS/SS/Refractory/Ceramic, +labour, ×wastage).
+    The resulting per-model total is the burner_cost that seeds the REGEN
+    pricelist (Regen: Burner with Regenerator …)."""
+    from bom.regen_builder import _BURNER_WEIGHTS, MODEL_KWS, REGEN_MODELS
+    # component -> (display label, weight key, material used for the rate)
+    COMPONENTS = [
+        ("Burner Body — MS",           "burner_ms",     "MS"),
+        ("Burner Body — Refractory",   "burner_refrac", "Refractory"),
+        ("Regenerator — MS",           "regen_ms",      "MS"),
+        ("Regenerator — SS",           "regen_ss",      "SS"),
+        ("Regenerator — Refractory",   "regen_refrac",  "Refractory"),
+        ("Regenerator — Ceramic Balls","regen_ceramic", "Ceramic Balls"),
+        ("Burner Block — Refractory",  "block_refrac",  "Refractory"),
+    ]
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rates, rate_rows = {}, []
+        for material, wastage, mc, lc in conn.execute(
+                "SELECT material, wastage, material_cost, labor_cost "
+                "FROM regen_material_rates"):
+            wa = wastage or 0; mc = mc or 0; lc = lc or 0
+            eff = round((mc + lc) * (1 + wa), 2)
+            rates[material] = eff
+            rate_rows.append({"material": material, "wastage": wa,
+                              "material_cost": mc, "labor_cost": lc, "rate": eff})
+        conn.close()
+        models = []
+        for kw in MODEL_KWS:
+            w = _BURNER_WEIGHTS[kw]
+            comps, total = [], 0.0
+            for label, wk, mat in COMPONENTS:
+                wt = w[wk]; rate = rates.get(mat, 0.0); cost = round(wt * rate, 2)
+                total += cost
+                comps.append({"label": label, "material": mat,
+                              "weight": wt, "rate": rate, "cost": cost})
+            models.append({"kw": kw, "components": comps,
+                           "total_cost": round(total, 2),
+                           "pricelist_cost": REGEN_MODELS[kw]["burner_cost"]})
+        return {"component_labels": [c[0] for c in COMPONENTS],
+                "material_rates": rate_rows, "models": models}
+    except Exception as e:
+        return {"component_labels": [], "material_rates": [], "models": [],
+                "error": str(e)}
+
+
 @app.get("/enquiries", response_class=HTMLResponse)
 def enquiries_page():
     with open(os.path.join(BASE_DIR, "enquiries.html"), "r", encoding="utf-8") as f:

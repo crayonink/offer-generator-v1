@@ -120,6 +120,7 @@ details.fpanel[open]>summary{border-bottom:1px solid var(--line)}
       <button class="tab active" data-tab="burner" onclick="switchTab('burner',this)">Burner</button>
       <button class="tab" data-tab="hpu" onclick="switchTab('hpu',this)">HPU</button>
       <button class="tab" data-tab="blower" onclick="switchTab('blower',this)">Blower</button>
+      <button class="tab" data-tab="regen" onclick="switchTab('regen',this)">Regen</button>
     </div>
     <div id="note" class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>(Amount, Total, prices) recalc automatically. <b>◆ Linked rate</b><span class="sw" style="background:#eef4fb;border:1px solid var(--line2)"></span>driven by the Rate Master at the bottom — edit it there to reprice every part at once.</div>
     <div id="fbar" class="fbar"><span class="fx">ƒx</span> Click any computed cell to see how it's derived.</div>
@@ -516,18 +517,74 @@ function loadBlower(){
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
 }
 
+// ---------- Regen tab (burner + regenerator sizing & costing) ----------
+let REGEN=null;
+function r2(x){ return Math.round((+x||0)*100)/100; }
+function shortComp(l){
+  return l.replace('Burner Body — ','Burner ').replace('Regenerator — ','Regen ')
+          .replace('Burner Block — ','Block ').replace('Refractory','Refr.')
+          .replace('Ceramic Balls','Ceramic');
+}
+function regenRatesTable(rates){
+  const body = rates.map(r=>`<tr>
+    <td class="co">${r.material}</td>
+    <td class="num">${Math.round((r.wastage||0)*100)}%</td>
+    <td class="num">${inr(r.material_cost)}</td>
+    <td class="num">${inr(r.labor_cost)}</td>
+    <td class="num setcol">${inr(r.rate)}</td></tr>`).join('');
+  return `<div class="grp">
+    <div class="grp-h"><span class="t">Material Rates — (Material + Labour) × (1 + Wastage)</span></div>
+    <table><thead><tr><th>Material</th><th class="num">Wastage</th><th class="num">Material ₹/kg</th>
+      <th class="num">Labour ₹/kg</th><th class="num setcol">Effective ₹/kg</th></tr></thead>
+    <tbody>${body}</tbody></table></div>`;
+}
+function regenMatrix(title, kind){
+  const labels = REGEN.component_labels||[];
+  const totLabel = kind==='kg' ? 'Total (kg)' : 'Burner Cost ₹';
+  const head = `<tr><th>KW</th>${labels.map(l=>`<th class="num">${shortComp(l)}</th>`).join('')}<th class="num setcol">${totLabel}</th></tr>`;
+  const rows = REGEN.models.map(m=>{
+    const cells = m.components.map(c=>`<td class="num calc">${kind==='kg'?ev(r2(c.weight)):inr(Math.round(c.cost))}</td>`).join('');
+    const tot = kind==='kg'
+      ? ev(r2(m.components.reduce((s,c)=>s+(+c.weight||0),0)))
+      : inr(Math.round(m.total_cost));
+    return `<tr><td class="co">${m.kw}</td>${cells}<td class="num setcol">${tot}</td></tr>`;
+  }).join('');
+  return `<div class="grp"><div class="grp-h"><span class="t">${title}</span></div>
+    <table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderRegen(){
+  if(!REGEN || !REGEN.models || !REGEN.models.length){
+    document.getElementById('tab-content').innerHTML =
+      '<div class="stub"><h2>No regen data found</h2></div>'; return;
+  }
+  const note = `<div class="edit-note">Burner + regenerator sizing &amp; costing — <b>fuel-agnostic</b> (identical for gas &amp; oil).
+    Weights are per the sizing sheet; material rates come from <b>regen_material_rates</b>.
+    <b>Burner Cost = Σ(weight × rate)</b> — the per-model burner+regenerator cost that seeds the
+    <a href="/pricelist">REGEN pricelist</a> (Regen: Burner with Regenerator …).</div>`;
+  let html = note;
+  html += regenRatesTable(REGEN.material_rates||[]);
+  html += regenMatrix('Weight Summary (kg) — per KW model', 'kg');
+  html += regenMatrix('Burner Cost Breakdown (₹) — Σ(weight × rate)', 'cost');
+  document.getElementById('tab-content').innerHTML = html;
+}
+function loadRegen(){
+  return fetch('/api/internal-costing/regen').then(r=>r.json()).then(d=>{ REGEN=d; renderRegen();
+  }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
+}
+
 // ---------- tab switching ----------
 function switchTab(tab, btn){
   document.querySelectorAll('.tab[data-tab]').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   const isBurner = tab==='burner';
-  // Burner-only editable legend; formula bar is used by all tabs.
+  // Burner-only editable legend; formula bar is used by the clickable tabs.
   document.getElementById('note').style.display  = isBurner ? '' : 'none';
-  document.getElementById('fbar').style.display  = '';
+  document.getElementById('fbar').style.display  = (tab==='regen') ? 'none' : '';
   document.getElementById('tab-content').innerHTML = '<div class="stub"><h2>Loading…</h2></div>';
   if(tab==='burner') loadBurner();
   else if(tab==='hpu') loadHPU();
-  else loadBlower();
+  else if(tab==='blower') loadBlower();
+  else loadRegen();
 }
 
 loadBurner();
