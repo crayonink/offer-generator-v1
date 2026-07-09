@@ -1607,6 +1607,41 @@ def _startup_ensure_thermocouple_small():
 _startup_ensure_thermocouple_small()
 
 
+def _startup_ensure_regen_pricelist_extras():
+    """Add the Pricelist rows regen needs that weren't there: DPT flow meters by
+    size (general, 'Flow Meter (DPT)' — a DPT + orifice + flanges assembly) and
+    the PLC-with-HMI tiers by pair-count. Idempotent; reaches the volume."""
+    FLOW = {32:48000, 40:49000, 50:49700, 65:50000, 80:51000, 100:52000,
+            125:54000, 150:54000, 200:57000, 250:58000, 300:60000, 350:64000, 400:70500}
+    PLC = [("1-2 Pair", 300000), ("3 Pair", 600000), ("4 Pair", 750000),
+           ("5 Pair", 800000), ("6 Pair", 900000)]
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        def ins(item, cat, price, company):
+            if conn.execute("SELECT 1 FROM component_price_master WHERE item=? AND category=? LIMIT 1",
+                            (item, cat)).fetchone():
+                return 0
+            conn.execute("INSERT INTO component_price_master (item, category, unit, price, "
+                         "previous_price, company) VALUES (?,?,?,?,?,?)",
+                         (item, cat, "nos", price, price, company))
+            return 1
+        n = 0
+        for nb, price in FLOW.items():
+            n += ins(f"DPT Flow Meter {nb} NB", "Flow Meter (DPT)", price, "HONEYWELL")
+        # (item, company) is UNIQUE, so the pair size goes in the item name too.
+        for label, price in PLC:
+            n += ins(f"PLC with HMI ({label})", "PLC with HMI", price, "SIEMENS")
+        conn.commit()
+        conn.close()
+        if n:
+            print(f"[db] added {n} regen-support Pricelist rows (DPT flow meters / PLC)")
+    except Exception as e:
+        print(f"WARN: ensure regen pricelist extras failed: {e}")
+
+
+_startup_ensure_regen_pricelist_extras()
+
+
 def _startup_seed_markups():
     """Editable cost→price markups for HPU and Blower (like the burner Markup
     Master). Seeded once; the tabs AND the offers read from here."""
