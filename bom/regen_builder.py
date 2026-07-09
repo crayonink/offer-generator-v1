@@ -451,7 +451,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 1. BURNER SET ─────────────────────────────────────────────────────────
     add("BURNER SET", f"Burner with Regenerator ({kw} KW)",
         f"Regenerative burner with heat-storage media, complete",         2, m['burner_cost'])
-    add("BURNER SET", "Pilot Burner",        "10 KW (LPG)",              2, flat['pilot_burner'], scale=False)
+    add("BURNER SET", "Pilot Burner",        "10 KW (LPG)",              2, flat['pilot_burner'])
     add("BURNER SET", "Sequence Controller", "",                          2, flat['burner_controller'])
     add("BURNER SET", "Ignition Transformer","",                          2, flat['ignition_transformer'])
     add("BURNER SET", "UV Sensor",           "",                          2, flat['uv_sensor'])
