@@ -1621,6 +1621,9 @@ def _startup_ensure_regen_pricelist_extras():
     # Burner + regenerator, per KW (computed material x rates, now a Pricelist row).
     BURNER = {500:124429.13, 1000:162998.63, 1500:196797.43, 2000:346253.53,
               2500:356349.12, 3000:474790.79, 4500:663539.31, 6000:868568.06}
+    # Pneumatic (flue-gas) damper, by NB — distinct from the manual damper.
+    DAMPER = {200:80000, 250:125000, 300:148000, 350:177000, 400:350000, 450:350000,
+              500:350000, 550:350000, 600:350000, 650:350000, 700:350000, 900:350000}
     try:
         conn = sqlite3.connect(DB_PATH)
         def ins(item, cat, price, company):
@@ -1641,6 +1644,8 @@ def _startup_ensure_regen_pricelist_extras():
             n += ins(f"Control Panel {kw} KW", "Control Panel", price, "ENCON")
         for kw, price in BURNER.items():
             n += ins(f"Burner with Regenerator {kw} KW", "Burner with Regenerator", price, "ENCON")
+        for nb, price in DAMPER.items():
+            n += ins(f"Pneumatic Damper {nb} NB", "Pneumatic Damper", price, "ENCON")
         conn.commit()
         conn.close()
         if n:
@@ -7984,8 +7989,8 @@ def _regen_basis(item, spec):
         ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),
         ("Control Panel",            "Pricelist → Control Panel (per KW)"),
         ("NG Gas Train",             "Pricelist → Gas Train (by NG flow band)"),
-        ("Pneumatic Damper",         "Pricelist → DAMPER MANUAL"),
-        ("Manual Damper",            "Pricelist → DAMPER MANUAL"),
+        ("Pneumatic Damper",         f"Pricelist → Pneumatic Damper{sz} (ENCON)"),
+        ("Manual Damper",            "Pricelist → DAMPER MANUAL (ENCON)"),
         ("Sequence Controller",      "Pricelist → Sequence Controller (LINEAR)"),
         ("Pilot Burner",             "Pricelist → ENCON-PB-LPG-10KW"),
         ("Ignition Transformer",     "Pricelist → Ignition Transformer (DANFOSS)"),
@@ -8435,15 +8440,15 @@ def export_excel(req: ExcelExportRequest):
 
         # ── Sheet 5: BOM (with a BASIS column + live formulas) ────────────
         ws5 = wb.create_sheet("BOM")
-        for col, w in zip("ABCDEFGHIJ", [6, 16, 26, 20, 7, 13, 14, 13, 15, 42]):
+        for col, w in zip("ABCDEFGHIJK", [6, 16, 26, 11, 20, 7, 13, 14, 13, 15, 42]):
             ws5.column_dimensions[col].width = w
 
         mk = cs.get("markup", 1.8) or 1.8
         r5 = 1
-        title_row(ws5, r5, 10, f"BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM ({calc.get('model_kw','1000')} KW)")
+        title_row(ws5, r5, 11, f"BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM ({calc.get('model_kw','1000')} KW)")
         r5 += 2
 
-        bom_col_hdrs = ["S.No.","SECTION","ITEM NAME","SPECIFICATION","QTY",
+        bom_col_hdrs = ["S.No.","SECTION","ITEM NAME","MAKE","SPECIFICATION","QTY",
                         "COST/UNIT ₹","TOTAL COST ₹\n(=Qty×Unit)","SELL/UNIT ₹\n(=Unit×Markup)",
                         f"TOTAL SELLING ₹\n(=Qty×Sell)","BASIS — how the unit price is derived"]
         for ci, lbl in enumerate(bom_col_hdrs, 1):
@@ -8458,26 +8463,27 @@ def export_excel(req: ExcelExportRequest):
             cell(ws5, r5, 1, sno, bg=bg, align="center")
             cell(ws5, r5, 2, row_d.get("SECTION",""), bg=bg)
             cell(ws5, r5, 3, row_d.get("ITEM NAME",""), bg=bg)
-            cell(ws5, r5, 4, row_d.get("SPECIFICATION",""), bg=bg)
-            cell(ws5, r5, 5, row_d.get("QTY",""), bg=bg, align="right")
-            cell(ws5, r5, 6, row_d.get("COST/UNIT",0), bg=bg, align="right", num_fmt='#,##0.00')
+            cell(ws5, r5, 4, row_d.get("MAKE",""), bg=bg)
+            cell(ws5, r5, 5, row_d.get("SPECIFICATION",""), bg=bg)
+            cell(ws5, r5, 6, row_d.get("QTY",""), bg=bg, align="right")
+            cell(ws5, r5, 7, row_d.get("COST/UNIT",0), bg=bg, align="right", num_fmt='#,##0.00')
             # Derived values as live formulas so the calculation is visible.
-            cell(ws5, r5, 7, f"=E{r5}*F{r5}",     bg=bg, align="right", num_fmt='#,##0.00')
-            cell(ws5, r5, 8, f"=F{r5}*{mk}",      bg=bg, align="right", num_fmt='#,##0.00')
-            cell(ws5, r5, 9, f"=E{r5}*H{r5}",     bg=bg, align="right", num_fmt='#,##0.00')
-            b = cell(ws5, r5, 10, _regen_basis(row_d.get("ITEM NAME",""), row_d.get("SPECIFICATION","")),
+            cell(ws5, r5, 8,  f"=F{r5}*G{r5}",     bg=bg, align="right", num_fmt='#,##0.00')
+            cell(ws5, r5, 9,  f"=G{r5}*{mk}",      bg=bg, align="right", num_fmt='#,##0.00')
+            cell(ws5, r5, 10, f"=F{r5}*I{r5}",     bg=bg, align="right", num_fmt='#,##0.00')
+            b = cell(ws5, r5, 11, _regen_basis(row_d.get("ITEM NAME",""), row_d.get("SPECIFICATION","")),
                      bg=bg, fg="475569")
             b.font = Font(color="475569", size=9, italic=True, name="Calibri")
             ws5.row_dimensions[r5].height = 18
             r5 += 1
 
         # Grand total row — sum formulas over the data rows.
-        ws5.merge_cells(f"A{r5}:F{r5}")
+        ws5.merge_cells(f"A{r5}:G{r5}")
         cell(ws5, r5, 1, f"GRAND TOTAL   (Selling = Cost × {mk} markup)", bold=True, bg=GREEN_BG, fg=GREEN, align="right")
-        cell(ws5, r5, 7, f"=SUM(G{data_start}:G{r5-1})", bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
-        cell(ws5, r5, 8, "", bold=True, bg=GREEN_BG, fg=GREEN)
-        cell(ws5, r5, 9, f"=SUM(I{data_start}:I{r5-1})", bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
-        cell(ws5, r5, 10, "", bold=True, bg=GREEN_BG, fg=GREEN)
+        cell(ws5, r5, 8, f"=SUM(H{data_start}:H{r5-1})", bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
+        cell(ws5, r5, 9, "", bold=True, bg=GREEN_BG, fg=GREEN)
+        cell(ws5, r5, 10, f"=SUM(J{data_start}:J{r5-1})", bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
+        cell(ws5, r5, 11, "", bold=True, bg=GREEN_BG, fg=GREEN)
         ws5.row_dimensions[r5].height = 22
 
         # BOM-only download — the derivation tabs were dropped from the UI

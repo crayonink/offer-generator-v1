@@ -819,20 +819,20 @@
     const bomKwLabel = 'Costing REGENBurner ' + c.model_kw + ' Kw';
     document.getElementById('xtab-bom').textContent = bomKwLabel;
 
-    const bomHdr = {_class:'xl-label', cells:[xc('S.No.'), xc('Section'), xc('Item Name'), xc('Specification'), xc('Qty',true), xc('Cost/Unit ₹',true), xc('Total Cost ₹',true), xc('Sell/Unit ₹',true), xc('Total Selling ₹',true)]};
+    const bomHdr = {_class:'xl-label', cells:[xc('S.No.'), xc('Section'), xc('Item Name'), xc('Make'), xc('Specification'), xc('Qty',true), xc('Cost/Unit ₹',true), xc('Total Cost ₹',true), xc('Sell/Unit ₹',true), xc('Total Selling ₹',true)]};
     let sno = 0;
     const bomRows = [
-      {_class:'xl-section', cells:[xs('BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM',9)]},
+      {_class:'xl-section', cells:[xs('BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM',10)]},
       bomHdr,
       ...data.bom.map(row => {
         sno++;
-        return {cells:[xc(sno,true), xc(row['SECTION']), xc(row['ITEM NAME']), xc(row['SPECIFICATION']), xc(row['QTY'],true), xc(fmtN(row['COST/UNIT']),true), xc(fmtN(row['TOTAL COST']),true), xc(fmtN(row['SELL/UNIT']),true), xc(fmtN(row['TOTAL SELLING']),true)]};
+        return {cells:[xc(sno,true), xc(row['SECTION']), xc(row['ITEM NAME']), xc(row['MAKE']), xc(row['SPECIFICATION']), xc(row['QTY'],true), xc(fmtN(row['COST/UNIT']),true), xc(fmtN(row['TOTAL COST']),true), xc(fmtN(row['SELL/UNIT']),true), xc(fmtN(row['TOTAL SELLING']),true)]};
       }),
-      {_class:'xl-total', cells:[xs('GRAND TOTAL',6,true), xc(fmtN(s.total_cost),true), xc('',true), xc(fmtN(s.total_selling),true)]},
+      {_class:'xl-total', cells:[xs('GRAND TOTAL',7,true), xc(fmtN(s.total_cost),true), xc('',true), xc(fmtN(s.total_selling),true)]},
     ];
-    document.getElementById('xl-bom').innerHTML = xlGrid(['A','B','C','D','E','F','G','H','I'], bomRows);
+    document.getElementById('xl-bom').innerHTML = xlGrid(['A','B','C','D','E','F','G','H','I','J'], bomRows);
     // Update formula bar when BOM tab focused
-    document.getElementById('xlFormula').textContent = '=SUM(G3:G' + (data.bom.length+2) + ')';
+    document.getElementById('xlFormula').textContent = '=SUM(H3:H' + (data.bom.length+2) + ')';
 
 
     // Step 4 summary

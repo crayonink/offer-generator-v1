@@ -533,16 +533,18 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1, flat['furnace_thermocouple'])
     add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'], scale=False)
     if is_lowcv and flue_dn:
-        # Pneumatic damper = DAMPER MANUAL (flat Pricelist price, not per-NB).
-        add("TEMP CONTROL", "Pneumatic Damper", f"DN{flue_dn}", 1, flat['manual_damper'])
+        nb, p, gap = _snap("pneu_damp", "pneu_damp", flue_dn)
+        spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
+        add("TEMP CONTROL", "Pneumatic Damper", spec, 1, p)
     else:
         add("TEMP CONTROL", "Pneumatic Damper",
             f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
     add("TEMP CONTROL", "Manual Damper",     "",                         1, flat['manual_damper'], scale=False)
 
     # ── 7. BLOWER ─────────────────────────────────────────────────────────────
+    _bhp = _BLOWER_HP.get(kw, "")
     add("BLOWER", "Combustion Blower (40\" WG)",
-        f"With motor, for {kw} KW",           2,                          m['blower_cost'], scale=False)
+        f"ENCON 40/{_bhp.replace('HP','')}, {_bhp}, with motor",   2,   m['blower_cost'], scale=False)
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
@@ -568,6 +570,29 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     return pd.DataFrame(rows)
 
 
+def _regen_make(item):
+    """Make/brand for a BOM line — mirrors the Pricelist `company` for each item
+    type (sized valves per SIZED, flat items per their Pricelist row)."""
+    n = (item or "").lower().strip()
+    if "solenoid" in n:                       return "MADAS"
+    if "pilot regulator" in n:                return "MADAS"
+    if "butterfly" in n:                      return "L&T"
+    if "ball valve" in n:                     return "L&T"
+    if "flexible hose" in n:                  return "BENGAL"
+    if "shut-off" in n or "shut off" in n:    return "DEMBLA"
+    if "control valve" in n:                  return "DEMBLA"
+    if "flow meter" in n or n == "dpt":       return "HONEYWELL"
+    if "pressure gauge 0-500" in n:           return "H GURU"
+    if "pressure gauge 0-1000" in n:          return "BAUMER"
+    if "ignition transformer" in n:           return "DANFOSS"
+    if "uv sensor" in n:                      return "LINEAR"
+    if "sequence controller" in n:            return "LINEAR"
+    if "thermocouple" in n:                   return "TEMPSENS"
+    if "transmitter" in n:                    return "HONEYWELL"
+    if "plc with hmi" in n:                   return "SIEMENS"
+    return "ENCON"
+
+
 def _make_row(section, item, spec, qty, cost_unit, markup):
     total_cost = qty * cost_unit
     sell_unit  = cost_unit * markup
@@ -575,6 +600,7 @@ def _make_row(section, item, spec, qty, cost_unit, markup):
     return {
         "SECTION":       section,
         "ITEM NAME":     item,
+        "MAKE":          _regen_make(item),
         "SPECIFICATION": spec,
         "QTY":           qty,
         "COST/UNIT":     round(cost_unit, 2),

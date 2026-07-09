@@ -45,6 +45,7 @@ SIZED = {
     "shutoff":    ("Pneumatic Shut Off Valve",          "DEMBLA"),
     "control":    ("Pneumatic Control Valve",           "DEMBLA"),
     "flow_meter": ("Flow Meter (DPT)",                  "HONEYWELL"),
+    "pneu_damp":  ("Pneumatic Damper",                  "ENCON"),
 }
 
 
@@ -160,6 +161,7 @@ _MODEL_VALVE = {
     "air_fm_cost":   ("flow_meter", "air_fm_nb"),
     "gas_cv_cost":   ("control",    "gas_cv_nb"),
     "gas_fm_cost":   ("flow_meter", "gas_fm_nb"),
+    "pneu_damp_cost":("pneu_damp",  "pneu_damp_nb"),
 }
 
 
@@ -176,11 +178,8 @@ def load_regen_prices(conn, kw: int) -> dict:
             _, p, _ = valve_price(conn, vtype, int(nb))
             if p is not None:
                 model[field] = p
-    # Pneumatic Damper = the (manual) DAMPER MANUAL row; burner PG 0-500 = the
-    # small pressure gauge.
-    dm = flat_price(conn, "manual_damper")
-    if dm is not None:
-        model["pneu_damp_cost"] = dm
+    # Burner PG 0-500 = the small pressure gauge (pneumatic damper is a sized
+    # valve, resolved in the loop above — separate from the manual damper).
     pg = flat_price(conn, "pilot_pg_500")
     if pg is not None:
         model["pg_burner"] = pg
