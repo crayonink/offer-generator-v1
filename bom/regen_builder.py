@@ -191,6 +191,9 @@ _GAS_SKID_6000 = {
 # Oil fuel line — fuel='Oil' swaps these in for the gas fuel line, gas train,
 # and the gas control valve / gas flow meter. All NB25 (oil lines are small and
 # size-invariant across KW). Prices from Regen_BOM.xlsx (OIL sheet).
+# Oil grades — all build the same regen oil line.
+_OIL_FUELS = {"oil", "hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
+
 _OIL = {
     "solenoid_valve_oil":  7000,   # NB25, per burner
     "oil_control_valve":  25000,   # NB25
@@ -397,7 +400,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
                 Oil Flow Meter, TT/PT). Any gas fuel builds the standard NG BOM.
     """
     _fuel_l = (fuel or "").strip().lower()
-    is_oil = _fuel_l == "oil"
+    # Any oil grade (HSD/LDO/HDO/FO/SKO/CFO/LSHS) builds the oil line; the
+    # regen oil line is the same for every grade.
+    is_oil = _fuel_l in _OIL_FUELS
     # Low-CV gases (BFG / COG / Producer Gas) resize the gas + flue lines per
     # fuel and use a built-up line (no packaged NG gas train). NG (and the
     # default) keep the standard gas BOM.
