@@ -110,6 +110,44 @@ def control_panel_price(conn, kw):
     return _f(r[0]) if r else None
 
 
+def burner_price(conn, kw):
+    """Burner + Regenerator, per KW ('Burner with Regenerator {kw} KW')."""
+    r = conn.execute("SELECT price FROM component_price_master WHERE item=? LIMIT 1",
+                     (f"Burner with Regenerator {kw} KW",)).fetchone()
+    return _f(r[0]) if r else None
+
+
+def blower_price_ic(conn, kw):
+    """Combustion blower from the internal-costing blower pricelist (with motor),
+    for the ENCON 40" WG model at this KW's HP."""
+    from bom.regen_builder import _BLOWER_HP
+    from bom.blower_pricelist import blower_price as _bp
+    hp = (_BLOWER_HP.get(kw) or "").replace("HP", "").strip()
+    if not hp:
+        return None
+    try:
+        return _f(_bp(conn, f"ENCON 40/{hp}", with_motor=True))
+    except Exception:
+        return None
+
+
+def gas_train_price(conn, flow_nm3hr):
+    """NG gas train from the 'Gas Train' pricelist — the smallest flow band whose
+    upper bound covers the required Nm³/hr."""
+    best = None
+    for _item, spec, price in conn.execute(
+            "SELECT item, specification, price FROM component_price_master "
+            "WHERE category='Gas Train'"):
+        m = re.search(r"-\s*(\d+)", str(spec))   # upper bound of "X-Y Nm³/hr"
+        p = _f(price)
+        if not m or p is None:
+            continue
+        hi = int(m.group(1))
+        if flow_nm3hr <= hi and (best is None or hi < best[0]):
+            best = (hi, p)
+    return best[1] if best else None
+
+
 # per-KW model valve field -> (valve type, NB field on the model)
 _MODEL_VALVE = {
     "gas_sol_cost":  ("solenoid",   "gas_sol_nb"),
@@ -138,18 +176,33 @@ def load_regen_prices(conn, kw: int) -> dict:
             _, p, _ = valve_price(conn, vtype, int(nb))
             if p is not None:
                 model[field] = p
-    # Pneumatic Damper = the (manual) DAMPER MANUAL row; Control Panel from Bought
-    # Out; burner PG 0-500 = the small pressure gauge. Gas train / burner /
-    # blower have no bought-out Pricelist row — kept from the code constant.
+    # Pneumatic Damper = the (manual) DAMPER MANUAL row; burner PG 0-500 = the
+    # small pressure gauge.
     dm = flat_price(conn, "manual_damper")
     if dm is not None:
         model["pneu_damp_cost"] = dm
-    cp = control_panel_price(conn, kw)
-    if cp is not None:
-        model["panel_cost"] = cp
     pg = flat_price(conn, "pilot_pg_500")
     if pg is not None:
         model["pg_burner"] = pg
+    # Control panel + burner+regenerator: dedicated per-KW Pricelist rows.
+    cp = control_panel_price(conn, kw)
+    if cp is not None:
+        model["panel_cost"] = cp
+    bp = burner_price(conn, kw)
+    if bp is not None:
+        model["burner_cost"] = bp
+    # Combustion blower from the internal-costing blower pricelist.
+    bl = blower_price_ic(conn, kw)
+    if bl is not None:
+        model["blower_cost"] = bl
+    # NG gas train from the 'Gas Train' pricelist, by NG flow (only KW that have one).
+    if model.get("gas_train_cost"):
+        from bom.regen_builder import _PIPE_SIZES
+        flow = _PIPE_SIZES.get(kw, {}).get("ng_flow")
+        if flow:
+            gt = gas_train_price(conn, flow)
+            if gt is not None:
+                model["gas_train_cost"] = gt
 
     flat = dict(_FLAT)
     for key in FLAT_ITEM:

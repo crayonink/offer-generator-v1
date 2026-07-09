@@ -1618,6 +1618,9 @@ def _startup_ensure_regen_pricelist_extras():
     # Regen control panel, per burner KW.
     PANEL = {500:300000, 1000:300000, 1500:450000, 2000:450000,
              2500:600000, 3000:600000, 4500:600000, 6000:700000}
+    # Burner + regenerator, per KW (computed material x rates, now a Pricelist row).
+    BURNER = {500:124429.13, 1000:162998.63, 1500:196797.43, 2000:346253.53,
+              2500:356349.12, 3000:474790.79, 4500:663539.31, 6000:868568.06}
     try:
         conn = sqlite3.connect(DB_PATH)
         def ins(item, cat, price, company):
@@ -1636,6 +1639,8 @@ def _startup_ensure_regen_pricelist_extras():
             n += ins(f"PLC with HMI ({label})", "PLC with HMI", price, "SIEMENS")
         for kw, price in PANEL.items():
             n += ins(f"Control Panel {kw} KW", "Control Panel", price, "ENCON")
+        for kw, price in BURNER.items():
+            n += ins(f"Burner with Regenerator {kw} KW", "Burner with Regenerator", price, "ENCON")
         conn.commit()
         conn.close()
         if n:
