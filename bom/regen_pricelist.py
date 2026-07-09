@@ -1,119 +1,51 @@
 """
-Regenerative-burner pricing — the single DB-backed source for every price the
-regen offer BOM uses (mirrors the HPU / Blower / Burner pricelist architecture).
+Regen price resolver — sources every regen BOM price from the CENTRALISED
+Pricelist (component_price_master). Regen adds no product-specific pricing of
+its own; each item is name-matched to its Pricelist row (flat items by exact
+name, sized valves by category + NB + make). If a row is missing, the resolver
+returns None so build_regen_df falls back to its code constant.
 
-Every price that build_regen_df() puts on a line now lives in the Pricelist
-(component_price_master) under a REGEN_* category, seeded idempotently at
-startup from the code constants in regen_builder. The offer LAYOUT and logic
-stay in build_regen_df; only the numbers are sourced here, so they become
-editable in the same Price-Master UI as the other products.
-
-    seed_regen_pricelist(conn)   -> insert missing rows (idempotent, non-destructive)
-    load_regen_prices(conn, kw)  -> {model, flat, plc, gas_skid} with DB overrides
-                                     (falls back to the code constant per field)
+    flat_price(conn, key)          -> price for a flat bought-out item
+    valve_price(conn, vtype, nb)   -> (nb_used, price, gap) for a sized valve
+    plc_price(conn, pairs)         -> PLC-with-HMI tier price
+    control_panel_price(conn)      -> Control Panel price
+    load_regen_prices(conn, kw)    -> {model, flat, plc, gas_skid, oil} for build_regen_df
 """
 
+import re
+
 from bom.regen_builder import (
-    REGEN_MODELS, _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL, MODEL_KWS,
+    REGEN_MODELS, _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL,
 )
 
-# ── Pricelist categories (shown as sections in the Price-Master UI) ───────────
-CAT_BURNER   = "REGEN Burner Set"
-CAT_GAS      = "REGEN Gas Line"
-CAT_AIR      = "REGEN Air Line"
-CAT_TEMP     = "REGEN Temp Control"
-CAT_BLOWER   = "REGEN Blower"
-CAT_CONTROLS = "REGEN Controls"
-CAT_GASTRAIN = "REGEN Gas Train"
-CAT_FITTINGS = "REGEN Fittings"
-CAT_OIL      = "REGEN Oil Line"
-
-# ── Oil fuel-line fields: _OIL[key] -> (label, category) ─────────────────────
-OIL_FIELDS = [
-    ("solenoid_valve_oil",  "Solenoid Valve (Oil)",          CAT_OIL),
-    ("oil_control_valve",   "Oil Control Valve",             CAT_OIL),
-    ("oil_flow_meter_dpt",  "Oil Flow Meter (DPT)",          CAT_OIL),
-    ("tt_oil_line",         "Temperature Transmitter (Oil)", CAT_OIL),
-    ("pt_oil_line",         "Pressure Transmitter (Oil)",    CAT_OIL),
-]
-
-# ── Per-KW model fields: REGEN_MODELS[kw][field] -> (label, category) ─────────
-# gas_train_cost is skipped for any model whose value is 0 (6000 KW uses a skid).
-PERKW_FIELDS = [
-    ("burner_cost",     "Burner with Regenerator",         CAT_BURNER),
-    ("blower_cost",     "Combustion Blower",               CAT_BLOWER),
-    ("panel_cost",      "Control Panel",                   CAT_CONTROLS),
-    ("gas_train_cost",  "NG Gas Train",                    CAT_GASTRAIN),
-    ("gas_sol_cost",    "Gas Solenoid / Shut-Off Valve",   CAT_GAS),
-    ("gas_bv_cost",     "Gas Ball / Butterfly Valve",      CAT_GAS),
-    ("gas_hose_cost",   "Gas Flexible Hose",               CAT_GAS),
-    ("pg_burner",       "Burner Gas Pressure Gauge 0-500", CAT_GAS),
-    ("air_sov_cost",    "Air Shut-Off Valve",              CAT_AIR),
-    ("air_mbv_cost",    "Air Manual Butterfly Valve",      CAT_AIR),
-    ("flue_sov_cost",   "Flue Gas Shut-Off Valve",         CAT_AIR),
-    ("air_cv_cost",     "Air Control Valve",               CAT_TEMP),
-    ("air_fm_cost",     "Air Flow Meter (DPT)",            CAT_TEMP),
-    ("gas_cv_cost",     "Gas Control Valve",               CAT_TEMP),
-    ("gas_fm_cost",     "Gas Flow Meter (DPT)",            CAT_TEMP),
-    ("pneu_damp_cost",  "Pneumatic Damper",                CAT_TEMP),
-]
-
-# NB/size field that carries the spec for a per-KW price field (display only).
-_PERKW_NB = {
-    "gas_sol_cost": "gas_sol_nb", "gas_bv_cost": "gas_bv_nb", "gas_hose_cost": "gas_hose_nb",
-    "air_sov_cost": "air_sov_nb", "air_mbv_cost": "air_mbv_nb", "flue_sov_cost": "flue_sov_nb",
-    "air_cv_cost": "air_cv_nb", "air_fm_cost": "air_fm_nb", "gas_cv_cost": "gas_cv_nb",
-    "gas_fm_cost": "gas_fm_nb", "pneu_damp_cost": "pneu_damp_nb",
+# ── regen flat key -> exact Pricelist item name ──────────────────────────────
+FLAT_ITEM = {
+    "pilot_burner":         "ENCON-PB-LPG-10KW",
+    "burner_controller":    "Sequence Controller",
+    "ignition_transformer": "Ignition Transformer",
+    "uv_sensor":            "UV Sensor with Air Jacket",
+    "pilot_regulator":      "GAS PRESSURE REGULATORS ( Pmax = 5 Bar) 025 RCS04V0000-M5XXX",
+    "pilot_solenoid":       "Solenoid Valve 15 NB",
+    "pilot_pg_500":         "PRESSURE GAUGE WITH TNV (HGURU)",
+    "ball_valve_nb15":      "BALL VALVE 15 NB #01 L3RBTC/L3RSWC",
+    "flex_hose_nb15":       "FLEXIBLE HOSE 15 NB 1500mm",
+    "air_pg_1000":          "PRESSURE GAUGE WITH TNV (BAUMER)",
+    "thermocouple_tt":      "Thermocouple Small",
+    "furnace_thermocouple": "THERMOCOUPLE",
+    "dpt":                  "DPT",
+    "manual_damper":        "DAMPER MANUAL",
 }
 
-# ── Flat fields (same price across all KW models): _FLAT[key] -> (label, cat) ──
-FLAT_FIELDS = [
-    ("pilot_burner",         "Pilot Burner",                    CAT_BURNER),
-    ("burner_controller",    "Burner Controller",               CAT_BURNER),
-    ("ignition_transformer", "Ignition Transformer",            CAT_BURNER),
-    ("uv_sensor",            "UV Sensor",                       CAT_BURNER),
-    ("pilot_regulator",      "Pilot Regulator NB15",            CAT_GAS),
-    ("pilot_solenoid",       "Pilot Solenoid Valve NB15",       CAT_GAS),
-    ("pilot_pg_500",         "Pilot Gas Pressure Gauge 0-500",  CAT_GAS),
-    ("ball_valve_nb15",      "Ball Valve NB15",                 CAT_FITTINGS),
-    ("flex_hose_nb15",       "Flexible Hose NB15",              CAT_FITTINGS),
-    ("air_pg_1000",          "Air Pressure Gauge 0-1000",       CAT_AIR),
-    ("thermocouple_tt",      "Thermocouple with TT",            CAT_AIR),
-    ("furnace_thermocouple", "Furnace Thermocouple with TT",    CAT_TEMP),
-    ("dpt",                  "DPT (flow / pressure / temp)",    CAT_TEMP),
-    ("manual_damper",        "Manual Damper",                   CAT_TEMP),
-]
-
-# ── 6000 KW gas-skid fields: _GAS_SKID_6000[key] -> (label, category) ─────────
-GASSKID_FIELDS = [
-    ("gate_valve",      "Gate Valve DN350",                     CAT_GASTRAIN),
-    ("pg_cock",         "Gas Pressure Gauge with Manual Cock",  CAT_GASTRAIN),
-    ("pneu_sov",        "Pneumatic Shut-Off Valve DN350",       CAT_GASTRAIN),
-    ("pressure_switch", "Pressure Switch Low / High",           CAT_GASTRAIN),
-]
-
-
-# ── Item-name helpers (canonical, must match between seed and load) ───────────
-# Every regen item name is prefixed so it can't collide with — or silently share
-# a row with — a generic item another product owns (e.g. "Ignition Transformer",
-# "UV Sensor"). Regen owns its own editable rows.
-PREFIX = "Regen: "
-
-
-def _perkw_item(label, kw):
-    return f"{PREFIX}{label} ({kw}KW)"
-
-
-def _flat_item(label):
-    return f"{PREFIX}{label}"
-
-
-def _plc_item(pairs):
-    return f"{PREFIX}PLC with HMI ({'≤2 pairs' if pairs <= 2 else f'{pairs} pairs'})"
-
-
-# PLC prices seed one row per distinct pair-count (1 and 2 share ≤2 pairs).
-_PLC_SEED_PAIRS = [2, 3, 4, 5, 6]
+# ── sized valve type -> (Pricelist category, make) ; item carries "<nb> NB" ───
+SIZED = {
+    "solenoid":   ("Solenoid Valve - Automatic Reset", "MADAS"),
+    "ball_valve": ("Ball Valve",                        "L&T"),
+    "flex_hose":  ("Flexible Hose",                     "BENGAL"),
+    "butterfly":  ("Butterfly Valve",                   "L&T"),
+    "shutoff":    ("Pneumatic Shut Off Valve",          "DEMBLA"),
+    "control":    ("Pneumatic Control Valve",           "DEMBLA"),
+    "flow_meter": ("Flow Meter (DPT)",                  "HONEYWELL"),
+}
 
 
 def _f(v):
@@ -123,100 +55,112 @@ def _f(v):
         return None
 
 
-def seed_regen_pricelist(conn) -> int:
-    """Insert any missing REGEN pricelist rows into component_price_master.
-    Idempotent and non-destructive — existing rows (and live edits) are kept."""
-    inserted = 0
-
-    def _ins(item, cat, price, spec=None):
-        nonlocal inserted
-        if price is None:
-            return
-        if conn.execute("SELECT 1 FROM component_price_master WHERE item=? LIMIT 1",
-                        (item,)).fetchone():
-            return
-        # Store the exact value (burner_cost carries a computed .xx) so the seed
-        # reproduces the current offer to the paisa.
-        p = float(price)
-        conn.execute(
-            "INSERT INTO component_price_master (item, category, company, unit, "
-            "price, previous_price, specification) VALUES (?,?,?,?,?,?,?)",
-            (item, cat, "ENCON", "nos", p, p, spec))
-        inserted += 1
-
-    # Per-KW model prices
-    for kw in MODEL_KWS:
-        m = REGEN_MODELS[kw]
-        for field, label, cat in PERKW_FIELDS:
-            val = m.get(field)
-            if field == "gas_train_cost" and not val:
-                continue          # 6000 KW: no packaged gas train
-            nb = m.get(_PERKW_NB.get(field, ""), None)
-            spec = f"{kw} KW" + (f" · DN{int(nb)}" if nb else "")
-            _ins(_perkw_item(label, kw), cat, val, spec)
-
-    # Flat prices (one row each, shared across KW models)
-    for key, label, cat in FLAT_FIELDS:
-        _ins(_flat_item(label), cat, _FLAT.get(key))
-
-    # Oil fuel-line prices (one row each, used when fuel = Oil)
-    for key, label, cat in OIL_FIELDS:
-        _ins(_flat_item(label), cat, _OIL.get(key))
-
-    # PLC prices (per pair-count)
-    for pairs in _PLC_SEED_PAIRS:
-        _ins(_plc_item(pairs), CAT_CONTROLS, _PLC_COST.get(pairs),
-             f"{'1-2' if pairs <= 2 else pairs} pair(s)")
-
-    # 6000 KW gas-skid prices
-    for key, label, cat in GASSKID_FIELDS:
-        _ins(_perkw_item(label, 6000), cat, _GAS_SKID_6000.get(key), "6000 KW")
-
-    conn.commit()
-    return inserted
-
-
-def _price(conn, item):
+def flat_price(conn, key):
+    name = FLAT_ITEM.get(key)
+    if not name:
+        return None
     r = conn.execute("SELECT price FROM component_price_master WHERE item=? LIMIT 1",
-                     (item,)).fetchone()
+                     (name,)).fetchone()
     return _f(r[0]) if r else None
 
 
+def _nb_options(conn, category, company):
+    q = "SELECT item, price FROM component_price_master WHERE category=?"
+    args = [category]
+    if company:
+        q += " AND company=?"
+        args.append(company)
+    out = {}
+    for item, price in conn.execute(q, args):
+        m = re.search(r"(\d+)\s*NB", str(item))
+        p = _f(price)
+        if m and p is not None:
+            nb = int(m.group(1))
+            if nb not in out or p < out[nb]:   # cheapest wins on dup
+                out[nb] = p
+    return out
+
+
+def valve_price(conn, vtype, nb):
+    """(nb_used, price, gap) for a sized valve — snaps to the smallest Pricelist
+    NB >= nb. gap=True when nb exceeds the category's max (price falls back to
+    the largest available)."""
+    cat, company = SIZED[vtype]
+    opts = _nb_options(conn, cat, company)
+    if not opts:
+        return None, None, False
+    ge = sorted(n for n in opts if n >= nb)
+    if ge:
+        return ge[0], opts[ge[0]], False
+    mx = max(opts)
+    return mx, opts[mx], True
+
+
+def plc_price(conn, pairs):
+    label = "1-2 Pair" if pairs <= 2 else f"{pairs} Pair"
+    r = conn.execute("SELECT price FROM component_price_master WHERE item=? LIMIT 1",
+                     (f"PLC with HMI ({label})",)).fetchone()
+    return _f(r[0]) if r else None
+
+
+def control_panel_price(conn):
+    r = conn.execute("SELECT price FROM component_price_master WHERE item='CONTROL PANEL' "
+                     "LIMIT 1").fetchone()
+    return _f(r[0]) if r else None
+
+
+# per-KW model valve field -> (valve type, NB field on the model)
+_MODEL_VALVE = {
+    "gas_sol_cost":  ("solenoid",   "gas_sol_nb"),
+    "gas_bv_cost":   ("ball_valve", "gas_bv_nb"),
+    "gas_hose_cost": ("flex_hose",  "gas_hose_nb"),
+    "air_sov_cost":  ("shutoff",    "air_sov_nb"),
+    "air_mbv_cost":  ("butterfly",  "air_mbv_nb"),
+    "flue_sov_cost": ("shutoff",    "flue_sov_nb"),
+    "air_cv_cost":   ("control",    "air_cv_nb"),
+    "air_fm_cost":   ("flow_meter", "air_fm_nb"),
+    "gas_cv_cost":   ("control",    "gas_cv_nb"),
+    "gas_fm_cost":   ("flow_meter", "gas_fm_nb"),
+}
+
+
 def load_regen_prices(conn, kw: int) -> dict:
-    """Resolve every price build_regen_df needs for `kw`, DB value winning over
-    the code constant. Returns {model, flat, plc, gas_skid} — same shapes as the
-    regen_builder constants, so build_regen_df can consume it directly."""
+    """Resolve every price build_regen_df needs for `kw` from the Pricelist,
+    falling back to the code constant when a row is missing. Returns
+    {model, flat, plc, gas_skid, oil} — same shapes build_regen_df consumes."""
     model = dict(REGEN_MODELS[kw])
-    for field, label, cat in PERKW_FIELDS:
-        if field == "gas_train_cost" and not model.get(field):
-            continue
-        p = _price(conn, _perkw_item(label, kw))
-        if p is not None:
-            model[field] = p
+
+    # Per-KW sized valves -> Pricelist by (type, NB at the NG size for this KW).
+    for field, (vtype, nbf) in _MODEL_VALVE.items():
+        nb = model.get(nbf)
+        if nb:
+            _, p, _ = valve_price(conn, vtype, int(nb))
+            if p is not None:
+                model[field] = p
+    # Pneumatic Damper = the (manual) DAMPER MANUAL row; Control Panel from Bought
+    # Out; burner PG 0-500 = the small pressure gauge. Gas train / burner /
+    # blower have no bought-out Pricelist row — kept from the code constant.
+    dm = flat_price(conn, "manual_damper")
+    if dm is not None:
+        model["pneu_damp_cost"] = dm
+    cp = control_panel_price(conn)
+    if cp is not None:
+        model["panel_cost"] = cp
+    pg = flat_price(conn, "pilot_pg_500")
+    if pg is not None:
+        model["pg_burner"] = pg
 
     flat = dict(_FLAT)
-    for key, label, cat in FLAT_FIELDS:
-        p = _price(conn, _flat_item(label))
+    for key in FLAT_ITEM:
+        p = flat_price(conn, key)
         if p is not None:
             flat[key] = p
 
     plc = dict(_PLC_COST)
-    for pairs in _PLC_SEED_PAIRS:
-        p = _price(conn, _plc_item(pairs))
+    for pairs in (1, 2, 3, 4, 5, 6):
+        p = plc_price(conn, pairs)
         if p is not None:
             plc[pairs] = p
-    plc[1] = plc.get(2, plc.get(1))     # 1 pair shares the ≤2-pair price
 
-    gas_skid = dict(_GAS_SKID_6000)
-    for key, label, cat in GASSKID_FIELDS:
-        p = _price(conn, _perkw_item(label, 6000))
-        if p is not None:
-            gas_skid[key] = p
-
-    oil = dict(_OIL)
-    for key, label, cat in OIL_FIELDS:
-        p = _price(conn, _flat_item(label))
-        if p is not None:
-            oil[key] = p
-
-    return dict(model=model, flat=flat, plc=plc, gas_skid=gas_skid, oil=oil)
+    return dict(model=model, flat=flat, plc=plc,
+                gas_skid=dict(_GAS_SKID_6000), oil=dict(_OIL))

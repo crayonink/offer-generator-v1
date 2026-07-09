@@ -411,19 +411,33 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # default) keep the standard gas BOM.
     is_lowcv = (not is_oil) and _fuel_l in ("coke oven gas", "producer gas", "blast furnace gas")
     gas_dn, flue_dn = (_fuel_pipe_dn(db_path, fuel, kw) if is_lowcv else (None, None))
-    # Resolve prices — DB (editable Pricelist) wins over code constants.
+    # Resolve prices — the centralised Pricelist wins over the code constants.
     flat, plc_map, skid, oil = _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL
     m = REGEN_MODELS[kw]
+    _conn = None
     if db_path:
         try:
             import sqlite3 as _sql
+            _conn = _sql.connect(db_path)
             from bom.regen_pricelist import load_regen_prices
-            with _sql.connect(db_path) as _c:
-                _pr = load_regen_prices(_c, kw)
-            m, flat, plc_map, skid = _pr['model'], _pr['flat'], _pr['plc'], _pr['gas_skid']
-            oil = _pr.get('oil', _OIL)
+            _pr = load_regen_prices(_conn, kw)
+            m, flat, plc_map, skid, oil = (_pr['model'], _pr['flat'], _pr['plc'],
+                                           _pr['gas_skid'], _pr['oil'])
         except Exception:
             m, flat, plc_map, skid, oil = REGEN_MODELS[kw], _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL
+
+    # Sized-valve pricing for the per-fuel (low-CV) lines: Pricelist first, code
+    # catalog (_GAS_CATALOG) as the fallback.
+    def _snap(pl_type, cat_key, dn):
+        if _conn:
+            try:
+                from bom.regen_pricelist import valve_price
+                nbu, p, gap = valve_price(_conn, pl_type, dn)
+                if p is not None:
+                    return nbu, p, gap
+            except Exception:
+                pass
+        return _snap_price(cat_key, dn)
 
     mk = markup if markup is not None else m['markup']
     rows = []
@@ -460,12 +474,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         # solenoid + ball-valve + hose bank; above that (low-CV, large flow) it
         # becomes a shut-off + manual butterfly valve line (air-line valves).
         if gas_dn <= 100:
-            nb, p, _  = _snap_price("solenoid",   gas_dn); add("GAS LINE — BURNER", "Solenoid Valve",  f"NB{nb}",  2,  p)
-            nb, p, _  = _snap_price("ball_valve",  gas_dn); add("GAS LINE — BURNER", "Ball Valve",      f"NB{nb}",  10, p)
-            nb, p, _  = _snap_price("flex_hose",   gas_dn); add("GAS LINE — BURNER", "Flexible Hose",   f"NB{nb}",  10, p)
+            nb, p, _  = _snap("solenoid",   "solenoid",   gas_dn); add("GAS LINE — BURNER", "Solenoid Valve",  f"NB{nb}",  2,  p)
+            nb, p, _  = _snap("ball_valve", "ball_valve", gas_dn); add("GAS LINE — BURNER", "Ball Valve",      f"NB{nb}",  10, p)
+            nb, p, _  = _snap("flex_hose",  "flex_hose",  gas_dn); add("GAS LINE — BURNER", "Flexible Hose",   f"NB{nb}",  10, p)
         else:
-            nb, p, _  = _snap_price("shutoff",     gas_dn); add("GAS LINE — BURNER", "Shut-Off Valve",  f"DN{nb}",  2,  p)
-            nb, p, _  = _snap_price("butterfly",   gas_dn); add("GAS LINE — BURNER", "Manual Butterfly Valve", f"DN{nb}", 2, p)
+            nb, p, _  = _snap("shutoff",    "shutoff",    gas_dn); add("GAS LINE — BURNER", "Shut-Off Valve",  f"DN{nb}",  2,  p)
+            nb, p, _  = _snap("butterfly",  "butterfly",  gas_dn); add("GAS LINE — BURNER", "Manual Butterfly Valve", f"DN{nb}", 2, p)
         add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
     else:
         # 6000 KW uses shut-off valve + butterfly valve (not solenoid + ball valve × 10)
@@ -492,7 +506,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         f"DN{m['air_mbv_nb']}",              2,                          m['air_mbv_cost'])
     add("AIR LINE — BURNER", "Pressure Gauge 0-1000", "",                2, flat['air_pg_1000'])
     if is_lowcv and flue_dn:
-        nb, p, gap = _snap_price("flue_sov", flue_dn)
+        nb, p, gap = _snap("shutoff", "flue_sov", flue_dn)
         spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
         add("AIR LINE — BURNER", "Shut-Off Valve Flue Gas", spec, 2, p)
     else:
@@ -509,8 +523,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("TEMP CONTROL", "Oil Control Valve",   "NB25",              1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter (DPT)","NB25",              1, oil['oil_flow_meter_dpt'])
     elif is_lowcv and gas_dn:
-        nb, p, _ = _snap_price("gas_cv", gas_dn); add("TEMP CONTROL", "Gas Control Valve",    f"DN{nb}", 1, p)
-        nb, p, _ = _snap_price("gas_fm", gas_dn); add("TEMP CONTROL", "Gas Flow Meter (DPT)", f"DN{nb}", 1, p)
+        nb, p, _ = _snap("control",    "gas_cv", gas_dn); add("TEMP CONTROL", "Gas Control Valve",    f"DN{nb}", 1, p)
+        nb, p, _ = _snap("flow_meter", "gas_fm", gas_dn); add("TEMP CONTROL", "Gas Flow Meter (DPT)", f"DN{nb}", 1, p)
     else:
         add("TEMP CONTROL", "Gas Control Valve",
             f"DN{m['gas_cv_nb']}",               1,                          m['gas_cv_cost'])
@@ -519,9 +533,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1, flat['furnace_thermocouple'])
     add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'], scale=False)
     if is_lowcv and flue_dn:
-        nb, p, gap = _snap_price("pneu_damp", flue_dn)
-        spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
-        add("TEMP CONTROL", "Pneumatic Damper", spec, 1, p)
+        # Pneumatic damper = DAMPER MANUAL (flat Pricelist price, not per-NB).
+        add("TEMP CONTROL", "Pneumatic Damper", f"DN{flue_dn}", 1, flat['manual_damper'])
     else:
         add("TEMP CONTROL", "Pneumatic Damper",
             f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
@@ -550,6 +563,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("GAS TRAIN", "Pneumatic Shut-Off Valve",  "DN350",            1, skid['pneu_sov'], scale=False)
         add("GAS TRAIN", "Pressure Switch Low/High",  "",                 2, skid['pressure_switch'], scale=False)
 
+    if _conn is not None:
+        _conn.close()
     return pd.DataFrame(rows)
 
 
