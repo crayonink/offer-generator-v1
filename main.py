@@ -1584,6 +1584,29 @@ def _startup_discount_madas_solenoid_valves():
 _startup_discount_madas_solenoid_valves()
 
 
+def _startup_ensure_thermocouple_small():
+    """Add the 'Thermocouple Small' pricelist row (₹5,000) if missing — a small
+    bought-out TC, alongside the full THERMOCOUPLE (₹36,000). Idempotent; reaches
+    the persistent volume. (The regen 'Thermocouple with TT' price maps here.)"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        exists = conn.execute("SELECT 1 FROM component_price_master WHERE item=? LIMIT 1",
+                              ("Thermocouple Small",)).fetchone()
+        if not exists:
+            conn.execute(
+                "INSERT INTO component_price_master (item, category, unit, price, "
+                "previous_price, company) VALUES (?,?,?,?,?,?)",
+                ("Thermocouple Small", "Bought Out", "nos", 5000, 5000, "TEMPSENS"))
+            conn.commit()
+            print("[db] added 'Thermocouple Small' (₹5,000) to component_price_master")
+        conn.close()
+    except Exception as e:
+        print(f"WARN: ensure Thermocouple Small failed: {e}")
+
+
+_startup_ensure_thermocouple_small()
+
+
 def _startup_seed_markups():
     """Editable cost→price markups for HPU and Blower (like the burner Markup
     Master). Seeded once; the tabs AND the offers read from here."""

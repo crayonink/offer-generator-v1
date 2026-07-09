@@ -177,8 +177,8 @@ _FLAT = {
     "ball_valve_nb15":       1953,   # Ball Valve 15 NB (L&T)
     "flex_hose_nb15":         940,   # Flexible Hose 15 NB 1500mm (BENGAL)
     "air_pg_1000":           4000,   # Pressure Gauge with TNV (BAUMER)
-    "thermocouple_tt":       5000,   # TBD — Pricelist THERMOCOUPLE is 36,000
-    "furnace_thermocouple": 25000,   # TBD — Pricelist THERMOCOUPLE is 36,000
+    "thermocouple_tt":       5000,   # Thermocouple Small (Pricelist)
+    "furnace_thermocouple": 36000,   # THERMOCOUPLE (TEMPSENS)
     "dpt":                  43150,   # DPT (HONEYWELL)
     "manual_damper":        50000,   # DAMPER MANUAL (ENCON)
 }
