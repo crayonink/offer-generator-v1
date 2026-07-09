@@ -162,15 +162,16 @@ _PLC_COST = {1: 300000, 2: 300000, 3: 600000, 4: 750000, 5: 800000, 6: 900000}
 # truth; they seed the Pricelist (component_price_master, REGEN_* categories) and
 # are the fallback build_regen_df uses when no DB price is supplied. See
 # bom/regen_pricelist.py.
+# Flat bought-out prices, per the gas-regen master (Regen_BOM.xlsx, GAS sheet).
 _FLAT = {
     "pilot_burner":         10000,
-    "burner_controller":     3600,
-    "ignition_transformer":  3300,
-    "uv_sensor":             5500,
-    "pilot_regulator":       4400,
-    "pilot_solenoid":        4300,
+    "burner_controller":    10000,
+    "ignition_transformer":  5500,
+    "uv_sensor":            13000,
+    "pilot_regulator":       5000,
+    "pilot_solenoid":        5200,
     "pilot_pg_500":          3000,
-    "ball_valve_nb15":       1400,
+    "ball_valve_nb15":       1700,
     "flex_hose_nb15":        1500,
     "air_pg_1000":           4000,
     "thermocouple_tt":       5000,
