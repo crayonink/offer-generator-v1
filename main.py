@@ -4367,7 +4367,8 @@ def regen_calculate(req: RegenCalcRequest):
 
         model_markup = req.markup if req.markup != 1.80 else None  # None → use model default
 
-        bom_df = build_regen_df(model_kw, model_markup, num_pairs=num_pairs, db_path=DB_PATH)
+        bom_df = build_regen_df(model_kw, model_markup, num_pairs=num_pairs,
+                                db_path=DB_PATH, fuel=req.fuel or "Natural Gas")
         supplementary = get_supplementary_data(model_kw)
 
         # Augment supplementary with full sizing + nozzle + legacy rates from DB

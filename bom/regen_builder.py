@@ -187,6 +187,17 @@ _GAS_SKID_6000 = {
     "pressure_switch":  12000,
 }
 
+# Oil fuel line — fuel='Oil' swaps these in for the gas fuel line, gas train,
+# and the gas control valve / gas flow meter. All NB25 (oil lines are small and
+# size-invariant across KW). Prices from Regen_BOM.xlsx (OIL sheet).
+_OIL = {
+    "solenoid_valve_oil":  7000,   # NB25, per burner
+    "oil_control_valve":  25000,   # NB25
+    "oil_flow_meter_dpt": 48000,   # NB25, DPT + orifice + flanges
+    "tt_oil_line":         5000,   # temperature transmitter in oil line
+    "pt_oil_line":        48000,   # pressure transmitter in oil line
+}
+
 # ── Burner + Regenerator material weights (kg) per KW model ──────────────────
 # Source: "Burner Sizing and costing" sheet, rows 35-42
 # Columns: burner_ms, burner_refrac, regen_ms, regen_ss, regen_refrac, regen_ceramic, block_refrac
@@ -308,7 +319,7 @@ def select_model(required_kw: float) -> int:
 
 
 def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
-                   db_path: str = None) -> pd.DataFrame:
+                   db_path: str = None, fuel: str = "Natural Gas") -> pd.DataFrame:
     """
     Build full BOM DataFrame for the given KW model.
 
@@ -318,9 +329,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     db_path   : if given, every line price is sourced LIVE from the Pricelist
                 (component_price_master, REGEN_* categories), falling back to the
                 code constant per field. If None, the code constants are used.
+    fuel      : "Oil" swaps the gas fuel line + gas train + gas control/flow
+                meter for the oil line (Solenoid Valve Oil, Oil Control Valve,
+                Oil Flow Meter, TT/PT). Any gas fuel builds the standard NG BOM.
     """
+    is_oil = (fuel or "").strip().lower() == "oil"
     # Resolve prices — DB (editable Pricelist) wins over code constants.
-    flat, plc_map, skid = _FLAT, _PLC_COST, _GAS_SKID_6000
+    flat, plc_map, skid, oil = _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL
     m = REGEN_MODELS[kw]
     if db_path:
         try:
@@ -329,8 +344,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             with _sql.connect(db_path) as _c:
                 _pr = load_regen_prices(_c, kw)
             m, flat, plc_map, skid = _pr['model'], _pr['flat'], _pr['plc'], _pr['gas_skid']
+            oil = _pr.get('oil', _OIL)
         except Exception:
-            m, flat, plc_map, skid = REGEN_MODELS[kw], _FLAT, _PLC_COST, _GAS_SKID_6000
+            m, flat, plc_map, skid, oil = REGEN_MODELS[kw], _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL
 
     mk = markup if markup is not None else m['markup']
     rows = []
@@ -353,17 +369,23 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("GAS LINE — PILOT", "Ball Valve",            "NB15",             2, flat['ball_valve_nb15'])
     add("GAS LINE — PILOT", "Pressure Gauge 0-500",  "",                 2, flat['pilot_pg_500'])
 
-    # ── 3. GAS LINE — Burner ──────────────────────────────────────────────────
-    # 6000 KW uses shut-off valve + butterfly valve (not solenoid + ball valve × 10)
-    sol_label = "Shut-Off Valve" if kw == 6000 else "Solenoid Valve"
-    bv_label  = "Butterfly Valve" if kw == 6000 else "Ball Valve"
-    add("GAS LINE — BURNER", sol_label,
-        f"NB{m['gas_sol_nb']}",              2,                          m['gas_sol_cost'])
-    add("GAS LINE — BURNER", bv_label,
-        f"NB{m['gas_bv_nb']}",               m['gas_bv_qty'],            m['gas_bv_cost'])
-    add("GAS LINE — BURNER", "Flexible Hose",
-        f"NB{m['gas_hose_nb']}",             m['gas_hose_qty'],          m['gas_hose_cost'])
-    add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
+    # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
+    if is_oil:
+        # Oil fuel line (NB25) — replaces the gas solenoid/ball-valve/hose bank.
+        add("OIL LINE — BURNER", "Solenoid Valve (Oil)",          "NB25", 2, oil['solenoid_valve_oil'])
+        add("OIL LINE — BURNER", "Temperature Transmitter (Oil)", "",     1, oil['tt_oil_line'])
+        add("OIL LINE — BURNER", "Pressure Transmitter (Oil)",    "",     1, oil['pt_oil_line'])
+    else:
+        # 6000 KW uses shut-off valve + butterfly valve (not solenoid + ball valve × 10)
+        sol_label = "Shut-Off Valve" if kw == 6000 else "Solenoid Valve"
+        bv_label  = "Butterfly Valve" if kw == 6000 else "Ball Valve"
+        add("GAS LINE — BURNER", sol_label,
+            f"NB{m['gas_sol_nb']}",              2,                          m['gas_sol_cost'])
+        add("GAS LINE — BURNER", bv_label,
+            f"NB{m['gas_bv_nb']}",               m['gas_bv_qty'],            m['gas_bv_cost'])
+        add("GAS LINE — BURNER", "Flexible Hose",
+            f"NB{m['gas_hose_nb']}",             m['gas_hose_qty'],          m['gas_hose_cost'])
+        add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
 
     # ── 4. AIR LINE — Pilot / UV / UV Cooling ─────────────────────────────────
     add("AIR LINE — PILOT/UV", "Ball Valve UV",       "NB15",            8, flat['ball_valve_nb15'])
@@ -386,10 +408,14 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         f"DN{m['air_cv_nb']}",               1,                          m['air_cv_cost'])
     add("TEMP CONTROL", "Air Flow Meter (DPT)",
         f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'])
-    add("TEMP CONTROL", "Gas Control Valve",
-        f"DN{m['gas_cv_nb']}",               1,                          m['gas_cv_cost'])
-    add("TEMP CONTROL", "Gas Flow Meter (DPT)",
-        f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
+    if is_oil:
+        add("TEMP CONTROL", "Oil Control Valve",   "NB25",              1, oil['oil_control_valve'])
+        add("TEMP CONTROL", "Oil Flow Meter (DPT)","NB25",              1, oil['oil_flow_meter_dpt'])
+    else:
+        add("TEMP CONTROL", "Gas Control Valve",
+            f"DN{m['gas_cv_nb']}",               1,                          m['gas_cv_cost'])
+        add("TEMP CONTROL", "Gas Flow Meter (DPT)",
+            f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
     add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1, flat['furnace_thermocouple'])
     add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'])
     add("TEMP CONTROL", "Pneumatic Damper",
@@ -407,7 +433,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'])
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
-    if m['gas_train_cost'] > 0:
+    if is_oil:
+        pass  # oil has no gas train
+    elif m['gas_train_cost'] > 0:
         add("GAS TRAIN", "NG Gas Train",
             f"Complete, for {kw} KW",             1,                     m['gas_train_cost'])
     else:

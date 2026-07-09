@@ -14,7 +14,7 @@ editable in the same Price-Master UI as the other products.
 """
 
 from bom.regen_builder import (
-    REGEN_MODELS, _FLAT, _PLC_COST, _GAS_SKID_6000, MODEL_KWS,
+    REGEN_MODELS, _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL, MODEL_KWS,
 )
 
 # ── Pricelist categories (shown as sections in the Price-Master UI) ───────────
@@ -26,6 +26,16 @@ CAT_BLOWER   = "REGEN Blower"
 CAT_CONTROLS = "REGEN Controls"
 CAT_GASTRAIN = "REGEN Gas Train"
 CAT_FITTINGS = "REGEN Fittings"
+CAT_OIL      = "REGEN Oil Line"
+
+# ── Oil fuel-line fields: _OIL[key] -> (label, category) ─────────────────────
+OIL_FIELDS = [
+    ("solenoid_valve_oil",  "Solenoid Valve (Oil)",          CAT_OIL),
+    ("oil_control_valve",   "Oil Control Valve",             CAT_OIL),
+    ("oil_flow_meter_dpt",  "Oil Flow Meter (DPT)",          CAT_OIL),
+    ("tt_oil_line",         "Temperature Transmitter (Oil)", CAT_OIL),
+    ("pt_oil_line",         "Pressure Transmitter (Oil)",    CAT_OIL),
+]
 
 # ── Per-KW model fields: REGEN_MODELS[kw][field] -> (label, category) ─────────
 # gas_train_cost is skipped for any model whose value is 0 (6000 KW uses a skid).
@@ -149,6 +159,10 @@ def seed_regen_pricelist(conn) -> int:
     for key, label, cat in FLAT_FIELDS:
         _ins(_flat_item(label), cat, _FLAT.get(key))
 
+    # Oil fuel-line prices (one row each, used when fuel = Oil)
+    for key, label, cat in OIL_FIELDS:
+        _ins(_flat_item(label), cat, _OIL.get(key))
+
     # PLC prices (per pair-count)
     for pairs in _PLC_SEED_PAIRS:
         _ins(_plc_item(pairs), CAT_CONTROLS, _PLC_COST.get(pairs),
@@ -199,4 +213,10 @@ def load_regen_prices(conn, kw: int) -> dict:
         if p is not None:
             gas_skid[key] = p
 
-    return dict(model=model, flat=flat, plc=plc, gas_skid=gas_skid)
+    oil = dict(_OIL)
+    for key, label, cat in OIL_FIELDS:
+        p = _price(conn, _flat_item(label))
+        if p is not None:
+            oil[key] = p
+
+    return dict(model=model, flat=flat, plc=plc, gas_skid=gas_skid, oil=oil)
