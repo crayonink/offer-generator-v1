@@ -199,6 +199,65 @@ _OIL = {
     "pt_oil_line":        48000,   # pressure transmitter in oil line
 }
 
+# ── Per-fuel gas lines (low-CV gases: BFG / COG / Producer Gas) ───────────────
+# Low-CV gases need far more volume than NG, so the gas + flue lines step up in
+# NB (from regen_pipe_sizes), and they use a BUILT-UP line (no packaged NG gas
+# train). Size-indexed prices below are the gas-regen master (Regen_BOM.xlsx,
+# GAS sheet). The built-up gas line reuses the shut-off + manual butterfly valve
+# prices (the same valves the air line uses), priced to NB400.
+_GAS_CATALOG = {
+    "solenoid":  {32: 13700, 40: 14720, 50: 17900, 65: 43000, 80: 44000, 100: 76000},
+    "ball_valve":{32: 4925,  40: 5100,  50: 7200,  65: 13400, 80: 17000, 100: 26600},
+    "flex_hose": {32: 1750,  40: 2000,  50: 3000,  65: 4200,  80: 6900,  100: 7650},
+    "gas_cv":    {25: 83000, 32: 83000, 40: 83000, 50: 96960, 65: 97810, 80: 101900,
+                  100: 110450, 150: 125600, 200: 144000, 250: 189540, 300: 213240, 350: 242250, 400: 261000},
+    "gas_fm":    {32: 48000, 40: 49000, 50: 49700, 65: 50000, 80: 51000, 100: 52000,
+                  150: 54000, 200: 57000, 250: 58000, 300: 60000, 350: 64000, 400: 70500},
+    "shutoff":   {125: 50050, 200: 80000, 250: 125000, 300: 148000, 350: 177000, 400: 227500},
+    "butterfly": {125: 12498, 200: 31178, 250: 38378, 300: 48055, 350: 61700, 400: 83750},
+    "flue_sov":  {200: 80000, 250: 125000, 300: 148000, 350: 177000, 400: 227500,
+                  450: 361020, 500: 453470, 600: 838150, 700: 1048800},
+    "pneu_damp": {200: 80000, 250: 125000, 300: 148000, 350: 177000,
+                  400: 350000, 450: 350000, 500: 350000, 600: 350000},
+}
+
+# UI fuel name -> regen_pipe_sizes.gas_type (for the per-fuel DN lookup)
+_FUEL_PIPE_NAME = {
+    "natural gas":       "Natural Gas (NG) 8600 Kcal/Nm³",
+    "coke oven gas":     "Coke Oven Gas 4000 Kcal/Nm³",
+    "producer gas":      "Producer Gas 1250 Kcal/Nm³",
+    "blast furnace gas": "Blast Furnace Gas 720 Kcal/Nm³",
+}
+
+
+def _snap_price(cat_key, dn):
+    """Price for a valve at the smallest catalog NB >= the pipe DN.
+    Returns (nb_used, price, gap) — gap=True when DN exceeds the catalog's max
+    (we fall back to the largest priced size and the caller should flag it)."""
+    d = _GAS_CATALOG[cat_key]
+    ge = sorted(n for n in d if n >= dn)
+    if ge:
+        return ge[0], d[ge[0]], False
+    mx = max(d)
+    return mx, d[mx], True
+
+
+def _fuel_pipe_dn(db_path, fuel, kw):
+    """(gas DN, flue DN) for a fuel + KW from regen_pipe_sizes, or (None, None)."""
+    name = _FUEL_PIPE_NAME.get((fuel or "").strip().lower())
+    if not (name and db_path):
+        return None, None
+    try:
+        import sqlite3 as _s
+        with _s.connect(db_path) as _c:
+            r = _c.execute("SELECT dn_gas_mm, dn_flue_mm FROM regen_pipe_sizes "
+                           "WHERE gas_type=? AND burner_size_kw=?", (name, kw)).fetchone()
+        if r:
+            return (int(r[0]) if r[0] else None, int(r[1]) if r[1] else None)
+    except Exception:
+        pass
+    return None, None
+
 # ── Burner + Regenerator material weights (kg) per KW model ──────────────────
 # Source: "Burner Sizing and costing" sheet, rows 35-42
 # Columns: burner_ms, burner_refrac, regen_ms, regen_ss, regen_refrac, regen_ceramic, block_refrac
@@ -334,7 +393,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
                 meter for the oil line (Solenoid Valve Oil, Oil Control Valve,
                 Oil Flow Meter, TT/PT). Any gas fuel builds the standard NG BOM.
     """
-    is_oil = (fuel or "").strip().lower() == "oil"
+    _fuel_l = (fuel or "").strip().lower()
+    is_oil = _fuel_l == "oil"
+    # Low-CV gases (BFG / COG / Producer Gas) resize the gas + flue lines per
+    # fuel and use a built-up line (no packaged NG gas train). NG (and the
+    # default) keep the standard gas BOM.
+    is_lowcv = (not is_oil) and _fuel_l in ("coke oven gas", "producer gas", "blast furnace gas")
+    gas_dn, flue_dn = (_fuel_pipe_dn(db_path, fuel, kw) if is_lowcv else (None, None))
     # Resolve prices — DB (editable Pricelist) wins over code constants.
     flat, plc_map, skid, oil = _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL
     m = REGEN_MODELS[kw]
@@ -376,6 +441,18 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("OIL LINE — BURNER", "Solenoid Valve (Oil)",          "NB25", 2, oil['solenoid_valve_oil'])
         add("OIL LINE — BURNER", "Temperature Transmitter (Oil)", "",     1, oil['tt_oil_line'])
         add("OIL LINE — BURNER", "Pressure Transmitter (Oil)",    "",     1, oil['pt_oil_line'])
+    elif is_lowcv and gas_dn:
+        # Built-up gas line sized to the fuel's gas DN. Up to NB100 it's the
+        # solenoid + ball-valve + hose bank; above that (low-CV, large flow) it
+        # becomes a shut-off + manual butterfly valve line (air-line valves).
+        if gas_dn <= 100:
+            nb, p, _  = _snap_price("solenoid",   gas_dn); add("GAS LINE — BURNER", "Solenoid Valve",  f"NB{nb}",  2,  p)
+            nb, p, _  = _snap_price("ball_valve",  gas_dn); add("GAS LINE — BURNER", "Ball Valve",      f"NB{nb}",  10, p)
+            nb, p, _  = _snap_price("flex_hose",   gas_dn); add("GAS LINE — BURNER", "Flexible Hose",   f"NB{nb}",  10, p)
+        else:
+            nb, p, _  = _snap_price("shutoff",     gas_dn); add("GAS LINE — BURNER", "Shut-Off Valve",  f"DN{nb}",  2,  p)
+            nb, p, _  = _snap_price("butterfly",   gas_dn); add("GAS LINE — BURNER", "Manual Butterfly Valve", f"DN{nb}", 2, p)
+        add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
     else:
         # 6000 KW uses shut-off valve + butterfly valve (not solenoid + ball valve × 10)
         sol_label = "Shut-Off Valve" if kw == 6000 else "Solenoid Valve"
@@ -400,8 +477,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("AIR LINE — BURNER", "Manual Butterfly Valve Air",
         f"DN{m['air_mbv_nb']}",              2,                          m['air_mbv_cost'])
     add("AIR LINE — BURNER", "Pressure Gauge 0-1000", "",                2, flat['air_pg_1000'])
-    add("AIR LINE — BURNER", "Shut-Off Valve Flue Gas",
-        f"DN{m['flue_sov_nb']}",             2,                          m['flue_sov_cost'])
+    if is_lowcv and flue_dn:
+        nb, p, gap = _snap_price("flue_sov", flue_dn)
+        spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
+        add("AIR LINE — BURNER", "Shut-Off Valve Flue Gas", spec, 2, p)
+    else:
+        add("AIR LINE — BURNER", "Shut-Off Valve Flue Gas",
+            f"DN{m['flue_sov_nb']}",             2,                          m['flue_sov_cost'])
     add("AIR LINE — BURNER", "Thermocouple with TT",  "",                4, flat['thermocouple_tt'])
 
     # ── 6. TEMPERATURE CONTROL ────────────────────────────────────────────────
@@ -412,6 +494,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     if is_oil:
         add("TEMP CONTROL", "Oil Control Valve",   "NB25",              1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter (DPT)","NB25",              1, oil['oil_flow_meter_dpt'])
+    elif is_lowcv and gas_dn:
+        nb, p, _ = _snap_price("gas_cv", gas_dn); add("TEMP CONTROL", "Gas Control Valve",    f"DN{nb}", 1, p)
+        nb, p, _ = _snap_price("gas_fm", gas_dn); add("TEMP CONTROL", "Gas Flow Meter (DPT)", f"DN{nb}", 1, p)
     else:
         add("TEMP CONTROL", "Gas Control Valve",
             f"DN{m['gas_cv_nb']}",               1,                          m['gas_cv_cost'])
@@ -419,8 +504,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
     add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1, flat['furnace_thermocouple'])
     add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'])
-    add("TEMP CONTROL", "Pneumatic Damper",
-        f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
+    if is_lowcv and flue_dn:
+        nb, p, gap = _snap_price("pneu_damp", flue_dn)
+        spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
+        add("TEMP CONTROL", "Pneumatic Damper", spec, 1, p)
+    else:
+        add("TEMP CONTROL", "Pneumatic Damper",
+            f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
     add("TEMP CONTROL", "Manual Damper",     "",                         1, flat['manual_damper'])
 
     # ── 7. BLOWER ─────────────────────────────────────────────────────────────
@@ -434,8 +524,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'])
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
-    if is_oil:
-        pass  # oil has no gas train
+    if is_oil or is_lowcv:
+        pass  # oil / low-CV gases (BFG/COG/PG) use a built-up line — no packaged train
     elif m['gas_train_cost'] > 0:
         add("GAS TRAIN", "NG Gas Train",
             f"Complete, for {kw} KW",             1,                     m['gas_train_cost'])
