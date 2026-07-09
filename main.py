@@ -8480,6 +8480,12 @@ def export_excel(req: ExcelExportRequest):
         cell(ws5, r5, 10, "", bold=True, bg=GREEN_BG, fg=GREEN)
         ws5.row_dimensions[r5].height = 22
 
+        # BOM-only download — the derivation tabs were dropped from the UI
+        # (we map straight from the Pricelist), so drop them from the workbook too.
+        for _name in ("Process Calcs", "Burner Sizing and Costing", "Burner Pipe Size", "Blower"):
+            if _name in wb.sheetnames:
+                del wb[_name]
+
         # Save and return
         buf = io.BytesIO()
         wb.save(buf)
