@@ -425,13 +425,16 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     mk = markup if markup is not None else m['markup']
     rows = []
 
-    def add(section, item, spec, qty, cost_unit):
-        rows.append(_make_row(section, item, spec, qty, cost_unit, mk))
+    def add(section, item, spec, qty, cost_unit, scale=True):
+        # Base quantities are per pair; multiply by num_pairs unless the item is
+        # one-per-system (scale=False) — matches the RegenCosting sheet formulas.
+        q = qty * num_pairs if scale else qty
+        rows.append(_make_row(section, item, spec, q, cost_unit, mk))
 
     # ── 1. BURNER SET ─────────────────────────────────────────────────────────
     add("BURNER SET", f"Burner with Regenerator ({kw} KW)",
         f"Regenerative burner with heat-storage media, complete",         2, m['burner_cost'])
-    add("BURNER SET", "Pilot Burner",        "7 KW",                     2, flat['pilot_burner'])
+    add("BURNER SET", "Pilot Burner",        "7 KW",                     2, flat['pilot_burner'], scale=False)
     add("BURNER SET", "Burner Controller",   "",                          2, flat['burner_controller'])
     add("BURNER SET", "Ignition Transformer","",                          2, flat['ignition_transformer'])
     add("BURNER SET", "UV Sensor",           "",                          2, flat['uv_sensor'])
@@ -470,7 +473,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("GAS LINE — BURNER", bv_label,
             f"NB{m['gas_bv_nb']}",               m['gas_bv_qty'],            m['gas_bv_cost'])
         add("GAS LINE — BURNER", "Flexible Hose",
-            f"NB{m['gas_hose_nb']}",             m['gas_hose_qty'],          m['gas_hose_cost'])
+            f"NB{m['gas_hose_nb']}",             m['gas_hose_qty'],          m['gas_hose_cost'], scale=False)
         add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
 
     # ── 4. AIR LINE — Pilot / UV / UV Cooling ─────────────────────────────────
@@ -498,7 +501,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("TEMP CONTROL", "Air Control Valve",
         f"DN{m['air_cv_nb']}",               1,                          m['air_cv_cost'])
     add("TEMP CONTROL", "Air Flow Meter (DPT)",
-        f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'])
+        f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'], scale=False)
     if is_oil:
         add("TEMP CONTROL", "Oil Control Valve",   "NB25",              1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter (DPT)","NB25",              1, oil['oil_flow_meter_dpt'])
@@ -511,7 +514,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("TEMP CONTROL", "Gas Flow Meter (DPT)",
             f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
     add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1, flat['furnace_thermocouple'])
-    add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'])
+    add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'], scale=False)
     if is_lowcv and flue_dn:
         nb, p, gap = _snap_price("pneu_damp", flue_dn)
         spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
@@ -519,30 +522,30 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     else:
         add("TEMP CONTROL", "Pneumatic Damper",
             f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
-    add("TEMP CONTROL", "Manual Damper",     "",                         1, flat['manual_damper'])
+    add("TEMP CONTROL", "Manual Damper",     "",                         1, flat['manual_damper'], scale=False)
 
     # ── 7. BLOWER ─────────────────────────────────────────────────────────────
     add("BLOWER", "Combustion Blower (40\" WG)",
-        f"With motor, for {kw} KW",           2,                          m['blower_cost'])
+        f"With motor, for {kw} KW",           2,                          m['blower_cost'], scale=False)
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
     add("CONTROLS", "PLC with HMI",
-        "Siemens S7-1200/1500 with touch panel",  1,                     plc_cost)
-    add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'])
+        "Siemens S7-1200/1500 with touch panel",  1,                     plc_cost, scale=False)
+    add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'], scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil or is_lowcv:
         pass  # oil / low-CV gases (BFG/COG/PG) use a built-up line — no packaged train
     elif m['gas_train_cost'] > 0:
         add("GAS TRAIN", "NG Gas Train",
-            f"Complete, for {kw} KW",             1,                     m['gas_train_cost'])
+            f"Complete, for {kw} KW",             1,                     m['gas_train_cost'], scale=False)
     else:
         # 6000 KW uses a custom gas skid instead of a packaged gas train
-        add("GAS TRAIN", "Gate Valve",                "DN350",            1, skid['gate_valve'])
-        add("GAS TRAIN", "Pressure Gauge with Manual Cock", "",           1, skid['pg_cock'])
-        add("GAS TRAIN", "Pneumatic Shut-Off Valve",  "DN350",            1, skid['pneu_sov'])
-        add("GAS TRAIN", "Pressure Switch Low/High",  "",                 2, skid['pressure_switch'])
+        add("GAS TRAIN", "Gate Valve",                "DN350",            1, skid['gate_valve'], scale=False)
+        add("GAS TRAIN", "Pressure Gauge with Manual Cock", "",           1, skid['pg_cock'], scale=False)
+        add("GAS TRAIN", "Pneumatic Shut-Off Valve",  "DN350",            1, skid['pneu_sov'], scale=False)
+        add("GAS TRAIN", "Pressure Switch Low/High",  "",                 2, skid['pressure_switch'], scale=False)
 
     return pd.DataFrame(rows)
 
