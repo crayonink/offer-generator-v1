@@ -1551,6 +1551,39 @@ def _startup_purge_regen_pricelist():
 _startup_purge_regen_pricelist()
 
 
+def _startup_discount_madas_solenoid_valves():
+    """MADAS 'Solenoid Valve - Automatic Reset' pricelist rows carry a 45%
+    discount off list (price = list × 0.55, previous_price = list). Apply it to
+    every row idempotently — rows already ~45%-discounted are skipped, so manual
+    Price-Master edits and the persistent volume aren't disturbed."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            "SELECT rowid, price, previous_price FROM component_price_master "
+            "WHERE category='Solenoid Valve - Automatic Reset'").fetchall()
+        n = 0
+        for rid, price, prev in rows:
+            if not price:
+                continue
+            list_price = prev if prev else price      # pre-discount list price
+            already = prev and abs(price - list_price * 0.55) < 1.0
+            if already:
+                continue
+            conn.execute(
+                "UPDATE component_price_master SET previous_price=?, price=? WHERE rowid=?",
+                (list_price, round(list_price * 0.55, 2), rid))
+            n += 1
+        conn.commit()
+        conn.close()
+        if n:
+            print(f"[db] applied 45% discount to {n} MADAS solenoid valve rows")
+    except Exception as e:
+        print(f"WARN: solenoid valve discount migration failed: {e}")
+
+
+_startup_discount_madas_solenoid_valves()
+
+
 def _startup_seed_markups():
     """Editable cost→price markups for HPU and Blower (like the burner Markup
     Master). Seeded once; the tabs AND the offers read from here."""
