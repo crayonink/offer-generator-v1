@@ -7972,6 +7972,55 @@ class ExcelExportRequest(BaseModel):
     equipment: dict = {}
 
 
+def _regen_basis(item, spec):
+    """Describe where a regen BOM line's unit price comes from — for the BOM
+    Excel's 'BASIS' column. Matches how bom/regen_pricelist resolves each line."""
+    it = item or ""
+    s = (spec or "").strip()
+    sz = f" {s}" if s and ("NB" in s or "DN" in s) else ""
+    checks = [
+        ("Burner with Regenerator", "Pricelist → Burner with Regenerator (per KW)"),
+        ("Combustion Blower",        "Internal costing → blower with motor (Alone×1.8 + Motor×1.5)"),
+        ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),
+        ("Control Panel",            "Pricelist → Control Panel (per KW)"),
+        ("NG Gas Train",             "Pricelist → Gas Train (by NG flow band)"),
+        ("Pneumatic Damper",         "Pricelist → DAMPER MANUAL"),
+        ("Manual Damper",            "Pricelist → DAMPER MANUAL"),
+        ("Sequence Controller",      "Pricelist → Sequence Controller (LINEAR)"),
+        ("Pilot Burner",             "Pricelist → ENCON-PB-LPG-10KW"),
+        ("Ignition Transformer",     "Pricelist → Ignition Transformer (DANFOSS)"),
+        ("UV Sensor",                "Pricelist → UV Sensor with Air Jacket (LINEAR)"),
+        ("Pilot Regulator",          "Pricelist → Gas Regulator 025 NB, 5 Bar (MADAS)"),
+        ("Pilot Solenoid Valve",     "Pricelist → Solenoid Valve 15 NB (MADAS)"),
+        ("Solenoid Valve (Oil)",     "Code → oil line (NB25)"),
+        ("Solenoid Valve",           f"Pricelist → Solenoid Valve{sz} (MADAS, −45%)"),
+        ("Ball Valve",               f"Pricelist → Ball Valve{sz} (L&T)"),
+        ("Manual Butterfly Valve",   f"Pricelist → Butterfly Valve{sz} (L&T)"),
+        ("Shut-Off Valve",           f"Pricelist → Pneumatic Shut Off Valve{sz} (DEMBLA)"),
+        ("Gas Control Valve",        f"Pricelist → Pneumatic Control Valve{sz} (DEMBLA)"),
+        ("Air Control Valve",        f"Pricelist → Pneumatic Control Valve{sz} (DEMBLA)"),
+        ("Oil Control Valve",        "Code → oil line (NB25)"),
+        ("Flow Meter (DPT)",         f"Pricelist → Flow Meter (DPT){sz}"),
+        ("Flow Meter",               f"Pricelist → Flow Meter (DPT){sz}"),
+        ("Flexible Hose",            f"Pricelist → Flexible Hose{sz} (BENGAL)"),
+        ("Pressure Gauge 0-1000",    "Pricelist → Pressure Gauge with TNV (BAUMER)"),
+        ("Pressure Gauge 0-500",     "Pricelist → Pressure Gauge with TNV (HGURU)"),
+        ("Thermocouple with TT (Furnace)", "Pricelist → THERMOCOUPLE (TEMPSENS)"),
+        ("Thermocouple",             "Pricelist → Thermocouple Small"),
+        ("Temperature Transmitter (Oil)", "Code → oil line"),
+        ("Pressure Transmitter (Oil)",    "Code → oil line"),
+        ("DPT",                      "Pricelist → DPT (HONEYWELL)"),
+        ("Gate Valve",               "Code → 6000 KW gas skid"),
+        ("Pressure Switch",          "Code → 6000 KW gas skid"),
+        ("Pneumatic Shut-Off Valve", "Code → 6000 KW gas skid"),
+        ("Manual Cock",              "Code → 6000 KW gas skid"),
+    ]
+    for needle, basis in checks:
+        if needle in it:
+            return basis
+    return ""
+
+
 @app.post("/api/export-excel")
 def export_excel(req: ExcelExportRequest):
     import io
@@ -8384,44 +8433,51 @@ def export_excel(req: ExcelExportRequest):
                      num_fmt='#,##0.00' if ci > 4 and isinstance(v,(int,float)) else None)
             r4 += 1
 
-        # ── Sheet 5: BOM ──────────────────────────────────────────────────
+        # ── Sheet 5: BOM (with a BASIS column + live formulas) ────────────
         ws5 = wb.create_sheet("BOM")
-        for col, w in zip("ABCDEFGHI", [6, 16, 28, 26, 8, 14, 14, 14, 14]):
+        for col, w in zip("ABCDEFGHIJ", [6, 16, 26, 20, 7, 13, 14, 13, 15, 42]):
             ws5.column_dimensions[col].width = w
 
+        mk = cs.get("markup", 1.8) or 1.8
         r5 = 1
-        title_row(ws5, r5, 9, f"BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM ({calc.get('model_kw','1000')} KW)")
+        title_row(ws5, r5, 10, f"BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM ({calc.get('model_kw','1000')} KW)")
         r5 += 2
 
         bom_col_hdrs = ["S.No.","SECTION","ITEM NAME","SPECIFICATION","QTY",
-                        "COST/UNIT ₹","TOTAL COST ₹","SELL/UNIT ₹","TOTAL SELLING ₹"]
+                        "COST/UNIT ₹","TOTAL COST ₹\n(=Qty×Unit)","SELL/UNIT ₹\n(=Unit×Markup)",
+                        f"TOTAL SELLING ₹\n(=Qty×Sell)","BASIS — how the unit price is derived"]
         for ci, lbl in enumerate(bom_col_hdrs, 1):
             hdr(ws5, r5, ci, lbl, size=9)
-        ws5.row_dimensions[r5].height = 22
+        ws5.row_dimensions[r5].height = 30
         r5 += 1
+        data_start = r5
         sno = 0
         for i, row_d in enumerate(req.bom):
             bg = GREY if i % 2 == 0 else WHITE
             sno += 1
-            bom_vals = [sno,
-                        row_d.get("SECTION",""), row_d.get("ITEM NAME",""), row_d.get("SPECIFICATION",""),
-                        row_d.get("QTY",""),
-                        row_d.get("COST/UNIT",0), row_d.get("TOTAL COST",0),
-                        row_d.get("SELL/UNIT",0), row_d.get("TOTAL SELLING",0)]
-            for ci, v in enumerate(bom_vals, 1):
-                cell(ws5, r5, ci, v, bg=bg, align="right" if ci >= 5 else ("center" if ci==1 else "left"),
-                     num_fmt='#,##0.00' if ci >= 6 and isinstance(v,(int,float)) else None)
+            cell(ws5, r5, 1, sno, bg=bg, align="center")
+            cell(ws5, r5, 2, row_d.get("SECTION",""), bg=bg)
+            cell(ws5, r5, 3, row_d.get("ITEM NAME",""), bg=bg)
+            cell(ws5, r5, 4, row_d.get("SPECIFICATION",""), bg=bg)
+            cell(ws5, r5, 5, row_d.get("QTY",""), bg=bg, align="right")
+            cell(ws5, r5, 6, row_d.get("COST/UNIT",0), bg=bg, align="right", num_fmt='#,##0.00')
+            # Derived values as live formulas so the calculation is visible.
+            cell(ws5, r5, 7, f"=E{r5}*F{r5}",     bg=bg, align="right", num_fmt='#,##0.00')
+            cell(ws5, r5, 8, f"=F{r5}*{mk}",      bg=bg, align="right", num_fmt='#,##0.00')
+            cell(ws5, r5, 9, f"=E{r5}*H{r5}",     bg=bg, align="right", num_fmt='#,##0.00')
+            b = cell(ws5, r5, 10, _regen_basis(row_d.get("ITEM NAME",""), row_d.get("SPECIFICATION","")),
+                     bg=bg, fg="475569")
+            b.font = Font(color="475569", size=9, italic=True, name="Calibri")
             ws5.row_dimensions[r5].height = 18
             r5 += 1
 
-        # Grand total row
+        # Grand total row — sum formulas over the data rows.
         ws5.merge_cells(f"A{r5}:F{r5}")
-        cell(ws5, r5, 1, "GRAND TOTAL", bold=True, bg=GREEN_BG, fg=GREEN, align="right")
-        cell(ws5, r5, 7, cs.get("total_cost",0), bold=True, bg=GREEN_BG, fg=GREEN,
-             align="right", num_fmt='#,##0.00')
+        cell(ws5, r5, 1, f"GRAND TOTAL   (Selling = Cost × {mk} markup)", bold=True, bg=GREEN_BG, fg=GREEN, align="right")
+        cell(ws5, r5, 7, f"=SUM(G{data_start}:G{r5-1})", bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
         cell(ws5, r5, 8, "", bold=True, bg=GREEN_BG, fg=GREEN)
-        cell(ws5, r5, 9, cs.get("total_selling",0), bold=True, bg=GREEN_BG, fg=GREEN,
-             align="right", num_fmt='#,##0.00')
+        cell(ws5, r5, 9, f"=SUM(I{data_start}:I{r5-1})", bold=True, bg=GREEN_BG, fg=GREEN, align="right", num_fmt='#,##0.00')
+        cell(ws5, r5, 10, "", bold=True, bg=GREEN_BG, fg=GREEN)
         ws5.row_dimensions[r5].height = 22
 
         # Save and return
