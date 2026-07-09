@@ -1615,6 +1615,9 @@ def _startup_ensure_regen_pricelist_extras():
             125:54000, 150:54000, 200:57000, 250:58000, 300:60000, 350:64000, 400:70500}
     PLC = [("1-2 Pair", 300000), ("3 Pair", 600000), ("4 Pair", 750000),
            ("5 Pair", 800000), ("6 Pair", 900000)]
+    # Regen control panel, per burner KW.
+    PANEL = {500:300000, 1000:300000, 1500:450000, 2000:450000,
+             2500:600000, 3000:600000, 4500:600000, 6000:700000}
     try:
         conn = sqlite3.connect(DB_PATH)
         def ins(item, cat, price, company):
@@ -1631,6 +1634,8 @@ def _startup_ensure_regen_pricelist_extras():
         # (item, company) is UNIQUE, so the pair size goes in the item name too.
         for label, price in PLC:
             n += ins(f"PLC with HMI ({label})", "PLC with HMI", price, "SIEMENS")
+        for kw, price in PANEL.items():
+            n += ins(f"Control Panel {kw} KW", "Control Panel", price, "ENCON")
         conn.commit()
         conn.close()
         if n:

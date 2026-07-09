@@ -103,9 +103,10 @@ def plc_price(conn, pairs):
     return _f(r[0]) if r else None
 
 
-def control_panel_price(conn):
-    r = conn.execute("SELECT price FROM component_price_master WHERE item='CONTROL PANEL' "
-                     "LIMIT 1").fetchone()
+def control_panel_price(conn, kw):
+    """Regen control panel, per burner KW ('Control Panel {kw} KW')."""
+    r = conn.execute("SELECT price FROM component_price_master WHERE item=? LIMIT 1",
+                     (f"Control Panel {kw} KW",)).fetchone()
     return _f(r[0]) if r else None
 
 
@@ -143,7 +144,7 @@ def load_regen_prices(conn, kw: int) -> dict:
     dm = flat_price(conn, "manual_damper")
     if dm is not None:
         model["pneu_damp_cost"] = dm
-    cp = control_panel_price(conn)
+    cp = control_panel_price(conn, kw)
     if cp is not None:
         model["panel_cost"] = cp
     pg = flat_price(conn, "pilot_pg_500")
