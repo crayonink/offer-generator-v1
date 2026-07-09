@@ -251,6 +251,18 @@ def _snap_price(cat_key, dn):
     return mx, d[mx], True
 
 
+# Standard pipe NB ladder — used to size a gas-train control valve one step
+# below the header DN (matches the vertical's gas-train logic).
+_NB_LADDER = [15, 20, 25, 32, 40, 50, 65, 80, 100, 125, 150, 200, 250, 300, 350, 400, 450, 500, 600]
+
+
+def _one_smaller_nb(dn):
+    for i, n in enumerate(_NB_LADDER):
+        if n >= dn:
+            return _NB_LADDER[i - 1] if i > 0 else n
+    return dn
+
+
 def _fuel_pipe_dn(db_path, fuel, kw):
     """(gas DN, flue DN) for a fuel + KW from regen_pipe_sizes, or (None, None)."""
     name = _FUEL_PIPE_NAME.get((fuel or "").strip().lower())
@@ -553,8 +565,61 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'], scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
-    if is_oil or is_lowcv:
-        pass  # oil / low-CV gases (BFG/COG/PG) use a built-up line — no packaged train
+    if is_oil:
+        pass  # oil fuels are handled by the HPU/pumping unit — no gas train
+    elif is_lowcv and gas_dn:
+        # Low-CV gases (BFG / COG / Producer Gas) get a discrete, vertical-style
+        # gas train sized to the fuel's gas-header DN. Every line is Pricelist-
+        # sourced; layout differs by fuel (BFG = double-block + rotary joint).
+        def _pl(vtype, dn):
+            if _conn:
+                try:
+                    from bom.regen_pricelist import valve_price
+                    return valve_price(_conn, vtype, dn)
+                except Exception:
+                    pass
+            return dn, None, False
+
+        ps_low = None
+        or_nb = or_p = None
+        if _conn:
+            try:
+                from bom.regen_pricelist import pressure_switch_low_price, orifice_price
+                ps_low = pressure_switch_low_price(_conn)
+                or_nb, or_p, _ = orifice_price(_conn, gas_dn)
+            except Exception:
+                pass
+        cv_nb = _one_smaller_nb(gas_dn)
+        _cvn, cv_p, _ = _pl("control", cv_nb)
+        _shn, sh_p, _ = _pl("shutoff", gas_dn)
+        _bfn, bf_p, _ = _pl("butterfly", gas_dn)
+
+        if _fuel_l == "blast furnace gas":
+            # BFG: low pressure + variable composition → full-bore isolation,
+            # DOUBLE-block shut-off, and a rotary joint (no packaged train).
+            _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
+            _rjn, rj_p, _ = _pl("rotary_joint", gas_dn)
+            add("GAS TRAIN", "Butterfly Valve (Isolation)", f"DN{gas_dn}", 1, bf_p, scale=False)
+            add("GAS TRAIN", "Shut-Off Valve",              f"DN{gas_dn}", 2, sh_p, scale=False)
+            add("GAS TRAIN", "Pressure Gauge with TNV",     f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
+            add("GAS TRAIN", "Pressure Switch Low",         "",            1, ps_low, scale=False)
+            if or_p is not None:
+                add("GAS TRAIN", "Orifice Plate",           f"DN{or_nb}",  1, or_p, scale=False)
+            add("GAS TRAIN", "DPT (Gas Train)",             "",            1, flat['dpt'], scale=False)
+            add("GAS TRAIN", "Control Valve",               f"DN{cv_nb}",  1, cv_p, scale=False)
+            add("GAS TRAIN", "Rotary Joint",                f"DN{gas_dn}", 1, rj_p, scale=False)
+        else:
+            # COG / Producer Gas: gate + butterfly isolation, single shut-off.
+            _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
+            add("GAS TRAIN", "Gate Valve",                  f"DN{gas_dn}", 1, gv_p, scale=False)
+            add("GAS TRAIN", "Pressure Gauge with TNV",     f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
+            add("GAS TRAIN", "Shut-Off Valve",              f"DN{gas_dn}", 1, sh_p, scale=False)
+            add("GAS TRAIN", "Butterfly Valve",             f"DN{gas_dn}", 1, bf_p, scale=False)
+            add("GAS TRAIN", "Pressure Switch Low",         "",            1, ps_low, scale=False)
+            if or_p is not None:
+                add("GAS TRAIN", "Orifice Plate",           f"DN{or_nb}",  1, or_p, scale=False)
+            add("GAS TRAIN", "DPT (Gas Train)",             "",            1, flat['dpt'], scale=False)
+            add("GAS TRAIN", "Control Valve",               f"DN{cv_nb}",  1, cv_p, scale=False)
     elif m['gas_train_cost'] > 0:
         add("GAS TRAIN", "NG Gas Train",
             f"Complete, for {kw} KW",             1,                     m['gas_train_cost'], scale=False)
@@ -576,14 +641,18 @@ def _regen_make(item):
     n = (item or "").lower().strip()
     if "solenoid" in n:                       return "MADAS"
     if "pilot regulator" in n:                return "MADAS"
+    if "gate valve" in n:                     return "L&T"
     if "butterfly" in n:                      return "L&T"
     if "ball valve" in n:                     return "L&T"
     if "flexible hose" in n:                  return "BENGAL"
     if "shut-off" in n or "shut off" in n:    return "DEMBLA"
     if "control valve" in n:                  return "DEMBLA"
-    if "flow meter" in n or n == "dpt":       return "HONEYWELL"
+    if "flow meter" in n or "dpt" in n:       return "HONEYWELL"
+    if "pressure switch" in n:                return "MADAS"
+    if "orifice" in n:                        return "ENCON"
+    if "rotary joint" in n:                   return "ENCON"
     if "pressure gauge 0-500" in n:           return "H GURU"
-    if "pressure gauge 0-1000" in n:          return "BAUMER"
+    if "pressure gauge" in n:                 return "BAUMER"
     if "ignition transformer" in n:           return "DANFOSS"
     if "uv sensor" in n:                      return "LINEAR"
     if "sequence controller" in n:            return "LINEAR"
@@ -594,6 +663,7 @@ def _regen_make(item):
 
 
 def _make_row(section, item, spec, qty, cost_unit, markup):
+    cost_unit  = cost_unit or 0          # never crash on a missing Pricelist price
     total_cost = qty * cost_unit
     sell_unit  = cost_unit * markup
     total_sell = qty * sell_unit

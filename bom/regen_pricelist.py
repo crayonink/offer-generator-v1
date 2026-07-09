@@ -46,6 +46,9 @@ SIZED = {
     "control":    ("Pneumatic Control Valve",           "DEMBLA"),
     "flow_meter": ("Flow Meter (DPT)",                  "HONEYWELL"),
     "pneu_damp":  ("Pneumatic Damper",                  "ENCON"),
+    # Gas-train (low-CV BFG/COG/Producer Gas) header valves — vertical-style.
+    "gate_valve":   ("Gate Valve",   "L&T"),
+    "rotary_joint": ("Rotary Joint", "ENCON"),
 }
 
 
@@ -95,6 +98,47 @@ def valve_price(conn, vtype, nb):
         return ge[0], opts[ge[0]], False
     mx = max(opts)
     return mx, opts[mx], True
+
+
+def _nb_options_by_item(conn, item_prefix, company=None):
+    """{nb: cheapest price} for rows whose ITEM starts with item_prefix and
+    carries an '<n> NB' size — used where a category isn't clean enough to key on
+    (e.g. Orifice Plate shares 'Instrumentation' with pressure-regulating valves)."""
+    q = "SELECT item, price FROM component_price_master WHERE item LIKE ?"
+    args = [item_prefix + "%"]
+    if company:
+        q += " AND company=?"
+        args.append(company)
+    out = {}
+    for item, price in conn.execute(q, args):
+        m = re.search(r"(\d+)\s*NB", str(item))
+        p = _f(price)
+        if m and p is not None:
+            nb = int(m.group(1))
+            if nb not in out or p < out[nb]:
+                out[nb] = p
+    return out
+
+
+def orifice_price(conn, nb):
+    """(nb_used, price, gap) for a gas-train orifice plate — snaps to the
+    smallest 'ORIFICE PLATE <n> NB' >= nb."""
+    opts = _nb_options_by_item(conn, "ORIFICE PLATE")
+    if not opts:
+        return None, None, False
+    ge = sorted(n for n in opts if n >= nb)
+    if ge:
+        return ge[0], opts[ge[0]], False
+    mx = max(opts)
+    return mx, opts[mx], True
+
+
+def pressure_switch_low_price(conn):
+    """Cheapest 'PRESSURE SWITCH LOW' row (MADAS)."""
+    rows = conn.execute(
+        "SELECT price FROM component_price_master WHERE item='PRESSURE SWITCH LOW'").fetchall()
+    prices = [p for p in (_f(r[0]) for r in rows) if p is not None]
+    return min(prices) if prices else None
 
 
 def plc_price(conn, pairs):
