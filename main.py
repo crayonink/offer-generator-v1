@@ -1531,23 +1531,24 @@ def _startup_seed_blower_alone():
 _startup_seed_blower_alone()
 
 
-def _startup_seed_regen_pricelist():
-    """Seed the REGEN_* pricelist rows (component_price_master) so every regen
-    offer line price is editable in the Price-Master UI and sourced live by
-    build_regen_df. Idempotent and non-destructive; reaches the persistent
-    volume on deploy."""
+def _startup_purge_regen_pricelist():
+    """Regen prices live in code (bom/regen_builder), NOT the Pricelist. Remove
+    any REGEN_* rows from component_price_master on startup so they never show
+    up in Price-Master — this also clears them from a persistent volume that may
+    still carry rows seeded by an earlier build."""
     try:
-        from bom.regen_pricelist import seed_regen_pricelist
         conn = sqlite3.connect(DB_PATH)
-        n = seed_regen_pricelist(conn)
+        n = conn.execute("DELETE FROM component_price_master "
+                         "WHERE category LIKE 'REGEN %'").rowcount
+        conn.commit()
         conn.close()
         if n:
-            print(f"[db] seeded {n} REGEN pricelist rows into component_price_master")
+            print(f"[db] removed {n} REGEN pricelist rows from component_price_master")
     except Exception as e:
-        print(f"WARN: startup seed_regen_pricelist failed: {e}")
+        print(f"WARN: purge regen pricelist failed: {e}")
 
 
-_startup_seed_regen_pricelist()
+_startup_purge_regen_pricelist()
 
 
 def _startup_seed_markups():
