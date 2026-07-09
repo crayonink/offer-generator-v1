@@ -162,22 +162,25 @@ _PLC_COST = {1: 300000, 2: 300000, 3: 600000, 4: 750000, 5: 800000, 6: 900000}
 # truth; they seed the Pricelist (component_price_master, REGEN_* categories) and
 # are the fallback build_regen_df uses when no DB price is supplied. See
 # bom/regen_pricelist.py.
-# Flat bought-out prices, per the gas-regen master (Regen_BOM.xlsx, GAS sheet).
+# Flat bought-out prices — matched by name to the centralised Pricelist
+# (component_price_master). The mapped Pricelist item is noted per line; values
+# are a snapshot of the current Pricelist. Items marked TBD are unconfirmed and
+# kept at their prior value.
 _FLAT = {
-    "pilot_burner":         10000,
-    "burner_controller":    10000,
-    "ignition_transformer":  5500,
-    "uv_sensor":            13000,
-    "pilot_regulator":       5000,
-    "pilot_solenoid":        5200,
-    "pilot_pg_500":          3000,
-    "ball_valve_nb15":       1700,
-    "flex_hose_nb15":        1500,
-    "air_pg_1000":           4000,
-    "thermocouple_tt":       5000,
-    "furnace_thermocouple": 25000,
-    "dpt":                  45000,
-    "manual_damper":        40000,
+    "pilot_burner":         11000,   # ENCON-PB-LPG-10KW (10 KW pilot)
+    "burner_controller":    10000,   # Sequence Controller (LINEAR)
+    "ignition_transformer":  5500,   # Ignition Transformer (DANFOSS)
+    "uv_sensor":            13000,   # UV Sensor with Air Jacket (LINEAR)
+    "pilot_regulator":       5000,   # TBD — no 15 NB gas regulator in Pricelist
+    "pilot_solenoid":        3317.03,# Solenoid Valve 15 NB (MADAS, −45%)
+    "pilot_pg_500":          3000,   # Pressure Gauge with TNV (HGURU)
+    "ball_valve_nb15":       1953,   # Ball Valve 15 NB (L&T)
+    "flex_hose_nb15":         940,   # Flexible Hose 15 NB 1500mm (BENGAL)
+    "air_pg_1000":           4000,   # Pressure Gauge with TNV (BAUMER)
+    "thermocouple_tt":       5000,   # TBD — Pricelist THERMOCOUPLE is 36,000
+    "furnace_thermocouple": 25000,   # TBD — Pricelist THERMOCOUPLE is 36,000
+    "dpt":                  43150,   # DPT (HONEYWELL)
+    "manual_damper":        50000,   # DAMPER MANUAL (ENCON)
 }
 
 # 6000 KW custom gas skid (used instead of a packaged gas train)
@@ -434,8 +437,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 1. BURNER SET ─────────────────────────────────────────────────────────
     add("BURNER SET", f"Burner with Regenerator ({kw} KW)",
         f"Regenerative burner with heat-storage media, complete",         2, m['burner_cost'])
-    add("BURNER SET", "Pilot Burner",        "7 KW",                     2, flat['pilot_burner'], scale=False)
-    add("BURNER SET", "Burner Controller",   "",                          2, flat['burner_controller'])
+    add("BURNER SET", "Pilot Burner",        "10 KW (LPG)",              2, flat['pilot_burner'], scale=False)
+    add("BURNER SET", "Sequence Controller", "",                          2, flat['burner_controller'])
     add("BURNER SET", "Ignition Transformer","",                          2, flat['ignition_transformer'])
     add("BURNER SET", "UV Sensor",           "",                          2, flat['uv_sensor'])
 
