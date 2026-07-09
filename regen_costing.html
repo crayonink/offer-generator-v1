@@ -423,65 +423,42 @@
   <!-- ═══════════════════════════════════════════ STEP 2 ═══ -->
   <div class="step" id="step-2">
     <div class="card">
-      <div class="card-title">Material Properties</div>
-
-      <div class="field" style="margin-bottom:16px;">
-        <label>Material Type</label>
+      <div class="card-title">Burner / Regen Size</div>
+      <div class="field">
+        <label>Size (KW per pair)</label>
         <div class="mat-buttons" style="margin-top:8px;">
-          <button class="mat-btn active" onclick="setMaterial(this, 0.48)">Steel (0.48)</button>
-          <button class="mat-btn"        onclick="setMaterial(this, 0.54)">Cast Iron (0.54)</button>
-          <button class="mat-btn"        onclick="setMaterial(this, 0.90)">Aluminium (0.90)</button>
-          <button class="mat-btn"        onclick="setMaterial(this, 0.12)">Graphite (0.12)</button>
+          <button class="mat-btn active" onclick="setSize(this,500)">500</button>
+          <button class="mat-btn"        onclick="setSize(this,1000)">1000</button>
+          <button class="mat-btn"        onclick="setSize(this,1500)">1500</button>
+          <button class="mat-btn"        onclick="setSize(this,2000)">2000</button>
+          <button class="mat-btn"        onclick="setSize(this,2500)">2500</button>
+          <button class="mat-btn"        onclick="setSize(this,3000)">3000</button>
+          <button class="mat-btn"        onclick="setSize(this,4500)">4500</button>
+          <button class="mat-btn"        onclick="setSize(this,6000)">6000</button>
         </div>
       </div>
+    </div>
 
+    <div class="card">
+      <div class="card-title">Fuel</div>
+      <div class="field">
+        <label>Fuel Type</label>
+        <div class="mat-buttons" style="margin-top:8px;">
+          <button class="mat-btn active" onclick="setFuel(this,'Natural Gas')">Natural Gas</button>
+          <button class="mat-btn"        onclick="setFuel(this,'Blast Furnace Gas')">Blast Furnace Gas</button>
+          <button class="mat-btn"        onclick="setFuel(this,'Coke Oven Gas')">Coke Oven Gas</button>
+          <button class="mat-btn"        onclick="setFuel(this,'Producer Gas')">Producer Gas</button>
+          <button class="mat-btn"        onclick="setFuel(this,'Oil')">Oil</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Configuration</div>
       <div class="field-grid">
         <div class="field">
-          <label>Specific Heat Cp (kJ/kg·°C)</label>
-          <input id="Cp" type="number" step="0.01" value="0.48" min="0.01"/>
-        </div>
-        <div class="field">
-          <label>Material / Charge Weight (kg)</label>
-          <input id="material_weight_kg" type="number" step="100" value="30000" min="1"/>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Temperature &amp; Cycle</div>
-      <div class="field-grid three">
-        <div class="field">
-          <label>Initial Temp Ti (°C)</label>
-          <input id="Ti" type="number" value="30" placeholder="e.g. 30"/>
-        </div>
-        <div class="field">
-          <label>Final Temp Tf (°C)</label>
-          <input id="Tf" type="number" value="900" placeholder="e.g. 900"/>
-        </div>
-        <div class="field">
-          <label>Cycle Time (hr)</label>
-          <input id="cycle_time_hr" type="number" step="0.5" value="2" min="0.5"/>
-          <div class="quick-btns">
-            <button class="qbtn" onclick="setVal('cycle_time_hr',1)">1 h</button>
-            <button class="qbtn" onclick="setVal('cycle_time_hr',1.5)">1.5 h</button>
-            <button class="qbtn" onclick="setVal('cycle_time_hr',2)">2 h</button>
-            <button class="qbtn" onclick="setVal('cycle_time_hr',3)">3 h</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">System Parameters</div>
-      <div class="field-grid three">
-        <div class="field">
-          <label>Thermal Efficiency</label>
-          <input id="efficiency" type="number" step="0.01" value="0.65" min="0.1" max="0.99"/>
-          <div class="quick-btns">
-            <button class="qbtn" onclick="setVal('efficiency',0.60)">0.60</button>
-            <button class="qbtn" onclick="setVal('efficiency',0.65)">0.65</button>
-            <button class="qbtn" onclick="setVal('efficiency',0.70)">0.70</button>
-          </div>
+          <label>Number of Burner Pairs</label>
+          <input id="num_pairs" type="number" step="1" value="1" min="1"/>
         </div>
         <div class="field">
           <label>Markup Factor</label>
@@ -491,11 +468,6 @@
             <button class="qbtn" onclick="setVal('markup',1.80)">1.80×</button>
             <button class="qbtn" onclick="setVal('markup',1.90)">1.90×</button>
           </div>
-        </div>
-        <div class="field">
-          <label>No. of Pairs Override</label>
-          <input id="num_pairs_override" type="number" step="1" value="0" min="0"/>
-          <div style="font-size:.75rem; color:var(--muted); margin-top:4px;">0 = auto-calculate</div>
         </div>
       </div>
     </div>
@@ -693,16 +665,23 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ── Material buttons ─────────────────────────────────────────────────────
-  function setMaterial(btn, cp) {
-    document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('Cp').value = cp;
-  }
-
   // ── Quick-set ────────────────────────────────────────────────────────────
   function setVal(id, val) {
     document.getElementById(id).value = val;
+  }
+
+  // ── Direct selection: Size (KW per pair) + Fuel ──────────────────────────
+  let selectedKw = 500;
+  let selectedFuel = 'Natural Gas';
+  function setSize(btn, kw) {
+    selectedKw = kw;
+    btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  function setFuel(btn, fuel) {
+    selectedFuel = fuel;
+    btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
   }
 
   // ── Format currency ──────────────────────────────────────────────────────
@@ -753,24 +732,11 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Calculating…';
 
-    const Ti = parseFloat(document.getElementById('Ti').value);
-    const Tf = parseFloat(document.getElementById('Tf').value);
-    if (Tf <= Ti) {
-      errBox.textContent = 'Final temperature (Tf) must be greater than initial temperature (Ti).';
-      errBox.classList.remove('hidden');
-      btn.disabled = false; btn.innerHTML = 'Calculate &amp; Size System';
-      return;
-    }
-
     const payload = {
-      material_weight_kg: parseFloat(document.getElementById('material_weight_kg').value),
-      Ti,
-      Tf,
-      Cp:                 parseFloat(document.getElementById('Cp').value),
-      cycle_time_hr:      parseFloat(document.getElementById('cycle_time_hr').value),
-      efficiency:         parseFloat(document.getElementById('efficiency').value),
-      num_pairs_override: parseInt(document.getElementById('num_pairs_override').value) || 0,
-      markup:             parseFloat(document.getElementById('markup').value),
+      model_kw:  selectedKw,
+      fuel:      selectedFuel,
+      num_pairs: parseInt(document.getElementById('num_pairs').value) || 1,
+      markup:    parseFloat(document.getElementById('markup').value) || 1.80,
     };
 
     try {
@@ -847,7 +813,23 @@
     // Update workbook title
     document.getElementById('xlTitle').textContent = `Regen Costing — ${c.num_pairs} × ${c.model_kw} KW`;
 
-    // ── Sheet 1: Process Calc ─────────────────────────────────────────────
+    // ── Sheet 1: Selection / Process Calc ─────────────────────────────────
+    let calcRows;
+    if (c.mode === 'direct') {
+      calcRows = [
+        {_class:'xl-section', cells:[xs('SELECTION', 3)]},
+        {_class:'xl-label', cells:[xc('Parameter'), xc(''), xc('Value',true)]},
+        {cells:[xc('Burner / Regen Size'), xc('(selected)'), xc(c.model_kw + ' KW per pair', true)]},
+        {_class:'xl-label', cells:[xc('Fuel'), xc('(selected)'), xc(c.fuel || '—', true)]},
+        {cells:[xc('No. of Burner Pairs'), xc('(selected)'), xc(String(c.num_pairs), true)]},
+        {_class:'xl-total', cells:[xc('Total Installed Capacity'), xc(c.num_pairs + ' × ' + c.model_kw + ' KW'), xc(c.total_kw + ' KW total', true)]},
+        {cells:[xc(''), xc(''), xc('')]},
+        {_class:'xl-section', cells:[xs('COST SUMMARY', 3)]},
+        {cells:[xc('Total Cost Price'), xc('Sum of all BOM item costs × qty'), xc('₹ ' + fmtN(s.total_cost), true)]},
+        {_class:'xl-label', cells:[xc('Markup'), xc('Standard selling price multiplier'), xc(s.markup.toFixed(2) + '×', true)]},
+        {_class:'xl-total', cells:[xc('Total Selling Price'), xc('Total Cost × Markup  =  ₹ ' + fmtN(s.total_cost) + ' × ' + s.markup.toFixed(2)), xc('₹ ' + fmtN(s.total_selling), true)]},
+      ];
+    } else {
     const mw   = c.material_weight_kg;
     const dT   = c.delta_T;
     const Cp   = c.Cp;
@@ -857,7 +839,7 @@
     const Q_kc = c.heat_required_kcal;
     const P    = c.required_kw;
 
-    const calcRows = [
+    calcRows = [
       {_class:'xl-section', cells:[xs('PROCESS CALCULATIONS', 3)]},
       {_class:'xl-label', cells:[xc('Parameter'), xc('Formula / Calculation'), xc('Value',true)]},
       {cells:[
@@ -921,6 +903,7 @@
       {_class:'xl-label', cells:[xc('Markup'), xc('Standard selling price multiplier'), xc(s.markup.toFixed(2) + '×', true)]},
       {_class:'xl-total', cells:[xc('Total Selling Price'), xc('Total Cost × Markup  =  ₹ ' + fmtN(s.total_cost) + ' × ' + s.markup.toFixed(2)), xc('₹ ' + fmtN(s.total_selling), true)]},
     ];
+    }
     document.getElementById('xl-calc').innerHTML = xlGrid(['A','B','C'], calcRows);
 
     // ── Sheet 2: Burner Sizing and Costing ───────────────────────────────
@@ -1202,7 +1185,7 @@
         <div style="background:#f8fafc; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">System</div>
           <div style="font-weight:700;">${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}</div>
-          <div style="font-size:.82rem; color:var(--muted);">${c.Ti}°C → ${c.Tf}°C</div>
+          <div style="font-size:.82rem; color:var(--muted);">${c.fuel || 'Natural Gas'} · ${c.total_kw} KW</div>
         </div>
         <div style="background:#eff6ff; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Final Total</div>
@@ -1301,7 +1284,7 @@
     const items = [{
       product_type: 'Regenerative Burner System',
       model: `${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}`,
-      description: `${c.Ti}°C → ${c.Tf}°C | ${c.material_weight_kg.toLocaleString('en-IN')} kg charge | ${c.cycle_time_hr} hr cycle`,
+      description: `${c.fuel || 'Natural Gas'} · ${c.num_pairs} pair${c.num_pairs > 1 ? 's' : ''} · ${c.total_kw} KW total`,
       qty: 1,
       unit_price: finalTotal,
       total: finalTotal,

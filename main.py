@@ -4323,38 +4323,51 @@ def cost_variations(req: CostVariationsRequest):
 
 
 class RegenCalcRequest(BaseModel):
-    material_weight_kg: float
-    Ti: float
-    Tf: float
+    # Direct-selection mode (Size / Fuel / Pairs) — the primary path.
+    model_kw: Optional[int] = None     # 500..6000; if set, skips the heat-load calc
+    fuel: Optional[str] = None         # Natural Gas / Blast Furnace Gas / Coke Oven Gas / Producer Gas / Oil
+    num_pairs: Optional[int] = None    # number of burner pairs
+    markup: float = 1.80
+    # Legacy heat-load sizing inputs — used only when model_kw is not given.
+    material_weight_kg: float = 0.0
+    Ti: float = 0.0
+    Tf: float = 0.0
     Cp: float = 0.48
     cycle_time_hr: float = 2.0
     efficiency: float = 0.65
     num_pairs_override: int = 0
-    markup: float = 1.80
 
 
 @app.post("/api/regen-calculate")
 def regen_calculate(req: RegenCalcRequest):
     try:
-        from calculations.regen import RegenInputs, calculate_regen
         from bom.regen_builder import build_regen_df, select_model, get_supplementary_data
 
-        result = calculate_regen(RegenInputs(
-            material_weight_kg=req.material_weight_kg,
-            Ti=req.Ti,
-            Tf=req.Tf,
-            Cp=req.Cp,
-            cycle_time_hr=req.cycle_time_hr,
-            efficiency=req.efficiency,
-            num_pairs_override=req.num_pairs_override,
-        ))
+        result = None
+        if req.model_kw:
+            # ── Direct-selection mode: user picks Size + Fuel + Pairs ──────────
+            model_kw  = select_model(int(req.model_kw))   # snap to a valid model
+            num_pairs = max(1, int(req.num_pairs or 1))
+        else:
+            # ── Legacy heat-load sizing (charge weight → kW) ──────────────────
+            from calculations.regen import RegenInputs, calculate_regen
+            result = calculate_regen(RegenInputs(
+                material_weight_kg=req.material_weight_kg,
+                Ti=req.Ti,
+                Tf=req.Tf,
+                Cp=req.Cp,
+                cycle_time_hr=req.cycle_time_hr,
+                efficiency=req.efficiency,
+                num_pairs_override=req.num_pairs_override,
+            ))
+            # Select the appropriate KW model (smallest >= required_kw per pair)
+            kw_per_pair = result.required_kw / max(1, result.num_pairs)
+            model_kw    = select_model(kw_per_pair)
+            num_pairs   = result.num_pairs
 
-        # Select the appropriate KW model (smallest >= required_kw per pair)
-        kw_per_pair = result.required_kw / max(1, result.num_pairs)
-        model_kw    = select_model(kw_per_pair)
         model_markup = req.markup if req.markup != 1.80 else None  # None → use model default
 
-        bom_df = build_regen_df(model_kw, model_markup, num_pairs=result.num_pairs, db_path=DB_PATH)
+        bom_df = build_regen_df(model_kw, model_markup, num_pairs=num_pairs, db_path=DB_PATH)
         supplementary = get_supplementary_data(model_kw)
 
         # Augment supplementary with full sizing + nozzle + legacy rates from DB
@@ -4426,8 +4439,16 @@ def regen_calculate(req: RegenCalcRequest):
         total_cost    = float(bom_df["TOTAL COST"].sum())
         total_selling = float(bom_df["TOTAL SELLING"].sum())
 
-        return {
-            "calculations": {
+        calculations = {
+            "mode": "direct" if req.model_kw else "heat",
+            "fuel": req.fuel or "Natural Gas",
+            "num_pairs": num_pairs,
+            "model_kw": model_kw,
+            "total_kw": model_kw * num_pairs,
+        }
+        if result is not None:
+            # Legacy heat-load mode — include the derivation for the calc sheet.
+            calculations.update({
                 "material_weight_kg": req.material_weight_kg,
                 "Ti": req.Ti,
                 "Tf": req.Tf,
@@ -4438,10 +4459,9 @@ def regen_calculate(req: RegenCalcRequest):
                 "cycle_time_hr": req.cycle_time_hr,
                 "efficiency": req.efficiency,
                 "required_kw": round(result.required_kw, 2),
-                "num_pairs": result.num_pairs,
-                "model_kw": model_kw,
-                "total_kw": model_kw * result.num_pairs,
-            },
+            })
+        return {
+            "calculations": calculations,
             "bom": bom_df.to_dict(orient="records"),
             "cost_summary": {
                 "total_cost": round(total_cost, 2),
