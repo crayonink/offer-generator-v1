@@ -171,7 +171,7 @@ _FLAT = {
     "burner_controller":    10000,   # Sequence Controller (LINEAR)
     "ignition_transformer":  5500,   # Ignition Transformer (DANFOSS)
     "uv_sensor":            13000,   # UV Sensor with Air Jacket (LINEAR)
-    "pilot_regulator":       5000,   # TBD — no 15 NB gas regulator in Pricelist
+    "pilot_regulator":     7313.59, # Gas Pressure Regulator 025 NB, 5 Bar (MADAS, −45%)
     "pilot_solenoid":        3317.03,# Solenoid Valve 15 NB (MADAS, −45%)
     "pilot_pg_500":          3000,   # Pressure Gauge with TNV (HGURU)
     "ball_valve_nb15":       1953,   # Ball Valve 15 NB (L&T)
