@@ -787,12 +787,16 @@
       row.cells.forEach(c => {
         const align = c.r ? ' class="xl-r"' : '';
         const span  = c.span ? ` colspan="${c.span}"` : '';
-        h += `<td${align}${span}>${c.v === null || c.v === undefined ? '' : c.v}</td>`;
+        const bg    = row._bg ? ` style="background:${row._bg};"` : '';
+        h += `<td${align}${span}${bg}>${c.v === null || c.v === undefined ? '' : c.v}</td>`;
       });
       h += '</tr>';
     });
     return h + '</tbody></table>';
   }
+  // Per-section colour bands — must match _sec_palette in main.py's Excel export.
+  const _SECTION_COLORS = ['#DBEAFE','#DCFCE7','#FEF3C7','#EDE9FE','#CCFBF1',
+                           '#FCE7F3','#FFEDD5','#E0F2FE','#FEE2E2','#F3E8FF'];
   function xc(v, r=false) { return {v, r}; }
   function xs(v, span, r=false) { return {v, span, r}; }
 
@@ -821,12 +825,18 @@
 
     const bomHdr = {_class:'xl-label', cells:[xc('S.No.'), xc('Section'), xc('Item Name'), xc('Make'), xc('Specification'), xc('Qty',true), xc('Cost/Unit ₹',true), xc('Total Cost ₹',true), xc('Sell/Unit ₹',true), xc('Total Selling ₹',true)]};
     let sno = 0;
+    // Assign each section a colour band in first-appearance order.
+    const secColor = {};
+    data.bom.forEach(row => {
+      const sec = row['SECTION'] || '';
+      if (!(sec in secColor)) secColor[sec] = _SECTION_COLORS[Object.keys(secColor).length % _SECTION_COLORS.length];
+    });
     const bomRows = [
       {_class:'xl-section', cells:[xs('BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM',10)]},
       bomHdr,
       ...data.bom.map(row => {
         sno++;
-        return {cells:[xc(sno,true), xc(row['SECTION']), xc(row['ITEM NAME']), xc(row['MAKE']), xc(row['SPECIFICATION']), xc(row['QTY'],true), xc(fmtN(row['COST/UNIT']),true), xc(fmtN(row['TOTAL COST']),true), xc(fmtN(row['SELL/UNIT']),true), xc(fmtN(row['TOTAL SELLING']),true)]};
+        return {_bg: secColor[row['SECTION'] || ''], cells:[xc(sno,true), xc(row['SECTION']), xc(row['ITEM NAME']), xc(row['MAKE']), xc(row['SPECIFICATION']), xc(row['QTY'],true), xc(fmtN(row['COST/UNIT']),true), xc(fmtN(row['TOTAL COST']),true), xc(fmtN(row['SELL/UNIT']),true), xc(fmtN(row['TOTAL SELLING']),true)]};
       }),
       {_class:'xl-total', cells:[xs('GRAND TOTAL',7,true), xc(fmtN(s.total_cost),true), xc('',true), xc(fmtN(s.total_selling),true)]},
     ];

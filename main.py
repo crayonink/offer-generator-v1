@@ -8465,9 +8465,19 @@ def export_excel(req: ExcelExportRequest):
         ws5.row_dimensions[r5].height = 30
         r5 += 1
         data_start = r5
+        # Each BOM section gets its own colour band so line items are grouped
+        # visually. Colours are assigned in section-first-appearance order and
+        # match the on-screen preview (_SECTION_COLORS in regen_costing.html).
+        _sec_palette = ["DBEAFE", "DCFCE7", "FEF3C7", "EDE9FE", "CCFBF1",
+                        "FCE7F3", "FFEDD5", "E0F2FE", "FEE2E2", "F3E8FF"]
+        _sec_color = {}
+        for _rd in req.bom:
+            _s = _rd.get("SECTION", "")
+            if _s not in _sec_color:
+                _sec_color[_s] = _sec_palette[len(_sec_color) % len(_sec_palette)]
         sno = 0
         for i, row_d in enumerate(req.bom):
-            bg = GREY if i % 2 == 0 else WHITE
+            bg = _sec_color.get(row_d.get("SECTION", ""), WHITE)
             sno += 1
             cell(ws5, r5, 1, sno, bg=bg, align="center")
             cell(ws5, r5, 2, row_d.get("SECTION",""), bg=bg)
