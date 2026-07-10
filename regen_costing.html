@@ -383,9 +383,9 @@
 
       <div class="sec-label">Enquiry</div>
       <div class="fg fg-4">
-        <div class="field"><label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label><input id="ref_no" type="text" class="ro" readonly placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/></div>
+        <div class="field" style="grid-column:span 3"><label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label><input id="ref_no" type="text" class="ro" readonly title="" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/></div>
         <div class="field"><label>Location</label><input id="location" type="text" class="ro" value="Faridabad" readonly/></div>
-        <div class="field" style="grid-column:span 2"><label>Subject</label><input id="subject" type="text" value="Offer for Regenerative Burner System" placeholder="Supply of Regenerative Burner System"/></div>
+        <div class="field" style="grid-column:span 4"><label>Subject</label><input id="subject" type="text" value="Offer for Regenerative Burner System" placeholder="Supply of Regenerative Burner System"/></div>
       </div>
       <div class="fg fg-2">
         <div class="field">
@@ -715,6 +715,7 @@
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     ref.value = `ENCON.04026.${parts.join('/')} DT.${dd}/${mm}/${d.getFullYear()}`;
+    ref.title = ref.value;   // hover shows the full ref even if visually clipped
   }
   async function fetchAutoRefSeq() {
     try { const r = await fetch('/api/next-quote-ref'); const j = await r.json(); if (j && j.seq) _autoRefSeq = j.seq; }
