@@ -441,13 +441,17 @@
 
     <div class="card">
       <div class="card-title">Fuel</div>
-      <div class="field">
+      <div class="field" id="fuelBtns">
         <label>Fuel Type</label>
-        <div class="mat-buttons" style="margin-top:8px;">
+        <div style="font-size:.72rem; font-weight:700; letter-spacing:.6px; color:var(--muted); text-transform:uppercase; margin-top:10px;">Gas</div>
+        <div class="mat-buttons" style="margin-top:6px;">
           <button class="mat-btn active" onclick="setFuel(this,'Natural Gas')">Natural Gas</button>
           <button class="mat-btn"        onclick="setFuel(this,'Blast Furnace Gas')">Blast Furnace Gas</button>
           <button class="mat-btn"        onclick="setFuel(this,'Coke Oven Gas')">Coke Oven Gas</button>
           <button class="mat-btn"        onclick="setFuel(this,'Producer Gas')">Producer Gas</button>
+        </div>
+        <div style="font-size:.72rem; font-weight:700; letter-spacing:.6px; color:var(--muted); text-transform:uppercase; margin-top:14px;">Oil</div>
+        <div class="mat-buttons" style="margin-top:6px;">
           <button class="mat-btn"        onclick="setFuel(this,'HSD')">HSD</button>
           <button class="mat-btn"        onclick="setFuel(this,'LDO')">LDO</button>
           <button class="mat-btn"        onclick="setFuel(this,'HDO')">HDO</button>
@@ -678,7 +682,8 @@
   }
   function setFuel(btn, fuel) {
     selectedFuel = fuel;
-    btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+    // Clear active across BOTH the Gas and Oil groups (scoped to the fuel field).
+    document.getElementById('fuelBtns').querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
 
