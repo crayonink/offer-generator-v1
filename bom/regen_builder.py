@@ -567,8 +567,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
         pass  # oil fuels are handled by the HPU/pumping unit — no gas train
-    elif is_lowcv and _fuel_l == "blast furnace gas":
-        # BFG gas train — 5 header valves sized to the BFG gas DN, Pricelist-
+    elif is_lowcv and _fuel_l in ("blast furnace gas", "coke oven gas"):
+        # BFG / COG gas train — 5 header valves sized to the gas DN, Pricelist-
         # sourced (DEMBLA for the pneumatic shut-off; butterfly/gate are L&T-only).
         if gas_dn:
             def _pl(vtype, dn):
