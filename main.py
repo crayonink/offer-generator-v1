@@ -1633,6 +1633,10 @@ def _startup_ensure_regen_pricelist_extras():
         ("Oil Flow Meter",                     "Oil Line", 90000, "HONEYWELL"),
         ("TT in Oil Line",                     "Oil Line",  5000, "HONEYWELL"),
         ("PT in Oil Line",                     "Oil Line", 12000, "HONEYWELL"),
+        # Oil auxiliaries (Regen_Oil_Testing.xlsx). HPU is computed by the HPU
+        # calculator, not a row; these two are single Pricelist lines.
+        ("Paperless Recorder",                 "Oil Line",160000, "EUROTHERM"),
+        ("ID Fan 15 HP",                       "Oil Line",200000, "ENCON"),
     ]
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -8004,6 +8008,9 @@ def _regen_basis(item, spec):
         ("TT in Oil Line",            "Pricelist → TT in Oil Line (HONEYWELL)"),
         ("PT in Oil Line",            "Pricelist → PT in Oil Line (HONEYWELL)"),
         ("Flexible Hose Pipe",        "Pricelist → Flexible Hose Pipe (Oil Line) 25 NB (BENGAL)"),
+        ("Paperless Recorder",        "Pricelist → Paperless Recorder (EUROTHERM)"),
+        ("Heating & Pumping Unit",    "HPU calculator → 9 KW (HPD-9, material cost × markup)"),
+        ("ID Fan",                    "Pricelist → ID Fan 15 HP (ENCON)"),
         ("Burner with Regenerator", "Pricelist → Burner with Regenerator (per KW)"),
         ("Combustion Blower",        "Internal costing → blower with motor (Alone×1.8 + Motor×1.5)"),
         ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),

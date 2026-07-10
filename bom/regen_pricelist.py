@@ -61,6 +61,8 @@ OIL_ITEM = {
     "oil_flow_meter":      "Oil Flow Meter",
     "tt_oil_line":         "TT in Oil Line",
     "pt_oil_line":         "PT in Oil Line",
+    "paperless_recorder":  "Paperless Recorder",
+    "id_fan":              "ID Fan 15 HP",
 }
 
 

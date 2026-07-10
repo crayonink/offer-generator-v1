@@ -207,6 +207,8 @@ _OIL = {
     "oil_flow_meter":     90000,   # "Oil Flow Meter"
     "tt_oil_line":         5000,   # "TT in Oil Line"
     "pt_oil_line":        12000,   # "PT in Oil Line"
+    "paperless_recorder":160000,   # "Paperless Recorder" (EUROTHERM)
+    "id_fan":            200000,   # "ID Fan 15 HP"
 }
 
 # ── Per-fuel gas lines (low-CV gases: BFG / COG / Producer Gas) ───────────────
@@ -572,6 +574,23 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("CONTROLS", "PLC with HMI",
         "Siemens S7-1200/1500 with touch panel",  1,                     plc_cost, scale=False)
     add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'], scale=False)
+    if is_oil:
+        # Oil offers add a paperless recorder for the oil flow/temp channels.
+        add("CONTROLS", "Paperless Recorder", "",                         1, oil['paperless_recorder'], scale=False)
+
+    # ── 8b. OIL AUXILIARY — HPU (computed) + ID Fan ───────────────────────────
+    if is_oil:
+        # Heating & Pumping Unit — priced live by the HPU calculator (9 KW unit;
+        # material cost × regen markup ≈ the HPU's own selling price). Fallback 0.
+        hpu_cost = 0.0
+        try:
+            from bom.hpu_calculator import get_hpu_cost
+            hpu_cost = float(get_hpu_cost(9).get('material_cost') or 0.0)
+        except Exception:
+            hpu_cost = 0.0
+        if hpu_cost:
+            add("OIL AUXILIARY", "Heating & Pumping Unit", "9 KW",        1, hpu_cost, scale=False)
+        add("OIL AUXILIARY", "ID Fan",                     "15 HP",       1, oil['id_fan'], scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
@@ -632,6 +651,7 @@ def _regen_make(item):
     if "shut-off" in n or "shut off" in n:    return "DEMBLA"
     if "control valve" in n:                  return "DEMBLA"
     if "in oil line" in n:                    return "HONEYWELL"
+    if "paperless recorder" in n:             return "EUROTHERM"
     if "flow meter" in n or "dpt" in n:       return "HONEYWELL"
     if "pressure switch" in n:                return "MADAS"
     if "orifice" in n:                        return "ENCON"
