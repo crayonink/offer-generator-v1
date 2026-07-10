@@ -515,10 +515,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
 
     # ── 4. AIR LINE — Pilot / UV / UV Cooling ─────────────────────────────────
-    add("AIR LINE — PILOT/UV", "Ball Valve UV",       "NB15",            8, flat['ball_valve_nb15'])
-    add("AIR LINE — PILOT/UV", "Flexible Hose UV",    "NB15",            4, flat['flex_hose_nb15'])
-    add("AIR LINE — PILOT/UV", "Ball Valve Pilot",    "NB15",            4, flat['ball_valve_nb15'])
-    add("AIR LINE — PILOT/UV", "Flexible Hose Pilot", "NB15",            4, flat['flex_hose_nb15'])
+    # Oil offers use 2 of each (Regen_Oil_Testing.xlsx); gas keeps 8/4/4/4.
+    _uv_bv, _uv_fh, _pl_bv, _pl_fh = (2, 2, 2, 2) if is_oil else (8, 4, 4, 4)
+    add("AIR LINE — PILOT/UV", "Ball Valve UV",       "NB15",       _uv_bv, flat['ball_valve_nb15'])
+    add("AIR LINE — PILOT/UV", "Flexible Hose UV",    "NB15",       _uv_fh, flat['flex_hose_nb15'])
+    add("AIR LINE — PILOT/UV", "Ball Valve Pilot",    "NB15",       _pl_bv, flat['ball_valve_nb15'])
+    add("AIR LINE — PILOT/UV", "Flexible Hose Pilot", "NB15",       _pl_fh, flat['flex_hose_nb15'])
 
     # ── 5. AIR LINE — Burner ──────────────────────────────────────────────────
     add("AIR LINE — BURNER", "Shut-Off Valve Air",
@@ -553,7 +555,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             f"DN{m['gas_cv_nb']}",               1,                          m['gas_cv_cost'])
         add("TEMP CONTROL", "Gas Flow Meter (DPT)",
             f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
-    add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "",            1, flat['furnace_thermocouple'])
+    add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "", (4 if is_oil else 1), flat['furnace_thermocouple'])
     add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'], scale=False)
     if is_lowcv and flue_dn:
         nb, p, gap = _snap("pneu_damp", "pneu_damp", flue_dn)
@@ -567,7 +569,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 7. BLOWER ─────────────────────────────────────────────────────────────
     _bhp = _BLOWER_HP.get(kw, "")
     add("BLOWER", "Combustion Blower (40\" WG)",
-        f"ENCON 40/{_bhp.replace('HP','')}, {_bhp}, with motor",   2,   m['blower_cost'], scale=False)
+        f"ENCON 40/{_bhp.replace('HP','')}, {_bhp}, with motor",
+        (1 if is_oil else 2),   m['blower_cost'], scale=False)
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
