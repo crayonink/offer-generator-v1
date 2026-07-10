@@ -4447,7 +4447,8 @@ def cost_variations(req: CostVariationsRequest):
 
 class RegenCalcRequest(BaseModel):
     # Direct-selection mode (Size / Fuel / Pairs) — the primary path.
-    model_kw: Optional[int] = None     # 500..6000; if set, skips the heat-load calc
+    model_kw: Optional[int] = None     # BURNER size 500..6000; if set, skips the heat-load calc
+    regen_kw: Optional[int] = None     # REGENERATOR size 500..6000; defaults to model_kw
     fuel: Optional[str] = None         # Natural Gas / Blast Furnace Gas / Coke Oven Gas / Producer Gas / Oil
     num_pairs: Optional[int] = None    # number of burner pairs
     markup: float = 1.80
@@ -4469,7 +4470,8 @@ def regen_calculate(req: RegenCalcRequest):
         result = None
         if req.model_kw:
             # ── Direct-selection mode: user picks Size + Fuel + Pairs ──────────
-            model_kw  = select_model(int(req.model_kw))   # snap to a valid model
+            model_kw  = select_model(int(req.model_kw))   # snap to a valid burner model
+            regen_kw  = select_model(int(req.regen_kw)) if req.regen_kw else model_kw
             num_pairs = max(1, int(req.num_pairs or 1))
         else:
             # ── Legacy heat-load sizing (charge weight → kW) ──────────────────
@@ -4486,12 +4488,14 @@ def regen_calculate(req: RegenCalcRequest):
             # Select the appropriate KW model (smallest >= required_kw per pair)
             kw_per_pair = result.required_kw / max(1, result.num_pairs)
             model_kw    = select_model(kw_per_pair)
+            regen_kw    = model_kw
             num_pairs   = result.num_pairs
 
         model_markup = req.markup if req.markup != 1.80 else None  # None → use model default
 
         bom_df = build_regen_df(model_kw, model_markup, num_pairs=num_pairs,
-                                db_path=DB_PATH, fuel=req.fuel or "Natural Gas")
+                                db_path=DB_PATH, fuel=req.fuel or "Natural Gas",
+                                regen_kw=regen_kw)
         supplementary = get_supplementary_data(model_kw)
 
         # Augment supplementary with full sizing + nozzle + legacy rates from DB
@@ -4567,7 +4571,8 @@ def regen_calculate(req: RegenCalcRequest):
             "mode": "direct" if req.model_kw else "heat",
             "fuel": req.fuel or "Natural Gas",
             "num_pairs": num_pairs,
-            "model_kw": model_kw,
+            "model_kw": model_kw,          # burner size
+            "regen_kw": regen_kw,          # regenerator size
             "total_kw": model_kw * num_pairs,
         }
         if result is not None:
@@ -8011,7 +8016,7 @@ def _regen_basis(item, spec):
         ("Paperless Recorder",        "Pricelist → Paperless Recorder (EUROTHERM)"),
         ("Heating & Pumping Unit",    "HPU calculator → 9 KW (HPD-9, material cost × markup)"),
         ("ID Fan",                    "Pricelist → ID Fan 15 HP (ENCON)"),
-        ("Burner with Regenerator", "Pricelist → Burner with Regenerator (per KW)"),
+        ("Burner with Regenerator", "Regen-with-Burner tab → Burner portion (burner KW) + Regen portion (regen KW)"),
         ("Combustion Blower",        "Internal costing → blower with motor (Alone×1.8 + Motor×1.5)"),
         ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),
         ("Control Panel",            "Pricelist → Control Panel (per KW)"),

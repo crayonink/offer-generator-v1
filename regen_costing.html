@@ -424,17 +424,30 @@
   <div class="step" id="step-2">
     <div class="card">
       <div class="card-title">Burner / Regen Size</div>
-      <div class="field">
-        <label>Size (KW per pair)</label>
+      <div class="field" id="burnerSizeBtns">
+        <label>Burner Size (KW per pair)</label>
         <div class="mat-buttons" style="margin-top:8px;">
-          <button class="mat-btn active" onclick="setSize(this,500)">500</button>
-          <button class="mat-btn"        onclick="setSize(this,1000)">1000</button>
-          <button class="mat-btn"        onclick="setSize(this,1500)">1500</button>
-          <button class="mat-btn"        onclick="setSize(this,2000)">2000</button>
-          <button class="mat-btn"        onclick="setSize(this,2500)">2500</button>
-          <button class="mat-btn"        onclick="setSize(this,3000)">3000</button>
-          <button class="mat-btn"        onclick="setSize(this,4500)">4500</button>
-          <button class="mat-btn"        onclick="setSize(this,6000)">6000</button>
+          <button class="mat-btn active" onclick="setBurnerSize(this,500)">500</button>
+          <button class="mat-btn"        onclick="setBurnerSize(this,1000)">1000</button>
+          <button class="mat-btn"        onclick="setBurnerSize(this,1500)">1500</button>
+          <button class="mat-btn"        onclick="setBurnerSize(this,2000)">2000</button>
+          <button class="mat-btn"        onclick="setBurnerSize(this,2500)">2500</button>
+          <button class="mat-btn"        onclick="setBurnerSize(this,3000)">3000</button>
+          <button class="mat-btn"        onclick="setBurnerSize(this,4500)">4500</button>
+          <button class="mat-btn"        onclick="setBurnerSize(this,6000)">6000</button>
+        </div>
+      </div>
+      <div class="field" id="regenSizeBtns" style="margin-top:16px;">
+        <label>Regen Size (KW per pair)</label>
+        <div class="mat-buttons" style="margin-top:8px;">
+          <button class="mat-btn active" onclick="setRegenSize(this,500)">500</button>
+          <button class="mat-btn"        onclick="setRegenSize(this,1000)">1000</button>
+          <button class="mat-btn"        onclick="setRegenSize(this,1500)">1500</button>
+          <button class="mat-btn"        onclick="setRegenSize(this,2000)">2000</button>
+          <button class="mat-btn"        onclick="setRegenSize(this,2500)">2500</button>
+          <button class="mat-btn"        onclick="setRegenSize(this,3000)">3000</button>
+          <button class="mat-btn"        onclick="setRegenSize(this,4500)">4500</button>
+          <button class="mat-btn"        onclick="setRegenSize(this,6000)">6000</button>
         </div>
       </div>
     </div>
@@ -672,11 +685,17 @@
     document.getElementById(id).value = val;
   }
 
-  // ── Direct selection: Size (KW per pair) + Fuel ──────────────────────────
-  let selectedKw = 500;
+  // ── Direct selection: Burner Size + Regen Size + Fuel ────────────────────
+  let selectedKw = 500;        // burner size (drives the whole BOM)
+  let selectedRegenKw = 500;   // regenerator size (regen cost portion only)
   let selectedFuel = 'Natural Gas';
-  function setSize(btn, kw) {
+  function setBurnerSize(btn, kw) {
     selectedKw = kw;
+    btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  function setRegenSize(btn, kw) {
+    selectedRegenKw = kw;
     btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
@@ -738,6 +757,7 @@
 
     const payload = {
       model_kw:  selectedKw,
+      regen_kw:  selectedRegenKw,
       fuel:      selectedFuel,
       num_pairs: parseInt(document.getElementById('num_pairs').value) || 1,
       markup:    parseFloat(document.getElementById('markup').value) || 1.80,
@@ -862,7 +882,7 @@
         <div style="background:#f8fafc; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">System</div>
           <div style="font-weight:700;">${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}</div>
-          <div style="font-size:.82rem; color:var(--muted);">${c.fuel || 'Natural Gas'} · ${c.total_kw} KW</div>
+          <div style="font-size:.82rem; color:var(--muted);">${c.fuel || 'Natural Gas'} · ${(c.regen_kw && c.regen_kw !== c.model_kw) ? ('Burner '+c.model_kw+' / Regen '+c.regen_kw+' KW') : (c.total_kw + ' KW')}</div>
         </div>
         <div style="background:#eff6ff; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Final Total</div>

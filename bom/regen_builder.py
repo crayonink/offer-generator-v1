@@ -285,6 +285,18 @@ def _fuel_pipe_dn(db_path, fuel, kw):
         pass
     return None, None
 
+# ── Burner-portion / Regen-portion cost per KW (₹, per burner) ───────────────
+# Hardcoded, matching the "Regen with Burner" tab in Internal Costing:
+#   Burner = Burner MS + Burner Refractory + Burner Block (2 refractory)
+#   Regen  = Regen MS + Regen SS + Regen Refractory + Regen Ceramic
+# The two independent selectors let a burner size differ from the regen size;
+# the combined line = _BURNER_PORTION[burner_kw] + _REGEN_PORTION[regen_kw].
+# When the sizes are equal the sum equals the legacy combined price.
+_BURNER_PORTION = {500:43148.50, 1000:51704.97, 1500:61014.00, 2000:84145.48,
+                   2500:93458.97, 3000:105779.10, 4500:132675.18, 6000:178665.24}
+_REGEN_PORTION  = {500:81280.63, 1000:111293.67, 1500:135783.44, 2000:262108.05,
+                   2500:262890.15, 3000:369011.69, 4500:530864.13, 6000:689902.82}
+
 # ── Burner + Regenerator material weights (kg) per KW model ──────────────────
 # Source: "Burner Sizing and costing" sheet, rows 35-42
 # Columns: burner_ms, burner_refrac, regen_ms, regen_ss, regen_refrac, regen_ceramic, block_refrac
@@ -406,11 +418,14 @@ def select_model(required_kw: float) -> int:
 
 
 def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
-                   db_path: str = None, fuel: str = "Natural Gas") -> pd.DataFrame:
+                   db_path: str = None, fuel: str = "Natural Gas",
+                   regen_kw: int = None) -> pd.DataFrame:
     """
     Build full BOM DataFrame for the given KW model.
 
-    kw        : one of MODEL_KWS (500, 1000, 1500, 2000, 2500, 3000, 4500, 6000)
+    kw        : BURNER size — one of MODEL_KWS (500..6000). Drives the whole BOM
+                (valves, pipes, blower, HP, panel, PLC, damper, flows) plus the
+                burner portion of the Burner+Regenerator line.
     markup    : selling price multiplier; if None uses model default (1.8 or 2.0)
     num_pairs : number of pairs — affects PLC selection only (default 1)
     db_path   : if given, every line price is sourced LIVE from the Pricelist
@@ -419,7 +434,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     fuel      : "Oil" swaps the gas fuel line + gas train + gas control/flow
                 meter for the oil line (Solenoid Valve Oil, Oil Control Valve,
                 Oil Flow Meter, TT/PT). Any gas fuel builds the standard NG BOM.
+    regen_kw  : REGENERATOR size (one of MODEL_KWS). Defaults to the burner size.
+                Only affects the regenerator portion of the Burner+Regenerator
+                line cost (_REGEN_PORTION[regen_kw]).
     """
+    if regen_kw is None:
+        regen_kw = kw
     _fuel_l = (fuel or "").strip().lower()
     # Any oil grade (HSD/LDO/HDO/FO/SKO/CFO/LSHS) builds the oil line; the
     # regen oil line is the same for every grade.
@@ -467,8 +487,17 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         rows.append(_make_row(section, item, spec, q, cost_unit, mk))
 
     # ── 1. BURNER SET ─────────────────────────────────────────────────────────
-    add("BURNER SET", f"Burner with Regenerator ({kw} KW)",
-        f"Regenerative burner with heat-storage media, complete",         2, m['burner_cost'])
+    # Combined burner + regenerator cost = burner portion (burner KW) + regen
+    # portion (regen KW), from the hardcoded Regen-with-Burner table. When the
+    # two sizes match, this equals the legacy combined price.
+    _br_cost = _BURNER_PORTION.get(kw, m['burner_cost']) + _REGEN_PORTION.get(regen_kw, 0)
+    if regen_kw == kw:
+        _br_item = f"Burner with Regenerator ({kw} KW)"
+        _br_spec = "Regenerative burner with heat-storage media, complete"
+    else:
+        _br_item = f"Burner with Regenerator (Burner {kw} / Regen {regen_kw} KW)"
+        _br_spec = f"Burner {kw} KW + Regenerator {regen_kw} KW, complete"
+    add("BURNER SET", _br_item, _br_spec,                                  2, _br_cost)
     add("BURNER SET", "Pilot Burner",        "10 KW (LPG)",              2, flat['pilot_burner'])
     add("BURNER SET", "Sequence Controller", "",                          2, flat['burner_controller'])
     add("BURNER SET", "Ignition Transformer","",                          2, flat['ignition_transformer'])
