@@ -197,12 +197,16 @@ _GAS_SKID_6000 = {
 # Oil grades — all build the same regen oil line.
 _OIL_FUELS = {"oil", "hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
 
+# Oil line — matches Regen_Oil_Testing.xlsx "Oil Line" (per-burner NB25 items +
+# oil temperature-control block). Prices are per unit.
 _OIL = {
-    "solenoid_valve_oil":  7000,   # NB25, per burner
-    "oil_control_valve":  25000,   # NB25
-    "oil_flow_meter_dpt": 48000,   # NB25, DPT + orifice + flanges
-    "tt_oil_line":         5000,   # temperature transmitter in oil line
-    "pt_oil_line":        48000,   # pressure transmitter in oil line
+    "solenoid_valve_oil": 14000,   # NB25, per burner — "Solenoid Valve (Oil Line)"
+    "gate_valve_oil":      5000,   # NB25, per burner — "Gate Valve"
+    "flex_hose_oil":       1750,   # NB25, 2000mm, per burner — "Flexible Hose Pipe"
+    "oil_control_valve":  80000,   # NB25 — "Globe Type Oil Control valve"
+    "oil_flow_meter":     90000,   # "Oil Flow Meter"
+    "tt_oil_line":         5000,   # "TT in Oil Line"
+    "pt_oil_line":        12000,   # "PT in Oil Line"
 }
 
 # ── Per-fuel gas lines (low-CV gases: BFG / COG / Producer Gas) ───────────────
@@ -478,9 +482,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
     if is_oil:
         # Oil fuel line (NB25) — replaces the gas solenoid/ball-valve/hose bank.
-        add("OIL LINE — BURNER", "Solenoid Valve (Oil)",          "NB25", 2, oil['solenoid_valve_oil'])
-        add("OIL LINE — BURNER", "Temperature Transmitter (Oil)", "",     1, oil['tt_oil_line'])
-        add("OIL LINE — BURNER", "Pressure Transmitter (Oil)",    "",     1, oil['pt_oil_line'])
+        add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",     "NB25", 2, oil['solenoid_valve_oil'])
+        add("OIL LINE — BURNER", "Gate Valve",                    "NB25", 2, oil['gate_valve_oil'])
+        add("OIL LINE — BURNER", "Flexible Hose Pipe (2000mm)",   "NB25", 2, oil['flex_hose_oil'])
     elif is_lowcv and gas_dn:
         # Built-up gas line sized to the fuel's gas DN. Up to NB100 it's the
         # solenoid + ball-valve + hose bank; above that (low-CV, large flow) it
@@ -532,8 +536,10 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("TEMP CONTROL", "Air Flow Meter (DPT)",
         f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'], scale=False)
     if is_oil:
-        add("TEMP CONTROL", "Oil Control Valve",   "NB25",              1, oil['oil_control_valve'])
-        add("TEMP CONTROL", "Oil Flow Meter (DPT)","NB25",              1, oil['oil_flow_meter_dpt'])
+        add("TEMP CONTROL", "Globe Type Oil Control Valve", "NB25",     1, oil['oil_control_valve'])
+        add("TEMP CONTROL", "Oil Flow Meter",               "",         1, oil['oil_flow_meter'])
+        add("TEMP CONTROL", "TT in Oil Line",               "",         1, oil['tt_oil_line'])
+        add("TEMP CONTROL", "PT in Oil Line",               "",         1, oil['pt_oil_line'])
     elif is_lowcv and gas_dn:
         nb, p, _ = _snap("control",    "gas_cv", gas_dn); add("TEMP CONTROL", "Gas Control Valve",    f"DN{nb}", 1, p)
         nb, p, _ = _snap("flow_meter", "gas_fm", gas_dn); add("TEMP CONTROL", "Gas Flow Meter (DPT)", f"DN{nb}", 1, p)
@@ -622,6 +628,7 @@ def _regen_make(item):
     if "flexible hose" in n:                  return "BENGAL"
     if "shut-off" in n or "shut off" in n:    return "DEMBLA"
     if "control valve" in n:                  return "DEMBLA"
+    if "in oil line" in n:                    return "HONEYWELL"
     if "flow meter" in n or "dpt" in n:       return "HONEYWELL"
     if "pressure switch" in n:                return "MADAS"
     if "orifice" in n:                        return "ENCON"

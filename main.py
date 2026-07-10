@@ -7984,6 +7984,14 @@ def _regen_basis(item, spec):
     s = (spec or "").strip()
     sz = f" {s}" if s and ("NB" in s or "DN" in s) else ""
     checks = [
+        # Oil line (code constants — Regen_Oil_Testing.xlsx). Kept first so they
+        # win over the generic valve/flow-meter matches below.
+        ("Solenoid Valve (Oil",       "Code → oil line (NB25)"),
+        ("Globe Type Oil Control",    "Code → oil line (Globe valve, NB25)"),
+        ("Oil Flow Meter",            "Code → oil line"),
+        ("TT in Oil Line",            "Code → oil line"),
+        ("PT in Oil Line",            "Code → oil line"),
+        ("Flexible Hose Pipe",        "Code → oil line (NB25, 2000mm)"),
         ("Burner with Regenerator", "Pricelist → Burner with Regenerator (per KW)"),
         ("Combustion Blower",        "Internal costing → blower with motor (Alone×1.8 + Motor×1.5)"),
         ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),
@@ -8006,14 +8014,12 @@ def _regen_basis(item, spec):
         ("UV Sensor",                "Pricelist → UV Sensor with Air Jacket (LINEAR)"),
         ("Pilot Regulator",          "Pricelist → Gas Regulator 025 NB, 5 Bar (MADAS)"),
         ("Pilot Solenoid Valve",     "Pricelist → Solenoid Valve 15 NB (MADAS)"),
-        ("Solenoid Valve (Oil)",     "Code → oil line (NB25)"),
         ("Solenoid Valve",           f"Pricelist → Solenoid Valve{sz} (MADAS, −45%)"),
         ("Ball Valve",               f"Pricelist → Ball Valve{sz} (L&T)"),
         ("Manual Butterfly Valve",   f"Pricelist → Butterfly Valve{sz} (L&T)"),
         ("Shut-Off Valve",           f"Pricelist → Pneumatic Shut Off Valve{sz} (DEMBLA)"),
         ("Gas Control Valve",        f"Pricelist → Pneumatic Control Valve{sz} (DEMBLA)"),
         ("Air Control Valve",        f"Pricelist → Pneumatic Control Valve{sz} (DEMBLA)"),
-        ("Oil Control Valve",        "Code → oil line (NB25)"),
         ("Flow Meter (DPT)",         f"Pricelist → Flow Meter (DPT){sz}"),
         ("Flow Meter",               f"Pricelist → Flow Meter (DPT){sz}"),
         ("Flexible Hose",            f"Pricelist → Flexible Hose{sz} (BENGAL)"),
@@ -8021,8 +8027,6 @@ def _regen_basis(item, spec):
         ("Pressure Gauge 0-500",     "Pricelist → Pressure Gauge with TNV (HGURU)"),
         ("Thermocouple with TT (Furnace)", "Pricelist → THERMOCOUPLE (TEMPSENS)"),
         ("Thermocouple",             "Pricelist → Thermocouple Small"),
-        ("Temperature Transmitter (Oil)", "Code → oil line"),
-        ("Pressure Transmitter (Oil)",    "Code → oil line"),
         ("DPT",                      "Pricelist → DPT (HONEYWELL)"),
         ("Gate Valve",               "Code → 6000 KW gas skid"),
         ("Pressure Switch",          "Code → 6000 KW gas skid"),
