@@ -589,11 +589,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             _bfn, bf_p, _ = _pl("butterfly", gas_dn)
             _shn, sh_p, _ = _pl("shutoff", gas_dn)
             _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
+            add("GAS TRAIN", "Gate Valve",              f"DN{gas_dn}", 1, gv_p, scale=False)
             add("GAS TRAIN", "Butterfly Valve",         f"DN{gas_dn}", 1, bf_p, scale=False)
             add("GAS TRAIN", "Shut-Off Valve",          f"DN{gas_dn}", 1, sh_p, scale=False)
             add("GAS TRAIN", "Pressure Gauge with TNV", f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
             add("GAS TRAIN", "Pressure Switch Low",     "",            1, ps_low, scale=False)
-            add("GAS TRAIN", "Gate Valve",              f"DN{gas_dn}", 1, gv_p, scale=False)
     elif is_lowcv and gas_dn:
         # COG / Producer Gas get a discrete, vertical-style gas train sized to the
         # fuel's gas-header DN — gate + butterfly isolation, single shut-off.
