@@ -567,10 +567,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
         pass  # oil fuels are handled by the HPU/pumping unit — no gas train
+    elif is_lowcv and _fuel_l == "blast furnace gas":
+        pass  # BFG: no gas train (built-up gas line only, per user request)
     elif is_lowcv and gas_dn:
-        # Low-CV gases (BFG / COG / Producer Gas) get a discrete, vertical-style
-        # gas train sized to the fuel's gas-header DN. Every line is Pricelist-
-        # sourced; layout differs by fuel (BFG = double-block + rotary joint).
+        # COG / Producer Gas get a discrete, vertical-style gas train sized to the
+        # fuel's gas-header DN — gate + butterfly isolation, single shut-off.
+        # Every line is Pricelist-sourced.
         def _pl(vtype, dn):
             if _conn:
                 try:
@@ -593,33 +595,16 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         _cvn, cv_p, _ = _pl("control", cv_nb)
         _shn, sh_p, _ = _pl("shutoff", gas_dn)
         _bfn, bf_p, _ = _pl("butterfly", gas_dn)
-
-        if _fuel_l == "blast furnace gas":
-            # BFG: low pressure + variable composition → full-bore isolation,
-            # DOUBLE-block shut-off, and a rotary joint (no packaged train).
-            _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
-            _rjn, rj_p, _ = _pl("rotary_joint", gas_dn)
-            add("GAS TRAIN", "Butterfly Valve (Isolation)", f"DN{gas_dn}", 1, bf_p, scale=False)
-            add("GAS TRAIN", "Shut-Off Valve",              f"DN{gas_dn}", 2, sh_p, scale=False)
-            add("GAS TRAIN", "Pressure Gauge with TNV",     f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
-            add("GAS TRAIN", "Pressure Switch Low",         "",            1, ps_low, scale=False)
-            if or_p is not None:
-                add("GAS TRAIN", "Orifice Plate",           f"DN{or_nb}",  1, or_p, scale=False)
-            add("GAS TRAIN", "DPT (Gas Train)",             "",            1, flat['dpt'], scale=False)
-            add("GAS TRAIN", "Control Valve",               f"DN{cv_nb}",  1, cv_p, scale=False)
-            add("GAS TRAIN", "Rotary Joint",                f"DN{gas_dn}", 1, rj_p, scale=False)
-        else:
-            # COG / Producer Gas: gate + butterfly isolation, single shut-off.
-            _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
-            add("GAS TRAIN", "Gate Valve",                  f"DN{gas_dn}", 1, gv_p, scale=False)
-            add("GAS TRAIN", "Pressure Gauge with TNV",     f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
-            add("GAS TRAIN", "Shut-Off Valve",              f"DN{gas_dn}", 1, sh_p, scale=False)
-            add("GAS TRAIN", "Butterfly Valve",             f"DN{gas_dn}", 1, bf_p, scale=False)
-            add("GAS TRAIN", "Pressure Switch Low",         "",            1, ps_low, scale=False)
-            if or_p is not None:
-                add("GAS TRAIN", "Orifice Plate",           f"DN{or_nb}",  1, or_p, scale=False)
-            add("GAS TRAIN", "DPT (Gas Train)",             "",            1, flat['dpt'], scale=False)
-            add("GAS TRAIN", "Control Valve",               f"DN{cv_nb}",  1, cv_p, scale=False)
+        _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
+        add("GAS TRAIN", "Gate Valve",                  f"DN{gas_dn}", 1, gv_p, scale=False)
+        add("GAS TRAIN", "Pressure Gauge with TNV",     f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
+        add("GAS TRAIN", "Shut-Off Valve",              f"DN{gas_dn}", 1, sh_p, scale=False)
+        add("GAS TRAIN", "Butterfly Valve",             f"DN{gas_dn}", 1, bf_p, scale=False)
+        add("GAS TRAIN", "Pressure Switch Low",         "",            1, ps_low, scale=False)
+        if or_p is not None:
+            add("GAS TRAIN", "Orifice Plate",           f"DN{or_nb}",  1, or_p, scale=False)
+        add("GAS TRAIN", "DPT (Gas Train)",             "",            1, flat['dpt'], scale=False)
+        add("GAS TRAIN", "Control Valve",               f"DN{cv_nb}",  1, cv_p, scale=False)
     elif m['gas_train_cost'] > 0:
         add("GAS TRAIN", "NG Gas Train",
             f"Complete, for {kw} KW",             1,                     m['gas_train_cost'], scale=False)
