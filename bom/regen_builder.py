@@ -568,7 +568,32 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     if is_oil:
         pass  # oil fuels are handled by the HPU/pumping unit — no gas train
     elif is_lowcv and _fuel_l == "blast furnace gas":
-        pass  # BFG: no gas train (built-up gas line only, per user request)
+        # BFG gas train — 5 header valves sized to the BFG gas DN, Pricelist-
+        # sourced (DEMBLA for the pneumatic shut-off; butterfly/gate are L&T-only).
+        if gas_dn:
+            def _pl(vtype, dn):
+                if _conn:
+                    try:
+                        from bom.regen_pricelist import valve_price
+                        return valve_price(_conn, vtype, dn)
+                    except Exception:
+                        pass
+                return dn, None, False
+            ps_low = None
+            if _conn:
+                try:
+                    from bom.regen_pricelist import pressure_switch_low_price
+                    ps_low = pressure_switch_low_price(_conn)
+                except Exception:
+                    pass
+            _bfn, bf_p, _ = _pl("butterfly", gas_dn)
+            _shn, sh_p, _ = _pl("shutoff", gas_dn)
+            _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
+            add("GAS TRAIN", "Butterfly Valve",         f"DN{gas_dn}", 1, bf_p, scale=False)
+            add("GAS TRAIN", "Shut-Off Valve",          f"DN{gas_dn}", 1, sh_p, scale=False)
+            add("GAS TRAIN", "Pressure Gauge with TNV", f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
+            add("GAS TRAIN", "Pressure Switch Low",     "",            1, ps_low, scale=False)
+            add("GAS TRAIN", "Gate Valve",              f"DN{gas_dn}", 1, gv_p, scale=False)
     elif is_lowcv and gas_dn:
         # COG / Producer Gas get a discrete, vertical-style gas train sized to the
         # fuel's gas-header DN — gate + butterfly isolation, single shut-off.
