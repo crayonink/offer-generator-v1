@@ -567,9 +567,10 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
         pass  # oil fuels are handled by the HPU/pumping unit — no gas train
-    elif is_lowcv and _fuel_l in ("blast furnace gas", "coke oven gas"):
-        # BFG / COG gas train — 5 header valves sized to the gas DN, Pricelist-
-        # sourced (DEMBLA for the pneumatic shut-off; butterfly/gate are L&T-only).
+    elif is_lowcv and _fuel_l in ("blast furnace gas", "coke oven gas", "producer gas"):
+        # BFG / COG / Producer Gas gas train — 5 header valves sized to the fuel's
+        # own gas DN (varies per fuel via regen_pipe_sizes), Pricelist-sourced
+        # (DEMBLA for the pneumatic shut-off; butterfly/gate are L&T-only).
         if gas_dn:
             def _pl(vtype, dn):
                 if _conn:
@@ -594,42 +595,6 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             add("GAS TRAIN", "Shut-Off Valve",          f"DN{gas_dn}", 1, sh_p, scale=False)
             add("GAS TRAIN", "Pressure Gauge with TNV", f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
             add("GAS TRAIN", "Pressure Switch Low",     "",            1, ps_low, scale=False)
-    elif is_lowcv and gas_dn:
-        # COG / Producer Gas get a discrete, vertical-style gas train sized to the
-        # fuel's gas-header DN — gate + butterfly isolation, single shut-off.
-        # Every line is Pricelist-sourced.
-        def _pl(vtype, dn):
-            if _conn:
-                try:
-                    from bom.regen_pricelist import valve_price
-                    return valve_price(_conn, vtype, dn)
-                except Exception:
-                    pass
-            return dn, None, False
-
-        ps_low = None
-        or_nb = or_p = None
-        if _conn:
-            try:
-                from bom.regen_pricelist import pressure_switch_low_price, orifice_price
-                ps_low = pressure_switch_low_price(_conn)
-                or_nb, or_p, _ = orifice_price(_conn, gas_dn)
-            except Exception:
-                pass
-        cv_nb = _one_smaller_nb(gas_dn)
-        _cvn, cv_p, _ = _pl("control", cv_nb)
-        _shn, sh_p, _ = _pl("shutoff", gas_dn)
-        _bfn, bf_p, _ = _pl("butterfly", gas_dn)
-        _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
-        add("GAS TRAIN", "Gate Valve",                  f"DN{gas_dn}", 1, gv_p, scale=False)
-        add("GAS TRAIN", "Pressure Gauge with TNV",     f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
-        add("GAS TRAIN", "Shut-Off Valve",              f"DN{gas_dn}", 1, sh_p, scale=False)
-        add("GAS TRAIN", "Butterfly Valve",             f"DN{gas_dn}", 1, bf_p, scale=False)
-        add("GAS TRAIN", "Pressure Switch Low",         "",            1, ps_low, scale=False)
-        if or_p is not None:
-            add("GAS TRAIN", "Orifice Plate",           f"DN{or_nb}",  1, or_p, scale=False)
-        add("GAS TRAIN", "DPT (Gas Train)",             "",            1, flat['dpt'], scale=False)
-        add("GAS TRAIN", "Control Valve",               f"DN{cv_nb}",  1, cv_p, scale=False)
     elif m['gas_train_cost'] > 0:
         add("GAS TRAIN", "NG Gas Train",
             f"Complete, for {kw} KW",             1,                     m['gas_train_cost'], scale=False)
