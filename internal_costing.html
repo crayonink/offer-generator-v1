@@ -585,9 +585,15 @@ const REGEN_BURNER = [
   {kw:6000, bms:53235.60, bref:68775.40, rms:54496.46, rss:4562.25, rref:191759.31, rcer:439084.80, block:56654.24, total:868568.06},
 ];
 function renderRegenBurner(){
+  const f2 = x => (Number(x)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
   const note = `<div class="edit-note">Burner + regenerator material cost breakdown per KW model — <b>hardcoded</b>.
-    The <b>Total Cost</b> is what seeds the <a href="/pricelist">REGEN pricelist</a> (Burner with Regenerator …).</div>`;
-  const rows = REGEN_BURNER.map(m=>`<tr>
+    <b>Burner</b> = Burner MS + Refractory + Burner Block. <b>Regen</b> = Regen MS + SS + Refractory + Ceramic.
+    <b>Total Cost</b> = Burner + Regen — the value that seeds the <a href="/pricelist">REGEN pricelist</a>
+    (Burner with Regenerator …).</div>`;
+  const rows = REGEN_BURNER.map(m=>{
+    const burner = m.bms + m.bref + m.block;
+    const regen  = m.rms + m.rss + m.rref + m.rcer;
+    return `<tr>
     <td class="co">${m.kw}</td>
     <td class="num">${inr(m.bms)}</td>
     <td class="num">${inr(m.bref)}</td>
@@ -596,15 +602,19 @@ function renderRegenBurner(){
     <td class="num">${inr(m.rref)}</td>
     <td class="num">${inr(m.rcer)}</td>
     <td class="num">${inr(m.block)}</td>
-    <td class="num setcol">${inr(m.total)}</td></tr>`).join('');
+    <td class="num calc">${f2(burner)}</td>
+    <td class="num calc">${f2(regen)}</td>
+    <td class="num setcol">${inr(m.total)}</td></tr>`;
+  }).join('');
   const html = note + `<div class="grp">
     <div class="grp-h"><span class="t">Burner + Regenerator Cost (₹) — per KW model</span></div>
     <table><thead>
       <tr><th></th><th class="num" colspan="2">BURNER</th><th class="num" colspan="4">REGENERATOR</th>
-        <th class="num">Burner Block</th><th></th></tr>
+        <th class="num">Burner Block</th><th class="num" colspan="2">PRICE</th><th></th></tr>
       <tr><th>KW</th><th class="num">MS</th><th class="num">Refractory</th>
         <th class="num">MS</th><th class="num">SS</th><th class="num">Refractory</th><th class="num">Ceramic</th>
-        <th class="num">2 refractory</th><th class="num setcol">Total Cost</th></tr>
+        <th class="num">2 refractory</th><th class="num">Burner</th><th class="num">Regen</th>
+        <th class="num setcol">Total Cost</th></tr>
     </thead><tbody>${rows}</tbody></table></div>`;
   document.getElementById('tab-content').innerHTML = html;
 }
