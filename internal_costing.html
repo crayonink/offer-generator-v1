@@ -121,6 +121,7 @@ details.fpanel[open]>summary{border-bottom:1px solid var(--line)}
       <button class="tab" data-tab="hpu" onclick="switchTab('hpu',this)">HPU</button>
       <button class="tab" data-tab="blower" onclick="switchTab('blower',this)">Blower</button>
       <button class="tab" data-tab="regen" onclick="switchTab('regen',this)">Regen</button>
+      <button class="tab" data-tab="regenburner" onclick="switchTab('regenburner',this)">Regen with Burner</button>
     </div>
     <div id="note" class="edit-note"><b>✎ Editable</b> inputs<span class="sw" style="background:#fff;border:1px solid var(--line2)"></span>click to change &amp; auto-save. <b>Computed</b><span class="sw" style="background:#f6f8fa;border:1px solid var(--line2)"></span>(Amount, Total, prices) recalc automatically. <b>◆ Linked rate</b><span class="sw" style="background:#eef4fb;border:1px solid var(--line2)"></span>driven by the Rate Master at the bottom — edit it there to reprice every part at once.</div>
     <div id="fbar" class="fbar"><span class="fx">ƒx</span> Click any computed cell to see how it's derived.</div>
@@ -572,6 +573,42 @@ function loadRegen(){
   }).catch(e=>{ document.getElementById('tab-content').innerHTML='<div class="stub"><h2>Couldn\'t load</h2><p>'+e+'</p></div>'; });
 }
 
+// ---------- Regen with Burner tab (hardcoded material cost breakdown) ----------
+const REGEN_BURNER = [
+  {kw:500,  bms:13821.23, bref:17854.75, rms:11473.34, rss:912.45,  rref:37640.54,  rcer:31254.30,  block:11472.52, total:124429.13},
+  {kw:1000, bms:16380.38, bref:21161.25, rms:11474.43, rss:1955.25, rref:49866.31,  rcer:47997.68,  block:14163.34, total:162998.63},
+  {kw:1500, bms:19144.13, bref:24732.38, rms:12908.64, rss:2150.78, rref:59027.22,  rcer:61696.80,  block:17137.49, total:196797.43},
+  {kw:2000, bms:25946.25, bref:33520.31, rms:23468.94, rss:2346.30, rref:94929.88,  rcer:141362.93, block:24678.92, total:346253.53},
+  {kw:2500, bms:28665.45, bref:37032.63, rms:23468.94, rss:3128.40, rref:94929.88,  rcer:141362.93, block:27760.89, total:356349.12},
+  {kw:3000, bms:32248.43, bref:41662.27, rms:28815.20, rss:3649.80, rref:122513.64, rcer:214033.05, block:31868.40, total:474790.79},
+  {kw:4500, bms:40029.00, bref:51713.64, rms:41721.24, rss:4562.25, rref:158281.59, rcer:326299.05, block:40932.54, total:663539.31},
+  {kw:6000, bms:53235.60, bref:68775.40, rms:54496.46, rss:4562.25, rref:191759.31, rcer:439084.80, block:56654.24, total:868568.06},
+];
+function renderRegenBurner(){
+  const note = `<div class="edit-note">Burner + regenerator material cost breakdown per KW model — <b>hardcoded</b>.
+    The <b>Total Cost</b> is what seeds the <a href="/pricelist">REGEN pricelist</a> (Burner with Regenerator …).</div>`;
+  const rows = REGEN_BURNER.map(m=>`<tr>
+    <td class="co">${m.kw}</td>
+    <td class="num">${inr(m.bms)}</td>
+    <td class="num">${inr(m.bref)}</td>
+    <td class="num">${inr(m.rms)}</td>
+    <td class="num">${inr(m.rss)}</td>
+    <td class="num">${inr(m.rref)}</td>
+    <td class="num">${inr(m.rcer)}</td>
+    <td class="num">${inr(m.block)}</td>
+    <td class="num setcol">${inr(m.total)}</td></tr>`).join('');
+  const html = note + `<div class="grp">
+    <div class="grp-h"><span class="t">Burner + Regenerator Cost (₹) — per KW model</span></div>
+    <table><thead>
+      <tr><th></th><th class="num" colspan="2">BURNER</th><th class="num" colspan="4">REGENERATOR</th>
+        <th class="num">Burner Block</th><th></th></tr>
+      <tr><th>KW</th><th class="num">MS</th><th class="num">Refractory</th>
+        <th class="num">MS</th><th class="num">SS</th><th class="num">Refractory</th><th class="num">Ceramic</th>
+        <th class="num">2 refractory</th><th class="num setcol">Total Cost</th></tr>
+    </thead><tbody>${rows}</tbody></table></div>`;
+  document.getElementById('tab-content').innerHTML = html;
+}
+
 // ---------- tab switching ----------
 function switchTab(tab, btn){
   document.querySelectorAll('.tab[data-tab]').forEach(b=>b.classList.remove('active'));
@@ -579,11 +616,12 @@ function switchTab(tab, btn){
   const isBurner = tab==='burner';
   // Burner-only editable legend; formula bar is used by the clickable tabs.
   document.getElementById('note').style.display  = isBurner ? '' : 'none';
-  document.getElementById('fbar').style.display  = (tab==='regen') ? 'none' : '';
+  document.getElementById('fbar').style.display  = (tab==='regen' || tab==='regenburner') ? 'none' : '';
   document.getElementById('tab-content').innerHTML = '<div class="stub"><h2>Loading…</h2></div>';
   if(tab==='burner') loadBurner();
   else if(tab==='hpu') loadHPU();
   else if(tab==='blower') loadBlower();
+  else if(tab==='regenburner') renderRegenBurner();
   else loadRegen();
 }
 
