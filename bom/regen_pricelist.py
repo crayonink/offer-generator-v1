@@ -52,6 +52,18 @@ SIZED = {
 }
 
 
+# ── oil-line key -> exact Pricelist item name (category 'Oil Line') ──────────
+OIL_ITEM = {
+    "solenoid_valve_oil":  "Solenoid Valve (Oil Line) 25 NB",
+    "gate_valve_oil":      "Gate Valve (Oil Line) 25 NB",
+    "flex_hose_oil":       "Flexible Hose Pipe (Oil Line) 25 NB",
+    "oil_control_valve":   "Globe Type Oil Control Valve 25 NB",
+    "oil_flow_meter":      "Oil Flow Meter",
+    "tt_oil_line":         "TT in Oil Line",
+    "pt_oil_line":         "PT in Oil Line",
+}
+
+
 def _f(v):
     try:
         return float(v)
@@ -259,5 +271,14 @@ def load_regen_prices(conn, kw: int) -> dict:
         if p is not None:
             plc[pairs] = p
 
+    # Oil line — resolve each item from its 'Oil Line' Pricelist row (code fallback).
+    oil = dict(_OIL)
+    for key, name in OIL_ITEM.items():
+        r = conn.execute("SELECT price FROM component_price_master WHERE item=? LIMIT 1",
+                         (name,)).fetchone()
+        p = _f(r[0]) if r else None
+        if p is not None:
+            oil[key] = p
+
     return dict(model=model, flat=flat, plc=plc,
-                gas_skid=dict(_GAS_SKID_6000), oil=dict(_OIL))
+                gas_skid=dict(_GAS_SKID_6000), oil=oil)

@@ -1624,6 +1624,16 @@ def _startup_ensure_regen_pricelist_extras():
     # Pneumatic (flue-gas) damper, by NB — distinct from the manual damper.
     DAMPER = {200:80000, 250:125000, 300:148000, 350:177000, 400:350000, 450:350000,
               500:350000, 550:350000, 600:350000, 650:350000, 700:350000, 900:350000}
+    # Oil line (Regen_Oil_Testing.xlsx) — (item, category, price, company).
+    OIL = [
+        ("Solenoid Valve (Oil Line) 25 NB",   "Oil Line", 14000, "MADAS"),
+        ("Gate Valve (Oil Line) 25 NB",       "Oil Line",  5000, "L&T"),
+        ("Flexible Hose Pipe (Oil Line) 25 NB","Oil Line",  1750, "BENGAL"),
+        ("Globe Type Oil Control Valve 25 NB", "Oil Line", 80000, "DEMBLA"),
+        ("Oil Flow Meter",                     "Oil Line", 90000, "HONEYWELL"),
+        ("TT in Oil Line",                     "Oil Line",  5000, "HONEYWELL"),
+        ("PT in Oil Line",                     "Oil Line", 12000, "HONEYWELL"),
+    ]
     try:
         conn = sqlite3.connect(DB_PATH)
         def ins(item, cat, price, company):
@@ -1646,6 +1656,8 @@ def _startup_ensure_regen_pricelist_extras():
             n += ins(f"Burner with Regenerator {kw} KW", "Burner with Regenerator", price, "ENCON")
         for nb, price in DAMPER.items():
             n += ins(f"Pneumatic Damper {nb} NB", "Pneumatic Damper", price, "ENCON")
+        for item, cat, price, company in OIL:
+            n += ins(item, cat, price, company)
         conn.commit()
         conn.close()
         if n:
@@ -7984,14 +7996,14 @@ def _regen_basis(item, spec):
     s = (spec or "").strip()
     sz = f" {s}" if s and ("NB" in s or "DN" in s) else ""
     checks = [
-        # Oil line (code constants — Regen_Oil_Testing.xlsx). Kept first so they
-        # win over the generic valve/flow-meter matches below.
-        ("Solenoid Valve (Oil",       "Code → oil line (NB25)"),
-        ("Globe Type Oil Control",    "Code → oil line (Globe valve, NB25)"),
-        ("Oil Flow Meter",            "Code → oil line"),
-        ("TT in Oil Line",            "Code → oil line"),
-        ("PT in Oil Line",            "Code → oil line"),
-        ("Flexible Hose Pipe",        "Code → oil line (NB25, 2000mm)"),
+        # Oil line (Pricelist 'Oil Line' category). Kept first so they win over
+        # the generic valve/flow-meter matches below.
+        ("Solenoid Valve (Oil",       "Pricelist → Solenoid Valve (Oil Line) 25 NB (MADAS)"),
+        ("Globe Type Oil Control",    "Pricelist → Globe Type Oil Control Valve 25 NB (DEMBLA)"),
+        ("Oil Flow Meter",            "Pricelist → Oil Flow Meter (HONEYWELL)"),
+        ("TT in Oil Line",            "Pricelist → TT in Oil Line (HONEYWELL)"),
+        ("PT in Oil Line",            "Pricelist → PT in Oil Line (HONEYWELL)"),
+        ("Flexible Hose Pipe",        "Pricelist → Flexible Hose Pipe (Oil Line) 25 NB (BENGAL)"),
         ("Burner with Regenerator", "Pricelist → Burner with Regenerator (per KW)"),
         ("Combustion Blower",        "Internal costing → blower with motor (Alone×1.8 + Motor×1.5)"),
         ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),
