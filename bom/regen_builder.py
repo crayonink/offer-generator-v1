@@ -472,12 +472,15 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("BURNER SET", "Ignition Transformer","",                          2, flat['ignition_transformer'])
     add("BURNER SET", "UV Sensor",           "",                          2, flat['uv_sensor'])
 
-    # ── 2. GAS LINE — Pilot ───────────────────────────────────────────────────
-    add("GAS LINE — PILOT", "Pilot Regulator",       "NB15",             2, flat['pilot_regulator'])
-    add("GAS LINE — PILOT", "Pilot Solenoid Valve",  "NB15",             2, flat['pilot_solenoid'])
-    add("GAS LINE — PILOT", "Flexible Hose",         "NB15",             2, flat['flex_hose_nb15'])
-    add("GAS LINE — PILOT", "Ball Valve",            "NB15",             2, flat['ball_valve_nb15'])
-    add("GAS LINE — PILOT", "Pressure Gauge 0-500",  "",                 2, flat['pilot_pg_500'])
+    # ── 2. PILOT LINE ─────────────────────────────────────────────────────────
+    # The pilot burner is LPG-fired regardless of the main fuel; on an oil offer
+    # label it "PILOT LINE (LPG)" so it isn't mistaken for a gas fuel line.
+    _pilot_sec = "PILOT LINE (LPG)" if is_oil else "GAS LINE — PILOT"
+    add(_pilot_sec, "Pilot Regulator",       "NB15",             2, flat['pilot_regulator'])
+    add(_pilot_sec, "Pilot Solenoid Valve",  "NB15",             2, flat['pilot_solenoid'])
+    add(_pilot_sec, "Flexible Hose",         "NB15",             2, flat['flex_hose_nb15'])
+    add(_pilot_sec, "Ball Valve",            "NB15",             2, flat['ball_valve_nb15'])
+    add(_pilot_sec, "Pressure Gauge 0-500",  "",                 2, flat['pilot_pg_500'])
 
     # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
     if is_oil:
