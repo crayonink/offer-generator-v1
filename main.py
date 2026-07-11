@@ -8113,6 +8113,59 @@ def _regen_basis(item, spec):
     return ""
 
 
+def _vlph_basis(item, media, ref):
+    """Describe where a VLPH/HLPH/Tundish BOM line's price comes from — for the
+    Excel 'BASIS' column. Branches on MEDIA first (some item names, e.g. ORIFICE
+    PLATE / BALL VALVE / SOLENOID VALVE, mean different sources in different
+    lines), then on the item name. Mirrors bom/vlph_builder.py's pricing."""
+    it = (item or "").upper().strip()
+    md = (media or "").upper()
+    r  = (ref or "").strip()
+    sz = f" ({r})" if r else ""
+    if it in ("BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"):
+        return ""
+    # ── Calculated structural items (unit price = qty basis × rate) ──────────
+    if "FABRICATION" in it:       return "Calculated: MS structure kg × FABRICATION RATE (Pricelist)"
+    if "AIR-GAS PIPELINE" in it:  return "Calculated: pipeline kg × PIPELINE RATE (Pricelist)"
+    if "PLUMMER BLOCK" in it:     return "Calculated: plummer block kg × ₹170/kg (code)"
+    if it.startswith("SHAFT"):    return "Calculated: shaft kg × ₹120/kg (code)"
+    if "CERAMIC FIBRE" in it:     return "Calculated: rolls × ceramic rate/roll (vertical_master)"
+    # ── Media-disambiguated items ────────────────────────────────────────────
+    if "ORIFICE PLATE" in it:
+        if "COG" in md or "BFG" in md:  return "Fixed ₹10,000 (code — ENGINEERING SPECIALITY)"
+        if "MG" in md or "MIX" in md:   return "Fixed ₹7,000 (code — ENGINEERING SPECIALITY)"
+        return f"orifice_plate_master → NB ≥ size{sz} (ENCON)"
+    if "SOLENOID VALVE" in it:
+        if "PURGING" in md:  return "Fixed ₹5,000 (code — MADAS)"
+        return f"solenoidvalve_component_master → NB ≥ size{sz} (MADAS, −45%)"
+    if "BALL VALVE" in it:
+        if "PURGING" in md:  return "Fixed (code — AUDCO/L&T/LEADER)"
+        if "INSTRUMENTS" in it: return "Pricelist → INSTRUMENTS BALL VALVE (L&T)"
+        return f"Pricelist → BALL VALVE{sz} (L&T, cheapest)"
+    if "PRESSURE REGULATING VALVE" in it:
+        if "PURGING" in md:  return "Fixed ₹35,000 (code — NIRMAL)"
+        return f"gas_regulator master → select_gas_regulator{sz} (MADAS)"
+    if "CHECK VALVE" in it:       return "Fixed ₹3,300 (code — AUDCO/L&T/LEADER)"
+    # ── Selector / master-table items ────────────────────────────────────────
+    if "GAS TRAIN" in it:         return "gas_train_master → selected by flow band (MADAS)"
+    if "BURNER" in it and "ENCON" in it: return "burner_master → selected burner model (ENCON)"
+    if it == "BLOWER" or it.startswith("BLOWER"): return "blower_master / blower_pricelist_master → selected model (ENCON)"
+    if "HEATING AND PUMPING" in it or it == "HPU": return "HPU selector (hpu_master) → selected KW / variant"
+    if it == "AGR" or "AIR OIL REGULATOR" in it: return "agr_master → selected AGR (ENAG)"
+    if "FLEXIBLE HOSE" in it:     return f"flexible_hose_master → DN ≥ size{sz} (BENGAL IND.)"
+    if "ROTARY JOINT" in it:      return f"rotary_joint_master → selected{sz} (ENCON)"
+    if "GATE VALVE" in it:        return f"Pricelist → GATE VALVE{sz} (L&T)"
+    if "SHUT OFF VALVE" in it or "SHUT-OFF" in it: return f"Pricelist → PNEUMATIC SHUT OFF VALVE{sz} (AIRA/DEMBLA)"
+    if "MOTORIZED CONTROL VALVE" in it: return f"Pricelist → MOTORIZED CONTROL VALVE{sz} (CAIR)"
+    if "CONTROL VALVE" in it:     return f"Pricelist → PNEUMATIC / MOTORIZED CONTROL VALVE{sz}"
+    if "BUTTERFLY VALVE" in it:   return f"Pricelist → BUTTERFLY VALVE{sz} (L&T) / lt_butterfly_valve_master"
+    if "FLOWMETER" in it:         return "Pricelist → FLOWMETER (ELETA)"
+    if "SWIVEL ASSEMBLY" in it:   return "vertical_master → swirling / pipeline cost"
+    if "PILOT BURNER" in it:      return f"Pricelist → pilot burner model{sz} (ENCON)"
+    # ── Everything else = exact Pricelist (component_price_master) item ───────
+    return "Pricelist (component_price_master) → exact item"
+
+
 @app.post("/api/export-excel")
 def export_excel(req: ExcelExportRequest):
     import io
@@ -9210,30 +9263,55 @@ def export_excel(req: ExcelExportRequest):
     ws.row_dimensions[r].height = 20
     r += 1
 
-    # Columns: MEDIA(A) ITEM NAME(B) REFERENCE(C) QTY(D) MAKE(E) UNIT PRICE(F) TOTAL(G)
-    bom_cols = ["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE", "TOTAL", ""]
+    # Columns: MEDIA(A) ITEM NAME(B) REFERENCE(C) QTY(D) MAKE(E) UNIT PRICE(F)
+    #          TOTAL(G) BASIS(H)
+    ws.column_dimensions["H"].width = 52
+    bom_cols = ["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE",
+                "TOTAL", "BASIS — where the price comes from"]
     for ci, col in enumerate(bom_cols, 1):
         hdr(ws, r, ci, col, size=9)
     ws.row_dimensions[r].height = 22
     r += 1
 
     # Live formulas so every derived value is visible in the cell (like Regen):
-    # per-line TOTAL = QTY(D) × UNIT PRICE(F); GRAND TOTAL = SUM over the item rows.
+    # per-line TOTAL = QTY(D) × UNIT PRICE(F); GRAND TOTAL = SUM over the item
+    # rows. Calculated structural unit prices (weight × rate) are shown as
+    # formulas when the weight is in the REFERENCE. The BASIS column names the
+    # source (which master / Pricelist / calculation) of every line.
+    import re as _re
+    def _numf(x):
+        return str(int(x)) if float(x) == int(x) else str(round(x, 4))
     _SUBTOTAL = {"BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"}
+    _CALC_KG = ("FABRICATION", "AIR-GAS PIPELINE")   # unit price = kg × rate
     _item_rows = []
     for i, row_d in enumerate(req.bom):
         bg = GREY if i % 2 == 0 else WHITE
         vals = list(row_d.values())
+        media     = str(vals[0]) if len(vals) > 0 else ""
         item_name = str(vals[1]).strip() if len(vals) > 1 else ""
+        ref       = str(vals[2]) if len(vals) > 2 else ""
         is_sub = item_name in _SUBTOTAL
         qty = vals[3] if len(vals) > 3 else None
         up  = vals[5] if len(vals) > 5 else None
-        # cols 1-6 (MEDIA .. UNIT PRICE) written as-is
-        for ci in range(1, 7):
+        # cols 1-5 (MEDIA .. MAKE) written as-is
+        for ci in range(1, 6):
             v = vals[ci - 1] if ci - 1 < len(vals) else ""
-            num = ci >= 4
-            cell(ws, r, ci, v, bg=bg, align="right" if num else "left",
-                 num_fmt='#,##0.00' if isinstance(v, (int, float)) and num else None)
+            cell(ws, r, ci, v, bg=bg, align="right" if ci == 4 else "left",
+                 num_fmt='#,##0.00' if isinstance(v, (int, float)) and ci == 4 else None)
+        # col 6 = UNIT PRICE — a weight×rate formula for calc items whose kg is
+        # in the REFERENCE; otherwise the value.
+        up_done = False
+        if isinstance(up, (int, float)) and up and any(k in item_name.upper() for k in _CALC_KG):
+            m = _re.search(r"([\d,]+(?:\.\d+)?)\s*kg", ref, _re.I)
+            if m:
+                kg = float(m.group(1).replace(",", ""))
+                if kg:
+                    cell(ws, r, 6, f"={_numf(kg)}*{_numf(round(up / kg, 4))}",
+                         bg=bg, align="right", num_fmt='#,##0.00')
+                    up_done = True
+        if not up_done:
+            cell(ws, r, 6, up if up is not None else "", bg=bg, align="right",
+                 num_fmt='#,##0.00' if isinstance(up, (int, float)) else None)
         # col 7 = TOTAL
         if not is_sub and isinstance(qty, (int, float)) and isinstance(up, (int, float)):
             cell(ws, r, 7, f"=D{r}*F{r}", bg=bg, align="right", num_fmt='#,##0.00')
@@ -9245,6 +9323,9 @@ def export_excel(req: ExcelExportRequest):
             v = vals[6] if len(vals) > 6 else ""
             cell(ws, r, 7, v, bold=is_sub, bg=bg, align="right",
                  num_fmt='#,##0.00' if isinstance(v, (int, float)) else None)
+        # col 8 = BASIS (source of the line)
+        b = cell(ws, r, 8, _vlph_basis(item_name, media, ref), bg=bg, fg="475569")
+        b.font = Font(color="475569", size=9, italic=True, name="Calibri")
         ws.row_dimensions[r].height = 18
         r += 1
     r += 1
