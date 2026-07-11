@@ -9288,14 +9288,18 @@ def export_excel(req: ExcelExportRequest):
         return str(int(x)) if float(x) == int(x) else str(round(x, 4))
     _SUBTOTAL = {"BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"}
     _CALC_KG = ("FABRICATION", "AIR-GAS PIPELINE")   # unit price = kg × rate
+    _ENCON_MEDIA = {"ENCON ITEMS", "MISC ITEMS"}
+    _ENCON_BG  = "DCFCE7"   # light green  → ENCON / MISC items
+    _BOUGHT_BG = "DBEAFE"   # light blue   → bought-out items
     _item_rows = []
     for i, row_d in enumerate(req.bom):
-        bg = GREY if i % 2 == 0 else WHITE
         vals = list(row_d.values())
         media     = str(vals[0]) if len(vals) > 0 else ""
         item_name = str(vals[1]).strip() if len(vals) > 1 else ""
         ref       = str(vals[2]) if len(vals) > 2 else ""
         is_sub = item_name in _SUBTOTAL
+        # Colour ENCON/MISC items vs bought-out items distinctly; subtotal rows grey.
+        bg = GREY if is_sub else (_ENCON_BG if media.strip().upper() in _ENCON_MEDIA else _BOUGHT_BG)
         qty = vals[3] if len(vals) > 3 else None
         up  = vals[5] if len(vals) > 5 else None
         # cols 1-5 (MEDIA .. MAKE) written as-is
