@@ -9292,6 +9292,8 @@ def export_excel(req: ExcelExportRequest):
     _ENCON_BG  = "DCFCE7"   # light green  → ENCON / MISC items
     _BOUGHT_BG = "DBEAFE"   # light blue   → bought-out items
     _item_rows = []
+    _bought_rows = []
+    _encon_rows = []
     for i, row_d in enumerate(req.bom):
         vals = list(row_d.values())
         media     = str(vals[0]) if len(vals) > 0 else ""
@@ -9325,6 +9327,7 @@ def export_excel(req: ExcelExportRequest):
         if not is_sub and isinstance(qty, (int, float)) and isinstance(up, (int, float)):
             cell(ws, r, 7, f"=D{r}*F{r}", bg=bg, align="right", num_fmt='#,##0.00')
             _item_rows.append(r)
+            (_encon_rows if media.strip().upper() in _ENCON_MEDIA else _bought_rows).append(r)
         elif item_name == "GRAND TOTAL" and _item_rows:
             cell(ws, r, 7, f"=SUM(G{_item_rows[0]}:G{_item_rows[-1]})",
                  bold=True, bg=bg, align="right", num_fmt='#,##0.00')
@@ -9384,16 +9387,21 @@ def export_excel(req: ExcelExportRequest):
         #   Grand = BoughtOut×markup + ENCON  → then P&F/Designing/Negotiation are
         #   % of Grand, Final = round to nearest ₹1000, Order Total = Final × qty.
         markup = _f(comm.get("markup")) or 1.0
-        # Bought Out / ENCON as live formulas over the BOM item rows (col A =
-        # MEDIA, col G = line TOTAL). ENCON = 'ENCON ITEMS' + 'MISC ITEMS' media;
-        # Bought Out = all items − ENCON. Falls back to the value if no items.
-        bought_f = encon_f = None
+        # Bought Out / ENCON as live formulas over the BOM item rows (col G =
+        # line TOTAL). The builder groups all bought-out rows together and all
+        # ENCON/MISC rows together, so each is a clean =SUM(range). If a block
+        # isn't contiguous, fall back to SUMIF / total−ENCON.
+        def _rng_sum(rows):
+            return f"=SUM(G{min(rows)}:G{max(rows)})" if rows and (max(rows) - min(rows) + 1 == len(rows)) else None
+        bought_f = _rng_sum(_bought_rows)
+        encon_f  = _rng_sum(_encon_rows)
         if _item_rows:
-            _a = f"$A${_item_rows[0]}:$A${_item_rows[-1]}"
-            _g = f"$G${_item_rows[0]}:$G${_item_rows[-1]}"
-            encon_f  = f'=SUMIF({_a},"ENCON ITEMS",{_g})+SUMIF({_a},"MISC ITEMS",{_g})'
-            _encon_row = r + 1   # ENCON row is written right after Bought Out
-            bought_f = f"=SUM({_g})-H{_encon_row}"
+            _a = f"A{_item_rows[0]}:A{_item_rows[-1]}"
+            _g = f"G{_item_rows[0]}:G{_item_rows[-1]}"
+            if encon_f is None:
+                encon_f = f'=SUMIF({_a},"ENCON ITEMS",{_g})+SUMIF({_a},"MISC ITEMS",{_g})'
+            if bought_f is None:
+                bought_f = f"=SUM({_g})-H{r + 1}"   # ENCON row is written next
         r_bought = _sline("Bought Out Total", bought, formula=bought_f)
         r_encon  = _sline("ENCON Total", encon, formula=encon_f)
         # Grand — formula when it reconciles with Bought×markup + ENCON.
