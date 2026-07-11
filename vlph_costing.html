@@ -2651,6 +2651,8 @@ async function generateQuote() {
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
     transport_amt:   parseFloat(document.getElementById("transport-amt")?.value) || 0,
+    currency:        selectedCurrency,
+    fx_rate:         (selectedCurrency === 'USD' ? (fxRate || 0) : 0),
     items: [{
       product_type: "Vertical Ladle Preheater",
       model:        "VLPH (As per Calculation)",

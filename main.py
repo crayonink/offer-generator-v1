@@ -3102,6 +3102,8 @@ class QuoteRequest(BaseModel):
     ref_no: Optional[str] = ""
     your_ref: Optional[str] = ""
     enquiry_ref: Optional[str] = ""
+    currency: Optional[str] = "INR"     # "USD" → offer priced in USD
+    fx_rate: Optional[float] = 0        # INR → USD, used only when currency == "USD"
     marketing_person: Optional[str] = ""
     marketing_phone: Optional[str] = ""
     marketing_email: Optional[str] = ""
@@ -7625,6 +7627,8 @@ async def generate_quote(req: QuoteRequest):
                 "technical_phone": req.technical_phone,
                 "technical_email": req.technical_email,
                 "gstin":           req.company_gstin,
+                "currency":        (req.currency or "INR"),
+                "fx_rate":         (req.fx_rate or 0),
                 # Technical data (for template tech table)
                 "ladle_tons":          req.ladle_tons,
                 "ladle_dim":           req.ladle_dim,

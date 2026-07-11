@@ -734,6 +734,51 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         if n <= 0: return ""
         return f"{n:02d} {'Set' if n == 1 else 'Sets'}"
 
+    # ── Currency: default INR; 'USD' converts the price figures and switches the
+    # symbol + amount-in-words (offer shows USD only, per the currency choice). ──
+    _cur = (customer.get("currency") or "INR").upper()
+    try:
+        _rate = float(customer.get("fx_rate") or 0)
+    except (TypeError, ValueError):
+        _rate = 0.0
+    _usd = (_cur == "USD" and _rate > 0)
+
+    def _money(x):
+        try:
+            v = float(x or 0)
+        except (TypeError, ValueError):
+            v = 0.0
+        return f"$ {v * _rate:,.2f}" if _usd else _format_inr(v)
+
+    def _intl_words(n):
+        n = int(round(n))
+        if n == 0:
+            return "ZERO"
+        ones = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN",
+                "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN",
+                "EIGHTEEN", "NINETEEN"]
+        tens = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"]
+        def _three(x):
+            s = ""
+            if x >= 100:
+                s += ones[x // 100] + " HUNDRED"; x %= 100
+                if x: s += " "
+            if x >= 20:
+                s += tens[x // 10] + ("-" + ones[x % 10] if x % 10 else "")
+            elif x > 0:
+                s += ones[x]
+            return s
+        out = []
+        for scale, name in ((1_000_000_000, "BILLION"), (1_000_000, "MILLION"), (1_000, "THOUSAND"), (1, "")):
+            if n >= scale:
+                out.append(_three(n // scale) + ((" " + name) if name else "")); n %= scale
+        return " ".join(p for p in out if p).strip()
+
+    def _words(total_inr):
+        if _usd:
+            return _intl_words(round(total_inr * _rate)) + " US DOLLARS ONLY"
+        return amount_in_words_indian(total_inr) + " ONLY"
+
     # Map to template variable names (must match {{...}} in Offer_Template.docx)
     context = {
         # Customer / contact
@@ -768,22 +813,22 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         "technical_phone":       customer.get("technical_phone", ""),
         "technical_email":       customer.get("technical_email", ""),
         # Pricing
-        "unit_price_vertical":    _format_inr(unit_vertical),
-        "unit_price_horizontal":  _format_inr(unit_horizontal) if unit_horizontal else "N/A",
-        "total_price_vertical":   _format_inr(total_vertical),
-        "total_price_horizontal": _format_inr(total_horizontal) if total_horizontal else "N/A",
+        "unit_price_vertical":    _money(unit_vertical),
+        "unit_price_horizontal":  _money(unit_horizontal) if unit_horizontal else "N/A",
+        "total_price_vertical":   _money(total_vertical),
+        "total_price_horizontal": _money(total_horizontal) if total_horizontal else "N/A",
         "qty_label_vertical":    _qty_label(qty_v),
         "qty_label_horizontal":  _qty_label(qty_h),
         "total_in_words": (
             customer.get("total_in_words")
-            or amount_in_words_indian(total_vertical + total_horizontal) + " ONLY"
+            or _words(total_vertical + total_horizontal)
         ),
         "equipment_name": _build_equipment_name(customer, quote_data),
         # Supervision-charge rates (from component_price_master)
         "supervision_mech": sup_mech,
         "supervision_plc":  sup_plc,
-        "subtotal":              f"₹ {quote_data.get('subtotal', 0):,.0f}",
-        "grand_total":           f"₹ {quote_data.get('grand_total', 0):,.0f}",
+        "subtotal":              _money(quote_data.get('subtotal', 0)),
+        "grand_total":           _money(quote_data.get('grand_total', 0)),
         "valid_days":            quote_data.get("valid_days", 30),
         "items":                 quote_data.get("items", []),
         # Technical data (populates the Tech Data table in the template)
