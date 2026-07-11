@@ -2133,7 +2133,9 @@ function recalcGrandTotal() {
 
 // Called when a BOM Qty input is edited. Recompute the row's TOTAL,
 // then re-derive Bought Out / ENCON subtotals + Grand Total.
-const _ENCON_MEDIA = new Set(["ENCON ITEMS", "MISC ITEMS"]);
+// Must match bom/vlph_builder.py: ENCON = MEDIA 'ENCON ITEMS' only; everything
+// else (incl. MISC ITEMS) is bought-out, minus the excluded items.
+const _BUY_EXCLUDE = new Set(["RATIO CONTROLLER"]);
 const _SUBTOTAL_ITEM_NAMES = new Set(["BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"]);
 function onBomQtyChange(idx, newQtyStr) {
   if (!lastCalc || !lastCalc.bom) return;
@@ -2147,10 +2149,11 @@ function onBomQtyChange(idx, newQtyStr) {
   if (cell) cell.textContent = "₹ " + fmt(row.TOTAL, 0);
   let bought = 0, encon = 0;
   for (const r of lastCalc.bom) {
-    if (_SUBTOTAL_ITEM_NAMES.has(r["ITEM NAME"] || "")) continue;
+    const nm = (r["ITEM NAME"] || "").trim();
+    if (_SUBTOTAL_ITEM_NAMES.has(nm)) continue;
     const t = +r.TOTAL || 0;
-    if (_ENCON_MEDIA.has((r.MEDIA || "").toUpperCase())) encon += t;
-    else                                                 bought += t;
+    if ((r.MEDIA || "").toUpperCase() === "ENCON ITEMS")      encon  += t;
+    else if (!_BUY_EXCLUDE.has(nm.toUpperCase()))             bought += t;
   }
   window._boughtRaw = bought;
   window._enconRaw  = encon;

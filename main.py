@@ -9288,8 +9288,11 @@ def export_excel(req: ExcelExportRequest):
         return str(int(x)) if float(x) == int(x) else str(round(x, 4))
     _SUBTOTAL = {"BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"}
     _CALC_KG = ("FABRICATION", "AIR-GAS PIPELINE")   # unit price = kg × rate
-    _ENCON_MEDIA = {"ENCON ITEMS", "MISC ITEMS"}
-    _ENCON_BG  = "DCFCE7"   # light green  → ENCON / MISC items
+    # Classification MUST match bom/vlph_builder.py: ENCON = MEDIA 'ENCON ITEMS'
+    # only; Bought Out = everything else (incl. MISC ITEMS) minus the excluded
+    # items. (MISC ITEMS are bought-out, not in-house.)
+    _BUY_EXCLUDE = {"RATIO CONTROLLER"}
+    _ENCON_BG  = "DCFCE7"   # light green  → ENCON (in-house) items
     _BOUGHT_BG = "DBEAFE"   # light blue   → bought-out items
     _item_rows = []
     _bought_rows = []
@@ -9300,8 +9303,9 @@ def export_excel(req: ExcelExportRequest):
         item_name = str(vals[1]).strip() if len(vals) > 1 else ""
         ref       = str(vals[2]) if len(vals) > 2 else ""
         is_sub = item_name in _SUBTOTAL
-        # Colour ENCON/MISC items vs bought-out items distinctly; subtotal rows grey.
-        bg = GREY if is_sub else (_ENCON_BG if media.strip().upper() in _ENCON_MEDIA else _BOUGHT_BG)
+        _is_encon = media.strip().upper() == "ENCON ITEMS"
+        # Colour ENCON (in-house) vs bought-out distinctly; subtotal rows grey.
+        bg = GREY if is_sub else (_ENCON_BG if _is_encon else _BOUGHT_BG)
         qty = vals[3] if len(vals) > 3 else None
         up  = vals[5] if len(vals) > 5 else None
         # cols 1-5 (MEDIA .. MAKE) written as-is
@@ -9327,7 +9331,10 @@ def export_excel(req: ExcelExportRequest):
         if not is_sub and isinstance(qty, (int, float)) and isinstance(up, (int, float)):
             cell(ws, r, 7, f"=D{r}*F{r}", bg=bg, align="right", num_fmt='#,##0.00')
             _item_rows.append(r)
-            (_encon_rows if media.strip().upper() in _ENCON_MEDIA else _bought_rows).append(r)
+            if _is_encon:
+                _encon_rows.append(r)
+            elif item_name.upper() not in _BUY_EXCLUDE:
+                _bought_rows.append(r)
         elif item_name == "GRAND TOTAL" and _item_rows:
             cell(ws, r, 7, f"=SUM(G{_item_rows[0]}:G{_item_rows[-1]})",
                  bold=True, bg=bg, align="right", num_fmt='#,##0.00')
@@ -9391,17 +9398,24 @@ def export_excel(req: ExcelExportRequest):
         # line TOTAL). The builder groups all bought-out rows together and all
         # ENCON/MISC rows together, so each is a clean =SUM(range). If a block
         # isn't contiguous, fall back to SUMIF / total−ENCON.
-        def _rng_sum(rows):
-            return f"=SUM(G{min(rows)}:G{max(rows)})" if rows and (max(rows) - min(rows) + 1 == len(rows)) else None
-        bought_f = _rng_sum(_bought_rows)
-        encon_f  = _rng_sum(_encon_rows)
-        if _item_rows:
-            _a = f"A{_item_rows[0]}:A{_item_rows[-1]}"
-            _g = f"G{_item_rows[0]}:G{_item_rows[-1]}"
-            if encon_f is None:
-                encon_f = f'=SUMIF({_a},"ENCON ITEMS",{_g})+SUMIF({_a},"MISC ITEMS",{_g})'
-            if bought_f is None:
-                bought_f = f"=SUM({_g})-H{r + 1}"   # ENCON row is written next
+        # Clean SUM over each block's rows; joins contiguous runs with SUM(a:b)
+        # and separates non-contiguous runs with '+' (bought-out = top block +
+        # the MISC block, since the ENCON block sits between them).
+        def _sum_rows(rows):
+            if not rows:
+                return None
+            rows = sorted(rows)
+            runs = []
+            a = p = rows[0]
+            for x in rows[1:]:
+                if x == p + 1:
+                    p = x
+                else:
+                    runs.append((a, p)); a = p = x
+            runs.append((a, p))
+            return "=" + "+".join(f"SUM(G{s}:G{e})" if s != e else f"G{s}" for s, e in runs)
+        bought_f = _sum_rows(_bought_rows)
+        encon_f  = _sum_rows(_encon_rows)
         r_bought = _sline("Bought Out Total", bought, formula=bought_f)
         r_encon  = _sline("ENCON Total", encon, formula=encon_f)
         # Grand — formula when it reconciles with Bought×markup + ENCON.
