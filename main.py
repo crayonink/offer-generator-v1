@@ -9380,8 +9380,18 @@ def export_excel(req: ExcelExportRequest):
         #   Grand = BoughtOut×markup + ENCON  → then P&F/Designing/Negotiation are
         #   % of Grand, Final = round to nearest ₹1000, Order Total = Final × qty.
         markup = _f(comm.get("markup")) or 1.0
-        r_bought = _sline("Bought Out Total", bought)
-        r_encon  = _sline("ENCON Total", encon)
+        # Bought Out / ENCON as live formulas over the BOM item rows (col A =
+        # MEDIA, col G = line TOTAL). ENCON = 'ENCON ITEMS' + 'MISC ITEMS' media;
+        # Bought Out = all items − ENCON. Falls back to the value if no items.
+        bought_f = encon_f = None
+        if _item_rows:
+            _a = f"$A${_item_rows[0]}:$A${_item_rows[-1]}"
+            _g = f"$G${_item_rows[0]}:$G${_item_rows[-1]}"
+            encon_f  = f'=SUMIF({_a},"ENCON ITEMS",{_g})+SUMIF({_a},"MISC ITEMS",{_g})'
+            _encon_row = r + 1   # ENCON row is written right after Bought Out
+            bought_f = f"=SUM({_g})-H{_encon_row}"
+        r_bought = _sline("Bought Out Total", bought, formula=bought_f)
+        r_encon  = _sline("ENCON Total", encon, formula=encon_f)
         # Grand — formula when it reconciles with Bought×markup + ENCON.
         g_formula = None
         if grand is not None and abs(grand - (bought * markup + encon)) < 0.5:
