@@ -8046,6 +8046,11 @@ class ExcelExportRequest(BaseModel):
     cost_summary: dict = {}
     pipes: dict = {}
     equipment: dict = {}
+    # Commercial buildup (markup / P&F / Designing / Negotiation / Transport /
+    # Final) merged into the same sheet below the BOM. Optional — when absent the
+    # old 3-row cost summary is written instead.
+    commercial: dict = {}
+    order_qty: int = 1           # order more than one unit → scales the costing
 
 
 def _regen_basis(item, spec):
@@ -9330,36 +9335,106 @@ def export_excel(req: ExcelExportRequest):
         r += 1
     r += 1
 
-    # ── Cost Summary ──────────────────────────────────────────────────────
-    cs = req.cost_summary
+    # ── Cost Summary (merged: cost breakup + commercial buildup) ──────────
+    cs   = req.cost_summary
+    comm = req.commercial or {}
     ws.merge_cells(f"A{r}:H{r}")
     hdr(ws, r, 1, "COST SUMMARY", size=10)
     ws.row_dimensions[r].height = 20
     r += 1
 
-    _sum_first = r   # excel row of "Bought Out Total"
-    summary_rows = [
-        ("Bought Out Total", cs.get("bought_out_total", 0)),
-        ("ENCON Total",      cs.get("encon_total", 0)),
-        ("Grand Total",      cs.get("grand_total", 0)),
-    ]
-    for label, val in summary_rows:
-        is_total = label == "Grand Total"
+    import math
+    def _pf(p):
+        p = float(p or 0)
+        return str(int(p)) if p == int(p) else str(round(p, 4))
+
+    def _sline(label, value, formula=None, is_total=False):
+        """One summary row: value/formula in col H, label in col A (B:G merged)."""
+        nonlocal r
         bg = GREEN_BG if is_total else GREY
         fg = GREEN if is_total else "1E293B"
         cell(ws, r, 1, label, bold=is_total, bg=bg, fg=fg)
         ws.merge_cells(f"B{r}:G{r}")
         cell(ws, r, 2, "", bg=bg)
-        # Grand Total shown as a live formula: Bought Out + ENCON.
-        cell_val = f"=H{_sum_first}+H{_sum_first+1}" if is_total else val
-        c = ws.cell(row=r, column=8, value=cell_val)
+        c = ws.cell(row=r, column=8, value=formula if formula is not None else value)
         c.font = Font(bold=is_total, color=fg, size=11 if is_total else 10, name="Calibri")
         c.fill = PatternFill("solid", fgColor=bg)
         c.alignment = Alignment(horizontal="right", vertical="center")
         c.number_format = '₹#,##0.00'
         c.border = thin()
         ws.row_dimensions[r].height = 20
+        used = r
         r += 1
+        return used
+
+    def _f(x):
+        try:    return float(x)
+        except (TypeError, ValueError): return None
+
+    bought = _f(cs.get("bought_out_total")) or 0.0
+    encon  = _f(cs.get("encon_total")) or 0.0
+    grand  = _f(cs.get("grand_total"))
+
+    if comm:
+        # Merged commercial buildup. markup applies to bought-out only:
+        #   Grand = BoughtOut×markup + ENCON  → then P&F/Designing/Negotiation are
+        #   % of Grand, Final = round to nearest ₹1000, Order Total = Final × qty.
+        markup = _f(comm.get("markup")) or 1.0
+        r_bought = _sline("Bought Out Total", bought)
+        r_encon  = _sline("ENCON Total", encon)
+        # Grand — formula when it reconciles with Bought×markup + ENCON.
+        g_formula = None
+        if grand is not None and abs(grand - (bought * markup + encon)) < 0.5:
+            g_formula = f"=H{r_bought}*{_pf(markup)}+H{r_encon}"
+        r_grand = _sline(f"Grand Total (Bought Out × {_pf(markup)} + ENCON)",
+                         grand if grand is not None else bought * markup + encon,
+                         formula=g_formula)
+
+        def _pct(label_key, amt_key, pct_key, text):
+            amt = _f(comm.get(amt_key))
+            if amt is None:
+                return None
+            pct = _f(comm.get(pct_key)) or 0
+            f = None
+            gval = grand if grand is not None else (bought * markup + encon)
+            if gval and abs(amt - gval * pct / 100) < 0.5:
+                f = f"=H{r_grand}*{_pf(pct)}/100"
+            return _sline(text.format(pct=_pf(pct)), amt, formula=f)
+
+        r_pf  = _pct("pf", "pf_amount", "pf_pct", "Packaging & Forwarding ({pct} %)")
+        r_ds  = _pct("design", "design_amount", "design_pct", "Designing ({pct} %)")
+        r_ng  = _pct("neg", "neg_amount", "neg_pct", "Negotiation ({pct} %)")
+        r_tr  = None
+        if _f(comm.get("transport_amount")) is not None:
+            r_tr = _sline("Transport", _f(comm.get("transport_amount")))
+        # Final Total — SUM(Grand..Transport) rounded to nearest ₹1000.
+        final = _f(comm.get("final_total"))
+        last_row = r - 1
+        parts = [grand if grand is not None else (bought * markup + encon)]
+        for k in ("pf_amount", "design_amount", "neg_amount", "transport_amount"):
+            if _f(comm.get(k)) is not None:
+                parts.append(_f(comm.get(k)))
+        ssum = sum(parts)
+        ffml = None
+        if final is not None and abs(final - (round(ssum / 1000) * 1000)) < 0.5:
+            ffml = f"=MROUND(SUM(H{r_grand}:H{last_row}),1000)"
+        elif final is not None and abs(final - (math.ceil(ssum / 1000) * 1000)) < 0.5:
+            ffml = f"=CEILING(SUM(H{r_grand}:H{last_row}),1000)"
+        r_final = _sline("Final Total", final if final is not None else ssum,
+                         formula=ffml, is_total=True)
+        # Order quantity → order total (× N units).
+        oq = int(req.order_qty or comm.get("order_qty") or 1)
+        if oq > 1:
+            r_oq = _sline("Order Quantity (units)", oq)
+            ws.cell(r_oq, 8).number_format = '#,##0'
+            _sline(f"Order Total ({oq} units)", (final or ssum) * oq,
+                   formula=f"=H{r_final}*H{r_oq}", is_total=True)
+    else:
+        # Fallback (no commercial payload): the plain 3-row breakup. Grand Total
+        # is written as its exact value (its markup rule is product-specific).
+        _sline("Bought Out Total", bought)
+        _sline("ENCON Total", encon)
+        _sline("Grand Total", grand if grand is not None else bought + encon, is_total=True)
 
     buf = io.BytesIO()
     wb.save(buf)

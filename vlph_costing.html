@@ -1036,8 +1036,12 @@
 
     <div class="action-row">
       <button class="btn-outline" onclick="goStep(2)">Back</button>
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:.86rem;color:var(--muted);">
+        Order Qty
+        <input id="order-qty" type="number" value="1" min="1" step="1"
+               style="width:58px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font:inherit;text-align:center;"/>
+      </label>
       <button class="btn-outline" id="xl-btn" onclick="downloadExcel()" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">⬇ Download Excel</button>
-      <button class="btn-outline" id="cost-xl-btn" onclick="downloadCostingExcel()" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;">⬇ Download Excel (Cost Sheet)</button>
       <button class="btn-primary" onclick="goStep(4)">
         <span class="btn-txt">Generate Offer</span>
         <span>&rarr;</span>
@@ -1954,6 +1958,22 @@ function renderResults(d) {
 /* ── Export Excel ── */
 async function downloadExcel() {
   if (!lastCalc) return;
+  // Keep cost_summary in sync with the live markup / P&F / designing /
+  // negotiation / transport inputs before we read them.
+  recalcGrandTotal();
+  const cs = lastCalc.cost_summary || {};
+  const commercial = {
+    markup:           parseFloat(document.getElementById("markup-factor")?.value) || 1.8,
+    pf_pct:           parseFloat(document.getElementById("pf-pct")?.value)          || 0,
+    pf_amount:        +cs.pf_amount          || 0,
+    design_pct:       parseFloat(document.getElementById("design-pct")?.value)      || 0,
+    design_amount:    +cs.design_amount      || 0,
+    neg_pct:          parseFloat(document.getElementById("negotiation-pct")?.value) || 0,
+    neg_amount:       +cs.negotiation_amount || 0,
+    transport_amount: parseFloat(document.getElementById("transport-amt")?.value)   || 0,
+    final_total:      +cs.final_total        || 0,
+  };
+  const orderQty = Math.max(1, parseInt(document.getElementById("order-qty")?.value) || 1);
   const btn = document.getElementById("xl-btn");
   btn.disabled = true; btn.textContent = "Generating…";
   try {
@@ -1976,6 +1996,8 @@ async function downloadExcel() {
         cost_summary: lastCalc.cost_summary,
         pipes:        lastCalc.pipes    || {},
         equipment:    lastCalc.equipment || {},
+        commercial:   commercial,
+        order_qty:    orderQty,
       }),
     });
     const blob = await res.blob();
