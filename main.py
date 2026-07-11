@@ -6874,39 +6874,77 @@ def costing_excel(req: CostingExcelRequest):
         ws.cell(r, 1, "COST SUMMARY").font = Font(bold=True, color=navy, size=11)
         r += 1
 
+        import math
+
         def _num(x):
             try:
                 return float(x)
             except (TypeError, ValueError):
                 return None
 
-        def _line(label, amount, is_total=False):
+        def _fmt_pct(p):
+            return str(int(p)) if float(p) == int(p) else str(p)
+
+        # `formula` (when given) is written instead of the literal amount so the
+        # derivation is visible in the cell. Returns the excel row used.
+        def _line(label, amount, is_total=False, formula=None):
             nonlocal r
             bg = green_bg if is_total else grey
             lc = ws.cell(r, 1, label)
-            lc.font = green if is_total else bold if is_total else Font(bold=False)
+            lc.font = green if is_total else Font(bold=False)
             lc.fill = bg; lc.border = border
             ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=6)
             for c in range(2, 7):
                 ws.cell(r, c).fill = bg; ws.cell(r, c).border = border
-            vc = ws.cell(r, 7, _num(amount) if _num(amount) is not None else 0)
+            val = formula if formula is not None else (_num(amount) if _num(amount) is not None else 0)
+            vc = ws.cell(r, 7, val)
             vc.number_format = money; vc.fill = bg; vc.border = border
             vc.alignment = Alignment(horizontal="right")
             vc.font = green if is_total else bold
+            used = r
             r += 1
+            return used
 
+        subtotal = _num(s.get("subtotal"))
         sub_label = s.get("subtotal_label") or "Grand Total"
-        if _num(s.get("subtotal")) is not None:
-            _line(sub_label, s.get("subtotal"))
-        if _num(s.get("pf_amount")) is not None:
-            _line(f"Packaging & Forwarding ({s.get('pf_pct', 0)} %)", s.get("pf_amount"))
-        if _num(s.get("design_amount")) is not None:
-            _line(f"Designing ({s.get('design_pct', 0)} %)", s.get("design_amount"))
-        if _num(s.get("neg_amount")) is not None:
-            _line(f"Negotiation ({s.get('neg_pct', 0)} %)", s.get("neg_amount"))
+        rows = {}
+        if subtotal is not None:
+            rows["sub"] = _line(sub_label, s.get("subtotal"))
+
+        # A percentage line becomes "=G{sub}*pct/100" only when the passed amount
+        # actually equals subtotal × pct (some products apply the % to a marked-up
+        # base, so the shown subtotal isn't the pct base → keep the exact value).
+        def _pct_line(amt_key, pct_key, label_fmt):
+            amt = _num(s.get(amt_key))
+            if amt is None:
+                return
+            pct = _num(s.get(pct_key)) or 0
+            f = None
+            if "sub" in rows and subtotal not in (None, 0) and abs(amt - subtotal * pct / 100) < 0.5:
+                f = f"=G{rows['sub']}*{_fmt_pct(pct)}/100"
+            rows[amt_key] = _line(label_fmt.format(pct=_fmt_pct(pct)), s.get(amt_key), formula=f)
+
+        _pct_line("pf_amount", "pf_pct", "Packaging & Forwarding ({pct} %)")
+        _pct_line("design_amount", "design_pct", "Designing ({pct} %)")
+        _pct_line("neg_amount", "neg_pct", "Negotiation ({pct} %)")
         if _num(s.get("transport_amount")) is not None:
-            _line("Transport", s.get("transport_amount"))
-        _line("Final Total", s.get("final_total"), is_total=True)
+            rows["transport"] = _line("Transport", s.get("transport_amount"))
+
+        # Final Total: formula only when it reconciles with the lines above
+        # (either a straight SUM, or a SUM rounded up to the nearest ₹1,000).
+        final = _num(s.get("final_total"))
+        ffml = None
+        if "sub" in rows and final is not None:
+            first, last = rows["sub"], r - 1
+            parts = [subtotal or 0] + [(_num(s.get(k)) or 0) for k in
+                     ("pf_amount", "design_amount", "neg_amount", "transport_amount")
+                     if _num(s.get(k)) is not None]
+            ssum = sum(parts)
+            if abs(final - (math.ceil(ssum / 1000) * 1000)) < 0.5:
+                ffml = f"=CEILING(SUM(G{first}:G{last}),1000)"
+            elif abs(final - ssum) < 0.5:
+                ffml = f"=SUM(G{first}:G{last})"
+        _line("Final Total", s.get("final_total"), is_total=True, formula=ffml)
 
         for col, w in zip("ABCDEFG", [8, 16, 40, 18, 8, 14, 16]):
             ws.column_dimensions[col].width = w
