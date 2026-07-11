@@ -1016,6 +1016,24 @@
             </tr>
             <tr class="tot"><td><b>Final Total</b></td>       <td id="s-final">—</td></tr>
           </table>
+
+          <!-- Currency converter: live INR→USD. Selecting USD shows the summary
+               in $ and carries it into the Excel cost sheet + the offer. -->
+          <div style="margin-top:14px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:0.9rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+                Currency
+                <select id="currency-sel" onchange="applyCurrency()" style="padding:3px 6px;border:1px solid var(--border);border-radius:6px;font:inherit;">
+                  <option value="INR">₹ INR</option>
+                  <option value="USD">$ USD</option>
+                </select>
+              </label>
+              <span id="fx-rate-line" style="color:var(--muted);">Fetching today's rate…</span>
+            </div>
+            <div id="fx-usd-line" style="margin-top:8px;color:#15803d;font-weight:700;">
+              Final Total (USD): <span id="s-final-usd">—</span>
+            </div>
+          </div>
         </div>
 
         <!-- Cost Variations panel — runs the calc against every component /
@@ -1880,12 +1898,13 @@ function renderResults(d) {
   }).join("");
 
   const s = d.cost_summary;
-  set("s-bought", "₹ " + fmt(s.bought_out_total, 0));
-  set("s-encon",  "₹ " + fmt(s.encon_total, 0));
+  set("s-bought", fmtCur(s.bought_out_total));
+  set("s-encon",  fmtCur(s.encon_total));
   // Store raw values for recalc
   window._boughtRaw = s.bought_out_total;
   window._enconRaw  = s.encon_total;
   recalcGrandTotal();
+  loadFxRate();   // fetch today's INR→USD and show the USD equivalent
   set("banner-total",  "₹ " + fmt(s.grand_total, 0));
   set("banner-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("banner-encon",  "₹ " + fmt(s.encon_total, 0));
@@ -1998,6 +2017,8 @@ async function downloadExcel() {
         equipment:    lastCalc.equipment || {},
         commercial:   commercial,
         order_qty:    orderQty,
+        currency:     selectedCurrency,
+        fx_rate:      (selectedCurrency === 'USD' ? (fxRate || 0) : 0),
       }),
     });
     const blob = await res.blob();
@@ -2093,6 +2114,38 @@ function parseHP(str) {
   return m ? parseFloat(m[0]) : 0;
 }
 
+/* ── Currency (live INR→USD) ──────────────────────────────────────────────── */
+let selectedCurrency = 'INR';
+let fxRate = null;      // INR → USD
+let fxInverse = null;   // USD → INR (for display)
+function fmtCur(inr) {
+  return (selectedCurrency === 'USD' && fxRate) ? ('$ ' + fmt(inr * fxRate, 0))
+                                                : ('₹ ' + fmt(inr, 0));
+}
+async function loadFxRate() {
+  const line = document.getElementById('fx-rate-line');
+  try {
+    const r = await fetch(`${API}/api/fx-rate?to=USD`);
+    const j = await r.json();
+    fxRate = +j.rate; fxInverse = +j.inverse;
+    if (line) line.textContent = `1 USD = ₹${fxInverse.toFixed(2)}${j.fallback ? ' (approx)' : ' · today'}`;
+  } catch (e) {
+    if (line) line.textContent = 'rate unavailable';
+  }
+  updateUsdLine();
+}
+function updateUsdLine() {
+  const el = document.getElementById('s-final-usd');
+  if (!el) return;
+  const inr = (lastCalc && lastCalc.cost_summary && +lastCalc.cost_summary.final_total) || 0;
+  el.textContent = fxRate ? ('$ ' + fmt(inr * fxRate, 0)) : '—';
+}
+function applyCurrency() {
+  selectedCurrency = (document.getElementById('currency-sel') || {}).value || 'INR';
+  recalcGrandTotal();
+  updateUsdLine();
+}
+
 /* Recalculate Maximum Electrical Load = (blower_hp + motor_hp) × 0.746, rounded up. */
 /* Recalculate Grand Total when markup factor changes */
 function recalcGrandTotal() {
@@ -2101,9 +2154,9 @@ function recalcGrandTotal() {
   const encon  = window._enconRaw  || 0;
   const boughtMarked = bought * markup;
   const grand = boughtMarked + encon;
-  set("s-bought-marked", "₹ " + fmt(boughtMarked, 0));
-  set("s-grand", "₹ " + fmt(grand, 0));
-  // Update the banner too
+  set("s-bought-marked", fmtCur(boughtMarked));
+  set("s-grand", fmtCur(grand));
+  // Update the banner too (always ₹)
   set("banner-total", "₹ " + fmt(grand, 0));
   // Packaging & Forwarding + Designing (% of Grand Total), Negotiation
   // (% of Grand Total, subtracted = discount), Transport (flat ₹).
@@ -2116,11 +2169,11 @@ function recalcGrandTotal() {
   const negAmt    = grand * negPct    / 100;
   // Round Final Total to the nearest ₹1000 (commercial cleanliness).
   const finalTot  = Math.round((grand + pfAmt + designAmt + negAmt + transAmt) / 1000) * 1000;
-  set("s-pf",          "₹ " + fmt(pfAmt, 0));
-  set("s-design",      "₹ " + fmt(designAmt, 0));
-  set("s-negotiation", "₹ " + fmt(negAmt, 0));
-  set("s-transport",   "₹ " + fmt(transAmt, 0));
-  set("s-final",       "₹ " + fmt(finalTot, 0));
+  set("s-pf",          fmtCur(pfAmt));
+  set("s-design",      fmtCur(designAmt));
+  set("s-negotiation", fmtCur(negAmt));
+  set("s-transport",   fmtCur(transAmt));
+  set("s-final",       fmtCur(finalTot));
   if (lastCalc && lastCalc.cost_summary) {
     lastCalc.cost_summary.grand_total = grand;
     lastCalc.cost_summary.pf_amount = pfAmt;
@@ -2129,6 +2182,7 @@ function recalcGrandTotal() {
     lastCalc.cost_summary.transport_amount = transAmt;
     lastCalc.cost_summary.final_total = finalTot;
   }
+  updateUsdLine();
 }
 
 // Called when a BOM Qty input is edited. Recompute the row's TOTAL,
@@ -2157,8 +2211,8 @@ function onBomQtyChange(idx, newQtyStr) {
   }
   window._boughtRaw = bought;
   window._enconRaw  = encon;
-  set("s-bought", "₹ " + fmt(bought, 0));
-  set("s-encon",  "₹ " + fmt(encon, 0));
+  set("s-bought", fmtCur(bought));
+  set("s-encon",  fmtCur(encon));
   set("banner-bought", "₹ " + fmt(bought, 0));
   set("banner-encon",  "₹ " + fmt(encon, 0));
   recalcGrandTotal();

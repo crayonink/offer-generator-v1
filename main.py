@@ -7491,6 +7491,35 @@ def api_next_quote_ref(technical_person: str = "", location: str = ""):
     return {"seq": seq, "ref": build_enquiry_ref(seq, technical_person, location)}
 
 
+_FX_CACHE = {}   # {to: {"rate": float, "ts": epoch, "date": str}}
+
+@app.get("/api/fx-rate")
+def api_fx_rate(to: str = "USD"):
+    """Live INR → `to` exchange rate (default USD). Cached ~6h; falls back to a
+    sensible constant if the provider is unreachable so the UI never breaks."""
+    import time as _t, json as _j, urllib.request as _u
+    to = (to or "USD").upper()
+    now = _t.time()
+    c = _FX_CACHE.get(to)
+    if c and (now - c["ts"] < 6 * 3600):
+        return {"from": "INR", "to": to, "rate": c["rate"], "inverse": round(1 / c["rate"], 4),
+                "date": c["date"], "cached": True}
+    rate = None; date = ""
+    try:
+        with _u.urlopen("https://open.er-api.com/v6/latest/INR", timeout=6) as resp:
+            d = _j.loads(resp.read().decode())
+            rate = float(d["rates"][to]); date = d.get("time_last_update_utc", "") or ""
+    except Exception:
+        rate = None
+    fallback = False
+    if not rate or rate <= 0:
+        rate = {"USD": 0.01198, "EUR": 0.0110, "GBP": 0.0094}.get(to, 0.012)  # ~₹83.5/USD
+        date = "fallback"; fallback = True
+    _FX_CACHE[to] = {"rate": rate, "ts": now, "date": date}
+    return {"from": "INR", "to": to, "rate": rate, "inverse": round(1 / rate, 4),
+            "date": date, "cached": False, "fallback": fallback}
+
+
 def _break_out_transport(docx_path: str, transport: float):
     """In a standalone offer's Annexure III, pull Transport out of the single
     all-inclusive price onto its own line: reduce the equipment row by the
@@ -8051,6 +8080,8 @@ class ExcelExportRequest(BaseModel):
     # old 3-row cost summary is written instead.
     commercial: dict = {}
     order_qty: int = 1           # order more than one unit → scales the costing
+    currency: str = "INR"        # "USD" → add USD equivalents of the commercial totals
+    fx_rate: float = 0           # INR → USD (e.g. 0.012); only used when currency == "USD"
 
 
 def _regen_basis(item, spec):
@@ -9460,11 +9491,21 @@ def export_excel(req: ExcelExportRequest):
                          formula=ffml, is_total=True)
         # Order quantity → order total (× N units).
         oq = int(req.order_qty or comm.get("order_qty") or 1)
+        r_ordertotal = None
         if oq > 1:
             r_oq = _sline("Order Quantity (units)", oq)
             ws.cell(r_oq, 8).number_format = '#,##0'
-            _sline(f"Order Total ({oq} units)", (final or ssum) * oq,
-                   formula=f"=H{r_final}*H{r_oq}", is_total=True)
+            r_ordertotal = _sline(f"Order Total ({oq} units)", (final or ssum) * oq,
+                                  formula=f"=H{r_final}*H{r_oq}", is_total=True)
+        # USD conversion (commercial totals only). rate = INR→USD.
+        if (req.currency or "").upper() == "USD" and (req.fx_rate or 0) > 0:
+            _rate = _pf(req.fx_rate)
+            r_rate = _sline(f"Exchange Rate (1 USD = ₹{_pf(round(1 / req.fx_rate, 2))})", req.fx_rate)
+            ws.cell(r_rate, 8).number_format = '0.000000'
+            _usd_base = r_ordertotal or r_final
+            r_usd = _sline("Final Total (USD)", (final or ssum) * (oq if r_ordertotal else 1) * req.fx_rate,
+                           formula=f"=H{_usd_base}*H{r_rate}", is_total=True)
+            ws.cell(r_usd, 8).number_format = '$#,##0.00'
     else:
         # Fallback (no commercial payload): the plain 3-row breakup. Grand Total
         # is written as its exact value (its markup rule is product-specific).
