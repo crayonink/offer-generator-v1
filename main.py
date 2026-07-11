@@ -6841,19 +6841,31 @@ def costing_excel(req: CostingExcelRequest):
                 cell = ws.cell(r, c, h); cell.fill = hdr_fill; cell.font = hdr_font
                 cell.border = border; cell.alignment = Alignment(horizontal="center")
             r += 1
+            # Live formulas so every derived value is visible: per-line
+            # Total = Qty(E) × Unit Price(F); BOM TOTAL = SUM over the item rows.
             sub = 0.0
+            _item_rows = []
             for i, row in enumerate(req.bom, start=1):
                 tot = float(row.get("total") or 0); sub += tot
+                qv = row.get("qty", "")
                 vals = [i, row.get("media", ""), row.get("item", ""),
                         row.get("ref", row.get("size", "")),
-                        row.get("qty", ""), float(row.get("unit_price") or 0), tot]
+                        qv, float(row.get("unit_price") or 0)]
                 for c, v in enumerate(vals, start=1):
                     cell = ws.cell(r, c, v); cell.border = border
-                    if c in (6, 7):
+                    if c == 6:
                         cell.number_format = money; cell.alignment = Alignment(horizontal="right")
+                if isinstance(qv, (int, float)):
+                    tcell = ws.cell(r, 7, f"=E{r}*F{r}"); _item_rows.append(r)
+                else:
+                    tcell = ws.cell(r, 7, tot)
+                tcell.border = border; tcell.number_format = money
+                tcell.alignment = Alignment(horizontal="right")
                 r += 1
             tc = ws.cell(r, 3, "BOM TOTAL"); tc.font = bold
-            vc = ws.cell(r, 7, sub); vc.font = bold; vc.number_format = money
+            _bom_total_row = r
+            vc = ws.cell(r, 7, f"=SUM(G{_item_rows[0]}:G{_item_rows[-1]})" if _item_rows else sub)
+            vc.font = bold; vc.number_format = money
             vc.alignment = Alignment(horizontal="right")
             r += 2
 
@@ -9160,19 +9172,41 @@ def export_excel(req: ExcelExportRequest):
     ws.row_dimensions[r].height = 20
     r += 1
 
-    bom_cols = ["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "UNIT PRICE", "TOTAL", "", ""]
+    # Columns: MEDIA(A) ITEM NAME(B) REFERENCE(C) QTY(D) MAKE(E) UNIT PRICE(F) TOTAL(G)
+    bom_cols = ["MEDIA", "ITEM NAME", "REFERENCE", "QTY", "MAKE", "UNIT PRICE", "TOTAL", ""]
     for ci, col in enumerate(bom_cols, 1):
         hdr(ws, r, ci, col, size=9)
     ws.row_dimensions[r].height = 22
     r += 1
 
+    # Live formulas so every derived value is visible in the cell (like Regen):
+    # per-line TOTAL = QTY(D) × UNIT PRICE(F); GRAND TOTAL = SUM over the item rows.
+    _SUBTOTAL = {"BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"}
+    _item_rows = []
     for i, row_d in enumerate(req.bom):
         bg = GREY if i % 2 == 0 else WHITE
         vals = list(row_d.values())
-        for ci, v in enumerate(vals[:8], 1):
+        item_name = str(vals[1]).strip() if len(vals) > 1 else ""
+        is_sub = item_name in _SUBTOTAL
+        qty = vals[3] if len(vals) > 3 else None
+        up  = vals[5] if len(vals) > 5 else None
+        # cols 1-6 (MEDIA .. UNIT PRICE) written as-is
+        for ci in range(1, 7):
+            v = vals[ci - 1] if ci - 1 < len(vals) else ""
             num = ci >= 4
             cell(ws, r, ci, v, bg=bg, align="right" if num else "left",
                  num_fmt='#,##0.00' if isinstance(v, (int, float)) and num else None)
+        # col 7 = TOTAL
+        if not is_sub and isinstance(qty, (int, float)) and isinstance(up, (int, float)):
+            cell(ws, r, 7, f"=D{r}*F{r}", bg=bg, align="right", num_fmt='#,##0.00')
+            _item_rows.append(r)
+        elif item_name == "GRAND TOTAL" and _item_rows:
+            cell(ws, r, 7, f"=SUM(G{_item_rows[0]}:G{_item_rows[-1]})",
+                 bold=True, bg=bg, align="right", num_fmt='#,##0.00')
+        else:
+            v = vals[6] if len(vals) > 6 else ""
+            cell(ws, r, 7, v, bold=is_sub, bg=bg, align="right",
+                 num_fmt='#,##0.00' if isinstance(v, (int, float)) else None)
         ws.row_dimensions[r].height = 18
         r += 1
     r += 1
@@ -9184,6 +9218,7 @@ def export_excel(req: ExcelExportRequest):
     ws.row_dimensions[r].height = 20
     r += 1
 
+    _sum_first = r   # excel row of "Bought Out Total"
     summary_rows = [
         ("Bought Out Total", cs.get("bought_out_total", 0)),
         ("ENCON Total",      cs.get("encon_total", 0)),
@@ -9196,7 +9231,9 @@ def export_excel(req: ExcelExportRequest):
         cell(ws, r, 1, label, bold=is_total, bg=bg, fg=fg)
         ws.merge_cells(f"B{r}:G{r}")
         cell(ws, r, 2, "", bg=bg)
-        c = ws.cell(row=r, column=8, value=val)
+        # Grand Total shown as a live formula: Bought Out + ENCON.
+        cell_val = f"=H{_sum_first}+H{_sum_first+1}" if is_total else val
+        c = ws.cell(row=r, column=8, value=cell_val)
         c.font = Font(bold=is_total, color=fg, size=11 if is_total else 10, name="Calibri")
         c.fill = PatternFill("solid", fgColor=bg)
         c.alignment = Alignment(horizontal="right", vertical="center")
