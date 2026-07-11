@@ -224,6 +224,8 @@ def _build_equipment_name(customer, quote_data):
             if variant:
                 return f"{label} – {variant}"
             return label
+        elif "regen" in pt:
+            return "Regenerative Burner System"
     # Default: Vertical Ladle Preheater
     tons = _fmt_int_if_whole(customer.get("ladle_tons"))
     if tons:
