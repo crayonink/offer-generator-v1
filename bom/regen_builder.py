@@ -680,15 +680,32 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             add("GAS TRAIN", "Shut-Off Valve",          f"DN{gas_dn}", 1, sh_p, scale=False)
             add("GAS TRAIN", "Pressure Gauge with TNV", f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
             add("GAS TRAIN", "Pressure Switch Low",     "",            1, ps_low, scale=False)
-    elif m['gas_train_cost'] > 0:
-        add("GAS TRAIN", "NG Gas Train",
-            f"Complete, for {kw} KW",             1,                     m['gas_train_cost'], scale=False)
     else:
-        # 6000 KW uses a custom gas skid instead of a packaged gas train
-        add("GAS TRAIN", "Gate Valve",                "DN350",            1, skid['gate_valve'], scale=False)
-        add("GAS TRAIN", "Pressure Gauge with Manual Cock", "",           1, skid['pg_cock'], scale=False)
-        add("GAS TRAIN", "Pneumatic Shut-Off Valve",  "DN350",            1, skid['pneu_sov'], scale=False)
-        add("GAS TRAIN", "Pressure Switch Low/High",  "",                 2, skid['pressure_switch'], scale=False)
+        # Packaged NG gas train — sourced from the Gas Train pricelist by NG
+        # flow (Nm³/hr), so every size draws the current rate (e.g. 6000 KW =
+        # 600 Nm³/hr -> DN80xDN100 -> ~4.38 lakh). Falls back to the model's
+        # hardcoded cost, then to an itemized custom skid, if unavailable.
+        _ngflow = _PIPE_SIZES.get(kw, {}).get('ng_flow', 0)
+        _gt_item = _gt_price = _gt_spec = None
+        if _conn and _ngflow:
+            try:
+                from bom.regen_pricelist import ng_gas_train_price
+                _gt_item, _gt_price, _gt_spec = ng_gas_train_price(_conn, _ngflow)
+            except Exception:
+                pass
+        if _gt_price:
+            _dn = (_gt_item or "").replace("Gas Train", "").strip()   # "DN80 x DN100"
+            _spec = f"{_dn}, for {kw} KW" if _dn else f"Complete, for {kw} KW"
+            add("GAS TRAIN", "NG Gas Train", _spec, 1, _gt_price, scale=False)
+        elif m['gas_train_cost'] > 0:
+            add("GAS TRAIN", "NG Gas Train",
+                f"Complete, for {kw} KW",         1,                     m['gas_train_cost'], scale=False)
+        else:
+            # last resort: itemized custom gas skid
+            add("GAS TRAIN", "Gate Valve",                "DN350",        1, skid['gate_valve'], scale=False)
+            add("GAS TRAIN", "Pressure Gauge with Manual Cock", "",       1, skid['pg_cock'], scale=False)
+            add("GAS TRAIN", "Pneumatic Shut-Off Valve",  "DN350",        1, skid['pneu_sov'], scale=False)
+            add("GAS TRAIN", "Pressure Switch Low/High",  "",             2, skid['pressure_switch'], scale=False)
 
     if _conn is not None:
         _conn.close()

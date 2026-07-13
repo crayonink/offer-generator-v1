@@ -7744,7 +7744,7 @@ async def generate_quote(req: QuoteRequest):
             try:
                 from bom.regen_builder import build_regen_df, select_model
                 _mkw = select_model(float(_rk)) if _rk else 1000
-                _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf)
+                _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf, db_path=DB_PATH)
                 from engine.regen_bom_table import fill_make_list
                 if not fill_make_list(output_path, _bomdf):
                     print("WARN: regen MAKE LIST table not found in template")

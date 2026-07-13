@@ -284,3 +284,32 @@ def load_regen_prices(conn, kw: int) -> dict:
 
     return dict(model=model, flat=flat, plc=plc,
                 gas_skid=dict(_GAS_SKID_6000), oil=oil)
+
+
+def ng_gas_train_price(conn, ng_flow_nm3hr):
+    """Packaged NG gas train cost from the Pricelist, sized by NG flow (Nm³/hr).
+
+    The 'Gas Train' pricelist rows carry a flow band in their `specification`
+    (e.g. '501-800 Nm³/hr'). Returns (item_name, price, spec) for the band that
+    contains ``ng_flow_nm3hr`` — or the largest band if the flow exceeds them
+    all. Returns (None, None, None) if nothing matches. Mirrors how the vertical
+    system sizes its NG gas train, so every regen size draws the same rate.
+    """
+    import re
+    rows = conn.execute(
+        "SELECT item, price, specification FROM component_price_master "
+        "WHERE category = 'Gas Train'"
+    ).fetchall()
+    biggest = None  # (hi, item, price, spec) — fallback when flow > all bands
+    for item, price, spec in rows:
+        m = re.search(r'(\d+)\s*-\s*(\d+)', spec or '')
+        if not m or price is None:
+            continue
+        lo, hi = int(m.group(1)), int(m.group(2))
+        if lo <= ng_flow_nm3hr <= hi:
+            return item, float(price), spec
+        if biggest is None or hi > biggest[0]:
+            biggest = (hi, item, float(price), spec)
+    if biggest and ng_flow_nm3hr > biggest[0]:
+        return biggest[1], biggest[2], biggest[3]
+    return None, None, None
