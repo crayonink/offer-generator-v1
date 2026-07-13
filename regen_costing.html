@@ -383,7 +383,7 @@
 
       <div class="sec-label">Enquiry</div>
       <div class="fg fg-4">
-        <div class="field" style="grid-column:span 3"><label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto)</small></label><input id="ref_no" type="text" class="ro" readonly title="" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/></div>
+        <div class="field" style="grid-column:span 3"><label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto — editable)</small></label><input id="ref_no" type="text" title="" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/></div>
         <div class="field"><label>Location</label><input id="location" type="text" class="ro" value="Faridabad" readonly/></div>
         <div class="field" style="grid-column:span 4"><label>Subject</label><input id="subject" type="text" value="Offer for Regenerative Burner System" placeholder="Supply of Regenerative Burner System"/></div>
       </div>
@@ -723,8 +723,10 @@
     return (name || '').trim().split(/\s+/).filter(Boolean).map(p => p[0].toUpperCase()).join('');
   }
   function _locationCode(loc) { return _LOC_CODES[(loc || '').trim().toLowerCase()] || ''; }
+  let _refEdited = false;   // once the user types in the ref field, stop auto-overwriting
   function updateAutoRef() {
     const ref = document.getElementById('ref_no'); if (!ref) return;
+    if (_refEdited) return;
     const ini  = _personInitials((document.getElementById('technical_person') || {}).value);
     const code = _locationCode((document.getElementById('location') || {}).value);
     const parts = [_autoRefSeq];
@@ -783,6 +785,8 @@
   window.addEventListener('DOMContentLoaded', () => {
     const t = document.getElementById('technical_person');
     if (t) t.addEventListener('input', updateAutoRef);
+    const ref = document.getElementById('ref_no');
+    if (ref) ref.addEventListener('input', () => { _refEdited = true; });
     prefillCustomer();
     fetchAutoRefSeq();
   });
