@@ -741,9 +741,38 @@
     catch (e) { /* keep default */ }
     updateAutoRef();
   }
+  // TEMP: prefill customer/contact details for quick offer testing.
+  // Remove this block (and its call below) when real data entry resumes.
+  function prefillCustomer() {
+    const vals = {
+      company_name:    'PP Rolling Mills',
+      company_address: 'Industrial Area, Phase 2',
+      company_city:    'Faridabad',
+      company_state:   'Haryana',
+      company_pin:     '121001',
+      company_gstin:   '06AAAAA0000A1Z5',
+      poc_name:        'Rajesh Kumar',
+      poc_designation: 'Purchase Manager',
+      mobile_no:       '+91 98765 43210',
+      email:           'purchase@pprollingmills.in',
+      marketing_person:'Atul Sharma',
+      marketing_email: 'atul@encon.co.in',
+      marketing_phone: '+91 98765 11111',
+      technical_person:'Nutan Kumari',
+      technical_email: 'mdo@encon.co.in',
+      technical_phone: '+91 99714 77448',
+    };
+    for (const [id, v] of Object.entries(vals)) {
+      const el = document.getElementById(id);
+      if (el && !el.value) el.value = v;
+    }
+    const ts = document.getElementById('technical_salutation'); if (ts && !ts.value) ts.value = 'Mrs.';
+    updateAutoRef();
+  }
   window.addEventListener('DOMContentLoaded', () => {
     const t = document.getElementById('technical_person');
     if (t) t.addEventListener('input', updateAutoRef);
+    prefillCustomer();
     fetchAutoRefSeq();
   });
 
