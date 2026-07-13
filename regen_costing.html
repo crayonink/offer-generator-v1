@@ -1015,6 +1015,12 @@
       items,
       transport_amt:   parseFloat(val('transport-amt')) || 0,
       valid_days: 30,
+      // Regen body template vars (backend enriches into fuel_word/qty/price)
+      extra_context: {
+        regen_kw:    c.model_kw,
+        regen_pairs: c.num_pairs,
+        regen_fuel:  c.fuel || 'Natural Gas',
+      },
       // Annexure IV — Terms & Conditions
       tnc_prices:             val('tnc_prices'),
       tnc_delivery:           val('tnc_delivery'),

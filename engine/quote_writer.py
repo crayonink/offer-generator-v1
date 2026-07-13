@@ -1170,6 +1170,10 @@ def generate_quote_docx(quote_data: dict, output_path: str,
         context.setdefault("price_bullets", [])
         context.setdefault("price_notes", [])
 
+    # Product-specific template vars (e.g. the regen body's fuel_word / kw /
+    # price_in_words) — merged last so they win over defaults.
+    context.update(customer.get("extra_context") or {})
+
     # All products (Vertical, Horizontal, Tundish) render from
     # Offer_Template.docx so they share hood / HPU / scope-of-supply
     # content. HPU stand-alone offers pass HPU_Offer_Template.docx via

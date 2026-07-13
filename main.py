@@ -3104,6 +3104,7 @@ class QuoteRequest(BaseModel):
     enquiry_ref: Optional[str] = ""
     currency: Optional[str] = "INR"     # "USD" → offer priced in USD
     fx_rate: Optional[float] = 0        # INR → USD, used only when currency == "USD"
+    extra_context: dict = {}            # product-specific template vars (e.g. regen: fuel_word, kw, price_in_words)
     marketing_person: Optional[str] = ""
     marketing_phone: Optional[str] = ""
     marketing_email: Optional[str] = ""
@@ -7629,6 +7630,7 @@ async def generate_quote(req: QuoteRequest):
                 "gstin":           req.company_gstin,
                 "currency":        (req.currency or "INR"),
                 "fx_rate":         (req.fx_rate or 0),
+                "extra_context":   (req.extra_context or {}),
                 # Technical data (for template tech table)
                 "ladle_tons":          req.ladle_tons,
                 "ladle_dim":           req.ladle_dim,
@@ -7710,7 +7712,32 @@ async def generate_quote(req: QuoteRequest):
         _capacity = f"-{int(req.ladle_tons)}T" if req.ladle_tons else ""
         filename = f"{_date}_{_safe_company}_{_product}{_capacity}.docx"
         output_path = os.path.join(QUOTES_FOLDER, filename)
-        generate_quote_docx(quote_data, output_path)
+        # Regenerative-burner offers use their own template (blower-style cover
+        # letter + regen technical body); everything else uses the VLPH template.
+        _regen_tpl = None
+        if "regen" in _first_pt.lower():
+            _cand = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Regen_Offer_Template.docx")
+            if os.path.exists(_cand):
+                _regen_tpl = _cand
+            # Enrich the regen body's template vars from the raw calc values.
+            from engine.quote_writer import amount_in_words_indian, _format_inr
+            _ec = dict(req.extra_context or {})
+            _rp = int(_ec.get("regen_pairs") or 1)
+            _rf = str(_ec.get("regen_fuel") or "Natural Gas")
+            _rk = _ec.get("regen_kw") or ""
+            _price = float(req.items[0].total) if req.items else 0.0
+            _oil = _rf.strip().lower() in {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs", "oil"}
+            _fword = "OIL" if _oil else ("NG" if "natural" in _rf.lower() else _rf.upper())
+            _qtyw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
+            _ec.update({
+                "fuel_word": _fword, "fuel_name": _rf, "kw": _rk, "pairs": _rp,
+                "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
+                "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
+                "price_inr": _format_inr(_price),
+                "price_in_words": "INR " + amount_in_words_indian(_price) + " only.",
+            })
+            quote_data.setdefault("customer", {})["extra_context"] = _ec
+        generate_quote_docx(quote_data, output_path, template_path=_regen_tpl)
         # Pull Transport onto its own price-schedule line (P&F/designing/
         # negotiation stay baked into the equipment price). No-op if 0.
         try:
