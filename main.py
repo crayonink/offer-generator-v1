@@ -7738,18 +7738,18 @@ async def generate_quote(req: QuoteRequest):
             })
             quote_data.setdefault("customer", {})["extra_context"] = _ec
         generate_quote_docx(quote_data, output_path, template_path=_regen_tpl)
-        # Regen offers: fill the BILL OF MATERIAL table dynamically from the
-        # real BOM (faithful dump — real sections, specs, total quantities).
+        # Regen offers: build the MAKE LIST dynamically from the real BOM — only
+        # the item categories actually present (with their makes) are listed.
         if _regen_tpl:
             try:
                 from bom.regen_builder import build_regen_df, select_model
                 _mkw = select_model(float(_rk)) if _rk else 1000
                 _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf)
-                from engine.regen_bom_table import fill_bom_table
-                if not fill_bom_table(output_path, _bomdf):
-                    print("WARN: regen BILL OF MATERIAL table not found in template")
+                from engine.regen_bom_table import fill_make_list
+                if not fill_make_list(output_path, _bomdf):
+                    print("WARN: regen MAKE LIST table not found in template")
             except Exception as _bom_err:
-                print(f"WARN: regen BOM table fill failed: {_bom_err}")
+                print(f"WARN: regen MAKE LIST fill failed: {_bom_err}")
         # Pull Transport onto its own price-schedule line (P&F/designing/
         # negotiation stay baked into the equipment price). No-op if 0.
         try:
