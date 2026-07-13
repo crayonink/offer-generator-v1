@@ -354,26 +354,27 @@ BLOWER_CATALOGUE = [
 # KW → blower HP mapping (from costing sheets)
 _BLOWER_HP = {500:"10HP", 1000:"10HP", 1500:"15HP", 2000:"20HP", 2500:"25HP", 3000:"25HP", 4500:"40HP", 6000:"60HP"}
 
-# Standard motor frame HP sizes — an ID fan is ordered against one of these.
-_STD_MOTOR_HP = [3, 5, 7.5, 10, 12.5, 15, 20, 25, 30, 40, 50, 60, 75, 100, 125, 150]
+def _id_fan(kw: int):
+    """ID Fan (motor HP, cost) for the given BURNER-size model.
 
+    HP — take the fuel flow + air flow of the burner size (Nm³/hr), sum them,
+    convert to CFM (÷1.7) at 36" WG static, convert to HP (CFM × 36 ÷ 3200),
+    then round UP to the nearest combustion-blower catalogue frame.
 
-def _id_fan_hp(kw: int) -> float:
-    """ID Fan motor HP for the given BURNER-size model.
-
-    Formula (per ENCON regen sizing): take the fuel flow + air flow of the
-    burner size (Nm³/hr), sum them, convert to CFM (÷1.7), at 36" WG static,
-    convert to HP (CFM × 36 ÷ 3200). e.g. 1000 KW → (100+1000)/1.7×36/3200
-    ≈ 7.28 HP → 7.5 HP frame. Result is rounded up to the next standard
-    motor frame size.
+    Cost — reuse the blower catalogue price (with motor) for that HP: ENCON has
+    no separate ID-fan pricelist, and an ID fan of a given HP is priced like the
+    equivalent blower. e.g. 1000 KW → (100+1000)/1.7×36/3200 ≈ 7.28 HP →
+    7.5 HP frame → ₹99,500.
     """
     p = _PIPE_SIZES.get(kw) or _PIPE_SIZES[1000]
-    total_flow = p['ng_flow'] + p['air_flow']          # fuel + air, Nm³/hr
-    raw_hp = total_flow / 1.7 * 36 / 3200               # CFM × 36" WG ÷ 3200
-    for h in _STD_MOTOR_HP:
-        if h >= raw_hp:
-            return h
-    return _STD_MOTOR_HP[-1]
+    raw_hp = (p['ng_flow'] + p['air_flow']) / 1.7 * 36 / 3200   # CFM × 36" WG ÷ 3200
+    frames = sorted(BLOWER_CATALOGUE, key=lambda b: float(str(b['hp']).replace('HP', '')))
+    for b in frames:
+        hp = float(str(b['hp']).replace('HP', ''))
+        if hp >= raw_hp:
+            return hp, float(b['price_with_motor'])
+    last = frames[-1]
+    return float(str(last['hp']).replace('HP', '')), float(last['price_with_motor'])
 
 
 def get_supplementary_data(kw: int) -> dict:
@@ -646,8 +647,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
 
     # ── 8c. ID FAN — every fuel (gas + oil). HP sized from the burner's
     #        fuel+air flow at 36" WG (see _id_fan_hp).
-    _id_hp = _id_fan_hp(kw)
-    add("ID FAN", "ID Fan", f"{_id_hp:g} HP", 1, oil['id_fan'], scale=False)
+    _id_hp, _id_cost = _id_fan(kw)
+    add("ID FAN", "ID Fan", f"{_id_hp:g} HP", 1, _id_cost, scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
