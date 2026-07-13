@@ -39,7 +39,7 @@ PU_VARIANT_PREFIX = {
 # Oils that use a standalone Pumping Unit (heating handled elsewhere).
 # FO previously routed here but now uses the HPU (heating + pumping) selector
 # so the in-unit heater is sized into the BOM.
-PUMPING_UNIT_ONLY_FUELS = {"ldo", "lshs"}
+PUMPING_UNIT_ONLY_FUELS = {"hsd", "ldo", "lshs"}
 
 
 def _hpu_kw_for_lph(required_lph: float) -> int:

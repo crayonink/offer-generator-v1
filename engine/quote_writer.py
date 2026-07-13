@@ -234,10 +234,10 @@ def _build_equipment_name(customer, quote_data):
 
 
 # Oil fuels where the oil is pre-heated separately (no heating element in
-# the pumping unit). Anything else oil-based gets the heater (HSD, SKO, HDO,
-# CFO, FO etc.). FO was previously listed here but now routes through the
-# HPU selector so the in-unit heater is included in the BOM and the offer.
-PUMPING_UNIT_ONLY_FUEL_NAMES = {"LDO", "LSHS"}
+# the pumping unit) — these get a plain Pumping Unit. Anything else oil-based
+# gets the heater (SKO, HDO, CFO, FO etc.). FO was previously pumping-only but
+# now routes through the HPU selector so the in-unit heater is included.
+PUMPING_UNIT_ONLY_FUEL_NAMES = {"HSD", "LDO", "LSHS"}
 
 
 # ─── Annexure I scope-of-supply dynamic strings ────────────────────────────

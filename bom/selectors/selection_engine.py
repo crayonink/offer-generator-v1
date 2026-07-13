@@ -120,9 +120,9 @@ def select_equipment(*, ng_flow_nm3hr: float, air_flow_nm3hr: float, is_dual_fue
     rotary_joint = select_rotary_joint(air_line_nb)
 
     # HPU / Pumping Unit — only for oil-based fuels.
-    # Heavy oils (LSHS, FO) get a standalone Pumping Unit since the oil is
-    # pre-heated separately; other oils (LDO, HSD, SKO, HDO, CFO) use HPU.
-    # Sized to actual oil firing rate (LPH), not burner model.
+    # HSD, LDO, LSHS get a standalone Pumping Unit (oil pre-heated separately,
+    # no in-unit heater); other oils (SKO, HDO, FO, CFO) use the HPU (heating +
+    # pumping). Sized to actual oil firing rate (LPH), not burner model.
     hpu = None
     if _resolve_category(fuel_type) == "oil":
         picker = select_pumping_unit if fuel_type.lower() in PUMPING_UNIT_ONLY_FUELS else select_hpu
