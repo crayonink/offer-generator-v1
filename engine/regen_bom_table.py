@@ -152,6 +152,71 @@ def fill_temp_control(doc_path, df):
     return True
 
 
+def fill_gas_train(doc_path, df):
+    """Rewrite the main-burner gas-train bullet list for fuels that have NO
+    packaged gas train (BFG / COG / Producer Gas): list the BOM's itemized
+    components with quantities. Packaged fuels (NG/PNG — a single 'Gas Train'
+    BOM row) keep the standard breakdown bullets untouched.
+    """
+    import copy
+
+    gt = df[df["SECTION"] == "GAS TRAIN"]
+    if gt.empty:
+        return False
+    # packaged train present -> leave the static bullets as-is
+    if any("gas train" in str(n).lower() for n in gt["ITEM NAME"]):
+        return False
+
+    lines = []
+    for _, r in gt.iterrows():
+        q = int(round(float(r["QTY"])))
+        name = str(r["ITEM NAME"]).strip()
+        spec = str(r.get("SPECIFICATION", "") or "").strip()
+        unit = "No." if q == 1 else "Nos."
+        lines.append(f"{q} {unit} {name}" + (f" ({spec})" if spec else ""))
+    if not lines:
+        return False
+
+    d = Document(doc_path)
+    paras = d.paragraphs
+    hi = next((i for i, p in enumerate(paras)
+               if "GAS TRAIN FOR MAIN BURNERS" in p.text), None)
+    if hi is None:
+        return False
+    bullets, started = [], False
+    for i in range(hi + 1, len(paras)):
+        pPr = paras[i]._element.find(qn("w:pPr"))
+        is_b = pPr is not None and pPr.find(qn("w:numPr")) is not None
+        if is_b:
+            started = True
+            bullets.append(paras[i])
+        elif started:
+            break
+    if not bullets:
+        return False
+
+    template = bullets[0]._element
+    prev = bullets[-1]._element
+    for txt in lines:
+        nb = copy.deepcopy(template)
+        runs = nb.findall(qn("w:r"))
+        if runs:
+            ts = runs[0].findall(qn("w:t"))
+            if ts:
+                ts[0].text = txt
+                for extra in ts[1:]:
+                    extra.getparent().remove(extra)
+            for r in runs[1:]:
+                r.getparent().remove(r)
+        prev.addnext(nb)
+        prev = nb
+    for p in bullets:
+        p._element.getparent().remove(p._element)
+
+    d.save(doc_path)
+    return True
+
+
 def _makelist_category(name):
     """Map a BOM item name to a clean MAKE-LIST display category, so many BOM
     lines collapse into one make-list row (e.g. every Ball Valve → 'Ball Valve').
