@@ -113,15 +113,29 @@ def fill_temp_control(doc_path, df):
         plc_model = m.group(0).replace(" ", "") if m else ""
     plc_phrase = (f"PLC {plc_model} with HMI" if plc_model else "PLC with HMI")
 
-    SPEC = [
-        ("CONTROLS",     "plc with hmi",      plc_phrase),
-        ("TEMP CONTROL", "thermocouple",      "Thermocouple with Temperature Transmitter"),
-        ("TEMP CONTROL", "air flow meter",    "Orifice with DPT Volumetric Flow Meter for Air"),
-        ("TEMP CONTROL", "gas flow meter",    "Orifice with DPT Volumetric Flow Meter for Gas"),
-        ("TEMP CONTROL", "air control valve", "Pneumatic Air Control Valve"),
-        ("TEMP CONTROL", "gas control valve", "Pneumatic Gas Control Valve"),
-        ("TEMP CONTROL", "pneumatic damper",  "Pneumatic Flue Control Valve"),
-    ]
+    is_oil = any(str(s).upper().startswith("OIL") for s in df["SECTION"].unique())
+    if is_oil:
+        SPEC = [
+            ("CONTROLS",     "plc with hmi",        plc_phrase),
+            ("TEMP CONTROL", "thermocouple",        "Thermocouple with Temperature Transmitter"),
+            ("TEMP CONTROL", "air flow meter",      "Orifice with DPT Volumetric Flow Meter for Air"),
+            ("TEMP CONTROL", "oil flow meter",      "Flow Meter in Oil Line"),
+            ("TEMP CONTROL", "air control valve",   "Pneumatic Air Control Valve"),
+            ("TEMP CONTROL", "oil control valve",   "Pneumatic Control Valve in Oil Line"),
+            ("TEMP CONTROL", "tt in oil line",      "Temperature Transmitter in Oil Line"),
+            ("TEMP CONTROL", "pt in oil line",      "Pressure Transmitter in Oil Line"),
+            ("TEMP CONTROL", "pneumatic damper",    "Pneumatic Flue Control Valve"),
+        ]
+    else:
+        SPEC = [
+            ("CONTROLS",     "plc with hmi",      plc_phrase),
+            ("TEMP CONTROL", "thermocouple",      "Thermocouple with Temperature Transmitter"),
+            ("TEMP CONTROL", "air flow meter",    "Orifice with DPT Volumetric Flow Meter for Air"),
+            ("TEMP CONTROL", "gas flow meter",    "Orifice with DPT Volumetric Flow Meter for Gas"),
+            ("TEMP CONTROL", "air control valve", "Pneumatic Air Control Valve"),
+            ("TEMP CONTROL", "gas control valve", "Pneumatic Gas Control Valve"),
+            ("TEMP CONTROL", "pneumatic damper",  "Pneumatic Flue Control Valve"),
+        ]
     lines = []
     for section, needle, phrase in SPEC:
         q, _ = _lookup(section, needle)
@@ -132,6 +146,70 @@ def fill_temp_control(doc_path, df):
 
     template = bullets[0]._element      # clone for list formatting
     prev = bullets[-1]._element         # insert new bullets after the old block
+    for txt in lines:
+        nb = copy.deepcopy(template)
+        runs = nb.findall(qn("w:r"))
+        if runs:
+            ts = runs[0].findall(qn("w:t"))
+            if ts:
+                ts[0].text = txt
+                for extra in ts[1:]:
+                    extra.getparent().remove(extra)
+            for r in runs[1:]:
+                r.getparent().remove(r)
+        prev.addnext(nb)
+        prev = nb
+    for p in bullets:
+        p._element.getparent().remove(p._element)
+
+    d.save(doc_path)
+    return True
+
+
+def fill_oil_supply(doc_path, df):
+    """Populate the oil offer's HEATING & PUMPING UNIT bullet list from the BOM.
+
+    Lists the OIL AUXILIARY (Heating & Pumping Unit) and OIL LINE — BURNER
+    components with quantities. No-op if the BOM has no oil sections (gas offer).
+    """
+    import copy
+
+    # HPU first, then the oil line to the burners
+    oil_rows = []
+    for section in ("OIL AUXILIARY", "OIL LINE — BURNER"):
+        oil_rows += list(df[df["SECTION"] == section].iterrows())
+    if not oil_rows:
+        return False
+
+    lines = []
+    for _, r in oil_rows:
+        q = int(round(float(r["QTY"])))
+        name = str(r["ITEM NAME"]).strip()
+        unit = "No." if q == 1 else "Nos."
+        lines.append(f"{q} {unit} {name}")
+    if not lines:
+        return False
+
+    d = Document(doc_path)
+    paras = d.paragraphs
+    hi = next((i for i, p in enumerate(paras)
+               if p.text.strip() == "HEATING & PUMPING UNIT"), None)
+    if hi is None:
+        return False
+    bullets, started = [], False
+    for i in range(hi + 1, len(paras)):
+        pPr = paras[i]._element.find(qn("w:pPr"))
+        is_b = pPr is not None and pPr.find(qn("w:numPr")) is not None
+        if is_b:
+            started = True
+            bullets.append(paras[i])
+        elif started:
+            break
+    if not bullets:
+        return False
+
+    template = bullets[0]._element
+    prev = bullets[-1]._element
     for txt in lines:
         nb = copy.deepcopy(template)
         runs = nb.findall(qn("w:r"))
