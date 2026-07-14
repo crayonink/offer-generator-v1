@@ -1337,10 +1337,11 @@ def build_vlph_manual_df(
     # Assembly instead and also drop the air-gas pipeline (added below).
     is_swivel = hood_type in ("swivel_manual", "swivel_geared", "swivel")
     if is_swivel:
-        # Swivel assembly bundles the swirling mechanism + pipeline + fittings;
-        # priced from the tonnage-based swirling-mech row in vertical_master.
+        # Manual swivel assembly is a fixed price by ladle tonnage:
+        # Rs.40,000 up to 30 T, Rs.50,000 for 30–40 T (and above).
+        swivel_cost = 40000 if ladle_tons <= 30 else 50000
         rows.append(_row("ENCON ITEMS", "SWIVEL ASSEMBLY", "", 1,
-                         unit_price_override=params.get("pipeline_swirling_cost", 0)))
+                         unit_price_override=swivel_cost))
     else:
         rows += [
             _row("ENCON ITEMS",
