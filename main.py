@@ -4759,6 +4759,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 pipeline_weight_kg=_pipeline_kg_h,
                 include_pilot=req.manual_pilot_burner == "yes",
                 pilot_line_fuel=req.pilot_line_fuel,
+                ceramic_rolls_override=_ceramic_rolls_h,
             )
         else:
             bom_df = build_hlph_df(
@@ -7716,9 +7717,6 @@ async def generate_quote(req: QuoteRequest):
         # letter + regen technical body); everything else uses the VLPH template.
         _regen_tpl = None
         if "regen" in _first_pt.lower():
-            _cand = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Regen_Offer_Template.docx")
-            if os.path.exists(_cand):
-                _regen_tpl = _cand
             # Enrich the regen body's template vars from the raw calc values.
             from engine.quote_writer import amount_in_words_indian, _format_inr
             _ec = dict(req.extra_context or {})
@@ -7727,6 +7725,14 @@ async def generate_quote(req: QuoteRequest):
             _rk = _ec.get("regen_kw") or ""
             _price = float(req.items[0].total) if req.items else 0.0
             _oil = _rf.strip().lower() in {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs", "oil"}
+            # Oil fuels use the dedicated oil template; gases use the standard one.
+            _base = os.path.dirname(os.path.abspath(__file__))
+            _tpl_name = "Regen_Oil_Offer_Template.docx" if _oil else "Regen_Offer_Template.docx"
+            _cand = os.path.join(_base, _tpl_name)
+            if os.path.exists(_cand):
+                _regen_tpl = _cand
+            elif os.path.exists(os.path.join(_base, "Regen_Offer_Template.docx")):
+                _regen_tpl = os.path.join(_base, "Regen_Offer_Template.docx")   # fallback
             _fword = "OIL" if _oil else ("NG" if "natural" in _rf.lower() else _rf.upper())
             # Gas-train label: strip a trailing "GAS" so "{fuel} GAS TRAIN" doesn't
             # read "BLAST FURNACE GAS GAS TRAIN". NG/PNG keep their names.
@@ -7734,7 +7740,7 @@ async def generate_quote(req: QuoteRequest):
             _gtf = _re_gt.sub(r"\s*GAS\s*$", "", _fword, flags=_re_gt.I).strip() or _fword
             _qtyw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
             _ec.update({
-                "fuel_word": _fword, "gas_train_fuel": _gtf,
+                "fuel_word": _fword, "gas_train_fuel": _gtf, "is_oil": _oil,
                 "fuel_name": _rf, "kw": _rk, "pairs": _rp,
                 "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
                 "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
@@ -7751,7 +7757,7 @@ async def generate_quote(req: QuoteRequest):
                 _mkw = select_model(float(_rk)) if _rk else 1000
                 _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf, db_path=DB_PATH)
                 from engine.regen_bom_table import (
-                    fill_make_list, fill_temp_control, fill_gas_train)
+                    fill_make_list, fill_temp_control, fill_gas_train, fill_oil_supply)
                 if not fill_make_list(output_path, _bomdf):
                     print("WARN: regen MAKE LIST table not found in template")
                 try:
@@ -7759,9 +7765,11 @@ async def generate_quote(req: QuoteRequest):
                 except Exception as _tc_err:
                     print(f"WARN: regen TEMP CONTROL fill failed: {_tc_err}")
                 try:
-                    fill_gas_train(output_path, _bomdf)
+                    # oil offers -> HPU/oil-line section; gas -> gas-train section
+                    if not fill_oil_supply(output_path, _bomdf):
+                        fill_gas_train(output_path, _bomdf)
                 except Exception as _gt_err:
-                    print(f"WARN: regen gas-train fill failed: {_gt_err}")
+                    print(f"WARN: regen fuel-supply fill failed: {_gt_err}")
             except Exception as _bom_err:
                 print(f"WARN: regen MAKE LIST fill failed: {_bom_err}")
         # Pull Transport onto its own price-schedule line (P&F/designing/

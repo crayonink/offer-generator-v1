@@ -321,6 +321,7 @@ def build_hlph_manual_df(
     pipeline_weight_kg: float = 1000.0,
     include_pilot: bool = True,
     pilot_line_fuel: str = "lpg",
+    ceramic_rolls_override: int = 0,
 ) -> pd.DataFrame:
     """
     Manual / simplified HLPH BOM.
