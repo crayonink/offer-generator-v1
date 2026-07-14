@@ -9717,9 +9717,34 @@ def _stamp_page_numbers(pdf_path: str):
 
 @app.get("/api/preview-quote/{filename}")
 def preview_quote(filename: str):
-    """Render a generated offer .docx as HTML so it can be shown in the browser."""
-    import mammoth
+    """Preview a generated offer.
+
+    Serves the PDF **inline** — a faithful LibreOffice render of the final
+    .docx — so the preview looks pixel-identical to the Word document (cover
+    layout, header logo, table styling, page breaks, etc.). Falls back to a
+    simplified mammoth HTML render only when no PDF can be produced (e.g. a dev
+    box without LibreOffice installed).
+    """
+    base = os.path.splitext(filename)[0]
     file_path = os.path.join(QUOTES_FOLDER, filename)
+    pdf_dst   = os.path.join(QUOTES_FOLDER, f"{base}.pdf")
+
+    # 1) Faithful PDF preview (build it from the .docx on demand if missing).
+    if not os.path.exists(pdf_dst):
+        docx_path = os.path.join(QUOTES_FOLDER, f"{base}.docx")
+        if os.path.exists(docx_path):
+            try:
+                _docx_to_pdf(docx_path, pdf_dst)
+            except Exception as _e:
+                print(f"WARN: preview PDF build failed: {_e}")
+    if os.path.exists(pdf_dst):
+        return FileResponse(
+            path=pdf_dst, media_type="application/pdf",
+            headers={"Content-Disposition": f'inline; filename="{base}.pdf"'},
+        )
+
+    # 2) Fallback: simplified HTML render (LibreOffice unavailable).
+    import mammoth
     if not os.path.exists(file_path):
         return HTMLResponse("<p style='color:red'>File not found</p>", status_code=404)
     with open(file_path, "rb") as f:
