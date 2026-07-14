@@ -562,12 +562,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("GAS LINE — BURNER", bv_label,
             f"NB{m['gas_bv_nb']}",               m['gas_bv_qty'],            m['gas_bv_cost'])
         add("GAS LINE — BURNER", "Flexible Hose",
-            f"NB{m['gas_hose_nb']}",             m['gas_hose_qty'],          m['gas_hose_cost'], scale=False)
+            f"NB{m['gas_hose_nb']}",             m['gas_hose_qty'],          m['gas_hose_cost'])
         add("GAS LINE — BURNER", "Pressure Gauge 0-500",  "",                2,  m['pg_burner'])
 
     # ── 4. AIR LINE — Pilot / UV / UV Cooling ─────────────────────────────────
-    # Oil offers use 2 of each (Regen_Oil_Testing.xlsx); gas keeps 8/4/4/4.
-    _uv_bv, _uv_fh, _pl_bv, _pl_fh = (2, 2, 2, 2) if is_oil else (8, 4, 4, 4)
+    # 2 of each per pair, per the reference costing sheet (1 Pair 1000 Kw).
+    _uv_bv, _uv_fh, _pl_bv, _pl_fh = (2, 2, 2, 2)
     add("AIR LINE — PILOT/UV", "Ball Valve UV",       "NB15",       _uv_bv, flat['ball_valve_nb15'])
     add("AIR LINE — PILOT/UV", "Flexible Hose UV",    "NB15",       _uv_fh, flat['flex_hose_nb15'])
     add("AIR LINE — PILOT/UV", "Ball Valve Pilot",    "NB15",       _pl_bv, flat['ball_valve_nb15'])
@@ -621,7 +621,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _bhp = _BLOWER_HP.get(kw, "")
     add("BLOWER", "Combustion Blower (40\" WG)",
         f"ENCON 40/{_bhp.replace('HP','')}, {_bhp}, with motor",
-        (1 if is_oil else 2),   m['blower_cost'], scale=False)
+        1,   m['blower_cost'])   # 1 per pair, per the reference costing sheet
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
