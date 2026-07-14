@@ -803,6 +803,17 @@ def _get_valve_price(nb, valve_type: str, vendor: str) -> tuple:
     return item, 0
 
 
+def _swivel_assembly_cost(hood_type: str, ladle_tons: float) -> int:
+    """Fixed SWIVEL ASSEMBLY price by mechanism type and ladle tonnage.
+
+    Geared swivel : Rs.40,000 up to 30 T, Rs.50,000 above (30-40 T).
+    Manual swivel : Rs.10,000 up to 30 T, Rs.20,000 above (30-40 T).
+    Applies to both the automatic and manual vertical builders.
+    """
+    base = 10000 if hood_type == "swivel_manual" else 40000
+    return base + (10000 if ladle_tons > 30 else 0)
+
+
 def build_vlph_120t_df(
     equipment: dict,
     ladle_tons: float = 10.0,
@@ -1001,10 +1012,10 @@ def build_vlph_120t_df(
     # block + shaft; swivelling hoods (manual/geared) use a single Swivel
     # Assembly instead and also drop the air-gas pipeline.
     if is_swivel:
-        # Swivel assembly bundles the swirling mechanism + pipeline + fittings;
-        # priced from the tonnage-based swirling-mech row in vertical_master.
+        # Fixed swirling-mechanism price by swivel type + tonnage (geared 40k/50k,
+        # manual 10k/20k) — see _swivel_assembly_cost.
         rows.append(_row("ENCON ITEMS", "SWIVEL ASSEMBLY", "", 1,
-                         unit_price_override=params.get("pipeline_swirling_cost", 0)))
+                         unit_price_override=_swivel_assembly_cost(hood_type, ladle_tons)))
     else:
         rows += [
             _row("ENCON ITEMS",
@@ -1337,11 +1348,10 @@ def build_vlph_manual_df(
     # Assembly instead and also drop the air-gas pipeline (added below).
     is_swivel = hood_type in ("swivel_manual", "swivel_geared", "swivel")
     if is_swivel:
-        # Manual swivel assembly is a fixed price by ladle tonnage:
-        # Rs.40,000 up to 30 T, Rs.50,000 for 30–40 T (and above).
-        swivel_cost = 40000 if ladle_tons <= 30 else 50000
+        # Fixed swirling-mechanism price by swivel type + tonnage (geared 40k/50k,
+        # manual 10k/20k) — see _swivel_assembly_cost.
         rows.append(_row("ENCON ITEMS", "SWIVEL ASSEMBLY", "", 1,
-                         unit_price_override=swivel_cost))
+                         unit_price_override=_swivel_assembly_cost(hood_type, ladle_tons)))
     else:
         rows += [
             _row("ENCON ITEMS",
