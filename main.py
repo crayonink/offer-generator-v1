@@ -7728,9 +7728,14 @@ async def generate_quote(req: QuoteRequest):
             _price = float(req.items[0].total) if req.items else 0.0
             _oil = _rf.strip().lower() in {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs", "oil"}
             _fword = "OIL" if _oil else ("NG" if "natural" in _rf.lower() else _rf.upper())
+            # Gas-train label: strip a trailing "GAS" so "{fuel} GAS TRAIN" doesn't
+            # read "BLAST FURNACE GAS GAS TRAIN". NG/PNG keep their names.
+            import re as _re_gt
+            _gtf = _re_gt.sub(r"\s*GAS\s*$", "", _fword, flags=_re_gt.I).strip() or _fword
             _qtyw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
             _ec.update({
-                "fuel_word": _fword, "fuel_name": _rf, "kw": _rk, "pairs": _rp,
+                "fuel_word": _fword, "gas_train_fuel": _gtf,
+                "fuel_name": _rf, "kw": _rk, "pairs": _rp,
                 "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
                 "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
                 "price_inr": _format_inr(_price),
