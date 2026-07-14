@@ -722,7 +722,7 @@ def _regen_make(item):
     if "gate valve" in n:                     return "L&T"
     if "butterfly" in n:                      return "L&T"
     if "ball valve" in n:                     return "L&T"
-    if "flexible hose" in n:                  return "BENGAL"
+    if "flexible hose" in n:                  return "Bengal Industries"
     if "shut-off" in n or "shut off" in n:    return "DEMBLA"
     if "control valve" in n:                  return "DEMBLA"
     if "in oil line" in n:                    return "HONEYWELL"
