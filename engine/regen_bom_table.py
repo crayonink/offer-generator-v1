@@ -171,9 +171,8 @@ def fill_gas_train(doc_path, df):
     for _, r in gt.iterrows():
         q = int(round(float(r["QTY"])))
         name = str(r["ITEM NAME"]).strip()
-        spec = str(r.get("SPECIFICATION", "") or "").strip()
         unit = "No." if q == 1 else "Nos."
-        lines.append(f"{q} {unit} {name}" + (f" ({spec})" if spec else ""))
+        lines.append(f"{q} {unit} {name}")   # no DN/size in the offer scope
     if not lines:
         return False
 
