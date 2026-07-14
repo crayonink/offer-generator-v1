@@ -1018,9 +1018,8 @@ def build_vlph_120t_df(
     rows.append(_row("ENCON ITEMS", "FABRICATION/ STRUCTURE",
              f'{(ms_structure_kg_override or params["ms_structure_kg"])} kg',
              1, unit_price_override=(ms_structure_kg_override or params["ms_structure_kg"]) * get_price("FABRICATION RATE")))
-    # AIR-GAS PIPELINE is always a separate line (including swivel hoods — the
-    # SWIVEL ASSEMBLY covers the swirling mechanism, pipeline is billed apart).
-    rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
+    if not is_swivel:
+        rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
              f'{pipeline_weight_kg:.0f} kg', 1,
              unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")))
     rows.append(_row("ENCON ITEMS", "Blower",
@@ -1389,11 +1388,12 @@ def build_vlph_manual_df(
             _row("ENCON ITEMS", "Sequence Controller", "", 1, make="LINEAR"),
             _row("ENCON ITEMS", "UV Sensor with Air Jacket", "", 1, make="LINEAR"),
         ]
-    # AIR-GAS PIPELINE is always a separate line (including swivel hoods — the
-    # SWIVEL ASSEMBLY covers the swirling mechanism, pipeline is billed apart).
-    rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
-         f'{pipeline_weight_kg:.0f} kg', 1,
-         unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")))
+    # AIR-GAS PIPELINE only for Up/Down hoods — swivel hoods bundle the
+    # pipeline into the SWIVEL ASSEMBLY row added above.
+    if not is_swivel:
+        rows.append(_row("ENCON ITEMS", "AIR-GAS PIPELINE",
+             f'{pipeline_weight_kg:.0f} kg', 1,
+             unit_price_override=pipeline_weight_kg * get_price("PIPELINE RATE")))
     # Ceramic roll count: prefer the override coming from the form (sourced
     # from fabrication_ladle_mapping via /api/ladle-mapping) so the BOM
     # matches what the user sees in Step 2; fall back to vertical_master.
