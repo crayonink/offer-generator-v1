@@ -22,6 +22,38 @@ from bom.vlph_builder import (
 from bom.selectors.gas_regulator_selector import select_gas_regulator
 
 
+def _trolley_drive_rows(ladle_tons: float) -> list:
+    """TROLLEY DRIVE SYSTEM rows (shared by the auto + manual HLPH builders).
+
+    10-30 T uses a fixed drive breakdown: Gear box with motor 100,000; CI Wheels
+    4 x 4,000; Plumber block (UCP 212) 6 x 4,000; Shaft (3 Nos) 18,000; Chain &
+    sprocket 2 Sets @ 0. The UCP-212 plumber block absorbs the trolley bearing.
+    Above 30 T the items fall back to DB pricing and keep the separate BEARING.
+    """
+    small = ladle_tons <= 30
+    out = [
+        _row("MISC ITEMS",  "GEARED MOTOR MECHANISM", "3 HP", 1, make="POWERTEK",
+             unit_price_override=100000 if small else None),
+        _row("ENCON ITEMS", "TROLLEY WHEEL", "CastIron", 4, make="ENCON",
+             unit_price_override=4000 if small else None),
+        _row("ENCON ITEMS", "PLUMMER BLOCK", "UCP 212" if small else "MS IS-2062", 6,
+             make="ENCON", unit_price_override=4000 if small else None),
+        _row("ENCON ITEMS", "SHAFT (1 long, 2 Short)", "EN-8", 1, make="ENCON",
+             unit_price_override=18000 if small else None),
+    ]
+    if not small:
+        out.append(_row("ENCON ITEMS", "BEARING (TROLLEY)", "", 4,
+                        unit_price_override=4000, make="ENCON"))
+    out += [
+        _row("ENCON ITEMS", "SLIEVE", "", 4, make="ENCON"),
+        _row("ENCON ITEMS", "FRAME", "MS Structure", 1000, make="ENCON"),
+    ]
+    if small:
+        out.append(_row("ENCON ITEMS", "CHAIN AND SPROCKET", "2 Sets", 2,
+                        unit_price_override=0, make="ENCON"))
+    return out
+
+
 def build_hlph_df(
     equipment: dict,
     ladle_tons: float = 10.0,
@@ -83,15 +115,7 @@ def build_hlph_df(
     ))
 
     # ── TROLLEY MECHANISM (individual items from DB) ──────────────────────
-    rows += [
-        _row("MISC ITEMS",  "GEARED MOTOR MECHANISM", "3 HP", 1, make="POWERTEK"),
-        _row("ENCON ITEMS", "TROLLEY WHEEL", "CastIron", 4, make="ENCON"),
-        _row("ENCON ITEMS", "PLUMMER BLOCK", "MS IS-2062", 6, make="ENCON"),
-        _row("ENCON ITEMS", "SHAFT (1 long, 2 Short)", "EN-8", 1, make="ENCON"),
-        _row("ENCON ITEMS", "BEARING (TROLLEY)", "", 4, unit_price_override=4000, make="ENCON"),
-        _row("ENCON ITEMS", "SLIEVE", "", 4, make="ENCON"),
-        _row("ENCON ITEMS", "FRAME", "MS Structure", 1000, make="ENCON"),
-    ]
+    rows += _trolley_drive_rows(ladle_tons)
 
     # ── COMBUSTION AIR LINE ───────────────────────────────────────────────
     air_nb = equipment.get("air_line_nb") or max(125, equipment["air_duct"]["nb"])
@@ -429,19 +453,11 @@ def build_hlph_manual_df(
             1, unit_price_override=hpu["price"],
         ))
 
-    rows += [
-        _row("MISC ITEMS",  "GEARED MOTOR MECHANISM", "3 HP", 1, make="POWERTEK"),
-        _row("ENCON ITEMS", "TROLLEY WHEEL", "CastIron", 4, make="ENCON"),
-        _row("ENCON ITEMS", "PLUMMER BLOCK", "MS IS-2062", 6, make="ENCON"),
-        _row("ENCON ITEMS", "SHAFT (1 long, 2 Short)", "EN-8", 1, make="ENCON"),
-        _row("ENCON ITEMS", "BEARING (TROLLEY)", "", 4, unit_price_override=4000, make="ENCON"),
-        _row("ENCON ITEMS", "SLIEVE", "", 4, make="ENCON"),
-        _row("ENCON ITEMS", "FRAME", "MS Structure", 1000, make="ENCON"),
-        _row("ENCON ITEMS", equipment["blower"]["model"],
+    rows += _trolley_drive_rows(ladle_tons)
+    rows.append(_row("ENCON ITEMS", equipment["blower"]["model"],
              f'{equipment["blower"]["hp"]} HP, {equipment["blower"]["pressure"]} WC, '
              f'{equipment["blower"]["airflow_nm3hr"]} Nm3/hr',
-             1, unit_price_override=equipment["blower"]["price_premium"]),
-    ]
+             1, unit_price_override=equipment["blower"]["price_premium"]))
     if include_pilot:
         _pb_code = {
             "lpg_10":  "ENCON-PB-LPG-10KW",
