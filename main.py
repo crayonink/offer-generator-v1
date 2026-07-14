@@ -7745,9 +7745,13 @@ async def generate_quote(req: QuoteRequest):
                 from bom.regen_builder import build_regen_df, select_model
                 _mkw = select_model(float(_rk)) if _rk else 1000
                 _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf, db_path=DB_PATH)
-                from engine.regen_bom_table import fill_make_list
+                from engine.regen_bom_table import fill_make_list, fill_temp_control
                 if not fill_make_list(output_path, _bomdf):
                     print("WARN: regen MAKE LIST table not found in template")
+                try:
+                    fill_temp_control(output_path, _bomdf)
+                except Exception as _tc_err:
+                    print(f"WARN: regen TEMP CONTROL fill failed: {_tc_err}")
             except Exception as _bom_err:
                 print(f"WARN: regen MAKE LIST fill failed: {_bom_err}")
         # Pull Transport onto its own price-schedule line (P&F/designing/

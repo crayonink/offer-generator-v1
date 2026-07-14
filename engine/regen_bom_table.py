@@ -68,13 +68,97 @@ def _run(p, text, *, bold=False, size=12):
     return r
 
 
+def fill_temp_control(doc_path, df):
+    """Regenerate the TEMPERATURE CONTROL bullet list from the BOM.
+
+    Replaces the static component bullets (PLC / thermocouple / flow meters /
+    control valves) with lines driven by the real BOM — each shows its actual
+    quantity, and the PLC model follows the selection. Items absent from the BOM
+    are dropped. Returns True if the bullet block was found and rewritten.
+    """
+    import copy, re as _re
+
+    d = Document(doc_path)
+    paras = d.paragraphs
+    hi = next((i for i, p in enumerate(paras)
+               if p.text.strip() == "TEMPERATURE CONTROL"), None)
+    if hi is None:
+        return False
+
+    # the component bullets = the consecutive list paragraphs after the intro
+    bullets, started = [], False
+    for i in range(hi + 1, len(paras)):
+        pPr = paras[i]._element.find(qn("w:pPr"))
+        is_bullet = pPr is not None and pPr.find(qn("w:numPr")) is not None
+        if is_bullet:
+            started = True
+            bullets.append(paras[i])
+        elif started:
+            break
+    if not bullets:
+        return False
+
+    def _lookup(section, needle):
+        sub = df[df["SECTION"] == section]
+        for _, r in sub.iterrows():
+            if needle in str(r["ITEM NAME"]).lower():
+                return int(round(float(r["QTY"]))), r
+        return None, None
+
+    # PLC model from its BOM spec (e.g. "Siemens S7-1200/1500 with touch panel")
+    _pq, _pr = _lookup("CONTROLS", "plc with hmi")
+    plc_model = ""
+    if _pr is not None:
+        m = _re.search(r"S7[-\s]?[\d/]+", str(_pr.get("SPECIFICATION", "")))
+        plc_model = m.group(0).replace(" ", "") if m else ""
+    plc_phrase = (f"PLC {plc_model} with HMI" if plc_model else "PLC with HMI")
+
+    SPEC = [
+        ("CONTROLS",     "plc with hmi",      plc_phrase),
+        ("TEMP CONTROL", "thermocouple",      "Thermocouple with Temperature Transmitter"),
+        ("TEMP CONTROL", "air flow meter",    "Orifice with DPT Volumetric Flow Meter for Air"),
+        ("TEMP CONTROL", "gas flow meter",    "Orifice with DPT Volumetric Flow Meter for Gas"),
+        ("TEMP CONTROL", "air control valve", "Pneumatic Air Control Valve"),
+        ("TEMP CONTROL", "gas control valve", "Pneumatic Gas Control Valve"),
+        ("TEMP CONTROL", "pneumatic damper",  "Pneumatic Flue Control Valve"),
+    ]
+    lines = []
+    for section, needle, phrase in SPEC:
+        q, _ = _lookup(section, needle)
+        if q:
+            lines.append(f"{q} {'No.' if q == 1 else 'Nos.'} {phrase}")
+    if not lines:
+        return False
+
+    template = bullets[0]._element      # clone for list formatting
+    prev = bullets[-1]._element         # insert new bullets after the old block
+    for txt in lines:
+        nb = copy.deepcopy(template)
+        runs = nb.findall(qn("w:r"))
+        if runs:
+            ts = runs[0].findall(qn("w:t"))
+            if ts:
+                ts[0].text = txt
+                for extra in ts[1:]:
+                    extra.getparent().remove(extra)
+            for r in runs[1:]:
+                r.getparent().remove(r)
+        prev.addnext(nb)
+        prev = nb
+    for p in bullets:
+        p._element.getparent().remove(p._element)
+
+    d.save(doc_path)
+    return True
+
+
 def _makelist_category(name):
     """Map a BOM item name to a clean MAKE-LIST display category, so many BOM
     lines collapse into one make-list row (e.g. every Ball Valve → 'Ball Valve').
     """
     n = (name or "").lower()
     rules = [
-        ("burner with regenerator", "Regen Gas Burner (LPG/NG)"),
+        ("burner with regenerator", "Regen Gas Burner"),
         ("pilot burner",            "Pilot Burner"),
         ("sequence controller",     "Burner Sequence Controller"),
         ("burner controller",       "Burner Sequence Controller"),
