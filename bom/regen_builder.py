@@ -367,26 +367,31 @@ BLOWER_CATALOGUE = [
 # KW → blower HP mapping (from costing sheets)
 _BLOWER_HP = {500:"10HP", 1000:"10HP", 1500:"15HP", 2000:"20HP", 2500:"25HP", 3000:"25HP", 4500:"40HP", 6000:"60HP"}
 
+# Standard frames we quote above the priced catalogue (no catalogue price yet)
+_EXTRA_FRAMES = (75.0, 100.0)
+
 def _size_fan(air_nm3hr: float, pressure_wg: float):
     """Size a fan (blower / ID fan) from its air flow.
 
     HP = (air Nm³/hr ÷ 1.7 = CFM) × static pressure (in. WG) ÷ 3200, rounded UP
-    to the nearest ENCON blower catalogue frame. Priced from that frame's
-    price-with-motor. Beyond the biggest catalogue blower (60 HP) the price is
-    clamped there and `exceeded` is True — the costing flags it so the real
-    (bigger) blower can be quoted separately.
+    to the nearest standard frame. Frames up to 60 HP are priced from the ENCON
+    catalogue. We quote blowers up to 100 HP; above 60 HP there is no catalogue
+    price yet, so `price` comes back as None and the costing shows "??".
 
-    Returns (hp, price, exceeded, raw_hp).
+    Returns (hp, price_or_None, raw_hp).
     """
+    import math
     raw_hp = (air_nm3hr / 1.7) * pressure_wg / 3200
     frames = sorted(BLOWER_CATALOGUE, key=lambda b: float(str(b['hp']).replace('HP', '')))
     for b in frames:
         hp = float(str(b['hp']).replace('HP', ''))
         if hp >= raw_hp:
-            return hp, float(b['price_with_motor']), False, raw_hp
-    last = frames[-1]
-    return (float(str(last['hp']).replace('HP', '')),
-            float(last['price_with_motor']), True, raw_hp)
+            return hp, float(b['price_with_motor']), raw_hp
+    # above the priced catalogue (60 HP): quote a real frame, price unknown (??)
+    for hp in _EXTRA_FRAMES:
+        if hp >= raw_hp:
+            return hp, None, raw_hp
+    return float(math.ceil(raw_hp)), None, raw_hp
 
 
 def get_supplementary_data(kw: int) -> dict:
@@ -637,13 +642,14 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _comb_air = kw * num_pairs
     _gas_flow = (kw * 860 / _cv) * num_pairs if not is_oil else 0.0
     _id_air   = _comb_air + _gas_flow
-    _bhp2, _bprice, _bexc, _braw = _size_fan(_comb_air, 40)   # blower @ 40" WG
-    _ihp2, _iprice, _iexc, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG
-    _b_note = f' — ~{_braw:.0f} HP req., NOT in catalogue; priced at 60 HP max' if _bexc else ''
-    _i_note = f' — ~{_iraw:.0f} HP req., NOT in catalogue; priced at 60 HP max' if _iexc else ''
+    _bhp2, _bprice, _braw = _size_fan(_comb_air, 40)   # blower @ 40" WG
+    _ihp2, _iprice, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG
+    # Above 60 HP there is no catalogue price yet → show HP, price "??" (cost 0).
+    _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price for this HP yet)'
+    _i_note = '' if _iprice is not None else ' — price ?? (no catalogue price for this HP yet)'
     add("BLOWER", "Combustion Blower (40\" WG)",
         f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP, with motor{_b_note}',
-        1,   _bprice, scale=False)   # one blower for the whole system
+        1,   _bprice if _bprice is not None else 0, scale=False)   # one blower for the whole system
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
@@ -671,7 +677,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     #        Oil offers group it under OIL AUXILIARY (with the HPU); gas keeps
     #        its own ID FAN section.
     add("OIL AUXILIARY" if is_oil else "ID FAN", "ID Fan",
-        f'{_ihp2:g} HP, 36" WG{_i_note}', 1, _iprice, scale=False)
+        f'{_ihp2:g} HP, 36" WG{_i_note}', 1,
+        _iprice if _iprice is not None else 0, scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
