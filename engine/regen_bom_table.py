@@ -166,6 +166,66 @@ def fill_temp_control(doc_path, df):
     return True
 
 
+def fill_consist_list(doc_path, is_oil=False, gas_train_label="NG"):
+    """Rebuild the cover-letter 'consisting of' scope list per fuel.
+
+    Always: Regenerative Burners, Temperature Control, Furnace Pressure Control,
+    Blower for Combustion Air, ID Fan for Suction of Flue Gas, Panel with PLC &
+    HMI. Gas fuels also get '{fuel} Gas Train' (oil fuels have no gas train).
+    Idempotent — removes any existing list first.
+    """
+    import copy
+    from docx.shared import Pt, Inches
+    from docx.text.paragraph import Paragraph
+
+    d = Document(doc_path)
+    anchor = next((p for p in d.paragraphs
+                   if p.text.strip().startswith("We are pleased to enclose")), None)
+    if anchor is None:
+        return False
+    body = next((p for p in d.paragraphs
+                 if p.text.strip().startswith("This is with reference")), anchor)
+
+    points = ["Regenerative Burners", "Temperature Control"]
+    if not is_oil:
+        points.append(f"{gas_train_label} Gas Train")
+    points += ["Furnace Pressure Control", "Blower for Combustion Air",
+               "ID Fan for Suction of Flue Gas", "Panel with PLC & HMI"]
+    LEAD = "The offer broadly comprises the following:"
+    KEYS = ("Regenerative Burners", "Temperature Control", "Gas Train",
+            "Furnace Pressure Control", "Blower for Combustion", "ID Fan",
+            "Panel with PLC")
+
+    # remove any existing list (idempotent)
+    for p in list(d.paragraphs):
+        t = p.text.strip()
+        if t == LEAD or (len(t) > 2 and t[0].isdigit() and t[1] == "."
+                         and any(k in t for k in KEYS)):
+            p._element.getparent().remove(p._element)
+
+    anchor = next(p for p in d.paragraphs
+                  if p.text.strip().startswith("We are pleased to enclose"))
+
+    def _after(prev_el, text, indent=None, sa=2):
+        el = copy.deepcopy(body._element)
+        for r in el.findall(qn("w:r")):
+            r.getparent().remove(r)
+        prev_el.addnext(el)
+        p = Paragraph(el, body._parent)
+        run = p.add_run(text)
+        pf = p.paragraph_format
+        pf.space_before = Pt(0); pf.space_after = Pt(sa); pf.line_spacing = 1.0
+        if indent is not None:
+            pf.left_indent = Inches(indent)
+        return el
+
+    prev = _after(anchor._element, LEAD, sa=3)
+    for i, pt in enumerate(points, 1):
+        prev = _after(prev, f"{i}. {pt}", indent=0.35, sa=1)
+    d.save(doc_path)
+    return True
+
+
 def fill_oil_supply(doc_path, df):
     """Populate the oil offer's HEATING & PUMPING UNIT bullet list from the BOM.
 

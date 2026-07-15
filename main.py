@@ -7757,9 +7757,14 @@ async def generate_quote(req: QuoteRequest):
                 _mkw = select_model(float(_rk)) if _rk else 1000
                 _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf, db_path=DB_PATH)
                 from engine.regen_bom_table import (
-                    fill_make_list, fill_temp_control, fill_gas_train, fill_oil_supply)
+                    fill_make_list, fill_temp_control, fill_gas_train,
+                    fill_oil_supply, fill_consist_list)
                 if not fill_make_list(output_path, _bomdf):
                     print("WARN: regen MAKE LIST table not found in template")
+                try:
+                    fill_consist_list(output_path, _oil, _gtf)
+                except Exception as _cl_err:
+                    print(f"WARN: regen consist-list fill failed: {_cl_err}")
                 try:
                     fill_temp_control(output_path, _bomdf)
                 except Exception as _tc_err:
