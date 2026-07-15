@@ -626,7 +626,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _bhp = _BLOWER_HP.get(kw, "")
     add("BLOWER", "Combustion Blower (40\" WG)",
         f"ENCON 40/{_bhp.replace('HP','')}, {_bhp}, with motor",
-        1,   m['blower_cost'])   # 1 per pair, per the reference costing sheet
+        1,   m['blower_cost'], scale=False)   # one blower for the whole system
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
