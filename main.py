@@ -7761,8 +7761,13 @@ async def generate_quote(req: QuoteRequest):
             import re as _re_gt
             _gtf = _re_gt.sub(r"\s*GAS\s*$", "", _fword, flags=_re_gt.I).strip() or _fword
             _qtyw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
+            # Gas-train supply pressure: NG at 2.1 bar; all other gas fuels at 1000 mm.
+            _press_clause = ("Pressure at TOP 2.1 bar and minimum pressure as 1 bar is considered."
+                             if _fword == "NG"
+                             else "Pressure at 1000 mm is considered.")
             _ec.update({
                 "fuel_word": _fword, "gas_train_fuel": _gtf, "is_oil": _oil,
+                "pressure_clause": _press_clause,
                 "fuel_name": _rf, "kw": _rk, "pairs": _rp,
                 "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
                 "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
