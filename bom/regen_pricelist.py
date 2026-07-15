@@ -54,7 +54,7 @@ SIZED = {
 
 # ── oil-line key -> exact Pricelist item name (category 'Oil Line') ──────────
 OIL_ITEM = {
-    "solenoid_valve_oil":  "Solenoid Valve (Oil Line) 25 NB",
+    "solenoid_valve_oil":  "Solenoid Valve (Oil Line) 20 NB",
     "gate_valve_oil":      "Gate Valve (Oil Line) 25 NB",
     "flex_hose_oil":       "Flexible Hose Pipe (Oil Line) 25 NB",
     "oil_control_valve":   "Globe Type Oil Control Valve 25 NB",

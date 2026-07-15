@@ -200,7 +200,7 @@ _OIL_FUELS = {"oil", "hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
 # Oil line — matches Regen_Oil_Testing.xlsx "Oil Line" (per-burner NB25 items +
 # oil temperature-control block). Prices are per unit.
 _OIL = {
-    "solenoid_valve_oil": 14000,   # NB25, per burner — "Solenoid Valve (Oil Line)"
+    "solenoid_valve_oil": 11813,   # NB20 JEFFERSON, per burner — "Solenoid Valve (Oil Line)"
     "gate_valve_oil":      5000,   # NB25, per burner — "Gate Valve"
     "flex_hose_oil":       1750,   # NB25, 2000mm, per burner — "Flexible Hose Pipe"
     "oil_control_valve":  80000,   # NB25 — "Globe Type Oil Control valve"
@@ -538,7 +538,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
     if is_oil:
         # Oil fuel line (NB25) — replaces the gas solenoid/ball-valve/hose bank.
-        add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",     "NB25", 2, oil['solenoid_valve_oil'])
+        add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",     "NB20", 2, oil['solenoid_valve_oil'])
         add("OIL LINE — BURNER", "Gate Valve",                    "NB25", 2, oil['gate_valve_oil'])
         add("OIL LINE — BURNER", "Flexible Hose Pipe (2000mm)",   "NB25", 2, oil['flex_hose_oil'])
     elif is_lowcv and gas_dn:
@@ -717,6 +717,7 @@ def _regen_make(item):
     """Make/brand for a BOM line — mirrors the Pricelist `company` for each item
     type (sized valves per SIZED, flat items per their Pricelist row)."""
     n = (item or "").lower().strip()
+    if "solenoid" in n and "oil" in n:        return "JEFFERSON"
     if "solenoid" in n:                       return "MADAS"
     if "pilot regulator" in n:                return "MADAS"
     if "gate valve" in n:                     return "L&T"
