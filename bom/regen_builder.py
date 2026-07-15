@@ -597,7 +597,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("TEMP CONTROL", "Air Control Valve",
         f"DN{m['air_cv_nb']}",               1,                          m['air_cv_cost'])
     add("TEMP CONTROL", "Air Flow Meter (DPT)",
-        f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'], scale=False)
+        f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'])
     if is_oil:
         add("TEMP CONTROL", "Oil Control Valve",            "DN125",    1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter",               "",         1, oil['oil_flow_meter'])
