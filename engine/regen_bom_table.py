@@ -140,7 +140,7 @@ def fill_temp_control(doc_path, df):
     for section, needle, phrase in SPEC:
         q, _ = _lookup(section, needle)
         if q:
-            lines.append(f"{q} {'No.' if q == 1 else 'Nos.'} {phrase}")
+            lines.append(phrase)   # no quantity in the offer scope
     if not lines:
         return False
 
@@ -248,8 +248,7 @@ def fill_oil_supply(doc_path, df):
     for _, r in oil_rows:
         q = int(round(float(r["QTY"])))
         name = str(r["ITEM NAME"]).strip()
-        unit = "No." if q == 1 else "Nos."
-        lines.append(f"{q} {unit} {name}")
+        lines.append(name)   # no quantity in the offer scope
     if not lines:
         return False
 
@@ -312,8 +311,7 @@ def fill_gas_train(doc_path, df):
     for _, r in gt.iterrows():
         q = int(round(float(r["QTY"])))
         name = str(r["ITEM NAME"]).strip()
-        unit = "No." if q == 1 else "Nos."
-        lines.append(f"{q} {unit} {name}")   # no DN/size in the offer scope
+        lines.append(name)   # no quantity / DN in the offer scope
     if not lines:
         return False
 
