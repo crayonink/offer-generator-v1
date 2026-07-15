@@ -200,9 +200,13 @@ _OIL_FUELS = {"oil", "hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs"}
 # Oil line — matches Regen_Oil_Testing.xlsx "Oil Line" (per-burner NB25 items +
 # oil temperature-control block). Prices are per unit.
 _OIL = {
-    "solenoid_valve_oil": 11813,   # NB20 JEFFERSON, per burner — "Solenoid Valve (Oil Line)"
-    "gate_valve_oil":      5000,   # NB25, per burner — "Gate Valve"
-    "flex_hose_oil":       1750,   # NB25, 2000mm, per burner — "Flexible Hose Pipe"
+    "solenoid_valve_oil":       11813,  # NB20 JEFFERSON — "Solenoid Valve (Oil Line)"
+    "solenoid_flameless_oil":   11813,  # NB20 JEFFERSON — flameless-mode solenoid
+    "ball_valve_oil":            1900,  # NB20 L&T/INTERVALVE — "Ball Valve (Oil Line)"
+    "ball_valve_flameless_oil":  1900,  # NB20 L&T/INTERVALVE — flameless-mode ball valve
+    "pressure_gauge_oil":        4000,  # 0-500 mm H GURU/BAUMER — burner line
+    "gate_valve_oil":            5000,  # (legacy, no longer used in the oil line)
+    "flex_hose_oil":             1750,  # NB20, 1000mm — "Flexible Hose Pipe (Oil Line)"
     "oil_control_valve":  80000,   # NB25 — "Globe Type Oil Control valve"
     "oil_flow_meter":     90000,   # "Oil Flow Meter"
     "tt_oil_line":         5000,   # "TT in Oil Line"
@@ -537,10 +541,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
 
     # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
     if is_oil:
-        # Oil fuel line (NB25) — replaces the gas solenoid/ball-valve/hose bank.
-        add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",     "NB20", 2, oil['solenoid_valve_oil'])
-        add("OIL LINE — BURNER", "Gate Valve",                    "NB25", 2, oil['gate_valve_oil'])
-        add("OIL LINE — BURNER", "Flexible Hose Pipe (2000mm)",   "NB25", 2, oil['flex_hose_oil'])
+        # Oil burner fuel line (NB20) — 6 items, incl. flameless-mode variants.
+        add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",                 "NB20", 2,  oil['solenoid_valve_oil'])
+        add("OIL LINE — BURNER", "Solenoid Valve for Flameless Mode (Oil Line)", "NB20", 2,  oil['solenoid_flameless_oil'])
+        add("OIL LINE — BURNER", "Ball Valve (Oil Line)",                     "NB20", 10, oil['ball_valve_oil'])
+        add("OIL LINE — BURNER", "Ball Valve for Flameless Mode (Oil Line)",  "NB20", 2,  oil['ball_valve_flameless_oil'])
+        add("OIL LINE — BURNER", "Flexible Hose Pipe (Oil Line)",             "NB20, 1000mm", 10, oil['flex_hose_oil'])
+        add("OIL LINE — BURNER", "Pressure Gauge 0-500",                      "",     2,  oil['pressure_gauge_oil'])
     elif is_lowcv and gas_dn:
         # Built-up gas line sized to the fuel's gas DN. Up to NB100 it's the
         # solenoid + ball-valve + hose bank; above that (low-CV, large flow) it
@@ -719,6 +726,7 @@ def _regen_make(item):
     n = (item or "").lower().strip()
     if "solenoid" in n and "oil" in n:        return "JEFFERSON"
     if "solenoid" in n:                       return "MADAS"
+    if "ball valve" in n and "oil" in n:      return "L&T / INTERVALVE"
     if "pilot regulator" in n:                return "MADAS"
     if "gate valve" in n:                     return "L&T"
     if "butterfly" in n:                      return "L&T"

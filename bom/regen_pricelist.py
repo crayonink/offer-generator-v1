@@ -54,9 +54,13 @@ SIZED = {
 
 # ── oil-line key -> exact Pricelist item name (category 'Oil Line') ──────────
 OIL_ITEM = {
-    "solenoid_valve_oil":  "Solenoid Valve (Oil Line) 20 NB",
-    "gate_valve_oil":      "Gate Valve (Oil Line) 25 NB",
-    "flex_hose_oil":       "Flexible Hose Pipe (Oil Line) 25 NB",
+    "solenoid_valve_oil":      "Solenoid Valve (Oil Line) 20 NB",
+    "solenoid_flameless_oil":  "Solenoid Valve Flameless (Oil Line) 20 NB",
+    "ball_valve_oil":          "Ball Valve (Oil Line) 20 NB",
+    "ball_valve_flameless_oil":"Ball Valve Flameless (Oil Line) 20 NB",
+    "pressure_gauge_oil":      "Pressure Gauge 0-500 (Oil Line)",
+    "gate_valve_oil":          "Gate Valve (Oil Line) 25 NB",
+    "flex_hose_oil":           "Flexible Hose Pipe (Oil Line) 20 NB",
     "oil_control_valve":   "Globe Type Oil Control Valve 25 NB",
     "oil_flow_meter":      "Oil Flow Meter",
     "tt_oil_line":         "TT in Oil Line",
