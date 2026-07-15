@@ -248,6 +248,15 @@ _FUEL_PIPE_NAME = {
     "blast furnace gas": "Blast Furnace Gas 720 Kcal/Nm³",
 }
 
+# Fuel calorific value (kcal/Nm³) — used to derive gas volume flow for the ID
+# fan sizing (gas qty = KW × 860 / CV). Default = NG.
+_FUEL_CV = {
+    "natural gas":       8600,
+    "coke oven gas":     4000,
+    "producer gas":      1250,
+    "blast furnace gas": 720,
+}
+
 
 def _snap_price(cat_key, dn):
     """Price for a valve at the smallest catalog NB >= the pipe DN.
@@ -358,27 +367,26 @@ BLOWER_CATALOGUE = [
 # KW → blower HP mapping (from costing sheets)
 _BLOWER_HP = {500:"10HP", 1000:"10HP", 1500:"15HP", 2000:"20HP", 2500:"25HP", 3000:"25HP", 4500:"40HP", 6000:"60HP"}
 
-def _id_fan(kw: int):
-    """ID Fan (motor HP, cost) for the given BURNER-size model.
+def _size_fan(air_nm3hr: float, pressure_wg: float):
+    """Size a fan (blower / ID fan) from its air flow.
 
-    HP — take the fuel flow + air flow of the burner size (Nm³/hr), sum them,
-    convert to CFM (÷1.7) at 36" WG static, convert to HP (CFM × 36 ÷ 3200),
-    then round UP to the nearest combustion-blower catalogue frame.
+    HP = (air Nm³/hr ÷ 1.7 = CFM) × static pressure (in. WG) ÷ 3200, rounded UP
+    to the nearest ENCON blower catalogue frame. Priced from that frame's
+    price-with-motor. Beyond the biggest catalogue blower (60 HP) the price is
+    clamped there and `exceeded` is True — the costing flags it so the real
+    (bigger) blower can be quoted separately.
 
-    Cost — reuse the blower catalogue price (with motor) for that HP: ENCON has
-    no separate ID-fan pricelist, and an ID fan of a given HP is priced like the
-    equivalent blower. e.g. 1000 KW → (100+1000)/1.7×36/3200 ≈ 7.28 HP →
-    7.5 HP frame → ₹99,500.
+    Returns (hp, price, exceeded, raw_hp).
     """
-    p = _PIPE_SIZES.get(kw) or _PIPE_SIZES[1000]
-    raw_hp = (p['ng_flow'] + p['air_flow']) / 1.7 * 36 / 3200   # CFM × 36" WG ÷ 3200
+    raw_hp = (air_nm3hr / 1.7) * pressure_wg / 3200
     frames = sorted(BLOWER_CATALOGUE, key=lambda b: float(str(b['hp']).replace('HP', '')))
     for b in frames:
         hp = float(str(b['hp']).replace('HP', ''))
         if hp >= raw_hp:
-            return hp, float(b['price_with_motor'])
+            return hp, float(b['price_with_motor']), False, raw_hp
     last = frames[-1]
-    return float(str(last['hp']).replace('HP', '')), float(last['price_with_motor'])
+    return (float(str(last['hp']).replace('HP', '')),
+            float(last['price_with_motor']), True, raw_hp)
 
 
 def get_supplementary_data(kw: int) -> dict:
@@ -622,11 +630,20 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
     add("TEMP CONTROL", "Manual Damper",     "",                         1, flat['manual_damper'], scale=False)
 
-    # ── 7. BLOWER ─────────────────────────────────────────────────────────────
-    _bhp = _BLOWER_HP.get(kw, "")
+    # ── 7. BLOWER + ID FAN — sized from the air flows (Puneet Sir's basis) ────
+    # Combustion air = burner KW × number of pairs. Gas volume flow = KW × 860 /
+    # fuel-CV, times pairs. ID-fan air = combustion air + total gas flow.
+    _cv = _FUEL_CV.get(_fuel_l, 8600)
+    _comb_air = kw * num_pairs
+    _gas_flow = (kw * 860 / _cv) * num_pairs if not is_oil else 0.0
+    _id_air   = _comb_air + _gas_flow
+    _bhp2, _bprice, _bexc, _braw = _size_fan(_comb_air, 40)   # blower @ 40" WG
+    _ihp2, _iprice, _iexc, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG
+    _b_note = f' — ~{_braw:.0f} HP req., NOT in catalogue; priced at 60 HP max' if _bexc else ''
+    _i_note = f' — ~{_iraw:.0f} HP req., NOT in catalogue; priced at 60 HP max' if _iexc else ''
     add("BLOWER", "Combustion Blower (40\" WG)",
-        f"ENCON 40/{_bhp.replace('HP','')}, {_bhp}, with motor",
-        1,   m['blower_cost'], scale=False)   # one blower for the whole system
+        f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP, with motor{_b_note}',
+        1,   _bprice, scale=False)   # one blower for the whole system
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
@@ -650,15 +667,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         if hpu_cost:
             add("OIL AUXILIARY", "Heating & Pumping Unit", "9 KW",        1, hpu_cost, scale=False)
 
-    # ── 8c. ID FAN — every fuel (gas + oil). HP sized from the burner's
-    #        fuel+air flow at 36" WG (see _id_fan_hp).
-    # ID Fan mirrors the combustion blower — same HP and same price, rated at
-    # 36" WG (vs the blower's 40").
-    _id_bhp = _BLOWER_HP.get(kw, "").replace("HP", "").strip()
-    # oil offers group the ID Fan under OIL AUXILIARY (with the HPU); gas keeps
-    # its own ID FAN section.
+    # ── 8c. ID FAN — sized from ID-fan air (combustion air + gas) at 36" WG.
+    #        Oil offers group it under OIL AUXILIARY (with the HPU); gas keeps
+    #        its own ID FAN section.
     add("OIL AUXILIARY" if is_oil else "ID FAN", "ID Fan",
-        f'{_id_bhp} HP, 36" WG', 1, m['blower_cost'], scale=False)
+        f'{_ihp2:g} HP, 36" WG{_i_note}', 1, _iprice, scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
