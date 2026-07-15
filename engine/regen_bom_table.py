@@ -174,10 +174,13 @@ def fill_oil_supply(doc_path, df):
     """
     import copy
 
-    # HPU first, then the oil line to the burners
+    # HPU first, then the oil line to the burners (exclude the ID Fan — it has
+    # its own SUCTION BLOWER FOR FLUE GAS section in the offer).
     oil_rows = []
     for section in ("OIL AUXILIARY", "OIL LINE — BURNER"):
-        oil_rows += list(df[df["SECTION"] == section].iterrows())
+        sub = df[df["SECTION"] == section]
+        sub = sub[~sub["ITEM NAME"].str.contains("ID Fan", case=False, na=False)]
+        oil_rows += list(sub.iterrows())
     if not oil_rows:
         return False
 

@@ -601,7 +601,6 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("TEMP CONTROL", "Air Flow Meter (DPT)",
         f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'], scale=False)
     if is_oil:
-        add("TEMP CONTROL", "Globe Type Oil Control Valve", "NB25",     1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter",               "",         1, oil['oil_flow_meter'])
         add("TEMP CONTROL", "TT in Oil Line",               "",         1, oil['tt_oil_line'])
         add("TEMP CONTROL", "PT in Oil Line",               "",         1, oil['pt_oil_line'])
@@ -655,7 +654,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 8c. ID FAN — every fuel (gas + oil). HP sized from the burner's
     #        fuel+air flow at 36" WG (see _id_fan_hp).
     _id_hp, _id_cost = _id_fan(kw)
-    add("ID FAN", "ID Fan", f"{_id_hp:g} HP", 1, _id_cost, scale=False)
+    # oil offers group the ID Fan under OIL AUXILIARY (with the HPU); gas keeps
+    # its own ID FAN section.
+    add("OIL AUXILIARY" if is_oil else "ID FAN", "ID Fan", f"{_id_hp:g} HP", 1, _id_cost, scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
