@@ -653,11 +653,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
 
     # ── 8c. ID FAN — every fuel (gas + oil). HP sized from the burner's
     #        fuel+air flow at 36" WG (see _id_fan_hp).
-    _id_hp, _id_cost = _id_fan(kw)
+    # ID Fan mirrors the combustion blower — same HP and same price, rated at
+    # 36" WG (vs the blower's 40").
+    _id_bhp = _BLOWER_HP.get(kw, "").replace("HP", "").strip()
     # oil offers group the ID Fan under OIL AUXILIARY (with the HPU); gas keeps
     # its own ID FAN section.
     add("OIL AUXILIARY" if is_oil else "ID FAN", "ID Fan",
-        f'{_id_hp:g} HP, 36" WG', 1, _id_cost, scale=False)
+        f'{_id_bhp} HP, 36" WG', 1, m['blower_cost'], scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
