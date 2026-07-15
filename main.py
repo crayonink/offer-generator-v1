@@ -1637,6 +1637,19 @@ def _startup_ensure_regen_pricelist_extras():
         # calculator, not a row; these two are single Pricelist lines.
         ("Paperless Recorder",                 "Oil Line",160000, "EUROTHERM"),
         ("ID Fan 15 HP",                       "Oil Line",200000, "ENCON"),
+        # Oil BURNER line (NB20) — Jefferson solenoids, L&T/INTERVALVE ball
+        # valves + flameless-mode variants, hose, pressure gauge.
+        ("Solenoid Valve (Oil Line) 20 NB",           "Oil Line", 11813, "JEFFERSON"),
+        ("Solenoid Valve Flameless (Oil Line) 20 NB", "Oil Line", 11813, "JEFFERSON"),
+        ("Ball Valve (Oil Line) 20 NB",               "Oil Line",  1900, "L&T / INTERVALVE"),
+        ("Ball Valve Flameless (Oil Line) 20 NB",     "Oil Line",  1900, "L&T / INTERVALVE"),
+        ("Flexible Hose Pipe (Oil Line) 20 NB",       "Oil Line",  1750, "BENGAL"),
+        ("Pressure Gauge 0-500 (Oil Line)",           "Oil Line",  4000, "H GURU / BAUMER"),
+    ]
+    # HLPH trolley geared motor mechanism (10-30T = 1 HP, >30T = 3 HP).
+    GEARED = [
+        ("GEARED MOTOR MECHANISM 1 HP", "HLPH Trolley", 100000, "POWERTEK"),
+        ("GEARED MOTOR MECHANISM",      "HLPH Trolley", 210000, "POWERTEK"),
     ]
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -1661,6 +1674,8 @@ def _startup_ensure_regen_pricelist_extras():
         for nb, price in DAMPER.items():
             n += ins(f"Pneumatic Damper {nb} NB", "Pneumatic Damper", price, "ENCON")
         for item, cat, price, company in OIL:
+            n += ins(item, cat, price, company)
+        for item, cat, price, company in GEARED:
             n += ins(item, cat, price, company)
         conn.commit()
         conn.close()
