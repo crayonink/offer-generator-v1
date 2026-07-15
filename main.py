@@ -1646,10 +1646,11 @@ def _startup_ensure_regen_pricelist_extras():
         ("Flexible Hose Pipe (Oil Line) 20 NB",       "Oil Line",  1750, "BENGAL"),
         ("Pressure Gauge 0-500 (Oil Line)",           "Oil Line",  4000, "H GURU / BAUMER"),
     ]
-    # HLPH trolley geared motor mechanism (10-30T = 1 HP, >30T = 3 HP).
+    # HLPH trolley geared motor mechanism (10-30T = 1 HP, >30T = 3 HP). The HP
+    # is in the item name so the pricelist Size column shows it.
     GEARED = [
         ("GEARED MOTOR MECHANISM 1 HP", "HLPH Trolley", 100000, "POWERTEK"),
-        ("GEARED MOTOR MECHANISM",      "HLPH Trolley", 210000, "POWERTEK"),
+        ("GEARED MOTOR MECHANISM 3 HP", "HLPH Trolley", 210000, "POWERTEK"),
     ]
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -1675,6 +1676,12 @@ def _startup_ensure_regen_pricelist_extras():
             n += ins(f"Pneumatic Damper {nb} NB", "Pneumatic Damper", price, "ENCON")
         for item, cat, price, company in OIL:
             n += ins(item, cat, price, company)
+        # rename legacy 'GEARED MOTOR MECHANISM' (no HP) -> '... 3 HP' so the
+        # pricelist Size column shows the HP (idempotent).
+        if not conn.execute("SELECT 1 FROM component_price_master WHERE "
+                            "item='GEARED MOTOR MECHANISM 3 HP'").fetchone():
+            conn.execute("UPDATE component_price_master SET item='GEARED MOTOR MECHANISM 3 HP' "
+                         "WHERE item='GEARED MOTOR MECHANISM'")
         for item, cat, price, company in GEARED:
             n += ins(item, cat, price, company)
         conn.commit()

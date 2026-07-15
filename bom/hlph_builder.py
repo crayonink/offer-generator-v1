@@ -34,8 +34,8 @@ def _trolley_drive_rows(ladle_tons: float) -> list:
     out = [
         _row("MISC ITEMS",  "GEARED MOTOR MECHANISM", "1 HP" if small else "3 HP", 1,
              make="POWERTEK",
-             unit_price_override=(_get_price_fuzzy("GEARED MOTOR MECHANISM 1 HP")
-                                  if small else None)),
+             unit_price_override=_get_price_fuzzy(
+                 "GEARED MOTOR MECHANISM 1 HP" if small else "GEARED MOTOR MECHANISM 3 HP")),
         _row("ENCON ITEMS", "TROLLEY WHEEL", "CastIron", 4, make="ENCON",
              unit_price_override=4000 if small else None),
         _row("ENCON ITEMS", "PLUMMER BLOCK", "UCP 212" if small else "MS IS-2062", 6,
