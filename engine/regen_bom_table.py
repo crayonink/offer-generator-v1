@@ -297,13 +297,13 @@ def fill_gas_train(doc_path, df):
     return True
 
 
-def _makelist_category(name):
+def _makelist_category(name, is_oil=False):
     """Map a BOM item name to a clean MAKE-LIST display category, so many BOM
     lines collapse into one make-list row (e.g. every Ball Valve → 'Ball Valve').
     """
     n = (name or "").lower()
     rules = [
-        ("burner with regenerator", "Regen Gas Burner"),
+        ("burner with regenerator", "Regen Oil Burner" if is_oil else "Regen Gas Burner"),
         ("pilot burner",            "Pilot Burner"),
         ("sequence controller",     "Burner Sequence Controller"),
         ("burner controller",       "Burner Sequence Controller"),
@@ -363,12 +363,13 @@ def fill_make_list(doc_path, df):
         return False
 
     # category -> distinct makes, in BOM order
+    is_oil = any(str(s).upper().startswith("OIL") for s in df["SECTION"].unique())
     cats = OrderedDict()
     for _, row in df.iterrows():
         make = str(row.get("MAKE", "") or "").strip()
         if not make:
             continue
-        cat = _makelist_category(row["ITEM NAME"])
+        cat = _makelist_category(row["ITEM NAME"], is_oil)
         cats.setdefault(cat, [])
         if make not in cats[cat]:
             cats[cat].append(make)
