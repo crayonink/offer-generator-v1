@@ -1645,6 +1645,7 @@ def _startup_ensure_regen_pricelist_extras():
         ("Ball Valve Flameless (Oil Line) 20 NB",     "Oil Line",  1900, "L&T / INTERVALVE"),
         ("Flexible Hose Pipe (Oil Line) 20 NB",       "Oil Line",  1750, "BENGAL"),
         ("Pressure Gauge 0-500 (Oil Line)",           "Oil Line",  4000, "H GURU / BAUMER"),
+        ("Oil Control Valve (DN125)",                 "Oil Line", 111000, "DEMBLA"),
     ]
     # HLPH trolley geared motor mechanism (10-30T = 1 HP, >30T = 3 HP). The HP
     # is in the item name so the pricelist Size column shows it.

@@ -61,7 +61,7 @@ OIL_ITEM = {
     "pressure_gauge_oil":      "Pressure Gauge 0-500 (Oil Line)",
     "gate_valve_oil":          "Gate Valve (Oil Line) 25 NB",
     "flex_hose_oil":           "Flexible Hose Pipe (Oil Line) 20 NB",
-    "oil_control_valve":   "Globe Type Oil Control Valve 25 NB",
+    "oil_control_valve":   "Oil Control Valve (DN125)",
     "oil_flow_meter":      "Oil Flow Meter",
     "tt_oil_line":         "TT in Oil Line",
     "pt_oil_line":         "PT in Oil Line",

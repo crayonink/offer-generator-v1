@@ -207,7 +207,7 @@ _OIL = {
     "pressure_gauge_oil":        4000,  # 0-500 mm H GURU/BAUMER — burner line
     "gate_valve_oil":            5000,  # (legacy, no longer used in the oil line)
     "flex_hose_oil":             1750,  # NB20, 1000mm — "Flexible Hose Pipe (Oil Line)"
-    "oil_control_valve":  80000,   # NB25 — "Globe Type Oil Control valve"
+    "oil_control_valve": 111000,   # DN125 DEMBLA — "Oil Control Valve"
     "oil_flow_meter":     90000,   # "Oil Flow Meter"
     "tt_oil_line":         5000,   # "TT in Oil Line"
     "pt_oil_line":        12000,   # "PT in Oil Line"
@@ -541,11 +541,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
 
     # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
     if is_oil:
-        # Oil burner fuel line (NB20) — 6 items, incl. flameless-mode variants.
+        # Oil burner fuel line (NB20).
         add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",                 "NB20", 2,  oil['solenoid_valve_oil'])
-        add("OIL LINE — BURNER", "Solenoid Valve for Flameless Mode (Oil Line)", "NB20", 2,  oil['solenoid_flameless_oil'])
         add("OIL LINE — BURNER", "Ball Valve (Oil Line)",                     "NB20", 10, oil['ball_valve_oil'])
-        add("OIL LINE — BURNER", "Ball Valve for Flameless Mode (Oil Line)",  "NB20", 2,  oil['ball_valve_flameless_oil'])
         add("OIL LINE — BURNER", "Flexible Hose Pipe (Oil Line)",             "NB20, 1000mm", 10, oil['flex_hose_oil'])
         add("OIL LINE — BURNER", "Pressure Gauge 0-500",                      "",     2,  oil['pressure_gauge_oil'])
     elif is_lowcv and gas_dn:
@@ -601,6 +599,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("TEMP CONTROL", "Air Flow Meter (DPT)",
         f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'], scale=False)
     if is_oil:
+        add("TEMP CONTROL", "Oil Control Valve",            "DN125",    1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter",               "",         1, oil['oil_flow_meter'])
         add("TEMP CONTROL", "TT in Oil Line",               "",         1, oil['tt_oil_line'])
         add("TEMP CONTROL", "PT in Oil Line",               "",         1, oil['pt_oil_line'])
