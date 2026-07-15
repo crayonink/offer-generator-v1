@@ -532,7 +532,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 2. PILOT LINE ─────────────────────────────────────────────────────────
     # The pilot burner is LPG-fired regardless of the main fuel; on an oil offer
     # label it "PILOT LINE (LPG)" so it isn't mistaken for a gas fuel line.
-    _pilot_sec = "PILOT LINE (LPG)" if is_oil else "GAS LINE — PILOT"
+    _pilot_sec = "PILOT LINE (OIL)" if is_oil else "GAS LINE — PILOT"
     add(_pilot_sec, "Pilot Regulator",       "NB15",             2, flat['pilot_regulator'])
     add(_pilot_sec, "Pilot Solenoid Valve",  "NB15",             2, flat['pilot_solenoid'])
     add(_pilot_sec, "Flexible Hose",         "NB15",             2, flat['flex_hose_nb15'])
@@ -656,7 +656,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _id_hp, _id_cost = _id_fan(kw)
     # oil offers group the ID Fan under OIL AUXILIARY (with the HPU); gas keeps
     # its own ID FAN section.
-    add("OIL AUXILIARY" if is_oil else "ID FAN", "ID Fan", f"{_id_hp:g} HP", 1, _id_cost, scale=False)
+    add("OIL AUXILIARY" if is_oil else "ID FAN", "ID Fan",
+        f'{_id_hp:g} HP, 36" WG', 1, _id_cost, scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
