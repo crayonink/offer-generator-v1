@@ -532,7 +532,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 2. PILOT LINE ─────────────────────────────────────────────────────────
     # The pilot burner is LPG-fired regardless of the main fuel; on an oil offer
     # label it "PILOT LINE (LPG)" so it isn't mistaken for a gas fuel line.
-    _pilot_sec = "PILOT LINE (OIL)" if is_oil else "GAS LINE — PILOT"
+    _pilot_sec = "PILOT LINE" if is_oil else "GAS LINE — PILOT"
     add(_pilot_sec, "Pilot Regulator",       "NB15",             2, flat['pilot_regulator'])
     add(_pilot_sec, "Pilot Solenoid Valve",  "NB15",             2, flat['pilot_solenoid'])
     add(_pilot_sec, "Flexible Hose",         "NB15",             2, flat['flex_hose_nb15'])
