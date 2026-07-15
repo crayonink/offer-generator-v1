@@ -7769,6 +7769,7 @@ async def generate_quote(req: QuoteRequest):
             _ec.update({
                 "fuel_word": _fword, "gas_train_fuel": _gtf, "is_oil": _oil,
                 "pressure_clause": _press_clause,
+                "savings_fuel": ("Fuel Oil" if _oil else _rf),
                 "fuel_name": _rf, "kw": _rk, "pairs": _rp,
                 "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
                 "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
