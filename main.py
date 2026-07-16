@@ -1002,7 +1002,31 @@ def api_ic_oil_burner_prices():
               "BALL VALVE": "Ball Valve",
               "S.G. ASSEMBLY": "S.G. Assembly", "AIR RESISTOR": "Air Resistor"}
 
-    def table(section):
+    import re as _re
+
+    def _kw_map(conn):
+        """Firing-capacity range (kW) per burner size token (2A/3A/…), from
+        burner_selection_master. kcal/hr ÷ 860 = kW; envelope across both
+        pressures. The largest model has an open-ended max (sentinel) → 'NNN+'."""
+        m = {}
+        for model, mn, mx in conn.execute(
+                "SELECT model, MIN(min_firing_kcal_hr), MAX(max_firing_kcal_hr) "
+                "FROM burner_selection_master GROUP BY model"):
+            t = _re.search(r'(\d+\s*A)\b', str(model), _re.I)
+            if not t:
+                continue
+            try:
+                lo, hi = round(float(mn) / 860), round(float(mx) / 860)
+            except (TypeError, ValueError):
+                continue
+            m[t.group(1).replace(' ', '').upper()] = (f"{lo}+" if hi > 20000 else f"{lo}–{hi}")
+        return m
+
+    def _kw_for(size, km):
+        t = _re.search(r'(\d+\s*A)\b', str(size), _re.I)
+        return km.get(t.group(1).replace(' ', '').upper()) if t else None
+
+    def table(section, km):
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         rows = conn.execute("SELECT burner_size, component, price FROM burner_pricelist_master "
@@ -1015,15 +1039,18 @@ def api_ic_oil_burner_prices():
             data.setdefault(r["burner_size"], {})[r["component"]] = r["price"]
         return {"section": section,
                 "columns": [{"label": LABELS.get(c, c.title()), "comp": c} for c in comps],
-                "rows": [{"size": sz, "cells": [vals.get(c) for c in comps]}
+                "rows": [{"size": sz, "kw": _kw_for(sz, km), "cells": [vals.get(c) for c in comps]}
                          for sz, vals in data.items()]}
     try:
-        return {"film":   table("PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"),
-                "dual":   table("PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"),
-                "gas":    table("PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"),
-                "hv_oil": table("PRICE LIST FOR HIGH VELOCITY OIL BURNERS"),
-                "hv_gas": table("PRICE LIST FOR HIGH VELOCITY GAS BURNERS"),
-                "spares": table("PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS")}
+        _c0 = sqlite3.connect(DB_PATH)
+        km = _kw_map(_c0)
+        _c0.close()
+        return {"film":   table("PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES", km),
+                "dual":   table("PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES", km),
+                "gas":    table("PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES", km),
+                "hv_oil": table("PRICE LIST FOR HIGH VELOCITY OIL BURNERS", km),
+                "hv_gas": table("PRICE LIST FOR HIGH VELOCITY GAS BURNERS", km),
+                "spares": table("PRICE LIST FOR SPARES OF IIP ENCON OIL FILM BURNERS", km)}
     except Exception as e:
         return {"film": {"columns": [], "rows": []}, "dual": {"columns": [], "rows": []},
                 "gas": {"columns": [], "rows": []}, "hv_oil": {"columns": [], "rows": []},
@@ -4595,8 +4622,9 @@ def regen_calculate(req: RegenCalcRequest):
         # Blower + ID-fan sizing worked example (shown under the costing sheet).
         try:
             from bom.regen_builder import compute_fan_flows
-            supplementary['fan_sizing'] = compute_fan_flows(
-                model_kw, num_pairs, req.fuel or "Natural Gas")
+            with sqlite3.connect(DB_PATH) as _fc:
+                supplementary['fan_sizing'] = compute_fan_flows(
+                    model_kw, num_pairs, req.fuel or "Natural Gas", _fc)
         except Exception:
             pass
 

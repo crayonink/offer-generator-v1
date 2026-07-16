@@ -200,10 +200,11 @@ function showF(el){
 function priceTable(t, title, fkey){
   if(!t || !t.rows || !t.rows.length) return '';
   const cols=t.columns||[], last=cols.length-1, F=FORMULA[fkey]||{};
+  const hasKw = t.rows.some(r=>r.kw!=null && r.kw!=='');
   return `<div class="grp">
     <div class="grp-h"><span class="t">${title}</span></div>
-    <table><thead><tr><th>Burner Size</th>${cols.map((c,i)=>`<th class="num${i===last?' setcol':''}">${c.label}</th>`).join('')}</tr></thead>
-    <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${r.cells.map((v,i)=>
+    <table><thead><tr><th>Burner Size</th>${hasKw?'<th class="num">kW (firing range)</th>':''}${cols.map((c,i)=>`<th class="num${i===last?' setcol':''}">${c.label}</th>`).join('')}</tr></thead>
+    <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${hasKw?`<td class="num" style="color:#475569;font-weight:600;">${r.kw!=null&&r.kw!==''?r.kw+' kW':'—'}</td>`:''}${r.cells.map((v,i)=>
       `<td class="num calc fcell${i===last?' setcol':''}" onclick="showF(this)" data-label="${esc(cols[i].label)}" data-size="${esc(r.size)}" data-f="${esc(F[cols[i].comp]||'value')}" data-val="${ev(v)}">${ev(v)}</td>`
     ).join('')}</tr>`).join('')}</tbody></table>
   </div>`;

@@ -382,13 +382,28 @@ _BLOWER_HP = {500:"10HP", 1000:"10HP", 1500:"15HP", 2000:"20HP", 2500:"25HP", 30
 # Standard frames we quote above the priced catalogue (no catalogue price yet)
 _EXTRA_FRAMES = (75.0, 100.0)
 
-def _size_fan(air_nm3hr: float, pressure_wg: float):
+def _live_blower_price(conn, hp):
+    """Live 'with motor' blower price for the ENCON 40" model at this HP, from the
+    internal-costing blower pricelist (blower_pricelist_master). None if missing."""
+    if conn is None:
+        return None
+    try:
+        from bom.blower_pricelist import blower_price as _bp
+        p = _bp(conn, f"ENCON 40/{hp:g}", with_motor=True)
+        return float(p) if p else None
+    except Exception:
+        return None
+
+
+def _size_fan(air_nm3hr: float, pressure_wg: float, conn=None):
     """Size a fan (blower / ID fan) from its air flow.
 
     HP = (air Nm³/hr ÷ 1.7 = CFM) × static pressure (in. WG) ÷ 3200, rounded UP
-    to the nearest standard frame. Frames up to 60 HP are priced from the ENCON
-    catalogue. We quote blowers up to 100 HP; above 60 HP there is no catalogue
-    price yet, so `price` comes back as None and the costing shows "??".
+    to the nearest standard frame. Frames up to 60 HP are priced LIVE from the
+    internal-costing blower pricelist (blower_pricelist_master) — the hardcoded
+    BLOWER_CATALOGUE is only a fallback if the DB lookup fails. We quote blowers
+    up to 100 HP; above 60 HP there is no blower model yet, so `price` is None
+    and the costing shows "??".
 
     Returns (hp, price_or_None, raw_hp).
     """
@@ -398,7 +413,8 @@ def _size_fan(air_nm3hr: float, pressure_wg: float):
     for b in frames:
         hp = float(str(b['hp']).replace('HP', ''))
         if hp >= raw_hp:
-            return hp, float(b['price_with_motor']), raw_hp
+            live = _live_blower_price(conn, hp)
+            return hp, (live if live is not None else float(b['price_with_motor'])), raw_hp
     # above the priced catalogue (60 HP): quote a real frame, price unknown (??)
     for hp in _EXTRA_FRAMES:
         if hp >= raw_hp:
@@ -406,12 +422,13 @@ def _size_fan(air_nm3hr: float, pressure_wg: float):
     return float(math.ceil(raw_hp)), None, raw_hp
 
 
-def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas"):
+def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None):
     """Blower + ID-fan sizing breakdown (flows, HP, price) for one regen system.
 
     Oil is sized by mass then converted to Nm³; gas by volume (Puneet Sir's
-    basis). Shared by build_regen_df and the costing-sheet worked example so the
-    numbers can never drift. Returns a dict of every intermediate value.
+    basis). Prices are pulled LIVE from the internal-costing blower pricelist
+    when `conn` is given. Shared by build_regen_df and the costing-sheet worked
+    example so the numbers can never drift. Returns a dict of every intermediate.
     """
     fuel_l = (fuel or "").strip().lower()
     is_oil = fuel_l in _OIL_FUELS
@@ -431,8 +448,8 @@ def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas"):
         gas_flow = (kw * 860 / cv) * num_pairs
         id_air   = comb_air + gas_flow
         d.update(fuel_cv=cv, gas_flow=gas_flow, comb_air=comb_air, id_air=id_air)
-    bhp, bprice, braw     = _size_fan(comb_air, 40)   # blower @ 40" WG
-    ihp, iprice_own, iraw = _size_fan(id_air, 36)     # ID fan @ 36" WG
+    bhp, bprice, braw     = _size_fan(comb_air, 40, conn)   # blower @ 40" WG
+    ihp, iprice_own, iraw = _size_fan(id_air, 36, conn)     # ID fan @ 36" WG
     id_in_cat = iprice_own is not None                # ID-fan HP <= 60
     d.update(blower_hp=bhp, blower_raw_hp=braw, blower_pressure=40, blower_price=bprice,
              id_hp=ihp, id_raw_hp=iraw, id_pressure=36,
@@ -691,7 +708,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # prices (<=60 HP) and no separate ID-fan prices yet, so the blower takes its
     # own catalogue price (else "??") and the ID fan MIRRORS the blower's price
     # when it is also <=60 HP (else "??"). See compute_fan_flows for the math.
-    _fan = compute_fan_flows(kw, num_pairs, fuel)
+    _fan = compute_fan_flows(kw, num_pairs, fuel, _conn)
     _bhp2, _bprice = _fan['blower_hp'], _fan['blower_price']
     _ihp2, _iprice = _fan['id_hp'],     _fan['id_price']
     _b_note = '' if _bprice is not None else ' — price ?? (no blower catalogue price above 60 HP)'
