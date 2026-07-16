@@ -8775,6 +8775,31 @@ def export_excel(req: ExcelExportRequest):
         title_row(ws5, r5, 11, f"BILL OF MATERIALS — REGENERATIVE BURNER SYSTEM ({calc.get('model_kw','1000')} KW)")
         r5 += 2
 
+        # System summary — fuel / pairs / KW, before the table.
+        _FUELDISP = {"fo": "Furnace Oil", "hsd": "Diesel (HSD)", "ldo": "LDO", "hdo": "HDO",
+                     "sko": "Kerosene (SKO)", "cfo": "CFO", "lshs": "LSHS", "oil": "Oil"}
+        _pairs = calc.get("num_pairs", 1) or 1
+        _mkw   = calc.get("model_kw", "")
+        _rkw   = calc.get("regen_kw", "")
+        _tkw   = calc.get("total_kw", "")
+        _fuel_disp = _FUELDISP.get(str(calc.get("fuel", "Natural Gas")).lower(),
+                                   calc.get("fuel", "Natural Gas"))
+        section_hdr(ws5, r5, 11, "SYSTEM")
+        r5 += 1
+        _summary = [
+            ("Fuel", _fuel_disp),
+            ("No. of Pairs", f"{_pairs} pair{'s' if _pairs != 1 else ''}  ({_pairs} × 2 = {_pairs*2} burners)"),
+            ("Burner Size", f"{_mkw} KW" + (f"    (Regenerator {_rkw} KW)" if _rkw and _rkw != _mkw else "")),
+            ("Total Installed Capacity", f"{_tkw} KW   ({_pairs} × {_mkw} KW)"),
+        ]
+        for i, (lbl, val) in enumerate(_summary):
+            bg = GREY if i % 2 == 0 else WHITE
+            cell(ws5, r5, 1, lbl, bold=True, bg=bg)
+            ws5.merge_cells(start_row=r5, start_column=2, end_row=r5, end_column=11)
+            cell(ws5, r5, 2, val, bg=bg)
+            r5 += 1
+        r5 += 1
+
         bom_col_hdrs = ["S.No.","SECTION","ITEM NAME","MAKE","SPECIFICATION","QTY",
                         "COST/UNIT ₹","TOTAL COST ₹\n(=Qty×Unit)","SELL/UNIT ₹\n(=Unit×Markup)",
                         f"TOTAL SELLING ₹\n(=Qty×Sell)","BASIS — how the unit price is derived"]
