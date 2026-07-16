@@ -677,9 +677,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             add("OIL AUXILIARY", "Heating & Pumping Unit", "9 KW",        1, hpu_cost, scale=False)
 
     # ── 8c. ID FAN — sized from ID-fan air (combustion air + gas) at 36" WG.
-    #        Oil offers group it under OIL AUXILIARY (with the HPU); gas keeps
-    #        its own ID FAN section.
-    add("OIL AUXILIARY" if is_oil else "ID FAN", "ID Fan",
+    #        Grouped with the blower (it is a fan, not an oil auxiliary).
+    add("BLOWER", "ID Fan",
         f'{_ihp2:g} HP, 36" WG{_i_note}', 1,
         _iprice if _iprice is not None else 0, scale=False)
 
