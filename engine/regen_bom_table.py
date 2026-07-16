@@ -360,6 +360,7 @@ def _makelist_category(name, is_oil=False):
     n = (name or "").lower()
     rules = [
         ("burner with regenerator", "Regen Oil Burner" if is_oil else "Regen Gas Burner"),
+        ("packaged gas train",      "Pilot Burner Packaged Gas Train"),
         ("pilot burner",            "Pilot Burner"),
         ("sequence controller",     "Burner Sequence Controller"),
         ("burner controller",       "Burner Sequence Controller"),

@@ -684,7 +684,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
-        pass  # oil fuels are handled by the HPU/pumping unit — no gas train
+        # The main fuel (oil) is fed by the HPU — no main gas train. But the LPG/NG
+        # pilot burner needs its own small packaged gas train (one skid/system).
+        # No catalogue price yet → priced manually ("??").
+        add("GAS TRAIN", "Pilot Burner Packaged Gas Train",
+            "LPG/NG, complete skid — price ?? (fill manually)", 1, 0, scale=False)
     elif is_lowcv and _fuel_l in ("blast furnace gas", "coke oven gas", "producer gas"):
         # BFG / COG / Producer Gas gas train — 5 header valves sized to the fuel's
         # own gas DN (varies per fuel via regen_pipe_sizes), Pricelist-sourced
