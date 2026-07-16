@@ -1646,6 +1646,8 @@ def _startup_ensure_regen_pricelist_extras():
         ("Flexible Hose Pipe (Oil Line) 20 NB",       "Oil Line",  1750, "BENGAL"),
         ("Pressure Gauge 0-500 (Oil Line)",           "Oil Line",  4000, "H GURU / BAUMER"),
         ("Oil Control Valve (DN125)",                 "Oil Line", 111000, "DEMBLA"),
+        # Packaged gas train for the NG/LPG pilot burner (oil regen).
+        ("Packaged Gas Train for NG/LPG Pilot Burner","Gas Train", 46333, "ENCON"),
     ]
     # HLPH trolley geared motor mechanism (10-30T = 1 HP, >30T = 3 HP). The HP
     # is in the item name so the pricelist Size column shows it.

@@ -213,6 +213,7 @@ _OIL = {
     "pt_oil_line":        12000,   # "PT in Oil Line"
     "paperless_recorder":160000,   # "Paperless Recorder" (EUROTHERM)
     "id_fan":            200000,   # "ID Fan 15 HP"
+    "pilot_gas_train":    46333,   # Packaged gas train for the NG/LPG pilot burner
 }
 
 # ── Per-fuel gas lines (low-CV gases: BFG / COG / Producer Gas) ───────────────
@@ -688,7 +689,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         # pilot burner needs its own small packaged gas train (one skid/system).
         # No catalogue price yet → priced manually ("??").
         add("GAS TRAIN", "Pilot Burner Packaged Gas Train",
-            "LPG/NG, complete skid — price ?? (fill manually)", 1, 0, scale=False)
+            "NG/LPG, complete skid", 1, oil['pilot_gas_train'], scale=False)
     elif is_lowcv and _fuel_l in ("blast furnace gas", "coke oven gas", "producer gas"):
         # BFG / COG / Producer Gas gas train — 5 header valves sized to the fuel's
         # own gas DN (varies per fuel via regen_pipe_sizes), Pricelist-sourced

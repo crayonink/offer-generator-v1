@@ -67,6 +67,7 @@ OIL_ITEM = {
     "pt_oil_line":         "PT in Oil Line",
     "paperless_recorder":  "Paperless Recorder",
     "id_fan":              "ID Fan 15 HP",
+    "pilot_gas_train":     "Packaged Gas Train for NG/LPG Pilot Burner",
 }
 
 
