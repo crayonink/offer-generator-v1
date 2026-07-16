@@ -40,7 +40,7 @@ FLAT_ITEM = {
 SIZED = {
     "solenoid":   ("Solenoid Valve - Automatic Reset", "MADAS"),
     "ball_valve": ("Ball Valve",                        "L&T"),
-    "flex_hose":  ("Flexible Hose",                     "BENGAL"),
+    "flex_hose":  ("Flexible Hose",                     "BENGAL INDUSTRIES"),
     "butterfly":  ("Butterfly Valve",                   "L&T"),
     "shutoff":    ("Pneumatic Shut Off Valve",          "DEMBLA"),
     "control":    ("Pneumatic Control Valve",           "DEMBLA"),

@@ -1655,7 +1655,7 @@ def _startup_ensure_regen_pricelist_extras():
     OIL = [
         ("Solenoid Valve (Oil Line) 25 NB",   "Oil Line", 14000, "MADAS"),
         ("Gate Valve (Oil Line) 25 NB",       "Oil Line",  5000, "L&T"),
-        ("Flexible Hose Pipe (Oil Line) 25 NB","Oil Line",  1750, "BENGAL"),
+        ("Flexible Hose Pipe (Oil Line) 25 NB","Oil Line",  1750, "BENGAL INDUSTRIES"),
         ("Globe Type Oil Control Valve 25 NB", "Oil Line", 80000, "DEMBLA"),
         ("Oil Flow Meter",                     "Oil Line", 90000, "HONEYWELL"),
         ("TT in Oil Line",                     "Oil Line",  5000, "HONEYWELL"),
@@ -1670,7 +1670,7 @@ def _startup_ensure_regen_pricelist_extras():
         ("Solenoid Valve Flameless (Oil Line) 20 NB", "Oil Line", 11813, "JEFFERSON"),
         ("Ball Valve (Oil Line) 20 NB",               "Oil Line",  1900, "L&T / INTERVALVE"),
         ("Ball Valve Flameless (Oil Line) 20 NB",     "Oil Line",  1900, "L&T / INTERVALVE"),
-        ("Flexible Hose Pipe (Oil Line) 20 NB",       "Oil Line",  1750, "BENGAL"),
+        ("Flexible Hose Pipe (Oil Line) 20 NB",       "Oil Line",  1750, "BENGAL INDUSTRIES"),
         ("Pressure Gauge 0-500 (Oil Line)",           "Oil Line",  4000, "H GURU / BAUMER"),
         ("Oil Control Valve (DN125)",                 "Oil Line", 111000, "DEMBLA"),
         # Packaged gas train for the NG/LPG pilot burner (oil regen).
@@ -1681,6 +1681,14 @@ def _startup_ensure_regen_pricelist_extras():
     GEARED = [
         ("GEARED MOTOR MECHANISM 1 HP", "HLPH Trolley", 100000, "POWERTEK"),
         ("GEARED MOTOR MECHANISM 3 HP", "HLPH Trolley", 210000, "POWERTEK"),
+    ]
+    # Gas burner-line flexible hoses regen needs but the base Pricelist lacks
+    # (65/80/350 NB). BENGAL INDUSTRIES, category 'Flexible Hose', so valve_price
+    # resolves them by size instead of snapping down to the 50 NB row.
+    FLEXHOSE = [
+        ("Flexible Hose 65 NB",  "Flexible Hose",  4200, "BENGAL INDUSTRIES"),
+        ("Flexible Hose 80 NB",  "Flexible Hose",  6900, "BENGAL INDUSTRIES"),
+        ("Flexible Hose 350 NB", "Flexible Hose", 90000, "BENGAL INDUSTRIES"),
     ]
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -1714,6 +1722,12 @@ def _startup_ensure_regen_pricelist_extras():
                          "WHERE item='GEARED MOTOR MECHANISM'")
         for item, cat, price, company in GEARED:
             n += ins(item, cat, price, company)
+        for item, cat, price, company in FLEXHOSE:
+            n += ins(item, cat, price, company)
+        # Normalise 'BENGAL' → 'BENGAL INDUSTRIES' so sized-valve lookups (which
+        # filter by company) resolve the flexible-hose rows (idempotent).
+        conn.execute("UPDATE component_price_master SET company='BENGAL INDUSTRIES' "
+                     "WHERE company='BENGAL'")
         conn.commit()
         conn.close()
         if n:
