@@ -556,8 +556,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     if is_oil:
         # Oil burner fuel line (NB20).
         add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",                 "NB20", 2,  oil['solenoid_valve_oil'])
-        add("OIL LINE — BURNER", "Ball Valve (Oil Line)",                     "NB20", 10, oil['ball_valve_oil'])
-        add("OIL LINE — BURNER", "Flexible Hose Pipe (Oil Line)",             "NB20, 1000mm", 10, oil['flex_hose_oil'])
+        add("OIL LINE — BURNER", "Ball Valve (Oil Line)",                     "NB20", 2,  oil['ball_valve_oil'])
+        add("OIL LINE — BURNER", "Flexible Hose Pipe (Oil Line)",             "NB20, 1000mm", 2,  oil['flex_hose_oil'])
         add("OIL LINE — BURNER", "Pressure Gauge 0-500",                      "",     2,  oil['pressure_gauge_oil'])
     elif is_lowcv and gas_dn:
         # Built-up gas line sized to the fuel's gas DN. Up to NB100 it's the
@@ -614,8 +614,6 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     if is_oil:
         add("TEMP CONTROL", "Oil Control Valve",            "DN125",    1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter",               "",         1, oil['oil_flow_meter'])
-        add("TEMP CONTROL", "TT in Oil Line",               "",         1, oil['tt_oil_line'])
-        add("TEMP CONTROL", "PT in Oil Line",               "",         1, oil['pt_oil_line'])
     elif is_lowcv and gas_dn:
         nb, p, _ = _snap("control",    "gas_cv", gas_dn); add("TEMP CONTROL", "Gas Control Valve",    f"DN{nb}", 1, p)
         nb, p, _ = _snap("flow_meter", "gas_fm", gas_dn); add("TEMP CONTROL", "Gas Flow Meter (DPT)", f"DN{nb}", 1, p)

@@ -122,8 +122,6 @@ def fill_temp_control(doc_path, df):
             ("TEMP CONTROL", "oil flow meter",      "Flow Meter in Oil Line"),
             ("TEMP CONTROL", "air control valve",   "Pneumatic Air Control Valve"),
             ("TEMP CONTROL", "oil control valve",   "Pneumatic Control Valve in Oil Line"),
-            ("TEMP CONTROL", "tt in oil line",      "Temperature Transmitter in Oil Line"),
-            ("TEMP CONTROL", "pt in oil line",      "Pressure Transmitter in Oil Line"),
             ("TEMP CONTROL", "pneumatic damper",    "Pneumatic Flue Control Valve"),
         ]
     else:
