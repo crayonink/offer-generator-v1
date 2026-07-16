@@ -258,6 +258,17 @@ _FUEL_CV = {
     "blast furnace gas": 720,
 }
 
+# Oil calorific value (kcal/kg), by fuel — sets oil mass flow = KW×860 / CV.
+# Light distillates ~10,200; standard FO ~10,000; heavy stock ~9,800.
+_OIL_CV = {
+    "hsd": 10200, "ldo": 10200, "sko": 10200,
+    "fo":  10000, "oil": 10000,
+    "hdo":  9800, "cfo":  9800, "lshs": 9800,
+}
+_OIL_AFR       = 15.0     # kg combustion air per kg oil
+_RHO_AIR       = 1.293    # kg/Nm³ — combustion-air side
+_RHO_FLUE      = 1.34     # kg/Nm³ — flue-gas (ID fan) side
+
 
 def _snap_price(cat_key, dn):
     """Price for a valve at the smallest catalog NB >= the pipe DN.
@@ -636,18 +647,26 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             scale=not is_oil)   # oil regen: one damper for the whole system
     add("PRESSURE CONTROL", "Manual Damper", "",                         1, flat['manual_damper'], scale=False)
 
-    # ── 7. BLOWER + ID FAN — sized from the air flows (Puneet Sir's basis) ────
-    # Combustion air = burner KW × number of pairs. Gas volume flow = KW × 860 /
-    # fuel-CV, times pairs. ID-fan air = combustion air + total gas flow.
-    _cv = _FUEL_CV.get(_fuel_l, 8600)
-    _comb_air = kw * num_pairs
-    _gas_flow = (kw * 860 / _cv) * num_pairs if not is_oil else 0.0
-    _id_air   = _comb_air + _gas_flow
+    # ── 7. BLOWER + ID FAN — sized from the air flows ─────────────────────────
+    if is_oil:
+        # Oil: work in mass, then convert to Nm³.
+        #   oil kg/hr  = KW × 860 / oil-CV, ×pairs (whole system)
+        #   air kg/hr  = oil kg × air-fuel ratio (15)
+        #   blower flow = air kg ÷ 1.293 (combustion-air density)
+        #   ID-fan flow = (air + oil) kg ÷ 1.34 (flue-gas density)
+        _ocv     = _OIL_CV.get(_fuel_l, 10000)
+        _oil_kg  = (kw * 860 / _ocv) * num_pairs
+        _air_kg  = _oil_kg * _OIL_AFR
+        _comb_air = _air_kg / _RHO_AIR
+        _id_air   = (_air_kg + _oil_kg) / _RHO_FLUE
+    else:
+        # Gas (Puneet Sir's basis): combustion air = KW × pairs; gas volume flow
+        # = KW × 860 / fuel-CV, ×pairs; ID-fan air = combustion air + gas.
+        _cv = _FUEL_CV.get(_fuel_l, 8600)
+        _comb_air = kw * num_pairs
+        _id_air   = _comb_air + (kw * 860 / _cv) * num_pairs
     _bhp2, _bprice, _braw = _size_fan(_comb_air, 40)   # blower @ 40" WG
     _ihp2, _iprice, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG
-    # Oil regen: blower + ID fan are always priced manually → force "??".
-    if is_oil:
-        _bprice = _iprice = None
     # Above 60 HP there is no catalogue price yet → show HP, price "??" (cost 0).
     _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price for this HP yet)'
     _i_note = '' if _iprice is not None else ' — price ?? (no catalogue price for this HP yet)'
