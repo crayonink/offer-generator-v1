@@ -665,11 +665,19 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         _cv = _FUEL_CV.get(_fuel_l, 8600)
         _comb_air = kw * num_pairs
         _id_air   = _comb_air + (kw * 860 / _cv) * num_pairs
-    _bhp2, _bprice, _braw = _size_fan(_comb_air, 40)   # blower @ 40" WG
-    _ihp2, _iprice, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG
-    # Above 60 HP there is no catalogue price yet → show HP, price "??" (cost 0).
-    _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price for this HP yet)'
-    _i_note = '' if _iprice is not None else ' — price ?? (no catalogue price for this HP yet)'
+    _bhp2, _bprice, _braw     = _size_fan(_comb_air, 40)   # blower @ 40" WG (HP + catalogue price)
+    _ihp2, _iprice_own, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG (HP; own price = in-cat flag)
+    # We only have BLOWER catalogue prices (<=60 HP), and no separate ID-fan
+    # prices yet. So:
+    #   • Blower  → its own catalogue price when <=60 HP, else "??".
+    #   • ID fan  → MIRROR the blower's price when the ID fan is also <=60 HP
+    #     (temporary — real ID-fan prices differ), else "??".
+    _id_in_cat = _iprice_own is not None                   # ID-fan HP <= 60 (catalogue frame)
+    _iprice = _bprice if _id_in_cat else None
+    _b_note = '' if _bprice is not None else ' — price ?? (no blower catalogue price above 60 HP)'
+    _i_note = (' — price mirrored from blower (ID-fan prices not yet available)'
+               if _iprice is not None
+               else ' — price ?? (no blower catalogue price above 60 HP)')
     add("BLOWER", "Combustion Blower (40\" WG)",
         f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP, with motor{_b_note}',
         1,   _bprice if _bprice is not None else 0, scale=False)   # one blower for the whole system
