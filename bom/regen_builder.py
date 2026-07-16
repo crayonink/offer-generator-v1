@@ -597,6 +597,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add(_pilot_sec, "Flexible Hose",         "NB15",             2, flat['flex_hose_nb15'])
     add(_pilot_sec, "Ball Valve",            "NB15",             2, flat['ball_valve_nb15'])
     add(_pilot_sec, "Pressure Gauge 0-500",  "",                 2, flat['pilot_pg_500'])
+    if is_oil:
+        # Oil regen: the LPG/NG pilot burner needs its own small packaged gas
+        # train — it belongs with the pilot line (one skid per system).
+        add(_pilot_sec, "Pilot Burner Packaged Gas Train",
+            "NG/LPG, complete skid", 1, oil['pilot_gas_train'], scale=False)
 
     # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
     if is_oil:
@@ -696,6 +701,10 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("BLOWER", "Combustion Blower (40\" WG)",
         f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP, with motor{_b_note}',
         1,   _bprice if _bprice is not None else 0, scale=False)   # one blower for the whole system
+    # ID fan sits directly under the blower (both are fans, same section).
+    add("BLOWER", "ID Fan",
+        f'{_ihp2:g} HP, 36" WG{_i_note}', 1,
+        _iprice if _iprice is not None else 0, scale=False)
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
@@ -719,19 +728,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         if hpu_cost:
             add("OIL AUXILIARY", "Heating & Pumping Unit", "9 KW",        1, hpu_cost, scale=False)
 
-    # ── 8c. ID FAN — sized from ID-fan air (combustion air + gas) at 36" WG.
-    #        Grouped with the blower (it is a fan, not an oil auxiliary).
-    add("BLOWER", "ID Fan",
-        f'{_ihp2:g} HP, 36" WG{_i_note}', 1,
-        _iprice if _iprice is not None else 0, scale=False)
-
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
     if is_oil:
-        # The main fuel (oil) is fed by the HPU — no main gas train. But the LPG/NG
-        # pilot burner needs its own small packaged gas train (one skid/system).
-        # No catalogue price yet → priced manually ("??").
-        add("GAS TRAIN", "Pilot Burner Packaged Gas Train",
-            "NG/LPG, complete skid", 1, oil['pilot_gas_train'], scale=False)
+        pass  # oil: main fuel via HPU; the pilot's packaged gas train is in the pilot line
     elif is_lowcv and _fuel_l in ("blast furnace gas", "coke oven gas", "producer gas"):
         # BFG / COG / Producer Gas gas train — 5 header valves sized to the fuel's
         # own gas DN (varies per fuel via regen_pipe_sizes), Pricelist-sourced

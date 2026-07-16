@@ -8781,6 +8781,37 @@ def export_excel(req: ExcelExportRequest):
         cell(ws5, r5, 11, "", bold=True, bg=GREEN_BG, fg=GREEN)
         ws5.row_dimensions[r5].height = 22
 
+        # ── Blower + ID-fan sizing worked example (below the items) ─────────
+        fs = supp.get("fan_sizing") if supp else None
+        if fs:
+            r5 += 2
+            section_hdr(ws5, r5, 11,
+                f"BLOWER & ID FAN — SIZING EXAMPLE  ({fs.get('num_pairs')} × {fs.get('kw')} KW, "
+                f"{'oil' if fs.get('is_oil') else 'gas'})")
+            r5 += 1
+            def _fline(text):
+                nonlocal r5
+                ws5.merge_cells(start_row=r5, start_column=1, end_row=r5, end_column=11)
+                fc = ws5.cell(row=r5, column=1, value=text)
+                fc.font = Font(size=10, name="Consolas", color="1E293B")
+                fc.alignment = Alignment(horizontal="left", vertical="center")
+                r5 += 1
+            def _r0(v): return f"{round(v):,}"
+            def _r1(v): return f"{round(v*10)/10:,}"
+            if fs.get("is_oil"):
+                _fline(f"Oil flow    = KW × 860 ÷ CV × pairs = {fs['kw']} × 860 ÷ {fs['oil_cv']} × {fs['num_pairs']}  =  {_r1(fs['oil_kg'])} kg/hr")
+                _fline(f"Air flow    = oil × A/F ({fs['afr']:g})       = {_r1(fs['oil_kg'])} × {fs['afr']:g}  =  {_r0(fs['air_kg'])} kg/hr")
+                _fline(f"Blower flow = air ÷ {fs['rho_air']} (air density)   = {_r0(fs['air_kg'])} ÷ {fs['rho_air']}  =  {_r0(fs['comb_air'])} Nm³/hr")
+                _fline(f"ID-fan flow = (air + oil) ÷ {fs['rho_flue']} (flue gas) = ({_r0(fs['air_kg'])} + {_r1(fs['oil_kg'])}) ÷ {fs['rho_flue']}  =  {_r0(fs['id_air'])} Nm³/hr")
+            else:
+                _fline(f"Combustion air = KW × pairs        = {fs['kw']} × {fs['num_pairs']}  =  {_r0(fs['comb_air'])} Nm³/hr")
+                _fline(f"Gas flow    = KW × 860 ÷ CV × pairs = {fs['kw']} × 860 ÷ {fs['fuel_cv']} × {fs['num_pairs']}  =  {_r0(fs['gas_flow'])} Nm³/hr")
+                _fline(f"ID-fan flow = combustion air + gas = {_r0(fs['comb_air'])} + {_r0(fs['gas_flow'])}  =  {_r0(fs['id_air'])} Nm³/hr")
+            _bnote = "   (>60 HP → price ??)" if fs.get("blower_price") is None else ""
+            _inote = "   (>60 HP → price ??)" if fs.get("id_price") is None else "   (price mirrored from blower)"
+            _fline(f"Blower HP = flow ÷ 1.7 × 40\" ÷ 3200 = {_r0(fs['comb_air'])} ÷ 1.7 × 40 ÷ 3200  =  {_r1(fs['blower_raw_hp'])} HP  →  {fs['blower_hp']:g} HP frame{_bnote}")
+            _fline(f"ID fan HP = flow ÷ 1.7 × 36\" ÷ 3200 = {_r0(fs['id_air'])} ÷ 1.7 × 36 ÷ 3200  =  {_r1(fs['id_raw_hp'])} HP  →  {fs['id_hp']:g} HP frame{_inote}")
+
         # BOM-only download — the derivation tabs were dropped from the UI
         # (we map straight from the Pricelist), so drop them from the workbook too.
         for _name in ("Process Calcs", "Burner Sizing and Costing", "Burner Pipe Size", "Blower"):
