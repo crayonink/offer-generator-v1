@@ -122,7 +122,7 @@ def fill_temp_control(doc_path, df):
             ("TEMP CONTROL", "oil flow meter",      "Flow Meter in Oil Line"),
             ("TEMP CONTROL", "air control valve",   "Pneumatic Air Control Valve"),
             ("TEMP CONTROL", "oil control valve",   "Pneumatic Control Valve in Oil Line"),
-            ("TEMP CONTROL", "pneumatic damper",    "Pneumatic Flue Control Valve"),
+            ("PRESSURE CONTROL", "pneumatic damper", "Pneumatic Flue Control Valve"),
         ]
     else:
         SPEC = [
@@ -132,7 +132,7 @@ def fill_temp_control(doc_path, df):
             ("TEMP CONTROL", "gas flow meter",    "Orifice with DPT Volumetric Flow Meter for Gas"),
             ("TEMP CONTROL", "air control valve", "Pneumatic Air Control Valve"),
             ("TEMP CONTROL", "gas control valve", "Pneumatic Gas Control Valve"),
-            ("TEMP CONTROL", "pneumatic damper",  "Pneumatic Flue Control Valve"),
+            ("PRESSURE CONTROL", "pneumatic damper", "Pneumatic Flue Control Valve"),
         ]
     lines = []
     for section, needle, phrase in SPEC:

@@ -622,16 +622,18 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             f"DN{m['gas_cv_nb']}",               1,                          m['gas_cv_cost'])
         add("TEMP CONTROL", "Gas Flow Meter (DPT)",
             f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
-    add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "", (4 if is_oil else 1), flat['furnace_thermocouple'])
-    add("TEMP CONTROL", "DPT",               "",                         1, flat['dpt'], scale=False)
+    add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "", 1, flat['furnace_thermocouple'])
+    # ── 6b. FURNACE PRESSURE CONTROL — DPT + flue dampers (not temperature) ───
+    add("PRESSURE CONTROL", "DPT",           "",                         1, flat['dpt'], scale=False)
     if is_lowcv and flue_dn:
         nb, p, gap = _snap("pneu_damp", "pneu_damp", flue_dn)
         spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
-        add("TEMP CONTROL", "Pneumatic Damper", spec, 1, p)
+        add("PRESSURE CONTROL", "Pneumatic Damper", spec, 1, p)
     else:
-        add("TEMP CONTROL", "Pneumatic Damper",
-            f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'])
-    add("TEMP CONTROL", "Manual Damper",     "",                         1, flat['manual_damper'], scale=False)
+        add("PRESSURE CONTROL", "Pneumatic Damper",
+            f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'],
+            scale=not is_oil)   # oil regen: one damper for the whole system
+    add("PRESSURE CONTROL", "Manual Damper", "",                         1, flat['manual_damper'], scale=False)
 
     # ── 7. BLOWER + ID FAN — sized from the air flows (Puneet Sir's basis) ────
     # Combustion air = burner KW × number of pairs. Gas volume flow = KW × 860 /
