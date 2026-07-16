@@ -642,6 +642,9 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _id_air   = _comb_air + _gas_flow
     _bhp2, _bprice, _braw = _size_fan(_comb_air, 40)   # blower @ 40" WG
     _ihp2, _iprice, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG
+    # Oil regen: blower + ID fan are always priced manually → force "??".
+    if is_oil:
+        _bprice = _iprice = None
     # Above 60 HP there is no catalogue price yet → show HP, price "??" (cost 0).
     _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price for this HP yet)'
     _i_note = '' if _iprice is not None else ' — price ?? (no catalogue price for this HP yet)'
