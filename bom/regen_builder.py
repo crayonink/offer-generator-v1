@@ -406,6 +406,40 @@ def _size_fan(air_nm3hr: float, pressure_wg: float):
     return float(math.ceil(raw_hp)), None, raw_hp
 
 
+def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas"):
+    """Blower + ID-fan sizing breakdown (flows, HP, price) for one regen system.
+
+    Oil is sized by mass then converted to Nm³; gas by volume (Puneet Sir's
+    basis). Shared by build_regen_df and the costing-sheet worked example so the
+    numbers can never drift. Returns a dict of every intermediate value.
+    """
+    fuel_l = (fuel or "").strip().lower()
+    is_oil = fuel_l in _OIL_FUELS
+    d = {"is_oil": is_oil, "kw": kw, "num_pairs": num_pairs, "fuel": fuel}
+    if is_oil:
+        ocv     = _OIL_CV.get(fuel_l, 10000)
+        oil_kg  = (kw * 860 / ocv) * num_pairs
+        air_kg  = oil_kg * _OIL_AFR
+        comb_air = air_kg / _RHO_AIR
+        id_air   = (air_kg + oil_kg) / _RHO_FLUE
+        d.update(oil_cv=ocv, oil_kg=oil_kg, air_kg=air_kg, afr=_OIL_AFR,
+                 rho_air=_RHO_AIR, rho_flue=_RHO_FLUE,
+                 comb_air=comb_air, id_air=id_air)
+    else:
+        cv       = _FUEL_CV.get(fuel_l, 8600)
+        comb_air = kw * num_pairs
+        gas_flow = (kw * 860 / cv) * num_pairs
+        id_air   = comb_air + gas_flow
+        d.update(fuel_cv=cv, gas_flow=gas_flow, comb_air=comb_air, id_air=id_air)
+    bhp, bprice, braw     = _size_fan(comb_air, 40)   # blower @ 40" WG
+    ihp, iprice_own, iraw = _size_fan(id_air, 36)     # ID fan @ 36" WG
+    id_in_cat = iprice_own is not None                # ID-fan HP <= 60
+    d.update(blower_hp=bhp, blower_raw_hp=braw, blower_pressure=40, blower_price=bprice,
+             id_hp=ihp, id_raw_hp=iraw, id_pressure=36,
+             id_in_cat=id_in_cat, id_price=(bprice if id_in_cat else None))
+    return d
+
+
 def get_supplementary_data(kw: int) -> dict:
     """Return burner sizing, pipe sizes, and blower selection for the given KW model."""
     w  = _BURNER_WEIGHTS[kw]
@@ -648,32 +682,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("PRESSURE CONTROL", "Manual Damper", "",                         1, flat['manual_damper'], scale=False)
 
     # ── 7. BLOWER + ID FAN — sized from the air flows ─────────────────────────
-    if is_oil:
-        # Oil: work in mass, then convert to Nm³.
-        #   oil kg/hr  = KW × 860 / oil-CV, ×pairs (whole system)
-        #   air kg/hr  = oil kg × air-fuel ratio (15)
-        #   blower flow = air kg ÷ 1.293 (combustion-air density)
-        #   ID-fan flow = (air + oil) kg ÷ 1.34 (flue-gas density)
-        _ocv     = _OIL_CV.get(_fuel_l, 10000)
-        _oil_kg  = (kw * 860 / _ocv) * num_pairs
-        _air_kg  = _oil_kg * _OIL_AFR
-        _comb_air = _air_kg / _RHO_AIR
-        _id_air   = (_air_kg + _oil_kg) / _RHO_FLUE
-    else:
-        # Gas (Puneet Sir's basis): combustion air = KW × pairs; gas volume flow
-        # = KW × 860 / fuel-CV, ×pairs; ID-fan air = combustion air + gas.
-        _cv = _FUEL_CV.get(_fuel_l, 8600)
-        _comb_air = kw * num_pairs
-        _id_air   = _comb_air + (kw * 860 / _cv) * num_pairs
-    _bhp2, _bprice, _braw     = _size_fan(_comb_air, 40)   # blower @ 40" WG (HP + catalogue price)
-    _ihp2, _iprice_own, _iraw = _size_fan(_id_air, 36)     # ID fan @ 36" WG (HP; own price = in-cat flag)
-    # We only have BLOWER catalogue prices (<=60 HP), and no separate ID-fan
-    # prices yet. So:
-    #   • Blower  → its own catalogue price when <=60 HP, else "??".
-    #   • ID fan  → MIRROR the blower's price when the ID fan is also <=60 HP
-    #     (temporary — real ID-fan prices differ), else "??".
-    _id_in_cat = _iprice_own is not None                   # ID-fan HP <= 60 (catalogue frame)
-    _iprice = _bprice if _id_in_cat else None
+    # Oil is sized by mass→Nm³, gas by volume. We only have BLOWER catalogue
+    # prices (<=60 HP) and no separate ID-fan prices yet, so the blower takes its
+    # own catalogue price (else "??") and the ID fan MIRRORS the blower's price
+    # when it is also <=60 HP (else "??"). See compute_fan_flows for the math.
+    _fan = compute_fan_flows(kw, num_pairs, fuel)
+    _bhp2, _bprice = _fan['blower_hp'], _fan['blower_price']
+    _ihp2, _iprice = _fan['id_hp'],     _fan['id_price']
     _b_note = '' if _bprice is not None else ' — price ?? (no blower catalogue price above 60 HP)'
     _i_note = (' — price mirrored from blower (ID-fan prices not yet available)'
                if _iprice is not None

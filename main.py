@@ -4592,6 +4592,14 @@ def regen_calculate(req: RegenCalcRequest):
         except Exception:
             pass  # DB not ready yet — supplementary still has the hardcoded data
 
+        # Blower + ID-fan sizing worked example (shown under the costing sheet).
+        try:
+            from bom.regen_builder import compute_fan_flows
+            supplementary['fan_sizing'] = compute_fan_flows(
+                model_kw, num_pairs, req.fuel or "Natural Gas")
+        except Exception:
+            pass
+
         total_cost    = float(bom_df["TOTAL COST"].sum())
         total_selling = float(bom_df["TOTAL SELLING"].sum())
 

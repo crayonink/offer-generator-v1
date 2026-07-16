@@ -844,6 +844,32 @@
   }
   function xlTabScroll(anchorId, btn) { xlTab(anchorId.replace('anchor-',''), btn); }
 
+  // ── Blower + ID-fan sizing worked example (rows under the BOM) ────────────
+  function fanSizingRows(fs) {
+    const r0 = v => Math.round(v).toLocaleString('en-IN');
+    const r1 = v => (Math.round(v * 10) / 10).toLocaleString('en-IN');
+    const hp = v => (Number.isInteger(v) ? v : v).toString();
+    const rows = [
+      {cells:[xs('',10)]},   // spacer
+      {_class:'xl-section', cells:[xs('BLOWER & ID FAN — SIZING EXAMPLE  (' +
+        fs.num_pairs + ' × ' + fs.kw + ' KW, ' + (fs.is_oil ? 'oil' : 'gas') + ')', 10)]},
+    ];
+    const line = t => rows.push({cells:[xs(t, 10)]});
+    if (fs.is_oil) {
+      line('Oil flow   = KW × 860 ÷ CV × pairs = ' + fs.kw + ' × 860 ÷ ' + fs.oil_cv + ' × ' + fs.num_pairs + '  =  ' + r1(fs.oil_kg) + ' kg/hr');
+      line('Air flow   = oil × A/F (' + fs.afr + ')       = ' + r1(fs.oil_kg) + ' × ' + fs.afr + '  =  ' + r0(fs.air_kg) + ' kg/hr');
+      line('Blower flow = air ÷ ' + fs.rho_air + ' (air density)   = ' + r0(fs.air_kg) + ' ÷ ' + fs.rho_air + '  =  ' + r0(fs.comb_air) + ' Nm³/hr');
+      line('ID-fan flow = (air + oil) ÷ ' + fs.rho_flue + ' (flue gas) = (' + r0(fs.air_kg) + ' + ' + r1(fs.oil_kg) + ') ÷ ' + fs.rho_flue + '  =  ' + r0(fs.id_air) + ' Nm³/hr');
+    } else {
+      line('Combustion air = KW × pairs        = ' + fs.kw + ' × ' + fs.num_pairs + '  =  ' + r0(fs.comb_air) + ' Nm³/hr');
+      line('Gas flow    = KW × 860 ÷ CV × pairs = ' + fs.kw + ' × 860 ÷ ' + fs.fuel_cv + ' × ' + fs.num_pairs + '  =  ' + r0(fs.gas_flow) + ' Nm³/hr');
+      line('ID-fan flow = combustion air + gas = ' + r0(fs.comb_air) + ' + ' + r0(fs.gas_flow) + '  =  ' + r0(fs.id_air) + ' Nm³/hr');
+    }
+    line('Blower HP = flow ÷ 1.7 × 40" ÷ 3200 = ' + r0(fs.comb_air) + ' ÷ 1.7 × 40 ÷ 3200  =  ' + r1(fs.blower_raw_hp) + ' HP  →  ' + hp(fs.blower_hp) + ' HP frame' + (fs.blower_price == null ? '   (>60 HP → price ??)' : ''));
+    line('ID fan HP = flow ÷ 1.7 × 36" ÷ 3200 = ' + r0(fs.id_air) + ' ÷ 1.7 × 36 ÷ 3200  =  ' + r1(fs.id_raw_hp) + ' HP  →  ' + hp(fs.id_hp) + ' HP frame' + (fs.id_price == null ? '   (>60 HP → price ??)' : '   (price mirrored from blower)'));
+    return rows;
+  }
+
   // ── Build Excel-style grid HTML ──────────────────────────────────────────
   function xlGrid(colHeaders, rows) {
     const cols = colHeaders.length;
@@ -910,6 +936,9 @@
       }),
       {_class:'xl-total', cells:[xs('GRAND TOTAL',7,true), xc(fmtN(s.total_cost),true), xc('',true), xc(fmtN(s.total_selling),true)]},
     ];
+    // Worked example for the blower + ID-fan sizing, below the items.
+    const _fs = data.supplementary && data.supplementary.fan_sizing;
+    if (_fs) bomRows.push(...fanSizingRows(_fs));
     document.getElementById('xl-bom').innerHTML = xlGrid(['A','B','C','D','E','F','G','H','I','J'], bomRows);
     // Update formula bar when BOM tab focused
     document.getElementById('xlFormula').textContent = '=SUM(H3:H' + (data.bom.length+2) + ')';
