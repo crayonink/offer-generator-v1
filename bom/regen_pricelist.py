@@ -189,6 +189,7 @@ _OIL_REGEN_SS = {"ENCON 3A": ("2A/3A", 5), "ENCON 4A": ("4A", 5),
                  "ENCON 5A": ("5A/6A", 5), "ENCON 6A": ("5A/6A", 5),
                  "ENCON 7A": ("7A", 10)}
 _FILM_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
+_GAS_BURNER_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"
 
 
 def _burner_ba_markup(conn):
@@ -223,6 +224,22 @@ def oil_regen_burner_cost(conn, kw):
     ba = _burner_ba_markup(conn)
     # +2× because Burner Alone already carries 1× S.S. Assembly → 3× total.
     return size, round(burner_set + 2 * (ss or 0) * ba, 2)
+
+
+def gas_regen_burner_cost(conn, kw):
+    """Gas-regen burner cost = ENCON Gas Burner Set (no S.S. Assembly ×3).
+
+    Size is fixed by KW (500->3A … 2500->7A). Returns (size, cost) or
+    (None, None) when unmapped (>2500 KW) or the Pricelist row is missing.
+    """
+    size = _OIL_REGEN_BURNER_MAP.get(kw)
+    if not size:
+        return None, None
+    r = conn.execute("SELECT price FROM burner_pricelist_master "
+                     "WHERE section=? AND burner_size=? AND component='BURNER SET'",
+                     (_GAS_BURNER_SECTION, size)).fetchone()
+    cost = _f(r[0]) if r else None
+    return size, (round(cost, 2) if cost is not None else None)
 
 
 def blower_price_ic(conn, kw):

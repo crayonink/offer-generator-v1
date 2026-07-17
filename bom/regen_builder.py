@@ -604,25 +604,32 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
 
     # ── 1. BURNER SET ─────────────────────────────────────────────────────────
     # Burner with Regenerator = burner portion + regenerator portion.
-    #   • Gas: both from the hardcoded Regen-with-Burner table (_BURNER/_REGEN).
-    #   • Oil (<=2500 KW): the BURNER portion is replaced by a fixed ENCON film
-    #     burner sized by KW (500->3A … 2500->7A) = Pricelist Burner Set + S.S.
-    #     Assembly ×3; the REGENERATOR portion still comes from the table
+    #   • BURNER portion (<=2500 KW) is sized by KW (500->3A … 2500->7A) and
+    #     priced live from the burner sheet:
+    #       - Oil: film Burner Set + S.S. Assembly ×3
+    #       - Gas: Gas Burner Set (no S.S. Assembly ×3)
+    #   • REGENERATOR portion always comes from the Regen-with-Burner table
     #     (_REGEN_PORTION).
-    _oil_burner_done = False
-    if is_oil and _conn:
+    #   • Fallback (gas >2500 KW, or DB unavailable): hardcoded burner+regen.
+    _burner_done = False
+    if _conn:
         try:
-            from bom.regen_pricelist import oil_regen_burner_cost
-            _osize, _ocost = oil_regen_burner_cost(_conn, kw)
-            if _ocost is not None:
+            if is_oil:
+                from bom.regen_pricelist import oil_regen_burner_cost as _bc
+                _bdesc = "film burner (S.S. Assembly ×3)"
+            else:
+                from bom.regen_pricelist import gas_regen_burner_cost as _bc
+                _bdesc = "gas burner"
+            _bsize, _bcost = _bc(_conn, kw)
+            if _bcost is not None:
                 _regen_portion = _REGEN_PORTION.get(regen_kw, 0)
-                _br_item = f"Burner with Regenerator ({_osize})"
-                _br_spec = f"{_osize} film burner (S.S. Assembly ×3) + regenerator, complete"
-                add("BURNER SET", _br_item, _br_spec, 2, _ocost + _regen_portion)
-                _oil_burner_done = True
+                _br_item = f"Burner with Regenerator ({_bsize})"
+                _br_spec = f"{_bsize} {_bdesc} + regenerator, complete"
+                add("BURNER SET", _br_item, _br_spec, 2, _bcost + _regen_portion)
+                _burner_done = True
         except Exception:
             pass
-    if not _oil_burner_done:
+    if not _burner_done:
         # Combined burner + regenerator cost = burner portion (burner KW) + regen
         # portion (regen KW), from the hardcoded Regen-with-Burner table.
         _br_cost = _BURNER_PORTION.get(kw, m['burner_cost']) + _REGEN_PORTION.get(regen_kw, 0)
