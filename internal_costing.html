@@ -54,6 +54,7 @@ tr.totrow td{font-weight:800;border-top:2px solid var(--line2);background:var(--
 .muted{color:var(--muted2)}
 .co{font-weight:700}
 .setcol{font-weight:800;background:var(--bg)}
+.grpsep{border-left:4px double var(--muted2)}
 td.ed{cursor:text}
 td.ed:hover{background:#eef4fb}
 td.ed:focus{outline:2px solid var(--red);outline-offset:-2px;background:#fff;border-radius:3px}
@@ -598,23 +599,25 @@ function renderRegenBurner(){
     <td class="co">${m.kw}</td>
     <td class="num">${inr(m.bms)}</td>
     <td class="num">${inr(m.bref)}</td>
-    <td class="num">${inr(m.rms)}</td>
+    <td class="num grpsep">${inr(m.block)}</td>
+    <td class="num grpsep">${inr(m.rms)}</td>
     <td class="num">${inr(m.rss)}</td>
     <td class="num">${inr(m.rref)}</td>
     <td class="num">${inr(m.rcer)}</td>
-    <td class="num">${inr(m.block)}</td>
-    <td class="num calc">${f2(burner)}</td>
+    <td class="num calc grpsep">${f2(burner)}</td>
     <td class="num calc">${f2(regen)}</td>
     <td class="num setcol">${inr(m.total)}</td></tr>`;
   }).join('');
   const html = note + `<div class="grp">
     <div class="grp-h"><span class="t">Burner + Regenerator Cost (₹) — per KW model</span></div>
     <table><thead>
-      <tr><th></th><th class="num" colspan="2">BURNER</th><th class="num" colspan="4">REGENERATOR</th>
-        <th class="num">Burner Block</th><th class="num" colspan="2">PRICE</th><th></th></tr>
+      <tr><th></th><th class="num" colspan="2">BURNER</th><th class="num grpsep">BURNER BLOCK</th>
+        <th class="num grpsep" colspan="4">REGENERATOR</th>
+        <th class="num grpsep" colspan="2">PRICE</th><th></th></tr>
       <tr><th>KW</th><th class="num">MS</th><th class="num">Refractory</th>
-        <th class="num">MS</th><th class="num">SS</th><th class="num">Refractory</th><th class="num">Ceramic</th>
-        <th class="num">2 refractory</th><th class="num">Burner</th><th class="num">Regen</th>
+        <th class="num grpsep">2 Refractory</th>
+        <th class="num grpsep">MS</th><th class="num">SS</th><th class="num">Refractory</th><th class="num">Ceramic</th>
+        <th class="num grpsep">Burner</th><th class="num">Regen</th>
         <th class="num setcol">Total Cost</th></tr>
     </thead><tbody>${rows}</tbody></table></div>`;
   document.getElementById('tab-content').innerHTML = html;
