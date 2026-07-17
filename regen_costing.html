@@ -492,6 +492,15 @@
             <button class="qbtn" onclick="setVal('markup',1.90)">1.90×</button>
           </div>
         </div>
+        <div class="field">
+          <label>Blower Options</label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;margin-top:4px;">
+            <input id="standby_blower" type="checkbox"/> Standby Blower <span style="color:#64748b;font-size:.85em;">(same price as blower)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;margin-top:6px;">
+            <input id="vfd" type="checkbox"/> Variable Frequency Drive (VFD) <span style="color:#64748b;font-size:.85em;">(price of blower motor)</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -805,6 +814,8 @@
       fuel:      selectedFuel,
       num_pairs: parseInt(document.getElementById('num_pairs').value) || 1,
       markup:    parseFloat(document.getElementById('markup').value) || 1.80,
+      standby_blower: document.getElementById('standby_blower').checked,
+      vfd:            document.getElementById('vfd').checked,
     };
 
     try {

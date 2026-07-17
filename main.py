@@ -4521,6 +4521,8 @@ class RegenCalcRequest(BaseModel):
     fuel: Optional[str] = None         # Natural Gas / Blast Furnace Gas / Coke Oven Gas / Producer Gas / Oil
     num_pairs: Optional[int] = None    # number of burner pairs
     markup: float = 1.80
+    standby_blower: bool = False       # add a standby blower (same price as blower)
+    vfd: bool = False                  # add a VFD (same price as blower motor)
     # Legacy heat-load sizing inputs — used only when model_kw is not given.
     material_weight_kg: float = 0.0
     Ti: float = 0.0
@@ -4564,7 +4566,8 @@ def regen_calculate(req: RegenCalcRequest):
 
         bom_df = build_regen_df(model_kw, model_markup, num_pairs=num_pairs,
                                 db_path=DB_PATH, fuel=req.fuel or "Natural Gas",
-                                regen_kw=regen_kw)
+                                regen_kw=regen_kw, standby_blower=req.standby_blower,
+                                vfd=req.vfd)
         supplementary = get_supplementary_data(model_kw)
 
         # Augment supplementary with full sizing + nozzle + legacy rates from DB

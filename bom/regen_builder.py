@@ -395,6 +395,19 @@ def _live_blower_price(conn, hp):
         return None
 
 
+def _live_blower_motor_price(conn, hp):
+    """Live blower-motor price at this HP (VFD = same as blower motor). None if
+    missing."""
+    if conn is None:
+        return None
+    try:
+        from bom.blower_pricelist import blower_motor_price as _bmp
+        p = _bmp(conn, hp)
+        return float(p) if p else None
+    except Exception:
+        return None
+
+
 def _size_fan(air_nm3hr: float, pressure_wg: float, conn=None):
     """Size a fan (blower / ID fan) from its air flow.
 
@@ -521,7 +534,8 @@ def select_model(required_kw: float) -> int:
 
 def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
                    db_path: str = None, fuel: str = "Natural Gas",
-                   regen_kw: int = None) -> pd.DataFrame:
+                   regen_kw: int = None, standby_blower: bool = False,
+                   vfd: bool = False) -> pd.DataFrame:
     """
     Build full BOM DataFrame for the given KW model.
 
@@ -722,6 +736,18 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("BLOWER", "ID Fan",
         f'{_ihp2:g} HP, 36" WG{_i_note}', 1,
         _iprice if _iprice is not None else 0, scale=False)
+    # Optional standby blower (1 working + 1 standby) — same price as the blower.
+    if standby_blower:
+        add("BLOWER", "Standby Blower (40\" WG)",
+            f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP, with motor (1 standby){_b_note}',
+            1, _bprice if _bprice is not None else 0, scale=False)
+    # Optional VFD for the blower motor — priced at the blower-motor cost.
+    if vfd:
+        _vprice = _live_blower_motor_price(_conn, _bhp2)
+        _v_note = '' if _vprice is not None else ' — price ?? (no motor price above 60 HP)'
+        add("BLOWER", "Variable Frequency Drive (VFD)",
+            f'For {_bhp2:g}HP blower motor{_v_note}',
+            1, _vprice if _vprice is not None else 0, scale=False)
 
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))

@@ -151,6 +151,15 @@ def motor_prices(conn: sqlite3.Connection) -> dict:
     return out
 
 
+def blower_motor_price(conn: sqlite3.Connection, hp) -> float:
+    """Costed blower-motor price (ABB motor × motor markup) at this HP — the motor
+    portion of the with-motor blower price. Used as the VFD price (VFD = same as
+    the blower motor). None if there's no motor row for that HP."""
+    _, motor_mk = blower_markups(conn)
+    motor = motor_prices(conn).get(float(hp))
+    return round(motor * motor_mk, 2) if motor is not None else None
+
+
 def seed_blower_motor(conn: sqlite3.Connection) -> int:
     """Idempotently create the 'Blower Motor' pricelist rows (one per HP,
     company ABB), seeded from motor_price_abb. The ABB motor is the same for
