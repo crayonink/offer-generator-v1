@@ -1058,6 +1058,56 @@ def api_ic_oil_burner_prices():
                 "spares": {"columns": [], "rows": []}, "error": str(e)}
 
 
+@app.get("/api/internal-costing/oil-regen-burner")
+def api_ic_oil_regen_burner():
+    """Oil-regen burner + regenerator per KW model, with the full calculation.
+
+    Oil Burner (<=2500 KW) = film Burner Set + 2 × S.S. Assembly × the Burner-
+    Alone markup — the Burner Set already carries 1× S.S. Assembly, so it is
+    counted 3× in total. Regenerator portion (_REGEN_PORTION) is shown for every
+    KW. Total = Oil Burner + Regen.
+    """
+    def f(x):
+        try:
+            return float(x)
+        except (TypeError, ValueError):
+            return 0.0
+    try:
+        from bom.regen_pricelist import (oil_regen_burner_cost, _OIL_REGEN_BURNER_MAP,
+                                         _OIL_REGEN_SS, _FILM_SECTION, _burner_ba_markup)
+        from bom.regen_builder import _REGEN_PORTION
+        conn = sqlite3.connect(DB_PATH)
+        ba = _burner_ba_markup(conn)
+        out = []
+        for kw in sorted(_REGEN_PORTION):
+            regen = round(f(_REGEN_PORTION.get(kw, 0)), 2)
+            row = {"kw": kw, "regen": regen, "size": None, "burner_set": None,
+                   "ss_each": None, "ba_markup": ba, "ss_add": None,
+                   "oil_burner": None, "total": None}
+            if kw in _OIL_REGEN_BURNER_MAP:
+                size, cost = oil_regen_burner_cost(conn, kw)
+                if cost is not None:
+                    bs = conn.execute("SELECT price FROM burner_pricelist_master "
+                                      "WHERE section=? AND burner_size=? AND component='BURNER SET'",
+                                      (_FILM_SECTION, size)).fetchone()
+                    burner_set = f(bs[0]) if bs else 0.0
+                    group, ss_idx = _OIL_REGEN_SS[size]
+                    prows = conn.execute("SELECT amount, mc_cost, total_amount FROM oil_burner_master "
+                                         "WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()
+                    ss = 0.0
+                    if ss_idx <= len(prows):
+                        a, m, t = prows[ss_idx - 1]
+                        ss = f(t) if t not in (None, "") else (f(a) + f(m))
+                    row.update(size=size, burner_set=round(burner_set, 2), ss_each=round(ss, 2),
+                               ss_add=round(2 * ss * ba, 2), oil_burner=cost,
+                               total=round(cost + regen, 2))
+            out.append(row)
+        conn.close()
+        return {"rows": out, "ba_markup": ba}
+    except Exception as e:
+        return {"rows": [], "error": str(e)}
+
+
 # Cost -> price markups baked into the burner tables, now editable (Markup Master).
 # key -> (label, default)
 BURNER_MARKUPS = [

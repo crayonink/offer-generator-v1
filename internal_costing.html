@@ -593,7 +593,7 @@ const REGEN_BURNER = [
   {kw:4500, bms:40029.00, bref:51713.64, rms:41721.24, rss:4562.25, rref:158281.59, rcer:326299.05, block:40932.54, total:663539.31},
   {kw:6000, bms:53235.60, bref:68775.40, rms:54496.46, rss:4562.25, rref:191759.31, rcer:439084.80, block:56654.24, total:868568.06},
 ];
-function renderRegenBurner(){
+async function renderRegenBurner(){
   const f2 = x => (Number(x)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
   const note = `<div class="edit-note">Burner + regenerator material cost breakdown per KW model — <b>hardcoded</b>.
     <b>Burner</b> = Burner MS + Refractory + Burner Block. <b>Regen</b> = Regen MS + SS + Refractory + Ceramic.
@@ -628,6 +628,39 @@ function renderRegenBurner(){
         <th class="num setcol">Total Cost</th></tr>
     </thead><tbody>${rows}</tbody></table></div>`;
   document.getElementById('tab-content').innerHTML = html;
+  // Second table: Oil Burner (from the burner sheet) + Regen, per KW model.
+  try {
+    const d = await fetch('/api/internal-costing/oil-regen-burner').then(r=>r.json());
+    if (d && d.rows && d.rows.length)
+      document.getElementById('tab-content').innerHTML += oilRegenTable(d.rows, d.ba_markup || 2.5);
+  } catch(e) {}
+}
+
+function oilRegenTable(rows, ba){
+  const dash = '<span style="color:#cbd5e1;">—</span>';
+  const body = rows.map(r=>{
+    const has = r.oil_burner != null;
+    return `<tr>
+      <td class="co">${r.kw}</td>
+      <td class="num">${has ? r.size : dash}</td>
+      <td class="num">${has ? inr(r.burner_set) : dash}</td>
+      <td class="num">${has ? inr(r.ss_each) : dash}</td>
+      <td class="num">${has ? inr(r.ss_add) : dash}</td>
+      <td class="num calc">${has ? inr(r.oil_burner) : dash}</td>
+      <td class="num grpsep">${inr(r.regen)}</td>
+      <td class="num setcol">${r.total != null ? inr(r.total) : dash}</td></tr>`;
+  }).join('');
+  return `<div class="grp" style="margin-top:26px;">
+    <div class="edit-note"><b>Oil Burner + Regen.</b> Oil Burner = film <b>Burner Set</b> (from the burner sheet) <b>+ 2 × S.S. Assembly × ${ba}</b> markup. The Burner Set already carries 1× S.S. Assembly, so it is counted <b>3× total</b>. Oil burner is only made &le;2500 KW; the regenerator (Regen) is shown for every size. <b>Total = Oil Burner + Regen</b>.</div>
+    <div class="grp-h"><span class="t">Oil Burner + Regen (₹) — per KW model</span></div>
+    <table><thead>
+      <tr><th></th><th class="num" colspan="5">OIL BURNER  (from burner sheet, &le;2500 KW)</th>
+        <th class="num grpsep">REGEN</th><th class="num setcol">TOTAL</th></tr>
+      <tr><th>KW</th><th class="num">ENCON Size</th><th class="num">Burner Set</th>
+        <th class="num">S.S. Assy (each)</th><th class="num">+ 2 × &times;${ba}</th>
+        <th class="num">Oil Burner</th><th class="num grpsep">Regen</th>
+        <th class="num setcol">Total Cost</th></tr>
+    </thead><tbody>${body}</tbody></table></div>`;
 }
 
 // ---------- tab switching ----------
