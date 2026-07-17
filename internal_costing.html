@@ -173,7 +173,7 @@ function reload(){ const y=window.scrollY; loadBurner().then(()=>window.scrollTo
 
 // per-table, per-column derivation shown in the formula bar on click.
 const FORMULA = {
-  film: {'BURNER ALONE':'Σ(first 5 oil-burner parts) × 2.5','MICRO VALVE':'micro-valve part × 2',
+  film: {'BURNER ALONE':'Σ(first 5 oil-burner parts, incl. S.S. Assembly at #5) × 2.5','MICRO VALVE':'micro-valve part × 2',
     'C.I.BURNER PLATE':'burner-plate part × 1.8','HIGH AL. WHYTEHEAT K BURNER BLOCK':'block part × 2 (5A/6A × 2.2)',
     'FLEXIBLE HOSES SET':'Σ(2 hose parts) × 2','Y TYPE STRAINER':'Y-strainer part × 2.5',
     'BUTTERFLY VALVE':'butterfly part × 2','BURNER SET':'sum of the 7 columns'},
@@ -198,6 +198,13 @@ function showF(el){
   document.getElementById('fbar').innerHTML =
     `<span class="fref">${sz}${lbl?' · '+lbl:''}</span> = <b>${f}</b>`+(v!==undefined&&v!==''?` <span class="fval">→ ₹${v}</span>`:'');
 }
+// 7A Burner Alone sums the first 10 body parts (S.S. Assembly is part #10);
+// 2A–6A use the first 5 (S.S. Assembly is part #5). Keep the tooltip honest.
+function cellF(F, comp, size){
+  if(comp==='BURNER ALONE' && /7A/.test(size||''))
+    return 'Σ(first 10 oil-burner parts, incl. S.S. Assembly at #10) × 2.5';
+  return F[comp]||'value';
+}
 function priceTable(t, title, fkey){
   if(!t || !t.rows || !t.rows.length) return '';
   const cols=t.columns||[], last=cols.length-1, F=FORMULA[fkey]||{};
@@ -206,7 +213,7 @@ function priceTable(t, title, fkey){
     <div class="grp-h"><span class="t">${title}</span></div>
     <table><thead><tr><th>Burner Size</th>${hasKw?'<th class="num">kW (firing range)</th>':''}${cols.map((c,i)=>`<th class="num${i===last?' setcol':''}">${c.label}</th>`).join('')}</tr></thead>
     <tbody>${t.rows.map(r=>`<tr><td class="co">${r.size}</td>${hasKw?`<td class="num" style="color:#475569;font-weight:600;">${r.kw!=null&&r.kw!==''?r.kw+' kW':'—'}</td>`:''}${r.cells.map((v,i)=>
-      `<td class="num calc fcell${i===last?' setcol':''}" onclick="showF(this)" data-label="${esc(cols[i].label)}" data-size="${esc(r.size)}" data-f="${esc(F[cols[i].comp]||'value')}" data-val="${ev(v)}">${ev(v)}</td>`
+      `<td class="num calc fcell${i===last?' setcol':''}" onclick="showF(this)" data-label="${esc(cols[i].label)}" data-size="${esc(r.size)}" data-f="${esc(cellF(F, cols[i].comp, r.size))}" data-val="${ev(v)}">${ev(v)}</td>`
     ).join('')}</tr>`).join('')}</tbody></table>
   </div>`;
 }
