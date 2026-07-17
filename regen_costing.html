@@ -427,27 +427,27 @@
       <div class="field" id="burnerSizeBtns">
         <label>Burner Size (KW per pair)</label>
         <div class="mat-buttons" style="margin-top:8px;">
-          <button class="mat-btn active" onclick="setBurnerSize(this,500)">500</button>
-          <button class="mat-btn"        onclick="setBurnerSize(this,1000)">1000</button>
-          <button class="mat-btn"        onclick="setBurnerSize(this,1500)">1500</button>
-          <button class="mat-btn"        onclick="setBurnerSize(this,2000)">2000</button>
-          <button class="mat-btn"        onclick="setBurnerSize(this,2500)">2500</button>
-          <button class="mat-btn"        onclick="setBurnerSize(this,3000)">3000</button>
-          <button class="mat-btn"        onclick="setBurnerSize(this,4500)">4500</button>
-          <button class="mat-btn"        onclick="setBurnerSize(this,6000)">6000</button>
+          <button class="mat-btn active" data-kw="500"  onclick="setBurnerSize(this,500)">500</button>
+          <button class="mat-btn"        data-kw="1000" onclick="setBurnerSize(this,1000)">1000</button>
+          <button class="mat-btn"        data-kw="1500" onclick="setBurnerSize(this,1500)">1500</button>
+          <button class="mat-btn"        data-kw="2000" onclick="setBurnerSize(this,2000)">2000</button>
+          <button class="mat-btn"        data-kw="2500" onclick="setBurnerSize(this,2500)">2500</button>
+          <button class="mat-btn"        data-kw="3000" onclick="setBurnerSize(this,3000)">3000</button>
+          <button class="mat-btn"        data-kw="4500" onclick="setBurnerSize(this,4500)">4500</button>
+          <button class="mat-btn"        data-kw="6000" onclick="setBurnerSize(this,6000)">6000</button>
         </div>
       </div>
       <div class="field" id="regenSizeBtns" style="margin-top:16px;">
         <label>Regen Size (KW per pair)</label>
         <div class="mat-buttons" style="margin-top:8px;">
-          <button class="mat-btn active" onclick="setRegenSize(this,500)">500</button>
-          <button class="mat-btn"        onclick="setRegenSize(this,1000)">1000</button>
-          <button class="mat-btn"        onclick="setRegenSize(this,1500)">1500</button>
-          <button class="mat-btn"        onclick="setRegenSize(this,2000)">2000</button>
-          <button class="mat-btn"        onclick="setRegenSize(this,2500)">2500</button>
-          <button class="mat-btn"        onclick="setRegenSize(this,3000)">3000</button>
-          <button class="mat-btn"        onclick="setRegenSize(this,4500)">4500</button>
-          <button class="mat-btn"        onclick="setRegenSize(this,6000)">6000</button>
+          <button class="mat-btn active" data-kw="500"  onclick="setRegenSize(this,500)">500</button>
+          <button class="mat-btn"        data-kw="1000" onclick="setRegenSize(this,1000)">1000</button>
+          <button class="mat-btn"        data-kw="1500" onclick="setRegenSize(this,1500)">1500</button>
+          <button class="mat-btn"        data-kw="2000" onclick="setRegenSize(this,2000)">2000</button>
+          <button class="mat-btn"        data-kw="2500" onclick="setRegenSize(this,2500)">2500</button>
+          <button class="mat-btn"        data-kw="3000" onclick="setRegenSize(this,3000)">3000</button>
+          <button class="mat-btn"        data-kw="4500" onclick="setRegenSize(this,4500)">4500</button>
+          <button class="mat-btn"        data-kw="6000" onclick="setRegenSize(this,6000)">6000</button>
         </div>
       </div>
     </div>
@@ -708,11 +708,30 @@
     btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
+  const OIL_FUELS = ['HSD','LDO','HDO','FO','SKO','CFO','LSHS'];
   function setFuel(btn, fuel) {
     selectedFuel = fuel;
     // Clear active across BOTH the Gas and Oil groups (scoped to the fuel field).
     document.getElementById('fuelBtns').querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    applyOilSizeCap();
+  }
+  // Oil regen burners are only made up to 2500 KW — hide the larger sizes for oil.
+  function applyOilSizeCap() {
+    const isOil = OIL_FUELS.includes(selectedFuel);
+    ['burnerSizeBtns','regenSizeBtns'].forEach(id => {
+      document.getElementById(id).querySelectorAll('.mat-btn').forEach(b => {
+        if (parseInt(b.dataset.kw) > 2500) b.style.display = isOil ? 'none' : '';
+      });
+    });
+    if (isOil) {
+      if (selectedKw > 2500)      { selectedKw = 2500;      _activateKw('burnerSizeBtns', 2500); }
+      if (selectedRegenKw > 2500) { selectedRegenKw = 2500; _activateKw('regenSizeBtns', 2500); }
+    }
+  }
+  function _activateKw(containerId, kw) {
+    document.getElementById(containerId).querySelectorAll('.mat-btn').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.kw) === kw));
   }
 
   // ── Format currency ──────────────────────────────────────────────────────

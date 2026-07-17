@@ -603,17 +603,36 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         rows.append(_make_row(section, item, spec, q, cost_unit, mk))
 
     # ── 1. BURNER SET ─────────────────────────────────────────────────────────
-    # Combined burner + regenerator cost = burner portion (burner KW) + regen
-    # portion (regen KW), from the hardcoded Regen-with-Burner table. When the
-    # two sizes match, this equals the legacy combined price.
-    _br_cost = _BURNER_PORTION.get(kw, m['burner_cost']) + _REGEN_PORTION.get(regen_kw, 0)
-    if regen_kw == kw:
-        _br_item = f"Burner with Regenerator ({kw} KW)"
-        _br_spec = "Regenerative burner with heat-storage media, complete"
-    else:
-        _br_item = f"Burner with Regenerator (Burner {kw} / Regen {regen_kw} KW)"
-        _br_spec = f"Burner {kw} KW + Regenerator {regen_kw} KW, complete"
-    add("BURNER SET", _br_item, _br_spec,                                  2, _br_cost)
+    # Burner with Regenerator = burner portion + regenerator portion.
+    #   • Gas: both from the hardcoded Regen-with-Burner table (_BURNER/_REGEN).
+    #   • Oil (<=2500 KW): the BURNER portion is replaced by a fixed ENCON film
+    #     burner sized by KW (500->3A … 2500->7A) = Pricelist Burner Set + S.S.
+    #     Assembly ×3; the REGENERATOR portion still comes from the table
+    #     (_REGEN_PORTION).
+    _oil_burner_done = False
+    if is_oil and _conn:
+        try:
+            from bom.regen_pricelist import oil_regen_burner_cost
+            _osize, _ocost = oil_regen_burner_cost(_conn, kw)
+            if _ocost is not None:
+                _regen_portion = _REGEN_PORTION.get(regen_kw, 0)
+                _br_item = f"Burner with Regenerator ({_osize})"
+                _br_spec = f"{_osize} film burner (S.S. Assembly ×3) + regenerator, complete"
+                add("BURNER SET", _br_item, _br_spec, 2, _ocost + _regen_portion)
+                _oil_burner_done = True
+        except Exception:
+            pass
+    if not _oil_burner_done:
+        # Combined burner + regenerator cost = burner portion (burner KW) + regen
+        # portion (regen KW), from the hardcoded Regen-with-Burner table.
+        _br_cost = _BURNER_PORTION.get(kw, m['burner_cost']) + _REGEN_PORTION.get(regen_kw, 0)
+        if regen_kw == kw:
+            _br_item = f"Burner with Regenerator ({kw} KW)"
+            _br_spec = "Regenerative burner with heat-storage media, complete"
+        else:
+            _br_item = f"Burner with Regenerator (Burner {kw} / Regen {regen_kw} KW)"
+            _br_spec = f"Burner {kw} KW + Regenerator {regen_kw} KW, complete"
+        add("BURNER SET", _br_item, _br_spec,                              2, _br_cost)
     add("BURNER SET", "Pilot Burner",        "10 KW (LPG)",              2, flat['pilot_burner'])
     add("BURNER SET", "Sequence Controller", "",                          2, flat['burner_controller'])
     add("BURNER SET", "Ignition Transformer","",                          2, flat['ignition_transformer'])

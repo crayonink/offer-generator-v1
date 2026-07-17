@@ -181,6 +181,50 @@ def burner_price(conn, kw):
     return _f(r[0]) if r else None
 
 
+# Oil regen burner: fixed ENCON film-burner size per KW (<=2500 KW only).
+_OIL_REGEN_BURNER_MAP = {500: "ENCON 3A", 1000: "ENCON 4A", 1500: "ENCON 5A",
+                         2000: "ENCON 6A", 2500: "ENCON 7A"}
+# ENCON size -> (oil_burner_master parts group, 1-based S.S. Assembly row index)
+_OIL_REGEN_SS = {"ENCON 3A": ("2A/3A", 5), "ENCON 4A": ("4A", 5),
+                 "ENCON 5A": ("5A/6A", 5), "ENCON 6A": ("5A/6A", 5),
+                 "ENCON 7A": ("7A", 10)}
+_FILM_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
+
+
+def _burner_ba_markup(conn):
+    r = conn.execute("SELECT value FROM burner_markup WHERE key='ba'").fetchone()
+    return _f(r[0]) if r and r[0] is not None else 2.5
+
+
+def oil_regen_burner_cost(conn, kw):
+    """Oil-regen burner cost for a KW model, from the ENCON film-burner Pricelist.
+
+    Size is fixed by KW (500->3A … 2500->7A). Cost = film Burner Set +
+    2 extra S.S. Assemblies × the Burner-Alone markup — i.e. the S.S. Assembly is
+    counted 3× in total (the Burner Set already includes 1× inside Burner Alone).
+    Returns (size, cost) or (size|None, None) when unmapped (>2500 KW) or missing.
+    """
+    size = _OIL_REGEN_BURNER_MAP.get(kw)
+    if not size:
+        return None, None
+    r = conn.execute("SELECT price FROM burner_pricelist_master "
+                     "WHERE section=? AND burner_size=? AND component='BURNER SET'",
+                     (_FILM_SECTION, size)).fetchone()
+    burner_set = _f(r[0]) if r else None
+    if burner_set is None:
+        return size, None
+    group, ss_idx = _OIL_REGEN_SS[size]
+    rows = conn.execute("SELECT amount, mc_cost, total_amount FROM oil_burner_master "
+                        "WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()
+    if ss_idx > len(rows):
+        return size, round(burner_set, 2)
+    a, m, t = rows[ss_idx - 1]
+    ss = _f(t) if t not in (None, "") else ((_f(a) or 0) + (_f(m) or 0))
+    ba = _burner_ba_markup(conn)
+    # +2× because Burner Alone already carries 1× S.S. Assembly → 3× total.
+    return size, round(burner_set + 2 * (ss or 0) * ba, 2)
+
+
 def blower_price_ic(conn, kw):
     """Combustion blower from the internal-costing blower pricelist (with motor),
     for the ENCON 40" WG model at this KW's HP."""
