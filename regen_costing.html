@@ -94,6 +94,11 @@
     }
     .mat-btn:hover { border-color: var(--navy); color: var(--navy); background: #eff6ff; }
     .mat-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .mat-btn.noprice { position: relative; }
+    .mat-btn.noprice::after {
+      content: '?'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+      color: #dc2626; font-weight: 900; font-size: .95rem; line-height: 1;
+    }
 
     /* ── Quick-set buttons ── */
     .quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
@@ -716,12 +721,16 @@
     btn.classList.add('active');
     applyOilSizeCap();
   }
-  // Oil BURNERS are only made up to 2500 KW — hide the larger BURNER sizes for
-  // oil. The REGENERATOR size can still be 3000/4500/6000, so it is not capped.
+  // Burner size >2500 KW: OIL has no burner (hide the buttons); GAS has no
+  // catalogue price (show a '?' marker). The REGENERATOR size stays full.
   function applyOilSizeCap() {
     const isOil = OIL_FUELS.includes(selectedFuel);
     document.getElementById('burnerSizeBtns').querySelectorAll('.mat-btn').forEach(b => {
-      if (parseInt(b.dataset.kw) > 2500) b.style.display = isOil ? 'none' : '';
+      if (parseInt(b.dataset.kw) > 2500) {
+        b.style.display = isOil ? 'none' : '';       // oil: hidden; gas: shown
+        b.classList.toggle('noprice', !isOil);        // gas: mark with '?'
+        b.title = (!isOil) ? 'No gas burner price for this size' : '';
+      }
     });
     if (isOil && selectedKw > 2500) { selectedKw = 2500; _activateKw('burnerSizeBtns', 2500); }
   }
@@ -813,6 +822,7 @@
     if (ref) ref.addEventListener('input', () => { _refEdited = true; });
     prefillCustomer();
     fetchAutoRefSeq();
+    applyOilSizeCap();   // reflect the default fuel (Natural Gas) on the size buttons
   });
 
   // ── Run calculation ──────────────────────────────────────────────────────
