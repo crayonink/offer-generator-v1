@@ -716,18 +716,14 @@
     btn.classList.add('active');
     applyOilSizeCap();
   }
-  // Oil regen burners are only made up to 2500 KW — hide the larger sizes for oil.
+  // Oil BURNERS are only made up to 2500 KW — hide the larger BURNER sizes for
+  // oil. The REGENERATOR size can still be 3000/4500/6000, so it is not capped.
   function applyOilSizeCap() {
     const isOil = OIL_FUELS.includes(selectedFuel);
-    ['burnerSizeBtns','regenSizeBtns'].forEach(id => {
-      document.getElementById(id).querySelectorAll('.mat-btn').forEach(b => {
-        if (parseInt(b.dataset.kw) > 2500) b.style.display = isOil ? 'none' : '';
-      });
+    document.getElementById('burnerSizeBtns').querySelectorAll('.mat-btn').forEach(b => {
+      if (parseInt(b.dataset.kw) > 2500) b.style.display = isOil ? 'none' : '';
     });
-    if (isOil) {
-      if (selectedKw > 2500)      { selectedKw = 2500;      _activateKw('burnerSizeBtns', 2500); }
-      if (selectedRegenKw > 2500) { selectedRegenKw = 2500; _activateKw('regenSizeBtns', 2500); }
-    }
+    if (isOil && selectedKw > 2500) { selectedKw = 2500; _activateKw('burnerSizeBtns', 2500); }
   }
   function _activateKw(containerId, kw) {
     document.getElementById(containerId).querySelectorAll('.mat-btn').forEach(b =>
