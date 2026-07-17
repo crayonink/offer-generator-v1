@@ -1076,6 +1076,7 @@ def api_ic_oil_regen_burner():
         from bom.regen_pricelist import (oil_regen_burner_cost, _OIL_REGEN_BURNER_MAP,
                                          _OIL_REGEN_SS, _FILM_SECTION, _burner_ba_markup)
         from bom.regen_builder import _REGEN_PORTION
+        GAS_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"
         conn = sqlite3.connect(DB_PATH)
         ba = _burner_ba_markup(conn)
         out = []
@@ -1083,7 +1084,8 @@ def api_ic_oil_regen_burner():
             regen = round(f(_REGEN_PORTION.get(kw, 0)), 2)
             row = {"kw": kw, "regen": regen, "size": None, "burner_set": None,
                    "ss_each": None, "ba_markup": ba, "ss_add": None,
-                   "oil_burner": None, "total": None}
+                   "oil_burner": None, "total": None,
+                   "gas_burner": None, "gas_total": None}
             if kw in _OIL_REGEN_BURNER_MAP:
                 size, cost = oil_regen_burner_cost(conn, kw)
                 if cost is not None:
@@ -1101,6 +1103,16 @@ def api_ic_oil_regen_burner():
                     row.update(size=size, burner_set=round(burner_set, 2), ss_each=round(ss, 2),
                                ss_add=round(2 * ss * ba, 2), oil_burner=cost,
                                total=round(cost + regen, 2))
+                # Gas burner: same size, price straight from the Gas Burner Set
+                # (no S.S. Assembly ×3).
+                gsize = size or _OIL_REGEN_BURNER_MAP[kw]
+                gbs = conn.execute("SELECT price FROM burner_pricelist_master "
+                                   "WHERE section=? AND burner_size=? AND component='BURNER SET'",
+                                   (GAS_SECTION, gsize)).fetchone()
+                if gbs and gbs[0] is not None:
+                    gas_burner = round(f(gbs[0]), 2)
+                    row.update(size=row["size"] or gsize, gas_burner=gas_burner,
+                               gas_total=round(gas_burner + regen, 2))
             out.append(row)
         conn.close()
         return {"rows": out, "ba_markup": ba}

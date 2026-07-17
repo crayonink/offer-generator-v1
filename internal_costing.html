@@ -632,8 +632,31 @@ async function renderRegenBurner(){
   try {
     const d = await fetch('/api/internal-costing/oil-regen-burner').then(r=>r.json());
     if (d && d.rows && d.rows.length)
-      document.getElementById('tab-content').innerHTML += oilRegenTable(d.rows, d.ba_markup || 2.5);
+      document.getElementById('tab-content').innerHTML +=
+        oilRegenTable(d.rows, d.ba_markup || 2.5) + gasRegenTable(d.rows);
   } catch(e) {}
+}
+
+function gasRegenTable(rows){
+  const dash = '<span style="color:#cbd5e1;">—</span>';
+  const body = rows.map(r=>{
+    const has = r.gas_burner != null;
+    return `<tr>
+      <td class="co">${r.kw}</td>
+      <td class="num">${has ? r.size : dash}</td>
+      <td class="num calc">${has ? inr(r.gas_burner) : dash}</td>
+      <td class="num grpsep">${inr(r.regen)}</td>
+      <td class="num setcol">${r.gas_total != null ? inr(r.gas_total) : dash}</td></tr>`;
+  }).join('');
+  return `<div class="grp" style="margin-top:26px;">
+    <div class="edit-note"><b>Gas Burner + Regen.</b> Gas Burner = the ENCON <b>Gas Burner Set</b> from the burner sheet (<b>no</b> S.S. Assembly ×3 — that is oil-only), sized by KW (500→3A … 2500→7A). Regen shown for every size. <b>Total = Gas Burner + Regen</b>.</div>
+    <div class="grp-h"><span class="t">Gas Burner + Regen (₹) — per KW model</span></div>
+    <table><thead>
+      <tr><th></th><th class="num" colspan="2">GAS BURNER  (from burner sheet, &le;2500 KW)</th>
+        <th class="num grpsep">REGEN</th><th class="num setcol">TOTAL</th></tr>
+      <tr><th>KW</th><th class="num">ENCON Size</th><th class="num">Gas Burner</th>
+        <th class="num grpsep">Regen</th><th class="num setcol">Total Cost</th></tr>
+    </thead><tbody>${body}</tbody></table></div>`;
 }
 
 function oilRegenTable(rows, ba){
