@@ -186,6 +186,7 @@
           <td style="text-align:center"><input id="adj-transport" type="number" min="0" value="0" oninput="computeAdj()" style="width:90px;text-align:center;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font:inherit"/> ₹</td>
           <td class="r" id="adj-transport-amt">₹ 0</td></tr>
       <tr class="tot"><td>FINAL TOTAL</td><td></td><td class="r" id="adj-final">₹ 0</td></tr>
+      <tr><td>Currency <select id="currency-sel" onchange="applyCurrency()" style="padding:2px 6px;border:1px solid var(--border);border-radius:6px;font:inherit;"><option value="INR">₹ INR</option><option value="USD">$ USD</option></select></td><td style="color:#94a3b8;font-size:.76rem;" id="fx-rate-line">…</td><td class="r" style="color:#15803d;font-weight:700;" id="adj-final-usd">—</td></tr>
     </tbody></table>
     <div class="sec-label">Terms &amp; Conditions (shared)</div>
     <table id="tnc">
@@ -481,18 +482,33 @@ function adjVals() {
   return { pf:+(document.getElementById('adj-pf')||{}).value||0, design:+(document.getElementById('adj-design')||{}).value||0,
            neg:+(document.getElementById('adj-neg')||{}).value||0, transport:+(document.getElementById('adj-transport')||{}).value||0 };
 }
+/* Currency (live INR->USD) */
+let selectedCurrency='INR', fxRate=null, fxInverse=null, _lastFinalInr=0;
+function fmtCur(v){ return (selectedCurrency==='USD'&&fxRate)?('$ '+Math.round(v*fxRate).toLocaleString('en-IN')):('₹ '+Math.round(v).toLocaleString('en-IN')); }
+async function loadFxRate(){
+  const line=document.getElementById('fx-rate-line');
+  try{ const r=await fetch('/api/fx-rate?to=USD'); const j=await r.json(); fxRate=+j.rate; fxInverse=+j.inverse;
+    if(line) line.textContent=`1 USD = ₹${fxInverse.toFixed(2)}${j.fallback?' (approx)':' · today'}`;
+  }catch(e){ if(line) line.textContent='rate unavailable'; }
+  updateUsdLine();
+}
+function updateUsdLine(){ const el=document.getElementById('adj-final-usd'); if(el) el.textContent=fxRate?('$ '+Math.round(_lastFinalInr*fxRate).toLocaleString('en-IN')):'—'; }
+function applyCurrency(){ selectedCurrency=(document.getElementById('currency-sel')||{}).value||'INR'; computeAdj(); updateUsdLine(); }
+
 function computeAdj() {
   if (!document.getElementById('adj-final')) return;
   let base = 0; _eq.forEach(e => base += (+e.qty||1)*(+e.unit_price||0));
   const a = adjVals();
   const pf = base*a.pf/100, des = base*a.design/100, neg = base*a.neg/100, trn = a.transport;
   const final = Math.round((base + pf + des + neg + trn)/1000)*1000;
-  const f = v => '₹ ' + Math.round(v).toLocaleString('en-IN');
+  const f = v => fmtCur(v);
   document.getElementById('adj-pf-amt').textContent = f(pf);
   document.getElementById('adj-design-amt').textContent = f(des);
   document.getElementById('adj-neg-amt').textContent = f(neg);
   document.getElementById('adj-transport-amt').textContent = f(trn);
   document.getElementById('adj-final').textContent = f(final);
+  _lastFinalInr = final;
+  updateUsdLine();
 }
 function customer() {
   const v = id => (document.getElementById(id)||{}).value || '';
@@ -528,6 +544,7 @@ async function generateOffer() {
   const a = adjVals();
   const payload = { customer: customer(), project_name: document.getElementById('c-subject').value,
     pf_pct:a.pf, design_pct:a.design, neg_pct:a.neg, transport_amt:a.transport,
+    currency: selectedCurrency, fx_rate: (selectedCurrency==='USD' ? (fxRate||0) : 0),
     equipments: _eq.map(e => ({ name:e.name||e.type, specs:e.specs, qty:+e.qty||1, unit_price:+e.unit_price||0,
       spec_rows:(e.spec_rows||[]).map(s => ({ label:s.label, value:s.value })),
       quote_payload: e.quote_payload || {},
@@ -560,7 +577,7 @@ async function generateExcel() {
 const STICKY=['c-salutation','c-name','c-designation','c-email','c-phone','c-company','c-gstin','c-address','c-city','c-state','c-pin','c-location',
   'c-marketing-salutation','c-marketing','c-marketing-email','c-marketing-phone','c-technical-salutation','c-technical','c-technical-email','c-technical-phone'];
 function loadSticky(){ try{ const o=JSON.parse(localStorage.getItem('encon_form_step1')||'{}'); STICKY.forEach(id=>{const el=document.getElementById(id); if(el&&o[id]!=null)el.value=o[id];}); }catch(e){} }
-document.addEventListener('DOMContentLoaded', () => { loadSticky(); renderTypes(); });
+document.addEventListener('DOMContentLoaded', () => { loadSticky(); renderTypes(); loadFxRate(); });
 </script>
 </body>
 </html>
