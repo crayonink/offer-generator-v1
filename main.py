@@ -5483,10 +5483,39 @@ def _material_of_construction(hot_mat: str, cold_mat: str, pipe_dia_mm: float = 
     }
 
 
+def _offer_money(currency: str = "INR", fx_rate: float = 0.0):
+    """Return a (money_fmt, words_fmt, is_usd) triple for offer price rendering.
+    USD converts figures via fx_rate and switches the symbol + amount-in-words;
+    otherwise plain INR. Shared by the inline-writer offers (recup / blower /
+    burner / combined) so they match the vertical's USD behaviour."""
+    from engine.quote_writer import amount_in_words_indian as _words, _format_inr
+    _usd = (str(currency or "INR").upper() == "USD" and float(fx_rate or 0) > 0)
+    _rate = float(fx_rate or 0)
+
+    def _m(x):
+        try:
+            v = float(x or 0)
+        except (TypeError, ValueError):
+            v = 0.0
+        return f"$ {v * _rate:,.2f}" if _usd else _format_inr(v)
+
+    def _w(x):
+        try:
+            v = float(x or 0)
+        except (TypeError, ValueError):
+            v = 0.0
+        if _usd:
+            return f"US $ {_words(round(v * _rate))} ONLY."
+        return f"INR. {_words(v)} ONLY."
+
+    return _m, _w, _usd
+
+
 def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
                         supervision_rate: str, supervision_note: str,
                         single_line_total: float = 0.0,
-                        single_line_mode: bool = False) -> dict:
+                        single_line_mode: bool = False,
+                        currency: str = "INR", fx_rate: float = 0.0) -> dict:
     """Translate the calculator's BOM detail (12 line items + 3 summary
     rows) into the placeholders the offer's Price Schedule needs:
       - bom_rows               iterable list of {sno,item,qty,unit_price,total}
@@ -5499,7 +5528,7 @@ def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
     we recompute totals from the line items so user-edited unit prices
     on Step 3 propagate to the offer.
     """
-    from engine.quote_writer import amount_in_words_indian as _words, _format_inr
+    _m, _w, _usd = _offer_money(currency, fx_rate)
 
     rows = []
     bought_out = 0.0
@@ -5515,8 +5544,8 @@ def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
             "sno":        len(rows) + 1,
             "item":       r.get("ITEM NAME", ""),
             "qty":        qty,
-            "unit_price": _format_inr(unit),
-            "total":      _format_inr(total),
+            "unit_price": _m(unit),
+            "total":      _m(total),
         })
         if media == "ENCON ITEMS":
             encon += total
@@ -5528,10 +5557,10 @@ def _bom_rows_for_offer(bom: list, *, supervision_include: bool,
     footer_total = single_line_total if single_line_mode else grand
     return {
         "bom_rows":            rows,
-        "bought_out_total":    _format_inr(bought_out),
-        "encon_total":         _format_inr(encon),
-        "grand_total":         _format_inr(footer_total),
-        "grand_total_in_words": f"INR. {_words(footer_total)} ONLY.",
+        "bought_out_total":    _m(bought_out),
+        "encon_total":         _m(encon),
+        "grand_total":         _m(footer_total),
+        "grand_total_in_words": _w(footer_total),
         "supervision_include": bool(supervision_include),
         "supervision_rate":    supervision_rate or "",
         "supervision_note":    supervision_note or "",
@@ -5563,6 +5592,7 @@ def generate_recup_quote(req: RecupQuoteRequest):
         unit_price = float(req.final_total or 0)
         qty = max(1, int(req.qty or 1))
         total_price = unit_price * qty
+        _m, _w, _usd = _offer_money(req.currency, req.fx_rate)
 
         ctx = {
             "project_name":     req.project_name or (f"Recuperator for {req.application}" if req.application else "Recuperator"),
@@ -5621,9 +5651,9 @@ def generate_recup_quote(req: RecupQuoteRequest):
             # Price schedule (legacy single-line placeholders — kept for
             # backwards compatibility in case any text still references them)
             "recup_qty":           f"{qty:02d} No.",
-            "recup_unit_price":    _format_inr(unit_price),
-            "recup_total_price":   _format_inr(total_price),
-            "recup_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
+            "recup_unit_price":    _m(unit_price),
+            "recup_total_price":   _m(total_price),
+            "recup_total_in_words": _w(total_price),
             # Price-schedule mode flag (template branches on this)
             "price_schedule_style": (req.price_schedule_style or "single").lower(),
             # Full-BOM iterable price schedule (Annexure III, 'full' mode)
@@ -5632,7 +5662,8 @@ def generate_recup_quote(req: RecupQuoteRequest):
                                   supervision_rate=req.supervision_rate,
                                   supervision_note=req.supervision_note,
                                   single_line_total=total_price,
-                                  single_line_mode=(req.price_schedule_style or 'single').lower() == 'single'),
+                                  single_line_mode=(req.price_schedule_style or 'single').lower() == 'single',
+                                  currency=req.currency, fx_rate=req.fx_rate),
             # T&C
             "tnc_prices":             req.tnc_prices,
             "tnc_delivery":           req.tnc_delivery,
@@ -6381,7 +6412,8 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
                               template_name: str, filename_infix: str,
                               drive_product: str,
                               pf_pct: float = 0.0, design_pct: float = 0.0,
-                              neg_pct: float = 0.0, transport_amt: float = 0.0) -> dict:
+                              neg_pct: float = 0.0, transport_amt: float = 0.0,
+                              currency: str = "INR", fx_rate: float = 0.0) -> dict:
     """Shared minimal-offer generator for stand-alone equipment (blower /
     burner). Builds the docxtpl context from the customer block + the
     equipment specs, renders template_name, saves to quotes/, best-effort
@@ -6391,7 +6423,11 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
     from engine.quote_writer import amount_in_words_indian, _format_inr
     from equipment_advantages import tnc_value as _tnc
 
-    def _fmt0(x):  # whole-rupee Indian format (no paise)
+    _m, _w, _usd = _offer_money(currency, fx_rate)
+
+    def _fmt0(x):  # whole-rupee Indian format (no paise); USD → "$ X.XX"
+        if _usd:
+            return _m(x)
         s = _format_inr(round(float(x or 0)))
         return s[:-3] if s.endswith(".00") else s
 
@@ -6445,7 +6481,7 @@ def _generate_equipment_offer(cust: HpuCustomer, *, equipment_name: str,
         "unit_price":        _fmt0(offer_unit),
         "total_price":       _fmt0(total_price),
         "grand_total":       _fmt0(total_price),
-        "grand_total_in_words": f"INR. {amount_in_words_indian(total_price)} ONLY.",
+        "grand_total_in_words": _w(total_price),
         # T&C (Annexure renumbered to III) — standard ENCON defaults when blank
         "tnc_prices":             _tnc("tnc_prices", cust.tnc_prices),
         "tnc_delivery":           _tnc("tnc_delivery", cust.tnc_delivery),
@@ -6595,7 +6631,8 @@ def generate_blower_quote(req: BlowerQuoteRequest):
             template_name="Blower_Offer_Template.docx",
             filename_infix="Blower", drive_product="blower",
             pf_pct=req.pf_pct, design_pct=req.design_pct,
-            neg_pct=req.neg_pct, transport_amt=req.transport_amt)
+            neg_pct=req.neg_pct, transport_amt=req.transport_amt,
+            currency=req.currency, fx_rate=req.fx_rate)
         result.update({"model": model, "config": f"{_fmt_num(hp)} HP • {(pressure or '').strip()}"})
         return result
     except Exception as e:
@@ -6664,7 +6701,8 @@ def generate_burner_quote(req: BurnerQuoteRequest):
             template_name="Burner_Offer_Template.docx",
             filename_infix="Burner", drive_product="burner",
             pf_pct=req.pf_pct, design_pct=req.design_pct,
-            neg_pct=req.neg_pct, transport_amt=req.transport_amt)
+            neg_pct=req.neg_pct, transport_amt=req.transport_amt,
+            currency=req.currency, fx_rate=req.fx_rate)
         result.update({"model": req.burner_model,
                        "config": f"{fuel}{(' • ' + capacity) if capacity else ''}"})
         return result
@@ -7304,6 +7342,7 @@ def generate_combined_offer(req: CombinedOfferRequest):
         from datetime import datetime as _dt
         from docxtpl import DocxTemplate
         from engine.quote_writer import amount_in_words_indian, _format_inr
+        _m, _w, _usd = _offer_money(req.currency, req.fx_rate)
 
         if not req.equipments:
             return {"error": "No equipment supplied."}
@@ -7386,8 +7425,8 @@ def generate_combined_offer(req: CombinedOfferRequest):
                 "sno":        f"{i}.",
                 "name":       eq.name,
                 "qty":        f"{qty:02d} No.",
-                "unit_price": _format_inr(line_total / qty),
-                "total":      _format_inr(line_total),
+                "unit_price": _m(line_total / qty),
+                "total":      _m(line_total),
             })
 
         # Scope of Supply (Annexure I) — modelled on the reference offer:
@@ -7555,19 +7594,19 @@ def generate_combined_offer(req: CombinedOfferRequest):
             "equipments":   [{"name": e.name, "specs": e.specs or ""} for e in req.equipments],
             "scope_rows":   scope_rows,
             "price_lines":  price_lines,
-            "grand_total":  _format_inr(grand),
+            "grand_total":  _m(grand),
             # P&F, Designing, Negotiation and Transport are all distributed into
             # the equipment prices — none shown as a separate price-schedule line.
-            "pf_amount":         _format_inr(_pf),
-            "design_amount":     _format_inr(_des),
-            "neg_amount":        _format_inr(_neg),
-            "transport_amount":  _format_inr(_trn),
+            "pf_amount":         _m(_pf),
+            "design_amount":     _m(_des),
+            "neg_amount":        _m(_neg),
+            "transport_amount":  _m(_trn),
             "show_pf":           False,
             "show_design":       False,
             "show_neg":          False,
             "show_transport":    False,
-            "final_total":       _format_inr(_combined_final),
-            "grand_total_in_words": f"INR. {amount_in_words_indian(round(_combined_final))} ONLY.",
+            "final_total":       _m(_combined_final),
+            "grand_total_in_words": _w(_combined_final),
             # Supervision charges — pulled from the price master (component_price_master).
             "supervision_mech":  _sup_mech,
             "supervision_plc":   _sup_plc,
