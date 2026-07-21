@@ -1034,6 +1034,21 @@
             </tr>
             <tr class="tot"><td><b>Final Total</b></td>       <td id="s-final">—</td></tr>
           </table>
+          <div style="margin-top:14px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:0.9rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+                Currency
+                <select id="currency-sel" onchange="applyCurrency()" style="padding:3px 6px;border:1px solid var(--border);border-radius:6px;font:inherit;">
+                  <option value="INR">&#8377; INR</option>
+                  <option value="USD">$ USD</option>
+                </select>
+              </label>
+              <span id="fx-rate-line" style="color:var(--muted);">Fetching today's rate&#8230;</span>
+            </div>
+            <div id="fx-usd-line" style="margin-top:8px;color:#15803d;font-weight:700;">
+              Final Total (USD): <span id="s-final-usd">&#8212;</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1855,6 +1870,7 @@ function renderResults(d) {
   window._boughtRaw = s.bought_out_total;
   window._enconRaw  = s.encon_total;
   recalcGrandTotal();
+  loadFxRate();   // fetch today's INR->USD and show the USD equivalent
   set("banner-total",  "₹ " + fmt(s.grand_total, 0));
   set("banner-bought", "₹ " + fmt(s.bought_out_total, 0));
   set("banner-encon",  "₹ " + fmt(s.encon_total, 0));
@@ -2012,14 +2028,36 @@ function parseHP(str) {
   const m = String(str || "").match(/[\d.]+/);
   return m ? parseFloat(m[0]) : 0;
 }
+/* Currency (live INR->USD) */
+let selectedCurrency = 'INR';
+let fxRate = null, fxInverse = null;
+function fmtCur(inr){ return (selectedCurrency==='USD'&&fxRate)?('$ '+fmt(inr*fxRate,0)):('₹ '+fmt(inr,0)); }
+async function loadFxRate(){
+  const line=document.getElementById('fx-rate-line');
+  try{ const r=await fetch(`${API}/api/fx-rate?to=USD`); const j=await r.json();
+    fxRate=+j.rate; fxInverse=+j.inverse;
+    if(line) line.textContent=`1 USD = ₹${fxInverse.toFixed(2)}${j.fallback?' (approx)':' · today'}`;
+  }catch(e){ if(line) line.textContent='rate unavailable'; }
+  updateUsdLine();
+}
+function updateUsdLine(){
+  const el=document.getElementById('s-final-usd'); if(!el) return;
+  const inr=(lastCalc&&lastCalc.cost_summary&&+lastCalc.cost_summary.final_total)||0;
+  el.textContent=fxRate?('$ '+fmt(inr*fxRate,0)):'—';
+}
+function applyCurrency(){
+  selectedCurrency=(document.getElementById('currency-sel')||{}).value||'INR';
+  recalcGrandTotal(); updateUsdLine();
+}
+
 function recalcGrandTotal() {
   const markup = parseFloat(document.getElementById("markup-factor")?.value) || 1.8;
   const bought = window._boughtRaw || 0;
   const encon  = window._enconRaw  || 0;
   const boughtMarked = bought * markup;
   const grand = boughtMarked + encon;
-  set("s-bought-marked", "₹ " + fmt(boughtMarked, 0));
-  set("s-grand", "₹ " + fmt(grand, 0));
+  set("s-bought-marked", fmtCur(boughtMarked));
+  set("s-grand", fmtCur(grand));
   set("banner-total", "₹ " + fmt(grand, 0));
   // Packaging & Forwarding + Designing (% of Grand Total), Negotiation
   // (% of Grand Total, subtracted = discount), Transport (flat ₹).
@@ -2032,11 +2070,11 @@ function recalcGrandTotal() {
   const negAmt    = grand * negPct    / 100;
   // Round Final Total to the nearest ₹1000 (commercial cleanliness).
   const finalTot  = Math.round((grand + pfAmt + designAmt + negAmt + transAmt) / 1000) * 1000;
-  set("s-pf",          "₹ " + fmt(pfAmt, 0));
-  set("s-design",      "₹ " + fmt(designAmt, 0));
-  set("s-negotiation", "₹ " + fmt(negAmt, 0));
-  set("s-transport",   "₹ " + fmt(transAmt, 0));
-  set("s-final",       "₹ " + fmt(finalTot, 0));
+  set("s-pf",          fmtCur(pfAmt));
+  set("s-design",      fmtCur(designAmt));
+  set("s-negotiation", fmtCur(negAmt));
+  set("s-transport",   fmtCur(transAmt));
+  set("s-final",       fmtCur(finalTot));
   // Stash live numeric values for the cost-sheet Excel export.
   window._lastSummary = {
     grand_total: grand,
@@ -2054,6 +2092,7 @@ function recalcGrandTotal() {
     lastCalc.cost_summary.transport_amount = transAmt;
     lastCalc.cost_summary.final_total = finalTot;
   }
+  updateUsdLine();
 }
 
 // Called when a BOM Qty input is edited. Recompute that row's TOTAL,
@@ -2373,6 +2412,8 @@ async function generateQuote() {
     ...buildTechData(),
     valid_days:      parseInt(document.getElementById("q-valid").value) || 30,
     transport_amt:   parseFloat(document.getElementById("transport-amt")?.value) || 0,
+    currency:        selectedCurrency,
+    fx_rate:         (selectedCurrency === 'USD' ? (fxRate || 0) : 0),
     items: [{
       product_type: "Tundish Dryer",
       model:        "Tundish (As per Calculation)",

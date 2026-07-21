@@ -5445,6 +5445,8 @@ class RecupQuoteRequest(BaseModel):
     calculations: dict = {}
     bom:          list = []        # the full BOM detail rows for the price schedule
     final_total:  float = 0.0
+    currency:     Optional[str] = "INR"   # "USD" → offer priced in USD
+    fx_rate:      Optional[float] = 0     # INR → USD, used only when currency == "USD"
     grand_total:  float = 0.0
     transport_amt: float = 0          # Transport (flat Rs.) — own price-schedule line
     qty:          int = 1
@@ -5777,6 +5779,8 @@ class HpuQuoteRequest(BaseModel):
     pf_pct:        float = 0    # Packaging & Forwarding (% of catalog price)
     design_pct:    float = 0    # Designing (%)
     neg_pct:       float = 0    # Negotiation (%, added)
+    currency:      Optional[str] = "INR"   # "USD" → offer priced in USD
+    fx_rate:       Optional[float] = 0     # INR → USD, used only when currency == "USD"
 
 
 @app.get("/api/hpu/flow-lph")
@@ -5950,6 +5954,9 @@ def _generate_pumping_unit_offer(req: "HpuQuoteRequest", *, mode: str) -> dict:
             "technical_phone":  cust.technical_phone or "",
             "technical_email":  cust.technical_email or "",
             "gstin":            cust.gstin or "",
+            # Currency: forwarded so the shared writer's USD path activates.
+            "currency":         (req.currency or "INR"),
+            "fx_rate":          (req.fx_rate or 0),
             # Picked up by _build_equipment_name + by the HPU/PU template
             # via {{ hpu_variant }} / {{ hpu_kw }} / {{ hpu_lph }} /
             # {{ hpu_qty }} (the PU template reuses the hpu_* keys so a
@@ -6266,6 +6273,8 @@ class BlowerQuoteRequest(BaseModel):
     design_pct:    float = 0    # Designing (%)
     neg_pct:       float = 0    # Negotiation (%, added)
     transport_amt: float = 0    # Transport (flat Rs., own price line)
+    currency:      Optional[str] = "INR"   # "USD" → offer priced in USD
+    fx_rate:       Optional[float] = 0     # INR → USD, when currency == "USD"
 
 
 class BurnerQuoteRequest(BaseModel):
@@ -6277,6 +6286,8 @@ class BurnerQuoteRequest(BaseModel):
     design_pct:    float = 0    # Designing (%)
     neg_pct:       float = 0    # Negotiation (%, added)
     transport_amt: float = 0    # Transport (flat Rs., own price line)
+    currency:      Optional[str] = "INR"   # "USD" → offer priced in USD
+    fx_rate:       Optional[float] = 0     # INR → USD, when currency == "USD"
 
 
 def _fill_blower_specs(docx_path: str, spec_rows: list, note: str = ""):
@@ -7133,6 +7144,8 @@ class CombinedOfferRequest(BaseModel):
     design_pct: float = 0      # Designing %
     neg_pct: float = 0         # Negotiation %
     transport_amt: float = 0   # Transport (flat Rs.)
+    currency: Optional[str] = "INR"   # "USD" → offer priced in USD
+    fx_rate: Optional[float] = 0      # INR → USD, when currency == "USD"
 
 
 def _build_spec_comparison_table(docx_path, columns, rows):

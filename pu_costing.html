@@ -249,6 +249,8 @@
         <tr><td style="padding:3px 0; color:#64748b;">+ Negotiation</td><td style="text-align:right;" id="cs-neg">&mdash;</td></tr>
         <tr><td style="padding:3px 0; color:#64748b;">+ Transport</td><td style="text-align:right;" id="cs-trans">&mdash;</td></tr>
         <tr style="border-top:1px solid var(--border);"><td style="padding:7px 0 0; font-weight:700; color:var(--navy);">Total Price</td><td style="text-align:right; padding:7px 0 0; font-weight:700; color:var(--navy); font-size:1.05rem;" id="cs-total">&mdash;</td></tr>
+        <tr><td style="padding:7px 0 0; color:#64748b;">Currency</td><td style="text-align:right; padding:7px 0 0;"><select id="currency-sel" onchange="applyCurrency()" style="padding:2px 6px;border:1px solid var(--border);border-radius:6px;font:inherit;"><option value="INR">₹ INR</option><option value="USD">$ USD</option></select> <span id="fx-rate-line" style="color:#94a3b8;font-size:.8rem;">&#8230;</span></td></tr>
+        <tr><td style="padding:3px 0; color:#15803d; font-weight:700;">Total (USD)</td><td style="text-align:right; color:#15803d; font-weight:700;" id="cs-total-usd">&mdash;</td></tr>
       </table>
     </div>
 
@@ -484,6 +486,19 @@ async function _refreshPrice() {
   } catch (e) { _catalogUnit = 0; }
   recalcTotal();
 }
+/* Currency (live INR->USD) */
+let selectedCurrency='INR', fxRate=null, fxInverse=null, _lastTotalInr=0;
+function fmtCur(inr){ return (selectedCurrency==='USD'&&fxRate)?('$ '+Math.round(inr*fxRate).toLocaleString('en-IN')):('₹ '+Math.round(inr).toLocaleString('en-IN')); }
+async function loadFxRate(){
+  const line=document.getElementById('fx-rate-line');
+  try{ const r=await fetch('/api/fx-rate?to=USD'); const j=await r.json(); fxRate=+j.rate; fxInverse=+j.inverse;
+    if(line) line.textContent=`1 USD = ₹${fxInverse.toFixed(2)}${j.fallback?' (approx)':' · today'}`;
+  }catch(e){ if(line) line.textContent='rate unavailable'; }
+  updateUsdLine();
+}
+function updateUsdLine(){ const el=document.getElementById('cs-total-usd'); if(el) el.textContent=fxRate?('$ '+Math.round(_lastTotalInr*fxRate).toLocaleString('en-IN')):'—'; }
+function applyCurrency(){ selectedCurrency=(document.getElementById('currency-sel')||{}).value||'INR'; recalcTotal(); updateUsdLine(); }
+
 function recalcTotal() {
   const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
   const qty = Math.max(1, parseInt((document.getElementById('qty') || {}).value || '1', 10));
@@ -492,12 +507,14 @@ function recalcTotal() {
   const pfA = base * pf / 100, desA = base * des / 100, negA = base * neg / 100;
   let total = base + pfA + desA + negA + trn;
   if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
-  const f = n => '₹ ' + Math.round(n).toLocaleString('en-IN');
+  const f = n => fmtCur(n);
   const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set('cs-catalog', base ? f(base) : '—');
   set('cs-pf', f(pfA)); set('cs-design', f(desA));
   set('cs-neg', '+ ' + f(negA)); set('cs-trans', f(trn));
+  _lastTotalInr = base ? total : 0;
   set('cs-total', base ? f(total) : '—');
+  updateUsdLine();
 }
 
 // ── Download Excel cost sheet (catalog-pick: single line + commercials) ─────
@@ -587,6 +604,8 @@ async function generateOffer() {
     design_pct: parseFloat(document.getElementById('design-pct')?.value) || 0,
     neg_pct: parseFloat(document.getElementById('negotiation-pct')?.value) || 0,
     transport_amt: parseFloat(document.getElementById('transport-amt')?.value) || 0,
+    currency: selectedCurrency,
+    fx_rate: (selectedCurrency==='USD' ? (fxRate||0) : 0),
   };
 
   try {
@@ -662,6 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('hpu_kw').addEventListener('change',      _refreshPrice);
   document.getElementById('qty').addEventListener('input',          recalcTotal);
   _refreshPrice();
+  loadFxRate();
 });
 </script>
 </body>
