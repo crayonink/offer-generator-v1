@@ -891,19 +891,27 @@
       {_class:'xl-section', cells:[xs('BLOWER & ID FAN — SIZING EXAMPLE  (' +
         fs.num_pairs + ' × ' + fs.kw + ' KW, ' + (fs.is_oil ? 'oil' : 'gas') + ')', 10)]},
     ];
+    const r2 = v => (Math.round(v * 100) / 100).toLocaleString('en-IN');
     const line = t => rows.push({cells:[xs(t, 10)]});
+    // ── air / gas flows ──
     if (fs.is_oil) {
-      line('Oil flow   = KW × 860 ÷ CV × pairs = ' + fs.kw + ' × 860 ÷ ' + fs.oil_cv + ' × ' + fs.num_pairs + '  =  ' + r1(fs.oil_kg) + ' kg/hr');
-      line('Air flow   = oil × A/F (' + fs.afr + ')       = ' + r1(fs.oil_kg) + ' × ' + fs.afr + '  =  ' + r0(fs.air_kg) + ' kg/hr');
-      line('Blower flow = air ÷ ' + fs.rho_air + ' (air density)   = ' + r0(fs.air_kg) + ' ÷ ' + fs.rho_air + '  =  ' + r0(fs.comb_air) + ' Nm³/hr');
-      line('ID-fan flow = (air + oil) ÷ ' + fs.rho_flue + ' (flue gas) = (' + r0(fs.air_kg) + ' + ' + r1(fs.oil_kg) + ') ÷ ' + fs.rho_flue + '  =  ' + r0(fs.id_air) + ' Nm³/hr');
+      line('Oil flow = KW × 860 ÷ CV × pairs = ' + fs.kw + ' × 860 ÷ ' + fs.oil_cv + ' × ' + fs.num_pairs + ' = ' + r1(fs.oil_kg) + ' kg/hr   ·   Air = oil × ' + fs.afr + ' = ' + r0(fs.air_kg) + ' kg/hr');
+      line('Blower flow = air ÷ ' + fs.rho_air + ' = ' + r0(fs.comb_air) + ' Nm³/hr   ·   ID-fan flow = (air+oil) ÷ ' + fs.rho_flue + ' = ' + r0(fs.id_air) + ' Nm³/hr');
     } else {
-      line('Combustion air = KW × pairs        = ' + fs.kw + ' × ' + fs.num_pairs + '  =  ' + r0(fs.comb_air) + ' Nm³/hr');
-      line('Gas flow    = KW × 860 ÷ CV × pairs = ' + fs.kw + ' × 860 ÷ ' + fs.fuel_cv + ' × ' + fs.num_pairs + '  =  ' + r0(fs.gas_flow) + ' Nm³/hr');
-      line('ID-fan flow = combustion air + gas = ' + r0(fs.comb_air) + ' + ' + r0(fs.gas_flow) + '  =  ' + r0(fs.id_air) + ' Nm³/hr');
+      line('Combustion air = KW × pairs = ' + r0(fs.comb_air) + ' Nm³/hr   ·   Gas = KW×860÷CV×pairs = ' + r0(fs.gas_flow) + ' Nm³/hr   ·   ID-fan flow = air+gas = ' + r0(fs.id_air) + ' Nm³/hr');
     }
-    line('Blower HP = flow ÷ 1.7 × 40" ÷ 3200 = ' + r0(fs.comb_air) + ' ÷ 1.7 × 40 ÷ 3200  =  ' + r1(fs.blower_raw_hp) + ' HP  →  ' + hp(fs.blower_hp) + ' HP frame' + (fs.blower_price == null ? '   (>60 HP → price ??)' : ''));
-    line('ID fan HP = flow ÷ 1.7 × 36" ÷ 3200 = ' + r0(fs.id_air) + ' ÷ 1.7 × 36 ÷ 3200  =  ' + r1(fs.id_raw_hp) + ' HP  →  ' + hp(fs.id_hp) + ' HP frame' + (fs.id_price == null ? '   (>60 HP → price ??)' : '   (price mirrored from blower)'));
+    // ── blower (rigorous) ──
+    rows.push({_class:'xl-section', cells:[xs('BLOWER — combustion air @ ' + fs.blower_inlet_c + '°C, ' + fs.blower_dp_inwc + ' inWC', 10)]});
+    line('Actual volume = ' + r0(fs.comb_air) + ' × (' + (fs.blower_inlet_c+273.15).toFixed(2) + '/273.15) ÷ 3600 = ' + r2(fs.blower_q_act) + ' m³/s   ·   ΔP = ' + fs.blower_dp_inwc + ' inWC = ' + r0(fs.blower_dp_inwc*249.089) + ' Pa');
+    line('Air power = Q×ΔP = ' + r2(fs.blower_air_kw) + ' kW  →  Shaft ÷0.75 = ' + r2(fs.blower_shaft_duty_kw) + ' kW  →  Test-block +10%/+15% = ' + r2(fs.blower_shaft_tb_kw) + ' kW');
+    line('Motor ×1.10 = ' + r2(fs.blower_motor_kw) + ' kW  →  ' + hp(fs.blower_hp) + ' HP frame' + (fs.blower_price == null ? '   (>60 HP → price ??)' : ''));
+    // ── id fan (rigorous, hot + cold-start) ──
+    rows.push({_class:'xl-section', cells:[xs('ID FAN — hot flue gas ' + fs.idfan_gas_c + '°C, ' + fs.idfan_dp_mmwc + ' mmWC (cold-start ' + fs.idfan_cold_c + '°C)', 10)]});
+    line('Actual volume (hot) = ' + r0(fs.id_air) + ' × (' + (fs.idfan_gas_c+273.15).toFixed(2) + '/273.15) ÷ 3600 = ' + r2(fs.idfan_q_act) + ' m³/s   ·   ΔP = ' + fs.idfan_dp_mmwc + ' mmWC = ' + r0(fs.idfan_dp_mmwc*9.80665) + ' Pa');
+    line('Air power = ' + r2(fs.idfan_air_kw) + ' kW  →  Shaft hot ÷0.75 = ' + r2(fs.idfan_shaft_hot_kw) + ' kW  →  Test-block = ' + r2(fs.idfan_shaft_tb_kw) + ' kW');
+    line('Cold-start (× density ratio ' + r2(fs.idfan_dens_ratio) + ') = ' + r2(fs.idfan_shaft_cold_kw) + ' kW  (≈2× hot — the trap)');
+    line('Option A (VFD + interlock): motor ' + r2(fs.id_motor_kw_A) + ' kW  →  ' + hp(fs.id_hp_A) + ' HP frame' + (fs.id_price_A == null ? '  (>60 HP → ??)' : ''));
+    line('Option B (cold-rated):      motor ' + r2(fs.id_motor_kw_B) + ' kW  →  ' + hp(fs.id_hp_B) + ' HP frame' + (fs.id_price_B == null ? '  (>60 HP → ??)' : ''));
     return rows;
   }
 

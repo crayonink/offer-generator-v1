@@ -9069,19 +9069,26 @@ def export_excel(req: ExcelExportRequest):
                 r5 += 1
             def _r0(v): return f"{round(v):,}"
             def _r1(v): return f"{round(v*10)/10:,}"
+            def _r2(v): return f"{round(v*100)/100:,}"
+            # ── air / gas flows ──
             if fs.get("is_oil"):
-                _fline(f"Oil flow    = KW × 860 ÷ CV × pairs = {fs['kw']} × 860 ÷ {fs['oil_cv']} × {fs['num_pairs']}  =  {_r1(fs['oil_kg'])} kg/hr")
-                _fline(f"Air flow    = oil × A/F ({fs['afr']:g})       = {_r1(fs['oil_kg'])} × {fs['afr']:g}  =  {_r0(fs['air_kg'])} kg/hr")
-                _fline(f"Blower flow = air ÷ {fs['rho_air']} (air density)   = {_r0(fs['air_kg'])} ÷ {fs['rho_air']}  =  {_r0(fs['comb_air'])} Nm³/hr")
-                _fline(f"ID-fan flow = (air + oil) ÷ {fs['rho_flue']} (flue gas) = ({_r0(fs['air_kg'])} + {_r1(fs['oil_kg'])}) ÷ {fs['rho_flue']}  =  {_r0(fs['id_air'])} Nm³/hr")
+                _fline(f"Oil flow = KW × 860 ÷ CV × pairs = {fs['kw']} × 860 ÷ {fs['oil_cv']} × {fs['num_pairs']} = {_r1(fs['oil_kg'])} kg/hr   ·   Air = oil × {fs['afr']:g} = {_r0(fs['air_kg'])} kg/hr")
+                _fline(f"Blower flow = air ÷ {fs['rho_air']} = {_r0(fs['comb_air'])} Nm³/hr   ·   ID-fan flow = (air+oil) ÷ {fs['rho_flue']} = {_r0(fs['id_air'])} Nm³/hr")
             else:
-                _fline(f"Combustion air = KW × pairs        = {fs['kw']} × {fs['num_pairs']}  =  {_r0(fs['comb_air'])} Nm³/hr")
-                _fline(f"Gas flow    = KW × 860 ÷ CV × pairs = {fs['kw']} × 860 ÷ {fs['fuel_cv']} × {fs['num_pairs']}  =  {_r0(fs['gas_flow'])} Nm³/hr")
-                _fline(f"ID-fan flow = combustion air + gas = {_r0(fs['comb_air'])} + {_r0(fs['gas_flow'])}  =  {_r0(fs['id_air'])} Nm³/hr")
-            _bnote = "   (>60 HP → price ??)" if fs.get("blower_price") is None else ""
-            _inote = "   (>60 HP → price ??)" if fs.get("id_price") is None else "   (price mirrored from blower)"
-            _fline(f"Blower HP = flow ÷ 1.7 × 40\" ÷ 3200 = {_r0(fs['comb_air'])} ÷ 1.7 × 40 ÷ 3200  =  {_r1(fs['blower_raw_hp'])} HP  →  {fs['blower_hp']:g} HP frame{_bnote}")
-            _fline(f"ID fan HP = flow ÷ 1.7 × 36\" ÷ 3200 = {_r0(fs['id_air'])} ÷ 1.7 × 36 ÷ 3200  =  {_r1(fs['id_raw_hp'])} HP  →  {fs['id_hp']:g} HP frame{_inote}")
+                _fline(f"Combustion air = KW × pairs = {_r0(fs['comb_air'])} Nm³/hr   ·   Gas = KW×860÷CV×pairs = {_r0(fs['gas_flow'])} Nm³/hr   ·   ID-fan flow = air+gas = {_r0(fs['id_air'])} Nm³/hr")
+            _bnote = "   (>60 HP -> price ??)" if fs.get("blower_price") is None else ""
+            # ── blower (rigorous) ──
+            _fline(f"BLOWER — combustion air @ {fs['blower_inlet_c']:g}°C, {fs['blower_dp_inwc']:g} inWC:")
+            _fline(f"  Actual vol = {_r0(fs['comb_air'])} × ({fs['blower_inlet_c']+273.15:.2f}/273.15) ÷ 3600 = {_r2(fs['blower_q_act'])} m³/s   ·   ΔP = {fs['blower_dp_inwc']:g} inWC = {_r0(fs['blower_dp_inwc']*249.089)} Pa")
+            _fline(f"  Air power = Q×ΔP = {_r2(fs['blower_air_kw'])} kW  ->  Shaft ÷0.75 = {_r2(fs['blower_shaft_duty_kw'])} kW  ->  Test-block +10%/+15% = {_r2(fs['blower_shaft_tb_kw'])} kW")
+            _fline(f"  Motor ×1.10 = {_r2(fs['blower_motor_kw'])} kW  ->  {fs['blower_hp']:g} HP frame{_bnote}")
+            # ── id fan (rigorous, hot + cold-start) ──
+            _fline(f"ID FAN — hot flue gas {fs['idfan_gas_c']:g}°C, {fs['idfan_dp_mmwc']:g} mmWC (cold-start {fs['idfan_cold_c']:g}°C):")
+            _fline(f"  Actual vol (hot) = {_r0(fs['id_air'])} × ({fs['idfan_gas_c']+273.15:.2f}/273.15) ÷ 3600 = {_r2(fs['idfan_q_act'])} m³/s   ·   ΔP = {fs['idfan_dp_mmwc']:g} mmWC = {_r0(fs['idfan_dp_mmwc']*9.80665)} Pa")
+            _fline(f"  Air power = {_r2(fs['idfan_air_kw'])} kW  ->  Shaft hot ÷0.75 = {_r2(fs['idfan_shaft_hot_kw'])} kW  ->  Test-block = {_r2(fs['idfan_shaft_tb_kw'])} kW")
+            _fline(f"  Cold-start (× density ratio {_r2(fs['idfan_dens_ratio'])}) = {_r2(fs['idfan_shaft_cold_kw'])} kW  (≈2× hot — the trap)")
+            _fline(f"  Option A (VFD + interlock): motor {_r2(fs['id_motor_kw_A'])} kW  ->  {fs['id_hp_A']:g} HP" + ("  (>60 HP -> ??)" if fs.get('id_price_A') is None else ""))
+            _fline(f"  Option B (cold-rated):      motor {_r2(fs['id_motor_kw_B'])} kW  ->  {fs['id_hp_B']:g} HP" + ("  (>60 HP -> ??)" if fs.get('id_price_B') is None else ""))
 
         # BOM-only download — the derivation tabs were dropped from the UI
         # (we map straight from the Pricelist), so drop them from the workbook too.

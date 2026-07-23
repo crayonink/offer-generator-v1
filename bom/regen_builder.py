@@ -269,6 +269,55 @@ _OIL_AFR       = 15.0     # kg combustion air per kg oil
 _RHO_AIR       = 1.293    # kg/Nm³ — combustion-air side
 _RHO_FLUE      = 1.34     # kg/Nm³ — flue-gas (ID fan) side
 
+# ── Rigorous FD-blower / ID-fan sizing (Blower_ID_Fan_Sizing sheet) ──────────
+# Shaft power = Q_actual(m³/s) × ΔP(Pa) / efficiency; motor from the test-block
+# point + margins. Actual volume flow is temperature-corrected (Charles's law).
+_INWC_TO_PA   = 249.089    # 1 inch water column → Pa
+_MMWC_TO_PA   = 9.80665    # 1 mm water column → Pa
+_FAN_EFF      = 0.75       # single-stage centrifugal, backward-curved, clean gas
+_FLOW_MARGIN  = 0.10       # rated / test-block flow margin (+10%)
+_PRESS_MARGIN = 0.15       # rated / test-block pressure margin (+15%)
+_MOTOR_MARGIN = 0.10       # motor rating over test-block shaft power (+10%)
+_REF_TEMP_K   = 273.15     # Nm³ reference: 0 °C
+_HP_PER_KW    = 1 / 0.746  # kW → HP
+# Combustion-air blower: 45 °C site air, 40 inWC pressure rise.
+_BLOWER_INLET_C = 45.0
+_BLOWER_DP_INWC = 40.0
+# ID fan: hot flue gas 300 °C, 500 mmWC static; cold-start ambient 40 °C.
+_IDFAN_GAS_C    = 300.0
+_IDFAN_COLD_C   = 40.0
+_IDFAN_DP_MMWC  = 500.0
+
+
+def _fan_shaft_kw(flow_nm3hr, dp_pa, gas_temp_c):
+    """Shaft-power breakdown for a fan moving `flow_nm3hr` (Nm³/hr) against
+    `dp_pa` (Pa) with the gas at `gas_temp_c`. Returns duty + test-block shaft
+    power and the required motor kW (test-block × motor margin)."""
+    T = gas_temp_c + 273.15
+    q_act = flow_nm3hr * (T / _REF_TEMP_K) / 3600.0        # m³/s (P_ref = P_act)
+    air_kw = q_act * dp_pa / 1000.0                         # P = Q × ΔP
+    shaft_duty = air_kw / _FAN_EFF
+    shaft_tb = (q_act * (1 + _FLOW_MARGIN) * dp_pa * (1 + _PRESS_MARGIN) / 1000.0) / _FAN_EFF
+    return {"q_act_m3s": q_act, "air_kw": air_kw, "shaft_duty_kw": shaft_duty,
+            "shaft_tb_kw": shaft_tb, "motor_kw": shaft_tb * (1 + _MOTOR_MARGIN)}
+
+
+def _frame_from_hp(hp, conn=None):
+    """Nearest ENCON catalogue blower frame whose HP >= required HP, with its
+    live price (catalogue fallback). >60 HP → no price yet (None). Returns
+    (frame_hp, price_or_None)."""
+    import math
+    frames = sorted(BLOWER_CATALOGUE, key=lambda b: float(str(b['hp']).replace('HP', '')))
+    for b in frames:
+        fhp = float(str(b['hp']).replace('HP', ''))
+        if fhp >= hp - 1e-6:
+            live = _live_blower_price(conn, fhp)
+            return fhp, (live if live is not None else float(b['price_with_motor']))
+    for fhp in _EXTRA_FRAMES:
+        if fhp >= hp:
+            return fhp, None
+    return float(math.ceil(hp)), None
+
 
 def _snap_price(cat_key, dn):
     """Price for a valve at the smallest catalog NB >= the pipe DN.
@@ -461,12 +510,38 @@ def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None):
         gas_flow = (kw * 860 / cv) * num_pairs
         id_air   = comb_air + gas_flow
         d.update(fuel_cv=cv, gas_flow=gas_flow, comb_air=comb_air, id_air=id_air)
-    bhp, bprice, braw     = _size_fan(comb_air, 40, conn)   # blower @ 40" WG
-    ihp, iprice_own, iraw = _size_fan(id_air, 36, conn)     # ID fan @ 36" WG
-    id_in_cat = iprice_own is not None                # ID-fan HP <= 60
-    d.update(blower_hp=bhp, blower_raw_hp=braw, blower_pressure=40, blower_price=bprice,
-             id_hp=ihp, id_raw_hp=iraw, id_pressure=36,
-             id_in_cat=id_in_cat, id_price=(bprice if id_in_cat else None))
+    # ── Rigorous sizing (Blower_ID_Fan_Sizing sheet): shaft power → motor kW ──
+    # BLOWER — combustion air, 45 °C, 40 inWC.
+    _b = _fan_shaft_kw(comb_air, _BLOWER_DP_INWC * _INWC_TO_PA, _BLOWER_INLET_C)
+    blower_motor_kw = _b["motor_kw"]
+    bhp, bprice = _frame_from_hp(blower_motor_kw * _HP_PER_KW, conn)
+
+    # ID FAN — hot flue gas 300 °C, 500 mmWC. Cold start draws ~2× power:
+    #   Option A = hot test-block motor (VFD + temp interlock);
+    #   Option B = cold-start-rated motor (density ratio T_hot/T_cold).
+    _i = _fan_shaft_kw(id_air, _IDFAN_DP_MMWC * _MMWC_TO_PA, _IDFAN_GAS_C)
+    _dens_ratio = (_IDFAN_GAS_C + 273.15) / (_IDFAN_COLD_C + 273.15)
+    _shaft_cold = _i["shaft_duty_kw"] * _dens_ratio
+    id_motor_kw_A = _i["motor_kw"]                        # VFD
+    id_motor_kw_B = _shaft_cold * (1 + _MOTOR_MARGIN)     # cold-rated
+    ihpA, ipriceA = _frame_from_hp(id_motor_kw_A * _HP_PER_KW, conn)
+    ihpB, ipriceB = _frame_from_hp(id_motor_kw_B * _HP_PER_KW, conn)
+
+    d.update(
+        # blower
+        blower_dp_inwc=_BLOWER_DP_INWC, blower_inlet_c=_BLOWER_INLET_C,
+        blower_q_act=_b["q_act_m3s"], blower_air_kw=_b["air_kw"],
+        blower_shaft_duty_kw=_b["shaft_duty_kw"], blower_shaft_tb_kw=_b["shaft_tb_kw"],
+        blower_motor_kw=blower_motor_kw, blower_hp=bhp, blower_price=bprice,
+        # id fan (Option A drives the BOM line; B shown alongside)
+        idfan_dp_mmwc=_IDFAN_DP_MMWC, idfan_gas_c=_IDFAN_GAS_C, idfan_cold_c=_IDFAN_COLD_C,
+        idfan_q_act=_i["q_act_m3s"], idfan_air_kw=_i["air_kw"],
+        idfan_shaft_hot_kw=_i["shaft_duty_kw"], idfan_shaft_tb_kw=_i["shaft_tb_kw"],
+        idfan_shaft_cold_kw=_shaft_cold, idfan_dens_ratio=_dens_ratio,
+        id_motor_kw_A=id_motor_kw_A, id_hp_A=ihpA, id_price_A=ipriceA,
+        id_motor_kw_B=id_motor_kw_B, id_hp_B=ihpB, id_price_B=ipriceB,
+        # BOM uses Option A (VFD) as the ID-fan line
+        id_hp=ihpA, id_price=ipriceA)
     return d
 
 
@@ -743,29 +818,27 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             scale=not is_oil)   # oil regen: one damper for the whole system
     add("PRESSURE CONTROL", "Manual Damper", "",                         1, flat['manual_damper'], scale=False)
 
-    # ── 7. BLOWER + ID FAN — sized from the air flows ─────────────────────────
-    # Oil is sized by mass→Nm³, gas by volume. We only have BLOWER catalogue
-    # prices (<=60 HP) and no separate ID-fan prices yet, so the blower takes its
-    # own catalogue price (else "??") and the ID fan MIRRORS the blower's price
-    # when it is also <=60 HP (else "??"). See compute_fan_flows for the math.
+    # ── 7. BLOWER + ID FAN — rigorous sizing (Blower_ID_Fan_Sizing sheet) ──────
+    # Shaft power = actual-volume-flow × ΔP / efficiency → required motor kW →
+    # nearest ENCON HP frame, priced live from the blower catalogue ("??" above
+    # 60 HP). ID fan uses Option A (VFD + temp interlock); Option B (cold-rated)
+    # is shown in the costing sheet's worked example.
     _fan = compute_fan_flows(kw, num_pairs, fuel, _conn)
-    _bhp2, _bprice = _fan['blower_hp'], _fan['blower_price']
-    _ihp2, _iprice = _fan['id_hp'],     _fan['id_price']
-    _b_note = '' if _bprice is not None else ' — price ?? (no blower catalogue price above 60 HP)'
-    _i_note = (' — price mirrored from blower (ID-fan prices not yet available)'
-               if _iprice is not None
-               else ' — price ?? (no blower catalogue price above 60 HP)')
+    _bhp2, _bprice, _bkw = _fan['blower_hp'], _fan['blower_price'], _fan['blower_motor_kw']
+    _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_A']
+    _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price above 60 HP)'
+    _i_note = '' if _iprice is not None else ' — price ?? (no catalogue price above 60 HP)'
     add("BLOWER", "Combustion Blower (40\" WG)",
-        f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP, with motor{_b_note}',
+        f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP ({_bkw:.1f} kW motor), with motor{_b_note}',
         1,   _bprice if _bprice is not None else 0, scale=False)   # one blower for the whole system
     # ID fan sits directly under the blower (both are fans, same section).
     add("BLOWER", "ID Fan",
-        f'{_ihp2:g} HP, 36" WG{_i_note}', 1,
+        f'{_ihp2:g}HP ({_ikw:.1f} kW motor), VFD + temp interlock{_i_note}', 1,
         _iprice if _iprice is not None else 0, scale=False)
     # Optional standby blower (1 working + 1 standby) — same price as the blower.
     if standby_blower:
         add("BLOWER", "Standby Blower (40\" WG)",
-            f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP, with motor (1 standby){_b_note}',
+            f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP ({_bkw:.1f} kW), with motor (1 standby){_b_note}',
             1, _bprice if _bprice is not None else 0, scale=False)
     # Optional VFD for the blower motor — priced at the blower-motor cost.
     if vfd:
