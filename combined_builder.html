@@ -380,9 +380,11 @@ function rmBom(id,j){ const e=eqById(id); e.bom.splice(j,1); renderBom(e); recal
 function setBom(id,j,k,v){ const e=eqById(id); e.bom[j][k]=(k==='item')?v:(+v||0); if(k!=='item') renderBom(e); recalc(); }
 
 /* ── Catalog / pump auto-fill (inline selectors, like the individual offers) ── */
-function _applyCatalog(e, name, specs, price, bomItem) {
+function _applyCatalog(e, name, specs, price, bomItem, spec_rows) {
   if (!e.nameCustom) e.name = name;       // respect a user-typed name
   e.specs = specs; e.unit_price = +price || 0; e.configured = true;
+  // Catalog picks get spec rows too, so they render a per-equipment tech table.
+  e.spec_rows = (spec_rows || []).filter(s => s && s.label && (s.value ?? '') !== '');
   e.bom = [{ item: bomItem, qty: +e.qty || 1, unit_price: +price || 0 }];
   const pr = document.getElementById('price-' + e.id); if (pr) pr.value = e.unit_price;
   const st = document.getElementById('status-' + e.id); if (st) st.innerHTML = statusText(e);
@@ -429,13 +431,19 @@ function onBurnerModel(id, model) {
   const g = _burnerCat[+e.sel_group], it = g && g.items.find(x => x.model === model); if (!it) return;
   e.sel_model = model;
   const cap = it.capacity_kw || it.capacity;   // burner capacity in kW for the combined offer
-  _applyCatalog(e, `${g.label||g.fuel} – ${it.model}`, `${g.fuel||''}${cap?' · '+cap:''}`, it.price, `Burner ${it.model}`);
+  _applyCatalog(e, `${g.label||g.fuel} – ${it.model}`, `${g.fuel||''}${cap?' · '+cap:''}`, it.price, `Burner ${it.model}`,
+    [{label:'Model', value:it.model},
+     {label:'Fuel', value:g.fuel||g.label||''}].concat(cap ? [{label:'Burner Capacity', value:cap+' kW'}] : []));
 }
 function onBlowerSel(id, model) {
   const e = eqById(id); if (!e || !_blowerCat) return;
   const it = _blowerCat.find(x => x.model === model); if (!it) return;
   e.sel_model = model;
-  _applyCatalog(e, `Centrifugal Blower – ${it.model}`, `${it.hp} HP · ${it.airflow} Nm³/hr · ${it.pressure}`, it.price, `Blower ${it.model}`);
+  _applyCatalog(e, `Centrifugal Blower – ${it.model}`, `${it.hp} HP · ${it.airflow} Nm³/hr · ${it.pressure}`, it.price, `Blower ${it.model}`,
+    [{label:'Model', value:it.model},
+     {label:'Rated Power', value:it.hp+' HP'},
+     {label:'Air Flow', value:it.airflow+' Nm³/hr'},
+     {label:'Static Pressure', value:it.pressure}]);
 }
 
 /* ── Embedded form → captured BOM ── */
