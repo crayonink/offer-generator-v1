@@ -1030,15 +1030,16 @@
     const nPct  = parseFloat(document.getElementById('negotiation-pct')?.value) || 0;
     const trans = parseFloat(document.getElementById('transport-amt')?.value)   || 0;
     const pf = grand * pfPct / 100, dz = grand * dPct / 100, ng = grand * nPct / 100;
-    // Round Final Total to the nearest ₹1,000 (commercial cleanliness), as Vertical does.
-    const final = Math.round((grand + pf + dz - ng + trans) / 1000) * 1000;
+    // Round Final Total to the nearest ₹1,000 (commercial cleanliness). Negotiation
+    // is ADDED (same as the other offers), not subtracted.
+    const final = Math.round((grand + pf + dz + ng + trans) / 1000) * 1000;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('cs-cost',      fmt(s.total_cost));
     set('cs-markup',    s.markup.toFixed(2) + '×');
     set('cs-grand',     fmtCur(grand));
     set('cs-pf',        fmtCur(pf));
     set('cs-design',    fmtCur(dz));
-    set('cs-neg',       '− ' + fmtCur(ng));
+    set('cs-neg',       '+ ' + fmtCur(ng));
     set('cs-transport', fmtCur(trans));
     set('cs-final',     fmtCur(final));
     set('offer-final',  fmtCur(final));

@@ -7627,11 +7627,16 @@ def generate_combined_offer(req: CombinedOfferRequest):
         from engine.quote_writer import _supervision_rates
         _sup_mech, _sup_plc = _supervision_rates()
 
+        # Cover shows the equipment as a numbered list (1, 2, 3, …) instead of a
+        # generic "Combined Equipment Offer" label.
+        _eq_names = [(eq.name or "").strip() for eq in req.equipments if (eq.name or "").strip()]
+        _eq_listing = "\n".join(f"{i}. {nm}" for i, nm in enumerate(_eq_names, 1)) or "Combined Equipment Offer"
+
         ctx = {
             "project_name":      req.project_name or "Combined Equipment Offer",
             "subject":           cust.subject or "Offer for Combined Equipment",
             "application":       "Combined Equipment",
-            "equipment_name":    "Combined Equipment Offer",
+            "equipment_name":    _eq_listing,
             "company_name":      cust.company or "",
             "company_address":   company_address,
             "email":             cust.email or "",
