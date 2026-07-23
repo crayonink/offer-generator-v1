@@ -7712,6 +7712,25 @@ def generate_combined_offer(req: CombinedOfferRequest):
                  "subject": cust.subject or "", "address": "", "poc_name": ""})
         except Exception as _scope_err:
             print(f"WARN: narrative scope build failed, keeping grouped scope: {_scope_err}")
+        # USD offers: relabel the price-schedule columns from (INR) to (USD) so
+        # the header matches the '$' figures.
+        if _usd:
+            try:
+                from docx import Document as _Dh
+                _dh = _Dh(docx_path)
+                for _t in _dh.tables:
+                    hdr = _t.rows[0].cells if _t.rows else []
+                    if any(("Unit Price" in c.text or "Total Price" in c.text) for c in hdr):
+                        for c in hdr:
+                            if "(INR)" not in c.text:
+                                continue
+                            for pr in c.paragraphs:
+                                for rn in pr.runs:
+                                    if "(INR)" in (rn.text or ""):
+                                        rn.text = rn.text.replace("(INR)", "(USD)")
+                _dh.save(docx_path)
+            except Exception as _cur_err:
+                print(f"WARN: currency header relabel failed: {_cur_err}")
 
         pdf_name = docx_name.replace(".docx", ".pdf")
         pdf_ok = _docx_to_pdf(docx_path, os.path.join(QUOTES_FOLDER, pdf_name))
