@@ -540,8 +540,8 @@ def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None):
         idfan_shaft_cold_kw=_shaft_cold, idfan_dens_ratio=_dens_ratio,
         id_motor_kw_A=id_motor_kw_A, id_hp_A=ihpA, id_price_A=ipriceA,
         id_motor_kw_B=id_motor_kw_B, id_hp_B=ihpB, id_price_B=ipriceB,
-        # BOM uses Option A (VFD) as the ID-fan line
-        id_hp=ihpA, id_price=ipriceA)
+        # BOM uses Option B (cold-start rated) as the ID-fan line
+        id_hp=ihpB, id_price=ipriceB)
     return d
 
 
@@ -821,11 +821,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 7. BLOWER + ID FAN — rigorous sizing (Blower_ID_Fan_Sizing sheet) ──────
     # Shaft power = actual-volume-flow × ΔP / efficiency → required motor kW →
     # nearest ENCON HP frame, priced live from the blower catalogue ("??" above
-    # 60 HP). ID fan uses Option A (VFD + temp interlock); Option B (cold-rated)
-    # is shown in the costing sheet's worked example.
+    # 60 HP). ID fan BOM uses Option B (cold-start rated); Option A (VFD + temp
+    # interlock) is shown alongside in the costing sheet's worked example.
     _fan = compute_fan_flows(kw, num_pairs, fuel, _conn)
     _bhp2, _bprice, _bkw = _fan['blower_hp'], _fan['blower_price'], _fan['blower_motor_kw']
-    _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_A']
+    _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_B']
     _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price above 60 HP)'
     _i_note = '' if _iprice is not None else ' — price ?? (no catalogue price above 60 HP)'
     add("BLOWER", "Combustion Blower (40\" WG)",
@@ -833,7 +833,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         1,   _bprice if _bprice is not None else 0, scale=False)   # one blower for the whole system
     # ID fan sits directly under the blower (both are fans, same section).
     add("BLOWER", "ID Fan",
-        f'{_ihp2:g}HP ({_ikw:.1f} kW motor), VFD + temp interlock{_i_note}', 1,
+        f'{_ihp2:g}HP ({_ikw:.1f} kW motor), cold-start rated{_i_note}', 1,
         _iprice if _iprice is not None else 0, scale=False)
     # Optional standby blower (1 working + 1 standby) — same price as the blower.
     if standby_blower:
