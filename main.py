@@ -8456,7 +8456,7 @@ def _regen_basis(item, spec):
         ("Flexible Hose Pipe",        "Pricelist → Flexible Hose Pipe (Oil Line) 25 NB (BENGAL)"),
         ("Paperless Recorder",        "Pricelist → Paperless Recorder (EUROTHERM)"),
         ("Heating & Pumping Unit",    "HPU calculator → 9 KW (HPD-9, material cost × markup)"),
-        ("ID Fan",                    "Pricelist → ID Fan 15 HP (ENCON)"),
+        ("ID Fan",                    "Blower catalogue at ID-fan HP (dedicated ID-fan prices pending)"),
         ("Burner with Regenerator", "Regen-with-Burner tab → Burner portion (burner KW) + Regen portion (regen KW)"),
         ("Combustion Blower",        "Internal costing → blower with motor (Alone×1.8 + Motor×1.5)"),
         ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),
