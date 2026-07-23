@@ -7244,6 +7244,64 @@ def _build_spec_comparison_table(docx_path, columns, rows):
     doc.save(docx_path)
 
 
+def _build_per_equipment_spec_tables(docx_path, equipments):
+    """Insert a full 'Technical Data' table per equipment (its spec_rows as
+    Parameter | Specification) just before the side-by-side comparison table —
+    matching the reference offer's per-equipment tech-data tables. In addition
+    to, not instead of, the comparison. Safe: any failure is a no-op."""
+    from docx import Document as _Docx
+    doc = _Docx(docx_path)
+    anchor = None
+    for t in doc.tables:
+        if t.rows and t.rows[0].cells and t.rows[0].cells[0].text.strip().lower() == "parameter":
+            anchor = t
+            break
+    if anchor is None:
+        return
+    style = anchor.style
+    # Grab a real heading STYLE OBJECT from an existing heading — name lookups
+    # (add_paragraph(style="Heading 3")) are unreliable on this template and
+    # leave orphan paragraphs when they raise.
+    head_style = None
+    for _p in doc.paragraphs:
+        _sn = (_p.style.name if _p.style else "") or ""
+        if _sn in ("Heading 3", "Heading 2") and (_p.text or "").strip():
+            head_style = _p.style
+            break
+    for eq in equipments:
+        rows = [(str(s.get("label", "")).strip(), str(s.get("value", "")).strip())
+                for s in (getattr(eq, "spec_rows", None) or []) if (s or {}).get("label")]
+        if not rows:
+            continue
+        h = doc.add_paragraph()
+        _hr = h.add_run(f"Technical Data — {eq.name}")
+        _hr.bold = True
+        if head_style is not None:
+            try:
+                h.style = head_style
+            except Exception:
+                pass
+        tbl = doc.add_table(rows=1 + len(rows), cols=2)
+        try:
+            tbl.style = style
+        except Exception:
+            pass
+        hdr = tbl.rows[0].cells
+        hdr[0].text = "Parameter"
+        hdr[1].text = "Specification"
+        for c in hdr:
+            for p in c.paragraphs:
+                for r in p.runs:
+                    r.bold = True
+        for i, (lbl, val) in enumerate(rows, 1):
+            tbl.rows[i].cells[0].text = lbl
+            tbl.rows[i].cells[1].text = val
+        # Relocate the heading + table to just before the comparison table.
+        anchor._tbl.addprevious(h._p)
+        anchor._tbl.addprevious(tbl._tbl)
+    doc.save(docx_path)
+
+
 def _build_narrative_scope_combined(combined_path, equipments, cust_base):
     """Replace the grouped Scope-of-Supply table in the combined offer with the
     full narrative scope of each equipment, reusing the standalone renderer
@@ -7634,6 +7692,11 @@ def generate_combined_offer(req: CombinedOfferRequest):
         tpl.save(docx_path)
         # Build the side-by-side technical-spec table (one column per equipment).
         _build_spec_comparison_table(docx_path, spec_columns, spec_rows)
+        # Add a full Technical Data table per equipment (before the comparison).
+        try:
+            _build_per_equipment_spec_tables(docx_path, req.equipments)
+        except Exception as _pe_err:
+            print(f"WARN: per-equipment spec tables failed: {_pe_err}")
         # Replace the grouped Scope of Supply with the full narrative scope per
         # equipment (falls back to the grouped scope if anything goes wrong).
         try:
