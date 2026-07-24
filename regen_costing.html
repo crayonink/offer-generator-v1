@@ -663,6 +663,7 @@ This will lead to a quicker payback.</textarea></td></tr>
     </div>
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(3)">← Back to BOM</button>
+      <button class="btn-back" type="button" onclick="clearStickyForm()" title="Forget saved inputs and start a fresh offer" style="margin-left:auto;">↺ Clear saved data</button>
     </div>
   </div>
 
@@ -726,6 +727,66 @@ This will lead to a quicker payback.</textarea></td></tr>
   function _activateKw(containerId, kw) {
     document.getElementById(containerId).querySelectorAll('.mat-btn').forEach(b =>
       b.classList.toggle('active', parseInt(b.dataset.kw) === kw));
+  }
+
+  // ── Sticky form: remember inputs + selections across reloads ───────────────
+  // Everything the user types/picks is saved to localStorage and restored on
+  // the next visit, so a page refresh (or coming back later) never loses data.
+  // The enquiry ref is excluded so it always stays freshly auto-generated.
+  const STICKY_KEY = 'regenFormV1';
+  const STICKY_SKIP = new Set(['ref_no']);
+  function _stickyFields() {
+    return Array.from(document.querySelectorAll('input, select, textarea'))
+      .filter(el => el.id && !STICKY_SKIP.has(el.id) && el.type !== 'file');
+  }
+  let _saveTimer = null;
+  function saveForm() {
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => {
+      try {
+        const data = {};
+        _stickyFields().forEach(el => {
+          data[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
+        });
+        data.__sel = { kw: selectedKw, regenKw: selectedRegenKw,
+                       fuel: selectedFuel, currency: selectedCurrency };
+        localStorage.setItem(STICKY_KEY, JSON.stringify(data));
+      } catch (e) { /* storage full / disabled — ignore */ }
+    }, 250);
+  }
+  function restoreForm() {
+    let data = null;
+    try { data = JSON.parse(localStorage.getItem(STICKY_KEY) || 'null'); } catch (e) {}
+    if (!data) return false;
+    _stickyFields().forEach(el => {
+      if (!(el.id in data)) return;
+      if (el.type === 'checkbox') el.checked = !!data[el.id];
+      else el.value = data[el.id];
+    });
+    const s = data.__sel || {};
+    if (s.fuel) {
+      selectedFuel = s.fuel;
+      const grp = document.getElementById('fuelBtns');
+      if (grp) {
+        grp.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+        const fb = Array.from(grp.querySelectorAll('.mat-btn'))
+          .find(b => (b.getAttribute('onclick') || '').indexOf("'" + s.fuel + "'") !== -1);
+        if (fb) fb.classList.add('active');
+      }
+    }
+    if (s.kw)      { selectedKw = s.kw;           _activateKw('burnerSizeBtns', s.kw); }
+    if (s.regenKw) { selectedRegenKw = s.regenKw; _activateKw('regenSizeBtns', s.regenKw); }
+    applyOilSizeCap();
+    if (s.currency) {
+      const cs = document.getElementById('currency-sel');
+      if (cs) { cs.value = s.currency; applyCurrency(); }
+    }
+    return true;
+  }
+  function clearStickyForm() {
+    if (!confirm('Clear all saved form data and start a fresh offer?')) return;
+    try { localStorage.removeItem(STICKY_KEY); } catch (e) {}
+    location.reload();
   }
 
   // ── Format currency ──────────────────────────────────────────────────────
@@ -810,8 +871,11 @@ This will lead to a quicker payback.</textarea></td></tr>
     const ref = document.getElementById('ref_no');
     if (ref) ref.addEventListener('input', () => { _refEdited = true; });
     prefillCustomer();
+    restoreForm();       // saved values win over the test prefill
     fetchAutoRefSeq();
     applyOilSizeCap();   // reflect the default fuel (Natural Gas) on the size buttons
+    // Persist on any edit (typing, select change, or size/fuel/currency click).
+    ['input', 'change', 'click'].forEach(evt => document.addEventListener(evt, saveForm));
   });
 
   // ── Run calculation ──────────────────────────────────────────────────────
