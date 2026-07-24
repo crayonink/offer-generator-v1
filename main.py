@@ -229,7 +229,31 @@ def whoami(request: Request):
 
 VALID_TABLES = None
 
-COUNTER_FILE = os.path.join(BASE_DIR, "quote_counter.txt")
+# Quote-sequence counter. Like the database, the in-repo quote_counter.txt is
+# reset by every Railway redeploy (ephemeral filesystem), which makes the auto
+# sequence jump backwards. When a persistent volume is configured (VLPH_DB_PATH),
+# keep the counter on that same volume so it survives redeploys and stays
+# monotonic; the committed file seeds it once on first run. No volume = in-repo
+# file, as before.
+def _resolve_counter_file():
+    committed = os.path.join(BASE_DIR, "quote_counter.txt")
+    vol = (os.environ.get("VLPH_DB_PATH") or "").strip()
+    if not vol:
+        return committed
+    try:
+        vol_dir = os.path.dirname(vol) or "."
+        os.makedirs(vol_dir, exist_ok=True)
+        vol_counter = os.path.join(vol_dir, "quote_counter.txt")
+        # Seed the volume counter from the committed file on first run only.
+        if not os.path.exists(vol_counter) and os.path.exists(committed):
+            shutil.copy2(committed, vol_counter)
+        print(f"[counter] using persistent volume file: {vol_counter}")
+        return vol_counter
+    except Exception as e:
+        print(f"[counter] volume init failed ({e}); using in-repo quote_counter.txt")
+        return committed
+
+COUNTER_FILE = _resolve_counter_file()
 
 def next_quote_seq():
     if os.path.exists(COUNTER_FILE):
