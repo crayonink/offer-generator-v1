@@ -154,7 +154,7 @@ REGEN_MODELS = {
 
 MODEL_KWS = sorted(REGEN_MODELS.keys())  # [500, 1000, 1500, 2000, 2500, 3000, 4500, 6000]
 
-# PLC cost by num_pairs (Siemens S7-1200 for 1-2 pairs, S7-1500 for 3+)
+# PLC cost by num_pairs (Siemens S7-1500 across the range)
 _PLC_COST = {1: 300000, 2: 300000, 3: 600000, 4: 750000, 5: 800000, 6: 900000}
 
 # ── Flat line-item prices (same across all KW models) ────────────────────────
@@ -851,7 +851,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 8. CONTROLS ───────────────────────────────────────────────────────────
     plc_cost = plc_map.get(num_pairs, plc_map.get(6, 900000))
     add("CONTROLS", "PLC with HMI",
-        "Siemens S7-1200/1500 with touch panel",  1,                     plc_cost, scale=False)
+        "Siemens S7-1500 with touch panel",  1,                     plc_cost, scale=False)
     add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'], scale=False)
     if is_oil:
         # Oil offers add a paperless recorder for the oil flow/temp channels.

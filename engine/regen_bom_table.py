@@ -105,7 +105,7 @@ def fill_temp_control(doc_path, df):
                 return int(round(float(r["QTY"]))), r
         return None, None
 
-    # PLC model from its BOM spec (e.g. "Siemens S7-1200/1500 with touch panel")
+    # PLC model from its BOM spec (e.g. "Siemens S7-1500 with touch panel")
     _pq, _pr = _lookup("CONTROLS", "plc with hmi")
     plc_model = ""
     if _pr is not None:

@@ -1143,6 +1143,8 @@ This will lead to a quicker payback.</textarea></td></tr>
         regen_kw:    c.model_kw,
         regen_pairs: c.num_pairs,
         regen_fuel:  c.fuel || 'Natural Gas',
+        standby_blower: document.getElementById('standby_blower').checked,
+        vfd:            document.getElementById('vfd').checked,
         tnc_regen_material_custody: val('tnc_regen_material_custody'),
         tnc_regen_site_facilities:  val('tnc_regen_site_facilities'),
         tnc_regen_delivery:         val('tnc_regen_delivery'),
