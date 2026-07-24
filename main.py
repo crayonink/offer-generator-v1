@@ -8019,7 +8019,7 @@ async def generate_quote(req: QuoteRequest):
             _gtf = _re_gt.sub(r"\s*GAS\s*$", "", _fword, flags=_re_gt.I).strip() or _fword
             _qtyw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
             # Gas-train supply pressure: NG at 2.1 bar; all other gas fuels at 1000 mm.
-            _press_clause = ("Pressure at TOP 2.1 bar and minimum pressure as 1 bar is considered."
+            _press_clause = ("Pressure at top 2.1 bar."
                              if _fword == "NG"
                              else "Pressure at 1000 mm is considered.")
             _ec.update({
