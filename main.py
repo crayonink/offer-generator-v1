@@ -7881,10 +7881,14 @@ async def generate_quote(req: QuoteRequest):
         from engine.pdf_writer import generate_quote_pdf
 
         seq = next_quote_seq()
-        # Auto-generate enquiry reference: ET{YY}-{seq}-{initials}.
-        # Overrides whatever the form sent so the reference always follows
-        # the canonical ENCON pattern (ET26-001-JR for FY2026/Jyotirmoy Rabha).
-        auto_ref = build_enquiry_ref(seq, req.technical_person or "", req.location or "")
+        # Enquiry reference: honor the ref the user set/edited on the form
+        # ("auto — editable"); only fall back to the auto-generated ENCON pattern
+        # when the form left it blank. The auto counter still advances so a blank
+        # field always yields a fresh number.
+        # The regen/VLPH forms submit the edited value as `ref_no`; older
+        # payloads may use `enquiry_ref`. Accept either.
+        _form_ref = ((req.ref_no or "").strip() or (req.enquiry_ref or "").strip())
+        auto_ref = _form_ref or build_enquiry_ref(seq, req.technical_person or "", req.location or "")
         form_data = {
             "quote_seq": seq,
             "customer": {
