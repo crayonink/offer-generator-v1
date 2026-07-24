@@ -619,53 +619,37 @@
         #tnc-table select{appearance:auto;cursor:pointer;}
       </style>
       <div class="card-title" style="margin-top:4px;">Terms &amp; Conditions</div>
+      <div class="hint" style="margin:-4px 0 10px;color:var(--muted);font-size:.85rem;">
+        These are the exact rows printed in the regenerative-burner offer's Terms &amp; Conditions table.
+        Edit any field and it flows straight into the generated document.
+      </div>
       <table id="tnc-table">
         <tbody>
-          <tr><td class="tnc-lbl">Prices</td>
-              <td><select id="tnc_prices">
-                <option value="EX Bhagola (Ex-Works)" selected>EX Bhagola (Ex-Works)</option>
-                <option value="FOR (Free on Road / Free on Rail)">FOR (Free on Road / Free on Rail)</option>
-                <option value="FOB (Free On Board)">FOB (Free On Board)</option>
-              </select></td></tr>
-          <tr><td class="tnc-lbl">Delivery</td>
-              <td><textarea id="tnc_delivery" rows="2">10 – 12 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later.</textarea></td></tr>
-          <tr><td class="tnc-lbl">GST</td>
-              <td><select id="tnc_gst">
-                <option value="18% extra." selected>18% extra.</option>
-                <option value="28% extra.">28% extra.</option>
-                <option value="12% extra.">12% extra.</option>
-                <option value="5% extra.">5% extra.</option>
-                <option value="Inclusive">Inclusive</option>
-                <option value="Exempt">Exempt</option>
-              </select></td></tr>
-          <tr><td class="tnc-lbl">HSN Code</td>
-              <td><input id="tnc_hsn_code" type="text" value="84541000"/></td></tr>
-          <tr><td class="tnc-lbl">PAN / GST No.</td>
-              <td><input id="tnc_pan_gst" type="text" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
+          <tr><td class="tnc-lbl">Material Custody</td>
+              <td><textarea id="tnc_regen_material_custody" rows="2">All material supplied by us will be received by your store for safe custody and storage. The material will be issued to us as and when required for installation.</textarea></td></tr>
+          <tr><td class="tnc-lbl">Site Facilities</td>
+              <td><textarea id="tnc_regen_site_facilities" rows="2">Electricity and water to be provided free of charge for the erection work.
+Crane facilities available in your works to be provided free of charge.</textarea></td></tr>
+          <tr><td class="tnc-lbl">Delivery &amp; Erection Schedule</td>
+              <td><textarea id="tnc_regen_delivery" rows="5">Drawings for the furnace will be prepared and submitted within 5 weeks from the date of your confirmed order for the design work.
+After approval of the drawings, items in our scope of supply will be delivered within 15 weeks from the date of drawing approval.
+The erection schedule will be mutually worked out based on your scope of erection work.
+We shall not be responsible for any delay due to non-availability of fronts, delay in issue of work permits, safety clearances and other clearances that fall in your purview.</textarea></td></tr>
+          <tr><td class="tnc-lbl">Transportation</td>
+              <td><textarea id="tnc_regen_transportation" rows="2">From our factory to your work site — extra at actuals and chargeable to you.</textarea></td></tr>
+          <tr><td class="tnc-lbl">Taxes &amp; Duties</td>
+              <td><input id="tnc_regen_taxes" type="text" value="Extra at actuals."/></td></tr>
           <tr><td class="tnc-lbl">Terms of Payment</td>
-              <td><textarea id="tnc_payment_terms" rows="2">30% advance with the purchase order
-70% against proforma invoice prior to dispatch</textarea></td></tr>
+              <td><textarea id="tnc_regen_payment" rows="2">30% along with the purchase order.
+70% against inspection of material at our works.</textarea></td></tr>
           <tr><td class="tnc-lbl">Packing &amp; Forwarding</td>
-              <td><select id="tnc_packing_forwarding">
-                <option value="4% and 2% respectively." selected>4% and 2% respectively.</option>
-                <option value="In ENCON's scope.">In ENCON's scope.</option>
-              </select></td></tr>
-          <tr><td class="tnc-lbl">Freight Charges</td>
-              <td><select id="tnc_freight">
-                <option value="In client's scope." selected>In client's scope.</option>
-                <option value="In ENCON's scope.">In ENCON's scope.</option>
-              </select></td></tr>
-          <tr><td class="tnc-lbl">Transit Insurance</td>
-              <td><select id="tnc_transit_insurance">
-                <option value="To be arranged by the client." selected>To be arranged by the client.</option>
-                <option value="In ENCON's scope.">In ENCON's scope.</option>
-              </select></td></tr>
-          <tr><td class="tnc-lbl">Validity</td>
-              <td><input id="tnc_validity" type="text" value="45 days from the date of our offer."/></td></tr>
-          <tr><td class="tnc-lbl">Inspection</td>
-              <td><textarea id="tnc_inspection" rows="2">If required, materials can be inspected at our works before dispatch, at the client's cost and with prior intimation.</textarea></td></tr>
-          <tr><td class="tnc-lbl">Guarantee</td>
-              <td><textarea id="tnc_guarantee" rows="2">Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier — against any manufacturing defects or poor workmanship.</textarea></td></tr>
+              <td><input id="tnc_regen_packing" type="text" value="4% of the order value, charged extra."/></td></tr>
+          <tr><td class="tnc-lbl">Warranty / Guarantee</td>
+              <td><textarea id="tnc_regen_warranty" rows="2">18 months from the date of material supplied (any manufacturing defect) or 12 months from date of commissioning, whichever is earlier.</textarea></td></tr>
+          <tr><td class="tnc-lbl">Note</td>
+              <td><textarea id="tnc_regen_note" rows="3">There will be a reduction in dross formation.
+Savings are calculated assuming a recuperator preheating combustion air to 350 °C.
+This will lead to a quicker payback.</textarea></td></tr>
         </tbody>
       </table>
 
@@ -1152,25 +1136,23 @@
       currency:        selectedCurrency,
       fx_rate:         (selectedCurrency === 'USD' ? (fxRate || 0) : 0),
       valid_days: 30,
-      // Regen body template vars (backend enriches into fuel_word/qty/price)
+      // Regen body template vars (backend enriches into fuel_word/qty/price).
+      // The regen Terms & Conditions rows ride along in extra_context so the
+      // backend can drop them straight into the offer's T&C table.
       extra_context: {
         regen_kw:    c.model_kw,
         regen_pairs: c.num_pairs,
         regen_fuel:  c.fuel || 'Natural Gas',
+        tnc_regen_material_custody: val('tnc_regen_material_custody'),
+        tnc_regen_site_facilities:  val('tnc_regen_site_facilities'),
+        tnc_regen_delivery:         val('tnc_regen_delivery'),
+        tnc_regen_transportation:   val('tnc_regen_transportation'),
+        tnc_regen_taxes:            val('tnc_regen_taxes'),
+        tnc_regen_payment:          val('tnc_regen_payment'),
+        tnc_regen_packing:          val('tnc_regen_packing'),
+        tnc_regen_warranty:         val('tnc_regen_warranty'),
+        tnc_regen_note:             val('tnc_regen_note'),
       },
-      // Annexure IV — Terms & Conditions
-      tnc_prices:             val('tnc_prices'),
-      tnc_delivery:           val('tnc_delivery'),
-      tnc_gst:                val('tnc_gst'),
-      tnc_hsn_code:           val('tnc_hsn_code'),
-      tnc_pan_gst:            val('tnc_pan_gst'),
-      tnc_payment_terms:      val('tnc_payment_terms'),
-      tnc_packing_forwarding: val('tnc_packing_forwarding'),
-      tnc_freight:            val('tnc_freight'),
-      tnc_transit_insurance:  val('tnc_transit_insurance'),
-      tnc_validity:           val('tnc_validity'),
-      tnc_inspection:         val('tnc_inspection'),
-      tnc_guarantee:          val('tnc_guarantee'),
     };
 
     try {

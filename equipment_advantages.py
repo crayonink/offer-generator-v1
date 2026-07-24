@@ -124,6 +124,56 @@ def tnc_value(key: str, provided) -> str:
     return provided if (provided or "").strip() else STANDARD_TNC.get(key, "")
 
 
+# Regenerative-burner offers carry a different Terms & Conditions layout (a
+# 9-row site/erection-oriented table, not the 12-field equipment set). These
+# defaults match the Regen_Offer_Template.docx wording and fill in whenever the
+# regen form leaves a field blank. Multi-line values use "\n" (docxtpl renders
+# each as a line break).
+REGEN_STANDARD_TNC = {
+    "tnc_regen_material_custody":
+        "All material supplied by us will be received by your store for safe "
+        "custody and storage. The material will be issued to us as and when "
+        "required for installation.",
+    "tnc_regen_site_facilities":
+        "Electricity and water to be provided free of charge for the erection work.\n"
+        "Crane facilities available in your works to be provided free of charge.",
+    "tnc_regen_delivery":
+        "Drawings for the furnace will be prepared and submitted within 5 weeks "
+        "from the date of your confirmed order for the design work.\n"
+        "After approval of the drawings, items in our scope of supply will be "
+        "delivered within 15 weeks from the date of drawing approval.\n"
+        "The erection schedule will be mutually worked out based on your scope "
+        "of erection work.\n"
+        "We shall not be responsible for any delay due to non-availability of "
+        "fronts, delay in issue of work permits, safety clearances and other "
+        "clearances that fall in your purview.",
+    "tnc_regen_transportation":
+        "From our factory to your work site — extra at actuals and chargeable to you.",
+    "tnc_regen_taxes":
+        "Extra at actuals.",
+    "tnc_regen_payment":
+        "30% along with the purchase order.\n"
+        "70% against inspection of material at our works.",
+    "tnc_regen_packing":
+        "4% of the order value, charged extra.",
+    "tnc_regen_warranty":
+        "18 months from the date of material supplied (any manufacturing defect) "
+        "or 12 months from date of commissioning, whichever is earlier.",
+    "tnc_regen_note":
+        "There will be a reduction in dross formation.\n"
+        "Savings are calculated assuming a recuperator preheating combustion air "
+        "to 350 °C.\n"
+        "This will lead to a quicker payback.",
+}
+
+REGEN_TNC_KEYS = list(REGEN_STANDARD_TNC.keys())
+
+
+def regen_tnc_value(key: str, provided) -> str:
+    """The provided regen T&C value, or the regen default if blank."""
+    return provided if (provided or "").strip() else REGEN_STANDARD_TNC.get(key, "")
+
+
 def build_advantages_ctx(kind: str) -> dict:
     """adv_* context for the offer template, for the given equipment kind."""
     k = (kind or "").lower()

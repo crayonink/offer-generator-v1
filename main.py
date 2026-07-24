@@ -8032,6 +8032,12 @@ async def generate_quote(req: QuoteRequest):
                 "price_inr": _format_inr(_price),
                 "price_in_words": "INR " + amount_in_words_indian(_price) + " only.",
             })
+            # Regen Terms & Conditions: form values (sent in extra_context)
+            # override the regen defaults; blanks fall back to the standard
+            # regen wording so the T&C table is never empty.
+            from equipment_advantages import REGEN_TNC_KEYS, regen_tnc_value
+            for _tk in REGEN_TNC_KEYS:
+                _ec[_tk] = regen_tnc_value(_tk, _ec.get(_tk))
             quote_data.setdefault("customer", {})["extra_context"] = _ec
         generate_quote_docx(quote_data, output_path, template_path=_regen_tpl)
         # Regen offers: build the MAKE LIST dynamically from the real BOM — only
