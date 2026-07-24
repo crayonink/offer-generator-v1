@@ -163,11 +163,6 @@ REGEN_STANDARD_TNC = {
     "tnc_regen_warranty":
         "18 months from the date of material supplied (any manufacturing defect) "
         "or 12 months from date of commissioning, whichever is earlier.",
-    "tnc_regen_note":
-        "There will be a reduction in dross formation.\n"
-        "Savings are calculated assuming a recuperator preheating combustion air "
-        "to 350 °C.\n"
-        "This will lead to a quicker payback.",
 }
 
 REGEN_TNC_KEYS = list(REGEN_STANDARD_TNC.keys())
