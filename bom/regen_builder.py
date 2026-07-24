@@ -698,8 +698,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             _bsize, _bcost = _bc(_conn, kw)
             if _bcost is not None:
                 _regen_portion = _REGEN_PORTION.get(regen_kw, 0)
-                _br_item = f"Burner with Regenerator ({_bsize})"
-                _br_spec = f"{_bsize} {_bdesc} + regenerator, complete"
+                _br_item = f"Burner with Regenerator ({kw} KW)"
+                _br_spec = f"{kw} KW {_bdesc} + regenerator, complete"
                 add("BURNER SET", _br_item, _br_spec, 2, _bcost + _regen_portion)
                 _burner_done = True
         except Exception:
