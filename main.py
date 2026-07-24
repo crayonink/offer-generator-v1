@@ -8060,6 +8060,33 @@ async def generate_quote(req: QuoteRequest):
                 "price_inr": _format_inr(_price),
                 "price_in_words": "INR " + amount_in_words_indian(_price) + " only.",
             })
+            # Technical-data summary table (rendered after Client Details):
+            # regen/burner kW, pairs, fuel, and the blower + ID-fan sizes from
+            # the rigorous fan sizing on the burner kW. burner kW = form model
+            # kW; regen kW = form regenerator kW (falls back to burner kW).
+            _burner_kw = _ec.get("tbl_burner_kw") or _rk
+            _regen_kw_disp = _ec.get("tbl_regen_kw") or _rk
+            _blsz = _idsz = ""
+            try:
+                import sqlite3 as _sq3
+                from bom.regen_builder import compute_fan_flows as _cff
+                _cc = _sq3.connect(DB_PATH)
+                try:
+                    _ff = _cff(float(_burner_kw), _rp, _rf, _cc)
+                    _blsz = f"{_ff['blower_hp']:g} HP"
+                    _idsz = f"{_ff['id_hp']:g} HP"
+                finally:
+                    _cc.close()
+            except Exception as _fe:
+                print(f"WARN: regen summary fan sizing failed: {_fe}")
+            _ec.update({
+                "tbl_regen_kw":    f"{_regen_kw_disp} kW" if _regen_kw_disp else "",
+                "tbl_burner_kw":   f"{_burner_kw} kW" if _burner_kw else "",
+                "tbl_pairs":       str(_rp),
+                "tbl_fuel":        _rf,
+                "tbl_blower_size": _blsz,
+                "tbl_idfan_size":  _idsz,
+            })
             # Regen Terms & Conditions: form values (sent in extra_context)
             # override the regen defaults; blanks fall back to the standard
             # regen wording so the T&C table is never empty.

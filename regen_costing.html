@@ -637,8 +637,12 @@ The erection schedule will be mutually worked out based on your scope of erectio
 We shall not be responsible for any delay due to non-availability of fronts, delay in issue of work permits, safety clearances and other clearances that fall in your purview.</textarea></td></tr>
           <tr><td class="tnc-lbl">Transportation</td>
               <td><textarea id="tnc_regen_transportation" rows="2">From our factory to your work site — extra at actuals and chargeable to you.</textarea></td></tr>
-          <tr><td class="tnc-lbl">Taxes &amp; Duties</td>
-              <td><input id="tnc_regen_taxes" type="text" value="Extra at actuals."/></td></tr>
+          <tr><td class="tnc-lbl">GST</td>
+              <td><input id="tnc_regen_gst" type="text" value="18% extra."/></td></tr>
+          <tr><td class="tnc-lbl">HSN Code</td>
+              <td><input id="tnc_regen_hsn" type="text" value="84541000"/></td></tr>
+          <tr><td class="tnc-lbl">PAN / GST No.</td>
+              <td><input id="tnc_regen_pan_gst" type="text" value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"/></td></tr>
           <tr><td class="tnc-lbl">Terms of Payment</td>
               <td><textarea id="tnc_regen_payment" rows="2">30% along with the purchase order.
 70% against inspection of material at our works.</textarea></td></tr>
@@ -1145,11 +1149,16 @@ This will lead to a quicker payback.</textarea></td></tr>
         regen_fuel:  c.fuel || 'Natural Gas',
         standby_blower: document.getElementById('standby_blower').checked,
         vfd:            document.getElementById('vfd').checked,
+        // Technical-data summary table values (burner vs regenerator kW)
+        tbl_burner_kw: c.model_kw,
+        tbl_regen_kw:  (c.regen_kw || c.model_kw),
+        tnc_regen_gst:         val('tnc_regen_gst'),
+        tnc_regen_hsn:         val('tnc_regen_hsn'),
+        tnc_regen_pan_gst:     val('tnc_regen_pan_gst'),
         tnc_regen_material_custody: val('tnc_regen_material_custody'),
         tnc_regen_site_facilities:  val('tnc_regen_site_facilities'),
         tnc_regen_delivery:         val('tnc_regen_delivery'),
         tnc_regen_transportation:   val('tnc_regen_transportation'),
-        tnc_regen_taxes:            val('tnc_regen_taxes'),
         tnc_regen_payment:          val('tnc_regen_payment'),
         tnc_regen_packing:          val('tnc_regen_packing'),
         tnc_regen_warranty:         val('tnc_regen_warranty'),

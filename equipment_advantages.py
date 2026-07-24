@@ -149,8 +149,12 @@ REGEN_STANDARD_TNC = {
         "clearances that fall in your purview.",
     "tnc_regen_transportation":
         "From our factory to your work site — extra at actuals and chargeable to you.",
-    "tnc_regen_taxes":
-        "Extra at actuals.",
+    "tnc_regen_gst":
+        "18% extra.",
+    "tnc_regen_hsn":
+        "84541000",
+    "tnc_regen_pan_gst":
+        "PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV",
     "tnc_regen_payment":
         "30% along with the purchase order.\n"
         "70% against inspection of material at our works.",
