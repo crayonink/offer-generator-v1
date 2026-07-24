@@ -7827,6 +7827,49 @@ def api_fx_rate(to: str = "USD"):
             "date": date, "cached": False, "fallback": fallback}
 
 
+def _regen_tnc_usd_taxes(docx_path: str):
+    """USD regen offers: replace the India-specific GST / HSN Code / PAN-GST
+    T&C rows with a single 'Taxes & Duties: Extra at actuals.' row (the pre-split
+    wording). Relabels the GST row in place and drops the HSN + PAN rows so the
+    tax cluster keeps its position."""
+    from docx import Document as _Doc
+    d = _Doc(docx_path)
+    tnc = None
+    for t in d.tables:
+        flat = "|".join(c.text for r in t.rows for c in r.cells)
+        if "Material Custody" in flat and "Warranty" in flat:
+            tnc = t
+            break
+    if tnc is None:
+        return
+    gst_row = None
+    drop = []
+    for r in tnc.rows:
+        lbl = r.cells[0].text.strip().lower()
+        if lbl == "gst":
+            gst_row = r
+        elif lbl.startswith("hsn") or lbl.startswith("pan"):
+            drop.append(r)
+    if gst_row is not None:
+        def _set(cell, text):
+            p = cell.paragraphs[0]
+            for extra in cell.paragraphs[1:]:
+                extra._p.getparent().remove(extra._p)
+            fn = fs = None
+            if p.runs:
+                fn = p.runs[0].font.name; fs = p.runs[0].font.size
+            for rn in list(p.runs):
+                rn._element.getparent().remove(rn._element)
+            run = p.add_run(text)
+            if fn: run.font.name = fn
+            if fs: run.font.size = fs
+        _set(gst_row.cells[0], "Taxes & Duties")
+        _set(gst_row.cells[1], "Extra at actuals.")
+    for r in drop:
+        r._tr.getparent().remove(r._tr)
+    d.save(docx_path)
+
+
 def _break_out_transport(docx_path: str, transport: float):
     """In a standalone offer's Annexure III, pull Transport out of the single
     all-inclusive price onto its own line: reduce the equipment row by the
@@ -8123,6 +8166,15 @@ async def generate_quote(req: QuoteRequest):
                     print(f"WARN: regen fuel-supply fill failed: {_gt_err}")
             except Exception as _bom_err:
                 print(f"WARN: regen MAKE LIST fill failed: {_bom_err}")
+        # USD (export) offers: the India-specific GST / HSN / PAN-GST rows don't
+        # apply — collapse them back to a single "Taxes & Duties: Extra at
+        # actuals." row, as before the split. INR offers keep the three rows.
+        if _regen_tpl and (req.currency or "INR").strip().upper() == "USD":
+            try:
+                _regen_tnc_usd_taxes(output_path)
+            except Exception as _tx_err:
+                print(f"WARN: regen USD T&C swap failed: {_tx_err}")
+
         # Pull Transport onto its own price-schedule line (P&F/designing/
         # negotiation stay baked into the equipment price). No-op if 0.
         try:
