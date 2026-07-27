@@ -587,5 +587,6 @@ const STICKY=['c-salutation','c-name','c-designation','c-email','c-phone','c-com
 function loadSticky(){ try{ const o=JSON.parse(localStorage.getItem('encon_form_step1')||'{}'); STICKY.forEach(id=>{const el=document.getElementById(id); if(el&&o[id]!=null)el.value=o[id];}); }catch(e){} }
 document.addEventListener('DOMContentLoaded', () => { loadSticky(); renderTypes(); loadFxRate(); });
 </script>
+  <script src="/static/rfq_prefill.js"></script>
 </body>
 </html>

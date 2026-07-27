@@ -121,6 +121,18 @@ from fastapi.staticfiles import StaticFiles
 _DOCS_DIR = os.path.join(BASE_DIR, "docs_site")
 if os.path.isdir(_DOCS_DIR):
     app.mount("/docs", StaticFiles(directory=_DOCS_DIR, html=True), name="docs")
+
+
+@app.get("/static/rfq_prefill.js")
+def _rfq_prefill_js():
+    """Shared script that pre-fills customer details handed off from the RFQ
+    tracker (via URL params) into whichever costing tab is opened."""
+    return FileResponse(
+        os.path.join(BASE_DIR, "static", "rfq_prefill.js"),
+        media_type="application/javascript",
+    )
+
+
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 QUOTES_FOLDER = os.path.join(BASE_DIR, "quotes")
 
@@ -136,7 +148,7 @@ from engine.auth import (
 )
 
 # Reachable without logging in.
-_PUBLIC_PATHS = {"/login", "/logout", "/health", "/favicon.ico"}
+_PUBLIC_PATHS = {"/login", "/logout", "/health", "/favicon.ico", "/static/rfq_prefill.js"}
 
 
 def _auth_is_admin_only(method: str, path: str) -> bool:
