@@ -14,13 +14,16 @@
 */
 (function () {
   var KEY = 'rfq_customer';
-  // Attributes carried from the tracker; only the four below have form fields.
-  var PARAMS = ['rfq_id', 'enquiry_id', 'company', 'contact', 'email', 'mobile', 'item', 'type'];
+  // Attributes carried from the tracker (only those in MAP below have form fields).
+  var PARAMS = ['rfq_id', 'enquiry_id', 'company', 'contact', 'email', 'mobile',
+                'item', 'type', 'marketing', 'technical'];
   var MAP = {
-    company: ['c-company', 'company_name'],
-    contact: ['c-name', 'poc_name'],
-    email:   ['c-email', 'email'],
-    mobile:  ['c-phone', 'mobile_no']
+    company:   ['c-company', 'company_name'],
+    contact:   ['c-name', 'poc_name'],
+    email:     ['c-email', 'email'],
+    mobile:    ['c-phone', 'mobile_no'],
+    marketing: ['c-marketing', 'marketing_person'],
+    technical: ['c-technical', 'technical_person']
   };
 
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
