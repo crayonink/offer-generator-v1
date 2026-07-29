@@ -637,22 +637,28 @@ async function renderRegenBurner(){
   } catch(e) {}
 }
 
+// Burner size label — 3000 KW is the 7A uprated, so show the scale factor.
+function sizeLbl(r){
+  return (r.kw_scale && r.kw_scale !== 1)
+    ? `${r.size} <span style="color:#94a3b8;">&times;${r.kw_scale}</span>` : r.size;
+}
+
 function gasRegenTable(rows){
   const dash = '<span style="color:#cbd5e1;">—</span>';
   const body = rows.map(r=>{
     const has = r.gas_burner != null;
     return `<tr>
       <td class="co">${r.kw}</td>
-      <td class="num">${has ? r.size : dash}</td>
+      <td class="num">${has ? sizeLbl(r) : dash}</td>
       <td class="num calc">${has ? inr(r.gas_burner) : dash}</td>
       <td class="num grpsep">${inr(r.regen)}</td>
       <td class="num setcol">${r.gas_total != null ? inr(r.gas_total) : dash}</td></tr>`;
   }).join('');
   return `<div class="grp" style="margin-top:26px;">
-    <div class="edit-note"><b>Gas Burner + Regen.</b> Gas Burner = the ENCON <b>Gas Burner Set</b> from the burner sheet (<b>no</b> S.S. Assembly ×3 — that is oil-only), sized by KW (500→3A … 2500→7A). Regen shown for every size. <b>Total = Gas Burner + Regen</b>.</div>
+    <div class="edit-note"><b>Gas Burner + Regen.</b> Gas Burner = the ENCON <b>Gas Burner Set</b> from the burner sheet (<b>no</b> S.S. Assembly ×3 — that is oil-only), sized by KW (500→3A … 2500→7A; 3000 = 7A uprated ×1.2). Regen shown for every size. <b>Total = Gas Burner + Regen</b>.</div>
     <div class="grp-h"><span class="t">Gas Burner + Regen (₹) — per KW model</span></div>
     <table><thead>
-      <tr><th></th><th class="num" colspan="2">GAS BURNER  (from burner sheet, &le;2500 KW)</th>
+      <tr><th></th><th class="num" colspan="2">GAS BURNER  (from burner sheet)</th>
         <th class="num grpsep">REGEN</th><th class="num setcol">TOTAL</th></tr>
       <tr><th>KW</th><th class="num">ENCON Size</th><th class="num">Gas Burner</th>
         <th class="num grpsep">Regen</th><th class="num setcol">Total Cost</th></tr>
@@ -665,7 +671,7 @@ function oilRegenTable(rows, ba){
     const has = r.oil_burner != null;
     return `<tr>
       <td class="co">${r.kw}</td>
-      <td class="num">${has ? r.size : dash}</td>
+      <td class="num">${has ? sizeLbl(r) : dash}</td>
       <td class="num">${has ? inr(r.burner_set) : dash}</td>
       <td class="num">${has ? inr(r.ss_each) : dash}</td>
       <td class="num">${has ? inr(r.ss_add) : dash}</td>
@@ -674,10 +680,10 @@ function oilRegenTable(rows, ba){
       <td class="num setcol">${r.total != null ? inr(r.total) : dash}</td></tr>`;
   }).join('');
   return `<div class="grp" style="margin-top:26px;">
-    <div class="edit-note"><b>Oil Burner + Regen.</b> Oil Burner = film <b>Burner Set</b> (from the burner sheet) <b>+ 2 × S.S. Assembly × ${ba}</b> markup. The Burner Set already carries 1× S.S. Assembly, so it is counted <b>3× total</b>. Oil burner is only made &le;2500 KW; the regenerator (Regen) is shown for every size. <b>Total = Oil Burner + Regen</b>.</div>
+    <div class="edit-note"><b>Oil Burner + Regen.</b> Oil Burner = film <b>Burner Set</b> (from the burner sheet) <b>+ 2 × S.S. Assembly × ${ba}</b> markup. The Burner Set already carries 1× S.S. Assembly, so it is counted <b>3× total</b>. The burner sheet tops out at 7A (2500 KW); 3000 KW is that burner uprated, so its components are scaled &times;1.2. <b>Total = Oil Burner + Regen</b>.</div>
     <div class="grp-h"><span class="t">Oil Burner + Regen (₹) — per KW model</span></div>
     <table><thead>
-      <tr><th></th><th class="num" colspan="5">OIL BURNER  (from burner sheet, &le;2500 KW)</th>
+      <tr><th></th><th class="num" colspan="5">OIL BURNER  (from burner sheet)</th>
         <th class="num grpsep">REGEN</th><th class="num setcol">TOTAL</th></tr>
       <tr><th>KW</th><th class="num">ENCON Size</th><th class="num">Burner Set</th>
         <th class="num">S.S. Assy (each)</th><th class="num">+ 2 × &times;${ba}</th>

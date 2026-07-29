@@ -181,9 +181,34 @@ def burner_price(conn, kw):
     return _f(r[0]) if r else None
 
 
-# Oil regen burner: fixed ENCON film-burner size per KW (<=2500 KW only).
+# Oil regen burner: fixed ENCON film-burner size per KW.
 _OIL_REGEN_BURNER_MAP = {500: "ENCON 3A", 1000: "ENCON 4A", 1500: "ENCON 5A",
                          2000: "ENCON 6A", 2500: "ENCON 7A"}
+# The burner Pricelist tops out at 7A (2500 KW). 3000 KW is built on the same
+# 7A burner uprated, so it is priced off 7A scaled by the KW ratio (×1.2) —
+# giving oil, gas and dual their own fuel-correct 3000 KW price instead of all
+# three collapsing onto the generic computed fallback. Sizes above this stay on
+# the computed material basis (_BURNER_PORTION in bom/regen_builder).
+_TOP_CATALOGUE_KW = 2500
+_MAX_SCALED_KW = 3000
+
+
+def _burner_size_for_kw(kw):
+    """(ENCON size, scale factor) for a regen burner at `kw`, or (None, None).
+
+    Exact catalogue sizes scale 1.0; above the catalogue (up to _MAX_SCALED_KW)
+    the top size is uprated by the KW ratio.
+    """
+    try:
+        kw = int(kw)
+    except (TypeError, ValueError):
+        return None, None
+    size = _OIL_REGEN_BURNER_MAP.get(kw)
+    if size:
+        return size, 1.0
+    if _TOP_CATALOGUE_KW < kw <= _MAX_SCALED_KW:
+        return _OIL_REGEN_BURNER_MAP[_TOP_CATALOGUE_KW], kw / _TOP_CATALOGUE_KW
+    return None, None
 # ENCON size -> (oil_burner_master parts group, 1-based S.S. Assembly row index)
 _OIL_REGEN_SS = {"ENCON 3A": ("2A/3A", 5), "ENCON 4A": ("4A", 5),
                  "ENCON 5A": ("5A/6A", 5), "ENCON 6A": ("5A/6A", 5),
@@ -203,8 +228,11 @@ def _oil_style_burner_cost(conn, kw, section):
     markup. Shared by the oil (film) and dual-fuel regen burners — both carry
     the oil film gun, so both count the S.S. Assembly 3× in total (the Burner
     Set already includes 1× inside Burner Alone).
+
+    Above the catalogue's top size the whole burner cost is scaled by the KW
+    ratio (see _burner_size_for_kw).
     """
-    size = _OIL_REGEN_BURNER_MAP.get(kw)
+    size, scale = _burner_size_for_kw(kw)
     if not size:
         return None, None
     r = conn.execute("SELECT price FROM burner_pricelist_master "
@@ -217,21 +245,22 @@ def _oil_style_burner_cost(conn, kw, section):
     rows = conn.execute("SELECT amount, mc_cost, total_amount FROM oil_burner_master "
                         "WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()
     if ss_idx > len(rows):
-        return size, round(burner_set, 2)
+        return size, round(burner_set * scale, 2)
     a, m, t = rows[ss_idx - 1]
     ss = _f(t) if t not in (None, "") else ((_f(a) or 0) + (_f(m) or 0))
     ba = _burner_ba_markup(conn)
     # +2× because Burner Alone already carries 1× S.S. Assembly → 3× total.
-    return size, round(burner_set + 2 * (ss or 0) * ba, 2)
+    return size, round((burner_set + 2 * (ss or 0) * ba) * scale, 2)
 
 
 def oil_regen_burner_cost(conn, kw):
     """Oil-regen burner cost for a KW model, from the ENCON film-burner Pricelist.
 
-    Size is fixed by KW (500->3A … 2500->7A). Cost = film Burner Set +
-    2 extra S.S. Assemblies × the Burner-Alone markup — i.e. the S.S. Assembly is
-    counted 3× in total (the Burner Set already includes 1× inside Burner Alone).
-    Returns (size, cost) or (size|None, None) when unmapped (>2500 KW) or missing.
+    Size is fixed by KW (500->3A … 2500->7A), with 3000 KW priced off the 7A
+    scaled by the KW ratio. Cost = film Burner Set + 2 extra S.S. Assemblies ×
+    the Burner-Alone markup — i.e. the S.S. Assembly is counted 3× in total (the
+    Burner Set already includes 1× inside Burner Alone). Returns (size, cost) or
+    (size|None, None) when unmapped (above _MAX_SCALED_KW) or missing.
     """
     return _oil_style_burner_cost(conn, kw, _FILM_SECTION)
 
@@ -240,7 +269,8 @@ def dual_regen_burner_cost(conn, kw):
     """Dual-fuel (gas + oil) regen burner cost, from the ENCON DUAL FUEL BURNER
     Pricelist section. Costed like the oil burner (Burner Set + S.S. Assembly ×3)
     because a dual burner carries the same oil film gun alongside the gas head.
-    Returns (size, cost) or (size|None, None) when unmapped (>2500 KW) or missing.
+    Returns (size, cost) or (size|None, None) when unmapped (above
+    _MAX_SCALED_KW) or missing.
     """
     return _oil_style_burner_cost(conn, kw, _DUAL_BURNER_SECTION)
 
@@ -248,17 +278,18 @@ def dual_regen_burner_cost(conn, kw):
 def gas_regen_burner_cost(conn, kw):
     """Gas-regen burner cost = ENCON Gas Burner Set (no S.S. Assembly ×3).
 
-    Size is fixed by KW (500->3A … 2500->7A). Returns (size, cost) or
-    (None, None) when unmapped (>2500 KW) or the Pricelist row is missing.
+    Size is fixed by KW (500->3A … 2500->7A), with 3000 KW priced off the 7A
+    scaled by the KW ratio. Returns (size, cost) or (None, None) when unmapped
+    (above _MAX_SCALED_KW) or the Pricelist row is missing.
     """
-    size = _OIL_REGEN_BURNER_MAP.get(kw)
+    size, scale = _burner_size_for_kw(kw)
     if not size:
         return None, None
     r = conn.execute("SELECT price FROM burner_pricelist_master "
                      "WHERE section=? AND burner_size=? AND component='BURNER SET'",
                      (_GAS_BURNER_SECTION, size)).fetchone()
     cost = _f(r[0]) if r else None
-    return size, (round(cost, 2) if cost is not None else None)
+    return size, (round(cost * scale, 2) if cost is not None else None)
 
 
 def blower_price_ic(conn, kw):

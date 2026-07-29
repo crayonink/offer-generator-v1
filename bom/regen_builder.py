@@ -662,12 +662,21 @@ def get_supplementary_data(kw: int) -> dict:
     )
 
 
+# Largest burner/regenerator we quote. The burner Pricelist runs to 7A (2500 KW)
+# and 3000 KW is that burner uprated; beyond it there's no catalogue basis, so
+# 3000 is the ceiling for both the burner and the regenerator. Bigger duties are
+# covered by adding pairs, not by a bigger burner. MODEL_KWS keeps its larger
+# entries as reference data for the internal-costing material tables.
+MAX_MODEL_KW = 3000
+SELECTABLE_KWS = [kw for kw in MODEL_KWS if kw <= MAX_MODEL_KW]
+
+
 def select_model(required_kw: float) -> int:
-    """Return the smallest model KW >= required_kw (caps at 6000 KW)."""
-    for kw in MODEL_KWS:
+    """Return the smallest quotable model KW >= required_kw (caps at 3000 KW)."""
+    for kw in SELECTABLE_KWS:
         if kw >= required_kw:
             return kw
-    return MODEL_KWS[-1]
+    return SELECTABLE_KWS[-1]
 
 
 def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
@@ -677,7 +686,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     """
     Build full BOM DataFrame for the given KW model.
 
-    kw        : BURNER size — one of MODEL_KWS (500..6000). Drives the whole BOM
+    kw        : BURNER size — one of SELECTABLE_KWS (500..3000). Drives the whole BOM
                 (valves, pipes, blower, HP, panel, PLC, damper, flows) plus the
                 burner portion of the Burner+Regenerator line.
     markup    : selling price multiplier; if None uses model default (1.8 or 2.0)
@@ -759,7 +768,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     #       - Gas: Gas Burner Set (no S.S. Assembly ×3)
     #   • REGENERATOR portion always comes from the Regen-with-Burner table
     #     (_REGEN_PORTION).
-    #   • Fallback (gas >2500 KW, or DB unavailable): hardcoded burner+regen.
+    #     3000 KW is the 7A uprated (priced at the 7A × KW ratio).
+    #   • Fallback (above 3000 KW, or DB unavailable): hardcoded burner+regen.
     _burner_done = False
     if _conn:
         try:
@@ -777,7 +787,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
                 _regen_portion = _REGEN_PORTION.get(regen_kw, 0)
                 _br_item = ("Burner with Regenerator (Dual Fuel, %d KW)" % kw
                             if is_dual else f"Burner with Regenerator ({kw} KW)")
-                _br_spec = f"{kw} KW {_bdesc} + regenerator, complete"
+                # Above the catalogue's top size the burner is that size
+                # uprated — say so, since the price is scaled, not listed.
+                from bom.regen_pricelist import _TOP_CATALOGUE_KW as _topkw
+                _uprate = (f" ({_bsize} uprated)"
+                           if (_bsize and kw > _topkw) else "")
+                _br_spec = f"{kw} KW {_bdesc}{_uprate} + regenerator, complete"
                 add("BURNER SET", _br_item, _br_spec, 2, _bcost + _regen_portion)
                 _burner_done = True
         except Exception:

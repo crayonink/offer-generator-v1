@@ -1098,10 +1098,11 @@ def api_ic_oil_burner_prices():
 def api_ic_oil_regen_burner():
     """Oil-regen burner + regenerator per KW model, with the full calculation.
 
-    Oil Burner (<=2500 KW) = film Burner Set + 2 × S.S. Assembly × the Burner-
-    Alone markup — the Burner Set already carries 1× S.S. Assembly, so it is
-    counted 3× in total. Regenerator portion (_REGEN_PORTION) is shown for every
-    KW. Total = Oil Burner + Regen.
+    Oil Burner = film Burner Set + 2 × S.S. Assembly × the Burner-Alone markup —
+    the Burner Set already carries 1× S.S. Assembly, so it is counted 3× in
+    total. 3000 KW is the 7A uprated, so its components are shown scaled by the
+    KW ratio and the arithmetic still reconciles. Regenerator portion
+    (_REGEN_PORTION) is shown for every KW. Total = Oil Burner + Regen.
     """
     def f(x):
         try:
@@ -1109,26 +1110,30 @@ def api_ic_oil_regen_burner():
         except (TypeError, ValueError):
             return 0.0
     try:
-        from bom.regen_pricelist import (oil_regen_burner_cost, _OIL_REGEN_BURNER_MAP,
+        from bom.regen_pricelist import (oil_regen_burner_cost, _burner_size_for_kw,
                                          _OIL_REGEN_SS, _FILM_SECTION, _burner_ba_markup)
-        from bom.regen_builder import _REGEN_PORTION
+        from bom.regen_builder import _REGEN_PORTION, MAX_MODEL_KW
         GAS_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"
         conn = sqlite3.connect(DB_PATH)
         ba = _burner_ba_markup(conn)
         out = []
-        for kw in sorted(_REGEN_PORTION):
+        # Only the quotable sizes — above MAX_MODEL_KW there is no burner to cost.
+        for kw in [k for k in sorted(_REGEN_PORTION) if k <= MAX_MODEL_KW]:
             regen = round(f(_REGEN_PORTION.get(kw, 0)), 2)
             row = {"kw": kw, "regen": regen, "size": None, "burner_set": None,
                    "ss_each": None, "ba_markup": ba, "ss_add": None,
                    "oil_burner": None, "total": None,
-                   "gas_burner": None, "gas_total": None}
-            if kw in _OIL_REGEN_BURNER_MAP:
+                   "gas_burner": None, "gas_total": None, "kw_scale": 1.0}
+            _msize, _scale = _burner_size_for_kw(kw)
+            if _msize:
+                row["kw_scale"] = round(_scale, 4)
                 size, cost = oil_regen_burner_cost(conn, kw)
                 if cost is not None:
                     bs = conn.execute("SELECT price FROM burner_pricelist_master "
                                       "WHERE section=? AND burner_size=? AND component='BURNER SET'",
                                       (_FILM_SECTION, size)).fetchone()
-                    burner_set = f(bs[0]) if bs else 0.0
+                    # Components are shown scaled so burner_set + ss_add == oil_burner.
+                    burner_set = (f(bs[0]) if bs else 0.0) * _scale
                     group, ss_idx = _OIL_REGEN_SS[size]
                     prows = conn.execute("SELECT amount, mc_cost, total_amount FROM oil_burner_master "
                                          "WHERE burner_type=? ORDER BY rowid", (group,)).fetchall()
@@ -1137,16 +1142,16 @@ def api_ic_oil_regen_burner():
                         a, m, t = prows[ss_idx - 1]
                         ss = f(t) if t not in (None, "") else (f(a) + f(m))
                     row.update(size=size, burner_set=round(burner_set, 2), ss_each=round(ss, 2),
-                               ss_add=round(2 * ss * ba, 2), oil_burner=cost,
+                               ss_add=round(2 * ss * ba * _scale, 2), oil_burner=cost,
                                total=round(cost + regen, 2))
                 # Gas burner: same size, price straight from the Gas Burner Set
                 # (no S.S. Assembly ×3).
-                gsize = size or _OIL_REGEN_BURNER_MAP[kw]
+                gsize = size or _msize
                 gbs = conn.execute("SELECT price FROM burner_pricelist_master "
                                    "WHERE section=? AND burner_size=? AND component='BURNER SET'",
                                    (GAS_SECTION, gsize)).fetchone()
                 if gbs and gbs[0] is not None:
-                    gas_burner = round(f(gbs[0]), 2)
+                    gas_burner = round(f(gbs[0]) * _scale, 2)
                     row.update(size=row["size"] or gsize, gas_burner=gas_burner,
                                gas_total=round(gas_burner + regen, 2))
             out.append(row)
