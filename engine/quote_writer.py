@@ -90,6 +90,38 @@ def amount_in_words_indian(amount) -> str:
     return " ".join(parts).strip()
 
 
+def amount_in_words_international(amount) -> str:
+    """Format an integer amount in international English words (million / billion).
+    Used for USD (export) offers, where the Indian lakh/crore wording is wrong."""
+    try:
+        n = int(round(float(amount)))
+    except (TypeError, ValueError):
+        return ""
+    if n == 0:
+        return "ZERO"
+    ones = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN",
+            "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN",
+            "EIGHTEEN", "NINETEEN"]
+    tens = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"]
+
+    def _three(x):
+        s = ""
+        if x >= 100:
+            s += ones[x // 100] + " HUNDRED"; x %= 100
+            if x: s += " "
+        if x >= 20:
+            s += tens[x // 10] + ("-" + ones[x % 10] if x % 10 else "")
+        elif x > 0:
+            s += ones[x]
+        return s
+
+    out = []
+    for scale, name in ((1_000_000_000, "BILLION"), (1_000_000, "MILLION"), (1_000, "THOUSAND"), (1, "")):
+        if n >= scale:
+            out.append(_three(n // scale) + ((" " + name) if name else "")); n %= scale
+    return " ".join(p for p in out if p).strip()
+
+
 def _supervision_rates() -> tuple:
     """Look up supervision-charge rates from component_price_master.
     Returns (mech_rate_str, plc_rate_str) formatted as Indian rupee strings."""
@@ -750,29 +782,7 @@ def generate_quote_docx(quote_data: dict, output_path: str,
             v = 0.0
         return f"$ {v * _rate:,.2f}" if _usd else _format_inr(v)
 
-    def _intl_words(n):
-        n = int(round(n))
-        if n == 0:
-            return "ZERO"
-        ones = ["", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN",
-                "ELEVEN", "TWELVE", "THIRTEEN", "FOURTEEN", "FIFTEEN", "SIXTEEN", "SEVENTEEN",
-                "EIGHTEEN", "NINETEEN"]
-        tens = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"]
-        def _three(x):
-            s = ""
-            if x >= 100:
-                s += ones[x // 100] + " HUNDRED"; x %= 100
-                if x: s += " "
-            if x >= 20:
-                s += tens[x // 10] + ("-" + ones[x % 10] if x % 10 else "")
-            elif x > 0:
-                s += ones[x]
-            return s
-        out = []
-        for scale, name in ((1_000_000_000, "BILLION"), (1_000_000, "MILLION"), (1_000, "THOUSAND"), (1, "")):
-            if n >= scale:
-                out.append(_three(n // scale) + ((" " + name) if name else "")); n %= scale
-        return " ".join(p for p in out if p).strip()
+    _intl_words = amount_in_words_international
 
     def _words(total_inr):
         if _usd:

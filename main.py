@@ -7893,11 +7893,65 @@ def _regen_tnc_usd_taxes(docx_path: str):
     d.save(docx_path)
 
 
-def _break_out_transport(docx_path: str, transport: float):
+REGEN_USD_SUPERVISION = 200      # flat USD supervision rate on export offers
+
+
+def _regen_usd_price_labels(docx_path: str):
+    """USD regen offers: switch the price schedule's '(INR)' column headers to
+    '(USD)', and put the flat USD supervision rate on both Erection &
+    Commissioning rows (Mechanical and PLC & Instrumentation) — those are quoted
+    at a flat USD 200 on export offers, not converted from the INR rate."""
+    from docx import Document as _Doc
+    d = _Doc(docx_path)
+
+    def _sub(cell, old, new):
+        """Replace `old` with `new` in a cell, keeping each run's formatting."""
+        for p in cell.paragraphs:
+            for rn in p.runs:
+                if old in (rn.text or ""):
+                    rn.text = rn.text.replace(old, new)
+
+    def _set(cell, text):
+        """Replace a cell's whole text with one run. Used where the value spans
+        runs ('INR ' from the template + the amount from the rendered var)."""
+        p = cell.paragraphs[0]
+        for extra in cell.paragraphs[1:]:
+            extra._p.getparent().remove(extra._p)
+        fn = fs = bold = None
+        if p.runs:
+            fn, fs, bold = p.runs[0].font.name, p.runs[0].font.size, p.runs[0].font.bold
+        for rn in list(p.runs):
+            rn._element.getparent().remove(rn._element)
+        run = p.add_run(text)
+        if fn:   run.font.name = fn
+        if fs:   run.font.size = fs
+        if bold is not None: run.font.bold = bold
+
+    for t in d.tables:
+        hdr = t.rows[0].cells if t.rows else []
+        if any(("Unit Price" in c.text or "Total Price" in c.text) for c in hdr):
+            for c in hdr:
+                _sub(c, "(INR)", "(USD)")
+        # Supervision charges — "INR 12,500.00" -> "USD 200"
+        for r in t.rows:
+            if "Supervision Charges" not in r.cells[0].text:
+                continue
+            for c in r.cells[1:]:
+                if c.text.strip().upper().startswith("INR"):
+                    _set(c, f"USD {REGEN_USD_SUPERVISION}")
+    d.save(docx_path)
+
+
+def _break_out_transport(docx_path: str, transport: float,
+                         currency: str = "INR", fx_rate: float = 0.0):
     """In a standalone offer's Annexure III, pull Transport out of the single
     all-inclusive price onto its own line: reduce the equipment row by the
     transport amount and insert a 'Transport' row just before TOTAL (TOTAL is
-    unchanged, so the schedule still reconciles). No-op when transport <= 0."""
+    unchanged, so the schedule still reconciles). No-op when transport <= 0.
+
+    On a USD offer the schedule is already quoted in whole dollars ("USD
+    212,657"), so the amounts are read and rewritten in that same form and the
+    INR transport figure is converted at `fx_rate`."""
     try:
         transport = float(transport or 0)
     except (TypeError, ValueError):
@@ -7908,8 +7962,19 @@ def _break_out_transport(docx_path: str, transport: float):
     from docx import Document
     from engine.quote_writer import _format_inr
 
+    _usd = (str(currency or "INR").strip().upper() == "USD" and float(fx_rate or 0) > 0)
+    if _usd:
+        transport = round(transport * float(fx_rate))
+
+    def _money(v):
+        return f"USD {round(v):,.0f}" if _usd else _format_inr(v)
+
     def _num(s):
         s = (s or "").replace(",", "").replace("₹", "").strip()
+        for pfx in ("USD", "INR", "$"):
+            if s.upper().startswith(pfx):
+                s = s[len(pfx):].strip()
+                break
         try:
             return float(s)
         except ValueError:
@@ -7950,13 +8015,13 @@ def _break_out_transport(docx_path: str, transport: float):
         if m:
             qty = max(1, int(m.group()))
         new_total = tot - transport
-        _set_cell(eq.cells[3], _format_inr(new_total / qty))
-        _set_cell(eq.cells[4], _format_inr(new_total))
+        _set_cell(eq.cells[3], _money(new_total / qty))
+        _set_cell(eq.cells[4], _money(new_total))
         # insert a Transport row before TOTAL (clone the equipment row to match style)
         new_tr = copy.deepcopy(eq._tr)
         t.rows[total_idx]._tr.addprevious(new_tr)
         trow = t.rows[total_idx]
-        for i, lab in enumerate(["", "Transport", "", "", _format_inr(transport)]):
+        for i, lab in enumerate(["", "Transport", "", "", _money(transport)]):
             if i < len(trow.cells):
                 _set_cell(trow.cells[i], lab)
         break
@@ -8091,13 +8156,31 @@ async def generate_quote(req: QuoteRequest):
         _regen_tpl = None
         if "regen" in _first_pt.lower():
             # Enrich the regen body's template vars from the raw calc values.
-            from engine.quote_writer import amount_in_words_indian, _format_inr
+            from engine.quote_writer import (amount_in_words_indian,
+                                             amount_in_words_international,
+                                             _format_inr)
             _ec = dict(req.extra_context or {})
             _rp = int(_ec.get("regen_pairs") or 1)
             _rf = str(_ec.get("regen_fuel") or "Natural Gas")
             _rf2 = str(_ec.get("regen_fuel2") or "")
             _rk = _ec.get("regen_kw") or ""
             _price = float(req.items[0].total) if req.items else 0.0
+            # USD (export) offers: the price schedule is quoted in whole dollars
+            # — converted at the offer's fx rate and rounded off (no cents).
+            _rgn_usd = ((req.currency or "INR").strip().upper() == "USD"
+                        and float(req.fx_rate or 0) > 0)
+            _rgn_fx = float(req.fx_rate or 0)
+
+            def _rgn_money(v):
+                if _rgn_usd:
+                    return f"USD {round(float(v or 0) * _rgn_fx):,.0f}"
+                return _format_inr(v)
+
+            def _rgn_words(v):
+                if _rgn_usd:
+                    return ("USD " + amount_in_words_international(
+                        round(float(v or 0) * _rgn_fx)) + " only.")
+                return "INR " + amount_in_words_indian(v) + " only."
             # Dual fuel = one gas + one oil; resolve_fuels sorts the pair so the
             # gas always drives the gas-train wording and the oil the HPU wording.
             from bom.regen_builder import resolve_fuels as _resolve_fuels
@@ -8138,8 +8221,8 @@ async def generate_quote(req: QuoteRequest):
                 "fuel_name": _fuel_name, "kw": _rk, "pairs": _rp,
                 "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
                 "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
-                "price_inr": _format_inr(_price),
-                "price_in_words": "INR " + amount_in_words_indian(_price) + " only.",
+                "price_inr": _rgn_money(_price),
+                "price_in_words": _rgn_words(_price),
             })
             # Technical-data summary table (rendered after Client Details):
             # regen/burner kW, pairs, fuel, and the blower + ID-fan sizes from
@@ -8223,11 +8306,17 @@ async def generate_quote(req: QuoteRequest):
                 _regen_tnc_usd_taxes(output_path)
             except Exception as _tx_err:
                 print(f"WARN: regen USD T&C swap failed: {_tx_err}")
+            try:
+                # '(INR)' column headers -> '(USD)', flat USD supervision rate.
+                _regen_usd_price_labels(output_path)
+            except Exception as _cl_err:
+                print(f"WARN: regen USD price labels failed: {_cl_err}")
 
         # Pull Transport onto its own price-schedule line (P&F/designing/
         # negotiation stay baked into the equipment price). No-op if 0.
         try:
-            _break_out_transport(output_path, req.transport_amt)
+            _break_out_transport(output_path, req.transport_amt,
+                                 currency=req.currency, fx_rate=req.fx_rate)
         except Exception as _trn_err:
             print(f"WARN: transport line break-out failed: {_trn_err}")
 
