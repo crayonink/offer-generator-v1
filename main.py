@@ -8164,7 +8164,15 @@ async def generate_quote(req: QuoteRequest):
             _rf = str(_ec.get("regen_fuel") or "Natural Gas")
             _rf2 = str(_ec.get("regen_fuel2") or "")
             _rk = _ec.get("regen_kw") or ""
-            _price = float(req.items[0].total) if req.items else 0.0
+            # Order quantity — how many complete regen systems are being bought.
+            # The price schedule quotes ONE system as the unit price and
+            # unit x qty as the line/grand total.
+            _it0 = req.items[0] if req.items else None
+            _oqty = max(1, int(getattr(_it0, "qty", 1) or 1)) if _it0 else 1
+            _price = float(_it0.total) if _it0 else 0.0          # order total
+            _unit_price = float(getattr(_it0, "unit_price", 0) or 0) if _it0 else 0.0
+            if not _unit_price:
+                _unit_price = _price / _oqty if _oqty else _price
             # USD (export) offers: the price schedule is quoted in whole dollars
             # — converted at the offer's fx rate and rounded off (no cents).
             _rgn_usd = ((req.currency or "INR").strip().upper() == "USD"
@@ -8205,7 +8213,14 @@ async def generate_quote(req: QuoteRequest):
             # read "BLAST FURNACE GAS GAS TRAIN". NG/PNG keep their names.
             import re as _re_gt
             _gtf = _re_gt.sub(r"\s*GAS\s*$", "", _gword, flags=_re_gt.I).strip() or _gword
-            _qtyw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
+            # Body wording: one system is "2 Pairs"; a multi-system order says
+            # so up front ("3 Sets of 2 Pairs each") so the technical text isn't
+            # understating what's supplied.
+            _pairw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
+            _qtyw = (f"{_oqty} Sets of {_pairw} each" if _oqty > 1 else _pairw)
+            # Price-schedule Qty column — sets ordered, matching the vertical
+            # offer's "01 Set" convention (the pairs live in the description).
+            _qty_label = f"{_oqty:02d} Set" + ("s" if _oqty != 1 else "")
             # Gas-train supply pressure: NG at 2.1 bar; all other gas fuels at 1000 mm.
             _press_clause = ("Pressure at top 2.1 bar."
                              if _gword == "NG"
@@ -8219,9 +8234,12 @@ async def generate_quote(req: QuoteRequest):
                 "pressure_clause": _press_clause,
                 "savings_fuel": (_gas_f if _dual else ("Fuel Oil" if _oil else _rf)),
                 "fuel_name": _fuel_name, "kw": _rk, "pairs": _rp,
-                "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
-                "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
-                "price_inr": _rgn_money(_price),
+                "burner_count": f"{_rp * 2 * _oqty} Nos", "qty_words": _qtyw,
+                # Description is per system; the Qty column carries the count.
+                "price_line_desc": f"{_pairw} Regenerative Burner System with PLC",
+                "order_qty": _oqty, "qty_label": _qty_label,
+                "price_inr": _rgn_money(_unit_price),     # one system
+                "price_total": _rgn_money(_price),        # unit x qty
                 "price_in_words": _rgn_words(_price),
             })
             # Technical-data summary table (rendered after Client Details):
