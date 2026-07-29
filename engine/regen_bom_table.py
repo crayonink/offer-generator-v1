@@ -238,6 +238,70 @@ def fill_consist_list(doc_path, is_oil=False, gas_train_label="NG", is_dual=Fals
     return True
 
 
+def _savings_table(doc):
+    """The ENERGY SAVING percentages table (its first row reads 'Savings In …')."""
+    for t in doc.tables:
+        if t.rows and "savings in" in t.rows[0].cells[0].text.strip().lower():
+            return t
+    return None
+
+
+def _retitle_cell(cell, text):
+    """Set a cell's text, keeping the first run's formatting."""
+    p = cell.paragraphs[0]
+    if not p.runs:
+        p.add_run(text)
+        return
+    p.runs[0].text = text
+    for r in p.runs[1:]:
+        r._element.getparent().remove(r._element)
+
+
+def add_oil_savings_table(doc_path, gas_fuel, oil_fuel):
+    """Dual-fuel offers: add a second ENERGY SAVING table for the oil fuel.
+
+    The template carries one savings table, titled from ``savings_fuel`` (the
+    gas fuel on a dual offer). This clones it directly beneath, retitled
+    "Savings In {oil_fuel}", so both fuels are quoted — the percentages are the
+    same grid the oil-only offer already ships. The caption above is also
+    re-pointed from "natural gas" to both fuel names.
+
+    Runs AFTER template rendering (the title must already be a real fuel name,
+    not "{{ savings_fuel }}"). Idempotent — a second call is a no-op.
+    """
+    import copy
+    from docx.oxml import OxmlElement
+
+    d = Document(doc_path)
+    tbl = _savings_table(d)
+    if tbl is None:
+        return False
+    title = f"Savings In {oil_fuel}"
+    # already added (regenerated over an existing file) -> nothing to do
+    for t in d.tables:
+        if t.rows and t.rows[0].cells[0].text.strip() == title:
+            return False
+
+    # Caption: "…the Saving in natural gas in a furnace…" names one fuel only.
+    for p in d.paragraphs:
+        if "Saving in natural gas" in p.text:
+            for r in p.runs:
+                if "natural gas" in r.text:
+                    r.text = r.text.replace("natural gas", f"{gas_fuel} and {oil_fuel}")
+            break
+
+    # Clone the table below the original, with a spacer paragraph between —
+    # two adjacent tbl elements would merge into one table in Word.
+    new_tbl = copy.deepcopy(tbl._tbl)
+    tbl._tbl.addnext(new_tbl)
+    tbl._tbl.addnext(OxmlElement("w:p"))
+
+    from docx.table import Table
+    _retitle_cell(Table(new_tbl, tbl._parent).rows[0].cells[0], title)
+    d.save(doc_path)
+    return True
+
+
 def fill_oil_supply(doc_path, df):
     """Populate the oil offer's HEATING & PUMPING UNIT bullet list from the BOM.
 

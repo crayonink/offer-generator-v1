@@ -8187,7 +8187,7 @@ async def generate_quote(req: QuoteRequest):
                                         fuel2=_rf2, db_path=DB_PATH)
                 from engine.regen_bom_table import (
                     fill_make_list, fill_temp_control, fill_gas_train,
-                    fill_oil_supply, fill_consist_list)
+                    fill_oil_supply, fill_consist_list, add_oil_savings_table)
                 if not fill_make_list(output_path, _bomdf):
                     print("WARN: regen MAKE LIST table not found in template")
                 try:
@@ -8206,6 +8206,13 @@ async def generate_quote(req: QuoteRequest):
                         fill_gas_train(output_path, _bomdf)
                 except Exception as _gt_err:
                     print(f"WARN: regen fuel-supply fill failed: {_gt_err}")
+                if _dual:
+                    try:
+                        # ENERGY SAVING: the template's table covers the gas
+                        # fuel; a dual offer gets a second one for the oil.
+                        add_oil_savings_table(output_path, _gas_f, _oil_f)
+                    except Exception as _sv_err:
+                        print(f"WARN: regen oil savings table failed: {_sv_err}")
             except Exception as _bom_err:
                 print(f"WARN: regen MAKE LIST fill failed: {_bom_err}")
         # USD (export) offers: the India-specific GST / HSN / PAN-GST rows don't
