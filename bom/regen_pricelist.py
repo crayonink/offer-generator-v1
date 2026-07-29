@@ -190,6 +190,7 @@ _OIL_REGEN_SS = {"ENCON 3A": ("2A/3A", 5), "ENCON 4A": ("4A", 5),
                  "ENCON 7A": ("7A", 10)}
 _FILM_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON 'FILM' BURNER & ACCESSORIES"
 _GAS_BURNER_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON 'GAS' BURNER & ACCESSORIES"
+_DUAL_BURNER_SECTION = "PRICE FOR VARIOUS SIZES OF ENCON DUAL FUEL BURNER & ACCESSORIES"
 
 
 def _burner_ba_markup(conn):
@@ -197,20 +198,18 @@ def _burner_ba_markup(conn):
     return _f(r[0]) if r and r[0] is not None else 2.5
 
 
-def oil_regen_burner_cost(conn, kw):
-    """Oil-regen burner cost for a KW model, from the ENCON film-burner Pricelist.
-
-    Size is fixed by KW (500->3A … 2500->7A). Cost = film Burner Set +
-    2 extra S.S. Assemblies × the Burner-Alone markup — i.e. the S.S. Assembly is
-    counted 3× in total (the Burner Set already includes 1× inside Burner Alone).
-    Returns (size, cost) or (size|None, None) when unmapped (>2500 KW) or missing.
+def _oil_style_burner_cost(conn, kw, section):
+    """Burner Set from `section` + 2 extra S.S. Assemblies × the Burner-Alone
+    markup. Shared by the oil (film) and dual-fuel regen burners — both carry
+    the oil film gun, so both count the S.S. Assembly 3× in total (the Burner
+    Set already includes 1× inside Burner Alone).
     """
     size = _OIL_REGEN_BURNER_MAP.get(kw)
     if not size:
         return None, None
     r = conn.execute("SELECT price FROM burner_pricelist_master "
                      "WHERE section=? AND burner_size=? AND component='BURNER SET'",
-                     (_FILM_SECTION, size)).fetchone()
+                     (section, size)).fetchone()
     burner_set = _f(r[0]) if r else None
     if burner_set is None:
         return size, None
@@ -224,6 +223,26 @@ def oil_regen_burner_cost(conn, kw):
     ba = _burner_ba_markup(conn)
     # +2× because Burner Alone already carries 1× S.S. Assembly → 3× total.
     return size, round(burner_set + 2 * (ss or 0) * ba, 2)
+
+
+def oil_regen_burner_cost(conn, kw):
+    """Oil-regen burner cost for a KW model, from the ENCON film-burner Pricelist.
+
+    Size is fixed by KW (500->3A … 2500->7A). Cost = film Burner Set +
+    2 extra S.S. Assemblies × the Burner-Alone markup — i.e. the S.S. Assembly is
+    counted 3× in total (the Burner Set already includes 1× inside Burner Alone).
+    Returns (size, cost) or (size|None, None) when unmapped (>2500 KW) or missing.
+    """
+    return _oil_style_burner_cost(conn, kw, _FILM_SECTION)
+
+
+def dual_regen_burner_cost(conn, kw):
+    """Dual-fuel (gas + oil) regen burner cost, from the ENCON DUAL FUEL BURNER
+    Pricelist section. Costed like the oil burner (Burner Set + S.S. Assembly ×3)
+    because a dual burner carries the same oil film gun alongside the gas head.
+    Returns (size, cost) or (size|None, None) when unmapped (>2500 KW) or missing.
+    """
+    return _oil_style_burner_cost(conn, kw, _DUAL_BURNER_SECTION)
 
 
 def gas_regen_burner_cost(conn, kw):

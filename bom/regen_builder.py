@@ -343,6 +343,35 @@ def _one_smaller_nb(dn):
     return dn
 
 
+def is_oil_fuel(fuel) -> bool:
+    """True when `fuel` names any oil grade (HSD/LDO/HDO/FO/SKO/CFO/LSHS/Oil)."""
+    return (fuel or "").strip().lower() in _OIL_FUELS
+
+
+def resolve_fuels(fuel, fuel2=None):
+    """Normalise a (fuel, fuel2) pair into (gas_fuel, oil_fuel, is_dual).
+
+    Regen dual fuel is always one GAS + one OIL, so the order the caller sends
+    them in doesn't matter — the gas always drives the gas line / gas train and
+    the oil always drives the oil line / HPU. Returns:
+
+      • single gas offer : (fuel,  None, False)
+      • single oil offer : (None,  fuel, False)
+      • dual offer       : (gas,   oil,  True)
+
+    A blank/"none"/duplicate-side fuel2 (gas+gas or oil+oil) is ignored — the
+    offer stays single-fuel on `fuel`, since only gas+oil is supported.
+    """
+    f1 = (fuel or "").strip()
+    f2 = (fuel2 or "").strip()
+    if f2.lower() in ("", "none", "-"):
+        f2 = ""
+    o1, o2 = is_oil_fuel(f1), is_oil_fuel(f2)
+    if f2 and o1 != o2:
+        return (f2, f1, True) if o1 else (f1, f2, True)
+    return (None, f1, False) if o1 else (f1 or "Natural Gas", None, False)
+
+
 def _fuel_pipe_dn(db_path, fuel, kw):
     """(gas DN, flue DN) for a fuel + KW from regen_pipe_sizes, or (None, None)."""
     name = _FUEL_PIPE_NAME.get((fuel or "").strip().lower())
@@ -484,14 +513,38 @@ def _size_fan(air_nm3hr: float, pressure_wg: float, conn=None):
     return float(math.ceil(raw_hp)), None, raw_hp
 
 
-def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None):
+def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None, fuel2=None):
     """Blower + ID-fan sizing breakdown (flows, HP, price) for one regen system.
 
     Oil is sized by mass then converted to Nm³; gas by volume (Puneet Sir's
     basis). Prices are pulled LIVE from the internal-costing blower pricelist
     when `conn` is given. Shared by build_regen_df and the costing-sheet worked
     example so the numbers can never drift. Returns a dict of every intermediate.
+
+    Dual fuel (gas + oil): the burner fires ONE fuel at a time, so the fans are
+    sized on the WORST CASE — each fuel's flows are computed independently and
+    the larger combustion-air / flue volume drives the selection. The losing
+    fuel's breakdown is kept under `alt_fuel_flows` for the costing sheet.
     """
+    _gasf, _oilf, _is_dual = resolve_fuels(fuel, fuel2)
+    if _is_dual:
+        g = compute_fan_flows(kw, num_pairs, _gasf, conn)
+        o = compute_fan_flows(kw, num_pairs, _oilf, conn)
+        # Worst case per side — the air and flue sides can peak on different
+        # fuels, so each is maxed independently before the fans are selected.
+        _ca = max(g['comb_air'], o['comb_air'])
+        _ia = max(g['id_air'],   o['id_air'])
+        d = {"is_oil": False, "is_dual": True, "kw": kw, "num_pairs": num_pairs,
+             "fuel": _gasf, "fuel2": _oilf,
+             "gas_fuel_flows": g, "oil_fuel_flows": o,
+             "sizing_fuel_air":  _gasf if g['comb_air'] >= o['comb_air'] else _oilf,
+             "sizing_fuel_flue": _gasf if g['id_air']   >= o['id_air']   else _oilf,
+             # gas-side figures kept for the pipe/flow displays
+             "fuel_cv": g.get('fuel_cv'), "gas_flow": g.get('gas_flow'),
+             "oil_cv": o.get('oil_cv'), "oil_kg": o.get('oil_kg')}
+        d.update(_fan_selection(_ca, _ia, conn))
+        return d
+
     fuel_l = (fuel or "").strip().lower()
     is_oil = fuel_l in _OIL_FUELS
     d = {"is_oil": is_oil, "kw": kw, "num_pairs": num_pairs, "fuel": fuel}
@@ -510,6 +563,16 @@ def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None):
         gas_flow = (kw * 860 / cv) * num_pairs
         id_air   = comb_air + gas_flow
         d.update(fuel_cv=cv, gas_flow=gas_flow, comb_air=comb_air, id_air=id_air)
+    d.update(_fan_selection(comb_air, id_air, conn))
+    return d
+
+
+def _fan_selection(comb_air, id_air, conn=None):
+    """Blower + ID-fan selection (shaft power → motor kW → HP frame → price) for
+    a given combustion-air and flue-gas volume. Split out so the dual-fuel path
+    can select the fans from the WORST-CASE flows of the two fuels rather than
+    from either fuel's own selection.
+    """
     # ── Rigorous sizing (Blower_ID_Fan_Sizing sheet): shaft power → motor kW ──
     # BLOWER — combustion air, 45 °C, 40 inWC.
     _b = _fan_shaft_kw(comb_air, _BLOWER_DP_INWC * _INWC_TO_PA, _BLOWER_INLET_C)
@@ -527,7 +590,8 @@ def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None):
     ihpA, ipriceA = _frame_from_hp(id_motor_kw_A * _HP_PER_KW, conn)
     ihpB, ipriceB = _frame_from_hp(id_motor_kw_B * _HP_PER_KW, conn)
 
-    d.update(
+    return dict(
+        comb_air=comb_air, id_air=id_air,
         # blower
         blower_dp_inwc=_BLOWER_DP_INWC, blower_inlet_c=_BLOWER_INLET_C,
         blower_q_act=_b["q_act_m3s"], blower_air_kw=_b["air_kw"],
@@ -542,7 +606,6 @@ def compute_fan_flows(kw, num_pairs=1, fuel="Natural Gas", conn=None):
         id_motor_kw_B=id_motor_kw_B, id_hp_B=ihpB, id_price_B=ipriceB,
         # BOM uses Option B (cold-start rated) as the ID-fan line
         id_hp=ihpB, id_price=ipriceB)
-    return d
 
 
 def get_supplementary_data(kw: int) -> dict:
@@ -610,7 +673,7 @@ def select_model(required_kw: float) -> int:
 def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
                    db_path: str = None, fuel: str = "Natural Gas",
                    regen_kw: int = None, standby_blower: bool = False,
-                   vfd: bool = False) -> pd.DataFrame:
+                   vfd: bool = False, fuel2: str = None) -> pd.DataFrame:
     """
     Build full BOM DataFrame for the given KW model.
 
@@ -628,18 +691,29 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     regen_kw  : REGENERATOR size (one of MODEL_KWS). Defaults to the burner size.
                 Only affects the regenerator portion of the Burner+Regenerator
                 line cost (_REGEN_PORTION[regen_kw]).
+    fuel2     : second fuel for a DUAL-FUEL offer — one gas + one oil (the order
+                doesn't matter). The BOM then carries BOTH fuel lines (gas line +
+                gas train AND oil line + HPU), a dual-fuel burner, and gas + oil
+                control valves / flow meters. Fans are sized on the worst case of
+                the two fuels. Blank/"none", or a second fuel on the same side
+                (gas+gas, oil+oil), keeps the offer single-fuel.
     """
     if regen_kw is None:
         regen_kw = kw
-    _fuel_l = (fuel or "").strip().lower()
-    # Any oil grade (HSD/LDO/HDO/FO/SKO/CFO/LSHS) builds the oil line; the
-    # regen oil line is the same for every grade.
-    is_oil = _fuel_l in _OIL_FUELS
+    # Dual fuel = one gas + one oil; resolve_fuels sorts the pair onto its sides.
+    _gas_fuel, _oil_fuel, is_dual = resolve_fuels(fuel, fuel2)
+    has_gas, has_oil = bool(_gas_fuel), bool(_oil_fuel)
+    _fuel_l = (_gas_fuel or _oil_fuel or "").strip().lower()
+    # Oil-ONLY offer: any oil grade (HSD/LDO/HDO/FO/SKO/CFO/LSHS) builds the oil
+    # line; the regen oil line is the same for every grade. A dual offer builds
+    # the oil line too, but keeps its gas line and gas train.
+    is_oil = has_oil and not has_gas
     # Low-CV gases (BFG / COG / Producer Gas) resize the gas + flue lines per
     # fuel and use a built-up line (no packaged NG gas train). NG (and the
     # default) keep the standard gas BOM.
-    is_lowcv = (not is_oil) and _fuel_l in ("coke oven gas", "producer gas", "blast furnace gas")
-    gas_dn, flue_dn = (_fuel_pipe_dn(db_path, fuel, kw) if is_lowcv else (None, None))
+    is_lowcv = has_gas and (_gas_fuel or "").strip().lower() in (
+        "coke oven gas", "producer gas", "blast furnace gas")
+    gas_dn, flue_dn = (_fuel_pipe_dn(db_path, _gas_fuel, kw) if is_lowcv else (None, None))
     # Resolve prices — the centralised Pricelist wins over the code constants.
     flat, plc_map, skid, oil = _FLAT, _PLC_COST, _GAS_SKID_6000, _OIL
     m = REGEN_MODELS[kw]
@@ -689,7 +763,10 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _burner_done = False
     if _conn:
         try:
-            if is_oil:
+            if is_dual:
+                from bom.regen_pricelist import dual_regen_burner_cost as _bc
+                _bdesc = "dual-fuel burner (S.S. Assembly ×3)"
+            elif is_oil:
                 from bom.regen_pricelist import oil_regen_burner_cost as _bc
                 _bdesc = "film burner (S.S. Assembly ×3)"
             else:
@@ -698,7 +775,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             _bsize, _bcost = _bc(_conn, kw)
             if _bcost is not None:
                 _regen_portion = _REGEN_PORTION.get(regen_kw, 0)
-                _br_item = f"Burner with Regenerator ({kw} KW)"
+                _br_item = ("Burner with Regenerator (Dual Fuel, %d KW)" % kw
+                            if is_dual else f"Burner with Regenerator ({kw} KW)")
                 _br_spec = f"{kw} KW {_bdesc} + regenerator, complete"
                 add("BURNER SET", _br_item, _br_spec, 2, _bcost + _regen_portion)
                 _burner_done = True
@@ -708,11 +786,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         # Combined burner + regenerator cost = burner portion (burner KW) + regen
         # portion (regen KW), from the hardcoded Regen-with-Burner table.
         _br_cost = _BURNER_PORTION.get(kw, m['burner_cost']) + _REGEN_PORTION.get(regen_kw, 0)
+        _dual_tag = "Dual Fuel, " if is_dual else ""
         if regen_kw == kw:
-            _br_item = f"Burner with Regenerator ({kw} KW)"
+            _br_item = f"Burner with Regenerator ({_dual_tag}{kw} KW)"
             _br_spec = "Regenerative burner with heat-storage media, complete"
         else:
-            _br_item = f"Burner with Regenerator (Burner {kw} / Regen {regen_kw} KW)"
+            _br_item = f"Burner with Regenerator ({_dual_tag}Burner {kw} / Regen {regen_kw} KW)"
             _br_spec = f"Burner {kw} KW + Regenerator {regen_kw} KW, complete"
         add("BURNER SET", _br_item, _br_spec,                              2, _br_cost)
     add("BURNER SET", "Pilot Burner",        "10 KW (LPG)",              2, flat['pilot_burner'])
@@ -723,6 +802,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ── 2. PILOT LINE ─────────────────────────────────────────────────────────
     # The pilot burner is LPG-fired regardless of the main fuel; on an oil offer
     # label it "PILOT LINE (LPG)" so it isn't mistaken for a gas fuel line.
+    # A dual offer has a gas line, so its pilot taps the main gas train as usual.
     _pilot_sec = "PILOT LINE" if is_oil else "GAS LINE — PILOT"
     add(_pilot_sec, "Pilot Regulator",       "NB15",             2, flat['pilot_regulator'])
     add(_pilot_sec, "Pilot Solenoid Valve",  "NB15",             2, flat['pilot_solenoid'])
@@ -736,12 +816,16 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             "NG/LPG, complete skid", 1, oil['pilot_gas_train'], scale=False)
 
     # ── 3. FUEL LINE — Burner ─────────────────────────────────────────────────
-    if is_oil:
+    # Dual fuel builds BOTH lines: the oil line below plus the gas line that
+    # follows (each burner carries a gas head and an oil film gun).
+    if has_oil:
         # Oil burner fuel line (NB20).
         add("OIL LINE — BURNER", "Solenoid Valve (Oil Line)",                 "NB20", 2,  oil['solenoid_valve_oil'])
         add("OIL LINE — BURNER", "Ball Valve (Oil Line)",                     "NB20", 2,  oil['ball_valve_oil'])
         add("OIL LINE — BURNER", "Flexible Hose Pipe (Oil Line)",             "NB20, 1000mm", 2,  oil['flex_hose_oil'])
         add("OIL LINE — BURNER", "Pressure Gauge 0-500",                      "",     2,  oil['pressure_gauge_oil'])
+    if not has_gas:
+        pass                       # oil-only: no gas line to the burners
     elif is_lowcv and gas_dn:
         # Built-up gas line sized to the fuel's gas DN. Up to NB100 it's the
         # solenoid + ball-valve + hose bank; above that (low-CV, large flow) it
@@ -794,9 +878,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         f"DN{m['air_cv_nb']}",               1,                          m['air_cv_cost'])
     add("TEMP CONTROL", "Air Flow Meter (DPT)",
         f"DN{m['air_fm_nb']}",               1,                          m['air_fm_cost'])
-    if is_oil:
+    if has_oil:
         add("TEMP CONTROL", "Oil Control Valve",            "DN125",    1, oil['oil_control_valve'])
         add("TEMP CONTROL", "Oil Flow Meter",               "",         1, oil['oil_flow_meter'])
+    if not has_gas:
+        pass                       # oil-only: no gas control valve / flow meter
     elif is_lowcv and gas_dn:
         nb, p, _ = _snap("control",    "gas_cv", gas_dn); add("TEMP CONTROL", "Gas Control Valve",    f"DN{nb}", 1, p)
         nb, p, _ = _snap("flow_meter", "gas_fm", gas_dn); add("TEMP CONTROL", "Gas Flow Meter (DPT)", f"DN{nb}", 1, p)
@@ -823,7 +909,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # nearest ENCON HP frame, priced live from the blower catalogue ("??" above
     # 60 HP). ID fan BOM uses Option B (cold-start rated); Option A (VFD + temp
     # interlock) is shown alongside in the costing sheet's worked example.
-    _fan = compute_fan_flows(kw, num_pairs, fuel, _conn)
+    # Dual fuel: sized on the worst case of the two fuels (one fires at a time).
+    _fan = compute_fan_flows(kw, num_pairs, fuel, _conn, fuel2=fuel2)
     _bhp2, _bprice, _bkw = _fan['blower_hp'], _fan['blower_price'], _fan['blower_motor_kw']
     _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_B']
     _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price above 60 HP)'
@@ -853,12 +940,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     add("CONTROLS", "PLC with HMI",
         "Siemens S7-1500 with touch panel",  1,                     plc_cost, scale=False)
     add("CONTROLS", "Control Panel",          "",                         1,  m['panel_cost'], scale=False)
-    if is_oil:
+    if has_oil:
         # Oil offers add a paperless recorder for the oil flow/temp channels.
         add("CONTROLS", "Paperless Recorder", "",                         1, oil['paperless_recorder'], scale=False)
 
-    # ── 8b. OIL AUXILIARY — HPU (computed), oil fuels only ────────────────────
-    if is_oil:
+    # ── 8b. OIL AUXILIARY — HPU (computed), any offer with an oil fuel ────────
+    if has_oil:
         # Heating & Pumping Unit — priced live by the HPU calculator (9 KW unit;
         # material cost × regen markup ≈ the HPU's own selling price). Fallback 0.
         hpu_cost = 0.0
@@ -871,9 +958,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             add("OIL AUXILIARY", "Heating & Pumping Unit", "9 KW",        1, hpu_cost, scale=False)
 
     # ── 9. GAS TRAIN ─────────────────────────────────────────────────────────
-    if is_oil:
-        pass  # oil: main fuel via HPU; the pilot's packaged gas train is in the pilot line
-    elif is_lowcv and _fuel_l in ("blast furnace gas", "coke oven gas", "producer gas"):
+    # Present whenever the offer has a gas fuel — including dual, where it feeds
+    # the gas side of the burners and the pilot.
+    if not has_gas:
+        pass  # oil-only: main fuel via HPU; the pilot's packaged gas train is in the pilot line
+    elif is_lowcv:
         # BFG / COG / Producer Gas gas train — 5 header valves sized to the fuel's
         # own gas DN (varies per fuel via regen_pipe_sizes), Pricelist-sourced
         # (DEMBLA for the pneumatic shut-off; butterfly/gate are L&T-only).

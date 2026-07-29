@@ -68,6 +68,20 @@ def _run(p, text, *, bold=False, size=12):
     return r
 
 
+def _fuel_flags(df):
+    """(has_oil, has_gas, is_dual) read off the BOM's section names.
+
+    Oil sections are 'OIL LINE — BURNER' / 'OIL AUXILIARY'; gas sections are
+    'GAS LINE — …' / 'GAS TRAIN'. An oil-only offer names its pilot section
+    'PILOT LINE', so a leading 'GAS' always means a real gas fuel is present —
+    and both sides present means a dual-fuel offer.
+    """
+    secs = {str(s).upper() for s in df["SECTION"].unique()}
+    has_oil = any(s.startswith("OIL") for s in secs)
+    has_gas = any(s.startswith("GAS") for s in secs)
+    return has_oil, has_gas, (has_oil and has_gas)
+
+
 def fill_temp_control(doc_path, df):
     """Regenerate the TEMPERATURE CONTROL bullet list from the BOM.
 
@@ -113,27 +127,24 @@ def fill_temp_control(doc_path, df):
         plc_model = m.group(0).replace(" ", "") if m else ""
     plc_phrase = (f"PLC {plc_model} with HMI" if plc_model else "PLC with HMI")
 
-    is_oil = any(str(s).upper().startswith("OIL") for s in df["SECTION"].unique())
-    if is_oil:
-        SPEC = [
-            ("CONTROLS",     "plc with hmi",        plc_phrase),
-            ("TEMP CONTROL", "thermocouple",        "Thermocouple with Temperature Transmitter"),
-            ("TEMP CONTROL", "air flow meter",      "Orifice with DPT Volumetric Flow Meter for Air"),
-            ("TEMP CONTROL", "oil flow meter",      "Flow Meter in Oil Line"),
-            ("TEMP CONTROL", "air control valve",   "Pneumatic Air Control Valve"),
-            ("TEMP CONTROL", "oil control valve",   "Pneumatic Control Valve in Oil Line"),
-            ("PRESSURE CONTROL", "pneumatic damper", "Pneumatic Flue Control Valve"),
-        ]
-    else:
-        SPEC = [
-            ("CONTROLS",     "plc with hmi",      plc_phrase),
-            ("TEMP CONTROL", "thermocouple",      "Thermocouple with Temperature Transmitter"),
-            ("TEMP CONTROL", "air flow meter",    "Orifice with DPT Volumetric Flow Meter for Air"),
-            ("TEMP CONTROL", "gas flow meter",    "Orifice with DPT Volumetric Flow Meter for Gas"),
-            ("TEMP CONTROL", "air control valve", "Pneumatic Air Control Valve"),
-            ("TEMP CONTROL", "gas control valve", "Pneumatic Gas Control Valve"),
-            ("PRESSURE CONTROL", "pneumatic damper", "Pneumatic Flue Control Valve"),
-        ]
+    # A dual-fuel BOM carries both the gas and the oil control loops, so both
+    # sets of bullets are listed (each line only survives if it's in the BOM).
+    _has_oil, _has_gas, _ = _fuel_flags(df)
+    SPEC = [
+        ("CONTROLS",     "plc with hmi",      plc_phrase),
+        ("TEMP CONTROL", "thermocouple",      "Thermocouple with Temperature Transmitter"),
+        ("TEMP CONTROL", "air flow meter",    "Orifice with DPT Volumetric Flow Meter for Air"),
+    ]
+    if _has_gas:
+        SPEC.append(("TEMP CONTROL", "gas flow meter", "Orifice with DPT Volumetric Flow Meter for Gas"))
+    if _has_oil:
+        SPEC.append(("TEMP CONTROL", "oil flow meter", "Flow Meter in Oil Line"))
+    SPEC.append(("TEMP CONTROL", "air control valve", "Pneumatic Air Control Valve"))
+    if _has_gas:
+        SPEC.append(("TEMP CONTROL", "gas control valve", "Pneumatic Gas Control Valve"))
+    if _has_oil:
+        SPEC.append(("TEMP CONTROL", "oil control valve", "Pneumatic Control Valve in Oil Line"))
+    SPEC.append(("PRESSURE CONTROL", "pneumatic damper", "Pneumatic Flue Control Valve"))
     lines = []
     for section, needle, phrase in SPEC:
         q, _ = _lookup(section, needle)
@@ -164,13 +175,14 @@ def fill_temp_control(doc_path, df):
     return True
 
 
-def fill_consist_list(doc_path, is_oil=False, gas_train_label="NG"):
+def fill_consist_list(doc_path, is_oil=False, gas_train_label="NG", is_dual=False):
     """Rebuild the cover-letter 'consisting of' scope list per fuel.
 
     Always: Regenerative Burners, Temperature Control, Furnace Pressure Control,
     Blower for Combustion Air, ID Fan for Suction of Flue Gas, Panel with PLC &
-    HMI. Gas fuels also get '{fuel} Gas Train' (oil fuels have no gas train).
-    Idempotent — removes any existing list first.
+    HMI. Gas fuels also get '{fuel} Gas Train' (oil fuels have no gas train);
+    any offer with an oil fuel gets the Heating & Pumping Unit. A dual-fuel
+    offer therefore lists both. Idempotent — removes any existing list first.
     """
     import copy
     from docx.shared import Pt, Inches
@@ -185,14 +197,16 @@ def fill_consist_list(doc_path, is_oil=False, gas_train_label="NG"):
                  if p.text.strip().startswith("This is with reference")), anchor)
 
     points = ["Regenerative Burners", "Temperature Control"]
-    if not is_oil:
+    if is_dual or not is_oil:
         points.append(f"{gas_train_label} Gas Train")
+    if is_dual or is_oil:
+        points.append("Heating & Pumping Unit for Oil")
     points += ["Furnace Pressure Control", "Blower for Combustion Air",
                "ID Fan for Suction of Flue Gas", "Panel with PLC & HMI"]
     LEAD = "The offer broadly comprises the following:"
     KEYS = ("Regenerative Burners", "Temperature Control", "Gas Train",
-            "Furnace Pressure Control", "Blower for Combustion", "ID Fan",
-            "Panel with PLC")
+            "Heating & Pumping Unit", "Furnace Pressure Control",
+            "Blower for Combustion", "ID Fan", "Panel with PLC")
 
     # remove any existing list (idempotent)
     for p in list(d.paragraphs):
@@ -353,13 +367,15 @@ def fill_gas_train(doc_path, df):
     return True
 
 
-def _makelist_category(name, is_oil=False):
+def _makelist_category(name, is_oil=False, is_dual=False):
     """Map a BOM item name to a clean MAKE-LIST display category, so many BOM
     lines collapse into one make-list row (e.g. every Ball Valve → 'Ball Valve').
     """
     n = (name or "").lower()
+    _burner_cat = ("Regen Dual Fuel Burner" if is_dual
+                   else ("Regen Oil Burner" if is_oil else "Regen Gas Burner"))
     rules = [
-        ("burner with regenerator", "Regen Oil Burner" if is_oil else "Regen Gas Burner"),
+        ("burner with regenerator", _burner_cat),
         ("packaged gas train",      "Pilot Burner Packaged Gas Train"),
         ("pilot burner",            "Pilot Burner"),
         ("sequence controller",     "Burner Sequence Controller"),
@@ -420,13 +436,13 @@ def fill_make_list(doc_path, df):
         return False
 
     # category -> distinct makes, in BOM order
-    is_oil = any(str(s).upper().startswith("OIL") for s in df["SECTION"].unique())
+    is_oil, _has_gas, is_dual = _fuel_flags(df)
     cats = OrderedDict()
     for _, row in df.iterrows():
         make = str(row.get("MAKE", "") or "").strip()
         if not make:
             continue
-        cat = _makelist_category(row["ITEM NAME"], is_oil)
+        cat = _makelist_category(row["ITEM NAME"], is_oil, is_dual)
         cats.setdefault(cat, [])
         if make not in cats[cat]:
             cats[cat].append(make)

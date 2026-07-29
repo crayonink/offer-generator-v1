@@ -4617,6 +4617,7 @@ class RegenCalcRequest(BaseModel):
     model_kw: Optional[int] = None     # BURNER size 500..6000; if set, skips the heat-load calc
     regen_kw: Optional[int] = None     # REGENERATOR size 500..6000; defaults to model_kw
     fuel: Optional[str] = None         # Natural Gas / Blast Furnace Gas / Coke Oven Gas / Producer Gas / Oil
+    fuel2: Optional[str] = None        # DUAL FUEL: the second fuel (one gas + one oil); blank/"none" = single fuel
     num_pairs: Optional[int] = None    # number of burner pairs
     markup: float = 1.80
     standby_blower: bool = False       # add a standby blower (same price as blower)
@@ -4665,7 +4666,7 @@ def regen_calculate(req: RegenCalcRequest):
         bom_df = build_regen_df(model_kw, model_markup, num_pairs=num_pairs,
                                 db_path=DB_PATH, fuel=req.fuel or "Natural Gas",
                                 regen_kw=regen_kw, standby_blower=req.standby_blower,
-                                vfd=req.vfd)
+                                vfd=req.vfd, fuel2=req.fuel2)
         supplementary = get_supplementary_data(model_kw)
 
         # Augment supplementary with full sizing + nozzle + legacy rates from DB
@@ -4739,16 +4740,26 @@ def regen_calculate(req: RegenCalcRequest):
             from bom.regen_builder import compute_fan_flows
             with sqlite3.connect(DB_PATH) as _fc:
                 supplementary['fan_sizing'] = compute_fan_flows(
-                    model_kw, num_pairs, req.fuel or "Natural Gas", _fc)
+                    model_kw, num_pairs, req.fuel or "Natural Gas", _fc,
+                    fuel2=req.fuel2)
         except Exception:
             pass
 
         total_cost    = float(bom_df["TOTAL COST"].sum())
         total_selling = float(bom_df["TOTAL SELLING"].sum())
 
+        from bom.regen_builder import resolve_fuels as _rf2
+        _gasf, _oilf, _isdual = _rf2(req.fuel or "Natural Gas", req.fuel2)
         calculations = {
             "mode": "direct" if req.model_kw else "heat",
             "fuel": req.fuel or "Natural Gas",
+            # Dual fuel (one gas + one oil). fuel/fuel2 echo what was picked;
+            # gas_fuel/oil_fuel are the resolved sides, so the sheet can label
+            # the gas line vs the oil line whichever order they came in.
+            "fuel2": (req.fuel2 or None) if _isdual else None,
+            "is_dual": _isdual,
+            "gas_fuel": _gasf,
+            "oil_fuel": _oilf,
             "num_pairs": num_pairs,
             "model_kw": model_kw,          # burner size
             "regen_kw": regen_kw,          # regenerator size
@@ -8084,32 +8095,47 @@ async def generate_quote(req: QuoteRequest):
             _ec = dict(req.extra_context or {})
             _rp = int(_ec.get("regen_pairs") or 1)
             _rf = str(_ec.get("regen_fuel") or "Natural Gas")
+            _rf2 = str(_ec.get("regen_fuel2") or "")
             _rk = _ec.get("regen_kw") or ""
             _price = float(req.items[0].total) if req.items else 0.0
-            _oil = _rf.strip().lower() in {"hsd", "ldo", "hdo", "fo", "sko", "cfo", "lshs", "oil"}
-            # Oil fuels use the dedicated oil template; gases use the standard one.
+            # Dual fuel = one gas + one oil; resolve_fuels sorts the pair so the
+            # gas always drives the gas-train wording and the oil the HPU wording.
+            from bom.regen_builder import resolve_fuels as _resolve_fuels
+            _gas_f, _oil_f, _dual = _resolve_fuels(_rf, _rf2)
+            _oil = bool(_oil_f) and not _dual          # oil-ONLY offer
+            # Oil fuels use the dedicated oil template, dual fuel the dual
+            # template (gas train + HPU sections); gases use the standard one.
             _base = os.path.dirname(os.path.abspath(__file__))
-            _tpl_name = "Regen_Oil_Offer_Template.docx" if _oil else "Regen_Offer_Template.docx"
+            _tpl_name = ("Regen_Dual_Offer_Template.docx" if _dual else
+                         "Regen_Oil_Offer_Template.docx" if _oil else
+                         "Regen_Offer_Template.docx")
             _cand = os.path.join(_base, _tpl_name)
             if os.path.exists(_cand):
                 _regen_tpl = _cand
             elif os.path.exists(os.path.join(_base, "Regen_Offer_Template.docx")):
                 _regen_tpl = os.path.join(_base, "Regen_Offer_Template.docx")   # fallback
-            _fword = "OIL" if _oil else ("NG" if "natural" in _rf.lower() else _rf.upper())
+            # Gas-fuel short name (drives the gas-train label + supply pressure).
+            _gword = ("NG" if "natural" in (_gas_f or "").lower()
+                      else (_gas_f or "").upper())
+            _fword = ("DUAL FUEL" if _dual else ("OIL" if _oil else _gword))
             # Gas-train label: strip a trailing "GAS" so "{fuel} GAS TRAIN" doesn't
             # read "BLAST FURNACE GAS GAS TRAIN". NG/PNG keep their names.
             import re as _re_gt
-            _gtf = _re_gt.sub(r"\s*GAS\s*$", "", _fword, flags=_re_gt.I).strip() or _fword
+            _gtf = _re_gt.sub(r"\s*GAS\s*$", "", _gword, flags=_re_gt.I).strip() or _gword
             _qtyw = f"{_rp} Pair" + ("s" if _rp > 1 else "")
             # Gas-train supply pressure: NG at 2.1 bar; all other gas fuels at 1000 mm.
             _press_clause = ("Pressure at top 2.1 bar."
-                             if _fword == "NG"
+                             if _gword == "NG"
                              else "Pressure at 1000 mm is considered.")
+            # Dual fuel names both fuels in the body ("Natural Gas & HSD"); the
+            # savings prose follows the gas (primary firing) fuel.
+            _fuel_name = f"{_gas_f} & {_oil_f}" if _dual else _rf
             _ec.update({
-                "fuel_word": _fword, "gas_train_fuel": _gtf, "is_oil": _oil,
+                "fuel_word": _fword, "gas_train_fuel": _gtf,
+                "is_oil": _oil, "is_dual": _dual,
                 "pressure_clause": _press_clause,
-                "savings_fuel": ("Fuel Oil" if _oil else _rf),
-                "fuel_name": _rf, "kw": _rk, "pairs": _rp,
+                "savings_fuel": (_gas_f if _dual else ("Fuel Oil" if _oil else _rf)),
+                "fuel_name": _fuel_name, "kw": _rk, "pairs": _rp,
                 "burner_count": f"{_rp * 2} Nos", "qty_words": _qtyw,
                 "price_line_desc": f"{_qtyw} Regenerative Burner System with PLC",
                 "price_inr": _format_inr(_price),
@@ -8127,7 +8153,8 @@ async def generate_quote(req: QuoteRequest):
                 from bom.regen_builder import compute_fan_flows as _cff
                 _cc = _sq3.connect(DB_PATH)
                 try:
-                    _ff = _cff(float(_burner_kw), _rp, _rf, _cc)
+                    # Dual fuel: sized on the worst case of the two fuels.
+                    _ff = _cff(float(_burner_kw), _rp, _rf, _cc, fuel2=_rf2)
                     _blsz = f"{_ff['blower_hp']:g} HP"
                     _idsz = f"{_ff['id_hp']:g} HP"
                 finally:
@@ -8138,7 +8165,7 @@ async def generate_quote(req: QuoteRequest):
                 "tbl_regen_kw":    f"{_regen_kw_disp} kW" if _regen_kw_disp else "",
                 "tbl_burner_kw":   f"{_burner_kw} kW" if _burner_kw else "",
                 "tbl_pairs":       str(_rp),
-                "tbl_fuel":        _rf,
+                "tbl_fuel":        _fuel_name,
                 "tbl_blower_size": _blsz,
                 "tbl_idfan_size":  _idsz,
             })
@@ -8156,14 +8183,15 @@ async def generate_quote(req: QuoteRequest):
             try:
                 from bom.regen_builder import build_regen_df, select_model
                 _mkw = select_model(float(_rk)) if _rk else 1000
-                _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf, db_path=DB_PATH)
+                _bomdf = build_regen_df(_mkw, num_pairs=_rp, fuel=_rf,
+                                        fuel2=_rf2, db_path=DB_PATH)
                 from engine.regen_bom_table import (
                     fill_make_list, fill_temp_control, fill_gas_train,
                     fill_oil_supply, fill_consist_list)
                 if not fill_make_list(output_path, _bomdf):
                     print("WARN: regen MAKE LIST table not found in template")
                 try:
-                    fill_consist_list(output_path, _oil, _gtf)
+                    fill_consist_list(output_path, _oil, _gtf, is_dual=_dual)
                 except Exception as _cl_err:
                     print(f"WARN: regen consist-list fill failed: {_cl_err}")
                 try:
@@ -8171,8 +8199,10 @@ async def generate_quote(req: QuoteRequest):
                 except Exception as _tc_err:
                     print(f"WARN: regen TEMP CONTROL fill failed: {_tc_err}")
                 try:
-                    # oil offers -> HPU/oil-line section; gas -> gas-train section
-                    if not fill_oil_supply(output_path, _bomdf):
+                    # oil offers -> HPU/oil-line section; gas -> gas-train
+                    # section; dual has both, so fill each one.
+                    _filled_oil = fill_oil_supply(output_path, _bomdf)
+                    if _dual or not _filled_oil:
                         fill_gas_train(output_path, _bomdf)
                 except Exception as _gt_err:
                     print(f"WARN: regen fuel-supply fill failed: {_gt_err}")
@@ -8582,6 +8612,8 @@ def _regen_basis(item, spec):
         ("Paperless Recorder",        "Pricelist → Paperless Recorder (EUROTHERM)"),
         ("Heating & Pumping Unit",    "HPU calculator → 9 KW (HPD-9, material cost × markup)"),
         ("ID Fan",                    "Blower catalogue at ID-fan HP (dedicated ID-fan prices pending)"),
+        ("Burner with Regenerator (Dual Fuel",
+         "Pricelist → ENCON DUAL FUEL Burner Set + S.S. Assembly ×3, + Regen portion (regen KW)"),
         ("Burner with Regenerator", "Regen-with-Burner tab → Burner portion (burner KW) + Regen portion (regen KW)"),
         ("Combustion Blower",        "Internal costing → blower with motor (Alone×1.8 + Motor×1.5)"),
         ("PLC with HMI",             "Pricelist → PLC with HMI (by no. of pairs)"),
@@ -9111,8 +9143,12 @@ def export_excel(req: ExcelExportRequest):
         _mkw   = calc.get("model_kw", "")
         _rkw   = calc.get("regen_kw", "")
         _tkw   = calc.get("total_kw", "")
-        _fuel_disp = _FUELDISP.get(str(calc.get("fuel", "Natural Gas")).lower(),
-                                   calc.get("fuel", "Natural Gas"))
+        def _fdisp(f):
+            return _FUELDISP.get(str(f).lower(), f)
+        _fuel_disp = _fdisp(calc.get("fuel", "Natural Gas"))
+        # Dual fuel (one gas + one oil) — name both on the BOM's SYSTEM header.
+        if calc.get("fuel2"):
+            _fuel_disp += f" + {_fdisp(calc.get('fuel2'))}"
         section_hdr(ws5, r5, 11, "SYSTEM")
         r5 += 1
         _summary = [

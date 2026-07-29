@@ -478,6 +478,13 @@
           <button class="mat-btn"        onclick="setFuel(this,'LSHS')">LSHS</button>
         </div>
       </div>
+      <!-- Dual fuel = one gas + one oil. The choices below are always the
+           opposite side of whatever Fuel Type is selected above. -->
+      <div class="field" id="fuel2Field" style="margin-top:18px;">
+        <label>Second Fuel <span style="font-weight:400; color:var(--muted);">— dual fuel (optional)</span></label>
+        <div class="mat-buttons" style="margin-top:8px;" id="fuel2Btns"></div>
+        <div style="font-size:.78rem; color:var(--muted); margin-top:8px;" id="fuel2Hint"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -688,6 +695,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
   let selectedKw = 500;        // burner size (drives the whole BOM)
   let selectedRegenKw = 500;   // regenerator size (regen cost portion only)
   let selectedFuel = 'Natural Gas';
+  let selectedFuel2 = '';          // dual fuel: the opposite-side fuel, '' = single fuel
   function setBurnerSize(btn, kw) {
     selectedKw = kw;
     btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
@@ -699,17 +707,43 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     btn.classList.add('active');
   }
   const OIL_FUELS = ['HSD','LDO','HDO','FO','SKO','CFO','LSHS'];
+  const GAS_FUELS = ['Natural Gas','Blast Furnace Gas','Coke Oven Gas','Producer Gas'];
   function setFuel(btn, fuel) {
     selectedFuel = fuel;
     // Clear active across BOTH the Gas and Oil groups (scoped to the fuel field).
     document.getElementById('fuelBtns').querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    renderFuel2();       // the second-fuel choices flip to the opposite side
+    applyOilSizeCap();
+  }
+  // ── Dual fuel (one gas + one oil) ────────────────────────────────────────
+  // The second fuel always comes from the opposite side of Fuel Type, so the
+  // pair can never be gas+gas or oil+oil. 'None' keeps the offer single-fuel.
+  function renderFuel2() {
+    const isOil1 = OIL_FUELS.includes(selectedFuel);
+    const opts = isOil1 ? GAS_FUELS : OIL_FUELS;
+    if (selectedFuel2 && opts.indexOf(selectedFuel2) === -1) selectedFuel2 = '';
+    const wrap = document.getElementById('fuel2Btns');
+    if (!wrap) return;
+    wrap.innerHTML =
+      `<button class="mat-btn${selectedFuel2 ? '' : ' active'}" onclick="setFuel2(this,'')">None</button>` +
+      opts.map(f => `<button class="mat-btn${selectedFuel2 === f ? ' active' : ''}" `
+                  + `onclick="setFuel2(this,'${f}')">${f}</button>`).join('');
+    document.getElementById('fuel2Hint').textContent = selectedFuel2
+      ? `Dual fuel: ${selectedFuel} + ${selectedFuel2} — both fuel lines, a dual-fuel `
+        + `burner, and the HPU are included; fans are sized on the worst case of the two.`
+      : `Pick ${isOil1 ? 'a gas' : 'an oil'} fuel to make this a dual-fuel offer.`;
+  }
+  function setFuel2(btn, fuel) {
+    selectedFuel2 = fuel;
+    renderFuel2();
     applyOilSizeCap();
   }
   // Burner size >2500 KW: OIL has no burner (hide the buttons); GAS has no
   // catalogue price (show a '?' marker). The REGENERATOR size stays full.
+  // A dual-fuel offer carries an oil burner, so it follows the oil cap.
   function applyOilSizeCap() {
-    const isOil = OIL_FUELS.includes(selectedFuel);
+    const isOil = OIL_FUELS.includes(selectedFuel) || OIL_FUELS.includes(selectedFuel2);
     document.getElementById('burnerSizeBtns').querySelectorAll('.mat-btn').forEach(b => {
       if (parseInt(b.dataset.kw) > 2500) {
         b.style.display = isOil ? 'none' : '';       // oil: hidden; gas: shown
@@ -744,7 +778,8 @@ We shall not be responsible for any delay due to non-availability of fronts, del
           data[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
         });
         data.__sel = { kw: selectedKw, regenKw: selectedRegenKw,
-                       fuel: selectedFuel, currency: selectedCurrency };
+                       fuel: selectedFuel, fuel2: selectedFuel2,
+                       currency: selectedCurrency };
         localStorage.setItem(STICKY_KEY, JSON.stringify(data));
       } catch (e) { /* storage full / disabled — ignore */ }
     }, 250);
@@ -769,6 +804,8 @@ We shall not be responsible for any delay due to non-availability of fronts, del
         if (fb) fb.classList.add('active');
       }
     }
+    selectedFuel2 = s.fuel2 || '';
+    renderFuel2();
     if (s.kw)      { selectedKw = s.kw;           _activateKw('burnerSizeBtns', s.kw); }
     if (s.regenKw) { selectedRegenKw = s.regenKw; _activateKw('regenSizeBtns', s.regenKw); }
     applyOilSizeCap();
@@ -782,6 +819,12 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     if (!confirm('Clear all saved form data and start a fresh offer?')) return;
     try { localStorage.removeItem(STICKY_KEY); } catch (e) {}
     location.reload();
+  }
+
+  // Fuel label for the summary lines — "Natural Gas + HSD" on a dual offer.
+  function fuelLabel(c) {
+    const f = c.fuel || 'Natural Gas';
+    return c.fuel2 ? `${f} + ${c.fuel2}` : f;
   }
 
   // ── Format currency ──────────────────────────────────────────────────────
@@ -865,6 +908,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     const ref = document.getElementById('ref_no');
     if (ref) ref.addEventListener('input', () => { _refEdited = true; });
     prefillCustomer();
+    renderFuel2();       // second-fuel choices for the default fuel (Natural Gas)
     restoreForm();       // saved values win over the test prefill
     fetchAutoRefSeq();
     applyOilSizeCap();   // reflect the default fuel (Natural Gas) on the size buttons
@@ -884,6 +928,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
       model_kw:  selectedKw,
       regen_kw:  selectedRegenKw,
       fuel:      selectedFuel,
+      fuel2:     selectedFuel2,          // '' = single fuel
       num_pairs: parseInt(document.getElementById('num_pairs').value) || 1,
       markup:    parseFloat(document.getElementById('markup').value) || 1.80,
       standby_blower: document.getElementById('standby_blower').checked,
@@ -935,12 +980,19 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     const rows = [
       {cells:[xs('',10)]},   // spacer
       {_class:'xl-section', cells:[xs('BLOWER & ID FAN — SIZING EXAMPLE  (' +
-        fs.num_pairs + ' × ' + fs.kw + ' KW, ' + (fs.is_oil ? 'oil' : 'gas') + ')', 10)]},
+        fs.num_pairs + ' × ' + fs.kw + ' KW, ' +
+        (fs.is_dual ? 'dual fuel' : (fs.is_oil ? 'oil' : 'gas')) + ')', 10)]},
     ];
     const r2 = v => (Math.round(v * 100) / 100).toLocaleString('en-IN');
     const line = t => rows.push({cells:[xs(t, 10)]});
     // ── air / gas flows ──
-    if (fs.is_oil) {
+    if (fs.is_dual) {
+      // One fuel fires at a time, so each side takes the worst case of the two.
+      const g = fs.gas_fuel_flows || {}, o = fs.oil_fuel_flows || {};
+      line(fs.fuel + ' (gas): combustion air = KW × pairs = ' + r0(g.comb_air) + ' Nm³/hr   ·   Gas = KW×860÷CV×pairs = ' + r0(g.gas_flow) + ' Nm³/hr   ·   ID-fan flow = air+gas = ' + r0(g.id_air) + ' Nm³/hr');
+      line(fs.fuel2 + ' (oil): oil = KW×860÷CV×pairs = ' + r1(o.oil_kg) + ' kg/hr   ·   air = oil × ' + o.afr + ' ÷ ' + o.rho_air + ' = ' + r0(o.comb_air) + ' Nm³/hr   ·   ID-fan flow = (air+oil) ÷ ' + o.rho_flue + ' = ' + r0(o.id_air) + ' Nm³/hr');
+      line('Worst case (one fuel fires at a time): blower on ' + fs.sizing_fuel_air + ' = ' + r0(fs.comb_air) + ' Nm³/hr   ·   ID fan on ' + fs.sizing_fuel_flue + ' = ' + r0(fs.id_air) + ' Nm³/hr');
+    } else if (fs.is_oil) {
       line('Oil flow = KW × 860 ÷ CV × pairs = ' + fs.kw + ' × 860 ÷ ' + fs.oil_cv + ' × ' + fs.num_pairs + ' = ' + r1(fs.oil_kg) + ' kg/hr   ·   Air = oil × ' + fs.afr + ' = ' + r0(fs.air_kg) + ' kg/hr');
       line('Blower flow = air ÷ ' + fs.rho_air + ' = ' + r0(fs.comb_air) + ' Nm³/hr   ·   ID-fan flow = (air+oil) ÷ ' + fs.rho_flue + ' = ' + r0(fs.id_air) + ' Nm³/hr');
     } else {
@@ -1047,7 +1099,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
         <div style="background:#f8fafc; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">System</div>
           <div style="font-weight:700;">${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}</div>
-          <div style="font-size:.82rem; color:var(--muted);">${c.fuel || 'Natural Gas'} · ${(c.regen_kw && c.regen_kw !== c.model_kw) ? ('Burner '+c.model_kw+' / Regen '+c.regen_kw+' KW') : (c.total_kw + ' KW')}</div>
+          <div style="font-size:.82rem; color:var(--muted);">${fuelLabel(c)} · ${(c.regen_kw && c.regen_kw !== c.model_kw) ? ('Burner '+c.model_kw+' / Regen '+c.regen_kw+' KW') : (c.total_kw + ' KW')}</div>
         </div>
         <div style="background:#eff6ff; border-radius:10px; padding:16px;">
           <div style="font-size:.75rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:6px;">Final Total</div>
@@ -1162,7 +1214,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     const items = [{
       product_type: 'Regenerative Burner System',
       model: `${c.num_pairs} × ${c.model_kw} KW Regen Pair${c.num_pairs > 1 ? 's' : ''}`,
-      description: `${c.fuel || 'Natural Gas'} · ${c.num_pairs} pair${c.num_pairs > 1 ? 's' : ''} · ${c.total_kw} KW total`,
+      description: `${fuelLabel(c)} · ${c.num_pairs} pair${c.num_pairs > 1 ? 's' : ''} · ${c.total_kw} KW total`,
       qty: 1,
       unit_price: finalTotal,
       total: finalTotal,
@@ -1204,6 +1256,8 @@ We shall not be responsible for any delay due to non-availability of fronts, del
         regen_kw:    c.model_kw,
         regen_pairs: c.num_pairs,
         regen_fuel:  c.fuel || 'Natural Gas',
+        regen_fuel2: c.fuel2 || '',        // dual fuel: the second (oil) fuel
+
         standby_blower: document.getElementById('standby_blower').checked,
         vfd:            document.getElementById('vfd').checked,
         // Technical-data summary table values (burner vs regenerator kW)
