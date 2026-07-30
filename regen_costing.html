@@ -94,6 +94,9 @@
     }
     .mat-btn:hover { border-color: var(--navy); color: var(--navy); background: #eff6ff; }
     .mat-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .mat-btn.blocked { opacity: .4; cursor: not-allowed; text-decoration: line-through;
+                       background: #f8fafc; border-color: var(--border); color: var(--muted); }
+    .mat-btn.blocked:hover { border-color: var(--border); color: var(--muted); background: #f8fafc; }
 
     /* ── Quick-set buttons ── */
     .quick-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
@@ -453,20 +456,20 @@
         <label>Fuel Type</label>
         <div style="font-size:.72rem; font-weight:700; letter-spacing:.6px; color:var(--muted); text-transform:uppercase; margin-top:10px;">Gas</div>
         <div class="mat-buttons" style="margin-top:6px;">
-          <button class="mat-btn active" onclick="setFuel(this,'Natural Gas')">Natural Gas</button>
-          <button class="mat-btn"        onclick="setFuel(this,'Blast Furnace Gas')">Blast Furnace Gas</button>
-          <button class="mat-btn"        onclick="setFuel(this,'Coke Oven Gas')">Coke Oven Gas</button>
-          <button class="mat-btn"        onclick="setFuel(this,'Producer Gas')">Producer Gas</button>
+          <button class="mat-btn active" data-fuel="Natural Gas" onclick="setFuel(this,'Natural Gas')">Natural Gas</button>
+          <button class="mat-btn" data-fuel="Blast Furnace Gas" onclick="setFuel(this,'Blast Furnace Gas')">Blast Furnace Gas</button>
+          <button class="mat-btn" data-fuel="Coke Oven Gas" onclick="setFuel(this,'Coke Oven Gas')">Coke Oven Gas</button>
+          <button class="mat-btn" data-fuel="Producer Gas" onclick="setFuel(this,'Producer Gas')">Producer Gas</button>
         </div>
         <div style="font-size:.72rem; font-weight:700; letter-spacing:.6px; color:var(--muted); text-transform:uppercase; margin-top:14px;">Oil</div>
         <div class="mat-buttons" style="margin-top:6px;">
-          <button class="mat-btn"        onclick="setFuel(this,'HSD')">HSD</button>
-          <button class="mat-btn"        onclick="setFuel(this,'LDO')">LDO</button>
-          <button class="mat-btn"        onclick="setFuel(this,'HDO')">HDO</button>
-          <button class="mat-btn"        onclick="setFuel(this,'FO')">FO</button>
-          <button class="mat-btn"        onclick="setFuel(this,'SKO')">SKO</button>
-          <button class="mat-btn"        onclick="setFuel(this,'CFO')">CFO</button>
-          <button class="mat-btn"        onclick="setFuel(this,'LSHS')">LSHS</button>
+          <button class="mat-btn" data-fuel="HSD" onclick="setFuel(this,'HSD')">HSD</button>
+          <button class="mat-btn" data-fuel="LDO" onclick="setFuel(this,'LDO')">LDO</button>
+          <button class="mat-btn" data-fuel="HDO" onclick="setFuel(this,'HDO')">HDO</button>
+          <button class="mat-btn" data-fuel="FO" onclick="setFuel(this,'FO')">FO</button>
+          <button class="mat-btn" data-fuel="SKO" onclick="setFuel(this,'SKO')">SKO</button>
+          <button class="mat-btn" data-fuel="CFO" onclick="setFuel(this,'CFO')">CFO</button>
+          <button class="mat-btn" data-fuel="LSHS" onclick="setFuel(this,'LSHS')">LSHS</button>
         </div>
       </div>
       <!-- Dual fuel = one gas + one oil. The choices below are always the
@@ -693,6 +696,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     selectedKw = kw;
     btn.parentElement.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    applyFuelSizeRules();
   }
   function setRegenSize(btn, kw) {
     selectedRegenKw = kw;
@@ -701,12 +705,41 @@ We shall not be responsible for any delay due to non-availability of fronts, del
   }
   const OIL_FUELS = ['HSD','LDO','HDO','FO','SKO','CFO','LSHS'];
   const GAS_FUELS = ['Natural Gas','Blast Furnace Gas','Coke Oven Gas','Producer Gas'];
+  // Fuels that can't be quoted at 3000 KW: their flue volume needs a 75 HP ID
+  // fan and the blower catalogue stops at 60 HP, so the line would price zero.
+  const NO_3000_FUELS = ['Blast Furnace Gas'];
+  const BLOCKED_KW = 3000;
+  const BLOCK_MSG = 'Blast Furnace Gas is not available at 3000 KW — it needs a 75 HP ID fan and the catalogue stops at 60 HP.';
+
+  function _blockedFuel() {
+    return [selectedFuel, selectedFuel2].find(f => NO_3000_FUELS.includes(f)) || null;
+  }
+  // Keep fuel and burner size compatible by disabling the option that would
+  // create the unpriceable pair — from whichever side the user comes at it.
+  function applyFuelSizeRules() {
+    const at3000 = selectedKw === BLOCKED_KW;
+    document.querySelectorAll('#fuelBtns .mat-btn[data-fuel], #fuel2Btns .mat-btn[data-fuel]')
+      .forEach(b => {
+        const off = at3000 && NO_3000_FUELS.includes(b.dataset.fuel);
+        b.disabled = off;
+        b.classList.toggle('blocked', off);
+        b.title = off ? BLOCK_MSG : '';
+      });
+    const bf = _blockedFuel();
+    document.querySelectorAll('#burnerSizeBtns .mat-btn').forEach(b => {
+      const off = !!bf && parseInt(b.dataset.kw) === BLOCKED_KW;
+      b.disabled = off;
+      b.classList.toggle('blocked', off);
+      b.title = off ? BLOCK_MSG : '';
+    });
+  }
   function setFuel(btn, fuel) {
     selectedFuel = fuel;
     // Clear active across BOTH the Gas and Oil groups (scoped to the fuel field).
     document.getElementById('fuelBtns').querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     renderFuel2();       // the second-fuel choices flip to the opposite side
+    applyFuelSizeRules();
   }
   // ── Dual fuel (one gas + one oil) ────────────────────────────────────────
   // The second fuel always comes from the opposite side of Fuel Type, so the
@@ -720,7 +753,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     wrap.innerHTML =
       `<button class="mat-btn${selectedFuel2 ? '' : ' active'}" onclick="setFuel2(this,'')">None</button>` +
       opts.map(f => `<button class="mat-btn${selectedFuel2 === f ? ' active' : ''}" `
-                  + `onclick="setFuel2(this,'${f}')">${f}</button>`).join('');
+                  + `data-fuel="${f}" onclick="setFuel2(this,'${f}')">${f}</button>`).join('');
     document.getElementById('fuel2Hint').textContent = selectedFuel2
       ? `Dual fuel: ${selectedFuel} + ${selectedFuel2} — both fuel lines, a dual-fuel `
         + `burner, and the HPU are included; fans are sized on the worst case of the two.`
@@ -729,6 +762,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
   function setFuel2(btn, fuel) {
     selectedFuel2 = fuel;
     renderFuel2();
+    applyFuelSizeRules();
   }
   function _activateKw(containerId, kw) {
     document.getElementById(containerId).querySelectorAll('.mat-btn').forEach(b =>
@@ -785,6 +819,11 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     renderFuel2();
     if (s.kw)      { selectedKw = s.kw;           _activateKw('burnerSizeBtns', s.kw); }
     if (s.regenKw) { selectedRegenKw = s.regenKw; _activateKw('regenSizeBtns', s.regenKw); }
+    // A stored BFG + 3000 KW pair is no longer quotable — step the burner down.
+    if (_blockedFuel() && selectedKw === BLOCKED_KW) {
+      selectedKw = 2500; _activateKw('burnerSizeBtns', 2500);
+    }
+    applyFuelSizeRules();
     if (s.currency) {
       const cs = document.getElementById('currency-sel');
       if (cs) { cs.value = s.currency; applyCurrency(); }
@@ -886,6 +925,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     prefillCustomer();
     renderFuel2();       // second-fuel choices for the default fuel (Natural Gas)
     restoreForm();       // saved values win over the test prefill
+    applyFuelSizeRules();
     fetchAutoRefSeq();
     // Persist on any edit (typing, select change, or size/fuel/currency click).
     ['input', 'change', 'click'].forEach(evt => document.addEventListener(evt, saveForm));
