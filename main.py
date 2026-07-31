@@ -310,9 +310,10 @@ def _person_initials(name: str) -> str:
 
 _LOCATION_CODES = {        # ENCON branch codes used in the enquiry ref
     "goa":       "GOA",
-    "vadodara":  "VAD",
+    "vadodara":  "VDD",
     "faridabad": "FBD",
 }
+DEFAULT_LOCATION_CODE = "FBD"    # head office — used when no location is given
 
 
 def _location_code(location: str) -> str:
@@ -325,15 +326,15 @@ def build_enquiry_ref(seq: str, technical_person: str,
     """ENCON.04026.{seq}/{LOC}/{initials} DT.{DD/MM/YYYY}.
 
     The '04026' segment is ENCON's fixed code (applies to ladle and
-    tundish offers alike). Location code (GOA/VDD/FBD) and the
-    technical-person initials get omitted only when missing.
+    tundish offers alike). The location code follows the branch the offer is
+    raised from (Faridabad FBD / Goa GOA / Vadodara VDD); an unknown or blank
+    location falls back to the head office. The technical-person initials get
+    omitted only when missing.
     """
     from datetime import datetime as _dt
     today = _dt.now()
     ini = _person_initials(technical_person)
-    # ENCON operates from Faridabad only — the location code is always FBD,
-    # regardless of any location passed in.
-    loc = "FBD"
+    loc = _location_code(location) or DEFAULT_LOCATION_CODE
     # Assemble the slash segment: include only the parts we have.
     parts = [seq]
     if loc: parts.append(loc)

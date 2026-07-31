@@ -266,7 +266,7 @@
       </div>
       <div class="field">
         <label>Location</label>
-        <input id="c-location" type="text" class="ro" value="Faridabad" readonly/>
+        <select id="c-location"><option value="Faridabad" selected>Faridabad</option><option value="Goa">Goa</option><option value="Vadodara">Vadodara</option></select>
       </div>
       <div class="field">
         <label>Client Enquiry Ref</label>
@@ -756,7 +756,13 @@ async function refreshRef() {
     if (data && data.ref) $("c-ref").value = data.ref;
   } catch (e) { /* silent */ }
 }
-window.addEventListener("DOMContentLoaded", refreshRef);
+window.addEventListener("DOMContentLoaded", () => {
+  refreshRef();
+  const loc = $("c-location");                       // branch → ref code
+  if (loc) loc.addEventListener("change", refreshRef);
+  const tech = $("c-technical");
+  if (tech) tech.addEventListener("input", refreshRef);
+});
 
 // Step 2 takes only direct user inputs — every derived quantity (flue mass,
 // final flue temp, energy chain, MS weights, etc.) is computed server-side

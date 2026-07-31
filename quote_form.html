@@ -253,6 +253,10 @@
         <label>Enquiry Ref No.</label>
         <input id="ref_no" type="text" placeholder="ENQ-2025-001"/>
       </div>
+      <div class="field">
+        <label>Location</label>
+        <select id="location"><option value="Faridabad" selected>Faridabad</option><option value="Goa">Goa</option><option value="Vadodara">Vadodara</option></select>
+      </div>
     </div>
   </div>
 
@@ -431,6 +435,9 @@ async function generateQuote() {
     mobile_no:       document.getElementById("mobile_no").value,
     project_name:    document.getElementById("project_name").value,
     ref_no:          document.getElementById("ref_no").value,
+    // Branch the offer is raised from — drives the enquiry ref's location code
+    // (FBD / GOA / VDD) when the ref field is left blank.
+    location:        document.getElementById("location").value,
     items,
     gst_percent: parseFloat(document.getElementById("gst_percent").value) || 18,
     freight:     parseFloat(document.getElementById("freight").value)     || 0,

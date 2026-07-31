@@ -386,7 +386,7 @@
       <div class="sec-label">Enquiry</div>
       <div class="fg fg-4">
         <div class="field" style="grid-column:span 3"><label>Enquiry / Ref No. <small style="color:#94a3b8;font-weight:400">(auto — editable)</small></label><input id="ref_no" type="text" title="" placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY"/></div>
-        <div class="field"><label>Location</label><input id="location" type="text" class="ro" value="Faridabad" readonly/></div>
+        <div class="field"><label>Location</label><select id="location"><option value="Faridabad" selected>Faridabad</option><option value="Goa">Goa</option><option value="Vadodara">Vadodara</option></select></div>
         <div class="field" style="grid-column:span 4"><label>Subject</label><input id="subject" type="text" value="Offer for Regenerative Burner System" placeholder="Supply of Regenerative Burner System"/></div>
       </div>
       <div class="fg fg-2">
@@ -920,6 +920,8 @@ We shall not be responsible for any delay due to non-availability of fronts, del
   window.addEventListener('DOMContentLoaded', () => {
     const t = document.getElementById('technical_person');
     if (t) t.addEventListener('input', updateAutoRef);
+    const loc = document.getElementById('location');       // branch → ref code
+    if (loc) loc.addEventListener('change', updateAutoRef);
     const ref = document.getElementById('ref_no');
     if (ref) ref.addEventListener('input', () => { _refEdited = true; });
     prefillCustomer();
