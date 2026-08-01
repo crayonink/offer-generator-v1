@@ -996,7 +996,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     const hp = v => (Number.isInteger(v) ? v : v).toString();
     const rows = [
       {cells:[xs('',10)]},   // spacer
-      {_class:'xl-section', cells:[xs('BLOWER & ID FAN — SIZING EXAMPLE  (' +
+      {_class:'xl-section', cells:[xs('BLOWER, ID FAN & DAMPER — SIZING EXAMPLE  (' +
         fs.num_pairs + ' × ' + fs.kw + ' KW, ' +
         (fs.is_dual ? 'dual fuel' : (fs.is_oil ? 'oil' : 'gas')) + ')', 10)]},
     ];
@@ -1027,6 +1027,20 @@ We shall not be responsible for any delay due to non-availability of fronts, del
     line('Cold-start (× density ratio ' + r2(fs.idfan_dens_ratio) + ') = ' + r2(fs.idfan_shaft_cold_kw) + ' kW  (≈2× hot — the trap)');
     line('Option A (VFD + interlock): motor ' + r2(fs.id_motor_kw_A) + ' kW  →  ' + hp(fs.id_hp_A) + ' HP frame' + (fs.id_price_A == null ? '  (>60 HP → ??)' : ''));
     line('Option B (cold-rated):      motor ' + r2(fs.id_motor_kw_B) + ' kW  →  ' + hp(fs.id_hp_B) + ' HP frame' + (fs.id_price_B == null ? '  (>60 HP → ??)' : ''));
+    // ── pneumatic damper (furnace pressure control) ──
+    // Driven by the SAME ID-fan flow, so it belongs with the two fans: one
+    // damper for the system, growing in size rather than multiplying.
+    const dm = fs.damper;
+    if (dm) {
+      rows.push({_class:'xl-section', cells:[xs('PNEUMATIC DAMPER — furnace pressure control @ ' +
+        dm.velocity + ' m/s (' + Math.round(dm.flow_share * 100) + '% of the flue volume)', 10)]});
+      line('Flue volume at furnace temp = ID-fan flow × 1573/275 = ' + r0(fs.id_air) + ' × ' +
+           r2(dm.temp_ratio) + ' = ' + r0(dm.hot_flow_m3hr) + ' m³/hr');
+      line('Damper share = ' + Math.round(dm.flow_share * 100) + '% × ' + r0(dm.hot_flow_m3hr) +
+           ' = ' + r0(dm.flow_m3hr) + ' m³/hr  =  ' + r2(dm.flow_m3hr / 3600) + ' m³/s');
+      line('Bore = √(4Q ÷ π×' + dm.velocity + ') = ' + r0(dm.bore_mm) + ' mm  →  DN' + dm.dn +
+           (dm.over_ladder ? '   (above the largest damper made — verify)' : ''));
+    }
     return rows;
   }
 

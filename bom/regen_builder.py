@@ -636,7 +636,10 @@ def _fan_selection(comb_air, id_air, conn=None):
         id_motor_kw_A=id_motor_kw_A, id_hp_A=ihpA, id_price_A=ipriceA,
         id_motor_kw_B=id_motor_kw_B, id_hp_B=ihpB, id_price_B=ipriceB,
         # BOM uses Option B (cold-start rated) as the ID-fan line
-        id_hp=ihpB, id_price=ipriceB)
+        id_hp=ihpB, id_price=ipriceB,
+        # furnace-pressure damper — sized off this same ID-fan flow, so the
+        # costing sheet can show its working next to the two fans
+        damper=damper_from_id_flow(id_air))
 
 
 def get_supplementary_data(kw: int) -> dict:

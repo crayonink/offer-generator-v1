@@ -5536,28 +5536,39 @@ def _material_of_construction(hot_mat: str, cold_mat: str, pipe_dia_mm: float = 
     }
 
 
-def _offer_money(currency: str = "INR", fx_rate: float = 0.0):
+def _offer_money(currency: str = "INR", fx_rate: float = 0.0, round_usd: bool = False):
     """Return a (money_fmt, words_fmt, is_usd) triple for offer price rendering.
     USD converts figures via fx_rate and switches the symbol + amount-in-words;
     otherwise plain INR. Shared by the inline-writer offers (recup / blower /
-    burner / combined) so they match the vertical's USD behaviour."""
-    from engine.quote_writer import amount_in_words_indian as _words, _format_inr
+    burner / combined) so they match the vertical's USD behaviour.
+
+    round_usd quotes whole dollars ("USD 29,950") and words them in the
+    international million/billion scale instead of "$ 29,950.00" with Indian
+    lakh/crore wording — the export-offer convention the regen offers use.
+    """
+    from engine.quote_writer import (amount_in_words_indian as _words,
+                                     amount_in_words_international as _iwords,
+                                     _format_inr)
     _usd = (str(currency or "INR").upper() == "USD" and float(fx_rate or 0) > 0)
     _rate = float(fx_rate or 0)
 
-    def _m(x):
+    def _f(x):
         try:
-            v = float(x or 0)
+            return float(x or 0)
         except (TypeError, ValueError):
-            v = 0.0
-        return f"$ {v * _rate:,.2f}" if _usd else _format_inr(v)
+            return 0.0
+
+    def _m(x):
+        v = _f(x)
+        if not _usd:
+            return _format_inr(v)
+        return f"USD {round(v * _rate):,.0f}" if round_usd else f"$ {v * _rate:,.2f}"
 
     def _w(x):
-        try:
-            v = float(x or 0)
-        except (TypeError, ValueError):
-            v = 0.0
+        v = _f(x)
         if _usd:
+            if round_usd:
+                return f"USD {_iwords(round(v * _rate))} ONLY."
             return f"US $ {_words(round(v * _rate))} ONLY."
         return f"INR. {_words(v)} ONLY."
 
@@ -9338,8 +9349,8 @@ def export_excel(req: ExcelExportRequest):
         if fs:
             r5 += 2
             section_hdr(ws5, r5, 11,
-                f"BLOWER & ID FAN — SIZING EXAMPLE  ({fs.get('num_pairs')} × {fs.get('kw')} KW, "
-                f"{'oil' if fs.get('is_oil') else 'gas'})")
+                f"BLOWER, ID FAN & DAMPER — SIZING EXAMPLE  ({fs.get('num_pairs')} × {fs.get('kw')} KW, "
+                f"{'dual fuel' if fs.get('is_dual') else ('oil' if fs.get('is_oil') else 'gas')})")
             r5 += 1
             def _fline(text):
                 nonlocal r5
@@ -9370,6 +9381,15 @@ def export_excel(req: ExcelExportRequest):
             _fline(f"  Cold-start (× density ratio {_r2(fs['idfan_dens_ratio'])}) = {_r2(fs['idfan_shaft_cold_kw'])} kW  (≈2× hot — the trap)")
             _fline(f"  Option A (VFD + interlock): motor {_r2(fs['id_motor_kw_A'])} kW  ->  {fs['id_hp_A']:g} HP" + ("  (>60 HP -> ??)" if fs.get('id_price_A') is None else ""))
             _fline(f"  Option B (cold-rated):      motor {_r2(fs['id_motor_kw_B'])} kW  ->  {fs['id_hp_B']:g} HP" + ("  (>60 HP -> ??)" if fs.get('id_price_B') is None else ""))
+            # ── pneumatic damper — same ID-fan flow drives it ──
+            _dm = fs.get("damper")
+            if _dm:
+                _pct = round(_dm['flow_share'] * 100)
+                _fline(f"PNEUMATIC DAMPER — furnace pressure control @ {_dm['velocity']:g} m/s ({_pct}% of the flue volume):")
+                _fline(f"  Flue vol at furnace temp = ID-fan flow × 1573/275 = {_r0(fs['id_air'])} × {_r2(_dm['temp_ratio'])} = {_r0(_dm['hot_flow_m3hr'])} m³/hr")
+                _fline(f"  Damper share = {_pct}% × {_r0(_dm['hot_flow_m3hr'])} = {_r0(_dm['flow_m3hr'])} m³/hr  =  {_r2(_dm['flow_m3hr']/3600)} m³/s")
+                _fline(f"  Bore = sqrt(4Q ÷ π×{_dm['velocity']:g}) = {_r0(_dm['bore_mm'])} mm  ->  DN{_dm['dn']}"
+                       + ("   (above the largest damper made — verify)" if _dm.get('over_ladder') else ""))
 
         # BOM-only download — the derivation tabs were dropped from the UI
         # (we map straight from the Pricelist), so drop them from the workbook too.
