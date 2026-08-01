@@ -302,6 +302,37 @@ def _fan_shaft_kw(flow_nm3hr, dp_pa, gas_temp_c):
             "shaft_tb_kw": shaft_tb, "motor_kw": shaft_tb * (1 + _MOTOR_MARGIN)}
 
 
+# ── Furnace-pressure (pneumatic) damper sizing ───────────────────────────────
+# Per Puneet Sir: take the ID-fan flow, expand it to furnace-outlet temperature
+# (×1573/275 — 1300 °C against the ~2 °C normal reference), take 30% of that as
+# the damper's share, and size it for 4 m/s.
+# Because it is driven by the ID-fan flow, which already covers every burner
+# pair, the damper grows in SIZE with the system instead of multiplying.
+_DAMPER_TEMP_RATIO = 1573 / 275     # Nm³ -> m³ at furnace-outlet temperature
+_DAMPER_FLOW_SHARE = 0.30           # share of the flue volume through the damper
+_DAMPER_VELOCITY_MS = 4.0           # design velocity through the damper
+# Standard flue sizes to land on (the priced rungs live in _GAS_CATALOG).
+_DAMPER_NB_LADDER = [200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900]
+
+
+def damper_from_id_flow(id_air_nm3hr):
+    """Size the furnace-pressure damper from the ID-fan flow.
+
+    Returns {hot_flow_m3hr, flow_m3hr, bore_mm, dn, ...} — the flue volume at
+    furnace temperature, the damper's 30% share of it, the bore that share needs
+    at the design velocity, and the standard size chosen for it.
+    """
+    import math
+    hot = float(id_air_nm3hr or 0) * _DAMPER_TEMP_RATIO
+    flow = hot * _DAMPER_FLOW_SHARE
+    bore = math.sqrt(4 * (flow / 3600.0) / (math.pi * _DAMPER_VELOCITY_MS)) * 1000
+    dn = next((x for x in _DAMPER_NB_LADDER if x >= bore), _DAMPER_NB_LADDER[-1])
+    return {"hot_flow_m3hr": hot, "flow_m3hr": flow, "bore_mm": bore, "dn": dn,
+            "velocity": _DAMPER_VELOCITY_MS, "temp_ratio": _DAMPER_TEMP_RATIO,
+            "flow_share": _DAMPER_FLOW_SHARE,
+            "over_ladder": bore > _DAMPER_NB_LADDER[-1]}
+
+
 def _frame_from_hp(hp, conn=None):
     """Nearest ENCON catalogue blower frame whose HP >= required HP, with its
     live price (catalogue fallback). >60 HP → no price yet (None). Returns
@@ -907,6 +938,12 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         add("TEMP CONTROL", "Gas Flow Meter (DPT)",
             f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
     add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "", 1, flat['furnace_thermocouple'])
+    # Blower / ID-fan sizing is needed here already: the furnace-pressure damper
+    # below is sized off the ID-fan flow. The BLOWER lines themselves are added
+    # further down, in section 7, so the BOM order is unchanged.
+    # Dual fuel: sized on the worst case of the two fuels (one fires at a time).
+    _fan = compute_fan_flows(kw, num_pairs, fuel, _conn, fuel2=fuel2)
+
     # ── 6b. FURNACE PRESSURE CONTROL — DPT + flue dampers (not temperature) ───
     # These control the FURNACE's pressure from its common flue, so there is one
     # of each per system however many burner pairs fire into it. The pneumatic
@@ -914,26 +951,15 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # total flue volume, the same way the gas train does on the supply side.
     # (Each burner's own flue shut-off stays per-burner, in AIR LINE — BURNER.)
     add("PRESSURE CONTROL", "DPT",           "",                         1, flat['dpt'], scale=False)
-    _tot_kw = kw * num_pairs
-    _tot_rung = next((k for k in MODEL_KWS if k >= _tot_kw), MODEL_KWS[-1])
-    if is_lowcv:
-        _damp_dn = (_fuel_pipe_dn(db_path, _gas_fuel, _tot_rung)[1] or flue_dn
-                    or _PIPE_SIZES.get(kw, {}).get('flue_dn'))
-    else:
-        _damp_dn = (_PIPE_SIZES.get(_tot_rung, {}).get('flue_dn')
-                    or _PIPE_SIZES.get(kw, {}).get('flue_dn'))
-    if _damp_dn:
-        nb, p, gap = _snap("pneu_damp", "pneu_damp", _damp_dn)
-        spec = f"DN{_damp_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
-        if num_pairs > 1:
-            spec += f", for {_tot_kw} KW total"
-            if _tot_kw > MODEL_KWS[-1]:
-                spec += " — above the pipe table, verify"
-        add("PRESSURE CONTROL", "Pneumatic Damper", spec, 1, p, scale=False)
-    else:
-        add("PRESSURE CONTROL", "Pneumatic Damper",
-            f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'],
-            scale=False)
+    # Sized from the ID-fan flow (see damper_from_id_flow) — that flow already
+    # covers every pair, so the damper scales by size, not by count.
+    _dmp = damper_from_id_flow(_fan['id_air'])
+    _damp_dn = _dmp['dn']
+    nb, p, gap = _snap("pneu_damp", "pneu_damp", _damp_dn)
+    spec = f"DN{_damp_dn} ({_dmp['flow_m3hr']:,.0f} m³/hr @ {_dmp['velocity']:g} m/s)"
+    if gap or _dmp['over_ladder']:
+        spec += f" — priced at DN{nb}, verify"
+    add("PRESSURE CONTROL", "Pneumatic Damper", spec, 1, p, scale=False)
     add("PRESSURE CONTROL", "Manual Damper", "",                         1, flat['manual_damper'], scale=False)
 
     # ── 7. BLOWER + ID FAN — rigorous sizing (Blower_ID_Fan_Sizing sheet) ──────
@@ -941,8 +967,7 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # nearest ENCON HP frame, priced live from the blower catalogue ("??" above
     # 60 HP). ID fan BOM uses Option B (cold-start rated); Option A (VFD + temp
     # interlock) is shown alongside in the costing sheet's worked example.
-    # Dual fuel: sized on the worst case of the two fuels (one fires at a time).
-    _fan = compute_fan_flows(kw, num_pairs, fuel, _conn, fuel2=fuel2)
+    # (_fan is computed above — the damper is sized off the same ID-fan flow.)
     _bhp2, _bprice, _bkw = _fan['blower_hp'], _fan['blower_price'], _fan['blower_motor_kw']
     _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_B']
     _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price above 60 HP)'
