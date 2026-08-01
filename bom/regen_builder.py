@@ -908,15 +908,32 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
             f"DN{m['gas_fm_nb']}",               1,                          m['gas_fm_cost'])
     add("TEMP CONTROL", "Thermocouple with TT (Furnace)", "", 1, flat['furnace_thermocouple'])
     # ── 6b. FURNACE PRESSURE CONTROL — DPT + flue dampers (not temperature) ───
+    # These control the FURNACE's pressure from its common flue, so there is one
+    # of each per system however many burner pairs fire into it. The pneumatic
+    # damper therefore does NOT multiply with pairs — it grows in SIZE with the
+    # total flue volume, the same way the gas train does on the supply side.
+    # (Each burner's own flue shut-off stays per-burner, in AIR LINE — BURNER.)
     add("PRESSURE CONTROL", "DPT",           "",                         1, flat['dpt'], scale=False)
-    if is_lowcv and flue_dn:
-        nb, p, gap = _snap("pneu_damp", "pneu_damp", flue_dn)
-        spec = f"DN{flue_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
-        add("PRESSURE CONTROL", "Pneumatic Damper", spec, 1, p)
+    _tot_kw = kw * num_pairs
+    _tot_rung = next((k for k in MODEL_KWS if k >= _tot_kw), MODEL_KWS[-1])
+    if is_lowcv:
+        _damp_dn = (_fuel_pipe_dn(db_path, _gas_fuel, _tot_rung)[1] or flue_dn
+                    or _PIPE_SIZES.get(kw, {}).get('flue_dn'))
+    else:
+        _damp_dn = (_PIPE_SIZES.get(_tot_rung, {}).get('flue_dn')
+                    or _PIPE_SIZES.get(kw, {}).get('flue_dn'))
+    if _damp_dn:
+        nb, p, gap = _snap("pneu_damp", "pneu_damp", _damp_dn)
+        spec = f"DN{_damp_dn}" + (f" (priced at DN{nb} — verify)" if gap else "")
+        if num_pairs > 1:
+            spec += f", for {_tot_kw} KW total"
+            if _tot_kw > MODEL_KWS[-1]:
+                spec += " — above the pipe table, verify"
+        add("PRESSURE CONTROL", "Pneumatic Damper", spec, 1, p, scale=False)
     else:
         add("PRESSURE CONTROL", "Pneumatic Damper",
             f"DN{m['pneu_damp_nb']}",            1,                          m['pneu_damp_cost'],
-            scale=not is_oil)   # oil regen: one damper for the whole system
+            scale=False)
     add("PRESSURE CONTROL", "Manual Damper", "",                         1, flat['manual_damper'], scale=False)
 
     # ── 7. BLOWER + ID FAN — rigorous sizing (Blower_ID_Fan_Sizing sheet) ──────
