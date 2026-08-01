@@ -499,7 +499,9 @@ def fill_make_list(doc_path, df):
     if tbl is None:
         return False
 
-    # category -> distinct makes, in BOM order
+    # category -> distinct makes, in BOM order. A make can itself name several
+    # brands ("L&T / INTERVALVE"), so dedupe brand by brand — otherwise a
+    # category carrying both that and a plain "L&T" reads "L&T / L&T / INTERVALVE".
     is_oil, _has_gas, is_dual = _fuel_flags(df)
     cats = OrderedDict()
     for _, row in df.iterrows():
@@ -508,8 +510,9 @@ def fill_make_list(doc_path, df):
             continue
         cat = _makelist_category(row["ITEM NAME"], is_oil, is_dual)
         cats.setdefault(cat, [])
-        if make not in cats[cat]:
-            cats[cat].append(make)
+        for brand in [b.strip() for b in make.split("/") if b.strip()]:
+            if brand not in cats[cat]:
+                cats[cat].append(brand)
 
     for r in list(tbl.rows[1:]):
         r._tr.getparent().remove(r._tr)
