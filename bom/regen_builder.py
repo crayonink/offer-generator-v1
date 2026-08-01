@@ -981,6 +981,21 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
         # BFG / COG / Producer Gas gas train — 5 header valves sized to the fuel's
         # own gas DN (varies per fuel via regen_pipe_sizes), Pricelist-sourced
         # (DEMBLA for the pneumatic shut-off; butterfly/gate are L&T-only).
+        # The header carries every pair, so it is sized at the total duty
+        # (kw × pairs) while each burner's own branch stays at the per-pair DN.
+        # regen_pipe_sizes is indexed by burner KW, which stands in for flow —
+        # so the header DN is the row for the TOTAL duty. Snap to that table's
+        # own KW rungs (MODEL_KWS, which still runs to 6000), not select_model,
+        # which is capped at the largest burner we quote.
+        hdr_dn, _hdr_capped = gas_dn, False
+        if gas_dn and num_pairs > 1:
+            _total_kw = kw * num_pairs
+            _hdr_kw = next((k for k in MODEL_KWS if k >= _total_kw), MODEL_KWS[-1])
+            _hdr_capped = _total_kw > MODEL_KWS[-1]
+            hdr_dn = _fuel_pipe_dn(db_path, _gas_fuel, _hdr_kw)[0] or gas_dn
+        _hdr_note = (f" (sized for {kw * num_pairs} KW total"
+                     + (" — above the pipe table, verify)" if _hdr_capped else ")")
+                     ) if num_pairs > 1 else ""
         if gas_dn:
             def _pl(vtype, dn):
                 if _conn:
@@ -997,20 +1012,23 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
                     ps_low = pressure_switch_low_price(_conn)
                 except Exception:
                     pass
-            _bfn, bf_p, _ = _pl("butterfly", gas_dn)
-            _shn, sh_p, _ = _pl("shutoff", gas_dn)
-            _gvn, gv_p, _ = _pl("gate_valve", gas_dn)
-            add("GAS TRAIN", "Gate Valve",              f"DN{gas_dn}", 1, gv_p, scale=False)
-            add("GAS TRAIN", "Butterfly Valve",         f"DN{gas_dn}", 1, bf_p, scale=False)
-            add("GAS TRAIN", "Shut-Off Valve",          f"DN{gas_dn}", 1, sh_p, scale=False)
-            add("GAS TRAIN", "Pressure Gauge with TNV", f"DN{gas_dn}", 1, flat['air_pg_1000'], scale=False)
+            _bfn, bf_p, _ = _pl("butterfly", hdr_dn)
+            _shn, sh_p, _ = _pl("shutoff", hdr_dn)
+            _gvn, gv_p, _ = _pl("gate_valve", hdr_dn)
+            _hdr_spec = f"DN{hdr_dn}{_hdr_note}"
+            add("GAS TRAIN", "Gate Valve",              _hdr_spec, 1, gv_p, scale=False)
+            add("GAS TRAIN", "Butterfly Valve",         _hdr_spec, 1, bf_p, scale=False)
+            add("GAS TRAIN", "Shut-Off Valve",          _hdr_spec, 1, sh_p, scale=False)
+            add("GAS TRAIN", "Pressure Gauge with TNV", _hdr_spec, 1, flat['air_pg_1000'], scale=False)
             add("GAS TRAIN", "Pressure Switch Low",     "",            1, ps_low, scale=False)
     else:
         # Packaged NG gas train — sourced from the Gas Train pricelist by NG
         # flow (Nm³/hr), so every size draws the current rate (e.g. 6000 KW =
         # 600 Nm³/hr -> DN80xDN100 -> ~4.38 lakh). Falls back to the model's
         # hardcoded cost, then to an itemized custom skid, if unavailable.
-        _ngflow = _PIPE_SIZES.get(kw, {}).get('ng_flow', 0)
+        # ONE train feeds the whole system, so it is sized on the system's TOTAL
+        # NG demand (per-pair flow × pairs), not on one pair's.
+        _ngflow = _PIPE_SIZES.get(kw, {}).get('ng_flow', 0) * num_pairs
         _gt_item = _gt_price = _gt_spec = None
         if _conn and _ngflow:
             try:
@@ -1018,13 +1036,24 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
                 _gt_item, _gt_price, _gt_spec = ng_gas_train_price(_conn, _ngflow)
             except Exception:
                 pass
+        _for = (f"for {num_pairs} × {kw} KW ({_ngflow:g} Nm³/hr)" if num_pairs > 1
+                else f"for {kw} KW ({_ngflow:g} Nm³/hr)")
+        # The Pricelist's top band is 801-1000 Nm³/hr; a bigger system falls back
+        # to it, so say that on the line instead of quoting it as if it fits.
+        try:
+            import re as _re_gt
+            _hi = _re_gt.search(r'-\s*(\d+)', _gt_spec or '')
+            if _hi and _ngflow > int(_hi.group(1)):
+                _for += f" — above the largest priced band ({_gt_spec}), verify"
+        except Exception:
+            pass
         if _gt_price:
             _dn = (_gt_item or "").replace("Gas Train", "").strip()   # "DN80 x DN100"
-            _spec = f"{_dn}, for {kw} KW" if _dn else f"Complete, for {kw} KW"
+            _spec = f"{_dn}, {_for}" if _dn else f"Complete, {_for}"
             add("GAS TRAIN", "NG Gas Train", _spec, 1, _gt_price, scale=False)
         elif m['gas_train_cost'] > 0:
             add("GAS TRAIN", "NG Gas Train",
-                f"Complete, for {kw} KW",         1,                     m['gas_train_cost'], scale=False)
+                f"Complete, {_for}",              1,                     m['gas_train_cost'], scale=False)
         else:
             # last resort: itemized custom gas skid
             add("GAS TRAIN", "Gate Valve",                "DN350",        1, skid['gate_valve'], scale=False)
