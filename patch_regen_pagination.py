@@ -104,6 +104,19 @@ def _set_page_break_before(p):
     pPr.append(OxmlElement("w:pageBreakBefore"))
 
 
+def _strip_borders(p):
+    """Remove any paragraph border. An earlier revision drew a rule around the
+    Fig 1 block and baked it into the committed templates, so it has to be
+    cleared explicitly rather than just not re-added."""
+    pPr = p._element.find(qn("w:pPr"))
+    if pPr is None:
+        return False
+    found = pPr.findall(qn("w:pBdr"))
+    for old in found:
+        pPr.remove(old)
+    return bool(found)
+
+
 def _no_split_rows(table):
     """Stop a table breaking mid-row across a page."""
     n = 0
@@ -221,7 +234,7 @@ def _keep_section_together(blocks, parent):
 
 def patch(path):
     d = Document(path)
-    done, gap, kept = [], False, 0
+    done, gap, kept, stripped = [], False, 0, 0
     promoted = False
     after_fig1 = False
     for p in d.paragraphs:
@@ -247,6 +260,10 @@ def patch(path):
             # Caption sits above its diagram, so it must travel with it.
             p.paragraph_format.keep_with_next = True
             kept += 1
+        # No rules anywhere around the figures.
+        if t.startswith(FIG_CAPTIONS) or p._element.findall(".//" + qn("w:drawing")):
+            if _strip_borders(p):
+                stripped += 1
 
     # Recipient + signature blocks fully bold.
     bolded = 0
@@ -303,7 +320,8 @@ def patch(path):
     note = f"  (not found: {', '.join(missing)})" if missing else ""
     print(f"  OK  {os.path.basename(path)} — breaks: {', '.join(done) or 'none'};"
           f" gap closed: {gap};"
-          f" captions kept with figure: {kept}; figures scaled: {scaled};"
+          f" captions kept with figure: {kept}; figure rules stripped: {stripped};"
+          f" figures scaled: {scaled};"
           f" CLIENT DETAILS promoted: {promoted}; savings rows no-split: {nosplit};"
           f" letter lines bolded: {bolded}; sections bound: {len(groups)};"
           f" runs re-typed: {sum(tc.values())}{note}")
