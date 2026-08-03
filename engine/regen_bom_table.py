@@ -62,6 +62,35 @@ def _add_item_row(tbl):
     return row.cells[0], row.cells[1]
 
 
+LABEL_FILL = "F3F4F6"    # the shaded label column the T&C table uses
+
+
+def _cell_borders(cell, color="BFBFBF", sz="4"):
+    """Single border on all four sides — matches the T&C table."""
+    tcPr = cell._tc.get_or_add_tcPr()
+    for old in tcPr.findall(qn("w:tcBorders")):
+        tcPr.remove(old)
+    borders = OxmlElement("w:tcBorders")
+    for edge in ("top", "left", "bottom", "right"):
+        e = OxmlElement(f"w:{edge}")
+        e.set(qn("w:val"), "single")
+        e.set(qn("w:sz"), sz)
+        e.set(qn("w:space"), "0")
+        e.set(qn("w:color"), color)
+        borders.append(e)
+    tcPr.append(borders)
+
+
+def _style_like_tnc(tbl, label_col=0, header_rows=1):
+    """Give a table the Terms & Conditions look: shaded, bold label column and
+    a single border on every cell."""
+    for ri, row in enumerate(tbl.rows):
+        for ci, cell in enumerate(row.cells):
+            _cell_borders(cell)
+            if ri >= header_rows and ci == label_col:
+                _set_fill(cell, LABEL_FILL)
+
+
 def _run(p, text, *, bold=False, size=12):
     r = p.add_run(text)
     r.bold = bold; r.font.size = Pt(size); r.font.color.rgb = RGBColor.from_string(DARK)
@@ -536,6 +565,11 @@ def fill_make_list(doc_path, df):
         _run(ip, cat, bold=True)
         mp = mc.paragraphs[0]; _style_para(mp, WA.LEFT)
         _run(mp, " / ".join(makes))
+
+    # Same look as the Terms & Conditions table: shaded ITEMS column, borders
+    # on every cell. The rows are rebuilt on each generation, so it is applied
+    # here rather than baked into the template.
+    _style_like_tnc(tbl)
 
     d.save(doc_path)
     return True

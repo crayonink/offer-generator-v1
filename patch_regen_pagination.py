@@ -56,7 +56,7 @@ from docx.shared import Emu, Inches, Pt, RGBColor
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES = ["Regen_Offer_Template.docx", "Regen_Oil_Offer_Template.docx"]
 
-PAGE_BREAK_BEFORE = ["To,", "TECHNICAL OFFER", "CLIENT DETAILS",
+PAGE_BREAK_BEFORE = ["To,", "TECHNICAL OFFER", "CLIENT DETAILS", "EXCLUSIONS",
                      "PRICE SCHEDULE", "TERMS AND CONDITIONS"]
 # SUPERVISION CHARGES is a heading in its own right but belongs with the price
 # schedule, so it does not start a new keep-together group — the two share a page.
@@ -260,17 +260,13 @@ def patch(path):
             # Sits directly under TECHNICAL OFFER — no blank line between them.
             p.paragraph_format.space_before = Pt(0)
             gap = True
-        # The Fig 1 diagram is the paragraph right after its caption; put the
-        # rule under it so it doesn't run straight into the Fig 2 caption.
         if t.startswith(FIG_CAPTIONS):
             p.paragraph_format.keep_with_next = True
             kept += 1
-        if after_fig1 and p._element.findall(".//" + qn("w:drawing")):
-            _rule_below(p)
-            rule = True
-            after_fig1 = False
-        elif t.startswith(FIG1_CAPTION):
-            after_fig1 = True
+            # The rule sits directly under the Fig 1 heading, above its diagram.
+            if t.startswith(FIG1_CAPTION) and not rule:
+                _rule_below(p)
+                rule = True
 
     # Recipient + signature blocks fully bold.
     bolded = 0
