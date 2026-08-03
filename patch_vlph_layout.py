@@ -149,6 +149,31 @@ def patch(path):
     for t in d.tables:
         _no_split_rows(t)
 
+    # A list item that has deeper items under it is a heading for them, so it
+    # keeps-with-next — "GAS TRAIN" was stranding at the foot of a page with
+    # its sub-bullets overleaf. Applies inside the long sections too, which are
+    # not bound as a whole.
+    def _list_level(p):
+        pPr = p._element.find(qn("w:pPr"))
+        if pPr is None:
+            return None
+        numPr = pPr.find(qn("w:numPr"))
+        if numPr is None:
+            return None
+        ilvl = numPr.find(qn("w:ilvl"))
+        return int(ilvl.get(qn("w:val"))) if ilvl is not None else 0
+
+    paras = d.paragraphs
+    parents = 0
+    for i, p in enumerate(paras[:-1]):
+        lvl = _list_level(p)
+        nxt = _list_level(paras[i + 1])
+        # a bullet with a deeper bullet under it, or the lead-in line above a list
+        if (lvl is not None and nxt is not None and nxt > lvl) or \
+           (lvl is None and nxt is not None and p.text.strip()):
+            p.paragraph_format.keep_with_next = True
+            parents += 1
+
     # ── 5. cover-letter emphasis ─────────────────────────────────────────────
     bolded = 0
     for p in d.paragraphs:
@@ -190,7 +215,7 @@ def patch(path):
     d.save(path)
     print(f"  OK  {os.path.basename(path)} — {breaks} page breaks; "
           f"{bound}/{len(groups)} sections bound; {bolded} letter lines bold; "
-          f"{retyped} runs re-typed")
+          f"{retyped} runs re-typed; {parents} list parents kept with children")
 
 
 if __name__ == "__main__":
