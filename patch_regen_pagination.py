@@ -17,12 +17,10 @@ break-before-every-heading treatment, which was tried and reverted:
    second heading carried 14 pt space-before, leaving a blank line between the
    two headings.
 
-4. Rule under the Fig 1 diagram — it ran straight into the "Fig 2" caption
-   with nothing separating the two figures.
-
-   The figure captions sit ABOVE their diagram, so both are set keep-with-next:
+4. Figure captions sit ABOVE their diagram, so both are set keep-with-next —
    "Fig 2: Parts of Regenerative Burner" was stranding at the foot of a page
-   with its diagram overleaf.
+   with its diagram overleaf. Fig 2 also gets a page break, so each diagram
+   has its own page.
 
 5. Scale both figure diagrams to 80%. They were 6.20 in wide (92% of the text
    width) and 4.30 / 3.33 in tall, so the pair alone overran a page.
@@ -64,7 +62,7 @@ MERGE_WITH_PREVIOUS = {"SUPERVISION CHARGES FOR ERECTION & COMMISSIONING"}
 # Matched on a prefix, because the heading carries template placeholders:
 # "ENCON REGENERATIVE {{ fuel_word }} BURNERS – {{ burner_count }}". It opens
 # the scope narrative and was crammed under the TECHNICAL DATA table.
-PAGE_BREAK_BEFORE_PREFIX = ("ENCON REGENERATIVE",)
+PAGE_BREAK_BEFORE_PREFIX = ("ENCON REGENERATIVE", "Fig 2:")
 CLOSE_GAP_BEFORE = "REGENERATIVE BURNERS"
 # CLIENT DETAILS opens its own page, so it is promoted from the 11 pt
 # Heading-3 sub-label to the document's 15 pt section-heading treatment (the
@@ -104,21 +102,6 @@ def _set_page_break_before(p):
     for old in pPr.findall(qn("w:pageBreakBefore")):
         pPr.remove(old)
     pPr.append(OxmlElement("w:pageBreakBefore"))
-
-
-def _rule_below(p):
-    """Draw a horizontal line under this paragraph."""
-    pPr = p._element.get_or_add_pPr()
-    for old in pPr.findall(qn("w:pBdr")):
-        pPr.remove(old)
-    bdr = OxmlElement("w:pBdr")
-    bottom = OxmlElement("w:bottom")
-    bottom.set(qn("w:val"), "single")
-    bottom.set(qn("w:sz"), "6")          # eighths of a point -> 0.75 pt
-    bottom.set(qn("w:space"), "6")       # gap between the image and the rule
-    bottom.set(qn("w:color"), "808080")
-    bdr.append(bottom)
-    pPr.append(bdr)
 
 
 def _no_split_rows(table):
@@ -238,7 +221,7 @@ def _keep_section_together(blocks, parent):
 
 def patch(path):
     d = Document(path)
-    done, gap, rule, kept = [], False, False, 0
+    done, gap, kept = [], False, 0
     promoted = False
     after_fig1 = False
     for p in d.paragraphs:
@@ -261,12 +244,9 @@ def patch(path):
             p.paragraph_format.space_before = Pt(0)
             gap = True
         if t.startswith(FIG_CAPTIONS):
+            # Caption sits above its diagram, so it must travel with it.
             p.paragraph_format.keep_with_next = True
             kept += 1
-            # The rule sits directly under the Fig 1 heading, above its diagram.
-            if t.startswith(FIG1_CAPTION) and not rule:
-                _rule_below(p)
-                rule = True
 
     # Recipient + signature blocks fully bold.
     bolded = 0
@@ -322,7 +302,7 @@ def patch(path):
     missing = [x for x in PAGE_BREAK_BEFORE if x not in done]
     note = f"  (not found: {', '.join(missing)})" if missing else ""
     print(f"  OK  {os.path.basename(path)} — breaks: {', '.join(done) or 'none'};"
-          f" gap closed: {gap}; rule after Fig 1: {rule};"
+          f" gap closed: {gap};"
           f" captions kept with figure: {kept}; figures scaled: {scaled};"
           f" CLIENT DETAILS promoted: {promoted}; savings rows no-split: {nosplit};"
           f" letter lines bolded: {bolded}; sections bound: {len(groups)};"
