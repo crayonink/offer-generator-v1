@@ -1205,6 +1205,7 @@ We shall not be responsible for any delay due to non-availability of fronts, del
   // ── Export Excel ────────────────────────────────────────────────────────
   async function downloadExcel() {
     if (!calcData) return;
+    recalcFinal();          // make sure the buildup on cost_summary is current
     const btn = document.getElementById('xl-btn');
     btn.disabled = true; btn.textContent = 'Generating…';
     try {
@@ -1225,6 +1226,26 @@ We shall not be responsible for any delay due to non-availability of fronts, del
           bom:          calcData.bom,
           cost_summary: calcData.cost_summary,
           equipment:    { supplementary: calcData.supplementary },
+          // The commercial buildup exactly as entered on screen. recalcFinal()
+          // has already stored every field on cost_summary; zeros are sent as
+          // 0 (not omitted) so the sheet shows every line.
+          commercial: {
+            total_cost:       +calcData.cost_summary.total_cost    || 0,
+            markup:           +calcData.cost_summary.markup        || 0,
+            grand_total:      +calcData.cost_summary.total_selling || 0,
+            pf_pct:           +calcData.cost_summary.pf_pct        || 0,
+            pf_amount:        +calcData.cost_summary.pf_amount     || 0,
+            design_pct:       +calcData.cost_summary.design_pct    || 0,
+            design_amount:    +calcData.cost_summary.design_amount || 0,
+            neg_pct:          +calcData.cost_summary.negotiation_pct    || 0,
+            neg_amount:       +calcData.cost_summary.negotiation_amount || 0,
+            transport_amount: +calcData.cost_summary.transport_amount   || 0,
+            final_total:      +calcData.cost_summary.final_total   || 0,
+            order_qty:        +calcData.cost_summary.order_qty     || 1,
+            order_total:      +calcData.cost_summary.order_total   || 0,
+          },
+          currency: selectedCurrency,
+          fx_rate:  (selectedCurrency === 'USD' ? (fxRate || 0) : 0),
         }),
       });
       const blob = await res.blob();

@@ -9344,6 +9344,76 @@ def export_excel(req: ExcelExportRequest):
         cell(ws5, r5, 11, "", bold=True, bg=GREEN_BG, fg=GREEN)
         ws5.row_dimensions[r5].height = 22
 
+        # ── Commercial summary — exactly the buildup entered on screen ──────
+        # Every line is written even when it is zero, so the sheet shows what
+        # was actually input rather than silently dropping empty steps.
+        _comm = req.commercial or {}
+        if _comm:
+            def _cf(x, d=0.0):
+                try:
+                    return float(x)
+                except (TypeError, ValueError):
+                    return d
+
+            def _pctxt(v):
+                v = _cf(v)
+                return str(int(v)) if v == int(v) else str(round(v, 4))
+
+            r5 += 2
+            section_hdr(ws5, r5, 11, "COMMERCIAL SUMMARY")
+            r5 += 1
+            _grand_row = None
+
+            def _cline(label, value, formula=None, is_total=False, fmt='#,##0.00'):
+                nonlocal r5
+                bg = GREEN_BG if is_total else GREY
+                fg = GREEN if is_total else "1E293B"
+                ws5.merge_cells(f"A{r5}:G{r5}")
+                cell(ws5, r5, 1, label, bold=is_total, bg=bg, fg=fg, align="right")
+                cell(ws5, r5, 8, formula if formula is not None else value,
+                     bold=is_total, bg=bg, fg=fg, align="right", num_fmt=fmt)
+                for _c in (9, 10, 11):
+                    cell(ws5, r5, _c, "", bg=bg)
+                ws5.row_dimensions[r5].height = 19
+                used = r5
+                r5 += 1
+                return used
+
+            _tc = _cf(_comm.get("total_cost"))
+            _mkv = _cf(_comm.get("markup"), 1.0)
+            _gt = _cf(_comm.get("grand_total"))
+            r_cost = _cline("Total Cost Price", _tc)
+            r_mkr = _cline("Markup", _mkv, fmt='0.00"×"')
+            _grand_row = _cline(
+                "Grand Total (Selling)", _gt,
+                formula=(f"=H{r_cost}*H{r_mkr}" if abs(_gt - _tc * _mkv) < 0.5 else None))
+
+            for _lbl, _pk, _ak in (("Packaging & Forwarding", "pf_pct", "pf_amount"),
+                                   ("Designing", "design_pct", "design_amount"),
+                                   ("Negotiation", "neg_pct", "neg_amount")):
+                _pv, _av = _cf(_comm.get(_pk)), _cf(_comm.get(_ak))
+                _fm = (f"=H{_grand_row}*{_pctxt(_pv)}/100"
+                       if abs(_av - _gt * _pv / 100) < 0.5 else None)
+                _cline(f"{_lbl} ({_pctxt(_pv)} %)", _av, formula=_fm)
+            _cline("Transport", _cf(_comm.get("transport_amount")))
+
+            _final = _cf(_comm.get("final_total"))
+            r_final = _cline("Final Total (per system)", _final,
+                             formula=f"=MROUND(SUM(H{_grand_row}:H{r5-1}),1000)",
+                             is_total=True)
+            _oq = int(req.order_qty or _comm.get("order_qty") or 1)
+            r_oq = _cline("Quantity (systems)", _oq, fmt='#,##0')
+            _cline(f"Order Total ({_oq} × Final)",
+                   _cf(_comm.get("order_total")) or _final * _oq,
+                   formula=f"=H{r_final}*H{r_oq}", is_total=True)
+            if (req.currency or "").upper() == "USD" and (req.fx_rate or 0) > 0:
+                r_fx = _cline(f"Exchange Rate (1 USD = ₹{_pctxt(round(1 / req.fx_rate, 2))})",
+                              req.fx_rate, fmt='0.000000')
+                _cline("Order Total (USD)",
+                       (_cf(_comm.get("order_total")) or _final * _oq) * req.fx_rate,
+                       formula=f"=H{r_final}*H{r_oq}*H{r_fx}", is_total=True,
+                       fmt='$#,##0.00')
+
         # ── Blower + ID-fan sizing worked example (below the items) ─────────
         fs = supp.get("fan_sizing") if supp else None
         if fs:
