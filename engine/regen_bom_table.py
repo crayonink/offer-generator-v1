@@ -294,10 +294,23 @@ def add_oil_savings_table(doc_path, gas_fuel, oil_fuel):
     # two adjacent tbl elements would merge into one table in Word.
     new_tbl = copy.deepcopy(tbl._tbl)
     tbl._tbl.addnext(new_tbl)
-    tbl._tbl.addnext(OxmlElement("w:p"))
+    spacer = OxmlElement("w:p")
+    tbl._tbl.addnext(spacer)
 
     from docx.table import Table
+    from docx.text.paragraph import Paragraph
     _retitle_cell(Table(new_tbl, tbl._parent).rows[0].cells[0], title)
+
+    # Keep the pair on one page: every row of the first table, and the spacer
+    # between them, keeps-with-next so Word carries the whole block over rather
+    # than leaving the second table stranded on the following page. The rows
+    # already carry cantSplit from the template, and the clone inherits it.
+    for row in Table(tbl._tbl, tbl._parent).rows:
+        for cell in row.cells:
+            for p in cell.paragraphs:
+                p.paragraph_format.keep_with_next = True
+    Paragraph(spacer, tbl._parent).paragraph_format.keep_with_next = True
+
     d.save(doc_path)
     return True
 
