@@ -9379,40 +9379,37 @@ def export_excel(req: ExcelExportRequest):
                 r5 += 1
                 return used
 
+            # Written as literal values, not formulas. A formula carries no
+            # cached result in an openpyxl file, so anything that doesn't
+            # recalculate on open shows a blank cell — and this block exists
+            # precisely to be read. The labels carry the arithmetic (markup,
+            # each %, the qty), so it stays checkable by eye.
             _tc = _cf(_comm.get("total_cost"))
             _mkv = _cf(_comm.get("markup"), 1.0)
-            _gt = _cf(_comm.get("grand_total"))
-            r_cost = _cline("Total Cost Price", _tc)
-            r_mkr = _cline("Markup", _mkv, fmt='0.00"×"')
-            _grand_row = _cline(
-                "Grand Total (Selling)", _gt,
-                formula=(f"=H{r_cost}*H{r_mkr}" if abs(_gt - _tc * _mkv) < 0.5 else None))
+            _gt = _cf(_comm.get("grand_total")) or _tc * _mkv
+            _cline("Total Cost Price", _tc)
+            _cline("Markup", _mkv, fmt='0.00"×"')
+            _grand_row = _cline(f"Grand Total (Selling)  =  Cost × {_pctxt(_mkv)}", _gt)
 
             for _lbl, _pk, _ak in (("Packaging & Forwarding", "pf_pct", "pf_amount"),
                                    ("Designing", "design_pct", "design_amount"),
                                    ("Negotiation", "neg_pct", "neg_amount")):
                 _pv, _av = _cf(_comm.get(_pk)), _cf(_comm.get(_ak))
-                _fm = (f"=H{_grand_row}*{_pctxt(_pv)}/100"
-                       if abs(_av - _gt * _pv / 100) < 0.5 else None)
-                _cline(f"{_lbl} ({_pctxt(_pv)} %)", _av, formula=_fm)
+                _cline(f"{_lbl} ({_pctxt(_pv)} %)", _av)
             _cline("Transport", _cf(_comm.get("transport_amount")))
 
             _final = _cf(_comm.get("final_total"))
-            r_final = _cline("Final Total (per system)", _final,
-                             formula=f"=MROUND(SUM(H{_grand_row}:H{r5-1}),1000)",
-                             is_total=True)
+            _cline("Final Total (per system)", _final, is_total=True)
             _oq = int(req.order_qty or _comm.get("order_qty") or 1)
-            r_oq = _cline("Quantity (systems)", _oq, fmt='#,##0')
-            _cline(f"Order Total ({_oq} × Final)",
-                   _cf(_comm.get("order_total")) or _final * _oq,
-                   formula=f"=H{r_final}*H{r_oq}", is_total=True)
+            _cline("Quantity (systems)", _oq, fmt='#,##0')
+            _cline(f"Order Total  =  Final × {_oq}",
+                   _cf(_comm.get("order_total")) or _final * _oq, is_total=True)
             if (req.currency or "").upper() == "USD" and (req.fx_rate or 0) > 0:
-                r_fx = _cline(f"Exchange Rate (1 USD = ₹{_pctxt(round(1 / req.fx_rate, 2))})",
-                              req.fx_rate, fmt='0.000000')
+                _cline(f"Exchange Rate (1 USD = ₹{_pctxt(round(1 / req.fx_rate, 2))})",
+                       req.fx_rate, fmt='0.000000')
                 _cline("Order Total (USD)",
                        (_cf(_comm.get("order_total")) or _final * _oq) * req.fx_rate,
-                       formula=f"=H{r_final}*H{r_oq}*H{r_fx}", is_total=True,
-                       fmt='$#,##0.00')
+                       is_total=True, fmt='$#,##0.00')
 
         # ── Blower + ID-fan sizing worked example (below the items) ─────────
         fs = supp.get("fan_sizing") if supp else None
@@ -9467,7 +9464,13 @@ def export_excel(req: ExcelExportRequest):
             if _name in wb.sheetnames:
                 del wb[_name]
 
-        # Save and return
+        # Save and return. Formulas written by openpyxl carry no cached result,
+        # so tell Excel to recalculate on open — otherwise a formula cell can
+        # render blank until the user forces a recalc.
+        try:
+            wb.calculation.fullCalcOnLoad = True
+        except Exception:
+            pass
         buf = io.BytesIO()
         wb.save(buf)
         buf.seek(0)
