@@ -2518,6 +2518,64 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ── Sticky parameters (same behaviour as the regen form) ────────────────────
+// Everything the user types or picks below Step 1 is remembered, so a refresh
+// or coming back later never loses the sizing work. The Step-1 customer block
+// keeps its own store above, shared between the two tundish forms; this one is
+// per form, so the preheater's parameters never leak into the dryer's.
+// The enquiry ref is excluded — it is always regenerated fresh.
+const _PARAM_KEY = 'encon_tundish_params_v1';
+const _PARAM_SKIP = new Set(['c-ref'].concat(_STICKY_FIELDS));
+
+function _paramEls() {
+  return Array.from(document.querySelectorAll('input, select, textarea'))
+    .filter(el => el.id && !_PARAM_SKIP.has(el.id)
+                 && el.type !== 'file' && el.type !== 'button' && el.type !== 'submit');
+}
+
+let _paramTimer = null;
+function _saveParams() {
+  clearTimeout(_paramTimer);
+  _paramTimer = setTimeout(() => {
+    try {
+      const d = {};
+      for (const el of _paramEls()) {
+        d[el.id] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
+      }
+      if (typeof selectedCurrency !== 'undefined') d.__currency = selectedCurrency;
+      localStorage.setItem(_PARAM_KEY, JSON.stringify(d));
+    } catch (e) { /* storage full or disabled — ignore */ }
+  }, 250);
+}
+
+function _loadParams() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(_PARAM_KEY) || 'null'); } catch (e) {}
+  if (!d) return;
+  for (const el of _paramEls()) {
+    if (!(el.id in d)) continue;
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!d[el.id];
+    else el.value = d[el.id];
+  }
+  const cs = document.getElementById('currency-sel');
+  if (cs && d.__currency) {
+    cs.value = d.__currency;
+    if (typeof applyCurrency === 'function') applyCurrency();
+  }
+}
+
+function clearStickyParams() {
+  if (!confirm('Clear the saved parameters and start fresh?')) return;
+  try { localStorage.removeItem(_PARAM_KEY); } catch (e) {}
+  location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  _loadParams();
+  // Persist on any edit — typing, a select change, or a button-group click.
+  ['input', 'change', 'click'].forEach(ev => document.addEventListener(ev, _saveParams));
+});
+
 </script>
   <script src="/static/rfq_prefill.js"></script>
 </body>
