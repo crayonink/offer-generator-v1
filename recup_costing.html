@@ -841,18 +841,16 @@ function _paintPreview(c) {
   const g = "color:#065f46";
   const b = (v) => `<strong style="${g}">${v}</strong>`;
   const grid = `${c.pipes_in_row} × ${c.pipes_in_column} = ${c.pipes_total}`;
-  const ovr = intv("pipes_total_override");
 
   $("pipes_raw_preview").textContent  = c.pipes_total_raw.toFixed(2);
   $("pipes_grid_preview").textContent = grid;
 
+  // One message either way. The raw count is always the heat balance's; the
+  // grid is whatever is in force, auto or typed.
   const gh = $("pipes_grid_hint");
-  if (gh) gh.innerHTML = ovr > 0
-    ? `Using your total of ${b(ovr)} &rarr; ${b(grid)}`
-      + `${c.pipes_total !== ovr ? ` (nearest layout — ${ovr} has no square-ish grid)` : ""}. `
-      + `Auto sizing would derive ${c.pipes_total_raw.toFixed(2)} raw pipes. Set 0 to use that instead.`
-    : `Auto sizing derives ${b(c.pipes_total_raw.toFixed(2))} raw pipes &rarr; ${b(grid)} `
-      + `from the heat balance. Leave at 0 to use this, or type your own total.`;
+  if (gh) gh.innerHTML =
+    `Auto sizing derives ${b(c.pipes_total_raw.toFixed(2))} raw pipes &rarr; ${b(grid)}. `
+    + `Leave at 0 to use this, or type your own total.`;
 
   const eachEl = $("pipe_kg_each");
   if (eachEl) {
