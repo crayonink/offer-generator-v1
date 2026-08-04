@@ -808,10 +808,12 @@ function syncRawPipesPreview() {
   const area  = (lmtd > 0 && htc > 0) ? Q / (lmtd * htc) : 0;
   const pipesRaw = area / (3.14 * (dia / 1000) * (lenM + 0.1));
 
-  // Mirror of _best_grid() in calculations/recup.py — find rows x cols
-  // that balances aspect skew + waste, with cols forced even.
-  const target = Math.max(1, Math.ceil(pipesRaw));
-  const [rows, cols] = bestGrid(target);
+  // Mirror of calculations/recup.py: an override is laid out EXACTLY
+  // (49 -> 7 x 7); only the auto path goes through the even-cols search.
+  const ovrIn = parseInt($("pipes_total_override").value) || 0;
+  const [rows, cols] = ovrIn > 0
+    ? exactGrid(ovrIn)
+    : bestGrid(Math.max(1, Math.ceil(pipesRaw)));
 
   $("pipes_raw_preview").textContent  = pipesRaw.toFixed(2);
   $("pipes_grid_preview").textContent = `${rows} × ${cols} = ${rows * cols}`;
@@ -838,18 +840,36 @@ function syncRawPipesPreview() {
   if (wEl) {
     const kgm = parseFloat($("pipe_kg_per_m").value) || 0;
     const override = parseInt($("pipes_total_override").value) || 0;
-    const perBank = override > 0 ? Math.ceil(override / 2) : rows * cols;
+    const totalPipes = rows * cols;
+    const perBank = Math.floor(totalPipes / 2);
+    const hotBank = totalPipes - perBank;          // odd total -> hot carries it
     const perPipe = kgm * lenM;
-    const bank = perPipe * perBank;
+    const bank = perPipe * hotBank;
     wEl.innerHTML = kgm > 0
       ? `Weight: <strong style="color:#065f46">${kgm.toFixed(3)}</strong> kg/m × `
         + `<strong style="color:#065f46">${lenM}</strong> m = `
         + `<strong style="color:#065f46">${perPipe.toFixed(3)}</strong> kg/pipe × `
-        + `<strong style="color:#065f46">${perBank}</strong> per bank = `
-        + `<strong style="color:#065f46">${bank.toFixed(1)}</strong> kg/bank, `
-        + `<strong style="color:#065f46">${(bank * 2).toFixed(1)}</strong> kg for both banks.`
+        + `<strong style="color:#065f46">${totalPipes}</strong> pipes `
+        + `(${hotBank} hot + ${perBank} cold) = `
+        + `<strong style="color:#065f46">${(perPipe * totalPipes).toFixed(1)}</strong> kg total.`
       : "&nbsp;";
   }
+}
+
+// Mirror of _exact_grid() — rows x cols == n exactly, as square as possible.
+// Steps up only when a number has no sensible factor pair (a prime like 47).
+function exactGrid(n) {
+  for (let cand = Math.max(1, n); cand < n + 12; cand++) {
+    let best = null;
+    for (let r = 1; r * r <= cand; r++) {
+      if (cand % r) continue;
+      const c = cand / r;
+      if (!best || (c - r) < (best[1] - best[0])) best = [r, c];
+    }
+    if (best && best[1] <= best[0] * 4) return best;
+  }
+  const r = Math.max(1, Math.round(Math.sqrt(n)));
+  return [r, Math.ceil(n / r)];
 }
 
 function bestGrid(n) {

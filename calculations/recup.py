@@ -163,6 +163,32 @@ def _best_grid(n: int) -> tuple[int, int]:
     return best[1], best[2]
 
 
+def _exact_grid(n: int) -> tuple:
+    """rows x cols == n exactly, as square as possible.
+
+    Used when the user types a pipe total: 49 must lay out as 7 x 7, not be
+    rounded up to 7 x 8 = 56. _best_grid forces an even column count so the
+    two banks split evenly, which is right when WE pick the number but wrong
+    when the user has stated it.
+
+    A number with no sensible factor pair (a prime like 47, whose only pair is
+    1 x 47) has no square-ish layout, so the search steps up to the next number
+    that does — the smallest nudge that still gives rows x cols == total.
+    """
+    for cand in range(max(1, n), n + 12):
+        best = None
+        for r in range(1, math.isqrt(cand) + 1):
+            if cand % r:
+                continue
+            c = cand // r
+            if best is None or (c - r) < (best[1] - best[0]):
+                best = (r, c)
+        if best and best[1] <= best[0] * 4:      # not absurdly tall/thin
+            return best
+    r = max(1, round(math.sqrt(n)))
+    return r, math.ceil(n / r)
+
+
 def calculate_recup(inp: RecupInputs) -> RecupResults:
     # ── E4: flue mass = flow * 1.2 ──────────────────────────────────
     flue_mass = inp.flue_flow_nm3hr * inp.flue_density_factor
@@ -197,12 +223,17 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     # ── E20/E21: rows / cols, both paths go through _best_grid so the
     # result is always near-square. Auto target is ceil(raw); override
     # target is whatever the user typed.
-    target = (inp.pipes_total_override
-              if inp.pipes_total_override and inp.pipes_total_override > 0
-              else max(1, math.ceil(pipes_raw)))
-    rows_count, cols_count = _best_grid(target)
+    if inp.pipes_total_override and inp.pipes_total_override > 0:
+        # The user stated the total — lay it out exactly, do not re-size it.
+        rows_count, cols_count = _exact_grid(inp.pipes_total_override)
+    else:
+        rows_count, cols_count = _best_grid(max(1, math.ceil(pipes_raw)))
     pipes_total = rows_count * cols_count
-    pipes_per_bank = pipes_total // 2  # E28: rows * (cols/2)
+    # An odd total cannot split evenly, so the hot bank carries the extra pipe
+    # rather than it being dropped by integer division.
+    pipes_per_bank = pipes_total // 2                    # E28: rows * (cols/2)
+    pipes_hot_bank  = pipes_total - pipes_per_bank
+    pipes_cold_bank = pipes_per_bank
 
     # ── E16/E17: bank length and width (derived) ───────────────────
     bank_length_mm = (((rows_count - 1) / 2) * inp.pipe_pitch_mm) \
@@ -214,8 +245,8 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
 
     # ── E27/E28: pipe weights ──────────────────────────────────────
     weight_per_pipe = inp.pipe_kg_per_m * inp.pipe_length_m_per_bank
-    weight_hot_bank  = weight_per_pipe * pipes_per_bank
-    weight_cold_bank = weight_per_pipe * pipes_per_bank
+    weight_hot_bank  = weight_per_pipe * pipes_hot_bank
+    weight_cold_bank = weight_per_pipe * pipes_cold_bank
     weight_total = weight_hot_bank + weight_cold_bank
 
     # ── MS structural weights (E41..E45) — exact Excel formulas ───
