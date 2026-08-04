@@ -403,13 +403,8 @@
           <option value="MS">MS &mdash; Rs.70/kg</option>
         </select>
       </div>
-      <div class="field">
-        <label>Bank Pipe Length (m)</label>
-        <input id="pipe_length_m_per_bank" type="number" step="any" value="0.63"/>
-        <div class="hint">Per-bank pipe length in metres (e.g. 0.63, 1.18).</div>
-      </div>
     </div>
-    <div class="fg fg-4">
+    <div class="fg" style="grid-template-columns:repeat(5,1fr)">
       <div class="field">
         <label>Pipe OD (mm)</label>
         <input id="pipe_dia_mm" type="number" step="any" value="48.3"/>
@@ -424,9 +419,14 @@
         <div class="hint" id="pipe_kg_hint">Derived from OD and thickness. Type a value to override.</div>
       </div>
       <div class="field">
+        <label>Pipe Length (m)</label>
+        <input id="pipe_length_m_per_bank" type="number" step="any" value="0.63"/>
+        <div class="hint">Per-bank pipe length (e.g. 0.63, 1.18).</div>
+      </div>
+      <div class="field">
         <label>Pipe (kg)</label>
         <input id="pipe_kg_each" type="text" class="ro" readonly value="—"/>
-        <div class="hint" id="pipe_kg_each_hint">kg/m &times; bank length. Read-only.</div>
+        <div class="hint" id="pipe_kg_each_hint">kg/m &times; length.</div>
       </div>
     </div>
     <div class="fg fg-3">
@@ -818,15 +818,20 @@ function syncRawPipesPreview() {
 
   // Pipe weight: kg/m × bank length = kg per pipe; × pipes per bank = bank
   // weight; both banks together is what the BOM prices at Rs/kg.
-  // Pipe weight in kg, shown beside the kg/m box: kg/m x bank length.
+  // Pipe weight in kg beside the kg/m box — the TOTAL steel in the tubes:
+  // kg/m x bank length x every pipe in both banks. That is the figure the BOM
+  // prices at Rs/kg, and the one that grows as the recuperator gets bigger.
   const eachEl = $("pipe_kg_each");
   if (eachEl) {
     const kgmv = parseFloat($("pipe_kg_per_m").value) || 0;
+    const ovr  = parseInt($("pipes_total_override").value) || 0;
+    const nAll = ovr > 0 ? ovr : rows * cols;
     eachEl.value = kgmv > 0 ? (kgmv * lenM).toFixed(3) + " kg" : "—";
     const eh = $("pipe_kg_each_hint");
     if (eh) eh.textContent = kgmv > 0
-      ? `${kgmv.toFixed(3)} kg/m x ${lenM} m per pipe. Read-only.`
-      : "kg/m x bank length. Read-only.";
+      ? `${kgmv.toFixed(3)} kg/m x ${lenM} m. All ${nAll} pipes: `
+        + `${(kgmv * lenM * nAll).toFixed(1)} kg.`
+      : "kg/m x length.";
   }
 
   const wEl = $("pipe_weight_preview");
