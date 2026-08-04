@@ -409,7 +409,7 @@
         <div class="hint">Per-bank pipe length in metres (e.g. 0.63, 1.18).</div>
       </div>
     </div>
-    <div class="fg fg-3">
+    <div class="fg fg-4">
       <div class="field">
         <label>Pipe OD (mm)</label>
         <input id="pipe_dia_mm" type="number" step="any" value="48.3"/>
@@ -422,6 +422,11 @@
         <label>Pipe (kg/m)</label>
         <input id="pipe_kg_per_m" type="number" step="any" value="3.16"/>
         <div class="hint" id="pipe_kg_hint">Derived from OD and thickness. Type a value to override.</div>
+      </div>
+      <div class="field">
+        <label>Pipe (kg)</label>
+        <input id="pipe_kg_each" type="text" class="ro" readonly value="—"/>
+        <div class="hint" id="pipe_kg_each_hint">kg/m &times; bank length. Read-only.</div>
       </div>
     </div>
     <div class="fg fg-3">
@@ -813,6 +818,17 @@ function syncRawPipesPreview() {
 
   // Pipe weight: kg/m × bank length = kg per pipe; × pipes per bank = bank
   // weight; both banks together is what the BOM prices at Rs/kg.
+  // Pipe weight in kg, shown beside the kg/m box: kg/m x bank length.
+  const eachEl = $("pipe_kg_each");
+  if (eachEl) {
+    const kgmv = parseFloat($("pipe_kg_per_m").value) || 0;
+    eachEl.value = kgmv > 0 ? (kgmv * lenM).toFixed(3) + " kg" : "—";
+    const eh = $("pipe_kg_each_hint");
+    if (eh) eh.textContent = kgmv > 0
+      ? `${kgmv.toFixed(3)} kg/m x ${lenM} m per pipe. Read-only.`
+      : "kg/m x bank length. Read-only.";
+  }
+
   const wEl = $("pipe_weight_preview");
   if (wEl) {
     const kgm = parseFloat($("pipe_kg_per_m").value) || 0;
@@ -883,7 +899,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const el = $(id);
     if (el) el.addEventListener("input", () => { recalcPipeKgPerM(); syncRawPipesPreview(); });
   }
-  for (const id of ["pipe_kg_per_m", "pipes_total_override"]) {
+  for (const id of ["pipe_kg_per_m", "pipes_total_override", "pipe_length_m_per_bank"]) {
     const el = $(id);
     if (el) el.addEventListener("input", syncRawPipesPreview);
   }
