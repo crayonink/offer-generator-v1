@@ -421,6 +421,7 @@
       <div class="field">
         <label>Pipe (kg/m)</label>
         <input id="pipe_kg_per_m" type="number" step="any" value="3.16"/>
+        <div class="hint" id="pipe_kg_hint">Derived from OD and thickness. Type a value to override.</div>
       </div>
     </div>
     <div class="fg fg-3">
@@ -824,6 +825,28 @@ function bestGrid(n) {
   return [best.rows, best.cols];
 }
 
+// Pipe weight per metre from OD and wall thickness — the same basis the
+// pricelist parser uses (bom/pricelist_parser.py):
+//     kg/m = π/4 × (OD² − ID²) × 7850 / 1,000,000,  ID = OD − 2×thickness
+// Recomputed whenever OD or thickness changes; typing directly in the kg/m box
+// marks it overridden and stops it being recalculated.
+const MS_DENSITY_KG_M3 = 7850;
+let _pipeKgOverridden = false;
+
+function recalcPipeKgPerM() {
+  if (_pipeKgOverridden) return;
+  const od = parseFloat($("pipe_dia_mm")?.value) || 0;
+  const th = parseFloat($("pipe_thick_mm")?.value) || 0;
+  const out = $("pipe_kg_per_m");
+  if (!out || od <= 0 || th <= 0 || 2 * th >= od) return;
+  const id = od - 2 * th;
+  const kg = Math.PI / 4 * (od * od - id * id) * MS_DENSITY_KG_M3 / 1e6;
+  out.value = (Math.round(kg * 1000) / 1000).toString();
+  const hint = $("pipe_kg_hint");
+  if (hint) hint.textContent = `= π/4 × (${od}² − ${id.toFixed(2)}²) × 7850 / 10⁶.`
+                             + " Type a value to override.";
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   for (const id of ["flue_flow_nm3hr","flue_temp_in_C","cp_flue_kcal_kgC",
                     "air_volume_nm3hr","air_temp_in_C","air_temp_out_C","cp_air_kcal_kgC",
@@ -831,6 +854,20 @@ window.addEventListener("DOMContentLoaded", () => {
     const el = $(id);
     if (el) el.addEventListener("input", syncRawPipesPreview);
   }
+  for (const id of ["pipe_dia_mm", "pipe_thick_mm"]) {
+    const el = $(id);
+    if (el) el.addEventListener("input", recalcPipeKgPerM);
+  }
+  const kgEl = $("pipe_kg_per_m");
+  if (kgEl) kgEl.addEventListener("input", () => {
+    _pipeKgOverridden = true;
+    const hint = $("pipe_kg_hint");
+    if (hint) hint.textContent = "Overridden — clear the box to go back to the derived value.";
+  });
+  if (kgEl) kgEl.addEventListener("blur", () => {
+    if (!kgEl.value.trim()) { _pipeKgOverridden = false; recalcPipeKgPerM(); }
+  });
+  recalcPipeKgPerM();
   syncRawPipesPreview();
 });
 
