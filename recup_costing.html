@@ -483,6 +483,11 @@
       <div class="stat"><div class="l">Total Pipe Wt</div><div class="v"><span id="r-totwt">0</span><span class="u">kg</span></div></div>
     </div>
 
+    <div class="section-title" style="margin-top:24px">Calculation Breakdown</div>
+    <div id="calc-breakdown" style="border:1px solid var(--border);border-radius:12px;padding:16px 18px;
+         font-family:ui-monospace,Consolas,monospace;font-size:.78rem;line-height:1.85;color:#334155;
+         overflow-x:auto;white-space:pre;"></div>
+
     <div class="section-title" style="margin-top:24px">Bill of Materials</div>
     <div class="bom-wrap">
       <table class="bom">
@@ -941,6 +946,79 @@ async function calculate() {
   }
 }
 
+// ── Step 3 calculation breakdown ────────────────────────────────────────────
+// Every intermediate the sizing goes through, with the real numbers, so the
+// output can be checked by hand. Values come from the backend result wherever
+// it publishes them, so this cannot drift from what was actually costed; only
+// the few purely-arithmetic steps (air mass, the two temperature differences)
+// are recomputed here.
+function renderBreakdown(c) {
+  const el = $("calc-breakdown");
+  if (!el) return;
+  const n = (v, d = 2) => (v == null ? "—" : Number(v).toFixed(d));
+  const cm = (v, d = 0) => (v == null ? "—" : Number(v).toLocaleString("en-IN",
+                { minimumFractionDigits: d, maximumFractionDigits: d }));
+  const f = id => parseFloat(($(id) || {}).value) || 0;
+
+  const dens   = 1.2;                    // kg/Nm3 — flue_density_factor
+  const cpAir  = f("cp_air_kcal_kgC")  || 0.247;
+  const cpFlue = f("cp_flue_kcal_kgC") || 0.23;
+  const U      = f("heat_transfer_coef") || 30;
+  const airMass = c.air_volume_nm3hr * dens;
+  const dTair   = c.air_temp_out_C - c.air_temp_in_C;
+  const dT1     = c.flue_temp_in_C - c.air_temp_out_C;
+  const dT2     = c.flue_temp_out_C - c.air_temp_in_C;
+  const lmtdRaw = (dT1 > 0 && dT2 > 0 && dT1 !== dT2)
+                ? (dT1 - dT2) / Math.log(dT1 / dT2) : (dT1 + dT2) / 2;
+  const effLen  = c.pipe_length_m_per_bank + 0.1;
+  const kgm     = f("pipe_kg_per_m");
+  const msTotal = (c.ms_outer_shell_kg || 0) + (c.ms_air_inlet_duct_kg || 0)
+                + (c.ms_hot_outlet_duct_kg || 0) + (c.ms_pipe_holding_kg || 0)
+                + (c.ms_bottom_box_kg || 0);
+
+  const L = [];
+  const h = t => L.push("\n── " + t + " " + "─".repeat(Math.max(0, 58 - t.length)));
+  h("1. MASS FLOWS");
+  L.push(`   Flue mass   = ${cm(c.flue_flow_nm3hr)} Nm³/hr × ${dens} kg/Nm³ = ${cm(c.flue_mass_kghr)} kg/hr`);
+  L.push(`   Air mass    = ${cm(c.air_volume_nm3hr)} Nm³/hr × ${dens} kg/Nm³ = ${cm(airMass)} kg/hr`);
+  h("2. HEAT REQUIRED  (to preheat the combustion air)");
+  L.push(`   ΔT air      = ${n(c.air_temp_out_C,0)} − ${n(c.air_temp_in_C,0)} = ${n(dTair,0)} °C`);
+  L.push(`   Q           = ${cm(airMass)} × ${cpAir} × ${n(dTair,0)} = ${cm(c.heat_required_kcal)} kcal/hr`);
+  h("3. FINAL FLUE TEMP  (from the heat balance)");
+  L.push(`   T flue,out  = ${n(c.flue_temp_in_C,0)} − ${cm(c.heat_required_kcal)} ÷ (${cm(c.flue_mass_kghr)} × ${cpFlue})`);
+  L.push(`               = ${n(c.flue_temp_out_C)} °C`);
+  h("4. LMTD  (counter-flow, × 0.9 correction)");
+  L.push(`   ΔT1         = ${n(c.flue_temp_in_C,0)} − ${n(c.air_temp_out_C,0)} = ${n(dT1)} °C   (hot end)`);
+  L.push(`   ΔT2         = ${n(c.flue_temp_out_C)} − ${n(c.air_temp_in_C,0)} = ${n(dT2)} °C   (cold end)`);
+  L.push(`   LMTD raw    = (${n(dT1)} − ${n(dT2)}) ÷ ln(${n(dT1)}/${n(dT2)}) = ${n(lmtdRaw)} °C`);
+  L.push(`   LMTD        = ${n(lmtdRaw)} × 0.9 = ${n(c.lmtd_C)} °C`);
+  h("5. SURFACE AREA");
+  L.push(`   A           = Q ÷ (LMTD × U) = ${cm(c.heat_required_kcal)} ÷ (${n(c.lmtd_C)} × ${U})`);
+  L.push(`               = ${n(c.surface_area_m2)} m²`);
+  h("6. PIPE COUNT");
+  L.push(`   Area/pipe   = π × ${n(c.pipe_dia_mm/1000,4)} m × (${c.pipe_length_m_per_bank} + 0.1) m = ${n(3.14*(c.pipe_dia_mm/1000)*effLen,4)} m²`);
+  L.push(`   Raw pipes   = ${n(c.surface_area_m2)} ÷ ${n(3.14*(c.pipe_dia_mm/1000)*effLen,4)} = ${n(c.pipes_total_raw)}`);
+  L.push(`   Grid        = ${c.pipes_in_row} rows × ${c.pipes_in_column} cols = ${c.pipes_total} pipes`);
+  L.push(`   Per bank    = ${c.pipes_total} ÷ 2 = ${c.pipes_per_bank}   (hot + cold)`);
+  h("7. PIPE WEIGHT");
+  L.push(`   kg/m        = π/4 × (OD² − ID²) × 7850 ÷ 10⁶,  OD ${c.pipe_dia_mm} / thk ${c.pipe_thick_mm} mm`);
+  L.push(`               = ${n(kgm,3)} kg/m`);
+  L.push(`   Per pipe    = ${n(kgm,3)} × ${c.pipe_length_m_per_bank} m = ${n(c.weight_per_pipe_kg,3)} kg`);
+  L.push(`   Hot bank    = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_per_bank} = ${n(c.weight_hot_bank_kg,1)} kg  (${c.hot_bank_material})`);
+  L.push(`   Cold bank   = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_per_bank} = ${n(c.weight_cold_bank_kg,1)} kg  (${c.cold_bank_material})`);
+  L.push(`   Total tubes = ${n(c.weight_total_pipes_kg,1)} kg`);
+  h("8. BANK GEOMETRY");
+  L.push(`   Bank length = ${cm(c.bank_length_mm,1)} mm     Bank width = ${cm(c.bank_width_mm,1)} mm`);
+  h("9. MS STRUCTURAL WEIGHT  (drives the CAI assembly cost)");
+  L.push(`   Outer shell = ${cm(c.ms_outer_shell_kg,1)} kg`);
+  L.push(`   Air inlet   = ${cm(c.ms_air_inlet_duct_kg,1)} kg`);
+  L.push(`   Hot outlet  = ${cm(c.ms_hot_outlet_duct_kg,1)} kg`);
+  L.push(`   Pipe holder = ${cm(c.ms_pipe_holding_kg,1)} kg`);
+  L.push(`   Bottom box  = ${cm(c.ms_bottom_box_kg,1)} kg`);
+  L.push(`   MS total    = ${cm(msTotal,1)} kg`);
+  el.textContent = L.join("\n").replace(/^\n/, "");
+}
+
 function renderResults() {
   const d = lastCalc;
 
@@ -954,6 +1032,7 @@ function renderResults() {
   $("r-hot").textContent     = c.weight_hot_bank_kg.toFixed(1);
   $("r-cold").textContent    = c.weight_cold_bank_kg.toFixed(1);
   $("r-totwt").textContent   = c.weight_total_pipes_kg.toFixed(1);
+  renderBreakdown(c);
 
   // Rows whose cost is fully driven by upstream sizing (heat balance,
   // MS weight chain) — hidden from the BOM display so the table shows
