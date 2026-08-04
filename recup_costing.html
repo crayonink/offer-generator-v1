@@ -1199,6 +1199,66 @@ async function generateOffer() {
     $("genBtn").textContent = "Generate Offer";
   }
 }
+// ── Sticky form (same behaviour as the regen and tundish forms) ─────────────
+// Everything typed or picked is remembered, so a refresh — or coming back
+// later — never loses the sizing work. The enquiry ref is excluded: it is
+// always regenerated fresh rather than restored stale.
+// Registered last on purpose, so the restore runs AFTER recalcPipeKgPerM() and
+// a hand-entered pipe weight is not overwritten by the derived one.
+const _STICKY_KEY = 'encon_recup_form_v1';
+const _STICKY_SKIP = new Set(['c-ref']);
+
+function _stickyEls() {
+  return Array.from(document.querySelectorAll('input, select, textarea'))
+    .filter(el => el.id && !_STICKY_SKIP.has(el.id)
+                 && el.type !== 'file' && el.type !== 'button' && el.type !== 'submit');
+}
+
+let _stickyTimer = null;
+function _saveSticky() {
+  clearTimeout(_stickyTimer);
+  _stickyTimer = setTimeout(() => {
+    try {
+      const d = {};
+      for (const el of _stickyEls()) {
+        d[el.id] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
+      }
+      d.__currency = selectedCurrency;
+      d.__pipeKgOverridden = _pipeKgOverridden;
+      localStorage.setItem(_STICKY_KEY, JSON.stringify(d));
+    } catch (e) { /* storage full or disabled — ignore */ }
+  }, 250);
+}
+
+function _loadSticky() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(_STICKY_KEY) || 'null'); } catch (e) {}
+  if (!d) return;
+  for (const el of _stickyEls()) {
+    if (!(el.id in d)) continue;
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!d[el.id];
+    else el.value = d[el.id];
+  }
+  // A pipe weight the user typed stays put; otherwise let it re-derive.
+  _pipeKgOverridden = !!d.__pipeKgOverridden;
+  if (!_pipeKgOverridden && typeof recalcPipeKgPerM === 'function') recalcPipeKgPerM();
+  const cs = document.getElementById('currency-sel');
+  if (cs && d.__currency) {
+    cs.value = d.__currency;
+    if (typeof applyCurrency === 'function') applyCurrency();
+  }
+}
+
+function clearStickyForm() {
+  if (!confirm('Clear all saved form data and start a fresh offer?')) return;
+  try { localStorage.removeItem(_STICKY_KEY); } catch (e) {}
+  location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  _loadSticky();
+  ['input', 'change', 'click'].forEach(ev => document.addEventListener(ev, _saveSticky));
+});
 </script>
   <script src="/static/rfq_prefill.js"></script>
 </body>
