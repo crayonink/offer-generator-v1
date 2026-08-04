@@ -82,7 +82,11 @@ class RecupInputs:
 class RecupResults:
     # Energy / heat balance
     flue_mass_kghr:        float    # E4
+    air_mass_kghr:         float    # E9 * 1.2
     heat_required_kcal:    float    # E13
+    dt_hot_end_C:          float    # E6 - E11   (flue in  - air out)
+    dt_cold_end_C:         float    # E7 - E10   (flue out - air in)
+    lmtd_raw_C:            float    # E14 before the 0.9 correction
     flue_temp_out_C:       float    # E7
     lmtd_C:                float    # E14 (already with the 0.9 correction)
     surface_area_m2:       float    # E15
@@ -270,6 +274,10 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
 
     return RecupResults(
         flue_mass_kghr        = round(flue_mass, 2),
+        air_mass_kghr         = round(air_mass, 2),
+        dt_hot_end_C          = round(dT1, 4),
+        dt_cold_end_C         = round(dT2, 4),
+        lmtd_raw_C            = round(lmtd_raw, 4),
         heat_required_kcal    = round(heat_required, 2),
         flue_temp_out_C       = round(flue_temp_out, 2),
         lmtd_C                = round(lmtd, 2),

@@ -5414,6 +5414,12 @@ def recup_calculate(req: RecupCalcRequest):
         return {
             "calculations": {
                 "flue_mass_kghr":       results.flue_mass_kghr,
+                # Heat-balance intermediates, so the form can show the working
+                # without recomputing any of it in JavaScript.
+                "air_mass_kghr":        results.air_mass_kghr,
+                "dt_hot_end_C":         results.dt_hot_end_C,
+                "dt_cold_end_C":        results.dt_cold_end_C,
+                "lmtd_raw_C":           results.lmtd_raw_C,
                 "heat_required_kcal":   results.heat_required_kcal,
                 "flue_temp_out_C":      results.flue_temp_out_C,
                 "lmtd_C":               results.lmtd_C,
