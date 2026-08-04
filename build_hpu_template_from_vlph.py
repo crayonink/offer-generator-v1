@@ -58,7 +58,7 @@ _HPU_SPECS = [
 
 
 # ── Annexure I — Scope of Supply (HPU accessories) ─────────────────────────
-# Intentionally empty: previous defaults were fabricated by the AI rather
+# Intentionally empty: previlous defaults were fabricated by the AI rather
 # than sourced from ENCON catalogs. Populate with real (description, qty)
 # tuples — or wire to a master table — when the catalog list is provided.
 _HPU_SCOPE_ITEMS = []

@@ -1,8 +1,10 @@
 """
-Give the vertical (VLPH) offer the same layout treatment as the regen offer.
+Give the VLPH-derived offers the same layout treatment as the regen offer.
 
-The vertical template already has a real heading hierarchy, so this keys off the
-built-in styles rather than the font signature the regen patch has to use:
+Covers the vertical and the recuperator — the recup template was built from the
+vertical one (see build_recup_template_from_vlph.py), so both carry the same
+heading hierarchy and this keys off the built-in styles rather than the font
+signature the regen patch has to detect:
 
     Heading 1  (16 pt navy)   TABLE OF CONTENTS, 1. COMPANY PROFILE,
                               2. ABOUT THE CLIENT, 3. TECHNICAL SPECIFICATIONS,
@@ -12,6 +14,8 @@ built-in styles rather than the font signature the regen patch has to use:
 
 What it does, matching the regen offer:
 
+0. Drop the "COVER LETTER" heading — it sat directly above "To," and added
+   nothing; nothing in the contents list refers to it.
 1. Page break before "To," — the cover block and the letter ran together, so
    "To," sat alone at the foot of page 1 with the address overleaf.
 2. Page break before every Heading 1, so each numbered section and annexure
@@ -40,7 +44,7 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATES = ["Offer_Template.docx"]
+TEMPLATES = ["Offer_Template.docx", "Recup_Offer_Template.docx"]
 
 LETTER_START = "To,"
 LETTER_END = "NATIONAL ENERGY EFFICIENCY INNOVATION AWARD"
@@ -102,8 +106,19 @@ def _set_font(run, size_pt=None):
         run.font.size = Pt(size_pt)
 
 
+COVER_HEADING = "COVER LETTER"
+
+
 def patch(path):
     d = Document(path)
+
+    # ── 0. drop the redundant COVER LETTER heading ───────────────────────────
+    dropped = 0
+    for p in list(d.paragraphs):
+        if p.text.strip().upper() == COVER_HEADING:
+            p._element.getparent().remove(p._element)
+            dropped += 1
+
     by_el = {p._element: p for p in d.paragraphs}
 
     # ── 1 + 2. page breaks ───────────────────────────────────────────────────
@@ -215,7 +230,8 @@ def patch(path):
     d.save(path)
     print(f"  OK  {os.path.basename(path)} — {breaks} page breaks; "
           f"{bound}/{len(groups)} sections bound; {bolded} letter lines bold; "
-          f"{retyped} runs re-typed; {parents} list parents kept with children")
+          f"{retyped} runs re-typed; {parents} list parents kept with children; "
+          f"{dropped} cover heading(s) dropped")
 
 
 if __name__ == "__main__":

@@ -31,6 +31,7 @@ TEMPLATES = [
     "Regen_Oil_Offer_Template.docx",
     "Regen_Dual_Offer_Template.docx",
     "Offer_Template.docx",
+    "Recup_Offer_Template.docx",
 ]
 
 FONT_NAME = "Calibri"
