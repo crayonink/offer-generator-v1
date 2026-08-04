@@ -450,7 +450,7 @@
       <div class="field">
         <label>Number of Recuperator Pipes (override; 0 = auto)</label>
         <input id="pipes_total_override" type="number" step="1" value="0"/>
-        <div class="hint">Auto sizing derives
+        <div class="hint" id="pipes_grid_hint">Auto sizing derives
           <strong style="color:#065f46" id="pipes_raw_preview">157.56</strong>
           raw pipes &rarr;
           <strong style="color:#065f46" id="pipes_grid_preview">14 &times; 12 = 168</strong>
@@ -817,6 +817,17 @@ function syncRawPipesPreview() {
 
   $("pipes_raw_preview").textContent  = pipesRaw.toFixed(2);
   $("pipes_grid_preview").textContent = `${rows} × ${cols} = ${rows * cols}`;
+  // With an override set the grid shown is the user's, not the heat balance's —
+  // say so, rather than captioning their number "auto sizing derives".
+  const gh = $("pipes_grid_hint");
+  if (gh) gh.innerHTML = ovrIn > 0
+    ? `Using your total of <strong style="color:#065f46">${ovrIn}</strong> &rarr; `
+      + `<strong style="color:#065f46">${rows} × ${cols} = ${rows * cols}</strong>`
+      + `${rows * cols !== ovrIn ? ` (nearest layout — ${ovrIn} has no square-ish grid)` : ""}. `
+      + `Auto sizing would derive ${pipesRaw.toFixed(2)} raw pipes. Set 0 to use that instead.`
+    : `Auto sizing derives <strong style="color:#065f46">${pipesRaw.toFixed(2)}</strong> raw pipes &rarr; `
+      + `<strong style="color:#065f46">${rows} × ${cols} = ${rows * cols}</strong> from the heat balance. `
+      + `Leave at 0 to use this, or type your own total.`;
 
   // Pipe weight: kg/m × bank length = kg per pipe; × pipes per bank = bank
   // weight; both banks together is what the BOM prices at Rs/kg.
