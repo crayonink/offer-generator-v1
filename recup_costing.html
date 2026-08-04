@@ -346,7 +346,7 @@
         <input id="flue_flow_nm3hr" type="number" step="any" value="1900"/>
       </div>
       <div class="field">
-        <label>Inlet Temp (&deg;C)</label>
+        <label>Initial Temp (&deg;C)</label>
         <input id="flue_temp_in_C" type="number" step="any" value="800"/>
       </div>
       <div class="field">
@@ -365,11 +365,11 @@
         <input id="air_volume_nm3hr" type="number" step="any" value="1750"/>
       </div>
       <div class="field">
-        <label>Inlet Temp (&deg;C)</label>
+        <label>Initial Temp (&deg;C)</label>
         <input id="air_temp_in_C" type="number" step="any" value="35"/>
       </div>
       <div class="field">
-        <label>Outlet Temp (&deg;C)</label>
+        <label>Final Temp (&deg;C)</label>
         <input id="air_temp_out_C" type="number" step="any" value="400"/>
       </div>
     </div>
@@ -679,11 +679,11 @@ function _useInCombined(prodType, prodLabel) {
   const _r0 = x => Math.round(+x);
   if (c.application) _push('Application', c.application);
   if (c.flue_flow_nm3hr) _push('Flue Gas Flow', _r0(c.flue_flow_nm3hr) + ' Nm³/hr');
-  if (c.flue_temp_in_C) _push('Flue Gas Inlet Temp.', _r0(c.flue_temp_in_C) + ' °C');
-  if (c.flue_temp_out_C) _push('Flue Gas Outlet Temp.', _r0(c.flue_temp_out_C) + ' °C');
+  if (c.flue_temp_in_C) _push('Flue Gas Initial Temp.', _r0(c.flue_temp_in_C) + ' °C');
+  if (c.flue_temp_out_C) _push('Flue Gas Final Temp.', _r0(c.flue_temp_out_C) + ' °C');
   if (c.air_volume_nm3hr) _push('Combustion Air Flow', _r0(c.air_volume_nm3hr) + ' Nm³/hr');
-  if (c.air_temp_in_C) _push('Air Inlet Temperature', _r0(c.air_temp_in_C) + ' °C');
-  if (c.air_temp_out_C) _push('Air Outlet Temperature', _r0(c.air_temp_out_C) + ' °C');
+  if (c.air_temp_in_C) _push('Air Initial Temperature', _r0(c.air_temp_in_C) + ' °C');
+  if (c.air_temp_out_C) _push('Air Final Temperature', _r0(c.air_temp_out_C) + ' °C');
   if (c.surface_area_m2) _push('Heat Transfer Surface', (Math.round(c.surface_area_m2 * 10) / 10) + ' m²');
   if (c.pipes_total) _push('No. of Heat-Exchanger Tubes', c.pipes_total);
   if (c.pipe_dia_mm) _push('Tube Size', c.pipe_dia_mm + ' mm OD × ' + (c.pipe_thick_mm || '') + ' mm thk');
