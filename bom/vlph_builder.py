@@ -1122,6 +1122,14 @@ def build_vlph_120t_df(
         per_burner_items = {
             burner_model,
             burner_model_dual,
+            # The burner and pilot rows are written with GENERIC names — the
+            # model designation goes in the REFERENCE column — so they have to
+            # be matched by name. Listing only the model silently missed both,
+            # leaving one burner and one pilot on a multi-burner system.
+            "ENCON Gas Burner",
+            "ENCON Oil Burner",
+            "ENCON Dual Burner",
+            "Pilot Burner",
             "Ignition Transformer",
             "Sequence Controller",
             "UV Sensor with Air Jacket",
@@ -1138,9 +1146,15 @@ def build_vlph_120t_df(
         pilot_line_media = {
             f"{pl} PILOT LINE" for pl in ("LPG", "NG", "COG", "LNG", "RLNG")
         }
+        # Belt and braces: also catch the burner by the model in its REFERENCE
+        # ("ENCON 5A — GAS FLOW: …"), so renaming the row again cannot silently
+        # drop it back to qty 1.
+        _ref = df["REFERENCE"].astype(str)
         mask = (
             df["ITEM NAME"].isin(per_burner_items)
             | df["MEDIA"].isin(pilot_line_media)
+            | _ref.str.startswith(f"{burner_model} —")
+            | _ref.str.startswith(f"{burner_model_dual} —")
         )
         df.loc[mask, "QTY"]   = df.loc[mask, "QTY"]   * num_burners
         df.loc[mask, "TOTAL"] = df.loc[mask, "TOTAL"] * num_burners
