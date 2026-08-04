@@ -1364,8 +1364,13 @@ const _STICKY_KEY = 'encon_recup_form_v1';
 const _STICKY_SKIP = new Set(['c-ref']);
 
 function _stickyEls() {
+  // Read-only and disabled boxes are DERIVED (pipe kg, the enquiry ref…).
+  // Persisting them means a stale figure is restored over the freshly
+  // computed one — which is exactly what made Pipe (kg) disagree with its
+  // own hint after the pipe dimensions changed.
   return Array.from(document.querySelectorAll('input, select, textarea'))
     .filter(el => el.id && !_STICKY_SKIP.has(el.id)
+                 && !el.readOnly && !el.disabled
                  && el.type !== 'file' && el.type !== 'button' && el.type !== 'submit');
 }
 
@@ -1397,6 +1402,9 @@ function _loadSticky() {
   // A pipe weight the user typed stays put; otherwise let it re-derive.
   _pipeKgOverridden = !!d.__pipeKgOverridden;
   if (!_pipeKgOverridden && typeof recalcPipeKgPerM === 'function') recalcPipeKgPerM();
+  // Refresh everything derived from the restored inputs — pipe kg, the grid
+  // preview and the weight hint — so nothing is left showing an old figure.
+  if (typeof syncRawPipesPreview === 'function') syncRawPipesPreview();
   const cs = document.getElementById('currency-sel');
   if (cs && d.__currency) {
     cs.value = d.__currency;
