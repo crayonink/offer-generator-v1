@@ -103,7 +103,13 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     rows_count = results.pipes_in_row
     cols_count = results.pipes_in_column
     n_total    = results.pipes_total
-    n_per_bank = max(1, results.pipes_per_bank)
+    # Bill each bank its own count. These are equal on an even total; on an odd
+    # one the hot bank holds the extra pipe. Using a single per-bank figure for
+    # both dropped that pipe from the quantity column (49 billed as 24 + 24).
+    # Clamp the DIVISOR, not the count — clamping the count would invent a
+    # pipe in the degenerate 1-pipe case, where the cold bank is genuinely 0.
+    n_hot  = results.pipes_hot_bank
+    n_cold = results.pipes_cold_bank
 
     rows: list[tuple] = []
 
@@ -119,14 +125,14 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     rows.append((
         "ENCON ITEMS", f"{hot_label} — Hot Bank",
         f"{results.weight_hot_bank_kg:.2f} kg @ Rs.{hot_rate:.0f}/kg",
-        n_per_bank, "ENCON",
-        round(hot_total / n_per_bank, 2), hot_total,
+        n_hot, "ENCON",
+        round(hot_total / max(1, n_hot), 2), hot_total,
     ))
     rows.append((
         "ENCON ITEMS", f"{cold_label} — Cold Bank",
         f"{results.weight_cold_bank_kg:.2f} kg @ Rs.{cold_rate:.0f}/kg",
-        n_per_bank, "ENCON",
-        round(cold_total / n_per_bank, 2), cold_total,
+        n_cold, "ENCON",
+        round(cold_total / max(1, n_cold), 2), cold_total,
     ))
 
     # ── ENCON — MS Side Hood fabrication (F48, flat Rs 50,000) ─────────

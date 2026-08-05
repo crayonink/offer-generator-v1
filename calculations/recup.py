@@ -96,6 +96,12 @@ class RecupResults:
     pipes_in_row:          int      # E20
     pipes_in_column:       int      # E21
     pipes_per_bank:        int      # G21 / 2
+    # The closest-to-equal split of pipes_total across the two banks. Equal
+    # whenever the total is even; on an odd total the hot bank carries the
+    # single extra pipe. These are the counts everything downstream bills and
+    # displays — nobody re-derives the split from pipes_total.
+    pipes_hot_bank:        int
+    pipes_cold_bank:       int
     bank_length_mm:        float    # E16
     bank_width_mm:         float    # E17
     weight_per_pipe_kg:    float    # E27
@@ -287,6 +293,8 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
         pipes_in_row          = rows_count,
         pipes_in_column       = cols_count,
         pipes_per_bank        = pipes_per_bank,
+        pipes_hot_bank        = pipes_hot_bank,
+        pipes_cold_bank       = pipes_cold_bank,
         bank_length_mm        = round(bank_length_mm, 2),
         bank_width_mm         = round(bank_width_mm, 2),
         weight_per_pipe_kg    = round(weight_per_pipe, 4),

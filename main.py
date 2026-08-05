@@ -5429,6 +5429,8 @@ def recup_calculate(req: RecupCalcRequest):
                 "pipes_in_row":         results.pipes_in_row,
                 "pipes_in_column":      results.pipes_in_column,
                 "pipes_per_bank":       results.pipes_per_bank,
+                "pipes_hot_bank":       results.pipes_hot_bank,
+                "pipes_cold_bank":      results.pipes_cold_bank,
                 "bank_length_mm":       results.bank_length_mm,
                 "bank_width_mm":        results.bank_width_mm,
                 "weight_per_pipe_kg":   results.weight_per_pipe_kg,

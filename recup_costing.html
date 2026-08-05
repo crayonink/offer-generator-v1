@@ -888,9 +888,8 @@ function _paintPreview(c) {
 
   const wEl = $("pipe_weight_preview");
   if (wEl) {
-    const hot = c.pipes_total - Math.floor(c.pipes_total / 2);
     wEl.innerHTML = `Weight: ${b(c.weight_per_pipe_kg.toFixed(3))} kg/pipe × ${b(c.pipes_total)} pipes `
-      + `(${hot} hot + ${Math.floor(c.pipes_total / 2)} cold) = `
+      + `(${c.pipes_hot_bank} hot + ${c.pipes_cold_bank} cold) = `
       + `${b(c.weight_total_pipes_kg.toFixed(1))} kg total. `
       + `Area ${b(c.surface_area_m2.toFixed(2))} m², LMTD ${b(c.lmtd_C.toFixed(1))} °C, `
       + `flue out ${b(c.flue_temp_out_C.toFixed(1))} °C.`;
@@ -950,13 +949,13 @@ function renderBreakdown(c) {
   L.push(`   Area/pipe   = π × ${n(c.pipe_dia_mm/1000,4)} m × (${c.pipe_length_m_per_bank} + 0.1) m = ${n(3.14*(c.pipe_dia_mm/1000)*effLen,4)} m²`);
   L.push(`   Raw pipes   = ${n(c.surface_area_m2)} ÷ ${n(3.14*(c.pipe_dia_mm/1000)*effLen,4)} = ${n(c.pipes_total_raw)}`);
   L.push(`   Grid        = ${c.pipes_in_row} rows × ${c.pipes_in_column} cols = ${c.pipes_total} pipes`);
-  L.push(`   Per bank    = ${c.pipes_total} ÷ 2 = ${c.pipes_per_bank}   (hot + cold)`);
+  L.push(`   Per bank    = ${c.pipes_total} split as evenly as possible = ${c.pipes_hot_bank} hot + ${c.pipes_cold_bank} cold`);
   h("7. PIPE WEIGHT");
   L.push(`   kg/m        = π/4 × (OD² − ID²) × 7850 ÷ 10⁶,  OD ${c.pipe_dia_mm} / thk ${c.pipe_thick_mm} mm`);
   L.push(`               = ${n(kgm,3)} kg/m`);
   L.push(`   Per pipe    = ${n(kgm,3)} × ${c.pipe_length_m_per_bank} m = ${n(c.weight_per_pipe_kg,3)} kg`);
-  L.push(`   Hot bank    = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_per_bank} = ${n(c.weight_hot_bank_kg,1)} kg  (${c.hot_bank_material})`);
-  L.push(`   Cold bank   = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_per_bank} = ${n(c.weight_cold_bank_kg,1)} kg  (${c.cold_bank_material})`);
+  L.push(`   Hot bank    = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_hot_bank} = ${n(c.weight_hot_bank_kg,1)} kg  (${c.hot_bank_material})`);
+  L.push(`   Cold bank   = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_cold_bank} = ${n(c.weight_cold_bank_kg,1)} kg  (${c.cold_bank_material})`);
   L.push(`   Total tubes = ${n(c.weight_total_pipes_kg,1)} kg`);
   h("8. BANK GEOMETRY");
   L.push(`   Bank length = ${cm(c.bank_length_mm,1)} mm     Bank width = ${cm(c.bank_width_mm,1)} mm`);
@@ -979,7 +978,9 @@ function renderResults() {
   $("r-lmtd").textContent    = c.lmtd_C.toFixed(2);
   $("r-area").textContent    = c.surface_area_m2.toFixed(2);
   $("r-pipes").textContent   = c.pipes_in_row + " × " + c.pipes_in_column + " = " + c.pipes_total;
-  $("r-perbank").textContent = c.pipes_per_bank;
+  $("r-perbank").textContent = c.pipes_hot_bank === c.pipes_cold_bank
+    ? c.pipes_hot_bank
+    : `${c.pipes_hot_bank} hot / ${c.pipes_cold_bank} cold`;
   $("r-hot").textContent     = c.weight_hot_bank_kg.toFixed(1);
   $("r-cold").textContent    = c.weight_cold_bank_kg.toFixed(1);
   $("r-totwt").textContent   = c.weight_total_pipes_kg.toFixed(1);
