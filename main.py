@@ -5376,6 +5376,11 @@ class RecupCalcRequest(BaseModel):
     cold_bank_material:   str = "SS" # can differ from hot bank
     side_hood_kg:         float = 1500.0   # MS side hood weight
     cai_rate_override:    float = 0.0      # CAI Assembly Rs/kg override; 0 = use DB default
+    # Direct sizing — the bank is already dimensioned, so the flue/air fields
+    # above are ignored and the pipe grid is read out of the bank size instead.
+    direct_mode:          bool  = False
+    direct_bank_length_mm: float = 0.0
+    direct_bank_width_mm:  float = 0.0
 
 
 @app.post("/api/recup-calculate")
@@ -5403,6 +5408,9 @@ def recup_calculate(req: RecupCalcRequest):
             cold_bank_material=req.cold_bank_material,
             side_hood_kg=req.side_hood_kg,
             cai_rate_override=req.cai_rate_override,
+            direct_mode=req.direct_mode,
+            direct_bank_length_mm=req.direct_bank_length_mm,
+            direct_bank_width_mm=req.direct_bank_width_mm,
         ))
 
         rates = _load_rates()
@@ -5448,14 +5456,20 @@ def recup_calculate(req: RecupCalcRequest):
                 "hot_bank_material":    results.hot_bank_material,
                 "cold_bank_material":   results.cold_bank_material,
                 "cai_rate_override":    results.cai_rate_override,
+                "direct_mode":          results.direct_mode,
                 # Echo of inputs — the offer template needs these for the
                 # Designing Parameters table (flue/air conditions are
                 # process inputs, not derived values).
-                "flue_flow_nm3hr":      req.flue_flow_nm3hr,
-                "flue_temp_in_C":       req.flue_temp_in_C,
-                "air_volume_nm3hr":     req.air_volume_nm3hr,
-                "air_temp_in_C":        req.air_temp_in_C,
-                "air_temp_out_C":       req.air_temp_out_C,
+                #
+                # Direct sizing echoes zeros for the process conditions: the
+                # boxes still hold whatever was last typed there, but none of
+                # it took part in this calculation, and the offer must not
+                # print a duty the recuperator was never sized against.
+                "flue_flow_nm3hr":      0 if req.direct_mode else req.flue_flow_nm3hr,
+                "flue_temp_in_C":       0 if req.direct_mode else req.flue_temp_in_C,
+                "air_volume_nm3hr":     0 if req.direct_mode else req.air_volume_nm3hr,
+                "air_temp_in_C":        0 if req.direct_mode else req.air_temp_in_C,
+                "air_temp_out_C":       0 if req.direct_mode else req.air_temp_out_C,
                 "pipe_dia_mm":          req.pipe_dia_mm,
                 "pipe_thick_mm":        req.pipe_thick_mm,
                 "pipe_length_m_per_bank": req.pipe_length_m_per_bank,
@@ -5714,7 +5728,10 @@ def generate_recup_quote(req: RecupQuoteRequest):
                 f"{int(((c.get('air_temp_out_C', 0) + 49.999) // 50) * 50)}"
                 if c.get('air_temp_out_C') else ""
             ),
-            "surface_area_m2":  f"{c.get('surface_area_m2', 0):.2f}",
+            # Blank, not "0.00", when the bank was sized directly — there is
+            # no computed heat-transfer area to quote in that case.
+            "surface_area_m2":  (f"{c.get('surface_area_m2', 0):.2f}"
+                                 if c.get('surface_area_m2') else ""),
             "pipe_dia_mm":      f"{c.get('pipe_dia_mm', 48.3):.1f}" if c.get('pipe_dia_mm') else "48.3",
             "pipe_length_m":    f"{c.get('pipe_length_m_per_bank', 0.63):.2f}" if c.get('pipe_length_m_per_bank') else "0.63",
             "pipe_thick_mm":    f"{c.get('pipe_thick_mm', 2.77):.2f}" if c.get('pipe_thick_mm') else "2.77",

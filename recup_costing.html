@@ -337,8 +337,38 @@
   <div class="step-panel" id="panel-2">
   <div class="step-heading">Step 2 &mdash; Recuperator Parameters</div>
 
-  <!-- ── Flue gas ── -->
+  <!-- ── Sizing basis ──
+       Two ways to arrive at a bank size. Sizing runs the heat balance from the
+       flue and air conditions; Direct takes a bank that is already dimensioned
+       — an existing unit, or one the customer has specified — and reads the
+       pipe grid back out of it. Everything after the grid is identical. -->
   <div class="section">
+    <div class="section-title">Sizing Basis</div>
+    <div class="fg fg-1">
+      <div class="field">
+        <label>How the bank size is arrived at</label>
+        <select id="sizing_mode" onchange="applySizingMode()">
+          <option value="heat" selected>Size it &mdash; from the flue and air heat balance</option>
+          <option value="direct">Direct &mdash; the bank size is already known</option>
+        </select>
+        <div class="hint" id="sizing_mode_hint">Flue and air conditions drive the
+          surface area, and the surface area drives the pipe count.</div>
+      </div>
+    </div>
+    <div class="fg fg-2" id="direct-bank-fields" style="display:none">
+      <div class="field">
+        <label>Bank Length (mm)</label>
+        <input id="direct_bank_length_mm" type="number" step="any" value="0"/>
+      </div>
+      <div class="field">
+        <label>Bank Width (mm)</label>
+        <input id="direct_bank_width_mm" type="number" step="any" value="0"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Flue gas ── -->
+  <div class="section" id="sec-flue">
     <div class="section-title">Flue Gas</div>
     <div class="fg fg-3">
       <div class="field">
@@ -357,7 +387,7 @@
   </div>
 
   <!-- ── Combustion air ── -->
-  <div class="section">
+  <div class="section" id="sec-air">
     <div class="section-title">Combustion Air</div>
     <div class="fg fg-3">
       <div class="field">
@@ -433,7 +463,7 @@
       <div class="field">
         <label>Bank Gap (mm)</label>
         <input id="bank_gap_mm" type="number" step="any" value="150"/>
-        <div class="hint">Bank Length and Width are derived from the rows/cols grid.</div>
+        <div class="hint" id="bank_gap_hint">Bank Length and Width are derived from the rows/cols grid.</div>
       </div>
       <div class="field">
         <label>MS Side Hood Weight (kg)</label>
@@ -696,6 +726,10 @@ function _useInCombined(prodType, prodLabel) {
   if (c.air_temp_in_C) _push('Air Initial Temperature', _r0(c.air_temp_in_C) + ' °C');
   if (c.air_temp_out_C) _push('Air Final Temperature', _r0(c.air_temp_out_C) + ' °C');
   if (c.surface_area_m2) _push('Heat Transfer Surface', (Math.round(c.surface_area_m2 * 10) / 10) + ' m²');
+  // Directly-sized units have no process conditions to list, so the bank size
+  // stands in for them — otherwise the combined offer shows almost no specs.
+  if (c.direct_mode && c.bank_length_mm && c.bank_width_mm)
+    _push('Bank Size', _r0(c.bank_length_mm) + ' × ' + _r0(c.bank_width_mm) + ' mm');
   if (c.pipes_total) _push('No. of Heat-Exchanger Tubes', c.pipes_total);
   if (c.pipe_dia_mm) _push('Tube Size', c.pipe_dia_mm + ' mm OD × ' + (c.pipe_thick_mm || '') + ' mm thk');
   if (c.hot_bank_material) _push('Hot Bank Material', c.hot_bank_material + (c.cold_bank_material && c.cold_bank_material !== c.hot_bank_material ? ' / Cold ' + c.cold_bank_material : ''));
@@ -816,7 +850,39 @@ function _previewPayload() {
     cold_bank_material: ($("cold_bank_material") || {}).value || "SS",
     side_hood_kg:       num("side_hood_kg"),
     cai_rate_override:  num("cai_rate_override"),
+    direct_mode:        _isDirectMode(),
+    direct_bank_length_mm: num("direct_bank_length_mm"),
+    direct_bank_width_mm:  num("direct_bank_width_mm"),
   };
+}
+
+function _isDirectMode() {
+  return (($("sizing_mode") || {}).value || "heat") === "direct";
+}
+
+// Show the fields the chosen basis actually uses, and hide the ones it does
+// not: in direct mode the flue and air boxes take no part in the calculation,
+// so leaving them on screen would suggest they still do.
+function applySizingMode() {
+  const direct = _isDirectMode();
+  const show = (id, on) => { const el = $(id); if (el) el.style.display = on ? "" : "none"; };
+  show("sec-flue", !direct);
+  show("sec-air",  !direct);
+  show("direct-bank-fields", direct);
+
+  const h = $("sizing_mode_hint");
+  if (h) h.textContent = direct
+    ? "Type the bank size and the pipe grid is read back out of it. The heat "
+      + "balance is skipped entirely, so the offer quotes no flue or air duty."
+    : "Flue and air conditions drive the surface area, and the surface area "
+      + "drives the pipe count.";
+
+  const bg = $("bank_gap_hint");
+  if (bg) bg.textContent = direct
+    ? "Bank Length and Width are yours above; this gap sits between the two banks."
+    : "Bank Length and Width are derived from the rows/cols grid.";
+
+  syncRawPipesPreview();
 }
 
 function syncRawPipesPreview() {
@@ -875,7 +941,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
   recalcPipeKgPerM();
-  syncRawPipesPreview();
+  applySizingMode();      // shows the right fields, and fires the first preview
 });
 
 // The Calculate / Recalculate button. Same endpoint and same payload as the
@@ -944,7 +1010,7 @@ function _paintPreview(c) {
                      || c.pipes_in_row !== c.auto_rows
                      || c.pipes_in_column !== c.auto_cols;
 
-  $("pipes_raw_preview").textContent  = c.pipes_total_raw.toFixed(2);
+  $("pipes_raw_preview").textContent  = c.direct_mode ? "—" : c.pipes_total_raw.toFixed(2);
   $("pipes_grid_preview").textContent = `${c.pipes_in_row} × ${c.pipes_in_column} = ${c.pipes_total}`;
 
   // The auto figures come back on every response now, override or not, so both
@@ -952,7 +1018,12 @@ function _paintPreview(c) {
   // the layout in force, and called it "auto" whichever it was.
   const gh = $("pipes_grid_hint");
   if (gh) {
-    const auto = `Auto sizing derives ${b(c.pipes_total_raw.toFixed(2))} raw pipes &rarr; ${b(autoGrid)}.`;
+    // In direct mode "auto" is what the typed bank size holds, so the sentence
+    // has to say where the grid came from rather than talk about a heat
+    // balance that was never run.
+    const auto = c.direct_mode
+      ? `A ${b(Math.round(c.bank_length_mm))} × ${b(Math.round(c.bank_width_mm))} mm bank holds ${b(autoGrid)} pipes.`
+      : `Auto sizing derives ${b(c.pipes_total_raw.toFixed(2))} raw pipes &rarr; ${b(autoGrid)}.`;
     if (!overridden) {
       gh.innerHTML = `${auto} Leave at 0 to use this, or type your own total.`;
     } else {
@@ -979,8 +1050,11 @@ function _paintPreview(c) {
     wEl.innerHTML = `Weight: ${b(c.weight_per_pipe_kg.toFixed(3))} kg/pipe × ${b(c.pipes_total)} pipes `
       + `(${c.pipes_hot_bank} hot + ${c.pipes_cold_bank} cold) = `
       + `${b(c.weight_total_pipes_kg.toFixed(1))} kg total. `
-      + `Area ${b(c.surface_area_m2.toFixed(2))} m², LMTD ${b(c.lmtd_C.toFixed(1))} °C, `
-      + `flue out ${b(c.flue_temp_out_C.toFixed(1))} °C.`;
+      // Area, LMTD and flue-out only exist when a heat balance was run.
+      + (c.direct_mode
+          ? `Bank ${b(Math.round(c.bank_length_mm))} × ${b(Math.round(c.bank_width_mm))} mm, as typed.`
+          : `Area ${b(c.surface_area_m2.toFixed(2))} m², LMTD ${b(c.lmtd_C.toFixed(1))} °C, `
+            + `flue out ${b(c.flue_temp_out_C.toFixed(1))} °C.`);
   }
 }
 
@@ -1015,25 +1089,55 @@ function renderBreakdown(c) {
                 + (c.ms_bottom_box_kg || 0);
 
   const L = [];
-  const h = t => L.push("\n── " + t + " " + "─".repeat(Math.max(0, 58 - t.length)));
-  h("1. MASS FLOWS");
+  // Sections number themselves, because direct sizing skips the first five.
+  let _sn = 0;
+  const h = (t) => {
+    const s = (++_sn) + ". " + t;
+    L.push("\n── " + s + " " + "─".repeat(Math.max(0, 58 - s.length)));
+  };
+
+  if (c.direct_mode) {
+    // No heat balance was run. What replaces it is the inverse of the bank
+    // formulas — the grid read back out of the size that was typed.
+    const pitch = 32, margin = 150;
+    h("BANK SIZE  (given, not calculated)");
+    L.push(`   Bank length = ${cm(c.bank_length_mm,1)} mm     Bank width = ${cm(c.bank_width_mm,1)} mm`);
+    L.push(`   No flue or air conditions were used, so there is no heat`);
+    L.push(`   balance, no LMTD and no surface area to report.`);
+    h("PIPE GRID  (read back out of the bank size)");
+    L.push(`   Rows        = 2 × (${n(c.bank_length_mm,1)} − ${margin} + ${pitch}/2) ÷ (${pitch} + ${c.pipe_dia_mm}) = ${c.pipes_in_row}`);
+    L.push(`   Cols        = 2 × (${n(c.bank_width_mm,1)} − ${margin} + ${pitch}/2) ÷ (${pitch} + 48.3) = ${c.pipes_in_column}`);
+    if (c.pipes_total === c.pipes_in_row * c.pipes_in_column) {
+      L.push(`   Grid        = ${c.pipes_in_row} × ${c.pipes_in_column} = ${c.pipes_total} pipes`);
+    } else {
+      L.push(`   Bank holds  = ${c.pipes_in_row} × ${c.pipes_in_column} = ${c.pipes_total_auto} pipes`);
+      L.push(`   Overridden  = ${c.pipes_total} pipes`
+           + ` (${c.pipes_in_row * c.pipes_in_column - c.pipes_total} places spare)`);
+    }
+    L.push(`   Per bank    = ${c.pipes_total} split as evenly as possible = ${c.pipes_hot_bank} hot + ${c.pipes_cold_bank} cold`);
+    renderBreakdownTail(L, h, c, kgm, msTotal, n, cm);
+    el.textContent = L.join("\n").replace(/^\n/, "");
+    return;
+  }
+
+  h("MASS FLOWS");
   L.push(`   Flue mass   = ${cm(c.flue_flow_nm3hr)} Nm³/hr × ${dens} kg/Nm³ = ${cm(c.flue_mass_kghr)} kg/hr`);
   L.push(`   Air mass    = ${cm(c.air_volume_nm3hr)} Nm³/hr × ${dens} kg/Nm³ = ${cm(airMass)} kg/hr`);
-  h("2. HEAT REQUIRED  (to preheat the combustion air)");
+  h("HEAT REQUIRED  (to preheat the combustion air)");
   L.push(`   ΔT air      = ${n(c.air_temp_out_C,0)} − ${n(c.air_temp_in_C,0)} = ${n(dTair,0)} °C`);
   L.push(`   Q           = ${cm(airMass)} × ${cpAir} × ${n(dTair,0)} = ${cm(c.heat_required_kcal)} kcal/hr`);
-  h("3. FINAL FLUE TEMP  (from the heat balance)");
+  h("FINAL FLUE TEMP  (from the heat balance)");
   L.push(`   T flue,out  = ${n(c.flue_temp_in_C,0)} − ${cm(c.heat_required_kcal)} ÷ (${cm(c.flue_mass_kghr)} × ${cpFlue})`);
   L.push(`               = ${n(c.flue_temp_out_C)} °C`);
-  h("4. LMTD  (counter-flow, × 0.9 correction)");
+  h("LMTD  (counter-flow, × 0.9 correction)");
   L.push(`   ΔT1         = ${n(c.flue_temp_in_C,0)} − ${n(c.air_temp_out_C,0)} = ${n(dT1)} °C   (hot end)`);
   L.push(`   ΔT2         = ${n(c.flue_temp_out_C)} − ${n(c.air_temp_in_C,0)} = ${n(dT2)} °C   (cold end)`);
   L.push(`   LMTD raw    = (${n(dT1)} − ${n(dT2)}) ÷ ln(${n(dT1)}/${n(dT2)}) = ${n(lmtdRaw)} °C`);
   L.push(`   LMTD        = ${n(lmtdRaw)} × 0.9 = ${n(c.lmtd_C)} °C`);
-  h("5. SURFACE AREA");
+  h("SURFACE AREA");
   L.push(`   A           = Q ÷ (LMTD × U) = ${cm(c.heat_required_kcal)} ÷ (${n(c.lmtd_C)} × ${U})`);
   L.push(`               = ${n(c.surface_area_m2)} m²`);
-  h("6. PIPE COUNT");
+  h("PIPE COUNT");
   L.push(`   Area/pipe   = π × ${n(c.pipe_dia_mm/1000,4)} m × (${c.pipe_length_m_per_bank} + 0.1) m = ${n(3.14*(c.pipe_dia_mm/1000)*effLen,4)} m²`);
   L.push(`   Raw pipes   = ${n(c.surface_area_m2)} ÷ ${n(3.14*(c.pipe_dia_mm/1000)*effLen,4)} = ${n(c.pipes_total_raw)}`);
   // rows x cols is the bundle envelope. It equals the total under auto sizing,
@@ -1046,33 +1150,44 @@ function renderBreakdown(c) {
          + ` (${c.pipes_in_row * c.pipes_in_column - c.pipes_total} places spare)`);
   }
   L.push(`   Per bank    = ${c.pipes_total} split as evenly as possible = ${c.pipes_hot_bank} hot + ${c.pipes_cold_bank} cold`);
-  h("7. PIPE WEIGHT");
+  renderBreakdownTail(L, h, c, kgm, msTotal, n, cm);
+  el.textContent = L.join("\n").replace(/^\n/, "");
+}
+
+// Weights and MS structure — the part of the working that is the same whether
+// the bank was sized from a heat balance or typed in. Direct mode skips the
+// Bank Geometry section: its numbers are the inputs, already printed at the top.
+function renderBreakdownTail(L, h, c, kgm, msTotal, n, cm) {
+  h("PIPE WEIGHT");
   L.push(`   kg/m        = π/4 × (OD² − ID²) × 7850 ÷ 10⁶,  OD ${c.pipe_dia_mm} / thk ${c.pipe_thick_mm} mm`);
   L.push(`               = ${n(kgm,3)} kg/m`);
   L.push(`   Per pipe    = ${n(kgm,3)} × ${c.pipe_length_m_per_bank} m = ${n(c.weight_per_pipe_kg,3)} kg`);
   L.push(`   Hot bank    = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_hot_bank} = ${n(c.weight_hot_bank_kg,1)} kg  (${c.hot_bank_material})`);
   L.push(`   Cold bank   = ${n(c.weight_per_pipe_kg,3)} × ${c.pipes_cold_bank} = ${n(c.weight_cold_bank_kg,1)} kg  (${c.cold_bank_material})`);
   L.push(`   Total tubes = ${n(c.weight_total_pipes_kg,1)} kg`);
-  h("8. BANK GEOMETRY");
-  L.push(`   Bank length = ${cm(c.bank_length_mm,1)} mm     Bank width = ${cm(c.bank_width_mm,1)} mm`);
-  h("9. MS STRUCTURAL WEIGHT  (drives the CAI assembly cost)");
+  if (!c.direct_mode) {
+    h("BANK GEOMETRY");
+    L.push(`   Bank length = ${cm(c.bank_length_mm,1)} mm     Bank width = ${cm(c.bank_width_mm,1)} mm`);
+  }
+  h("MS STRUCTURAL WEIGHT  (drives the CAI assembly cost)");
   L.push(`   Outer shell = ${cm(c.ms_outer_shell_kg,1)} kg`);
   L.push(`   Air inlet   = ${cm(c.ms_air_inlet_duct_kg,1)} kg`);
   L.push(`   Hot outlet  = ${cm(c.ms_hot_outlet_duct_kg,1)} kg`);
   L.push(`   Pipe holder = ${cm(c.ms_pipe_holding_kg,1)} kg`);
   L.push(`   Bottom box  = ${cm(c.ms_bottom_box_kg,1)} kg`);
   L.push(`   MS total    = ${cm(msTotal,1)} kg`);
-  el.textContent = L.join("\n").replace(/^\n/, "");
 }
 
 function renderResults() {
   const d = lastCalc;
 
   const c = d.calculations;
-  $("r-heat").textContent    = Math.round(c.heat_required_kcal).toLocaleString("en-IN");
-  $("r-fout").textContent    = c.flue_temp_out_C.toFixed(2);
-  $("r-lmtd").textContent    = c.lmtd_C.toFixed(2);
-  $("r-area").textContent    = c.surface_area_m2.toFixed(2);
+  // The four heat-balance tiles have nothing to show when the bank size was
+  // given rather than sized — a dash is honest where 0.00 would read as a result.
+  $("r-heat").textContent    = c.direct_mode ? "—" : Math.round(c.heat_required_kcal).toLocaleString("en-IN");
+  $("r-fout").textContent    = c.direct_mode ? "—" : c.flue_temp_out_C.toFixed(2);
+  $("r-lmtd").textContent    = c.direct_mode ? "—" : c.lmtd_C.toFixed(2);
+  $("r-area").textContent    = c.direct_mode ? "—" : c.surface_area_m2.toFixed(2);
   $("r-pipes").textContent   = c.pipes_in_row + " × " + c.pipes_in_column + " = " + c.pipes_total;
   $("r-perbank").textContent = c.pipes_hot_bank === c.pipes_cold_bank
     ? c.pipes_hot_bank
@@ -1400,7 +1515,10 @@ function _loadSticky() {
   if (!_pipeKgOverridden && typeof recalcPipeKgPerM === 'function') recalcPipeKgPerM();
   // Refresh everything derived from the restored inputs — pipe kg, the grid
   // preview and the weight hint — so nothing is left showing an old figure.
-  if (typeof syncRawPipesPreview === 'function') syncRawPipesPreview();
+  // Via applySizingMode so a restored direct-mode session comes back with the
+  // bank boxes showing and the flue/air sections still put away.
+  if (typeof applySizingMode === 'function') applySizingMode();
+  else if (typeof syncRawPipesPreview === 'function') syncRawPipesPreview();
   const cs = document.getElementById('currency-sel');
   if (cs && d.__currency) {
     cs.value = d.__currency;

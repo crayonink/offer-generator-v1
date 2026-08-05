@@ -31,6 +31,12 @@ Every numeric step here mirrors a specific cell in that workbook:
 
 MS structural weights (E41..E45) are derived from bank geometry instead
 of the previous flat constants, so they auto-scale with pipe count.
+
+There is a second way in. Direct mode (RecupInputs.direct_mode) starts from
+a bank size that is already known — an existing recuperator, or one the
+customer has dimensioned — and reads the pipe grid back out of it, skipping
+E3..E19 entirely. From the grid onward the two modes share every step, so a
+recuperator costs the same however its bank size was arrived at.
 """
 from __future__ import annotations
 
@@ -76,6 +82,15 @@ class RecupInputs:
     # When > 0 the BOM bills sum_MS_kg * cai_rate_override instead of
     # the recup_rates default (MS_FABRICATION_PER_KG, Rs 70/kg).
     cai_rate_override:    float = 0.0
+    # ── Direct mode ─────────────────────────────────────────────────
+    # Cost a recuperator whose bank size is already known — an existing
+    # unit, or one the customer has dimensioned — with no heat balance at
+    # all. Bank length and width become the inputs rather than E16/E17
+    # outputs, and the grid is read back out of them (see _grid_from_bank).
+    # The flue/air fields are ignored entirely in this mode.
+    direct_mode:          bool  = False
+    direct_bank_length_mm: float = 0.0
+    direct_bank_width_mm:  float = 0.0
 
 
 @dataclass
@@ -127,6 +142,10 @@ class RecupResults:
     # Echo of the user's side hood weight + CAI rate override.
     side_hood_kg:          float = 1500.0
     cai_rate_override:     float = 0.0
+    # True when the bank size was typed rather than sized from a heat balance.
+    # Everything in the energy block above is zero in that case — the form and
+    # the offer template read this flag rather than guessing from the zeros.
+    direct_mode:           bool  = False
 
 
 def _vol_to_kg(volume_mm3: float, density: float) -> float:
@@ -179,7 +198,33 @@ def _best_grid(n: int) -> tuple[int, int]:
     return best[1], best[2]
 
 
+def _grid_from_bank(bank_length_mm: float, bank_width_mm: float,
+                    inp: RecupInputs) -> tuple[int, int]:
+    """Read the (rows, cols) grid back out of a bank size — the inverse of
+    the E16/E17 formulas used everywhere else.
+
+        E16  L = ((r-1)/2)*pitch + (r/2)*dia + margin
+             -> r = 2*(L - margin + pitch/2) / (pitch + dia)
+        E17  W = (c/2)*48.3 + ((c-1)/2)*pitch + margin
+             -> c = 2*(W - margin + pitch/2) / (pitch + 48.3)
+
+    E17 uses the literal 48.3 rather than the OD field, exactly as the
+    forward formula does, so a bank sized here and then re-derived comes
+    back to the same millimetre.
+
+    Rounds to the nearest whole pipe — a measured bank rarely lands on an
+    exact multiple — and never returns less than one of either.
+    """
+    pitch  = inp.pipe_pitch_mm
+    margin = inp.end_margin_mm
+    rows = 2 * (bank_length_mm - margin + pitch / 2) / (pitch + inp.pipe_dia_mm)
+    cols = 2 * (bank_width_mm  - margin + pitch / 2) / (pitch + 48.3)
+    return max(1, round(rows)), max(1, round(cols))
+
+
 def calculate_recup(inp: RecupInputs) -> RecupResults:
+    if inp.direct_mode:
+        return _calculate_recup_direct(inp)
     # ── E4: flue mass = flow * 1.2 ──────────────────────────────────
     flue_mass = inp.flue_flow_nm3hr * inp.flue_density_factor
 
@@ -229,12 +274,6 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     else:
         rows_count, cols_count = auto_rows, auto_cols
         pipes_total = auto_total
-    # An odd total cannot split evenly, so the hot bank carries the extra pipe
-    # rather than it being dropped by integer division.
-    pipes_per_bank = pipes_total // 2                    # E28: rows * (cols/2)
-    pipes_hot_bank  = pipes_total - pipes_per_bank
-    pipes_cold_bank = pipes_per_bank
-
     # ── E16/E17: bank length and width (derived) ───────────────────
     bank_length_mm = (((rows_count - 1) / 2) * inp.pipe_pitch_mm) \
                      + ((rows_count / 2) * inp.pipe_dia_mm) \
@@ -242,6 +281,78 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     bank_width_mm  = ((cols_count / 2) * 48.3) \
                      + (((cols_count - 1) / 2) * inp.pipe_pitch_mm) \
                      + inp.end_margin_mm
+
+    return _assemble(
+        inp,
+        energy = dict(
+            flue_mass=flue_mass, air_mass=air_mass, heat_required=heat_required,
+            flue_temp_out=flue_temp_out, dT1=dT1, dT2=dT2, lmtd_raw=lmtd_raw,
+            lmtd=lmtd, surface_area=surface_area, pipes_raw=pipes_raw,
+        ),
+        rows_count=rows_count, cols_count=cols_count, pipes_total=pipes_total,
+        auto_rows=auto_rows, auto_cols=auto_cols, auto_total=auto_total,
+        bank_length_mm=bank_length_mm, bank_width_mm=bank_width_mm,
+    )
+
+
+def _calculate_recup_direct(inp: RecupInputs) -> RecupResults:
+    """Direct mode — the bank is already dimensioned, so there is no heat
+    balance to run. Bank length and width are the inputs; the pipe grid is
+    read back out of them, and everything downstream (weights, MS structure,
+    the whole BOM) proceeds exactly as it does in sized mode.
+
+    The energy block comes back as zeros rather than as stale figures from
+    flue/air boxes nobody filled in: in this mode those numbers were never
+    part of the calculation, and the form and the offer template blank them
+    out instead of printing a heat balance that was not performed.
+    """
+    bank_length_mm = float(inp.direct_bank_length_mm or 0)
+    bank_width_mm  = float(inp.direct_bank_width_mm  or 0)
+    if bank_length_mm <= 0 or bank_width_mm <= 0:
+        raise ValueError(
+            "Direct sizing needs both a bank length and a bank width in mm. "
+            "Enter the measured bank size, or switch back to heat-balance sizing."
+        )
+
+    rows_count, cols_count = _grid_from_bank(bank_length_mm, bank_width_mm, inp)
+    grid_total = rows_count * cols_count
+    # A typed total still wins over the count the bank size implies — the two
+    # answer different questions ("how big is the box" vs "how many pipes are
+    # in it"), and an existing unit can perfectly well have a part-filled row.
+    pipes_total = (int(inp.pipes_total_override)
+                   if inp.pipes_total_override and inp.pipes_total_override > 0
+                   else grid_total)
+
+    return _assemble(
+        inp,
+        energy = dict(
+            flue_mass=0.0, air_mass=0.0, heat_required=0.0, flue_temp_out=0.0,
+            dT1=0.0, dT2=0.0, lmtd_raw=0.0, lmtd=0.0, surface_area=0.0,
+            pipes_raw=0.0,
+        ),
+        rows_count=rows_count, cols_count=cols_count, pipes_total=pipes_total,
+        # "Auto" here is what the bank size implies, so the form can show the
+        # typed total against the grid it was read out of.
+        auto_rows=rows_count, auto_cols=cols_count, auto_total=grid_total,
+        # The typed dimensions are used as given — not re-derived from the
+        # rounded grid, which would quietly move the bank by a few mm.
+        bank_length_mm=bank_length_mm, bank_width_mm=bank_width_mm,
+    )
+
+
+def _assemble(inp: RecupInputs, *, energy: dict,
+              rows_count: int, cols_count: int, pipes_total: int,
+              auto_rows: int, auto_cols: int, auto_total: int,
+              bank_length_mm: float, bank_width_mm: float) -> RecupResults:
+    """Everything from the pipe grid onward — bank split, tube weights, the
+    MS structural chain and the packed result. Shared by both sizing modes so
+    a recuperator costs the same however its bank size was arrived at.
+    """
+    # An odd total cannot split evenly, so the hot bank carries the extra pipe
+    # rather than it being dropped by integer division.
+    pipes_per_bank = pipes_total // 2                    # E28: rows * (cols/2)
+    pipes_hot_bank  = pipes_total - pipes_per_bank
+    pipes_cold_bank = pipes_per_bank
 
     # ── E27/E28: pipe weights ──────────────────────────────────────
     weight_per_pipe = inp.pipe_kg_per_m * inp.pipe_length_m_per_bank
@@ -269,16 +380,16 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     ms_bottom_box = _vol_to_kg(box_volume, 8650)
 
     return RecupResults(
-        flue_mass_kghr        = round(flue_mass, 2),
-        air_mass_kghr         = round(air_mass, 2),
-        dt_hot_end_C          = round(dT1, 4),
-        dt_cold_end_C         = round(dT2, 4),
-        lmtd_raw_C            = round(lmtd_raw, 4),
-        heat_required_kcal    = round(heat_required, 2),
-        flue_temp_out_C       = round(flue_temp_out, 2),
-        lmtd_C                = round(lmtd, 2),
-        surface_area_m2       = round(surface_area, 4),
-        pipes_total_raw       = round(pipes_raw, 2),
+        flue_mass_kghr        = round(energy["flue_mass"], 2),
+        air_mass_kghr         = round(energy["air_mass"], 2),
+        dt_hot_end_C          = round(energy["dT1"], 4),
+        dt_cold_end_C         = round(energy["dT2"], 4),
+        lmtd_raw_C            = round(energy["lmtd_raw"], 4),
+        heat_required_kcal    = round(energy["heat_required"], 2),
+        flue_temp_out_C       = round(energy["flue_temp_out"], 2),
+        lmtd_C                = round(energy["lmtd"], 2),
+        surface_area_m2       = round(energy["surface_area"], 4),
+        pipes_total_raw       = round(energy["pipes_raw"], 2),
         pipes_total           = pipes_total,
         pipes_in_row          = rows_count,
         pipes_in_column       = cols_count,
@@ -303,4 +414,5 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
         cold_bank_material    = (inp.cold_bank_material or "SS").upper(),
         side_hood_kg          = float(inp.side_hood_kg) if inp.side_hood_kg > 0 else 1500.0,
         cai_rate_override     = float(inp.cai_rate_override or 0),
+        direct_mode           = bool(inp.direct_mode),
     )
