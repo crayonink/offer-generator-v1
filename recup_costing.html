@@ -738,8 +738,10 @@ else _initEmbed('RECUP', 'Recuperator');
 
 const $ = id => document.getElementById(id);
 const fmt = n => "₹ " + Math.round(n).toLocaleString("en-IN");
-const num = id => parseFloat($(id).value) || 0;
-const intv = id => parseInt($(id).value) || 0;
+// Null-safe: _previewPayload() runs during init to discover which fields drive
+// the preview, so a missing box must return 0 rather than throw and abort it.
+const num = id => parseFloat(($(id) || {}).value) || 0;
+const intv = id => parseInt(($(id) || {}).value) || 0;
 
 function goStep(n) {
   if ((n === 3 || n === 4) && !lastCalc) return; // need calc first
@@ -821,6 +823,60 @@ function syncRawPipesPreview() {
   clearTimeout(_previewTimer);
   _previewTimer = setTimeout(_runPreview, 300);   // debounce while typing
 }
+
+// Pipe weight per metre from OD and wall thickness — the same basis the
+// pricelist parser uses (bom/pricelist_parser.py):
+//     kg/m = π/4 × (OD² − ID²) × 7850 / 1,000,000,  ID = OD − 2×thickness
+// Recomputed whenever OD or thickness changes; typing directly in the kg/m box
+// marks it overridden and stops it being recalculated.
+const MS_DENSITY_KG_M3 = 7850;
+let _pipeKgOverridden = false;
+
+function recalcPipeKgPerM() {
+  if (_pipeKgOverridden) return;
+  const od = parseFloat(($("pipe_dia_mm") || {}).value) || 0;
+  const th = parseFloat(($("pipe_thick_mm") || {}).value) || 0;
+  const out = $("pipe_kg_per_m");
+  if (!out || od <= 0 || th <= 0 || 2 * th >= od) return;
+  const id = od - 2 * th;
+  const kg = Math.PI / 4 * (od * od - id * id) * MS_DENSITY_KG_M3 / 1e6;
+  out.value = (Math.round(kg * 1000) / 1000).toString();
+  const hint = $("pipe_kg_hint");
+  if (hint) hint.textContent = `= π/4 × (${od}² − ${id.toFixed(2)}²) × 7850 / 10⁶.`
+                             + " Type a value to override.";
+}
+
+// Every field the preview depends on is every field _previewPayload() reads, so
+// take the list from the payload itself rather than maintaining a second one
+// beside it — a parameter added to the payload is wired up automatically.
+function _previewInputIds() {
+  return Object.keys(_previewPayload());
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  for (const id of _previewInputIds()) {
+    const el = $(id);
+    if (el) el.addEventListener("input", syncRawPipesPreview);
+  }
+  // OD and thickness additionally re-derive the kg/m box before re-previewing.
+  for (const id of ["pipe_dia_mm", "pipe_thick_mm"]) {
+    const el = $(id);
+    if (el) el.addEventListener("input", recalcPipeKgPerM);
+  }
+  const kgEl = $("pipe_kg_per_m");
+  if (kgEl) {
+    kgEl.addEventListener("input", () => {
+      _pipeKgOverridden = true;
+      const hint = $("pipe_kg_hint");
+      if (hint) hint.textContent = "Overridden — clear the box to go back to the derived value.";
+    });
+    kgEl.addEventListener("blur", () => {
+      if (!kgEl.value.trim()) { _pipeKgOverridden = false; recalcPipeKgPerM(); syncRawPipesPreview(); }
+    });
+  }
+  recalcPipeKgPerM();
+  syncRawPipesPreview();
+});
 
 // The Calculate / Recalculate button. Same endpoint and same payload as the
 // preview — the difference is that this one keeps the full result (BOM and
