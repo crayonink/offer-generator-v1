@@ -95,6 +95,12 @@ class RecupResults:
     pipes_total:           int      # G21
     pipes_in_row:          int      # E20
     pipes_in_column:       int      # E21
+    # What auto sizing would pick, computed even when an override is in force
+    # so the form can show both without a round trip. Equal to the fields above
+    # whenever the override is off.
+    pipes_total_auto:      int
+    auto_rows:             int
+    auto_cols:             int
     pipes_per_bank:        int      # G21 / 2
     # The closest-to-equal split of pipes_total across the two banks. Equal
     # whenever the total is even; on an odd total the hot bank carries the
@@ -173,32 +179,6 @@ def _best_grid(n: int) -> tuple[int, int]:
     return best[1], best[2]
 
 
-def _exact_grid(n: int) -> tuple:
-    """rows x cols == n exactly, as square as possible.
-
-    Used when the user types a pipe total: 49 must lay out as 7 x 7, not be
-    rounded up to 7 x 8 = 56. _best_grid forces an even column count so the
-    two banks split evenly, which is right when WE pick the number but wrong
-    when the user has stated it.
-
-    A number with no sensible factor pair (a prime like 47, whose only pair is
-    1 x 47) has no square-ish layout, so the search steps up to the next number
-    that does — the smallest nudge that still gives rows x cols == total.
-    """
-    for cand in range(max(1, n), n + 12):
-        best = None
-        for r in range(1, math.isqrt(cand) + 1):
-            if cand % r:
-                continue
-            c = cand // r
-            if best is None or (c - r) < (best[1] - best[0]):
-                best = (r, c)
-        if best and best[1] <= best[0] * 4:      # not absurdly tall/thin
-            return best
-    r = max(1, round(math.sqrt(n)))
-    return r, math.ceil(n / r)
-
-
 def calculate_recup(inp: RecupInputs) -> RecupResults:
     # ── E4: flue mass = flow * 1.2 ──────────────────────────────────
     flue_mass = inp.flue_flow_nm3hr * inp.flue_density_factor
@@ -230,15 +210,25 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     effective_len = inp.pipe_length_m_per_bank + inp.surface_area_end_allowance_m
     pipes_raw = surface_area / (3.14 * pipe_dia_m * effective_len)
 
-    # ── E20/E21: rows / cols, both paths go through _best_grid so the
-    # result is always near-square. Auto target is ceil(raw); override
-    # target is whatever the user typed.
+    # ── E20/E21: rows / cols ───────────────────────────────────────
+    # The auto layout is worked out ALWAYS, override or not, so the form can
+    # show what auto would have picked next to what is actually in force
+    # without having to clear the override box and re-ask.
+    auto_rows, auto_cols = _best_grid(max(1, math.ceil(pipes_raw)))
+    auto_total = auto_rows * auto_cols
+
     if inp.pipes_total_override and inp.pipes_total_override > 0:
-        # The user stated the total — lay it out exactly, do not re-size it.
-        rows_count, cols_count = _exact_grid(inp.pipes_total_override)
+        # The typed total wins outright: it is what gets built, weighed and
+        # billed. _best_grid then supplies the ENVELOPE the bundle sits in —
+        # rows x cols can exceed the total, leaving the last row part-filled,
+        # and it is used only to derive bank length and width. Rounding the
+        # count up to fill the rectangle (the old behaviour) quietly changed
+        # the number the engineer asked for: 145 became 147.
+        pipes_total = int(inp.pipes_total_override)
+        rows_count, cols_count = _best_grid(pipes_total)
     else:
-        rows_count, cols_count = _best_grid(max(1, math.ceil(pipes_raw)))
-    pipes_total = rows_count * cols_count
+        rows_count, cols_count = auto_rows, auto_cols
+        pipes_total = auto_total
     # An odd total cannot split evenly, so the hot bank carries the extra pipe
     # rather than it being dropped by integer division.
     pipes_per_bank = pipes_total // 2                    # E28: rows * (cols/2)
@@ -292,6 +282,9 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
         pipes_total           = pipes_total,
         pipes_in_row          = rows_count,
         pipes_in_column       = cols_count,
+        pipes_total_auto      = auto_total,
+        auto_rows             = auto_rows,
+        auto_cols             = auto_cols,
         pipes_per_bank        = pipes_per_bank,
         pipes_hot_bank        = pipes_hot_bank,
         pipes_cold_bank       = pipes_cold_bank,
