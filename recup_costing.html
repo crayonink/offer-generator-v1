@@ -822,6 +822,31 @@ function syncRawPipesPreview() {
   _previewTimer = setTimeout(_runPreview, 300);   // debounce while typing
 }
 
+// The Calculate / Recalculate button. Same endpoint and same payload as the
+// preview — the difference is that this one keeps the full result (BOM and
+// cost summary, not just the sizing) and moves the form on to Step 3.
+async function calculate() {
+  $("calcErr").textContent = "";
+  const btn = $("calcBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Calculating…"; }
+  try {
+    const res = await fetch("/api/recup-calculate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(_previewPayload()),
+    });
+    const data = await res.json();
+    if (data.error) { $("calcErr").textContent = data.error; return; }
+    lastCalc = data;
+    renderResults();
+    goStep(3);
+  } catch (e) {
+    $("calcErr").textContent = e.message || "Network error";
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Calculate →"; }
+  }
+}
+
 async function _runPreview() {
   const seq = ++_previewSeq;
   let c;
