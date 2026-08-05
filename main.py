@@ -5780,10 +5780,14 @@ def generate_recup_quote(req: RecupQuoteRequest):
         from docxtpl import InlineImage
         from docx.shared import Mm
         _img_dir = os.path.join(BASE_DIR, "static", "recup")
+        # 70 mm, not 120: these views are nearly square (about 0.85 tall per
+        # unit wide), so at 120 mm each one stood 100 mm high and the three of
+        # them ran over two pages with a gap under the caption. At 70 mm they
+        # are 57-61 mm tall and all three sit on the page the caption starts.
         for key, fname, width_mm in (
-            ("image_recup_side",  "recup_3d_side.jpeg",  120),
-            ("image_recup_front", "recup_3d_front.jpeg", 120),
-            ("image_recup_top",   "recup_3d_top.jpeg",   120),
+            ("image_recup_side",  "recup_3d_side.jpeg",  70),
+            ("image_recup_front", "recup_3d_front.jpeg", 70),
+            ("image_recup_top",   "recup_3d_top.jpeg",   70),
         ):
             fpath = os.path.join(_img_dir, fname)
             ctx[key] = InlineImage(tpl, fpath, width=Mm(width_mm)) if os.path.exists(fpath) else ""

@@ -37,7 +37,7 @@ import sys
 from docx import Document
 from docx.enum.section import WD_HEADER_FOOTER
 from docx.oxml.ns import qn
-from docx.shared import Emu
+from docx.shared import Emu, Twips
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES = ["Recup_Offer_Template.docx"]
@@ -54,6 +54,45 @@ def _branded_section(doc):
         if "<w:drawing" in part.element.xml:
             return sec
     return None
+
+
+def _fit_letterhead_width(doc, sec):
+    """Make the letterhead table exactly as wide as the text column.
+
+    The rule under the logo is the table's bottom border, so its length is the
+    table's width. Recup and Combined carry a 9360-twip table on a 9740-twip
+    text column — inherited from an older page setup — and the two cell widths
+    inside it (1800 + 7760) do not even add up to that, with autofit left on to
+    paper over the difference. The result is a letterhead rule that stops short
+    of the right margin while the orange rule under every ANNEXURE heading runs
+    the full width, and a reference number that floats in from the edge instead
+    of ending flush with the rule. Every other template is already 9740 fixed.
+
+    Returns a description of what changed, or None.
+    """
+    tbl = sec.header.tables[0] if sec.header.tables else None
+    if tbl is None:
+        return None
+    text_w = int(round((sec.page_width - sec.left_margin - sec.right_margin) / 635))
+    tblPr = tbl._tbl.tblPr
+    tblW = tblPr.find(qn("w:tblW"))
+    logo_w = int(tbl.columns[0].width / 635) if tbl.columns[0].width else 1600
+    ref_w = text_w - logo_w
+    if (tblW is not None and tblW.get(qn("w:w")) == str(text_w)
+            and int(tbl.columns[1].width or 0) / 635 == ref_w
+            and tbl.autofit is False):
+        return None
+
+    if tblW is not None:
+        tblW.set(qn("w:w"), str(text_w))
+        tblW.set(qn("w:type"), "dxa")
+    tbl.autofit = False                    # w:tblLayout fixed — honour the widths
+    tbl.columns[0].width = Twips(logo_w)
+    tbl.columns[1].width = Twips(ref_w)
+    for row in tbl.rows:
+        row.cells[0].width = Twips(logo_w)
+        row.cells[1].width = Twips(ref_w)
+    return f"letterhead width {text_w} twips ({logo_w} logo + {ref_w} ref), fixed"
 
 
 def patch(target):
@@ -76,7 +115,13 @@ def patch(target):
         settings.remove(even_odd)
         done.append("turned off even/odd headers")
 
-    # 2. Every section after the cover page uses the branded letterhead.
+    # 2. The letterhead rule runs the full width of the text column, so it
+    #    lines up with the orange rules under the headings below it.
+    fitted = _fit_letterhead_width(doc, branded)
+    if fitted:
+        done.append(fitted)
+
+    # 3. Every section after the cover page uses the branded letterhead.
     for i, sec in enumerate(doc.sections):
         if i == 0:
             continue                      # cover page stays deliberately bare
