@@ -891,8 +891,26 @@ async function calculate() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(_previewPayload()),
     });
+    // A session that timed out while the form sat open answers 401 with
+    // {"detail": ...} and no "error" key, so it used to slip through and die
+    // inside renderResults on a missing calculations block — which showed up
+    // as an incomprehensible message and looked like the button doing nothing.
+    if (res.status === 401) {
+      $("calcErr").innerHTML =
+        'Your session has expired. <a href="/login?next=/recup">Log in again</a>, '
+        + 'then come back — your inputs are saved.';
+      return;
+    }
+    if (!res.ok) {
+      $("calcErr").textContent = `Server error ${res.status}. Nothing was calculated.`;
+      return;
+    }
     const data = await res.json();
     if (data.error) { $("calcErr").textContent = data.error; return; }
+    if (!data.calculations) {
+      $("calcErr").textContent = "The server returned no calculation. Nothing was changed.";
+      return;
+    }
     lastCalc = data;
     renderResults();
     goStep(3);
