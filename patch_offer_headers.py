@@ -36,6 +36,7 @@ import sys
 
 from docx import Document
 from docx.enum.section import WD_HEADER_FOOTER
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Emu, Twips
 
@@ -95,6 +96,50 @@ def _fit_letterhead_width(doc, sec):
     return f"letterhead width {text_w} twips ({logo_w} logo + {ref_w} ref), fixed"
 
 
+def _gap_below_letterhead(doc, sec):
+    """Put a blank line between the letterhead rule and the first line of the
+    page.
+
+    The header ends at </w:tbl> — there is no paragraph after the table at all,
+    which is both unusual OOXML and the reason the page starts hard against the
+    orange rule: a heading block or a table set immediately below it with
+    nothing between. Raising the top margin does not help, because Word already
+    starts the body below the taller of the margin and the header, and the
+    header is the taller one here.
+
+    A single empty 12 pt paragraph closing the header gives the rule a line of
+    air on every page it appears.
+
+    Returns a description of what changed, or None.
+    """
+    hdr = sec.header
+    tbl = hdr.tables[0] if hdr.tables else None
+    if tbl is None:
+        return None
+    root = hdr._element
+    children = list(root)
+    after_table = children[children.index(tbl._tbl) + 1:]
+    if any(child.tag == qn("w:p") for child in after_table):
+        return None                      # already has a closing line
+
+    p = OxmlElement("w:p")
+    pPr = OxmlElement("w:pPr")
+    spacing = OxmlElement("w:spacing")
+    spacing.set(qn("w:before"), "0")
+    spacing.set(qn("w:after"), "0")
+    spacing.set(qn("w:line"), "240")     # single
+    spacing.set(qn("w:lineRule"), "auto")
+    rPr = OxmlElement("w:rPr")
+    sz = OxmlElement("w:sz")
+    sz.set(qn("w:val"), "24")            # 12 pt — one line of air
+    rPr.append(sz)
+    pPr.append(spacing)
+    pPr.append(rPr)
+    p.append(pPr)
+    root.append(p)
+    return "blank line under the letterhead rule"
+
+
 def patch(target):
     path = os.path.join(BASE_DIR, target)
     doc = Document(path)
@@ -120,6 +165,9 @@ def patch(target):
     fitted = _fit_letterhead_width(doc, branded)
     if fitted:
         done.append(fitted)
+    gap = _gap_below_letterhead(doc, branded)
+    if gap:
+        done.append(gap)
 
     # 3. Every section after the cover page uses the branded letterhead.
     for i, sec in enumerate(doc.sections):
