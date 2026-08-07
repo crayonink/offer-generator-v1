@@ -78,7 +78,7 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     # Tube material per bank — SS304, SS310 or MS ERW. Rates live in
     # recup_rates so they can be retuned from /pricelist > Recup Rates.
     ss_rate    = r('SS304_TUBE_PER_KG', 250.0)
-    ss310_rate = r('SS310_TUBE_PER_KG', 280.0)
+    ss310_rate = r('SS310_TUBE_PER_KG', 550.0)
     ms_rate    = r('MS_TUBE_PER_KG',     70.0)
     def _tube(mat):
         # Bare "SS" is the old spelling from before SS310 existed as a choice;
