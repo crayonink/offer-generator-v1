@@ -480,11 +480,14 @@
       <div class="field">
         <label>Number of Recuperator Pipes (override; 0 = auto)</label>
         <input id="pipes_total_override" type="number" step="1" value="0"/>
-        <div class="hint" id="pipes_grid_hint">Auto sizing derives
-          <strong style="color:#065f46" id="pipes_raw_preview">157.56</strong>
-          raw pipes &rarr;
-          <strong style="color:#065f46" id="pipes_grid_preview">14 &times; 12 = 168</strong>
-          from the heat balance. Leave at 0 to use this, or type your own total.
+        <!-- Placeholder wording only: the whole line is rewritten by
+             _paintPreview on the first response. Nothing inside it carries an
+             id, deliberately — the elements that used to be addressed here were
+             wiped by that first rewrite, and every later paint then died on the
+             missing node. -->
+        <div class="hint" id="pipes_grid_hint">Auto sizing derives the raw pipe
+          count from the heat balance and lays it out in a grid. Leave at 0 to
+          use this, or type your own total.
         </div>
         <div class="hint" id="pipe_weight_preview">&nbsp;</div>
       </div>
@@ -829,6 +832,7 @@ window.addEventListener("DOMContentLoaded", () => {
 // had not re-run.
 let _previewSeq = 0;      // ignore responses that arrive out of order
 let _previewTimer = null;
+let _lastPreview = null;  // the engine's last word, for the parts typing cannot change
 
 function _previewPayload() {
   return {
@@ -933,6 +937,43 @@ function refreshPipeKgEach() {
   if (hint) hint.textContent = `${kgm} kg/m x ${len} m. Totals updating…`;
 }
 
+// The pipe count, repainted on the keystroke. A typed total settles three
+// things by itself — the count, its hot/cold split and the tube weight — so
+// they are formed here and the panel is repainted with them immediately.
+// The rest of the panel keeps the engine's last answer. For the count box that
+// is exactly right: the raw pipe count, the auto grid and the heat balance do
+// not depend on it. For a pipe dimension it is the previous answer for a few
+// hundred milliseconds, until the debounced response lands and replaces it —
+// the same delay as before, now confined to the figures that genuinely need
+// the engine. The bundle envelope is one of those, since the grid search lives
+// in calculations/recup.py and is deliberately not duplicated here, so it is
+// left unsaid rather than quoted from the previous total.
+function refreshPipesFromOverride() {
+  const c = _lastPreview;
+  if (!c) return;                       // nothing from the engine to build on yet
+  const typed = intv("pipes_total_override");
+  const kgm = parseFloat(($("pipe_kg_per_m") || {}).value) || 0;
+  const len = parseFloat(($("pipe_length_m_per_bank") || {}).value) || 0;
+  const per = (kgm > 0 && len > 0) ? kgm * len : c.weight_per_pipe_kg;
+  const total = typed > 0 ? typed : c.pipes_total_auto;
+  const cold = Math.floor(total / 2);   // odd totals put the extra pipe hot side
+  const hot  = total - cold;
+  _paintPreview(Object.assign({}, c, {
+    pipes_total:           total,
+    pipes_hot_bank:        hot,
+    pipes_cold_bank:       cold,
+    pipes_per_bank:        cold,
+    weight_per_pipe_kg:    per,
+    weight_hot_bank_kg:    per * hot,
+    weight_cold_bank_kg:   per * cold,
+    weight_total_pipes_kg: per * total,
+    // The pipe dimensions are quoted back in the hints, so they have to be the
+    // ones in the boxes right now, not the ones the last response was costed on.
+    pipe_kg_per_m:          kgm > 0 ? kgm : c.pipe_kg_per_m,
+    pipe_length_m_per_bank: len > 0 ? len : c.pipe_length_m_per_bank,
+  }), true);
+}
+
 // Every field the preview depends on is every field _previewPayload() reads, so
 // take the list from the payload itself rather than maintaining a second one
 // beside it — a parameter added to the payload is wired up automatically.
@@ -950,14 +991,19 @@ window.addEventListener("DOMContentLoaded", () => {
   // formed from the kg/m that was just recomputed rather than the previous one.
   for (const id of ["pipe_dia_mm", "pipe_thick_mm"]) {
     const el = $(id);
-    if (el) el.addEventListener("input", () => { recalcPipeKgPerM(); refreshPipeKgEach(); });
+    if (el) el.addEventListener("input", () => {
+      recalcPipeKgPerM(); refreshPipeKgEach(); refreshPipesFromOverride();
+    });
   }
   // Typing straight into kg/m, or changing the pipe length, moves the per-pipe
-  // weight just as directly.
+  // weight just as directly — and the bank totals with it.
   for (const id of ["pipe_kg_per_m", "pipe_length_m_per_bank"]) {
     const el = $(id);
-    if (el) el.addEventListener("input", refreshPipeKgEach);
+    if (el) el.addEventListener("input", () => { refreshPipeKgEach(); refreshPipesFromOverride(); });
   }
+  // The pipe-count box settles its own figures outright.
+  const ovEl = $("pipes_total_override");
+  if (ovEl) ovEl.addEventListener("input", refreshPipesFromOverride);
   const kgEl = $("pipe_kg_per_m");
   if (kgEl) {
     kgEl.addEventListener("input", () => {
@@ -1035,7 +1081,10 @@ async function _runPreview() {
   _paintPreview(c);
 }
 
-function _paintPreview(c) {
+// `pending` means the figures came from the keystroke rather than the engine,
+// so the bundle envelope has not been re-derived for this total yet.
+function _paintPreview(c, pending) {
+  _lastPreview = pending ? _lastPreview : c;   // only the engine's word is kept
   const g = "color:#065f46";
   const b = (v) => `<strong style="${g}">${v}</strong>`;
   const autoGrid = `${c.auto_rows} × ${c.auto_cols} = ${c.pipes_total_auto}`;
@@ -1043,12 +1092,12 @@ function _paintPreview(c) {
                      || c.pipes_in_row !== c.auto_rows
                      || c.pipes_in_column !== c.auto_cols;
 
-  $("pipes_raw_preview").textContent  = c.direct_mode ? "—" : c.pipes_total_raw.toFixed(2);
-  $("pipes_grid_preview").textContent = `${c.pipes_in_row} × ${c.pipes_in_column} = ${c.pipes_total}`;
-
-  // The auto figures come back on every response now, override or not, so both
-  // numbers can be shown at once — previously the panel could only ever report
-  // the layout in force, and called it "auto" whichever it was.
+  // The raw-pipe and grid figures are written as part of the sentence below,
+  // not into the two <strong> spans the markup ships with. Those spans live
+  // INSIDE #pipes_grid_hint, so the first innerHTML here removed them from the
+  // document — and every later paint then died on the null, silently, taking
+  // the pipe count, the weights and the whole panel down with it. That is why
+  // nothing moved after the first render.
   const gh = $("pipes_grid_hint");
   if (gh) {
     // In direct mode "auto" is what the typed bank size holds, so the sentence
@@ -1059,6 +1108,13 @@ function _paintPreview(c) {
       : `Auto sizing derives ${b(c.pipes_total_raw.toFixed(2))} raw pipes &rarr; ${b(autoGrid)}.`;
     if (!overridden) {
       gh.innerHTML = `${auto} Leave at 0 to use this, or type your own total.`;
+    } else if (pending) {
+      // The total is settled the moment it is typed; the bundle it is laid out
+      // in comes from the engine's grid search, so it is left unsaid for the
+      // fraction of a second before the answer lands rather than quoting the
+      // envelope of the previous number.
+      gh.innerHTML = `${auto} You have typed ${b(c.pipes_total)}, and ${b(c.pipes_total)} is what will be `
+        + `built and costed. Clear the box to go back to auto.`;
     } else {
       const places = c.pipes_in_row * c.pipes_in_column;
       const spare  = places - c.pipes_total;
