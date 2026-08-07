@@ -542,10 +542,10 @@
       <div class="stat"><div class="l">Final Flue Temp <span style="color:#94a3b8">(derived)</span></div><div class="v"><span id="r-fout">0</span><span class="u">&deg;C</span></div></div>
       <div class="stat"><div class="l">LMTD</div><div class="v"><span id="r-lmtd">0</span><span class="u">&deg;C</span></div></div>
       <div class="stat"><div class="l">Surface Area</div><div class="v"><span id="r-area">0</span><span class="u">m&sup2;</span></div></div>
-      <div class="stat"><div class="l">Length of Hot Bank</div><div class="v"><span id="r-hot-len">0</span><span class="u">m</span></div></div>
-      <div class="stat"><div class="l">Length of Cold Bank</div><div class="v"><span id="r-cold-len">0</span><span class="u">m</span></div></div>
-      <div class="stat"><div class="l">Width of Hot Bank</div><div class="v"><span id="r-hot-wid">0</span><span class="u">m</span></div></div>
-      <div class="stat"><div class="l">Width of Cold Bank</div><div class="v"><span id="r-cold-wid">0</span><span class="u">m</span></div></div>
+      <div class="stat"><div class="l">Length of Hot Bank</div><div class="v"><span id="r-hot-len">0</span><span class="u">mm</span></div></div>
+      <div class="stat"><div class="l">Length of Cold Bank</div><div class="v"><span id="r-cold-len">0</span><span class="u">mm</span></div></div>
+      <div class="stat"><div class="l">Width of Hot Bank</div><div class="v"><span id="r-hot-wid">0</span><span class="u">mm</span></div></div>
+      <div class="stat"><div class="l">Width of Cold Bank</div><div class="v"><span id="r-cold-wid">0</span><span class="u">mm</span></div></div>
       <div class="stat"><div class="l">Pipes (rows &times; cols)</div><div class="v"><span id="r-pipes">0</span></div></div>
       <div class="stat"><div class="l">Pipes per Bank</div><div class="v"><span id="r-perbank">0</span></div></div>
       <div class="stat"><div class="l">Weight per Pipe</div><div class="v"><span id="r-perpipe">0</span><span class="u">kg</span></div></div>
@@ -1351,13 +1351,14 @@ function renderResults() {
   $("r-area").textContent    = hb(() => c.surface_area_m2.toFixed(2));
   // Both banks are built to the same grid — rows deep by half the columns
   // across — so their length and width are the same figure, shown per bank
-  // because that is how the bank drawings are dimensioned. Millimetres from
-  // the engine, metres on the tile.
-  const m = (mm) => (mm / 1000).toFixed(2);
-  $("r-hot-len").textContent  = m(c.bank_length_mm);
-  $("r-cold-len").textContent = m(c.bank_length_mm);
-  $("r-hot-wid").textContent  = m(c.bank_width_mm);
-  $("r-cold-wid").textContent = m(c.bank_width_mm);
+  // because that is how the bank drawings are dimensioned. In millimetres, as
+  // the engine works and as every other dimension on this form is given.
+  const mm = (v) => Number(v).toLocaleString("en-IN",
+                    { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  $("r-hot-len").textContent  = mm(c.bank_length_mm);
+  $("r-cold-len").textContent = mm(c.bank_length_mm);
+  $("r-hot-wid").textContent  = mm(c.bank_width_mm);
+  $("r-cold-wid").textContent = mm(c.bank_width_mm);
   $("r-perpipe").textContent = c.weight_per_pipe_kg.toFixed(3);
   $("r-pipes").textContent   = c.pipes_in_row + " × " + c.pipes_in_column + " = " + c.pipes_total;
   $("r-perbank").textContent = c.pipes_hot_bank === c.pipes_cold_bank
