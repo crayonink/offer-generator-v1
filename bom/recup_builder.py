@@ -75,14 +75,20 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     ms_per_kg     = r('MS_PER_KG',         60.0)   # raw stock metal (channels/angles)
     ms_fab_per_kg = r('MS_FABRICATION_PER_KG', 70.0)  # fabricated MS (CAI assembly)
     flanges_kg    = r('FLANGES_KG',        100.0)
-    # Tube material per bank — SS304 ERW or MS ERW. Rates live in
+    # Tube material per bank — SS304, SS310 or MS ERW. Rates live in
     # recup_rates so they can be retuned from /pricelist > Recup Rates.
-    ss_rate = r('SS304_TUBE_PER_KG', 250.0)
-    ms_rate = r('MS_TUBE_PER_KG',     70.0)
+    ss_rate    = r('SS304_TUBE_PER_KG', 250.0)
+    ss310_rate = r('SS310_TUBE_PER_KG', 280.0)
+    ms_rate    = r('MS_TUBE_PER_KG',     70.0)
     def _tube(mat):
+        # Bare "SS" is the old spelling from before SS310 existed as a choice;
+        # it has always meant SS304, and quotes saved under it must keep costing
+        # the same, so it stays mapped there rather than becoming ambiguous.
         m = (mat or 'SS').upper()
         if m == 'MS':
             return ms_rate, 'MS ERW Tube'
+        if m == 'SS310':
+            return ss310_rate, 'SS310 ERW Tube'
         return ss_rate, 'SS304 ERW Tube'
     hot_rate,  hot_label  = _tube(getattr(results, 'hot_bank_material',  'SS'))
     cold_rate, cold_label = _tube(getattr(results, 'cold_bank_material', 'SS'))

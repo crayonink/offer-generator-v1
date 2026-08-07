@@ -421,8 +421,11 @@
     <div class="fg fg-3">
       <div class="field">
         <label>Hot Bank Material</label>
+        <!-- "SS" is SS304 under its old name; quotes saved before SS310
+             existed still carry it, and it must keep costing the same. -->
         <select id="hot_bank_material">
           <option value="SS" selected>SS304 &mdash; Rs.250/kg</option>
+          <option value="SS310">SS310 &mdash; Rs.280/kg</option>
           <option value="MS">MS &mdash; Rs.70/kg</option>
         </select>
       </div>
@@ -430,11 +433,16 @@
         <label>Cold Bank Material</label>
         <select id="cold_bank_material">
           <option value="SS" selected>SS304 &mdash; Rs.250/kg</option>
+          <option value="SS310">SS310 &mdash; Rs.280/kg</option>
           <option value="MS">MS &mdash; Rs.70/kg</option>
         </select>
       </div>
     </div>
-    <div class="fg" style="grid-template-columns:repeat(5,1fr)">
+    <!-- auto-fit, not a fixed five columns: at 5 x 1fr the last fields were
+         squeezed off the right of a narrower window, which is how Pipe Length
+         and the pipe weight came to be reported as "not displaying". The row
+         now wraps to as many columns as fit and never clips. -->
+    <div class="fg" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
       <div class="field">
         <label>Pipe OD (mm)</label>
         <input id="pipe_dia_mm" type="number" step="any" value="48.3"/>
@@ -457,6 +465,12 @@
         <label>Pipe (kg)</label>
         <input id="pipe_kg_each" type="text" class="ro" readonly value="—"/>
         <div class="hint" id="pipe_kg_each_hint">kg/m &times; length.</div>
+      </div>
+      <div class="field">
+        <label>Number of Pipes</label>
+        <input id="pipes_total_display" type="text" class="ro" readonly value="—"/>
+        <div class="hint" id="pipes_total_display_hint">The total being built &mdash;
+          auto-sized, or your override.</div>
       </div>
     </div>
     <div class="fg fg-3">
@@ -1123,6 +1137,18 @@ function _paintPreview(c, pending) {
         + (spare > 0 ? `, whose last row is ${b(spare)} short of full. ` : `. `)
         + `Clear the box to go back to auto.`;
     }
+  }
+
+  // The pipe count as a field of its own, beside the pipe weight it multiplies.
+  // It was only ever readable inside the sentences below, which is a poor place
+  // for the one number the rest of the bank geometry is counted in.
+  const nEl = $("pipes_total_display");
+  if (nEl) {
+    nEl.value = `${c.pipes_total}`;
+    const nh = $("pipes_total_display_hint");
+    if (nh) nh.textContent = overridden
+      ? `Your override. Auto sizing would build ${c.pipes_total_auto}.`
+      : `${c.pipes_hot_bank} hot + ${c.pipes_cold_bank} cold, auto-sized.`;
   }
 
   const eachEl = $("pipe_kg_each");

@@ -5552,8 +5552,11 @@ def _material_of_construction(hot_mat: str, cold_mat: str, pipe_dia_mm: float = 
             plate = "Mild Steel (CS)"
             tube  = f"CS, ERW {'Bended' if bend else 'Straight'} pipes, OD: {pipe_dia_mm}, Schedule-40"
         else:
-            plate = "SS-316"
-            tube  = f"SS-316 {'Bended' if bend else 'Straight'}, ERW pipes, OD: {pipe_dia_mm}, Schedule-40"
+            # SS310 is quoted as itself. Everything else keeps the SS-316 wording
+            # the offer has always carried for a stainless bank.
+            grade = "SS-310" if m == "SS310" else "SS-316"
+            plate = grade
+            tube  = f"{grade} {'Bended' if bend else 'Straight'}, ERW pipes, OD: {pipe_dia_mm}, Schedule-40"
         return plate, tube
     hot_plate, hot_tube   = block(hot_mat,  bend=True)   # hot bank is bent (for expansion)
     cold_plate, cold_tube = block(cold_mat, bend=False)  # cold bank is straight
