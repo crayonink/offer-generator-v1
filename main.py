@@ -5473,6 +5473,10 @@ def recup_calculate(req: RecupCalcRequest):
                 "pipe_dia_mm":          req.pipe_dia_mm,
                 "pipe_thick_mm":        req.pipe_thick_mm,
                 "pipe_length_m_per_bank": req.pipe_length_m_per_bank,
+                # Echoed so the form's derived boxes and the Step-3 breakdown
+                # read the kg/m that was actually costed, not whatever the
+                # input box happens to hold when they are painted.
+                "pipe_kg_per_m":        req.pipe_kg_per_m,
             },
             "bom": detail[["MEDIA","ITEM NAME","REFERENCE","QTY","MAKE","UNIT PRICE","TOTAL"]].to_dict(orient="records"),
             "cost_summary": summary,

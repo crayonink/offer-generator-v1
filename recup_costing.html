@@ -912,6 +912,27 @@ function recalcPipeKgPerM() {
                              + " Type a value to override.";
 }
 
+// Pipe (kg) is the box the engineer watches while typing, and it was the one
+// derived figure that could only change on a round trip: 300 ms of debounce
+// plus the request, and nothing at all if the request failed. It is simply
+// kg/m × length — the same product calculate_recup forms — so it is filled in
+// locally the moment anything it depends on changes. The preview response
+// still overwrites it when it lands, so the engine stays the authority; only
+// the per-pipe total is anticipated here, never the pipe count, which needs
+// the heat balance.
+function refreshPipeKgEach() {
+  const out = $("pipe_kg_each");
+  if (!out) return;
+  const kgm = parseFloat(($("pipe_kg_per_m") || {}).value) || 0;
+  const len = parseFloat(($("pipe_length_m_per_bank") || {}).value) || 0;
+  if (kgm <= 0 || len <= 0) return;
+  out.value = `${(kgm * len).toFixed(3)} kg`;
+  const hint = $("pipe_kg_each_hint");
+  // The bank totals depend on the pipe count, which only the engine knows —
+  // say so rather than leaving the old one sitting under a new weight.
+  if (hint) hint.textContent = `${kgm} kg/m x ${len} m. Totals updating…`;
+}
+
 // Every field the preview depends on is every field _previewPayload() reads, so
 // take the list from the payload itself rather than maintaining a second one
 // beside it — a parameter added to the payload is wired up automatically.
@@ -924,10 +945,18 @@ window.addEventListener("DOMContentLoaded", () => {
     const el = $(id);
     if (el) el.addEventListener("input", syncRawPipesPreview);
   }
-  // OD and thickness additionally re-derive the kg/m box before re-previewing.
+  // OD and thickness additionally re-derive the kg/m box before re-previewing,
+  // and the per-pipe weight follows from that — in this order, so the weight is
+  // formed from the kg/m that was just recomputed rather than the previous one.
   for (const id of ["pipe_dia_mm", "pipe_thick_mm"]) {
     const el = $(id);
-    if (el) el.addEventListener("input", recalcPipeKgPerM);
+    if (el) el.addEventListener("input", () => { recalcPipeKgPerM(); refreshPipeKgEach(); });
+  }
+  // Typing straight into kg/m, or changing the pipe length, moves the per-pipe
+  // weight just as directly.
+  for (const id of ["pipe_kg_per_m", "pipe_length_m_per_bank"]) {
+    const el = $(id);
+    if (el) el.addEventListener("input", refreshPipeKgEach);
   }
   const kgEl = $("pipe_kg_per_m");
   if (kgEl) {
@@ -937,10 +966,14 @@ window.addEventListener("DOMContentLoaded", () => {
       if (hint) hint.textContent = "Overridden — clear the box to go back to the derived value.";
     });
     kgEl.addEventListener("blur", () => {
-      if (!kgEl.value.trim()) { _pipeKgOverridden = false; recalcPipeKgPerM(); syncRawPipesPreview(); }
+      if (!kgEl.value.trim()) {
+        _pipeKgOverridden = false;
+        recalcPipeKgPerM(); refreshPipeKgEach(); syncRawPipesPreview();
+      }
     });
   }
   recalcPipeKgPerM();
+  refreshPipeKgEach();    // don't leave the box on its placeholder dash
   applySizingMode();      // shows the right fields, and fires the first preview
 });
 
@@ -1513,6 +1546,7 @@ function _loadSticky() {
   // A pipe weight the user typed stays put; otherwise let it re-derive.
   _pipeKgOverridden = !!d.__pipeKgOverridden;
   if (!_pipeKgOverridden && typeof recalcPipeKgPerM === 'function') recalcPipeKgPerM();
+  if (typeof refreshPipeKgEach === 'function') refreshPipeKgEach();
   // Refresh everything derived from the restored inputs — pipe kg, the grid
   // preview and the weight hint — so nothing is left showing an old figure.
   // Via applySizingMode so a restored direct-mode session comes back with the
