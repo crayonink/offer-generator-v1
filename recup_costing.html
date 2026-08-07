@@ -493,7 +493,19 @@
     <div class="fg fg-1">
       <div class="field">
         <label>Number of Recuperator Pipes (override; 0 = auto)</label>
-        <input id="pipes_total_override" type="number" step="1" value="0"/>
+        <!-- Two buttons because "what auto found" is two numbers: the count the
+             heat balance asks for, rounded up to a whole pipe, and the bundle
+             auto lays that out in. Both fill the box, so neither has to be
+             copied out of the sentence underneath. -->
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input id="pipes_total_override" type="number" step="1" value="0" style="flex:1; min-width:0"/>
+          <button type="button" class="btn-back" id="useRawBtn" onclick="useAutoPipes('raw')"
+                  style="flex:0 0 auto; white-space:nowrap;"
+                  title="The count the heat balance asks for, rounded up to a whole pipe">Use auto</button>
+          <button type="button" class="btn-back" id="useGridBtn" onclick="useAutoPipes('grid')"
+                  style="flex:0 0 auto; white-space:nowrap;"
+                  title="The full bundle auto lays that count out in (rows × cols)">Use bundle</button>
+        </div>
         <!-- Placeholder wording only: the whole line is rewritten by
              _paintPreview on the first response. Nothing inside it carries an
              id, deliberately — the elements that used to be addressed here were
@@ -969,6 +981,20 @@ function refreshPipeKgEach() {
 // the engine. The bundle envelope is one of those, since the grid search lives
 // in calculations/recup.py and is deliberately not duplicated here, so it is
 // left unsaid rather than quoted from the previous total.
+// Fill the box with what auto sizing found, instead of it having to be copied
+// out of the sentence below. 'raw' is the heat balance's own count rounded up
+// to a whole pipe — the engine rounds the same way before it grids — and 'grid'
+// is the bundle auto lays that count out in.
+function useAutoPipes(which) {
+  const c = _lastPreview;
+  const box = $("pipes_total_override");
+  if (!c || !box) return;
+  box.value = String(which === "grid" ? c.pipes_total_auto
+                                      : Math.max(1, Math.ceil(c.pipes_total_raw)));
+  refreshPipesFromOverride();   // the panel follows immediately
+  syncRawPipesPreview();        // and the engine confirms the bundle
+}
+
 function refreshPipesFromOverride() {
   const c = _lastPreview;
   if (!c) return;                       // nothing from the engine to build on yet
@@ -1145,6 +1171,16 @@ function _paintPreview(c, pending) {
         + `Clear the box to go back to auto.`;
     }
   }
+
+  // The fill buttons carry the numbers they fill in, so the choice is visible
+  // without reading the sentence. Direct mode has no heat balance and so no raw
+  // count — only the grid the typed bank holds — so that button stands down.
+  const rawBtn = $("useRawBtn"), gridBtn = $("useGridBtn");
+  if (rawBtn) {
+    rawBtn.style.display = c.direct_mode ? "none" : "";
+    rawBtn.textContent = `Use ${Math.max(1, Math.ceil(c.pipes_total_raw))}`;
+  }
+  if (gridBtn) gridBtn.textContent = `Use ${c.pipes_total_auto}`;
 
   // The pipe count as a field of its own, beside the pipe weight it multiplies.
   // It was only ever readable inside the sentences below, which is a poor place
