@@ -537,15 +537,15 @@
     <div class="section-title">Sized Output</div>
     <div class="results">
       <div class="stat"><div class="l">Total Flue Gas</div><div class="v"><span id="r-flue">0</span><span class="u">Nm&sup3;/hr</span></div></div>
-      <div class="stat"><div class="l">Heat Required</div><div class="v"><span id="r-heat">0</span><span class="u">kcal/hr</span></div></div>
       <div class="stat"><div class="l">Final Temp. of Preheated Air</div><div class="v"><span id="r-airout">0</span><span class="u">&deg;C</span></div></div>
       <div class="stat"><div class="l">Final Flue Temp <span style="color:#94a3b8">(derived)</span></div><div class="v"><span id="r-fout">0</span><span class="u">&deg;C</span></div></div>
-      <div class="stat"><div class="l">LMTD</div><div class="v"><span id="r-lmtd">0</span><span class="u">&deg;C</span></div></div>
       <div class="stat"><div class="l">Surface Area</div><div class="v"><span id="r-area">0</span><span class="u">m&sup2;</span></div></div>
-      <div class="stat"><div class="l">Length of Hot Bank</div><div class="v"><span id="r-hot-len">0</span><span class="u">mm</span></div></div>
-      <div class="stat"><div class="l">Length of Cold Bank</div><div class="v"><span id="r-cold-len">0</span><span class="u">mm</span></div></div>
-      <div class="stat"><div class="l">Width of Hot Bank</div><div class="v"><span id="r-hot-wid">0</span><span class="u">mm</span></div></div>
-      <div class="stat"><div class="l">Width of Cold Bank</div><div class="v"><span id="r-cold-wid">0</span><span class="u">mm</span></div></div>
+      <!-- One length and one width: both banks are built to the same grid, so
+           there was never a second pair of figures to give. Heat required and
+           LMTD are steps on the way to the surface area rather than results in
+           their own right — they stay in the Calculation Breakdown below. -->
+      <div class="stat"><div class="l">Length of Each Bank</div><div class="v"><span id="r-hot-len">0</span><span class="u">mm</span></div></div>
+      <div class="stat"><div class="l">Width of Each Bank</div><div class="v"><span id="r-hot-wid">0</span><span class="u">mm</span></div></div>
       <div class="stat"><div class="l">Pipes (rows &times; cols)</div><div class="v"><span id="r-pipes">0</span></div></div>
       <div class="stat"><div class="l">Pipes per Bank</div><div class="v"><span id="r-perbank">0</span></div></div>
       <div class="stat"><div class="l">Weight per Pipe</div><div class="v"><span id="r-perpipe">0</span><span class="u">kg</span></div></div>
@@ -1344,21 +1344,16 @@ function renderResults() {
   // rather than sized — a dash is honest where 0.00 would read as a result.
   const hb = (v) => c.direct_mode ? "—" : v();
   $("r-flue").textContent    = hb(() => Math.round(c.flue_flow_nm3hr).toLocaleString("en-IN"));
-  $("r-heat").textContent    = hb(() => Math.round(c.heat_required_kcal).toLocaleString("en-IN"));
   $("r-airout").textContent  = hb(() => Math.round(c.air_temp_out_C).toString());
   $("r-fout").textContent    = hb(() => c.flue_temp_out_C.toFixed(2));
-  $("r-lmtd").textContent    = hb(() => c.lmtd_C.toFixed(2));
   $("r-area").textContent    = hb(() => c.surface_area_m2.toFixed(2));
-  // Both banks are built to the same grid — rows deep by half the columns
-  // across — so their length and width are the same figure, shown per bank
-  // because that is how the bank drawings are dimensioned. In millimetres, as
-  // the engine works and as every other dimension on this form is given.
+  // One figure each, for both banks: they are built to the same grid — rows
+  // deep by half the columns across. In millimetres, as the engine works and as
+  // every other dimension on this form is given.
   const mm = (v) => Number(v).toLocaleString("en-IN",
                     { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  $("r-hot-len").textContent  = mm(c.bank_length_mm);
-  $("r-cold-len").textContent = mm(c.bank_length_mm);
-  $("r-hot-wid").textContent  = mm(c.bank_width_mm);
-  $("r-cold-wid").textContent = mm(c.bank_width_mm);
+  $("r-hot-len").textContent = mm(c.bank_length_mm);
+  $("r-hot-wid").textContent = mm(c.bank_width_mm);
   $("r-perpipe").textContent = c.weight_per_pipe_kg.toFixed(3);
   $("r-pipes").textContent   = c.pipes_in_row + " × " + c.pipes_in_column + " = " + c.pipes_total;
   $("r-perbank").textContent = c.pipes_hot_bank === c.pipes_cold_bank
