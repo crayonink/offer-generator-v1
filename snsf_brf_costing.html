@@ -33,6 +33,18 @@
     .card-title { font-size:.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:20px; }
 
     .field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+    /* Furnace duty inputs and the zone table */
+    .sz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+    .sz-f { display:flex; flex-direction:column; gap:6px; }
+    .sz-f label { font-size:.72rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+    .sz-f input, .sz-table input[type=text], .sz-table input[type=number] {
+      padding:9px 11px; border:1px solid var(--border); border-radius:8px;
+      font:inherit; font-size:.9rem; color:#0f172a; background:#fff; width:100%; box-sizing:border-box; }
+    .sz-table { width:100%; border-collapse:collapse; }
+    .sz-table th { text-align:left; font-size:.72rem; font-weight:600; letter-spacing:.04em;
+      text-transform:uppercase; color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--border); }
+    .sz-table td { padding:6px 8px; vertical-align:middle; }
+    .xl-num { text-align:right; }
     label { font-size:.8rem; font-weight:600; color:#374151; }
     .toggle { display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.88rem; }
     .toggle input[type=checkbox] { width:18px; height:18px; accent-color:var(--navy); }
@@ -123,13 +135,44 @@
   <!-- ═══ STEP 1 ═══ -->
   <div class="step active" id="step-1">
     <div class="card">
-      <div class="card-title">SNSF BRF — 30 Ton Billet Reheating Furnace</div>
+      <div class="card-title">Billet Reheating Furnace</div>
       <div class="field">
         <label class="toggle"><input type="checkbox" id="chk-ng"/> Include NG Optional (Pilot Burner + UV Sensor)</label>
       </div>
       <div class="field">
         <label class="toggle"><input type="checkbox" id="chk-client"/> Include Client Scope (Mild Steel + Refractory)</label>
       </div>
+    </div>
+
+    <!-- Furnace duty. These drive the firing rate, the combustion air, the
+         per-zone line sizes and the blower, through calculations/brf.py.
+         The refractory and structure sheets are still fixed data. -->
+    <div class="card">
+      <div class="card-title">Furnace Duty</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Capacity (t/hr)</label><input id="sz-cap" type="number" step="any" value="60"/></div>
+        <div class="sz-f"><label>Fuel per ton (SCM)</label><input id="sz-fuel" type="number" step="any" value="45"/></div>
+        <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label><input id="sz-cv" type="number" step="any" value="8600"/></div>
+        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air" type="number" step="any" value="10.5"/></div>
+        <div class="sz-f"><label>Preheated air temp (&deg;C)</label><input id="sz-preheat" type="number" step="any" value="300"/></div>
+        <div class="sz-f"><label>Air velocity (m/s)</label><input id="sz-vair" type="number" step="any" value="12"/></div>
+        <div class="sz-f"><label>Gas velocity (m/s)</label><input id="sz-vgas" type="number" step="any" value="30"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Zones &amp; Burners</div>
+      <div class="hint" style="margin:-6px 0 10px;color:var(--muted);font-size:.82rem;">
+        One row per fired zone. Leave fuel per burner at 0 to derive it from the
+        rating and the calorific value. Untick <em>Zone</em> for a standalone
+        burner &mdash; it is sized like the rest but the firing rate is not
+        divided into it.
+      </div>
+      <table class="sz-table">
+        <thead><tr><th>Name</th><th>Burner (kW)</th><th>Burners</th><th>Fuel/burner (Nm&sup3;/hr)</th><th>Zone</th><th></th></tr></thead>
+        <tbody id="sz-zones"></tbody>
+      </table>
+      <button class="btn-back" type="button" onclick="addZone()" style="margin-top:10px;">+ Add zone</button>
     </div>
     <div class="error-box" id="error-box"></div>
     <div class="step-nav">
@@ -148,7 +191,8 @@
       <div class="xl-titlebar"><span class="xl-logo">X</span><span>SNSF BRF 30T Calculation — ENCON</span></div>
       <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
       <div class="xl-content">
-        <div class="xl-sheet active" id="xl-furnace"></div>
+        <div class="xl-sheet active" id="xl-sizing"></div>
+        <div class="xl-sheet" id="xl-furnace"></div>
         <div class="xl-sheet" id="xl-refractory"></div>
         <div class="xl-sheet" id="xl-mildsteel"></div>
         <div class="xl-sheet" id="xl-massflow"></div>
@@ -157,7 +201,8 @@
         <div class="xl-sheet" id="xl-breakup"></div>
       </div>
       <div class="xl-tabs">
-        <div class="xl-tab active" onclick="xlTab('xl-furnace',this)">Furnace (2)</div>
+        <div class="xl-tab active" onclick="xlTab('xl-sizing',this)">Sizing</div>
+        <div class="xl-tab" onclick="xlTab('xl-furnace',this)">Furnace (2)</div>
         <div class="xl-tab" onclick="xlTab('xl-refractory',this)">Refractory</div>
         <div class="xl-tab" onclick="xlTab('xl-mildsteel',this)">Mild Steel</div>
         <div class="xl-tab" onclick="xlTab('xl-massflow',this)">Mass Flow Control</div>
@@ -247,16 +292,113 @@ function xlRow(n,cells,cls){
 const colHdr3=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td></tr>`;
 const colHdr5=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td><td class="xl-col-header">E</td></tr>`;
 
+// ── Zones & burners ────────────────────────────────────────────────────────
+// The uploaded 60 TPH job's zone table, as the starting point. Rows are added
+// and removed freely; the sizing follows whatever is here.
+const DEFAULT_ZONES=[
+  {name:"Zone 1",burner_kw:1000,burner_count:4,fuel_per_burner_nm3hr:150,is_zone:true},
+  {name:"Zone 2",burner_kw:1000,burner_count:5,fuel_per_burner_nm3hr:150,is_zone:true},
+  {name:"Zone 3",burner_kw:1000,burner_count:5,fuel_per_burner_nm3hr:0,is_zone:true},
+  {name:"Zone 4",burner_kw:1000,burner_count:5,fuel_per_burner_nm3hr:0,is_zone:true},
+  {name:"Zone 5",burner_kw:1000,burner_count:5,fuel_per_burner_nm3hr:0,is_zone:true},
+  {name:"Burner",burner_kw:1000,burner_count:1,fuel_per_burner_nm3hr:0,is_zone:false},
+];
+function zoneRow(z){
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td><input class="z-name" type="text" value="${z.name}"/></td>
+    <td><input class="z-kw" type="number" step="any" value="${z.burner_kw}"/></td>
+    <td><input class="z-n" type="number" step="1" value="${z.burner_count}"/></td>
+    <td><input class="z-fuel" type="number" step="any" value="${z.fuel_per_burner_nm3hr}"/></td>
+    <td style="text-align:center"><input class="z-is" type="checkbox" ${z.is_zone?"checked":""}/></td>
+    <td><button class="btn-back" type="button" onclick="this.closest('tr').remove()">&times;</button></td>`;
+  return tr;
+}
+function addZone(){
+  document.getElementById("sz-zones").appendChild(zoneRow(
+    {name:"Zone "+(document.querySelectorAll("#sz-zones tr").length+1),
+     burner_kw:1000,burner_count:5,fuel_per_burner_nm3hr:0,is_zone:true}));
+}
+function readZones(){
+  return Array.from(document.querySelectorAll("#sz-zones tr")).map(tr=>({
+    name: tr.querySelector(".z-name").value||"Zone",
+    burner_kw: parseFloat(tr.querySelector(".z-kw").value)||0,
+    burner_count: parseInt(tr.querySelector(".z-n").value,10)||0,
+    fuel_per_burner_nm3hr: parseFloat(tr.querySelector(".z-fuel").value)||0,
+    is_zone: tr.querySelector(".z-is").checked,
+  }));
+}
+window.addEventListener("DOMContentLoaded",()=>{
+  const body=document.getElementById("sz-zones");
+  if(body) DEFAULT_ZONES.forEach(z=>body.appendChild(zoneRow(z)));
+});
+
 async function calculate(){
   const ng=document.getElementById("chk-ng").checked;
   const cl=document.getElementById("chk-client").checked;
   const err=document.getElementById("error-box");err.style.display="none";
+  const n=id=>parseFloat((document.getElementById(id)||{}).value)||0;
+  const payload={
+    include_ng_optional:ng, include_client_scope:cl,
+    furnace_capacity_tph:n("sz-cap"), fuel_per_ton_scm:n("sz-fuel"),
+    cv_kcal_nm3:n("sz-cv"), combustion_air_per_nm3:n("sz-air"),
+    preheat_air_temp_C:n("sz-preheat"), air_velocity_ms:n("sz-vair"),
+    gas_velocity_ms:n("sz-vgas"), zones:readZones(),
+  };
   try{
-    const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({include_ng_optional:ng,include_client_scope:cl})});
+    const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
     if(data.error){err.textContent=data.error;err.style.display="block";return;}
     lastData=data;renderAll(data,ng,cl);goStep(2);
   }catch(e){err.textContent="API error: "+e.message;err.style.display="block";}
+}
+
+// The one sheet on this page that is worked out rather than stored: the duty
+// chain, the zone-by-zone line sizing and the combustion equipment that
+// follows from them. Everything comes from the response — there is no
+// arithmetic here.
+function renderSizing(sz){
+  const el=document.getElementById("xl-sizing");
+  if(!el) return;
+  if(!sz){ el.innerHTML='<div style="padding:16px;color:#64748b">No sizing returned.</div>'; return; }
+  const d=sz.duty, R=xlRow;
+  const C3=`<tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td></tr>`;
+  let n=0,h=`<table class="xl-grid">${C3}`;
+  h+=R(++n,[["FURNACE DUTY",""],["",""],["",""]],"xl-section");
+  [["Furnace capacity",fmt2(d.furnace_capacity_tph),"Ton/hr"],
+   ["Fuel consumption",fmt2(d.fuel_per_ton_scm),"SCM/Ton"],
+   ["Calorific value",fmt(d.cv_kcal_nm3),"kcal/Nm³"],
+   ["Firing rate",fmt(d.firing_rate_nm3hr),"Nm³/hr"],
+   ["Combustion air",fmt(d.combustion_air_nm3hr),"Nm³/hr"],
+   ["Number of zones",d.zone_count,"Nos"],
+   ["Firing rate per zone",fmt(d.firing_rate_per_zone_nm3hr),"Nm³/hr"],
+   ["Blower",fmt(d.blower_cfm),"CFM"],
+   ["Blower",fmt2(d.blower_hp),"HP"],
+   ["Total burners",d.total_burners,"Nos"],
+   ["Preheated air temperature",fmt(d.preheat_air_temp_C),"°C"],
+  ].forEach(([l,v,u])=>{h+=R(++n,[[l,""],[v,true],[u,true]],l.startsWith("Firing rate")||l==="Blower"?"xl-highlight":"");});
+
+  h+=R(++n,[["",""],["",""],["",""]]);
+  h+=R(++n,[["ZONE LINE SIZING",""],["",""],["",""]],"xl-section");
+  h+=`</table><table class="xl-grid">`;
+  const cols=["Zone","Burner kW","Nos","Fuel/burner","Zone fuel Nm³/hr","Air Nm³/hr",
+              "Air hot m³/hr","Air bore mm","Air NB","Gas bore mm","Gas NB"];
+  h+='<tr>'+cols.map(c=>`<td class="xl-col-header">${c}</td>`).join('')+'</tr>';
+  (sz.zones||[]).forEach(z=>{
+    h+='<tr>'+[z.name,z.burner_kw,z.burner_count,z.fuel_per_burner_nm3hr,z.fuel_flow_nm3hr,
+               z.air_flow_nm3hr,Math.round(z.air_flow_hot_m3hr),z.air_line_bore_mm,z.air_line_nb,
+               z.gas_line_bore_mm,z.gas_line_nb]
+      .map((v,i)=>`<td class="${i?'xl-num':''}">${typeof v==="number"?fmt(v):v}</td>`).join('')+'</tr>';
+  });
+  h+=`</table>`;
+
+  h+=`<table class="xl-grid">${C3}`;n=0;
+  h+=R(++n,[["COMBUSTION EQUIPMENT",""],["Rs",""],["",""]],"xl-section");
+  (sz.equipment||[]).forEach(e=>{
+    h+=R(++n,[[`${e.item}  × ${e.qty}`,""],[fmt(e.total),true],[e.basis==="derived"?"derived":"",true]]);
+  });
+  h+=R(++n,[["Total Combustion Equipment",""],[fmt(sz.equipment_total),true],["Rs",true]],"xl-total");
+  h+=`</table>`;
+  el.innerHTML=h;
 }
 
 function renderAll(data,showNG,showCL){
@@ -270,6 +412,9 @@ function renderAll(data,showNG,showCL){
     document.getElementById(p+"-cost").textContent="\u20B9 "+fmt(s.grand_cost);
   });
   document.getElementById("b3-main").textContent="Main Sell: \u20B9 "+fmt(s.main_sell);
+
+  // ═══ SHEET 0: Sizing — computed, not stored ═══
+  renderSizing(data.sizing);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
   const ff=sp.furnace_full||[];

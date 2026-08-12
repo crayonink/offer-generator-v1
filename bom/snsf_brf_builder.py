@@ -5,6 +5,7 @@ Per-item markup multipliers as per the costing breakup sheet.
 All prices read from snsf_brf_price_master DB table.
 """
 
+import math
 import pandas as pd
 import sqlite3
 import os
@@ -491,3 +492,121 @@ def build_snsf_brf_df(
     }
 
     return df, summary
+
+
+# ── Sizing, computed ────────────────────────────────────────────────────────
+# Everything above this line is frozen data from one 30 TPH job. Everything
+# below is worked out from the furnace the user actually types in, through
+# calculations/brf.py (duty and line sizing) and calculations/recup.py (the
+# waste-heat recuperator), and rolled up into the combustion equipment list the
+# workbook's Combustion sheet carries.
+
+# The recuperator on a reheating furnace is quoted at this job's own rates,
+# which are not the standalone recuperator page's rates — the workbook prices
+# SS304 tube at Rs.300/kg and mild steel at Rs.75/kg against the pricelist's
+# 250 and 70. Passed as overrides so the difference is visible rather than
+# buried in the database.
+BRF_RECUP_RATES = {
+    "SS304_TUBE_PER_KG":     300.0,
+    "MS_FABRICATION_PER_KG":  75.0,
+    "MS_PER_KG":              75.0,
+    "THERMOCOUPLE_TT":      8000.0,
+}
+
+# Combustion sheet, rows 5-12. Quantities marked derived are worked out from
+# the sizing; the rest are per-job picks that carry the workbook's figures
+# until someone changes them.
+BRF_EQUIPMENT_DEFAULTS = [
+    # (item, qty, unit price, how the quantity is arrived at)
+    ("Recuperator",                             1, None,       "derived"),
+    ("Blower 100HP/40\"",                    None, 1287000.0,  "derived"),
+    ("Burner Set 85 Litre/hr (5A)",          None,   38601.11, "derived"),
+    ("Gas Train",                               1, 1103550.0,  "fixed"),
+    ("Mass flow control",                       1, 5144200.0,  "fixed"),
+    ("Pneumatically operated doors",            3,   80000.0,  "fixed"),
+    ("Pusher",                                  1, 1500000.0,  "fixed"),
+    ("Ejector + Operator seating arrangement",  1, 1700000.0,  "fixed"),
+]
+
+BLOWER_UNIT_HP = 100.0      # the 100 HP frames the workbook buys in
+
+
+def build_brf_sizing(brf_inputs, recup_inputs, equipment_prices=None) -> dict:
+    """Size the furnace and price the combustion equipment that follows from it.
+
+    brf_inputs   — calculations.brf.BRFInputs: capacity, fuel, zones, velocities
+    recup_inputs — calculations.recup.RecupInputs: the waste-heat recuperator
+    equipment_prices — {item: unit price} overriding BRF_EQUIPMENT_DEFAULTS
+
+    Returns the duty figures, the zone table, the recuperator, and the
+    combustion equipment roll-up with its total.
+    """
+    from calculations.brf import calculate_brf
+    from calculations.recup import calculate_recup
+    from bom.recup_builder import recup_summary, _load_rates
+
+    brf = calculate_brf(brf_inputs)
+
+    rates = _load_rates()
+    rates.update(BRF_RECUP_RATES)
+    recup = calculate_recup(recup_inputs)
+    # The recuperator BOM carries its own subtotal rows — BOUGHT OUT ITEMS,
+    # ENCON ITEMS, GRAND TOTAL — inside the same TOTAL column as the line
+    # items, so summing that column counts every rupee three times over. The
+    # grand total is read out of the summary, which knows which rows are which.
+    recup_cost = recup_summary(recup, rates)["grand_total"]
+
+    prices = dict(equipment_prices or {})
+    derived_qty = {
+        # One blower frame per 100 HP of the calculated duty.
+        "Blower 100HP/40\"": max(1, math.ceil(brf.blower_hp / BLOWER_UNIT_HP)),
+        # Every burner in the zone table, standalone burners included.
+        "Burner Set 85 Litre/hr (5A)": brf.total_burners,
+    }
+
+    equipment, total = [], 0.0
+    for item, qty, unit, basis in BRF_EQUIPMENT_DEFAULTS:
+        q = derived_qty.get(item, qty)
+        u = prices.get(item, recup_cost if item == "Recuperator" else unit)
+        label = item
+        if item == "Gas Train":
+            label = f"Gas Train ({brf.firing_rate_nm3hr:,.0f} Nm\u00b3/hr)"
+        line_total = round((q or 0) * (u or 0), 2)
+        total += line_total
+        equipment.append({
+            "item": label, "qty": q, "unit_price": round(u or 0, 2),
+            "total": line_total, "basis": basis,
+        })
+
+    return {
+        "duty": {
+            "furnace_capacity_tph":   brf_inputs.furnace_capacity_tph,
+            "fuel_per_ton_scm":       brf_inputs.fuel_per_ton_scm,
+            "cv_kcal_nm3":            brf_inputs.cv_kcal_nm3,
+            "firing_rate_nm3hr":      brf.firing_rate_nm3hr,
+            "combustion_air_nm3hr":   brf.combustion_air_nm3hr,
+            "zone_count":             brf.zone_count,
+            "firing_rate_per_zone_nm3hr": brf.firing_rate_per_zone_nm3hr,
+            "blower_cfm":             brf.blower_cfm,
+            "blower_hp":              brf.blower_hp,
+            "total_burners":          brf.total_burners,
+            "total_fuel_nm3hr":       brf.total_fuel_nm3hr,
+            "total_air_nm3hr":        brf.total_air_nm3hr,
+            "preheat_air_temp_C":     brf_inputs.preheat_air_temp_C,
+        },
+        "zones": [vars(z) for z in brf.zones],
+        "recuperator": {
+            "surface_area_m2":      recup.surface_area_m2,
+            "pipes_total":          recup.pipes_total,
+            "pipes_in_row":         recup.pipes_in_row,
+            "pipes_in_column":      recup.pipes_in_column,
+            "bank_length_mm":       recup.bank_length_mm,
+            "bank_width_mm":        recup.bank_width_mm,
+            "weight_total_pipes_kg": recup.weight_total_pipes_kg,
+            "flue_temp_out_C":      recup.flue_temp_out_C,
+            "lmtd_C":               recup.lmtd_C,
+            "cost":                 round(recup_cost, 2),
+        },
+        "equipment": equipment,
+        "equipment_total": round(total, 2),
+    }
