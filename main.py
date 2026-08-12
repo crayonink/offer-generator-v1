@@ -10,6 +10,9 @@ import os
 from datetime import datetime
 
 from bom.pricelist_parser import parse_all as _parse_pricelist_all
+from engine.env_loader import load_env_file
+
+load_env_file()
 
 # Swagger/ReDoc moved off /docs so the Antora handbook can own /docs.
 app = FastAPI(docs_url="/api-docs", redoc_url="/api-redoc")
@@ -3403,6 +3406,126 @@ def sen_stove_costing_form():
     html_path = os.path.join(BASE_DIR, "sen_stove_costing.html")
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
+
+@app.get("/sen-preheater", response_class=HTMLResponse)
+def sen_preheater_costing_form():
+    """Full-featured SEN Preheater offer generator (4-step: customer → BOM & pricing → T&Cs → generate)."""
+    html_path = os.path.join(BASE_DIR, "sen_preheater_costing.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+class SenPreheaterQuotePayload(BaseModel):
+    customer: dict
+    gas_line: str = "NG"
+    bom: list = []
+    bought_sum: float = 0
+    encon_sum: float = 0
+    markup: float = 1.8
+    unit_sell: float = 0
+    qty: int = 1
+    pf_pct: float = 0
+    design_pct: float = 0
+    neg_pct: float = 0
+    transport_amt: float = 0
+    final_total: float = 0
+
+
+@app.post("/api/generate-sen-preheater-quote")
+def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Request):
+    """Generate Word offer + Excel cost sheet for the SEN Preheater.
+    Uses the same _generate_equipment_offer machinery as Burner / Blower."""
+    try:
+        c = payload.customer
+        # Build an HpuCustomer-compatible object from the dict the frontend sends
+        cust = HpuCustomer(
+            salutation=c.get("salutation", ""),
+            name=c.get("name", ""),
+            email=c.get("email", ""),
+            phone=c.get("phone", ""),
+            company=c.get("company", ""),
+            designation=c.get("designation", ""),
+            address=c.get("address", ""),
+            city=c.get("city", ""),
+            state=c.get("state", ""),
+            pin=c.get("pin", ""),
+            gstin=c.get("gstin", ""),
+            ref_no=c.get("ref_no", ""),
+            location=c.get("location", "Faridabad"),
+            subject=c.get("subject", "Offer for ENCON SEN Preheater"),
+            marketing_salutation=c.get("marketing_salutation", ""),
+            marketing=c.get("marketing", ""),
+            marketing_email=c.get("marketing_email", ""),
+            marketing_phone=c.get("marketing_phone", ""),
+            technical_salutation=c.get("technical_salutation", ""),
+            technical=c.get("technical", ""),
+            technical_email=c.get("technical_email", ""),
+            technical_phone=c.get("technical_phone", ""),
+            tnc_prices=c.get("tnc_prices", "EX Bhagola (Ex-Works)"),
+            tnc_delivery=c.get("tnc_delivery", "6 – 8 weeks from receipt of advance."),
+            tnc_gst=c.get("tnc_gst", "18% extra."),
+            tnc_hsn_code=c.get("tnc_hsn_code", "84161000"),
+            tnc_pan_gst=c.get("tnc_pan_gst", "PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"),
+            tnc_payment_terms=c.get("tnc_payment_terms", "30% advance, 70% before dispatch"),
+            tnc_packing_forwarding=c.get("tnc_packing_forwarding", "4% and 2% respectively."),
+            tnc_freight=c.get("tnc_freight", "In client's scope."),
+            tnc_transit_insurance=c.get("tnc_transit_insurance", "To be arranged by the client."),
+            tnc_validity=c.get("tnc_validity", "45 days from the date of our offer."),
+            tnc_inspection=c.get("tnc_inspection", ""),
+            tnc_guarantee=c.get("tnc_guarantee", "18 months from dispatch or 12 months from commissioning."),
+        )
+
+        gas_line = payload.gas_line or "NG"
+        qty = max(1, int(payload.qty or 1))
+        unit_sell = float(payload.unit_sell or 0)
+
+        equipment_name = f"SEN Preheater ({gas_line} Line)"
+
+        # Build BOM scope-of-supply bullet list from the rows
+        scope_items = [{"item": r.get("item", "")} for r in payload.bom if r.get("item")]
+
+        scope_intro = (
+            f"Supply ex-works of {qty} set(s) of ENCON SEN Preheater complete with "
+            f"{gas_line} line, compressed air line, pilot burner, control panel, "
+            f"fabrication & trolley, and all necessary accessories."
+        )
+
+        specs = {
+            "scope_intro":  scope_intro,
+            "scope_items":  scope_items,
+            "advantages_kind": None,
+            "price_desc": {
+                "heading": "SEN PREHEATER",
+                "body": scope_intro,
+                "bullets": [],
+                "notes": [f"Preheating Temp: 1200 °C  |  Gas Line: {gas_line}"],
+            },
+        }
+
+        # Pick template — use generic Offer_Template.docx (same as tundish)
+        template_name = "Offer_Template.docx"
+
+        result = _generate_equipment_offer(
+            cust,
+            equipment_name=equipment_name,
+            specs=specs,
+            unit_price=unit_sell,
+            qty=qty,
+            template_name=template_name,
+            filename_infix="SEN_Preheater",
+            drive_product="sen_preheater",
+            pf_pct=payload.pf_pct,
+            design_pct=payload.design_pct,
+            neg_pct=payload.neg_pct,
+            transport_amt=payload.transport_amt,
+        )
+        result["total_price"] = round(payload.final_total or unit_sell * qty)
+        return result
+
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
 
 @app.get("/api/sen-stove/bom")
 def sen_stove_bom():

@@ -1,0 +1,1779 @@
+﻿<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>ENCON – SEN Preheater Offer</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+			rel="stylesheet" />
+		<style>
+			:root {
+				--navy: #1a3a5c;
+				--navy2: #0f2744;
+				--green: #059669;
+				--red: #dc2626;
+				--border: #e5e7eb;
+				--text: #0f172a;
+				--muted: #64748b;
+				--bg: #f8fafc;
+			}
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+			body {
+				font-family: "Inter", system-ui, sans-serif;
+				background: #fff;
+				color: var(--text);
+				font-size: 14px;
+				-webkit-font-smoothing: antialiased;
+			}
+			.topnav {
+				background: #fff;
+				border-bottom: 1px solid var(--border);
+				box-shadow:
+					0 1px 0 var(--border),
+					0 4px 20px rgba(0, 0, 0, 0.04);
+				display: flex;
+				align-items: center;
+				padding: 0 40px;
+				position: sticky;
+				top: 0;
+				z-index: 100;
+				height: 56px;
+			}
+			.topnav-brand {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				font-weight: 900;
+				font-size: 0.95rem;
+				color: var(--text);
+				margin-right: 32px;
+				letter-spacing: -0.4px;
+				text-decoration: none;
+			}
+			.brand-mark {
+				width: 30px;
+				height: 30px;
+				background: var(--navy);
+				border-radius: 7px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: #fff;
+				font-size: 0.7rem;
+				font-weight: 900;
+				box-shadow: 0 2px 6px rgba(26, 58, 92, 0.35);
+			}
+			.step-tabs {
+				display: flex;
+			}
+			.step-tab {
+				padding: 0 20px;
+				height: 56px;
+				font-size: 0.82rem;
+				font-weight: 500;
+				color: #94a3b8;
+				cursor: pointer;
+				border-bottom: 2px solid transparent;
+				transition: all 0.15s;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				white-space: nowrap;
+			}
+			.step-tab.active {
+				color: var(--navy);
+				border-bottom-color: var(--navy);
+				font-weight: 600;
+			}
+			.step-tab.done {
+				color: var(--green);
+			}
+			.tab-n {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				font-size: 0.68rem;
+				font-weight: 700;
+				background: #e5e7eb;
+				color: #94a3b8;
+			}
+			.step-tab.active .tab-n {
+				background: var(--navy);
+				color: #fff;
+			}
+			.step-tab.done .tab-n {
+				background: var(--green);
+				color: #fff;
+			}
+			.topnav-links {
+				margin-left: auto;
+				display: flex;
+				gap: 4px;
+				align-items: center;
+			}
+			.topnav-links a {
+				font-size: 0.75rem;
+				color: var(--muted);
+				text-decoration: none;
+				padding: 5px 12px;
+				border-radius: 20px;
+				font-weight: 500;
+				border: 1px solid transparent;
+			}
+			.topnav-links a:hover {
+				background: #f1f5f9;
+				color: var(--navy);
+				border-color: var(--border);
+			}
+			.topnav-links a.active {
+				background: var(--navy);
+				color: #fff;
+				font-weight: 600;
+				border-color: var(--navy);
+			}
+			.page {
+				max-width: 890px;
+				margin: 0 auto;
+				padding: 48px 24px 80px;
+			}
+			.step-panel {
+				display: none;
+			}
+			.step-panel.active {
+				display: block;
+			}
+			.hero {
+				margin-bottom: 40px;
+			}
+			.hero h1 {
+				font-size: 2.4rem;
+				font-weight: 900;
+				line-height: 1.15;
+				letter-spacing: -0.04em;
+			}
+			.hero p {
+				font-size: 0.95rem;
+				color: var(--muted);
+				margin-top: 10px;
+			}
+			.step-heading {
+				font-size: 1.05rem;
+				font-weight: 700;
+				margin-bottom: 24px;
+				padding-bottom: 14px;
+				border-bottom: 1.5px solid var(--border);
+			}
+			.sec-label {
+				font-size: 0.72rem;
+				font-weight: 700;
+				color: var(--muted);
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				margin: 20px 0 10px;
+			}
+			.fg {
+				display: grid;
+				gap: 16px;
+				margin-bottom: 16px;
+			}
+			.fg-2 {
+				grid-template-columns: 1fr 1fr;
+			}
+			.fg-3 {
+				grid-template-columns: 1fr 1fr 1fr;
+			}
+			.fg-4 {
+				grid-template-columns: 1fr 1fr 1fr 1fr;
+			}
+			@media (max-width: 640px) {
+				.fg-3,
+				.fg-4 {
+					grid-template-columns: 1fr 1fr;
+				}
+				.fg-2 {
+					grid-template-columns: 1fr;
+				}
+			}
+			@media (max-width: 480px) {
+				.fg-3,
+				.fg-4,
+				.fg-2 {
+					grid-template-columns: 1fr;
+				}
+			}
+			.field {
+				display: flex;
+				flex-direction: column;
+				gap: 5px;
+			}
+			.field label {
+				font-size: 0.72rem;
+				font-weight: 700;
+				color: var(--muted);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+			.field label .req {
+				color: var(--red);
+			}
+			.field input,
+			.field textarea,
+			.field select {
+				padding: 10px 13px;
+				border: 1.5px solid var(--border);
+				border-radius: 9px;
+				font-size: 0.88rem;
+				color: var(--text);
+				background: var(--bg);
+				outline: none;
+				font-family: inherit;
+			}
+			.field input:focus,
+			.field textarea:focus,
+			.field select:focus {
+				border-color: var(--navy);
+				background: #fff;
+				box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.07);
+			}
+			.field textarea {
+				resize: vertical;
+				min-height: 72px;
+			}
+			.ro {
+				background: #eef4fb;
+				color: var(--navy);
+				font-weight: 700;
+				cursor: not-allowed;
+			}
+			.action-row {
+				margin-top: 32px;
+				display: flex;
+				gap: 12px;
+			}
+			.btn-primary {
+				flex: 1;
+				padding: 14px 24px;
+				background: linear-gradient(135deg, var(--navy) 0%, #1e4a7a 100%);
+				color: #fff;
+				border: none;
+				border-radius: 10px;
+				font-size: 0.92rem;
+				font-weight: 700;
+				cursor: pointer;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 8px;
+				box-shadow: 0 2px 10px rgba(26, 58, 92, 0.32);
+			}
+			.btn-primary:hover {
+				background: linear-gradient(135deg, var(--navy2) 0%, var(--navy) 100%);
+				transform: translateY(-1px);
+			}
+			.btn-primary:disabled {
+				background: #94a3b8;
+				cursor: not-allowed;
+				transform: none;
+			}
+			.btn-outline {
+				padding: 14px 24px;
+				background: #fff;
+				color: var(--navy);
+				border: 1.5px solid #cbd5e1;
+				border-radius: 10px;
+				font-size: 0.92rem;
+				font-weight: 600;
+				cursor: pointer;
+			}
+			.btn-outline:hover {
+				background: #f8fafc;
+				border-color: var(--navy);
+			}
+			.alert-error {
+				background: #fef2f2;
+				border: 1px solid #fecaca;
+				color: var(--red);
+				padding: 12px 16px;
+				border-radius: 8px;
+				font-size: 0.85rem;
+				margin-bottom: 20px;
+				display: none;
+				white-space: pre-wrap;
+			}
+			/* BOM table */
+			.bom-wrap {
+				border: 1px solid var(--border);
+				border-radius: 12px;
+				overflow: hidden;
+				margin-bottom: 20px;
+			}
+			table.bom {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.82rem;
+			}
+			table.bom th {
+				background: #f8fafc;
+				padding: 9px 10px;
+				text-align: left;
+				font-weight: 600;
+				color: #475569;
+				border-bottom: 1.5px solid var(--border);
+				font-size: 0.7rem;
+				text-transform: uppercase;
+				letter-spacing: 0.06em;
+			}
+			table.bom td {
+				padding: 8px 10px;
+				border-bottom: 1px solid #f1f5f9;
+			}
+			table.bom tr:last-child td {
+				border-bottom: none;
+			}
+			table.bom .r {
+				text-align: right;
+			}
+			table.bom tr.sec-row td {
+				background: #eef2f7;
+				font-weight: 800;
+				font-size: 0.7rem;
+				text-transform: uppercase;
+				letter-spacing: 0.04em;
+				color: var(--navy);
+				padding: 6px 12px;
+			}
+			table.bom tr.sub-row td {
+				background: #f8fafc;
+				font-weight: 700;
+				font-size: 0.8rem;
+			}
+			.bom-footer {
+				background: #f8fafc;
+				padding: 14px 20px;
+				border-top: 1.5px solid var(--border);
+			}
+			.bom-footer table {
+				width: 100%;
+				max-width: 320px;
+				margin-left: auto;
+				font-size: 0.88rem;
+				border-collapse: collapse;
+			}
+			.bom-footer td {
+				padding: 5px 0;
+			}
+			.bom-footer td:last-child {
+				text-align: right;
+				font-weight: 600;
+			}
+			.bom-footer tr.tot td {
+				border-top: 2px solid var(--navy);
+				padding-top: 9px;
+				font-size: 1rem;
+				color: var(--navy);
+				font-weight: 800;
+			}
+			/* Adjustments panel */
+			.adj-panel {
+				padding: 16px 18px;
+				border: 1px solid var(--border);
+				border-radius: 10px;
+				background: #f8fafc;
+				margin-top: 20px;
+			}
+			.adj-panel .adj-title {
+				font-weight: 600;
+				color: var(--navy);
+				margin-bottom: 12px;
+				font-size: 0.8rem;
+				letter-spacing: 0.04em;
+				text-transform: uppercase;
+			}
+			.adj-checks {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px 22px;
+				margin-bottom: 14px;
+			}
+			.adj-checks label {
+				font-size: 0.88rem;
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				cursor: pointer;
+			}
+			.adj-checks input[type="number"] {
+				width: 64px;
+				padding: 4px 6px;
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				font: inherit;
+				text-align: center;
+			}
+			/* Cost summary */
+			table.cs {
+				width: 100%;
+				font-size: 0.9rem;
+				border-collapse: collapse;
+			}
+			table.cs td {
+				padding: 3px 0;
+				color: #64748b;
+			}
+			table.cs td:last-child {
+				text-align: right;
+			}
+			table.cs tr.cs-tot td {
+				border-top: 1px solid var(--border);
+				padding-top: 7px;
+				font-weight: 700;
+				color: var(--navy);
+				font-size: 1.05rem;
+			}
+			/* Cost banner */
+			.cost-banner {
+				display: none;
+				background: linear-gradient(
+					135deg,
+					var(--navy2) 0%,
+					var(--navy) 55%,
+					#1e4a7a 100%
+				);
+				color: #fff;
+				border-radius: 14px;
+				padding: 22px 30px;
+				margin-bottom: 28px;
+				align-items: center;
+				justify-content: space-between;
+				box-shadow: 0 8px 32px rgba(15, 39, 68, 0.38);
+			}
+			.cost-banner.visible {
+				display: flex;
+			}
+			.banner-label {
+				font-size: 0.7rem;
+				opacity: 0.6;
+				text-transform: uppercase;
+				letter-spacing: 0.6px;
+				margin-bottom: 4px;
+				font-weight: 600;
+			}
+			.banner-big {
+				font-size: 1.9rem;
+				font-weight: 900;
+				letter-spacing: -0.04em;
+			}
+			.quote-result {
+				display: none;
+				background: #f0fdf4;
+				border: 1.5px solid #bbf7d0;
+				border-radius: 10px;
+				padding: 20px 24px;
+				margin-top: 20px;
+			}
+			.quote-result h4 {
+				font-size: 0.95rem;
+				font-weight: 700;
+				color: #15803d;
+				margin-bottom: 12px;
+			}
+			.dl-btn {
+				display: inline-block;
+				margin-top: 12px;
+				padding: 10px 20px;
+				background: #15803d;
+				color: #fff;
+				text-decoration: none;
+				border-radius: 8px;
+				font-size: 0.85rem;
+				font-weight: 600;
+				cursor: pointer;
+				border: none;
+			}
+			.dl-btn:hover {
+				background: #166534;
+			}
+			/* T&C table */
+			#tnc-table {
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				overflow: hidden;
+			}
+			#tnc-table td {
+				padding: 10px 12px;
+				vertical-align: middle;
+				border-top: 1px solid var(--border);
+			}
+			#tnc-table tr:first-child td {
+				border-top: none;
+			}
+			#tnc-table td.tech-lbl {
+				width: 30%;
+				background: #f8fafc;
+				font-weight: 600;
+			}
+			#tnc-table input[type="text"],
+			#tnc-table select,
+			#tnc-table textarea {
+				width: 100%;
+				box-sizing: border-box;
+				padding: 8px 10px;
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				font-family: inherit;
+				font-size: 0.9rem;
+				background: #fff;
+			}
+			#tnc-table textarea {
+				resize: vertical;
+				min-height: 48px;
+			}
+			#tnc-table input:focus,
+			#tnc-table select:focus,
+			#tnc-table textarea:focus {
+				outline: none;
+				border-color: var(--navy);
+				box-shadow: 0 0 0 2px rgba(31, 58, 95, 0.12);
+			}
+			/* Inline editable BOM qty / basic */
+			.editable-cell {
+				background: transparent;
+				border: none;
+				width: 100%;
+				font: inherit;
+				text-align: right;
+				color: var(--text);
+				padding: 2px 0;
+			}
+			.editable-cell:focus {
+				background: #fffbeb;
+				outline: 1px solid var(--navy);
+				border-radius: 3px;
+			}
+			@media (max-width: 640px) {
+				.topnav {
+					padding: 0 16px;
+				}
+				.page {
+					padding: 24px 14px 60px;
+				}
+				.action-row {
+					flex-direction: column-reverse;
+				}
+				.btn-primary,
+				.btn-outline {
+					width: 100%;
+				}
+			}
+		</style>
+		<style>
+			/*bw-grayscale*/
+			html {
+				filter: grayscale(1);
+			}
+		</style>
+	</head>
+	<body>
+		<nav class="topnav">
+			<div class="topnav-brand">
+				<div class="brand-mark">EN</div>
+				ENCON
+			</div>
+			<div class="step-tabs">
+				<div class="step-tab active" id="tab-1" onclick="goStep(1)">
+					<span class="tab-n">1</span>Customer Details
+				</div>
+				<div class="step-tab" id="tab-2" onclick="goStep(2)">
+					<span class="tab-n">2</span>BOM &amp; Pricing
+				</div>
+				<div class="step-tab" id="tab-3" onclick="goStep(3)">
+					<span class="tab-n">3</span>Terms &amp; Conditions
+				</div>
+				<div class="step-tab" id="tab-4" onclick="goStep(4)">
+					<span class="tab-n">4</span>Generate Offer
+				</div>
+			</div>
+			<div class="topnav-links">
+				<a href="/equipment-offer">Equipment</a>
+				<a href="/pricelist">Pricelist</a>
+				<a href="/">Dashboard</a>
+			</div>
+		</nav>
+
+		<div class="page">
+			<!-- ══ STEP 1: Customer Details ══ -->
+			<div class="step-panel active" id="panel-1">
+				<div class="hero">
+					<h1>SEN Preheater Offer Generator</h1>
+					<p>
+						Stand-alone SEN (Submerged Entry Nozzle) Preheater offer —
+						compressed air &amp; NG/LPG lines + ENCON-built items. Temp 1200 °C,
+						preheat time 60 min.
+					</p>
+				</div>
+				<div class="step-heading">Step 1 — Customer &amp; Enquiry Details</div>
+
+				<div class="sec-label">Contact Person</div>
+				<div class="fg fg-3">
+					<div class="field">
+						<label>Full Name <span class="req">*</span></label>
+						<div style="display: flex; gap: 6px">
+							<select id="c-salutation" style="flex: 0 0 80px">
+								<option value="">—</option>
+								<option value="Mr." selected>Mr.</option>
+								<option value="Mrs.">Mrs.</option>
+								<option value="Miss">Miss</option>
+								<option value="Dr.">Dr.</option>
+							</select>
+							<input
+								id="c-name"
+								type="text"
+								placeholder="Full Name"
+								style="flex: 1" />
+						</div>
+					</div>
+					<div class="field">
+						<label>Email Address <span class="req">*</span></label>
+						<input id="c-email" type="email" placeholder="name@company.com" />
+					</div>
+					<div class="field">
+						<label>Phone / Mobile <span class="req">*</span></label>
+						<input id="c-phone" type="tel" placeholder="+91 98765 43210" />
+					</div>
+				</div>
+
+				<div class="sec-label">Company</div>
+				<div class="fg fg-2">
+					<div class="field">
+						<label>Company Name <span class="req">*</span></label>
+						<input id="c-company" type="text" placeholder="ABC Steel Ltd" />
+					</div>
+					<div class="field">
+						<label>Designation / Department</label>
+						<input id="c-designation" type="text" />
+					</div>
+				</div>
+				<div class="fg fg-2">
+					<div class="field">
+						<label>Address</label> <textarea id="c-address"></textarea>
+					</div>
+					<div class="fg fg-2" style="margin-bottom: 0; align-content: start">
+						<div class="field"><label>City</label><input id="c-city" /></div>
+						<div class="field"><label>State</label><input id="c-state" /></div>
+						<div class="field"><label>PIN Code</label><input id="c-pin" /></div>
+						<div class="field"><label>GSTIN</label><input id="c-gstin" /></div>
+					</div>
+				</div>
+
+				<div class="sec-label">Enquiry</div>
+				<div class="fg fg-4">
+					<div class="field">
+						<label
+							>Enquiry / Ref No.
+							<small style="color: #94a3b8; font-weight: 400"
+								>(auto)</small
+							></label
+						>
+						<input
+							id="c-ref"
+							type="text"
+							class="ro"
+							readonly
+							placeholder="ENCON.04026.XXX/FBD/JR DT.DD/MM/YYYY" />
+					</div>
+					<div class="field">
+						<label>Location</label>
+						<select id="c-location">
+							<option value="Faridabad" selected>Faridabad</option>
+							<option value="Goa">Goa</option>
+							<option value="Vadodara">Vadodara</option>
+						</select>
+					</div>
+					<div class="field" style="grid-column: span 2">
+						<label>Subject</label>
+						<input id="c-subject" value="Offer for ENCON SEN Preheater" />
+					</div>
+				</div>
+
+				<div class="fg fg-2">
+					<div class="field">
+						<label>Marketing Person</label>
+						<div style="display: flex; gap: 6px">
+							<select id="c-marketing-salutation" style="flex: 0 0 80px">
+								<option value="">—</option>
+								<option value="Mr.">Mr.</option>
+								<option value="Mrs." selected>Mrs.</option>
+								<option value="Miss">Miss</option>
+								<option value="Dr.">Dr.</option>
+							</select>
+							<input id="c-marketing" style="flex: 1" />
+						</div>
+					</div>
+					<div class="field">
+						<label>Technical Person</label>
+						<div style="display: flex; gap: 6px">
+							<select id="c-technical-salutation" style="flex: 0 0 80px">
+								<option value="">—</option>
+								<option value="Mr." selected>Mr.</option>
+								<option value="Mrs.">Mrs.</option>
+								<option value="Miss">Miss</option>
+								<option value="Dr.">Dr.</option>
+							</select>
+							<input id="c-technical" style="flex: 1" />
+						</div>
+					</div>
+				</div>
+				<div class="fg fg-4">
+					<div class="field">
+						<label>Marketing Email</label><input id="c-marketing-email" />
+					</div>
+					<div class="field">
+						<label>Marketing Phone</label><input id="c-marketing-phone" />
+					</div>
+					<div class="field">
+						<label>Technical Email</label><input id="c-technical-email" />
+					</div>
+					<div class="field">
+						<label>Technical Phone</label><input id="c-technical-phone" />
+					</div>
+				</div>
+
+				<div class="action-row">
+					<button class="btn-primary" onclick="goStep(2)">
+						Continue to BOM &amp; Pricing
+						<svg
+							viewBox="0 0 24 24"
+							width="16"
+							height="16"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2">
+							<path d="M5 12h14M13 6l6 6-6 6" />
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<!-- ══ STEP 2: BOM & Pricing ══ -->
+			<div class="step-panel" id="panel-2">
+				<div class="step-heading">Step 2 — Bill of Materials &amp; Pricing</div>
+				<div class="alert-error" id="bom-error"></div>
+
+				<!-- Gas Line Selector -->
+				<div class="sec-label">Gas Line</div>
+				<div
+					style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap">
+					<button
+						id="btn-ng"
+						onclick="setGasLine('NG')"
+						style="
+							padding: 9px 22px;
+							border-radius: 8px;
+							border: 1.5px solid var(--navy);
+							background: var(--navy);
+							color: #fff;
+							font: 600 0.84rem/1 inherit;
+							cursor: pointer;
+						">
+						NG Line
+					</button>
+					<button
+						id="btn-lpg"
+						onclick="setGasLine('LPG')"
+						style="
+							padding: 9px 22px;
+							border-radius: 8px;
+							border: 1.5px solid var(--border);
+							background: var(--bg);
+							color: var(--text);
+							font: 600 0.84rem/1 inherit;
+							cursor: pointer;
+						">
+						LPG Line
+					</button>
+				</div>
+
+				<!-- ── Top Parameters ── -->
+				<div class="sec-label">Key Parameters</div>
+				<div
+					style="
+						display: grid;
+						grid-template-columns: 1fr 1fr 1fr;
+						gap: 14px;
+						margin-bottom: 20px;
+					">
+					<div class="field">
+						<label
+							>Pilot Burner Qty
+							<span
+								style="
+									color: var(--muted);
+									font-weight: 400;
+									text-transform: none;
+								"
+								>(sets)</span
+							></label
+						>
+						<input
+							id="param-pilot-qty"
+							type="number"
+							min="1"
+							step="1"
+							value="2"
+							oninput="applyParams()"
+							placeholder="e.g. 2" />
+					</div>
+					<div class="field">
+						<label
+							>Fabrication &amp; Trolley Weight
+							<span
+								style="
+									color: var(--muted);
+									font-weight: 400;
+									text-transform: none;
+								"
+								>(kg)</span
+							></label
+						>
+						<input
+							id="param-fab-kg"
+							type="number"
+							min="0"
+							step="1"
+							value="50"
+							oninput="applyParams()"
+							placeholder="e.g. 50" />
+					</div>
+					<div class="field">
+						<label
+							>Air-Gas Pipeline Weight
+							<span
+								style="
+									color: var(--muted);
+									font-weight: 400;
+									text-transform: none;
+								"
+								>(kg)</span
+							></label
+						>
+						<input
+							id="param-pipe-kg"
+							type="number"
+							min="0"
+							step="1"
+							value="40"
+							oninput="applyParams()"
+							placeholder="e.g. 40" />
+					</div>
+				</div>
+
+				<!-- BOM Table -->
+				<div
+					id="bom-loading"
+					style="color: var(--muted); font-size: 0.88rem; padding: 16px 0">
+					Loading BOM from pricelist…
+				</div>
+				<div id="bom-container" style="display: none">
+					<div class="bom-wrap">
+						<table class="bom">
+							<thead>
+								<tr>
+									<th>Sl</th>
+									<th>Media</th>
+									<th>Item Name</th>
+									<th>Ref</th>
+									<th class="r">Qty</th>
+									<th>Unit</th>
+									<th>Make</th>
+									<th class="r">Basic ₹</th>
+									<th class="r">Total ₹</th>
+								</tr>
+							</thead>
+							<tbody id="bom-tbody"></tbody>
+						</table>
+						<div class="bom-footer">
+							<table>
+								<tr>
+									<td style="color: var(--muted)">Bought-out subtotal</td>
+									<td id="ft-bought">—</td>
+								</tr>
+								<tr>
+									<td style="color: var(--muted)">× Markup</td>
+									<td>
+										<input
+											id="markup"
+											type="number"
+											step="0.05"
+											min="1"
+											value="1.8"
+											oninput="recalcBom()"
+											style="
+												width: 64px;
+												padding: 3px 6px;
+												border: 1px solid var(--border);
+												border-radius: 6px;
+												font: inherit;
+												text-align: center;
+											" />
+									</td>
+								</tr>
+								<tr>
+									<td style="color: var(--muted)">Marked-up bought-out</td>
+									<td id="ft-bought-mk">—</td>
+								</tr>
+								<tr>
+									<td style="color: var(--muted)">ENCON items (at cost)</td>
+									<td id="ft-encon">—</td>
+								</tr>
+								<tr class="tot">
+									<td>Unit Sell Price</td>
+									<td id="ft-unit-sell">—</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+
+					<!-- Commercial adjustments -->
+					<div class="adj-panel">
+						<div class="adj-title">Commercial Adjustments</div>
+						<div class="adj-checks">
+							<label
+								>Packaging &amp; Forwarding
+								<input
+									id="pf-pct"
+									type="number"
+									step="0.5"
+									min="0"
+									value="5"
+									oninput="recalcTotal()" />
+								%
+							</label>
+							<label
+								>Designing
+								<input
+									id="design-pct"
+									type="number"
+									step="0.5"
+									min="0"
+									value="10"
+									oninput="recalcTotal()" />
+								%
+							</label>
+							<label
+								>Negotiation
+								<input
+									id="neg-pct"
+									type="number"
+									step="0.5"
+									min="0"
+									value="0"
+									oninput="recalcTotal()" />
+								%
+							</label>
+							<label
+								>Quantity
+								<input
+									id="qty-units"
+									type="number"
+									min="1"
+									step="1"
+									value="1"
+									oninput="recalcTotal()"
+									style="width: 56px" />
+								sets
+							</label>
+							<label
+								>Transport ₹
+								<input
+									id="transport-amt"
+									type="number"
+									step="500"
+									min="0"
+									value="0"
+									oninput="recalcTotal()"
+									style="width: 88px" />
+							</label>
+						</div>
+						<table class="cs">
+							<tr>
+								<td>Unit sell price</td>
+								<td id="cs-unit">—</td>
+							</tr>
+							<tr>
+								<td>× Quantity</td>
+								<td id="cs-qty">—</td>
+							</tr>
+							<tr>
+								<td>Subtotal</td>
+								<td id="cs-subtotal">—</td>
+							</tr>
+							<tr>
+								<td>+ P&amp;F</td>
+								<td id="cs-pf">—</td>
+							</tr>
+							<tr>
+								<td>+ Designing</td>
+								<td id="cs-design">—</td>
+							</tr>
+							<tr>
+								<td>− Negotiation</td>
+								<td id="cs-neg">—</td>
+							</tr>
+							<tr>
+								<td>+ Transport</td>
+								<td id="cs-trans">—</td>
+							</tr>
+							<tr class="cs-tot">
+								<td>Final Total</td>
+								<td id="cs-total">—</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+
+				<div class="action-row" style="margin-top: 28px">
+					<button class="btn-outline" onclick="goStep(1)">Back</button>
+					<button class="btn-primary" onclick="goStep(3)">
+						Continue to T&amp;Cs
+						<svg
+							viewBox="0 0 24 24"
+							width="16"
+							height="16"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2">
+							<path d="M5 12h14M13 6l6 6-6 6" />
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<!-- ══ STEP 3: Terms & Conditions ══ -->
+			<div class="step-panel" id="panel-3">
+				<div class="step-heading">
+					Step 3 — Terms &amp; Conditions (Annexure)
+				</div>
+				<p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 14px">
+					These values appear verbatim in the T&amp;C annexure. Edit as needed.
+				</p>
+				<table
+					id="tnc-table"
+					style="width: 100%; border-collapse: collapse; margin-bottom: 28px">
+					<tbody>
+						<tr>
+							<td class="tech-lbl">Prices</td>
+							<td>
+								<select id="tnc_prices">
+									<option value="EX Bhagola (Ex-Works)" selected>
+										EX Bhagola (Ex-Works)
+									</option>
+									<option value="FOR (Free on Road / Free on Rail)">
+										FOR (Free on Road / Free on Rail)
+									</option>
+									<option value="FOB (Free On Board)">
+										FOB (Free On Board)
+									</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Delivery</td>
+							<td>
+								<textarea id="tnc_delivery" rows="2">
+6 – 8 weeks from our ENCON works, from the date of receipt of advance or drawing approval, whichever is later.</textarea
+								>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">GST</td>
+							<td>
+								<select id="tnc_gst">
+									<option value="18% extra." selected>18% extra.</option>
+									<option value="28% extra.">28% extra.</option>
+									<option value="12% extra.">12% extra.</option>
+									<option value="5% extra.">5% extra.</option>
+									<option value="Inclusive">Inclusive</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">HSN Code</td>
+							<td><input id="tnc_hsn_code" type="text" value="84161000" /></td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">PAN / GST No.</td>
+							<td>
+								<input
+									id="tnc_pan_gst"
+									type="text"
+									value="PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV" />
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Terms of Payment</td>
+							<td>
+								<textarea id="tnc_payment_terms" rows="2">
+30% advance with the purchase order
+70% against proforma invoice prior to dispatch</textarea
+								>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Packing &amp; Forwarding</td>
+							<td>
+								<select id="tnc_packing_forwarding">
+									<option value="4% and 2% respectively." selected>
+										4% and 2% respectively.
+									</option>
+									<option value="In ENCON's scope.">In ENCON's scope.</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Freight Charges</td>
+							<td>
+								<select id="tnc_freight">
+									<option value="In client's scope." selected>
+										In client's scope.
+									</option>
+									<option value="In ENCON's scope.">In ENCON's scope.</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Transit Insurance</td>
+							<td>
+								<select id="tnc_transit_insurance">
+									<option value="To be arranged by the client." selected>
+										To be arranged by the client.
+									</option>
+									<option value="In ENCON's scope.">In ENCON's scope.</option>
+								</select>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Validity</td>
+							<td>
+								<input
+									id="tnc_validity"
+									type="text"
+									value="45 days from the date of our offer." />
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Inspection</td>
+							<td>
+								<textarea id="tnc_inspection" rows="2">
+If required, materials can be inspected at our works before dispatch, at the client's cost and with prior intimation.</textarea
+								>
+							</td>
+						</tr>
+						<tr>
+							<td class="tech-lbl">Guarantee</td>
+							<td>
+								<textarea id="tnc_guarantee" rows="2">
+Materials are guaranteed for 18 months from the date of dispatch, or 12 months from commissioning, whichever is earlier — against any manufacturing defects or poor workmanship.</textarea
+								>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<div class="action-row">
+					<button class="btn-outline" onclick="goStep(2)">Back</button>
+					<button class="btn-primary" onclick="goStep(4)">
+						Continue to Generate
+						<svg
+							viewBox="0 0 24 24"
+							width="16"
+							height="16"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2">
+							<path d="M5 12h14M13 6l6 6-6 6" />
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			<!-- ══ STEP 4: Generate Offer ══ -->
+			<div class="step-panel" id="panel-4">
+				<div class="step-heading">Step 4 — Generate Offer</div>
+				<div class="alert-error" id="gen-error"></div>
+				<div class="cost-banner" id="cost-banner">
+					<div>
+						<div class="banner-label">SEN Preheater Price</div>
+						<div class="banner-big" id="banner-price">—</div>
+					</div>
+					<div>
+						<div class="banner-label">Configuration</div>
+						<div
+							class="banner-big"
+							id="banner-config"
+							style="font-size: 1.1rem">
+							—
+						</div>
+					</div>
+				</div>
+				<p style="color: var(--muted); font-size: 0.9rem">
+					Click <b>Generate Offer</b> to produce a Word document with the full
+					BOM, price schedule and commercial terms.
+				</p>
+				<div class="action-row" id="action-row-gen">
+					<button class="btn-outline" onclick="goStep(3)">Back</button>
+					<button
+						class="btn-outline"
+						id="xlsx-btn"
+						onclick="downloadCostExcel()">
+						Download Excel (Cost Sheet)
+					</button>
+					<button class="btn-primary" id="gen-btn" onclick="generateOffer()">
+						<span class="btn-txt">Generate Offer</span>
+					</button>
+				</div>
+				<div class="quote-result" id="quote-result">
+					<h4>Offer generated successfully</h4>
+					<div style="font-size: 0.88rem; color: #166534" id="quote-meta">
+						—
+					</div>
+					<a id="dl-link" class="dl-btn" href="#" target="_blank" rel="noopener"
+						>Download .docx</a
+					>
+					<a
+						id="preview-link"
+						class="dl-btn"
+						href="#"
+						target="_blank"
+						rel="noopener"
+						style="background: #334155; margin-left: 8px"
+						>Preview Offer</a
+					>
+				</div>
+			</div>
+		</div>
+		<!-- /page -->
+
+		<script>
+			/* ── State ────────────────────────────────────────────────────────────────── */
+			let _rows = []; // raw BOM rows from API
+			let _gasLine = "NG"; // 'NG' | 'LPG'
+			let _refDirty = false;
+
+			/* ── Navigation ──────────────────────────────────────────────────────────── */
+			function goStep(n) {
+				for (let i = 1; i <= 4; i++) {
+					document
+						.getElementById(`panel-${i}`)
+						.classList.toggle("active", i === n);
+					const tab = document.getElementById(`tab-${i}`);
+					tab.classList.toggle("active", i === n);
+					tab.classList.toggle("done", i < n);
+				}
+				if (n === 2 && _rows.length === 0) _loadBom();
+				if (n >= 2) _generateRef();
+				window.scrollTo({ top: 0, behavior: "smooth" });
+			}
+
+			/* ── Auto-ref ─────────────────────────────────────────────────────────────── */
+			function _generateRef() {
+				const ref = document.getElementById("c-ref");
+				if (_refDirty && ref.value) return;
+				const tech = (document.getElementById("c-technical") || {}).value || "";
+				const loc = (document.getElementById("c-location") || {}).value || "";
+				fetch(
+					"/api/next-quote-ref?technical_person=" +
+						encodeURIComponent(tech) +
+						"&location=" +
+						encodeURIComponent(loc),
+				)
+					.then((r) => r.json())
+					.then((d) => {
+						if ((!_refDirty || !ref.value) && d && d.ref) ref.value = d.ref;
+					})
+					.catch(() => {});
+			}
+
+			/* ── Gas line toggle ──────────────────────────────────────────────────────── */
+			function setGasLine(gl) {
+				_gasLine = gl;
+				["NG", "LPG"].forEach((g) => {
+					const b = document.getElementById("btn-" + g.toLowerCase());
+					if (!b) return;
+					const sel = g === gl;
+					b.style.background = sel ? "var(--navy)" : "var(--bg)";
+					b.style.color = sel ? "#fff" : "var(--text)";
+					b.style.borderColor = sel ? "var(--navy)" : "var(--border)";
+				});
+				_renderBom();
+			}
+			/* ── Apply top-level params to BOM rows ─────────────────────────────────── */
+			function applyParams() {
+				const pilotQty =
+					parseFloat(document.getElementById("param-pilot-qty").value) || 2;
+				const fabKg =
+					parseFloat(document.getElementById("param-fab-kg").value) || 0;
+				const pipeKg =
+					parseFloat(document.getElementById("param-pipe-kg").value) || 0;
+				_rows.forEach((r) => {
+					const item = (r.item || "").toLowerCase();
+					if (item.includes("pilot burner")) r._qty = pilotQty;
+					if (item.includes("fabrication")) r._qty = fabKg;
+					if (
+						item.includes("air-gas pipeline") ||
+						item.includes("air gas pipeline")
+					)
+						r._qty = pipeKg;
+				});
+				_renderBom();
+			}
+
+			async function _loadBom() {
+				const errEl = document.getElementById("bom-error");
+				errEl.style.display = "none";
+				document.getElementById("bom-loading").style.display = "block";
+				document.getElementById("bom-container").style.display = "none";
+				try {
+					const r = await fetch("/api/sen-stove/bom");
+					if (!r.ok) throw new Error("HTTP " + r.status);
+					const d = await r.json();
+					if (d.error) throw new Error(d.error);
+					_rows = d.rows || [];
+					document.getElementById("markup").value = d.markup || 1.8;
+					document.getElementById("bom-loading").style.display = "none";
+					document.getElementById("bom-container").style.display = "block";
+					applyParams(); // apply top-level param inputs before first render
+				} catch (e) {
+					document.getElementById("bom-loading").style.display = "none";
+					errEl.textContent = "Failed to load BOM: " + e.message;
+					errEl.style.display = "block";
+				}
+			}
+
+			/* ── BOM render ───────────────────────────────────────────────────────────── */
+			// The DB stores gas-line rows as "NG Line". When LPG is selected we show
+			// the same components (same spec, same price) but relabelled as "LPG Line".
+			// Compressed Air, MISC and ENCON items always appear regardless of selection.
+
+			function _visibleRows() {
+				// All rows are always visible — gas line selection only relabels the display.
+				return _rows;
+			}
+
+			function _displayMedia(r) {
+				const m = r.media || "";
+				if (_gasLine === "LPG" && m.toLowerCase() === "ng line")
+					return "LPG Line";
+				return m;
+			}
+
+			function _renderBom() {
+				const rows = _visibleRows();
+				let html = "",
+					sno = 0;
+				let curSection = null;
+
+				rows.forEach((r, idx) => {
+					const sec =
+						r.section === "encon" ? "ENCON Items" : "Bought-out Items";
+					if (sec !== curSection) {
+						curSection = sec;
+						html += `<tr class="sec-row"><td colspan="9">${sec}</td></tr>`;
+					}
+					sno++;
+					const qty = r._qty != null ? r._qty : r.qty;
+					const basic = r._basic != null ? r._basic : r.basic;
+					html += `<tr>
+      <td>${sno}</td>
+      <td>${_displayMedia(r)}</td>
+      <td>${r.item || ""}</td>
+      <td>${r.ref || ""}</td>
+      <td class="r"><input class="editable-cell" type="number" min="0" step="0.5"
+          value="${qty}" oninput="onCellEdit(${idx},'qty',this.value)"
+          style="width:52px;text-align:right;background:transparent;border:none;font:inherit;"/></td>
+      <td>${r.unit || ""}</td>
+      <td>${r.make || ""}</td>
+      <td class="r"><input class="editable-cell" type="number" min="0" step="100"
+          value="${Math.round(basic)}" oninput="onCellEdit(${idx},'basic',this.value)"
+          style="width:80px;text-align:right;background:transparent;border:none;font:inherit;"/></td>
+      <td class="r" id="row-total-${idx}">${inr(qty * basic)}</td>
+    </tr>`;
+				});
+
+				document.getElementById("bom-tbody").innerHTML = html;
+				recalcBom();
+			}
+
+			function onCellEdit(idx, field, val) {
+				_rows[idx]["_" + field] = parseFloat(val) || 0;
+				const qty = _rows[idx]._qty != null ? _rows[idx]._qty : _rows[idx].qty;
+				const basic =
+					_rows[idx]._basic != null ? _rows[idx]._basic : _rows[idx].basic;
+				const tot = document.getElementById("row-total-" + idx);
+				if (tot) tot.textContent = inr(qty * basic);
+				// Sync param inputs if a weight/qty row was edited directly
+				const item = (_rows[idx].item || "").toLowerCase();
+				if (field === "qty") {
+					if (item.includes("pilot burner"))
+						document.getElementById("param-pilot-qty").value = qty;
+					if (item.includes("fabrication"))
+						document.getElementById("param-fab-kg").value = qty;
+					if (
+						item.includes("air-gas pipeline") ||
+						item.includes("air gas pipeline")
+					)
+						document.getElementById("param-pipe-kg").value = qty;
+				}
+				recalcBom();
+			}
+
+			/* ── Totals ───────────────────────────────────────────────────────────────── */
+			const fmt = (v) => "₹ " + Math.round(v).toLocaleString("en-IN");
+			const inr = (v) => Math.round(v || 0).toLocaleString("en-IN");
+
+			function recalcBom() {
+				// Always sum all rows — LPG just relabels, not filters
+				let bSum = 0,
+					eSum = 0;
+				_rows.forEach((r) => {
+					const qty = r._qty != null ? r._qty : r.qty;
+					const basic = r._basic != null ? r._basic : r.basic;
+					const tot = qty * basic;
+					if (r.section === "encon") eSum += tot;
+					else bSum += tot;
+				});
+				const mk = parseFloat(document.getElementById("markup").value) || 1.8;
+				const unitSell = Math.round(bSum * mk + eSum);
+				document.getElementById("ft-bought").textContent = fmt(bSum);
+				document.getElementById("ft-bought-mk").textContent = fmt(bSum * mk);
+				document.getElementById("ft-encon").textContent = fmt(eSum);
+				document.getElementById("ft-unit-sell").textContent = fmt(unitSell);
+				recalcTotal(unitSell);
+			}
+
+			function recalcTotal(unitSell) {
+				if (unitSell == null) {
+					// read from footer
+					const txt =
+						(document.getElementById("ft-unit-sell") || {}).textContent || "";
+					unitSell = parseFloat(txt.replace(/[₹,\s]/g, "")) || 0;
+				}
+				const qty = Math.max(
+					1,
+					parseInt(document.getElementById("qty-units").value || "1", 10),
+				);
+				const pf = parseFloat(document.getElementById("pf-pct").value) || 0;
+				const des =
+					parseFloat(document.getElementById("design-pct").value) || 0;
+				const neg = parseFloat(document.getElementById("neg-pct").value) || 0;
+				const trn =
+					parseFloat(document.getElementById("transport-amt").value) || 0;
+				const sub = unitSell * qty;
+				const pfA = (sub * pf) / 100;
+				const desA = (sub * des) / 100;
+				const negA = (sub * neg) / 100;
+				let total = sub + pfA + desA - negA + trn;
+				if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+
+				const set = (id, v) => {
+					const e = document.getElementById(id);
+					if (e) e.textContent = v;
+				};
+				set("cs-unit", fmt(unitSell));
+				set("cs-qty", "× " + qty);
+				set("cs-subtotal", fmt(sub));
+				set("cs-pf", fmt(pfA));
+				set("cs-design", fmt(desA));
+				set("cs-neg", "− " + fmt(negA));
+				set("cs-trans", fmt(trn));
+				set("cs-total", fmt(total));
+			}
+
+			/* ── Customer payload helper ─────────────────────────────────────────────── */
+			function _customerPayload() {
+				const v = (id) => (document.getElementById(id) || {}).value || "";
+				return {
+					salutation: v("c-salutation"),
+					name: v("c-name"),
+					email: v("c-email"),
+					phone: v("c-phone"),
+					company: v("c-company"),
+					designation: v("c-designation"),
+					address: v("c-address"),
+					city: v("c-city"),
+					state: v("c-state"),
+					pin: v("c-pin"),
+					gstin: v("c-gstin"),
+					ref_no: v("c-ref"),
+					location: v("c-location"),
+					subject: v("c-subject"),
+					marketing_salutation: v("c-marketing-salutation"),
+					marketing: v("c-marketing"),
+					marketing_email: v("c-marketing-email"),
+					marketing_phone: v("c-marketing-phone"),
+					technical_salutation: v("c-technical-salutation"),
+					technical: v("c-technical"),
+					technical_email: v("c-technical-email"),
+					technical_phone: v("c-technical-phone"),
+					tnc_prices: v("tnc_prices"),
+					tnc_delivery: v("tnc_delivery"),
+					tnc_gst: v("tnc_gst"),
+					tnc_hsn_code: v("tnc_hsn_code"),
+					tnc_pan_gst: v("tnc_pan_gst"),
+					tnc_payment_terms: v("tnc_payment_terms"),
+					tnc_packing_forwarding: v("tnc_packing_forwarding"),
+					tnc_freight: v("tnc_freight"),
+					tnc_transit_insurance: v("tnc_transit_insurance"),
+					tnc_validity: v("tnc_validity"),
+					tnc_inspection: v("tnc_inspection"),
+					tnc_guarantee: v("tnc_guarantee"),
+				};
+			}
+
+			/* ── Download Excel ──────────────────────────────────────────────────────── */
+			async function downloadCostExcel() {
+				const errEl = document.getElementById("gen-error");
+				const btn = document.getElementById("xlsx-btn");
+				errEl.style.display = "none";
+				if (!_rows.length) {
+					errEl.textContent = "Please load the BOM first (Step 2).";
+					errEl.style.display = "block";
+					return;
+				}
+
+				let bSum = 0,
+					eSum = 0;
+				const bom = _rows.map((r) => {
+					const qty = r._qty != null ? r._qty : r.qty;
+					const basic = r._basic != null ? r._basic : r.basic;
+					const tot = qty * basic;
+					if (r.section === "encon") eSum += tot;
+					else bSum += tot;
+					return {
+						item: r.item,
+						qty,
+						unit_price: Math.round(basic),
+						total: Math.round(tot),
+					};
+				});
+				const mk = parseFloat(document.getElementById("markup").value) || 1.8;
+				const unitSell = Math.round(bSum * mk + eSum);
+				const qty = Math.max(
+					1,
+					parseInt(document.getElementById("qty-units").value || "1", 10),
+				);
+				const pf = parseFloat(document.getElementById("pf-pct").value) || 0;
+				const des =
+					parseFloat(document.getElementById("design-pct").value) || 0;
+				const neg = parseFloat(document.getElementById("neg-pct").value) || 0;
+				const trn =
+					parseFloat(document.getElementById("transport-amt").value) || 0;
+				const sub = unitSell * qty;
+				let total =
+					sub + (sub * pf) / 100 + (sub * des) / 100 - (sub * neg) / 100 + trn;
+				if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+
+				const cust = _customerPayload();
+				const payload = {
+					product: "SEN Preheater",
+					project_name: cust.subject || "",
+					company_name: cust.company || "",
+					bom,
+					summary: {
+						subtotal_label: "Bought-out (cost)",
+						subtotal: Math.round(bSum),
+						pf_pct: pf,
+						pf_amount: Math.round((sub * pf) / 100),
+						design_pct: des,
+						design_amount: Math.round((sub * des) / 100),
+						neg_pct: neg,
+						neg_amount: Math.round((sub * neg) / 100),
+						transport_amount: Math.round(trn),
+						final_total: Math.round(total),
+					},
+				};
+				const orig = btn.textContent;
+				btn.disabled = true;
+				btn.textContent = "Preparing…";
+				try {
+					const r = await fetch("/api/costing-excel", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(payload),
+					});
+					const j = await r.json();
+					if (!r.ok || j.error || !j.download_url)
+						throw new Error(j.error || `HTTP ${r.status}`);
+					const a = document.createElement("a");
+					a.href = j.download_url;
+					a.download = "";
+					document.body.appendChild(a);
+					a.click();
+					a.remove();
+				} catch (e) {
+					errEl.textContent = "Error: " + (e.message || e);
+					errEl.style.display = "block";
+				} finally {
+					btn.disabled = false;
+					btn.textContent = orig;
+				}
+			}
+
+			/* ── Generate Offer ──────────────────────────────────────────────────────── */
+			async function generateOffer() {
+				const errEl = document.getElementById("gen-error");
+				const btn = document.getElementById("gen-btn");
+				errEl.style.display = "none";
+				btn.disabled = true;
+				btn.querySelector(".btn-txt").textContent = "Generating…";
+
+				if (!_rows.length) {
+					errEl.textContent = "Please complete Step 2 (BOM & Pricing) first.";
+					errEl.style.display = "block";
+					btn.disabled = false;
+					btn.querySelector(".btn-txt").textContent = "Generate Offer";
+					return;
+				}
+				const vis = _rows;
+				let bSum = 0,
+					eSum = 0;
+				const bom = vis.map((r) => {
+					const qty = r._qty != null ? r._qty : r.qty;
+					const basic = r._basic != null ? r._basic : r.basic;
+					const tot = qty * basic;
+					if (r.section === "encon") eSum += tot;
+					else bSum += tot;
+					return {
+						section: r.section,
+						media: _displayMedia(r),
+						item: r.item,
+						ref: r.ref || "",
+						qty,
+						unit: r.unit || "",
+						make: r.make || "",
+						unit_price: Math.round(basic),
+						total: Math.round(tot),
+					};
+				});
+				const mk = parseFloat(document.getElementById("markup").value) || 1.8;
+				const unitSell = Math.round(bSum * mk + eSum);
+				const qty = Math.max(
+					1,
+					parseInt(document.getElementById("qty-units").value || "1", 10),
+				);
+				const pf = parseFloat(document.getElementById("pf-pct").value) || 0;
+				const des =
+					parseFloat(document.getElementById("design-pct").value) || 0;
+				const neg = parseFloat(document.getElementById("neg-pct").value) || 0;
+				const trn =
+					parseFloat(document.getElementById("transport-amt").value) || 0;
+				const sub = unitSell * qty;
+				let total =
+					sub + (sub * pf) / 100 + (sub * des) / 100 - (sub * neg) / 100 + trn;
+				if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
+
+				const payload = {
+					customer: _customerPayload(),
+					gas_line: _gasLine,
+					bom,
+					bought_sum: Math.round(bSum),
+					encon_sum: Math.round(eSum),
+					markup: mk,
+					unit_sell: unitSell,
+					qty,
+					pf_pct: pf,
+					design_pct: des,
+					neg_pct: neg,
+					transport_amt: trn,
+					final_total: Math.round(total),
+				};
+				try {
+					const r = await fetch("/api/generate-sen-preheater-quote", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify(payload),
+					});
+					const j = await r.json();
+					if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+					document.getElementById("banner-price").textContent =
+						"₹ " + Math.round(total).toLocaleString("en-IN");
+					document.getElementById("banner-config").textContent =
+						`${_gasLine} Line • ${qty} set${qty > 1 ? "s" : ""}`;
+					document.getElementById("cost-banner").classList.add("visible");
+					document.getElementById("quote-meta").textContent =
+						`${j.filename || ""} — total ₹ ${Math.round(total).toLocaleString("en-IN")}`;
+					document.getElementById("dl-link").href = j.download_url;
+					if (j.preview_url)
+						document.getElementById("preview-link").href = j.preview_url;
+					document.getElementById("quote-result").style.display = "block";
+					document.getElementById("action-row-gen").style.display = "none";
+					document.getElementById("tab-4").classList.add("done");
+				} catch (e) {
+					errEl.textContent = "Error: " + (e.message || e);
+					errEl.style.display = "block";
+					btn.disabled = false;
+					btn.querySelector(".btn-txt").textContent = "Generate Offer";
+				}
+			}
+
+			/* ── Sticky localStorage ─────────────────────────────────────────────────── */
+			const _STICKY_KEY = "encon_equipment_form";
+			let _stickyData = {};
+			function _saveSticky() {
+				const obj = {};
+				document
+					.querySelectorAll("input[id],select[id],textarea[id]")
+					.forEach((el) => {
+						if (!el.id || el.type === "file") return;
+						obj[el.id] = el.type === "checkbox" ? el.checked : el.value;
+					});
+				obj["_refDirty"] = _refDirty;
+				try {
+					localStorage.setItem(_STICKY_KEY, JSON.stringify(obj));
+				} catch (e) {}
+			}
+			function _loadSticky() {
+				try {
+					const raw = localStorage.getItem(_STICKY_KEY);
+					if (!raw) return;
+					_stickyData = JSON.parse(raw);
+					const SKIP = new Set(["c-subject"]);
+					Object.keys(_stickyData).forEach((id) => {
+						if (SKIP.has(id)) return;
+						const el = document.getElementById(id);
+						if (!el) return;
+						if (el.type === "checkbox") el.checked = _stickyData[id];
+						else if (_stickyData[id] != null) el.value = _stickyData[id];
+					});
+					_refDirty = !!_stickyData["_refDirty"];
+				} catch (e) {}
+			}
+
+			/* ── Boot ────────────────────────────────────────────────────────────────── */
+			document.addEventListener("DOMContentLoaded", () => {
+				_loadSticky();
+				document.addEventListener("input", _saveSticky, true);
+				document.addEventListener("change", _saveSticky, true);
+				window.addEventListener("pagehide", _saveSticky);
+				_generateRef();
+				document
+					.getElementById("c-location")
+					.addEventListener("change", _generateRef);
+				const ct = document.getElementById("c-technical");
+				if (ct) ct.addEventListener("input", _generateRef);
+				document.getElementById("c-ref").addEventListener("input", () => {
+					_refDirty = true;
+				});
+			});
+		</script>
+		<script src="/static/rfq_prefill.js"></script>
+	</body>
+</html>
