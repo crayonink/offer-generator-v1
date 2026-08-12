@@ -10,9 +10,9 @@ import os
 from datetime import datetime
 
 from bom.pricelist_parser import parse_all as _parse_pricelist_all
-from engine.env_loader import load_env_file
+# from engine.env_loader import load_env_file
 
-load_env_file()
+# load_env_file()
 
 # Swagger/ReDoc moved off /docs so the Antora handbook can own /docs.
 app = FastAPI(docs_url="/api-docs", redoc_url="/api-redoc")
