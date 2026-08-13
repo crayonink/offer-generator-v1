@@ -77,12 +77,16 @@
     .xl-namebox { width:72px; min-width:72px; background:#fff; border-right:1px solid #d0d0d0; font-size:.75rem; color:#333; text-align:center; padding:0 6px; height:100%; display:flex; align-items:center; justify-content:center; }
     .xl-fx { color:#217346; font-size:.78rem; font-style:italic; font-weight:700; padding:0 8px; border-right:1px solid #d0d0d0; height:100%; display:flex; align-items:center; }
     .xl-formulainput { flex:1; font-size:.78rem; color:#333; padding:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    /* The sheets are wider than the 960px page and up to 110 rows long. With
-       only overflow-x, the horizontal scrollbar sat at the bottom of the whole
-       table — to reach it you had to scroll past every row, so the right-hand
-       columns simply looked cut off. Bounding the pane puts the scrollbar back
-       on screen, and the sheet scrolls in both directions like a spreadsheet. */
-    .xl-content { overflow:auto; background:#fff; max-height:72vh; }
+    /* Kept as a safety net only. At full window width these sheets fit, so
+       there is normally nothing to scroll. */
+    .xl-content { overflow:auto; background:#fff; }
+    /* The workbook steps outside the 960px reading column and takes the whole
+       window, because these rows are meant to be read across — the label, the
+       value, the unit and the second calculation beside it. 16px is left at
+       each edge so a vertical scrollbar cannot push the page sideways. */
+    .xl-workbook { width:calc(100vw - 32px); max-width:calc(100vw - 32px);
+                   margin-left:calc(50% - 50vw + 16px); }
+
     /* Row numbers stay put when scrolling right, the column letters when
        scrolling down — otherwise you lose your place in a wide sheet. */
     .xl-grid .xl-row-num { position:sticky; left:0; z-index:2; }

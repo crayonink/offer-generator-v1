@@ -62,10 +62,16 @@
     .xl-namebox { width:72px; min-width:72px; background:#fff; border-right:1px solid #d0d0d0; font-size:.75rem; color:#333; text-align:center; padding:0 6px; height:100%; display:flex; align-items:center; justify-content:center; }
     .xl-fx { color:#217346; font-size:.78rem; font-style:italic; font-weight:700; padding:0 8px; border-right:1px solid #d0d0d0; height:100%; display:flex; align-items:center; }
     .xl-formulainput { flex:1; font-size:.78rem; color:#333; padding:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    /* Bounded so the horizontal scrollbar stays on screen instead of sitting
-       below every row of a long sheet, and sticky headers so a wide sheet
-       stays readable. Same fix as snsf_brf_costing.html. */
-    .xl-content { overflow:auto; background:#fff; max-height:72vh; }
+    /* Kept as a safety net only. At full window width these sheets fit, so
+       there is normally nothing to scroll. */
+    .xl-content { overflow:auto; background:#fff; }
+    /* The workbook steps outside the 960px reading column and takes the whole
+       window, because these rows are meant to be read across — the label, the
+       value, the unit and the second calculation beside it. 16px is left at
+       each edge so a vertical scrollbar cannot push the page sideways. */
+    .xl-workbook { width:calc(100vw - 32px); max-width:calc(100vw - 32px);
+                   margin-left:calc(50% - 50vw + 16px); }
+
     .xl-grid .xl-row-num { position:sticky; left:0; z-index:2; }
     .xl-grid tr:first-child .xl-col-header { position:sticky; top:0; z-index:3; }
     .xl-grid tr:first-child .xl-col-header:first-child { left:0; z-index:4; }
