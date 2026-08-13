@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
 import pandas as pd
 import sqlite3
@@ -10,9 +10,6 @@ import os
 from datetime import datetime
 
 from bom.pricelist_parser import parse_all as _parse_pricelist_all
-# from engine.env_loader import load_env_file
-
-# load_env_file()
 
 # Swagger/ReDoc moved off /docs so the Antora handbook can own /docs.
 app = FastAPI(docs_url="/api-docs", redoc_url="/api-redoc")
@@ -3480,31 +3477,75 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
         qty = max(1, int(payload.qty or 1))
         unit_sell = float(payload.unit_sell or 0)
 
+        # Gas line label for the offer doc
+        gas_label_map = {"NG": "Natural Gas (NG)", "LPG": "LPG", "COG": "Coke Oven Gas (COG)"}
+        gas_label = gas_label_map.get(gas_line, gas_line)
+
         equipment_name = f"SEN Preheater ({gas_line} Line)"
 
-        # Build BOM scope-of-supply bullet list from the rows
+        # Pilot burner qty from BOM (find it in the rows)
+        pilot_qty = next((r.get("qty", 2) for r in payload.bom
+                          if "pilot" in (r.get("item") or "").lower()), 2)
+
+        # Technical data section — mirrors the standard SEN preheater spec
+        tech_data_rows = [
+            {"label": "Heating Medium",        "value": f"{gas_label} Fired Burners"},
+            {"label": "Quantity",              "value": f"{qty} Set"},
+            {"label": "Minimum Temperature",   "value": "Ambient to 1200°C"},
+            {"label": "Heating Time",          "value": "60 minutes"},
+            {"label": f"{gas_line} Burner Capacity", "value": "10 kW (per burner)"},
+            {"label": "No. of Burners",        "value": f"{int(pilot_qty)} Nos."},
+            {"label": "Ignition of Burner",    "value": "Manual"},
+        ]
+
+        # Scope of supply — builds bullet list from BOM rows
         scope_items = [{"item": r.get("item", "")} for r in payload.bom if r.get("item")]
 
+        # Scope intro narrative
         scope_intro = (
             f"Supply ex-works of {qty} set(s) of ENCON SEN Preheater complete with "
-            f"{gas_line} line, compressed air line, pilot burner, control panel, "
-            f"fabrication & trolley, and all necessary accessories."
+            f"{gas_label} line, compressed air line, {int(pilot_qty)} nos. pilot burner, "
+            f"control panel, fabrication & trolley on caster wheels, and all necessary accessories."
         )
+
+        # Full technical narrative for price_desc (shown in offer body)
+        objective = (
+            f"Our main objective is to heat the SEN (Submerged Entry Nozzle) through "
+            f"{int(pilot_qty)} nos. {gas_label} fired burners. "
+            f"Burners will be ignited through manual torch."
+        )
+
+        price_bullets = [
+            f"{gas_line} Line: Ball Valve, Pressure Gauge, Pressure Regulating Valve, "
+            f"Pressure Switch (Low/High), Solenoid Valve",
+            "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
+            f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
+            "Control Panel: Fully wired, ENCON make",
+            "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
+            "Air-Gas Pipeline: MS material",
+        ]
 
         specs = {
             "scope_intro":  scope_intro,
             "scope_items":  scope_items,
             "advantages_kind": None,
+            # Burner_Offer_Template specific fields
+            "burner_model":    f"SEN Preheater – {gas_line} Line",
+            "burner_fuel":     gas_label,
+            "burner_capacity": f"{int(pilot_qty)} × 100 kW",
             "price_desc": {
-                "heading": "SEN PREHEATER",
-                "body": scope_intro,
-                "bullets": [],
-                "notes": [f"Preheating Temp: 1200 °C  |  Gas Line: {gas_line}"],
+                "heading":  f"SEN PREHEATER – {gas_line} LINE",
+                "body":     scope_intro + "\n\nOBJECTIVE: " + objective,
+                "bullets":  price_bullets,
+                "notes":    [
+                    f"Preheating Temp: Ambient to 1200°C  |  Heating Time: 60 min",
+                    f"Gas Supply at required pressure and flow to be provided by client.",
+                ],
             },
         }
 
-        # Pick template — use generic Offer_Template.docx (same as tundish)
-        template_name = "Offer_Template.docx"
+        # Use Burner_Offer_Template — it has the right scope/tech-data sections
+        template_name = "Burner_Offer_Template.docx"
 
         result = _generate_equipment_offer(
             cust,
@@ -5443,108 +5484,25 @@ def snsf_brf_costing_form():
         return f.read()
 
 
-class BRFZoneIn(BaseModel):
-    name:          str = "Zone"
-    burner_kw:     float = 1000.0
-    burner_count:  int = 5
-    # 0 derives it from the rating and the calorific value
-    fuel_per_burner_nm3hr: float = 0.0
-    # False for a standalone burner sized beside the zones but not one of them
-    is_zone:       bool = True
-
-
-def _brf_default_zones() -> list:
-    """The uploaded 60 TPH / 12 m billet job — five fired zones and the
-    standalone burner, as the Sizing Zone sheet has them."""
-    return [
-        BRFZoneIn(name="Zone 1", burner_count=4, fuel_per_burner_nm3hr=150),
-        BRFZoneIn(name="Zone 2", burner_count=5, fuel_per_burner_nm3hr=150),
-        BRFZoneIn(name="Zone 3", burner_count=5),
-        BRFZoneIn(name="Zone 4", burner_count=5),
-        BRFZoneIn(name="Zone 5", burner_count=5),
-        BRFZoneIn(name="Burner", burner_count=1, is_zone=False),
-    ]
-
-
 class SNSFBRFCalcRequest(BaseModel):
     include_ng_optional: bool = False
     include_client_scope: bool = False
-    # ── Furnace duty ────────────────────────────────────────────────
-    furnace_capacity_tph:   float = 60.0
-    fuel_per_ton_scm:       float = 45.0
-    cv_kcal_nm3:            float = 8600.0
-    combustion_air_per_nm3: float = 10.5
-    # ── Line sizing ─────────────────────────────────────────────────
-    preheat_air_temp_C:     float = 300.0
-    air_velocity_ms:        float = 12.0
-    gas_velocity_ms:        float = 30.0
-    zones: list[BRFZoneIn] = Field(default_factory=_brf_default_zones)
-    # ── Waste-heat recuperator ──────────────────────────────────────
-    # Its own duty: only part of the combustion air is preheated, so the flue
-    # and air figures here are not the furnace totals above.
-    recup_flue_flow_nm3hr:  float = 13200.0
-    recup_flue_temp_in_C:   float = 650.0
-    recup_air_volume_nm3hr: float = 20400.0
-    recup_air_temp_in_C:    float = 30.0
-    recup_air_temp_out_C:   float = 300.0
-    recup_pipe_dia_mm:      float = 48.3
-    recup_pipe_thick_mm:    float = 3.6
-    recup_pipe_kg_per_m:    float = 4.72275468
-    recup_pipe_length_m:    float = 2.8
-    recup_bank_gap_mm:      float = 250.0
-    recup_pipes_total_override: int = 756
 
 
 @app.post("/api/snsf-brf-calculate")
 def snsf_brf_calculate(req: SNSFBRFCalcRequest):
     try:
-        from bom.snsf_brf_builder import (build_snsf_brf_df, get_supplementary,
-                                          build_brf_sizing)
-        from calculations.brf import BRFInputs, BRFZone
-        from calculations.recup import RecupInputs
+        from bom.snsf_brf_builder import build_snsf_brf_df, get_supplementary
         import json
         df, summary = build_snsf_brf_df(
             include_ng_optional=req.include_ng_optional,
             include_client_scope=req.include_client_scope,
         )
         bom = json.loads(df.to_json(orient="records"))
-
-        # The sizing block is computed from what was typed; the refractory and
-        # structure sheets in `supplementary` are still the frozen 30 TPH data
-        # until that half is ported too.
-        sizing = build_brf_sizing(
-            BRFInputs(
-                furnace_capacity_tph=req.furnace_capacity_tph,
-                fuel_per_ton_scm=req.fuel_per_ton_scm,
-                cv_kcal_nm3=req.cv_kcal_nm3,
-                combustion_air_per_nm3=req.combustion_air_per_nm3,
-                preheat_air_temp_C=req.preheat_air_temp_C,
-                air_velocity_ms=req.air_velocity_ms,
-                gas_velocity_ms=req.gas_velocity_ms,
-                zones=[BRFZone(name=z.name, burner_kw=z.burner_kw,
-                               burner_count=z.burner_count,
-                               fuel_per_burner_nm3hr=z.fuel_per_burner_nm3hr,
-                               is_zone=z.is_zone) for z in req.zones],
-            ),
-            RecupInputs(
-                flue_flow_nm3hr=req.recup_flue_flow_nm3hr,
-                flue_temp_in_C=req.recup_flue_temp_in_C,
-                air_volume_nm3hr=req.recup_air_volume_nm3hr,
-                air_temp_in_C=req.recup_air_temp_in_C,
-                air_temp_out_C=req.recup_air_temp_out_C,
-                pipe_dia_mm=req.recup_pipe_dia_mm,
-                pipe_thick_mm=req.recup_pipe_thick_mm,
-                pipe_kg_per_m=req.recup_pipe_kg_per_m,
-                pipe_length_m_per_bank=req.recup_pipe_length_m,
-                bank_gap_mm=req.recup_bank_gap_mm,
-                pipes_total_override=req.recup_pipes_total_override,
-            ),
-        )
         return {
             "bom": bom,
             "cost_summary": summary,
             "supplementary": get_supplementary(),
-            "sizing": sizing,
         }
     except Exception as e:
         import traceback
