@@ -914,7 +914,7 @@ import tempfile
 ALLOWED_EDIT_TABLES = {
     'hpu_master', 'oil_burner_parts_master', 'hv_oil_burner_parts_master',
     'gas_burner_parts_master', 'horizontal_master', 'vertical_master',
-    'recuperator_master', 'blower_pricelist_master',
+    'recuperator_master', 'blower_pricelist_master', 'idfan_pricelist_master',
     'rad_heat_master', 'rad_heat_tata_master', 'gail_gas_burner_master',
     'rotary_joint_master',
 }
@@ -1660,6 +1660,24 @@ def _startup_seed_blower_alone():
 
 
 _startup_seed_blower_alone()
+
+
+def _startup_seed_idfan_catalog():
+    """Load the ID fan price list (Ref. Q26-ETPL-0803) so the fan is priced from
+    its own catalogue instead of borrowing the blower's. Idempotent; reaches the
+    persistent volume on deploy, and leaves an edited list alone."""
+    try:
+        from bom.idfan_pricelist import seed_idfan_catalog
+        conn = sqlite3.connect(DB_PATH)
+        n = seed_idfan_catalog(conn)
+        conn.close()
+        if n:
+            print(f"[db] seeded {n} ID fan catalogue rows")
+    except Exception as e:
+        print(f"WARN: startup seed_idfan_catalog failed: {e}")
+
+
+_startup_seed_idfan_catalog()
 
 
 def _startup_purge_regen_pricelist():
