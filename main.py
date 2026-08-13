@@ -3515,15 +3515,33 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
             f"Burners will be ignited through manual torch."
         )
 
-        price_bullets = [
-            f"{gas_line} Line: Ball Valve, Pressure Gauge, Pressure Regulating Valve, "
-            f"Pressure Switch (Low/High), Solenoid Valve",
-            "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
-            f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
-            "Control Panel: Fully wired, ENCON make",
-            "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
-            "Air-Gas Pipeline: MS material",
-        ]
+        price_bullets_map = {
+            "NG":  [
+                "NG Line: Ball Valve, Pressure Gauge, Pressure Regulating Valve, Pressure Switch (Low/High), Solenoid Valve",
+                "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
+                f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
+                "Control Panel: Fully wired, ENCON make",
+                "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
+                "Air-Gas Pipeline: MS material",
+            ],
+            "LPG": [
+                "LPG Line: Ball Valve, Pressure Gauge, Pressure Regulating Valve, Pressure Switch (Low/High), Solenoid Valve",
+                "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
+                f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
+                "Control Panel: Fully wired, ENCON make",
+                "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
+                "Air-Gas Pipeline: MS material",
+            ],
+            "COG": [
+                "COG Gas Line: Ball Valve 25 NB, Pressure Gauge with TNV, Shut Off Valve 25 NB, Pressure Switch Low",
+                "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
+                f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
+                "Control Panel: Fully wired, ENCON make",
+                "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
+                "Air-Gas Pipeline: MS material",
+            ],
+        }
+        price_bullets = price_bullets_map.get(gas_line, price_bullets_map["NG"])
 
         specs = {
             "scope_intro":  scope_intro,
