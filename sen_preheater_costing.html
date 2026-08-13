@@ -800,6 +800,20 @@
 						">
 						LPG Line
 					</button>
+					<button
+						id="btn-cog"
+						onclick="setGasLine('COG')"
+						style="
+							padding: 9px 22px;
+							border-radius: 8px;
+							border: 1.5px solid var(--border);
+							background: var(--bg);
+							color: var(--text);
+							font: 600 0.84rem/1 inherit;
+							cursor: pointer;
+						">
+						COG Gas Line
+					</button>
 				</div>
 
 				<!-- ── Top Parameters ── -->
@@ -1305,7 +1319,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 			/* ── Gas line toggle ──────────────────────────────────────────────────────── */
 			function setGasLine(gl) {
 				_gasLine = gl;
-				["NG", "LPG"].forEach((g) => {
+				["NG", "LPG", "COG"].forEach((g) => {
 					const b = document.getElementById("btn-" + g.toLowerCase());
 					if (!b) return;
 					const sel = g === gl;
@@ -1359,13 +1373,17 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 			}
 
 			/* ── BOM render ───────────────────────────────────────────────────────────── */
-			// The DB stores gas-line rows as "NG Line". When LPG is selected we show
-			// the same components (same spec, same price) but relabelled as "LPG Line".
-			// Compressed Air, MISC and ENCON items always appear regardless of selection.
+			// NG:  Compressed Air + NG Line + MISC + ENCON rows
+			// LPG: same as NG but "NG Line" relabelled → "LPG Line"
+			// COG: Compressed Air + COG Line (4 items) + MISC + ENCON rows
 
 			function _visibleRows() {
-				// All rows are always visible — gas line selection only relabels the display.
-				return _rows;
+				return _rows.filter((r) => {
+					const m = (r.media || "").toLowerCase();
+					if (m === "ng line") return _gasLine === "NG" || _gasLine === "LPG";
+					if (m === "cog line") return _gasLine === "COG";
+					return true; // Compressed Air, MISC ITEMS, ENCON ITEMS always visible
+				});
 			}
 
 			function _displayMedia(r) {
@@ -1440,10 +1458,10 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 			const inr = (v) => Math.round(v || 0).toLocaleString("en-IN");
 
 			function recalcBom() {
-				// Always sum all rows — LPG just relabels, not filters
+				// Sum only visible rows (respects NG / LPG / COG selection)
 				let bSum = 0,
 					eSum = 0;
-				_rows.forEach((r) => {
+				_visibleRows().forEach((r) => {
 					const qty = r._qty != null ? r._qty : r.qty;
 					const basic = r._basic != null ? r._basic : r.basic;
 					const tot = qty * basic;
@@ -1551,7 +1569,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 
 				let bSum = 0,
 					eSum = 0;
-				const bom = _rows.map((r) => {
+				const bom = _visibleRows().map((r) => {
 					const qty = r._qty != null ? r._qty : r.qty;
 					const basic = r._basic != null ? r._basic : r.basic;
 					const tot = qty * basic;
@@ -1642,7 +1660,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 					btn.querySelector(".btn-txt").textContent = "Generate Offer";
 					return;
 				}
-				const vis = _rows;
+				const vis = _visibleRows();
 				let bSum = 0,
 					eSum = 0;
 				const bom = vis.map((r) => {
