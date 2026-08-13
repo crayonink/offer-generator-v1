@@ -50,7 +50,8 @@
 				background: var(--bg);
 				color: var(--txt);
 				display: flex;
-				min-height: 100vh;
+				height: 100vh;
+				overflow: hidden;
 				-webkit-font-smoothing: antialiased;
 			}
 			a {
@@ -69,6 +70,7 @@
 				position: sticky;
 				top: 0;
 				height: 100vh;
+				overflow-y: auto;
 				padding: 18px 0;
 			}
 			.brand {
@@ -214,6 +216,8 @@
 				min-width: 0;
 				display: flex;
 				flex-direction: column;
+				overflow-y: auto;
+				height: 100vh;
 			}
 			.topbar {
 				display: flex;
