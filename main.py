@@ -54,7 +54,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # code-side edits to them appear live without a full reseed. component_price_
 # master and its cascade-derived tables are deliberately NOT in this list — they
 # stay on the volume so live UI price edits persist.
-_SEED_REFRESH_TABLES = ["fabrication_ladle_mapping"]
+_SEED_REFRESH_TABLES = ["fabrication_ladle_mapping", "sen_stove_bom"]
 
 def _refresh_seed_tables(seed_path, vol_path, tables):
     import sqlite3 as _sq
