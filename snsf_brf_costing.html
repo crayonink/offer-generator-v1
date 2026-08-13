@@ -45,6 +45,11 @@
       text-transform:uppercase; color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--border); }
     .sz-table td { padding:6px 8px; vertical-align:middle; }
     .xl-num { text-align:right; }
+    /* The worked calculation under the Sizing sheet — monospace so the columns
+       line up and the numbers can be read off against the workbook. */
+    .calc-work { border-top:1px solid var(--border); margin-top:4px; padding:16px 18px;
+      font-family:ui-monospace,Consolas,monospace; font-size:.76rem; line-height:1.8;
+      color:#334155; background:#fff; overflow-x:auto; white-space:pre; }
     label { font-size:.8rem; font-weight:600; color:#374151; }
     .toggle { display:flex; align-items:center; gap:10px; cursor:pointer; font-size:.88rem; }
     .toggle input[type=checkbox] { width:18px; height:18px; accent-color:var(--navy); }
@@ -398,7 +403,64 @@ function renderSizing(sz){
   });
   h+=R(++n,[["Total Combustion Equipment",""],[fmt(sz.equipment_total),true],["Rs",true]],"xl-total");
   h+=`</table>`;
+  h+=`<div class="calc-work">${sizingBreakdown(sz)}</div>`;
   el.innerHTML=h;
+}
+
+// Every step of the sizing with its real numbers, so the sheet can be checked
+// by hand against the workbook. Nothing is recomputed here — each line prints
+// figures the engine returned, with the operator between them.
+function sizingBreakdown(sz){
+  const d=sz.duty, L=[];
+  const n2=(v,p=2)=>v==null?"—":Number(v).toFixed(p);
+  const cm=(v,p=0)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  let sn=0;
+  const h=t=>{const s=(++sn)+". "+t;L.push("\n── "+s+" "+"─".repeat(Math.max(0,62-s.length)));};
+
+  h("FURNACE DUTY");
+  L.push(`   Firing rate     = ${cm(d.furnace_capacity_tph,0)} Ton/hr × ${cm(d.fuel_per_ton_scm,0)} SCM/Ton = ${cm(d.firing_rate_nm3hr)} Nm³/hr`);
+  L.push(`   Combustion air  = ${cm(d.firing_rate_nm3hr)} × ${d.combustion_air_per_nm3} = ${cm(d.combustion_air_nm3hr)} Nm³/hr`);
+  L.push(`   Per zone        = ${cm(d.firing_rate_nm3hr)} ÷ ${d.zone_count} zones, rounded up = ${cm(d.firing_rate_per_zone_nm3hr)} Nm³/hr`);
+
+  h("BLOWER");
+  L.push(`   Volume          = ${cm(d.combustion_air_nm3hr)} ÷ ${d.cfm_per_nm3hr} = ${cm(d.blower_cfm)} CFM`);
+  L.push(`   Power           = ${cm(d.blower_cfm)} × ${d.blower_head_factor} ÷ ${cm(d.blower_constant)} = ${n2(d.blower_hp)} HP`);
+  const frames=(sz.equipment||[]).find(e=>e.item.indexOf("Blower")===0);
+  if(frames) L.push(`   Frames          = ${n2(d.blower_hp)} ÷ ${d.blower_unit_hp} HP, rounded up = ${frames.qty}`);
+
+  h("ZONE LINE SIZING");
+  L.push(`   Air is expanded from the flow at 30 °C to ${cm(d.preheat_air_temp_C)} °C and`);
+  L.push(`   corrected for ${d.preheat_pressure_barg} barg, then sized at ${d.air_velocity_ms} m/s.`);
+  L.push(`   Gas is sized from the zone's own fuel flow at ${d.gas_velocity_ms} m/s.`);
+  (sz.zones||[]).forEach(z=>{
+    L.push("");
+    L.push(`   ${z.name} — ${cm(z.burner_kw)} kW × ${z.burner_count} burners`);
+    L.push(`     Fuel/burner   = ${cm(z.fuel_per_burner_nm3hr)} Nm³/hr`);
+    L.push(`     Zone fuel     = ${cm(z.fuel_per_burner_nm3hr)} × ${z.burner_count} = ${cm(z.fuel_flow_nm3hr)} Nm³/hr`);
+    L.push(`     Air at 30 °C  = ${cm(z.burner_kw)} × ${z.burner_count} = ${cm(z.air_flow_nm3hr)} Nm³/hr`);
+    L.push(`     Air hot       = ${cm(z.air_flow_nm3hr)} × 1/(${d.preheat_pressure_barg}+1) × (${cm(d.preheat_air_temp_C)}+273)/273 = ${cm(z.air_flow_hot_m3hr)} m³/hr`);
+    L.push(`     Air area      = ${cm(z.air_flow_hot_m3hr)} ÷ ${d.air_velocity_ms} ÷ 3600 = ${n2(z.air_line_area_m2,4)} m²`);
+    L.push(`     Air bore      = √(4 × ${n2(z.air_line_area_m2,4)} ÷ 3.14) × 1000 = ${n2(z.air_line_bore_mm)} mm  →  ${z.air_line_nb} NB`);
+    L.push(`     Gas area      = ${cm(z.fuel_flow_nm3hr)} ÷ ${d.gas_velocity_ms} ÷ 3600 = ${n2(z.gas_line_area_m2,5)} m²`);
+    L.push(`     Gas bore      = √(4 × ${n2(z.gas_line_area_m2,5)} ÷ 3.14) × 1000 = ${n2(z.gas_line_bore_mm)} mm  →  ${z.gas_line_nb} NB`);
+  });
+
+  const r=sz.recuperator||{};
+  h("RECUPERATOR");
+  L.push(`   Flue out        = ${n2(r.flue_temp_out_C)} °C     LMTD = ${n2(r.lmtd_C)} °C`);
+  L.push(`   Surface area    = ${n2(r.surface_area_m2)} m²`);
+  L.push(`   Bundle          = ${r.pipes_in_row} rows × ${r.pipes_in_column} cols = ${cm(r.pipes_total)} pipes`);
+  L.push(`   Bank            = ${cm(r.bank_length_mm,1)} × ${cm(r.bank_width_mm,1)} mm`);
+  L.push(`   Tube weight     = ${cm(r.weight_total_pipes_kg,1)} kg`);
+  L.push(`   Cost            = ₹ ${cm(r.cost)}`);
+
+  h("COMBUSTION EQUIPMENT");
+  (sz.equipment||[]).forEach(e=>{
+    L.push(`   ${e.item.slice(0,38).padEnd(40)}${String(e.qty).padStart(3)} × ${cm(e.unit_price).padStart(11)} = ${cm(e.total).padStart(13)}`
+           + (e.basis==="derived" ? "   (qty derived)" : ""));
+  });
+  L.push(`   ${"Total".padEnd(40)}${" ".repeat(17)}= ${cm(sz.equipment_total).padStart(13)}`);
+  return L.join("\n").replace(/^\n/,"");
 }
 
 function renderAll(data,showNG,showCL){

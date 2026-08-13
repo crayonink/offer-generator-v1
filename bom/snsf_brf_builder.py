@@ -583,6 +583,16 @@ def build_brf_sizing(brf_inputs, recup_inputs, equipment_prices=None) -> dict:
             "furnace_capacity_tph":   brf_inputs.furnace_capacity_tph,
             "fuel_per_ton_scm":       brf_inputs.fuel_per_ton_scm,
             "cv_kcal_nm3":            brf_inputs.cv_kcal_nm3,
+            # The constants the working refers to, so the breakdown can show
+            # the formula with its actual numbers instead of naming them.
+            "combustion_air_per_nm3": brf_inputs.combustion_air_per_nm3,
+            "preheat_pressure_barg":  brf_inputs.preheat_pressure_barg,
+            "air_velocity_ms":        brf_inputs.air_velocity_ms,
+            "gas_velocity_ms":        brf_inputs.gas_velocity_ms,
+            "cfm_per_nm3hr":          brf_inputs.cfm_per_nm3hr,
+            "blower_head_factor":     brf_inputs.blower_head_factor,
+            "blower_constant":        brf_inputs.blower_constant,
+            "blower_unit_hp":         BLOWER_UNIT_HP,
             "firing_rate_nm3hr":      brf.firing_rate_nm3hr,
             "combustion_air_nm3hr":   brf.combustion_air_nm3hr,
             "zone_count":             brf.zone_count,
