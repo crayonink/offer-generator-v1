@@ -77,7 +77,17 @@
     .xl-namebox { width:72px; min-width:72px; background:#fff; border-right:1px solid #d0d0d0; font-size:.75rem; color:#333; text-align:center; padding:0 6px; height:100%; display:flex; align-items:center; justify-content:center; }
     .xl-fx { color:#217346; font-size:.78rem; font-style:italic; font-weight:700; padding:0 8px; border-right:1px solid #d0d0d0; height:100%; display:flex; align-items:center; }
     .xl-formulainput { flex:1; font-size:.78rem; color:#333; padding:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .xl-content { overflow-x:auto; background:#fff; }
+    /* The sheets are wider than the 960px page and up to 110 rows long. With
+       only overflow-x, the horizontal scrollbar sat at the bottom of the whole
+       table — to reach it you had to scroll past every row, so the right-hand
+       columns simply looked cut off. Bounding the pane puts the scrollbar back
+       on screen, and the sheet scrolls in both directions like a spreadsheet. */
+    .xl-content { overflow:auto; background:#fff; max-height:72vh; }
+    /* Row numbers stay put when scrolling right, the column letters when
+       scrolling down — otherwise you lose your place in a wide sheet. */
+    .xl-grid .xl-row-num { position:sticky; left:0; z-index:2; }
+    .xl-grid tr:first-child .xl-col-header { position:sticky; top:0; z-index:3; }
+    .xl-grid tr:first-child .xl-col-header:first-child { left:0; z-index:4; }
     .xl-grid { border-collapse:collapse; font-size:.8rem; font-family:'Calibri',sans-serif; width:100%; min-width:600px; }
     .xl-grid .xl-col-header { background:#f2f2f2; color:#666; font-weight:600; font-size:.72rem; text-align:center; border:1px solid #d0d0d0; padding:2px 8px; min-width:40px; }
     .xl-grid .xl-row-num { background:#f2f2f2; color:#666; font-size:.72rem; text-align:right; border:1px solid #d0d0d0; padding:2px 6px; min-width:32px; user-select:none; }

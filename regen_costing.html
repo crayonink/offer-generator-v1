@@ -167,7 +167,13 @@
       text-overflow: ellipsis;
     }
     /* Sheet content */
-    .xl-content { overflow-x: auto; background: #fff; }
+    /* Bounded so the horizontal scrollbar stays on screen instead of sitting
+       below every row of a long sheet, and sticky headers so a wide sheet
+       stays readable. Same fix as snsf_brf_costing.html. */
+    .xl-content { overflow:auto; background:#fff; max-height:72vh; }
+    .xl-grid .xl-row-num { position:sticky; left:0; z-index:2; }
+    .xl-grid tr:first-child .xl-col-header { position:sticky; top:0; z-index:3; }
+    .xl-grid tr:first-child .xl-col-header:first-child { left:0; z-index:4; }
     /* Grid table */
     .xl-grid {
       border-collapse: collapse; font-size: .8rem; font-family: 'Calibri', sans-serif;
