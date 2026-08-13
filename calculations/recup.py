@@ -61,6 +61,14 @@ class RecupInputs:
     pipe_thick_mm:        float = 2.77         # E25
     pipe_kg_per_m:        float = 3.16         # E26
     pipe_length_m_per_bank: float = 0.63       # E24 = 0.55 + 0.08
+    # ── Cold-bank tube, when it differs from the hot bank ───────────
+    # The reheating-furnace sheets run a heavier boiler tube on the hot bank
+    # and a plain tube on the cold one — 3.6 mm against 2.7 mm on both the
+    # 60 TPH and the 4 TPH job — and weigh the two banks separately. 0 means
+    # the cold bank is built from the same tube as the hot bank, which is
+    # what a single-spec recuperator does.
+    cold_pipe_thick_mm:   float = 0.0
+    cold_pipe_kg_per_m:   float = 0.0
     bank_gap_mm:          float = 150.0        # E18
     pipe_pitch_mm:        float = 32.0         # spacing between adjacent pipes
     end_margin_mm:        float = 150.0        # margin on each side
@@ -71,6 +79,23 @@ class RecupInputs:
     #     When > 0, we honour the user's total and re-derive the grid as
     #     rows=14, cols=ceil(total/14).
     pipes_total_override: int = 0
+    # ── Grid override (0 -> let _best_grid choose) ──────────────────
+    # _best_grid keeps the column count even so each bank holds a whole number
+    # of pipes. The furnace sheets do not: the 60 TPH lays 756 pipes out as
+    # 28 x 27 and the 4 TPH puts 49 in a 7 x 7, both leaving half a pipe per
+    # row per bank. Since bank length runs on the rows and width on half the
+    # columns, the orientation is not cosmetic — it moves the MS weights — so
+    # a grid that was decided on the drawing can be stated outright.
+    rows_override:        int = 0
+    cols_override:        int = 0
+    # ── Pipe holding plate, layer factor ────────────────────────────
+    # Volume = (2 x bank length + gap) x bank width x THIS. Both reheating
+    # furnace sheets write it as 12 x 2 = 24. The hardening recuperator this
+    # module was first ported from used 16 x 4 = 64, which is 2.67 times the
+    # plate and, on the 60 TPH job, about Rs 87,000 of fabricated mild steel.
+    # 24 is the standard; a design that genuinely carries a heavier plate can
+    # say so here.
+    pipe_holding_factor:  float = 24.0
     # ── Tube material per bank (cost-only; "SS" or "MS"). Hot and Cold
     # can be different — common in hardening furnaces where one bank
     # sees hotter flue gas and is upgraded to SS.
@@ -125,7 +150,10 @@ class RecupResults:
     pipes_cold_bank:       int
     bank_length_mm:        float    # E16
     bank_width_mm:         float    # E17
-    weight_per_pipe_kg:    float    # E27
+    weight_per_pipe_kg:    float    # E27 — the hot bank's tube
+    # The cold bank's, which differs whenever a lighter tube is run on it.
+    # Equal to the above on a single-spec recuperator.
+    weight_per_pipe_cold_kg: float
     weight_hot_bank_kg:    float    # E28
     weight_cold_bank_kg:   float    # E35
     weight_total_pipes_kg: float    # E28 + E35
@@ -262,7 +290,13 @@ def calculate_recup(inp: RecupInputs) -> RecupResults:
     auto_rows, auto_cols = _best_grid(max(1, math.ceil(pipes_raw)))
     auto_total = auto_rows * auto_cols
 
-    if inp.pipes_total_override and inp.pipes_total_override > 0:
+    if inp.rows_override > 0 and inp.cols_override > 0:
+        # A grid stated outright wins over both the search and the total: it is
+        # what the drawing shows, and the bank dimensions are read off it.
+        rows_count, cols_count = inp.rows_override, inp.cols_override
+        pipes_total = (int(inp.pipes_total_override) if inp.pipes_total_override > 0
+                       else rows_count * cols_count)
+    elif inp.pipes_total_override and inp.pipes_total_override > 0:
         # The typed total wins outright: it is what gets built, weighed and
         # billed. _best_grid then supplies the ENVELOPE the bundle sits in —
         # rows x cols can exceed the total, leaving the last row part-filled,
@@ -354,10 +388,14 @@ def _assemble(inp: RecupInputs, *, energy: dict,
     pipes_hot_bank  = pipes_total - pipes_per_bank
     pipes_cold_bank = pipes_per_bank
 
-    # ── E27/E28: pipe weights ──────────────────────────────────────
-    weight_per_pipe = inp.pipe_kg_per_m * inp.pipe_length_m_per_bank
-    weight_hot_bank  = weight_per_pipe * pipes_hot_bank
-    weight_cold_bank = weight_per_pipe * pipes_cold_bank
+    # ── E27/E28: pipe weights, per bank ────────────────────────────
+    # The cold bank falls back to the hot bank's tube, so a single-spec
+    # recuperator weighs exactly what it always did.
+    cold_kg_per_m = inp.cold_pipe_kg_per_m or inp.pipe_kg_per_m
+    weight_per_pipe      = inp.pipe_kg_per_m * inp.pipe_length_m_per_bank
+    weight_per_pipe_cold = cold_kg_per_m     * inp.pipe_length_m_per_bank
+    weight_hot_bank  = weight_per_pipe      * pipes_hot_bank
+    weight_cold_bank = weight_per_pipe_cold * pipes_cold_bank
     weight_total = weight_hot_bank + weight_cold_bank
 
     # ── MS structural weights (E41..E45) — exact Excel formulas ───
@@ -371,7 +409,7 @@ def _assemble(inp: RecupInputs, *, energy: dict,
     ms_air_inlet = _vol_to_kg(duct_volume, 7850)
     ms_hot_outlet = _vol_to_kg(duct_volume, 8650)
     ms_pipe_holding = _vol_to_kg(
-        ((bank_length_mm * 2) + inp.bank_gap_mm) * bank_width_mm * 16 * 4,
+        ((bank_length_mm * 2) + inp.bank_gap_mm) * bank_width_mm * inp.pipe_holding_factor,
         8650,
     )
     box_volume = (((bank_length_mm * 2 + 250) * 600 * 5 * 2)
@@ -402,6 +440,7 @@ def _assemble(inp: RecupInputs, *, energy: dict,
         bank_length_mm        = round(bank_length_mm, 2),
         bank_width_mm         = round(bank_width_mm, 2),
         weight_per_pipe_kg    = round(weight_per_pipe, 4),
+        weight_per_pipe_cold_kg = round(weight_per_pipe_cold, 4),
         weight_hot_bank_kg    = round(weight_hot_bank, 2),
         weight_cold_bank_kg   = round(weight_cold_bank, 2),
         weight_total_pipes_kg = round(weight_total, 2),
