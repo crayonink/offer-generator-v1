@@ -147,8 +147,9 @@
   <div class="step-tabs">
     <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Config</div>
     <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace</div>
-    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Calculations</div>
-    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>BOM &amp; Costing</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Firing &amp; Air</div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Calculations</div>
+    <div class="step-tab" id="tab-5" onclick="goStep(5)"><span class="tab-n">5</span>BOM &amp; Costing</div>
   </div>
   <div class="topnav-links">
     <a href="/pricelist">Pricelist</a>
@@ -167,22 +168,6 @@
       </div>
       <div class="field">
         <label class="toggle"><input type="checkbox" id="chk-client"/> Include Client Scope (Mild Steel + Refractory)</label>
-      </div>
-    </div>
-
-    <!-- Furnace duty. These drive the firing rate, the combustion air, the
-         per-zone line sizes and the blower, through calculations/brf.py.
-         The refractory and structure sheets are still fixed data. -->
-    <div class="card">
-      <div class="card-title">Furnace Duty</div>
-      <div class="sz-grid">
-        <div class="sz-f"><label>Capacity (t/hr)</label><input id="sz-cap" type="number" step="any" value="60"/></div>
-        <div class="sz-f"><label>Fuel per ton (SCM)</label><input id="sz-fuel" type="number" step="any" value="45"/></div>
-        <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label><input id="sz-cv" type="number" step="any" value="8600"/></div>
-        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air" type="number" step="any" value="10.5"/></div>
-        <div class="sz-f"><label>Preheated air temp (&deg;C)</label><input id="sz-preheat" type="number" step="any" value="300"/></div>
-        <div class="sz-f"><label>Air velocity (m/s)</label><input id="sz-vair" type="number" step="any" value="12"/></div>
-        <div class="sz-f"><label>Gas velocity (m/s)</label><input id="sz-vgas" type="number" step="any" value="30"/></div>
       </div>
     </div>
 
@@ -269,12 +254,49 @@
 
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(1)">← Back to Config</button>
+      <button class="btn-primary" onclick="goStep(3)">Next: Firing &amp; Air →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3: Firing & Air ═══
+       The calculation sheet's duty chain. The inputs decide what the furnace
+       fires; the Derived panel is what falls out of them — firing rate,
+       combustion air, the share each zone carries, and the blower. -->
+  <div class="step" id="step-3">
+    <!-- Furnace duty. These drive the firing rate, the combustion air, the
+         per-zone line sizes and the blower, through calculations/brf.py.
+         The refractory and structure sheets are still fixed data. -->
+    <div class="card">
+      <div class="card-title">Furnace Duty</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Capacity (t/hr)</label><input id="sz-cap" type="number" step="any" oninput="dutyPreview()" value="60"/></div>
+        <div class="sz-f"><label>Fuel per ton (SCM)</label><input id="sz-fuel" type="number" step="any" oninput="dutyPreview()" value="45"/></div>
+        <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label><input id="sz-cv" type="number" step="any" oninput="dutyPreview()" value="8600"/></div>
+        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air" type="number" step="any" oninput="dutyPreview()" value="10.5"/></div>
+        <div class="sz-f"><label>Preheated air temp (&deg;C)</label><input id="sz-preheat" type="number" step="any" oninput="dutyPreview()" value="300"/></div>
+        <div class="sz-f"><label>Air velocity (m/s)</label><input id="sz-vair" type="number" step="any" oninput="dutyPreview()" value="12"/></div>
+        <div class="sz-f"><label>Gas velocity (m/s)</label><input id="sz-vgas" type="number" step="any" oninput="dutyPreview()" value="30"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Derived</div>
+      <div class="fn-out" id="duty-out"></div>
+      <div class="calc-work" id="duty-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
+      <div class="hint" style="margin-top:10px;color:var(--muted);font-size:.8rem;">
+        The per-zone share divides by the zones on the Config tab, so adding or
+        removing one moves it.
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(2)">&larr; Back to Furnace</button>
       <button class="btn-primary" onclick="calculate()">Calculate &amp; Build BOM</button>
     </div>
   </div>
 
-  <!-- ═══ STEP 3: All Calculations in Excel Workbook ═══ -->
-  <div class="step" id="step-3">
+  <!-- ═══ STEP 4: All Calculations in Excel Workbook ═══ -->
+  <div class="step" id="step-4">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b2-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b2-cost">--</div></div>
@@ -306,13 +328,13 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(2)">← Back to Furnace</button>
-      <button class="btn-primary" onclick="goStep(4)">Next: BOM &amp; Costing →</button>
+      <button class="btn-back" onclick="goStep(3)">← Back to Firing &amp; Air</button>
+      <button class="btn-primary" onclick="goStep(5)">Next: BOM &amp; Costing →</button>
     </div>
   </div>
 
   <!-- ═══ STEP 3: BOM ═══ -->
-  <div class="step" id="step-4">
+  <div class="step" id="step-5">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b3-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b3-cost">--</div><div class="banner-sub" id="b3-main">Main Sell: --</div></div>
@@ -345,7 +367,7 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(3)">← Back to Calculations</button>
+      <button class="btn-back" onclick="goStep(4)">← Back to Calculations</button>
     </div>
   </div>
 
@@ -356,7 +378,7 @@ const API="";
 const fmt=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
 const fmt2=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:2}).format(n);
 let lastData=null;
-const STEPS=[1,2,3,4];
+const STEPS=[1,2,3,4,5];
 
 function goStep(n){
   STEPS.forEach(i=>{
@@ -502,7 +524,64 @@ function renderFurnace(f){
   ].join("\n");
 }
 
-window.addEventListener("DOMContentLoaded",()=>{ setTimeout(runFurnace,0); });
+// ── Firing & air ───────────────────────────────────────────────────────────
+// The duty chain, worked out as the inputs change rather than only on
+// Calculate. Same rule as everywhere else on this page: the engine computes,
+// this paints.
+function dutyPreview(){
+  const cap=document.getElementById("sz-cap"), fnCap=document.getElementById("fn-cap");
+  if(cap&&fnCap) fnCap.value=cap.value;      // capacity is one number, two tabs
+  clearTimeout(dutyPreview._t);
+  dutyPreview._t=setTimeout(runDuty,250);
+}
+
+async function runDuty(){
+  const n=id=>parseFloat((document.getElementById(id)||{}).value)||0;
+  try{
+    const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(Object.assign({
+        furnace_capacity_tph:n("sz-cap"), fuel_per_ton_scm:n("sz-fuel"),
+        cv_kcal_nm3:n("sz-cv"), combustion_air_per_nm3:n("sz-air"),
+        preheat_air_temp_C:n("sz-preheat"), air_velocity_ms:n("sz-vair"),
+        gas_velocity_ms:n("sz-vgas"), zones:readZones(),
+      }, furnacePayload()))});
+    const data=await res.json();
+    if(data&&data.sizing) renderDuty(data.sizing);
+  }catch(e){ /* offline — leave the last good figures */ }
+}
+
+function renderDuty(sz){
+  const el=document.getElementById("duty-out");
+  if(!el) return;
+  const d=sz.duty;
+  const cm=(v,p=0)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  el.innerHTML=
+    tile("Firing Rate", cm(d.firing_rate_nm3hr), "Nm³/hr")+
+    tile("Combustion Air", cm(d.combustion_air_nm3hr), "Nm³/hr")+
+    tile("Firing Rate per Zone", cm(d.firing_rate_per_zone_nm3hr), "Nm³/hr")+
+    tile("Zones", cm(d.zone_count), "")+
+    tile("Blower", cm(d.blower_cfm), "CFM")+
+    tile("Blower", cm(d.blower_hp,2), "HP")+
+    tile("Total Burners", cm(d.total_burners), "")+
+    tile("Fuel, all zones", cm(d.total_fuel_nm3hr), "Nm³/hr");
+
+  const w=document.getElementById("duty-work");
+  if(w) w.textContent=[
+    `Firing rate    = ${cm(d.furnace_capacity_tph)} Ton/hr × ${cm(d.fuel_per_ton_scm)} SCM/Ton = ${cm(d.firing_rate_nm3hr)} Nm³/hr`,
+    `Combustion air = ${cm(d.firing_rate_nm3hr)} × ${d.combustion_air_per_nm3} = ${cm(d.combustion_air_nm3hr)} Nm³/hr`,
+    `Per zone       = ${cm(d.firing_rate_nm3hr)} ÷ ${d.zone_count} zones, rounded up = ${cm(d.firing_rate_per_zone_nm3hr)} Nm³/hr`,
+    ``,
+    `Blower volume  = ${cm(d.combustion_air_nm3hr)} ÷ ${d.cfm_per_nm3hr} = ${cm(d.blower_cfm)} CFM`,
+    `Blower power   = ${cm(d.blower_cfm)} × ${d.blower_head_factor} ÷ ${cm(d.blower_constant)} = ${cm(d.blower_hp,2)} HP`,
+    ``,
+    `The calorific value sets the fuel each burner takes where the zone table`,
+    `does not name it: rating × 860 ÷ ${cm(d.cv_kcal_nm3)}.`,
+  ].join("\n");
+}
+
+window.addEventListener("DOMContentLoaded",()=>{ setTimeout(runFurnace,0); setTimeout(runDuty,0); });
 
 async function calculate(){
   const ng=document.getElementById("chk-ng").checked;
@@ -521,7 +600,7 @@ async function calculate(){
     const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
     if(data.error){err.textContent=data.error;err.style.display="block";return;}
-    lastData=data;renderAll(data,ng,cl);goStep(3);
+    lastData=data;renderAll(data,ng,cl);goStep(4);
   }catch(e){err.textContent="API error: "+e.message;err.style.display="block";}
 }
 
@@ -645,6 +724,7 @@ function renderAll(data,showNG,showCL){
 
   // ═══ SHEET 0: Sizing — computed, not stored ═══
   renderSizing(data.sizing);
+  renderDuty(data.sizing);
   if(data.furnace) renderFurnace(data.furnace);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
