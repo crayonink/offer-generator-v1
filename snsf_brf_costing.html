@@ -264,6 +264,31 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="card-title">Commercial</div>
+      <div class="hint" style="margin:-6px 0 12px;color:var(--muted);font-size:.82rem;">
+        Each BOM line already carries its own markup from the pricelist, so
+        these apply on top of the marked-up total &mdash; there is no second
+        conversion here.
+      </div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Packing &amp; forwarding (%)</label><input id="cm-pf" type="number" step="any" value="5" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Designing (%)</label><input id="cm-design" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Negotiation (%)</label><input id="cm-nego" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Transport (&#8377;)</label><input id="cm-transport" type="number" step="any" value="0" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Order quantity (furnaces)</label><input id="cm-qty" type="number" step="1" min="1" value="1" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Currency</label>
+          <select id="cm-currency" onchange="commercialPreview()">
+            <option value="INR" selected>&#8377; INR</option>
+            <option value="USD">$ USD</option>
+          </select></div>
+      </div>
+      <div class="fn-out" id="cm-out" style="margin-top:16px"></div>
+      <div class="hint" id="cm-note" style="margin-top:8px;color:var(--muted);font-size:.8rem;">
+        Calculate on the Firing &amp; Air tab to price it.
+      </div>
+    </div>
+
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(1)">&larr; Back to Customer</button>
       <button class="btn-primary" onclick="goStep(3)">Next: Furnace &rarr;</button>
@@ -555,6 +580,72 @@ window.addEventListener("DOMContentLoaded",()=>{
   // browser; 'input' catches the typing.
   ["input","change"].forEach(ev=>body.addEventListener(ev,dutyPreview));
 });
+
+// ── Commercial buildup ─────────────────────────────────────────────────────
+// Every BOM line already carries its own markup out of the pricelist, so the
+// marked-up total is the starting point and these are added on top of it.
+// A second conversion markup here would charge the markup twice.
+function commercialInputs(){
+  const n=id=>parseFloat((document.getElementById(id)||{}).value)||0;
+  return {pf:n("cm-pf"), design:n("cm-design"), nego:n("cm-nego"),
+          transport:n("cm-transport"), qty:Math.max(1,n("cm-qty")||1),
+          currency:((document.getElementById("cm-currency")||{}).value)||"INR"};
+}
+
+function commercialTotals(){
+  const c=commercialInputs();
+  const cs=(lastData&&lastData.cost_summary)||null;
+  if(!cs) return null;
+  const cost=+cs.grand_cost||0, sell=+cs.grand_sell||0;
+  const pf=sell*c.pf/100, design=sell*c.design/100, nego=sell*c.nego/100;
+  // c.* are the percentages typed; the locals above are the money they come to.
+  // Rounded up to the nearest thousand, as the other pages quote.
+  const final=Math.ceil((sell+pf+design+nego+c.transport)/1000)*1000;
+  return {...c, pf_pct:c.pf, design_pct:c.design, nego_pct:c.nego,
+          cost, sell, pf, design, nego, final, order:final*c.qty};
+}
+
+function commercialPreview(){
+  const out=document.getElementById("cm-out"), note=document.getElementById("cm-note");
+  if(!out) return;
+  const t=commercialTotals();
+  if(!t){ out.innerHTML=""; if(note) note.textContent="Calculate on the Firing & Air tab to price it."; return; }
+  const sym=t.currency==="USD"?"$ ":"₹ ";
+  const m=v=>sym+Math.round(v).toLocaleString("en-IN");
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  out.innerHTML=
+    tile("Total Cost", m(t.cost),"")+
+    tile("After Markup", m(t.sell),"")+
+    tile("P &amp; F", m(t.pf), `@ ${t.pf_pct}%`)+
+    tile("Designing", m(t.design), `@ ${t.design_pct}%`)+
+    tile("Negotiation", m(t.nego), `@ ${t.nego_pct}%`)+
+    tile("Transport", m(t.transport),"")+
+    tile("Final per Furnace", m(t.final),"")+
+    tile("Order Total", m(t.order), t.qty>1?`× ${t.qty}`:"");
+  if(note) note.textContent = t.qty>1
+    ? `Final is rounded up to the nearest thousand, then multiplied by ${t.qty}.`
+    : "Final is rounded up to the nearest thousand.";
+}
+
+
+// What /api/export-excel expects: the same keys the regen page sends, so the
+// Commercial Summary block in the sheet fills in the same way.
+function commercialExportPayload(){
+  const t=commercialTotals();
+  if(!t) return {};
+  return {
+    commercial:{
+      total_cost:t.cost, markup:t.sell, grand_total:t.sell,
+      pf_pct:t.pf_pct, pf_amount:t.pf,
+      design_pct:t.design_pct, design_amount:t.design,
+      neg_pct:t.nego_pct, neg_amount:t.nego,
+      transport_amount:t.transport,
+      final_total:t.final, order_qty:t.qty, order_total:t.order,
+    },
+    order_qty:t.qty,
+    currency:t.currency,
+  };
+}
 
 // ── Customer & enquiry ─────────────────────────────────────────────────────
 // The reference is issued by the server, not assembled here: the sequence has
@@ -899,6 +990,7 @@ function renderAll(data,showNG,showCL){
   // ═══ SHEET 0: Sizing — computed, not stored ═══
   renderSizing(data.sizing);
   renderDuty(data.sizing);
+  commercialPreview();
   if(data.furnace) renderFurnace(data.furnace);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
@@ -1048,7 +1140,7 @@ function renderAll(data,showNG,showCL){
 
 async function downloadExcel(){
   if(!lastData)return;
-  const res=await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({equipment_type:"SNSF BRF",customer:customerPayload(),bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}})});
+  const res=await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({equipment_type:"SNSF BRF",customer:customerPayload(),bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}}, commercialExportPayload()))});
   const blob=await res.blob();const a=document.createElement("a");a.href=URL.createObjectURL(blob);
   a.download=`SNSF_BRF_Costing_${new Date().toISOString().slice(0,10)}.xlsx`;a.click();
 }
