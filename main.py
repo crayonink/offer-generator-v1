@@ -3465,8 +3465,33 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
         gas_label_map = {"NG": "Natural Gas (NG)", "LPG": "LPG", "COG": "Coke Oven Gas (COG)"}
         gas_label = gas_label_map.get(gas_line, gas_line)
 
-        pilot_qty = int(next((r.get("qty", 2) for r in payload.bom
-                              if "pilot" in (r.get("item") or "").lower()), 2))
+        pilot_row = next((r for r in payload.bom
+                          if "pilot" in (r.get("item") or "").lower() or "burner" in (r.get("item") or "").lower()), None)
+        pilot_qty = int(pilot_row.get("qty", 2)) if pilot_row and pilot_row.get("qty") else 2
+        total_burners  = pilot_qty * qty
+        equip_subtotal = round(unit_sell * qty)
+
+        # Extract burner capacity from BOM item name/ref (e.g. "Pilot Burner 100 kW" -> "100 kW")
+        burner_cap = "100 kW"
+        if pilot_row:
+            item_str = (pilot_row.get("item") or "") + " " + (pilot_row.get("ref") or "")
+            import re
+            m = re.search(r"(\d+\s*k?W)", item_str, re.IGNORECASE)
+            if m:
+                found_kw = m.group(1).strip()
+                burner_cap = found_kw if "KW" in found_kw.upper() else f"{found_kw} kW"
+
+        pf_pct        = float(payload.pf_pct or 0)
+        design_pct    = float(payload.design_pct or 0)
+        neg_pct       = float(payload.neg_pct or 0)
+        transport_amt = float(payload.transport_amt or 0)
+
+        pf_amt     = round(equip_subtotal * pf_pct / 100)
+        design_amt = round(equip_subtotal * design_pct / 100)
+        neg_amt    = round(equip_subtotal * neg_pct / 100)
+
+        has_adjustments = bool(pf_pct or design_pct or neg_pct or transport_amt)
+        _fmt_pct = lambda p: str(int(p)) if float(p) == int(p) else str(p)
 
         # Gas line items for the fuel1 line bullets in the offer
         gas_line_items_map = {
@@ -3516,7 +3541,7 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
         company_address = ", ".join(filter(None, [
             c.get("address",""), c.get("city",""), c.get("state",""), c.get("pin","")]))
 
-        _m = lambda x: "₹ " + _format_inr(round(float(x or 0))).rstrip(".00").rstrip(".")
+        _m = lambda x: "₹ " + _format_inr(round(float(x or 0))).split(".")[0]
         total_words = amount_in_words_indian(total)
 
         # Build template context — matches SEN_Preheater_Offer_Template.docx variable names
@@ -3552,20 +3577,27 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
             "fuel_name":         gas_label,
             "gas_line":          gas_line,
             "heating_time":      "60 minutes",
-            "num_burners_sen":   f"{pilot_qty} Nos. (2 Nos. per strand)",
-            "burner_capacity_sen": "10 kW",
+            "num_burners_sen":   f"{total_burners} Nos. ({pilot_qty} Nos. per set)" if qty > 1 else f"{pilot_qty} Nos. (2 Nos. per strand)",
+            "burner_capacity_sen": burner_cap,
             "blower_spec_sen":   "3HP / 28\" WC, 300 CFM, 510 Nm\u00B3/hr.",
-            "sen_quantity":      f"{qty} Set",
+            "sen_quantity":      f"{qty} Set" if qty == 1 else f"{qty} Sets",
 
             # ── Scope narrative ──────────────────────────────────────────────
             "sen_objective": (
                 f"Our main objective is to heat the tundish nozzle through "
+                f"{total_burners} nos. {gas_label} fired burners ({pilot_qty} nos. per set). "
+                f"Burners will be ignited through Torch manually."
+            ) if qty > 1 else (
+                f"Our main objective is to heat the tundish nozzle through "
                 f"{pilot_qty} nos. {gas_label} fired burners for each strand. "
                 f"Burners will be ignited through Torch manually."
             ),
-            "sen_burners_heading": f"ENCON {gas_line} BURNERS FOR SEN \u2013 {pilot_qty} Nos.",
+            "sen_burners_heading": f"ENCON {gas_line} BURNERS FOR SEN \u2013 {total_burners} Nos. ({burner_cap})",
             "sen_burners_body": (
-                f"Two {gas_label} fired ENCON Burners each strand will be supplied for "
+                f"{total_burners} {gas_label} fired ENCON Burners ({burner_cap}, {pilot_qty} Nos. per set across {qty} sets) will be supplied for "
+                f"firing & heating of SEN. Burners will be ignited through manual Torch."
+            ) if qty > 1 else (
+                f"Two {gas_label} fired ENCON Burners ({burner_cap}) each strand will be supplied for "
                 f"firing & heating of SEN. Burners will be ignited through manual Torch."
             ),
             "gas_line_label":     f"{gas_line} LINE FOR BURNERS",
@@ -3611,13 +3643,14 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
             "adv_closing":       [],
             "burner_model":      f"ENCON {gas_line} Burner",
             "burner_fuel":       gas_label,
-            "burner_capacity":   "10 kW",
+            "burner_capacity":   burner_cap,
 
             # ── Price Schedule ───────────────────────────────────────────────
-            "item_qty":             f"{qty} Set",
+            "item_qty":             f"{qty:02d} Set" if qty == 1 else f"{qty:02d} Sets",
             "unit_price":           _m(unit_sell),
             "total_price":          _m(total),
             "grand_total":          _m(total),
+            "total_in_words":       total_words,
 
             # ── T&C ─────────────────────────────────────────────────────────
             "tnc_prices":             c.get("tnc_prices","EX Bhagola (Ex-Works)"),
@@ -7573,8 +7606,15 @@ def costing_excel(req: CostingExcelRequest):
             r += 1
             return used
 
+        unit_sell = _num(s.get("unit_sell"))
+        equip_qty = _num(s.get("equip_qty") if s.get("equip_qty") is not None else s.get("qty"))
+        if unit_sell is not None:
+            _line("Unit Sell Price", unit_sell)
+            if equip_qty is not None and equip_qty > 0:
+                _line(f"Quantity ({int(equip_qty)} Set{'s' if equip_qty > 1 else ''})", equip_qty)
+
         subtotal = _num(s.get("subtotal"))
-        sub_label = s.get("subtotal_label") or "Grand Total"
+        sub_label = s.get("subtotal_label") or "Subtotal"
         rows = {}
         if subtotal is not None:
             rows["sub"] = _line(sub_label, s.get("subtotal"))
@@ -7582,21 +7622,25 @@ def costing_excel(req: CostingExcelRequest):
         # A percentage line becomes "=G{sub}*pct/100" only when the passed amount
         # actually equals subtotal × pct (some products apply the % to a marked-up
         # base, so the shown subtotal isn't the pct base → keep the exact value).
-        def _pct_line(amt_key, pct_key, label_fmt):
+        def _pct_line(amt_key, pct_key, label_fmt, is_deduction=False):
             amt = _num(s.get(amt_key))
-            if amt is None:
+            if amt is None or amt == 0:
                 return
             pct = _num(s.get(pct_key)) or 0
             f = None
-            if "sub" in rows and subtotal not in (None, 0) and abs(amt - subtotal * pct / 100) < 0.5:
-                f = f"=G{rows['sub']}*{_fmt_pct(pct)}/100"
-            rows[amt_key] = _line(label_fmt.format(pct=_fmt_pct(pct)), s.get(amt_key), formula=f)
+            val = -abs(amt) if is_deduction else abs(amt)
+            if "sub" in rows and subtotal not in (None, 0) and abs(abs(amt) - subtotal * pct / 100) < 0.5:
+                prefix = "-" if is_deduction else ""
+                f = f"={prefix}G{rows['sub']}*{_fmt_pct(pct)}/100"
+            rows[amt_key] = _line(label_fmt.format(pct=_fmt_pct(pct)), val, formula=f)
 
         _pct_line("pf_amount", "pf_pct", "Packaging & Forwarding ({pct} %)")
-        _pct_line("design_amount", "design_pct", "Designing ({pct} %)")
-        _pct_line("neg_amount", "neg_pct", "Negotiation ({pct} %)")
-        if _num(s.get("transport_amount")) is not None:
-            rows["transport"] = _line("Transport", s.get("transport_amount"))
+        _pct_line("design_amount", "design_pct", "Designing Charges ({pct} %)")
+        _pct_line("neg_amount", "neg_pct", "Discount / Negotiation ({pct} %)", is_deduction=True)
+
+        trn_amt = _num(s.get("transport_amount"))
+        if trn_amt is not None and trn_amt > 0:
+            rows["transport"] = _line("Freight & Transport Charges", trn_amt)
 
         # Final Total: formula only when it reconciles with the lines above
         # (either a straight SUM, or a SUM rounded up to the nearest ₹1,000).
@@ -7604,10 +7648,11 @@ def costing_excel(req: CostingExcelRequest):
         ffml = None
         if "sub" in rows and final is not None:
             first, last = rows["sub"], r - 1
-            parts = [subtotal or 0] + [(_num(s.get(k)) or 0) for k in
-                     ("pf_amount", "design_amount", "neg_amount", "transport_amount")
-                     if _num(s.get(k)) is not None]
-            ssum = sum(parts)
+            pf_val  = _num(s.get("pf_amount")) or 0
+            des_val = _num(s.get("design_amount")) or 0
+            neg_val = _num(s.get("neg_amount")) or 0
+            trn_val = _num(s.get("transport_amount")) or 0
+            ssum = (subtotal or 0) + pf_val + des_val - neg_val + trn_val
             if abs(final - (math.ceil(ssum / 1000) * 1000)) < 0.5:
                 ffml = f"=CEILING(SUM(G{first}:G{last}),1000)"
             elif abs(final - ssum) < 0.5:

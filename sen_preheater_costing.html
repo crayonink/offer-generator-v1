@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
@@ -1605,8 +1605,10 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 					company_name: cust.company || "",
 					bom,
 					summary: {
-						subtotal_label: "Bought-out (cost)",
-						subtotal: Math.round(bSum),
+						unit_sell: unitSell,
+						equip_qty: qty,
+						subtotal_label: "Subtotal",
+						subtotal: Math.round(sub),
 						pf_pct: pf,
 						pf_amount: Math.round((sub * pf) / 100),
 						design_pct: des,
