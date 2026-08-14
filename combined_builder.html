@@ -224,6 +224,7 @@ const EMBED_SRC = {
   'Tundish Preheater':'/tundish?embed=1', 'Recuperator':'/recup?embed=1',
   'Tundish Dryer':'/tundish-dryer?embed=1',
   'Tundish Cooling System':'/tundish-cooling?embed=1',
+  'SEN Preheater':'/sen-preheater?embed=1',
   'SEN Preheating Stove':'/sen-stove?embed=1',
   'SES Preheating Oven':'/sen-stove?embed=1&kind=oven',
 };
@@ -232,6 +233,7 @@ const TYPE_DESC = {
   'Tundish Preheater':'Full tundish config + BOM', 'Recuperator':'Full recuperator config + BOM',
   'Tundish Dryer':'Full tundish dryer config + BOM',
   'Tundish Cooling System':'Cooling fans × 2 + MS frame + damper',
+  'SEN Preheater':'SEN Preheater config + BOM (1200 °C)',
   'SEN Preheating Stove':'Compressed-air + NG lines + pilot burners (1200 °C)',
   'SES Preheating Oven':'Same build as the stove — oven variant (1200 °C)',
   'HPU':'Pick variant + kW · auto price', 'Pumping Unit':'Pick variant + kW · auto price',
@@ -256,7 +258,7 @@ function goStep(n) {
 }
 
 /* ── Step 2: selection ── */
-const TUNDISH_SYSTEM = ['Tundish Preheater', 'Tundish Dryer', 'Tundish Cooling System', 'SEN Preheating Stove', 'SES Preheating Oven'];
+const TUNDISH_SYSTEM = ['Tundish Preheater', 'Tundish Dryer', 'Tundish Cooling System', 'SEN Preheater', 'SES Preheating Oven'];
 function renderTypes() {
   const combo = `<div class="type" onclick="addTundishSystem()" style="border:2px solid var(--navy);background:#f0f6ff;grid-column:1/-1">
       <div class="t">Complete Tundish System <span style="font-size:.7rem;font-weight:700;color:var(--navy);background:#dbeafe;padding:2px 8px;border-radius:20px;margin-left:6px">Full line</span></div>

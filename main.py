@@ -7665,25 +7665,21 @@ def costing_excel(req: CostingExcelRequest):
         # A percentage line becomes "=G{sub}*pct/100" only when the passed amount
         # actually equals subtotal × pct (some products apply the % to a marked-up
         # base, so the shown subtotal isn't the pct base → keep the exact value).
-        def _pct_line(amt_key, pct_key, label_fmt, is_deduction=False):
+        def _pct_line(amt_key, pct_key, label_fmt):
             amt = _num(s.get(amt_key))
-            if amt is None or amt == 0:
+            if amt is None:
                 return
             pct = _num(s.get(pct_key)) or 0
             f = None
-            val = -abs(amt) if is_deduction else abs(amt)
-            if "sub" in rows and subtotal not in (None, 0) and abs(abs(amt) - subtotal * pct / 100) < 0.5:
-                prefix = "-" if is_deduction else ""
-                f = f"={prefix}G{rows['sub']}*{_fmt_pct(pct)}/100"
-            rows[amt_key] = _line(label_fmt.format(pct=_fmt_pct(pct)), val, formula=f)
+            if "sub" in rows and subtotal not in (None, 0) and abs(amt - subtotal * pct / 100) < 0.5:
+                f = f"=G{rows['sub']}*{_fmt_pct(pct)}/100"
+            rows[amt_key] = _line(label_fmt.format(pct=_fmt_pct(pct)), s.get(amt_key), formula=f)
 
         _pct_line("pf_amount", "pf_pct", "Packaging & Forwarding ({pct} %)")
-        _pct_line("design_amount", "design_pct", "Designing Charges ({pct} %)")
-        _pct_line("neg_amount", "neg_pct", "Discount / Negotiation ({pct} %)", is_deduction=True)
-
-        trn_amt = _num(s.get("transport_amount"))
-        if trn_amt is not None and trn_amt > 0:
-            rows["transport"] = _line("Freight & Transport Charges", trn_amt)
+        _pct_line("design_amount", "design_pct", "Designing ({pct} %)")
+        _pct_line("neg_amount", "neg_pct", "Negotiation ({pct} %)")
+        if _num(s.get("transport_amount")) is not None:
+            rows["transport"] = _line("Transport", s.get("transport_amount"))
 
         # Final Total: formula only when it reconciles with the lines above
         # (either a straight SUM, or a SUM rounded up to the nearest ₹1,000).
@@ -7691,11 +7687,10 @@ def costing_excel(req: CostingExcelRequest):
         ffml = None
         if "sub" in rows and final is not None:
             first, last = rows["sub"], r - 1
-            pf_val  = _num(s.get("pf_amount")) or 0
-            des_val = _num(s.get("design_amount")) or 0
-            neg_val = _num(s.get("neg_amount")) or 0
-            trn_val = _num(s.get("transport_amount")) or 0
-            ssum = (subtotal or 0) + pf_val + des_val - neg_val + trn_val
+            parts = [subtotal or 0] + [(_num(s.get(k)) or 0) for k in
+                     ("pf_amount", "design_amount", "neg_amount", "transport_amount")
+                     if _num(s.get(k)) is not None]
+            ssum = sum(parts)
             if abs(final - (math.ceil(ssum / 1000) * 1000)) < 0.5:
                 ffml = f"=CEILING(SUM(G{first}:G{last}),1000)"
             elif abs(final - ssum) < 0.5:

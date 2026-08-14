@@ -1776,9 +1776,118 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 				} catch (e) {}
 			}
 
+			/* ── Combined-builder embed mode ───────────────────────────────────────────── */
+			const EMBED = new URLSearchParams(location.search).get("embed") === "1";
+			async function _useInCombined(prodType, prodLabel) {
+				try {
+					if (!_rows.length) {
+						await _loadBom();
+					}
+					if (!_rows.length) {
+						alert("Please wait for the BOM to finish loading (Step 2).");
+						return;
+					}
+					const gasLine = typeof _gasLine !== "undefined" ? _gasLine : "NG";
+					const qtyEl = document.getElementById("qty-units");
+					const qty = Math.max(1, parseInt((qtyEl && qtyEl.value) || "1", 10));
+					let bSum = 0, eSum = 0;
+					const bom = _visibleRows().map((r) => {
+						const rqty = r._qty != null ? r._qty : r.qty;
+						const basic = r._basic != null ? r._basic : r.basic;
+						const tot = rqty * basic;
+						if (r.section === "encon") eSum += tot;
+						else bSum += tot;
+						return {
+							media: r.media || (r.section === "encon" ? "ENCON ITEMS" : "BOUGHT OUT ITEMS"),
+							item: r.item,
+							ref: r.ref || "",
+							qty: rqty,
+							unit_price: Math.round(basic),
+							total: Math.round(tot),
+						};
+					});
+					const mkEl = document.getElementById("markup");
+					const mk = parseFloat((mkEl && mkEl.value) || "1.8") || 1.8;
+					const unitSell = Math.round(bSum * mk + eSum);
+					const total = unitSell * qty;
+
+					const pilotRow = bom.find((r) => /pilot|burner/i.test(r.item || ""));
+					const pilotQty = pilotRow ? pilotRow.qty : 2;
+					const totalBurners = pilotQty * qty;
+					let burnerCap = "100 kW";
+					if (pilotRow) {
+						const m = (pilotRow.item + " " + (pilotRow.ref || "")).match(/(\d+\s*k?W)/i);
+						if (m) burnerCap = m[1].toUpperCase().includes("KW") ? m[1].trim() : m[1].trim() + " kW";
+					}
+
+					const specRows = [
+						{ label: "Heating Medium", value: `${gasLine} Fired Burners` },
+						{ label: "Gas Line", value: `${gasLine} Line` },
+						{ label: "No. of Burners", value: `${totalBurners} Nos. (${pilotQty} Nos. per set)` },
+						{ label: "Burner Capacity", value: burnerCap },
+						{ label: "Ignition of Burner", value: "Manual" },
+					];
+
+					const name = `SEN Preheater (${gasLine} Line)`;
+					let _qp = {};
+					try {
+						_qp = {
+							customer: _customerPayload(),
+							gas_line: gasLine,
+							bom: bom,
+							unit_sell: unitSell,
+							qty: qty,
+						};
+					} catch (e) {}
+
+					parent.postMessage(
+						{
+							source: "encon-combined-equipment",
+							type: "SEN Preheater",
+							name: name,
+							specs: specRows.slice(0, 3).map((s) => s.value).join(" · "),
+							spec_rows: specRows,
+							total: total,
+							bom: bom,
+							quote_payload: _qp,
+						},
+						"*"
+					);
+					const b = document.getElementById("_use-combined-btn");
+					if (b) {
+						b.textContent = "✓ Added — ₹ " + total.toLocaleString("en-IN") + " (click to update)";
+						b.style.background = "#15803d";
+					}
+				} catch (err) {
+					console.error("Error in _useInCombined:", err);
+					alert("Could not add to combined offer: " + (err.message || err));
+				}
+			}
+
+			function _initEmbed(prodType, prodLabel) {
+				if (!EMBED) return;
+				document.body.classList.add("embed");
+				const st = document.createElement("style");
+				st.textContent =
+					'.embed .topnav-links,.embed #gen-btn,.embed #gen-error,.embed #xlsx-btn,.embed button[onclick="goStep(4)"]{display:none!important}.embed .topnav{padding:0 16px}';
+				document.head.appendChild(st);
+				const host = document.getElementById("panel-2") || document.body;
+				const bar = document.createElement("div");
+				bar.style.cssText =
+					"position:sticky;bottom:0;background:#fff;border-top:1.5px solid #e2e8f0;padding:14px 0;margin-top:14px;text-align:center;z-index:999;";
+				bar.innerHTML =
+					'<button id="_use-combined-btn" class="btn-primary" style="padding:13px 26px;font-size:1rem;cursor:pointer;">Use in Combined Offer ↑</button>';
+				bar
+					.querySelector("button")
+					.addEventListener("click", () => _useInCombined(prodType, prodLabel));
+				host.appendChild(bar);
+				if (typeof goStep === "function") goStep(2);
+			}
+
 			/* ── Boot ────────────────────────────────────────────────────────────────── */
 			document.addEventListener("DOMContentLoaded", () => {
 				_loadSticky();
+				_initEmbed("SEN Preheater", "SEN Preheater");
 				document.addEventListener("input", _saveSticky, true);
 				document.addEventListener("change", _saveSticky, true);
 				window.addEventListener("pagehide", _saveSticky);
