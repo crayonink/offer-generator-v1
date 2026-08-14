@@ -3431,160 +3431,239 @@ class SenPreheaterQuotePayload(BaseModel):
 
 @app.post("/api/generate-sen-preheater-quote")
 def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Request):
-    """Generate Word offer + Excel cost sheet for the SEN Preheater.
-    Uses the same _generate_equipment_offer machinery as Burner / Blower."""
+    """Generate Word offer for the SEN Preheater using Offer_Template.docx —
+    same template as VLPH/Tundish, giving the full company profile, T&C,
+    reference list and make list sections."""
     try:
+        from engine.quote_writer import generate_quote_docx, amount_in_words_indian, _format_inr
+        from engine.pdf_writer import generate_quote_pdf
+
         c = payload.customer
-        # Build an HpuCustomer-compatible object from the dict the frontend sends
-        cust = HpuCustomer(
-            salutation=c.get("salutation", ""),
-            name=c.get("name", ""),
-            email=c.get("email", ""),
-            phone=c.get("phone", ""),
-            company=c.get("company", ""),
-            designation=c.get("designation", ""),
-            address=c.get("address", ""),
-            city=c.get("city", ""),
-            state=c.get("state", ""),
-            pin=c.get("pin", ""),
-            gstin=c.get("gstin", ""),
-            ref_no=c.get("ref_no", ""),
-            location=c.get("location", "Faridabad"),
-            subject=c.get("subject", "Offer for ENCON SEN Preheater"),
-            marketing_salutation=c.get("marketing_salutation", ""),
-            marketing=c.get("marketing", ""),
-            marketing_email=c.get("marketing_email", ""),
-            marketing_phone=c.get("marketing_phone", ""),
-            technical_salutation=c.get("technical_salutation", ""),
-            technical=c.get("technical", ""),
-            technical_email=c.get("technical_email", ""),
-            technical_phone=c.get("technical_phone", ""),
-            tnc_prices=c.get("tnc_prices", "EX Bhagola (Ex-Works)"),
-            tnc_delivery=c.get("tnc_delivery", "6 – 8 weeks from receipt of advance."),
-            tnc_gst=c.get("tnc_gst", "18% extra."),
-            tnc_hsn_code=c.get("tnc_hsn_code", "84161000"),
-            tnc_pan_gst=c.get("tnc_pan_gst", "PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"),
-            tnc_payment_terms=c.get("tnc_payment_terms", "30% advance, 70% before dispatch"),
-            tnc_packing_forwarding=c.get("tnc_packing_forwarding", "4% and 2% respectively."),
-            tnc_freight=c.get("tnc_freight", "In client's scope."),
-            tnc_transit_insurance=c.get("tnc_transit_insurance", "To be arranged by the client."),
-            tnc_validity=c.get("tnc_validity", "45 days from the date of our offer."),
-            tnc_inspection=c.get("tnc_inspection", ""),
-            tnc_guarantee=c.get("tnc_guarantee", "18 months from dispatch or 12 months from commissioning."),
-        )
-
-        gas_line = payload.gas_line or "NG"
-        qty = max(1, int(payload.qty or 1))
+        gas_line  = payload.gas_line or "NG"
+        qty       = max(1, int(payload.qty or 1))
         unit_sell = float(payload.unit_sell or 0)
+        total     = round(payload.final_total or unit_sell * qty)
 
-        # Gas line label for the offer doc
         gas_label_map = {"NG": "Natural Gas (NG)", "LPG": "LPG", "COG": "Coke Oven Gas (COG)"}
         gas_label = gas_label_map.get(gas_line, gas_line)
 
-        equipment_name = f"SEN Preheater ({gas_line} Line)"
+        pilot_qty = int(next((r.get("qty", 2) for r in payload.bom
+                              if "pilot" in (r.get("item") or "").lower()), 2))
 
-        # Pilot burner qty from BOM (find it in the rows)
-        pilot_qty = next((r.get("qty", 2) for r in payload.bom
-                          if "pilot" in (r.get("item") or "").lower()), 2)
-
-        # Technical data section — mirrors the standard SEN preheater spec
-        tech_data_rows = [
-            {"label": "Heating Medium",        "value": f"{gas_label} Fired Burners"},
-            {"label": "Quantity",              "value": f"{qty} Set"},
-            {"label": "Minimum Temperature",   "value": "Ambient to 1200°C"},
-            {"label": "Heating Time",          "value": "60 minutes"},
-            {"label": f"{gas_line} Burner Capacity", "value": "10 kW (per burner)"},
-            {"label": "No. of Burners",        "value": f"{int(pilot_qty)} Nos."},
-            {"label": "Ignition of Burner",    "value": "Manual"},
-        ]
-
-        # Scope of supply — builds bullet list from BOM rows
-        scope_items = [{"item": r.get("item", "")} for r in payload.bom if r.get("item")]
-
-        # Scope intro narrative
-        scope_intro = (
-            f"Supply ex-works of {qty} set(s) of ENCON SEN Preheater complete with "
-            f"{gas_label} line, compressed air line, {int(pilot_qty)} nos. pilot burner, "
-            f"control panel, fabrication & trolley on caster wheels, and all necessary accessories."
-        )
-
-        # Full technical narrative for price_desc (shown in offer body)
-        objective = (
-            f"Our main objective is to heat the SEN (Submerged Entry Nozzle) through "
-            f"{int(pilot_qty)} nos. {gas_label} fired burners. "
-            f"Burners will be ignited through manual torch."
-        )
-
-        price_bullets_map = {
+        # Gas line items for the fuel1 line bullets in the offer
+        gas_line_items_map = {
             "NG":  [
-                "NG Line: Ball Valve, Pressure Gauge, Pressure Regulating Valve, Pressure Switch (Low/High), Solenoid Valve",
-                "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
-                f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
-                "Control Panel: Fully wired, ENCON make",
-                "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
-                "Air-Gas Pipeline: MS material",
+                {"item": "Ball Valve"},
+                {"item": "Pressure Gauge with manual cock"},
+                {"item": "Pressure Regulating Valve in main line"},
+                {"item": "Pressure Switch (Low & High)"},
+                {"item": "Solenoid Valve"},
             ],
             "LPG": [
-                "LPG Line: Ball Valve, Pressure Gauge, Pressure Regulating Valve, Pressure Switch (Low/High), Solenoid Valve",
-                "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
-                f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
-                "Control Panel: Fully wired, ENCON make",
-                "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
-                "Air-Gas Pipeline: MS material",
+                {"item": "Ball Valve"},
+                {"item": "Pressure Gauge with manual cock"},
+                {"item": "Pressure Regulator in main line"},
+                {"item": "Ball Valve for Individual Burner"},
             ],
             "COG": [
-                "COG Gas Line: Ball Valve 25 NB, Pressure Gauge with TNV, Shut Off Valve 25 NB, Pressure Switch Low",
-                "Compressed Air Line: Ball Valves, Pressure Gauges, Pressure Regulating Valve, Pressure Switch",
-                f"Pilot Burner: {int(pilot_qty)} Nos. × 100 kW ENCON Burners",
-                "Control Panel: Fully wired, ENCON make",
-                "Fabrication & Trolley: MS fabricated, supported on 4 nos. caster wheels",
-                "Air-Gas Pipeline: MS material",
+                {"item": "Ball Valve 25 NB"},
+                {"item": "Pressure Gauge with TNV"},
+                {"item": "Shut Off Valve 25 NB"},
+                {"item": "Pressure Switch Low (Switzer)"},
             ],
         }
-        price_bullets = price_bullets_map.get(gas_line, price_bullets_map["NG"])
 
-        specs = {
-            "scope_intro":  scope_intro,
-            "scope_items":  scope_items,
-            "advantages_kind": None,
-            # Burner_Offer_Template specific fields
-            "burner_model":    f"SEN Preheater – {gas_line} Line",
-            "burner_fuel":     gas_label,
-            "burner_capacity": f"{int(pilot_qty)} × 100 kW",
-            "price_desc": {
-                "heading":  f"SEN PREHEATER – {gas_line} LINE",
-                "body":     scope_intro + "\n\nOBJECTIVE: " + objective,
-                "bullets":  price_bullets,
-                "notes":    [
-                    f"Preheating Temp: Ambient to 1200°C  |  Heating Time: 60 min",
-                    f"Gas Supply at required pressure and flow to be provided by client.",
-                ],
-            },
+        # Air line bullets (same for all gas types)
+        air_line_items = [
+            {"item": "Pressure Gauges with TNV"},
+            {"item": "Pressure Switch (Low)"},
+            {"item": "Butterfly Valve for manual Air regulation in main line"},
+            {"item": "Ball Valve for Individual Burner"},
+        ]
+
+        # Note per gas type
+        note_map = {
+            "NG":  "NG at required pressure and flow shall be provided by client. The required flow and pressure will be confirmed after designing and order finalization.",
+            "LPG": "LPG at required pressure and flow shall be provided by client. The required flow and pressure will be confirmed after designing and order finalization.",
+            "COG": "COG (Coke Oven Gas) at required pressure and flow shall be provided by client. The required flow and pressure will be confirmed after designing and order finalization.",
         }
 
-        # Use Burner_Offer_Template — it has the right scope/tech-data sections
-        template_name = "Burner_Offer_Template.docx"
+        # Scope of supply bullet list from BOM
+        scope_items = [{"item": r.get("item", "")} for r in payload.bom if r.get("item")]
 
-        result = _generate_equipment_offer(
-            cust,
-            equipment_name=equipment_name,
-            specs=specs,
-            unit_price=unit_sell,
-            qty=qty,
-            template_name=template_name,
-            filename_infix="SEN_Preheater",
-            drive_product="sen_preheater",
-            pf_pct=payload.pf_pct,
-            design_pct=payload.design_pct,
-            neg_pct=payload.neg_pct,
-            transport_amt=payload.transport_amt,
-        )
-        result["total_price"] = round(payload.final_total or unit_sell * qty)
-        return result
+        seq      = next_quote_seq()
+        _form_ref = (c.get("ref_no") or "").strip()
+        auto_ref  = _form_ref or build_enquiry_ref(seq, c.get("technical", ""), c.get("location", ""))
+
+        company_address = ", ".join(filter(None, [
+            c.get("address",""), c.get("city",""), c.get("state",""), c.get("pin","")]))
+
+        _m = lambda x: "₹ " + _format_inr(round(float(x or 0))).rstrip(".00").rstrip(".")
+        total_words = amount_in_words_indian(total)
+
+        # Build template context — matches SEN_Preheater_Offer_Template.docx variable names
+        ctx = {
+            # Cover / customer block
+            "company_name":      c.get("company", ""),
+            "company_address":   company_address,
+            "poc_name":          _with_salutation(c.get("salutation",""), c.get("name","")),
+            "poc_greeting":      _greeting(c.get("salutation","")),
+            "poc_designation":   c.get("designation",""),
+            "mobile_no":         c.get("phone",""),
+            "email":             c.get("email",""),
+            "project_name":      c.get("subject","") or f"SEN Preheater ({gas_line} Line)",
+            "subject":           c.get("subject","") or f"Offer for ENCON SEN Preheater ({gas_line} Line)",
+            "equipment_name":    f"SEN Preheater ({gas_line} Line)",
+            "enquiry_ref":       auto_ref,
+            "enquiry_ref_short": auto_ref.split(" DT.")[0],
+            "enquiry_date_str":  __import__('datetime').datetime.now().strftime("%d/%m/%Y"),
+            "your_ref":          c.get("ref_no",""),
+            "marketing_person":  _with_salutation(c.get("marketing_salutation",""), c.get("marketing","")),
+            "marketing_email":   c.get("marketing_email",""),
+            "marketing_phone":   c.get("marketing_phone",""),
+            "technical_person":  _with_salutation(c.get("technical_salutation",""), c.get("technical","")),
+            "technical_email":   c.get("technical_email",""),
+            "technical_phone":   c.get("technical_phone",""),
+
+            # ── Technical Specifications table ──────────────────────────────
+            "is_tundish":        True,
+            "is_horizontal":     False,
+            "is_dual":           False,
+            "is_oil":            False,
+            "is_manual":         True,
+            "fuel_name":         gas_label,
+            "gas_line":          gas_line,
+            "heating_time":      "60 minutes",
+            "num_burners_sen":   f"{pilot_qty} Nos. (2 Nos. per strand)",
+            "burner_capacity_sen": "10 kW",
+            "blower_spec_sen":   "3HP / 28\" WC, 300 CFM, 510 Nm\u00B3/hr.",
+            "sen_quantity":      f"{qty} Set",
+
+            # ── Scope narrative ──────────────────────────────────────────────
+            "sen_objective": (
+                f"Our main objective is to heat the tundish nozzle through "
+                f"{pilot_qty} nos. {gas_label} fired burners for each strand. "
+                f"Burners will be ignited through Torch manually."
+            ),
+            "sen_burners_heading": f"ENCON {gas_line} BURNERS FOR SEN \u2013 {pilot_qty} Nos.",
+            "sen_burners_body": (
+                f"Two {gas_label} fired ENCON Burners each strand will be supplied for "
+                f"firing & heating of SEN. Burners will be ignited through manual Torch."
+            ),
+            "gas_line_label":     f"{gas_line} LINE FOR BURNERS",
+            "fuel1_line_label":   f"{gas_line} LINE FOR BURNERS",
+            "fuel1_line_items":   gas_line_items_map.get(gas_line, gas_line_items_map["NG"]),
+            "fuel1_is_oil":       False,
+            "fuel1_cv_name":      "",
+            "fuel2_line_label":   "",
+            "fuel2_line_items":   [],
+            "fuel2_is_oil":       False,
+            "fuel2_cv_name":      "",
+            "air_pipeline_items": air_line_items,
+            "air_cv_name":        "",
+            "cv_bullets":         [],
+            "gas_pipeline_items": [],
+            "pilot_pipeline_items": [],
+            "sen_combustion_blower_text": (
+                "To supply combustion and atomizing air to the above burner, we will be supplying "
+                "a centrifugal steel plate air blower of suitable capacity and pressure equipped "
+                "with squirrel cage induction motor of reputed make such as ABB or Crompton."
+            ),
+            "sen_trolley_text": (
+                "We shall supply one no. MS fabricated Trolley supported on 4 nos. of wheels "
+                "(two wheels at one location) Movement of the trolley shall be driven manually. "
+                "The rail for trolley is in CLIENT Scope."
+            ),
+            "sen_roller_rack_text": (
+                "We shall supply one no. MS fabricated Roller \u2013 Mounted racks with handle "
+                "arrangement to move the SEN System manually up to Tundish for the above SEN "
+                "Preheater as per the requirement."
+            ),
+            "sen_note": note_map.get(gas_line, note_map["NG"]),
+
+            # Unused Burner template compat fields — set empty
+            "scope_intro":       "",
+            "scope_items":       [],
+            "adv_title":         "",
+            "adv_items":         [],
+            "adv_sub1_title":    "",
+            "adv_sub1_items":    [],
+            "adv_sub2_title":    "",
+            "adv_sub2_items":    [],
+            "adv_closing":       [],
+            "burner_model":      f"ENCON {gas_line} Burner",
+            "burner_fuel":       gas_label,
+            "burner_capacity":   "10 kW",
+
+            # ── Price Schedule ───────────────────────────────────────────────
+            "item_qty":             f"{qty} Set",
+            "unit_price":           _m(unit_sell),
+            "total_price":          _m(total),
+            "grand_total":          _m(total),
+
+            # ── T&C ─────────────────────────────────────────────────────────
+            "tnc_prices":             c.get("tnc_prices","EX Bhagola (Ex-Works)"),
+            "tnc_delivery":           c.get("tnc_delivery","16 \u2013 20 Weeks from receipt of advance."),
+            "tnc_gst":                c.get("tnc_gst","18% extra."),
+            "tnc_hsn_code":           c.get("tnc_hsn_code","84541000"),
+            "tnc_pan_gst":            c.get("tnc_pan_gst","PAN: AAACE0327M  |  GST: 06AAACE0327M1ZV"),
+            "tnc_payment_terms":      c.get("tnc_payment_terms","30% advance with the purchase order\n70% against proforma invoice prior to dispatch"),
+            "tnc_packing_forwarding": c.get("tnc_packing_forwarding","4% and 2% respectively."),
+            "tnc_freight":            c.get("tnc_freight","In client's scope."),
+            "tnc_transit_insurance":  c.get("tnc_transit_insurance","To be arranged by the client."),
+            "tnc_validity":           c.get("tnc_validity","45 days from the date of our offer."),
+            "tnc_inspection":         c.get("tnc_inspection","If required, materials can be inspected at our works before dispatch at your cost with earlier intimation."),
+            "tnc_guarantee":          c.get("tnc_guarantee","18 months from dispatch or 12 months from commissioning, whichever is earlier."),
+        }
+
+        # Render using the dedicated SEN_Preheater_Offer_Template.docx
+        from docxtpl import DocxTemplate
+        tpl_path  = os.path.join(BASE_DIR, "SEN_Preheater_Offer_Template.docx")
+        tpl = DocxTemplate(tpl_path)
+        tpl.render(ctx, autoescape=True)
+
+        _safe_co  = "".join(ch for ch in (c.get("company","Client"))
+                            if ch.isalnum() or ch in " _-").strip().replace(" ","_") or "Client"
+        docx_name = f"SEN_Preheater_Offer_{_safe_co}_{seq}.docx"
+        docx_path = os.path.join(QUOTES_FOLDER, docx_name)
+        tpl.save(docx_path)
+
+        # Best-effort PDF
+        pdf_name = docx_name.replace(".docx",".pdf")
+        pdf_path = os.path.join(QUOTES_FOLDER, pdf_name)
+        pdf_ok   = _docx_to_pdf(docx_path, pdf_path)
+
+        # Drive upload
+        try:
+            from engine.drive_uploader import upload_offer_async
+            upload_offer_async(docx_path, docx_name, "sen_preheater")
+            if pdf_ok: upload_offer_async(pdf_path, pdf_name, "sen_preheater")
+        except Exception as _de:
+            print(f"WARN: SEN drive upload failed: {_de}")
+
+        # Log to quotes_log
+        _log_equipment_quote(
+            HpuCustomer(
+                name=c.get("name",""), email=c.get("email",""), phone=c.get("phone",""),
+                company=c.get("company",""), location=c.get("location",""),
+                technical=c.get("technical",""),
+            ),
+            "SEN Preheater", total, docx_path)
+
+        return {
+            "success":      True,
+            "filename":     docx_name,
+            "download_url": f"/api/download-quote/{docx_name}",
+            "preview_url":  f"/api/preview-quote/{docx_name}",
+            "pdf_url":      f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
+            "quote_no":     auto_ref,
+            "total_price":  total,
+        }
 
     except Exception as e:
         import traceback
         return {"error": str(e), "trace": traceback.format_exc()}
+
 
 @app.get("/api/sen-stove/bom")
 def sen_stove_bom():
