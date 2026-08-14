@@ -151,17 +151,19 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     ))
 
     # ── ENCON — MS Combustion Air Inlet Assembly (F49) ─────────────────
-    # F49 = (E41+E42+E43+E44+E45+E46+E47) * MS_rate
-    # E41..E45 come from the calc (geometry-derived); E46/E47 are
-    # constants from recup_rates (flanges_kg, side_hood_kg).
+    # F49 = (shell + air inlet duct + hot outlet duct + holding plate
+    #        + bottom box) * MS_rate
+    # The five fabricated weights, and only those. Both reheating furnace
+    # sheets write it that way; the flange allowance and the side hood weight
+    # used to be added here as well, which billed 1,600 kg of mild steel that
+    # the sheets account for elsewhere — the hood as its own fabrication line,
+    # the flanges not at all.
     ms_total_kg = (
         results.ms_outer_shell_kg
         + results.ms_air_inlet_duct_kg
         + results.ms_hot_outlet_duct_kg
         + results.ms_pipe_holding_kg
         + results.ms_bottom_box_kg
-        + flanges_kg
-        + side_hood_kg
     )
     # CAI per-kg rate: user override (Rs/kg) wins, else the DB default.
     cai_rate_override = float(getattr(results, 'cai_rate_override', 0) or 0)
@@ -170,7 +172,7 @@ def build_recup_df(results: RecupResults, rates: Optional[dict] = None) -> pd.Da
     cai_ref  = (f"{ms_total_kg:.2f} kg @ Rs.{cai_rate:.0f}/kg "
                 f"(shell {results.ms_outer_shell_kg:.0f} + inlet {results.ms_air_inlet_duct_kg:.0f} "
                 f"+ outlet {results.ms_hot_outlet_duct_kg:.0f} + holding {results.ms_pipe_holding_kg:.0f} "
-                f"+ box {results.ms_bottom_box_kg:.0f} + flanges {flanges_kg:.0f} + hood {side_hood_kg:.0f})")
+                f"+ box {results.ms_bottom_box_kg:.0f})")
     rows.append((
         "ENCON ITEMS", "MS Combustion Air Inlet Assembly",
         cai_ref,

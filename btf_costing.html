@@ -62,7 +62,19 @@
     .xl-namebox { width:72px; min-width:72px; background:#fff; border-right:1px solid #d0d0d0; font-size:.75rem; color:#333; text-align:center; padding:0 6px; height:100%; display:flex; align-items:center; justify-content:center; }
     .xl-fx { color:#217346; font-size:.78rem; font-style:italic; font-weight:700; padding:0 8px; border-right:1px solid #d0d0d0; height:100%; display:flex; align-items:center; }
     .xl-formulainput { flex:1; font-size:.78rem; color:#333; padding:0 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .xl-content { overflow-x:auto; background:#fff; }
+    /* Kept as a safety net only. At full window width these sheets fit, so
+       there is normally nothing to scroll. */
+    .xl-content { overflow:auto; background:#fff; }
+    /* The workbook steps outside the 960px reading column and takes the whole
+       window, because these rows are meant to be read across — the label, the
+       value, the unit and the second calculation beside it. 16px is left at
+       each edge so a vertical scrollbar cannot push the page sideways. */
+    .xl-workbook { width:calc(100vw - 32px); max-width:calc(100vw - 32px);
+                   margin-left:calc(50% - 50vw + 16px); }
+
+    .xl-grid .xl-row-num { position:sticky; left:0; z-index:2; }
+    .xl-grid tr:first-child .xl-col-header { position:sticky; top:0; z-index:3; }
+    .xl-grid tr:first-child .xl-col-header:first-child { left:0; z-index:4; }
     .xl-grid { border-collapse:collapse; font-size:.8rem; font-family:'Calibri',sans-serif; width:100%; min-width:600px; }
     .xl-grid .xl-col-header { background:#f2f2f2; color:#666; font-weight:600; font-size:.72rem; text-align:center; border:1px solid #d0d0d0; padding:2px 8px; min-width:40px; }
     .xl-grid .xl-row-num { background:#f2f2f2; color:#666; font-size:.72rem; text-align:right; border:1px solid #d0d0d0; padding:2px 6px; min-width:32px; user-select:none; }

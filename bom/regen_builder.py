@@ -618,8 +618,19 @@ def _fan_selection(comb_air, id_air, conn=None):
     _shaft_cold = _i["shaft_duty_kw"] * _dens_ratio
     id_motor_kw_A = _i["motor_kw"]                        # VFD
     id_motor_kw_B = _shaft_cold * (1 + _MOTOR_MARGIN)     # cold-rated
-    ihpA, ipriceA = _frame_from_hp(id_motor_kw_A * _HP_PER_KW, conn)
-    ihpB, ipriceB = _frame_from_hp(id_motor_kw_B * _HP_PER_KW, conn)
+    # The fan itself comes from the ID-fan catalogue, chosen on the flue-gas
+    # volume it has to carry. Every model on that list is rated at the same
+    # 500 mmWC static the sizing assumes, and each already carries the motor
+    # the supplier matched to it, so the shaft-power chain above is what proves
+    # the duty rather than what picks the frame. The blower catalogue it used
+    # to borrow from priced a different machine and stopped at 60 HP.
+    from bom.idfan_pricelist import select_id_fan
+    _idsel = select_id_fan(id_air, conn)
+    ihpB   = _idsel["motor_hp"]    if _idsel else None
+    ipriceB = _idsel["price_total"] if _idsel else None
+    # Option A (VFD, hot-rated motor) is quoted on the same fan — the machine
+    # does not change, only how its motor is rated and driven.
+    ihpA, ipriceA = ihpB, ipriceB
 
     return dict(
         comb_air=comb_air, id_air=id_air,
@@ -637,6 +648,18 @@ def _fan_selection(comb_air, id_air, conn=None):
         id_motor_kw_B=id_motor_kw_B, id_hp_B=ihpB, id_price_B=ipriceB,
         # BOM uses Option B (cold-start rated) as the ID-fan line
         id_hp=ihpB, id_price=ipriceB,
+        # The catalogue selection behind those figures, so the costing sheet
+        # can name the fan it is quoting rather than only its horsepower.
+        id_model=(_idsel or {}).get("model"),
+        id_air_cap_cmh=(_idsel or {}).get("air_cap_cmh"),
+        id_fan_unit_price=(_idsel or {}).get("price_fan_unit"),
+        id_motor_price=(_idsel or {}).get("price_motor"),
+        id_bhp_ambient=(_idsel or {}).get("bhp_ambient"),
+        # The motor the catalogue price actually buys, which covers the hot
+        # running duty only. Our Option B sizes for a cold start, so where that
+        # comes out larger the quoted motor is not the one being asked for.
+        id_catalogue_motor_kw=(_idsel or {}).get("motor_kw"),
+        id_motor_short=(bool(_idsel) and id_motor_kw_B > (_idsel.get("motor_kw") or 0)),
         # furnace-pressure damper — sized off this same ID-fan flow, so the
         # costing sheet can show its working next to the two fans
         damper=damper_from_id_flow(id_air))
@@ -974,13 +997,21 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _bhp2, _bprice, _bkw = _fan['blower_hp'], _fan['blower_price'], _fan['blower_motor_kw']
     _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_B']
     _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price above 60 HP)'
-    _i_note = '' if _iprice is not None else ' — price ?? (no catalogue price above 60 HP)'
+    _i_note = '' if _iprice is not None else ' — price ?? (flow above the largest ID fan, 48,000 CMH)'
+    _i_model = _fan.get('id_model')
     add("BLOWER", "Combustion Blower (40\" WG)",
         f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP ({_bkw:.1f} kW motor), with motor{_b_note}',
         1,   _bprice if _bprice is not None else 0, scale=False)   # one blower for the whole system
     # ID fan sits directly under the blower (both are fans, same section).
+    # Quote the motor the catalogue price buys, not the one our cold-start
+    # sizing asks for — the two differ, and the price follows the catalogue.
+    _icat_kw = _fan.get('id_catalogue_motor_kw')
+    _i_cold = (f' — cold start needs {_ikw:.0f} kW, VFD or damped'
+               if _fan.get('id_motor_short') else '')
     add("BLOWER", "ID Fan",
-        f'{_ihp2:g}HP ({_ikw:.1f} kW motor), cold-start rated{_i_note}', 1,
+        ((f'{_i_model}, ' if _i_model else '')
+         + f'{_ihp2:g}HP ({_icat_kw:g} kW motor){_i_cold}{_i_note}'
+         if _ihp2 is not None else f'Suction of flue gas{_i_note}'), 1,
         _iprice if _iprice is not None else 0, scale=False)
     # Optional standby blower (1 working + 1 standby) — same price as the blower.
     if standby_blower:

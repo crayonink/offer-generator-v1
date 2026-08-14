@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 import pandas as pd
 import sqlite3
@@ -914,7 +914,7 @@ import tempfile
 ALLOWED_EDIT_TABLES = {
     'hpu_master', 'oil_burner_parts_master', 'hv_oil_burner_parts_master',
     'gas_burner_parts_master', 'horizontal_master', 'vertical_master',
-    'recuperator_master', 'blower_pricelist_master',
+    'recuperator_master', 'blower_pricelist_master', 'idfan_pricelist_master',
     'rad_heat_master', 'rad_heat_tata_master', 'gail_gas_burner_master',
     'rotary_joint_master',
 }
@@ -1660,6 +1660,24 @@ def _startup_seed_blower_alone():
 
 
 _startup_seed_blower_alone()
+
+
+def _startup_seed_idfan_catalog():
+    """Load the ID fan price list (Ref. Q26-ETPL-0803) so the fan is priced from
+    its own catalogue instead of borrowing the blower's. Idempotent; reaches the
+    persistent volume on deploy, and leaves an edited list alone."""
+    try:
+        from bom.idfan_pricelist import seed_idfan_catalog
+        conn = sqlite3.connect(DB_PATH)
+        n = seed_idfan_catalog(conn)
+        conn.close()
+        if n:
+            print(f"[db] seeded {n} ID fan catalogue rows")
+    except Exception as e:
+        print(f"WARN: startup seed_idfan_catalog failed: {e}")
+
+
+_startup_seed_idfan_catalog()
 
 
 def _startup_purge_regen_pricelist():
@@ -5581,25 +5599,118 @@ def snsf_brf_costing_form():
         return f.read()
 
 
+class BRFZoneIn(BaseModel):
+    name:          str = "Zone"
+    burner_kw:     float = 1000.0
+    burner_count:  int = 5
+    # 0 derives it from the rating and the calorific value
+    fuel_per_burner_nm3hr: float = 0.0
+    # False for a standalone burner sized beside the zones but not one of them
+    is_zone:       bool = True
+
+
+def _brf_default_zones() -> list:
+    """The uploaded 60 TPH / 12 m billet job — five fired zones and the
+    standalone burner, as the Sizing Zone sheet has them."""
+    return [
+        BRFZoneIn(name="Zone 1", burner_count=4, fuel_per_burner_nm3hr=150),
+        BRFZoneIn(name="Zone 2", burner_count=5, fuel_per_burner_nm3hr=150),
+        BRFZoneIn(name="Zone 3", burner_count=5),
+        BRFZoneIn(name="Zone 4", burner_count=5),
+        BRFZoneIn(name="Zone 5", burner_count=5),
+        BRFZoneIn(name="Burner", burner_count=1, is_zone=False),
+    ]
+
+
 class SNSFBRFCalcRequest(BaseModel):
     include_ng_optional: bool = False
     include_client_scope: bool = False
+    # ── Furnace duty ────────────────────────────────────────────────
+    furnace_capacity_tph:   float = 60.0
+    fuel_per_ton_scm:       float = 45.0
+    cv_kcal_nm3:            float = 8600.0
+    combustion_air_per_nm3: float = 10.5
+    # ── Line sizing ─────────────────────────────────────────────────
+    preheat_air_temp_C:     float = 300.0
+    air_velocity_ms:        float = 12.0
+    gas_velocity_ms:        float = 30.0
+    zones: list[BRFZoneIn] = Field(default_factory=_brf_default_zones)
+    # ── Waste-heat recuperator ──────────────────────────────────────
+    # Its own duty: only part of the combustion air is preheated, so the flue
+    # and air figures here are not the furnace totals above.
+    recup_flue_flow_nm3hr:  float = 13200.0
+    recup_flue_temp_in_C:   float = 650.0
+    recup_air_volume_nm3hr: float = 20400.0
+    recup_air_temp_in_C:    float = 30.0
+    recup_air_temp_out_C:   float = 300.0
+    recup_pipe_dia_mm:      float = 48.3
+    recup_pipe_thick_mm:    float = 3.6          # hot bank — boiler tube
+    recup_pipe_kg_per_m:    float = 4.72275468
+    recup_cold_pipe_thick_mm: float = 2.7        # cold bank — plain tube
+    recup_cold_pipe_kg_per_m: float = 4.0
+    recup_pipe_length_m:    float = 2.8
+    recup_bank_gap_mm:      float = 250.0
+    recup_pipes_total_override: int = 756
+    # The grid off the drawing. The sheets lay the bundle out with an odd
+    # column count, which the automatic search will not choose.
+    recup_rows:             int = 28
+    recup_cols:             int = 27
 
 
 @app.post("/api/snsf-brf-calculate")
 def snsf_brf_calculate(req: SNSFBRFCalcRequest):
     try:
-        from bom.snsf_brf_builder import build_snsf_brf_df, get_supplementary
+        from bom.snsf_brf_builder import (build_snsf_brf_df, get_supplementary,
+                                          build_brf_sizing)
+        from calculations.brf import BRFInputs, BRFZone
+        from calculations.recup import RecupInputs
         import json
         df, summary = build_snsf_brf_df(
             include_ng_optional=req.include_ng_optional,
             include_client_scope=req.include_client_scope,
         )
         bom = json.loads(df.to_json(orient="records"))
+
+        # The sizing block is computed from what was typed; the refractory and
+        # structure sheets in `supplementary` are still the frozen 30 TPH data
+        # until that half is ported too.
+        sizing = build_brf_sizing(
+            BRFInputs(
+                furnace_capacity_tph=req.furnace_capacity_tph,
+                fuel_per_ton_scm=req.fuel_per_ton_scm,
+                cv_kcal_nm3=req.cv_kcal_nm3,
+                combustion_air_per_nm3=req.combustion_air_per_nm3,
+                preheat_air_temp_C=req.preheat_air_temp_C,
+                air_velocity_ms=req.air_velocity_ms,
+                gas_velocity_ms=req.gas_velocity_ms,
+                zones=[BRFZone(name=z.name, burner_kw=z.burner_kw,
+                               burner_count=z.burner_count,
+                               fuel_per_burner_nm3hr=z.fuel_per_burner_nm3hr,
+                               is_zone=z.is_zone) for z in req.zones],
+            ),
+            RecupInputs(
+                flue_flow_nm3hr=req.recup_flue_flow_nm3hr,
+                flue_temp_in_C=req.recup_flue_temp_in_C,
+                air_volume_nm3hr=req.recup_air_volume_nm3hr,
+                air_temp_in_C=req.recup_air_temp_in_C,
+                air_temp_out_C=req.recup_air_temp_out_C,
+                pipe_dia_mm=req.recup_pipe_dia_mm,
+                pipe_thick_mm=req.recup_pipe_thick_mm,
+                pipe_kg_per_m=req.recup_pipe_kg_per_m,
+                cold_pipe_thick_mm=req.recup_cold_pipe_thick_mm,
+                cold_pipe_kg_per_m=req.recup_cold_pipe_kg_per_m,
+                pipe_length_m_per_bank=req.recup_pipe_length_m,
+                bank_gap_mm=req.recup_bank_gap_mm,
+                pipes_total_override=req.recup_pipes_total_override,
+                rows_override=req.recup_rows,
+                cols_override=req.recup_cols,
+            ),
+        )
         return {
             "bom": bom,
             "cost_summary": summary,
             "supplementary": get_supplementary(),
+            "sizing": sizing,
         }
     except Exception as e:
         import traceback
