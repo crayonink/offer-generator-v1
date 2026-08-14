@@ -145,10 +145,11 @@
 <nav>
   <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
   <div class="step-tabs">
-    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Furnace</div>
-    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Firing &amp; Air</div>
-    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Calculations</div>
-    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>BOM &amp; Costing</div>
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Customer</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Firing &amp; Air</div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Calculations</div>
+    <div class="step-tab" id="tab-5" onclick="goStep(5)"><span class="tab-n">5</span>BOM &amp; Costing</div>
   </div>
   <div class="topnav-links">
     <a href="/pricelist">Pricelist</a>
@@ -158,12 +159,68 @@
 
 <div class="page">
 
+  <!-- ═══ STEP 1: Customer & Enquiry ═══
+       The same field set the other costing pages collect, and the same
+       reference: fetched from /api/next-quote-ref so the sequence is issued
+       in one place rather than assembled here. -->
+  <div class="step active" id="step-1">
+    <div class="card">
+      <div class="card-title">Contact Person</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Full name</label>
+          <div style="display:flex; gap:6px">
+            <select id="c-salutation" style="flex:0 0 82px">
+              <option value="">&mdash;</option><option value="Mr.">Mr.</option>
+              <option value="Mrs.">Mrs.</option><option value="Miss">Miss</option>
+              <option value="Dr.">Dr.</option>
+            </select>
+            <input id="c-name" type="text" placeholder="Full name" style="flex:1"/>
+          </div></div>
+        <div class="sz-f"><label>Designation</label><input id="c-designation" type="text" placeholder="Purchase Manager"/></div>
+        <div class="sz-f"><label>Email</label><input id="c-email" type="email" placeholder="name@company.com"/></div>
+        <div class="sz-f"><label>Phone / mobile</label><input id="c-phone" type="tel" placeholder="+91 98765 43210"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Company</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Company name</label><input id="c-company" type="text" placeholder="ABC Steel Ltd"/></div>
+        <div class="sz-f"><label>Project</label><input id="c-project" type="text" value="Billet Reheating Furnace"/></div>
+      </div>
+      <div class="sz-f" style="margin-top:14px"><label>Address</label>
+        <input id="c-address" type="text" placeholder="Street, Area, City, State"/></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Enquiry</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Our reference</label>
+          <input id="c-ref" type="text" readonly placeholder="ENCON.04026.XXX/FBD/JS DT.DD/MM/YYYY" style="background:#f8fafc"/>
+          <div class="hint" style="color:var(--muted);font-size:.74rem;">Issued by the server &mdash; follows the location and the technical contact.</div></div>
+        <div class="sz-f"><label>Location</label>
+          <select id="c-location">
+            <option value="Faridabad" selected>Faridabad</option>
+            <option value="Goa">Goa</option>
+            <option value="Vadodara">Vadodara</option>
+          </select></div>
+        <div class="sz-f"><label>Client enquiry reference</label><input id="c-client-enq" type="text" placeholder="Mail enquiry, DD/MM/YYYY"/></div>
+        <div class="sz-f"><label>Marketing person</label><input id="c-marketing" type="text" value="Jagdeep Singh"/></div>
+        <div class="sz-f"><label>Technical person</label><input id="c-technical" type="text" value="Jagdeep Singh"/></div>
+      </div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-primary" onclick="goStep(2)">Next: Furnace &rarr;</button>
+    </div>
+  </div>
+
   <!-- ═══ STEP 2: Furnace ═══
        Section 1 of the Furnace sheet — the billet, the hearth it needs, and
        the box that goes round it once refractory, sheet and channel are added.
        Inputs are the cells the workbook shades peach; everything in the
        Derived panel is what it shades yellow. -->
-  <div class="step active" id="step-1">
+  <div class="step" id="step-2">
     <div class="card">
       <div class="card-title">Scope</div>
       <div class="field">
@@ -230,7 +287,7 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-primary" onclick="goStep(2)">Next: Firing &amp; Air →</button>
+      <button class="btn-primary" onclick="goStep(3)">Next: Firing &amp; Air →</button>
     </div>
   </div>
 
@@ -238,7 +295,7 @@
        The calculation sheet's duty chain. The inputs decide what the furnace
        fires; the Derived panel is what falls out of them — firing rate,
        combustion air, the share each zone carries, and the blower. -->
-  <div class="step" id="step-2">
+  <div class="step" id="step-3">
     <!-- Furnace duty. These drive the firing rate, the combustion air, the
          per-zone line sizes and the blower, through calculations/brf.py.
          The refractory and structure sheets are still fixed data. -->
@@ -282,14 +339,14 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(1)">&larr; Back to Furnace</button>
+      <button class="btn-back" onclick="goStep(2)">&larr; Back to Furnace</button>
       <button class="btn-primary" onclick="calculate()">Calculate &amp; Build BOM</button>
     </div>
     <div class="error-box" id="error-box"></div>
   </div>
 
   <!-- ═══ STEP 4: All Calculations in Excel Workbook ═══ -->
-  <div class="step" id="step-3">
+  <div class="step" id="step-4">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b2-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b2-cost">--</div></div>
@@ -321,13 +378,13 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(2)">← Back to Firing &amp; Air</button>
-      <button class="btn-primary" onclick="goStep(4)">Next: BOM &amp; Costing →</button>
+      <button class="btn-back" onclick="goStep(3)">← Back to Firing &amp; Air</button>
+      <button class="btn-primary" onclick="goStep(5)">Next: BOM &amp; Costing →</button>
     </div>
   </div>
 
   <!-- ═══ STEP 3: BOM ═══ -->
-  <div class="step" id="step-4">
+  <div class="step" id="step-5">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b3-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b3-cost">--</div><div class="banner-sub" id="b3-main">Main Sell: --</div></div>
@@ -360,7 +417,7 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(3)">← Back to Calculations</button>
+      <button class="btn-back" onclick="goStep(4)">← Back to Calculations</button>
     </div>
   </div>
 
@@ -371,7 +428,7 @@ const API="";
 const fmt=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
 const fmt2=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:2}).format(n);
 let lastData=null;
-const STEPS=[1,2,3,4];
+const STEPS=[1,2,3,4,5];
 
 function goStep(n){
   STEPS.forEach(i=>{
@@ -452,6 +509,46 @@ window.addEventListener("DOMContentLoaded",()=>{
   // that were there at load. 'change' is what a checkbox reports in every
   // browser; 'input' catches the typing.
   ["input","change"].forEach(ev=>body.addEventListener(ev,dutyPreview));
+});
+
+// ── Customer & enquiry ─────────────────────────────────────────────────────
+// The reference is issued by the server, not assembled here: the sequence has
+// to be handed out in one place or two quotes get the same number.
+function customerPayload(){
+  const v=id=>((document.getElementById(id)||{}).value||"").trim();
+  const sal=v("c-salutation");
+  return {
+    poc_name: (sal?sal+" ":"")+v("c-name"),
+    poc_designation: v("c-designation"),
+    email: v("c-email"),
+    mobile_no: v("c-phone"),
+    company_name: v("c-company"),
+    company_address: v("c-address"),
+    project_name: v("c-project"),
+    ref_no: v("c-ref"),
+    location: v("c-location"),
+    client_enq_ref: v("c-client-enq"),
+    marketing_person: v("c-marketing"),
+    technical_person: v("c-technical"),
+  };
+}
+
+async function refreshRef(){
+  const box=document.getElementById("c-ref");
+  if(!box) return;
+  const v=id=>encodeURIComponent(((document.getElementById(id)||{}).value||"").trim());
+  try{
+    const res=await fetch(`${API}/api/next-quote-ref?technical_person=${v("c-technical")}&location=${v("c-location")}`);
+    const data=await res.json();
+    if(data&&data.ref) box.value=data.ref;
+  }catch(e){ /* offline — leave whatever is there */ }
+}
+
+window.addEventListener("DOMContentLoaded",()=>{
+  refreshRef();
+  const loc=document.getElementById("c-location"), tech=document.getElementById("c-technical");
+  if(loc) loc.addEventListener("change",refreshRef);
+  if(tech) tech.addEventListener("input",refreshRef);
 });
 
 // ── Furnace geometry ───────────────────────────────────────────────────────
@@ -623,7 +720,7 @@ async function calculate(){
     const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
     if(data.error){fail(data.error);return;}
-    lastData=data;renderAll(data,ng,cl);goStep(3);
+    lastData=data;renderAll(data,ng,cl);goStep(4);
   }catch(e){fail("API error: "+e.message);}
 }
 
@@ -897,7 +994,7 @@ function renderAll(data,showNG,showCL){
 
 async function downloadExcel(){
   if(!lastData)return;
-  const res=await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({equipment_type:"SNSF BRF",customer:{},bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}})});
+  const res=await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({equipment_type:"SNSF BRF",customer:customerPayload(),bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}})});
   const blob=await res.blob();const a=document.createElement("a");a.href=URL.createObjectURL(blob);
   a.download=`SNSF_BRF_Costing_${new Date().toISOString().slice(0,10)}.xlsx`;a.click();
 }
