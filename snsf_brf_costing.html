@@ -284,6 +284,11 @@
         <div class="sz-f"><label>Height (mm)</label><input id="fn-bhgt" type="number" step="any" value="130" oninput="furnacePreview()"/></div>
         <div class="sz-f"><label>Density of MS (kg/m&sup3;)</label><input id="fn-dens" type="number" step="any" value="7850" oninput="furnacePreview()"/></div>
       </div>
+      <!-- The two figures the rest of the furnace is set out from, shown where
+           the billet that decides them is typed rather than at the foot of the
+           tab. Width follows the billet alone; length also needs the hearth
+           below, so it moves when either changes. -->
+      <div class="fn-out" id="fn-eff" style="margin-top:16px"></div>
     </div>
 
     <div class="card">
@@ -744,12 +749,15 @@ function renderFurnace(f){
   if(!el) return;
   const n=(v,p=2)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
   const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  const eff=document.getElementById("fn-eff");
+  if(eff) eff.innerHTML=
+    tile("Effective Length", n(f.effective_length_m), "m")+
+    tile("Effective Width", n(f.effective_width_m,1), "m");
+
   el.innerHTML=
     tile("Volume of Billet", n(f.billet_volume_m3,4), "m³")+
     tile("Weight of a Billet", n(f.billet_weight_kg), "kg")+
     tile("Hearth Area", n(f.hearth_area_m2), "m²")+
-    tile("Effective Length", n(f.effective_length_m), "m")+
-    tile("Effective Width", n(f.effective_width_m,1), "m")+
     tile("Overall Width", n(f.overall_width_m,3), "m")+
     tile("Overall Length", n(f.overall_length_m,3), "m")+
     tile("Preheating Zone", n(f.zone_preheating_m,3), "m")+
