@@ -416,13 +416,21 @@ function zoneRow(z){
     <td><input class="z-n" type="number" step="1" value="${z.burner_count}"/></td>
     <td><input class="z-fuel" type="number" step="any" value="${z.fuel_per_burner_nm3hr}"/></td>
     <td style="text-align:center"><input class="z-is" type="checkbox" ${z.is_zone?"checked":""}/></td>
-    <td><button class="btn-back" type="button" onclick="this.closest('tr').remove()">&times;</button></td>`;
+    <td><button class="btn-back" type="button" onclick="removeZone(this)">&times;</button></td>`;
   return tr;
 }
 function addZone(){
   document.getElementById("sz-zones").appendChild(zoneRow(
     {name:"Zone "+(document.querySelectorAll("#sz-zones tr").length+1),
      burner_kw:1000,burner_count:5,fuel_per_burner_nm3hr:0,is_zone:true}));
+  dutyPreview();
+}
+
+// Removing a row fires no input or change event, so the figures have to be
+// told. Same for adding one.
+function removeZone(btn){
+  btn.closest("tr").remove();
+  dutyPreview();
 }
 function readZones(){
   return Array.from(document.querySelectorAll("#sz-zones tr")).map(tr=>({
@@ -435,7 +443,13 @@ function readZones(){
 }
 window.addEventListener("DOMContentLoaded",()=>{
   const body=document.getElementById("sz-zones");
-  if(body) DEFAULT_ZONES.forEach(z=>body.appendChild(zoneRow(z)));
+  if(!body) return;
+  DEFAULT_ZONES.forEach(z=>body.appendChild(zoneRow(z)));
+  // One listener on the table rather than handlers on every field: rows come
+  // and go, and a row added later has to move the figures just like the ones
+  // that were there at load. 'change' is what a checkbox reports in every
+  // browser; 'input' catches the typing.
+  ["input","change"].forEach(ev=>body.addEventListener(ev,dutyPreview));
 });
 
 // ── Furnace geometry ───────────────────────────────────────────────────────
