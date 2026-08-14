@@ -285,6 +285,7 @@
       <button class="btn-back" onclick="goStep(1)">&larr; Back to Furnace</button>
       <button class="btn-primary" onclick="calculate()">Calculate &amp; Build BOM</button>
     </div>
+    <div class="error-box" id="error-box"></div>
   </div>
 
   <!-- ═══ STEP 4: All Calculations in Excel Workbook ═══ -->
@@ -600,9 +601,15 @@ function renderDuty(sz){
 window.addEventListener("DOMContentLoaded",()=>{ setTimeout(runFurnace,0); setTimeout(runDuty,0); });
 
 async function calculate(){
-  const ng=document.getElementById("chk-ng").checked;
-  const cl=document.getElementById("chk-client").checked;
-  const err=document.getElementById("error-box");err.style.display="none";
+  const ng=!!(document.getElementById("chk-ng")||{}).checked;
+  const cl=!!(document.getElementById("chk-client")||{}).checked;
+  // Guarded on purpose. This used to be err.style.display with no check, and
+  // when the error box moved off the page with the Config step the very first
+  // line of Calculate threw — the button did nothing at all, and the place it
+  // would have reported that to was the element that had gone.
+  const err=document.getElementById("error-box");
+  const fail=m=>{ if(err){err.textContent=m;err.style.display="block";} else alert(m); };
+  if(err) err.style.display="none";
   const n=id=>parseFloat((document.getElementById(id)||{}).value)||0;
   const payload={
     include_ng_optional:ng, include_client_scope:cl,
@@ -615,9 +622,9 @@ async function calculate(){
   try{
     const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
-    if(data.error){err.textContent=data.error;err.style.display="block";return;}
+    if(data.error){fail(data.error);return;}
     lastData=data;renderAll(data,ng,cl);goStep(3);
-  }catch(e){err.textContent="API error: "+e.message;err.style.display="block";}
+  }catch(e){fail("API error: "+e.message);}
 }
 
 // The one sheet on this page that is worked out rather than stored: the duty

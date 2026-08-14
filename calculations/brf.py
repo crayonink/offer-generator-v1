@@ -143,6 +143,14 @@ def _bore_mm(area_m2: float) -> float:
 
 
 def calculate_brf(inp: BRFInputs) -> BRFResults:
+    # A cleared box arrives as 0 and used to surface as "division by zero",
+    # which says nothing about which box. Name it instead.
+    for value, what in ((inp.cv_kcal_nm3, "calorific value"),
+                        (inp.air_velocity_ms, "air velocity"),
+                        (inp.gas_velocity_ms, "gas velocity")):
+        if not value or value <= 0:
+            raise ValueError(f"The {what} cannot be zero — nothing can be sized from it.")
+
     # ── D5: firing rate ────────────────────────────────────────────
     firing_rate = inp.furnace_capacity_tph * inp.fuel_per_ton_scm
 
