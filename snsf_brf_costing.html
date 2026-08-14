@@ -258,10 +258,11 @@
     <div class="card">
       <div class="card-title">Zones &amp; Burners</div>
       <div class="hint" style="margin:-6px 0 10px;color:var(--muted);font-size:.82rem;">
-        One row per fired zone. Leave fuel per burner at 0 to derive it from the
-        rating and the calorific value. Untick <em>Zone</em> for a standalone
-        burner &mdash; it is sized like the rest but the firing rate is not
-        divided into it.
+        One row per fired zone. Leave fuel per burner blank and it is derived
+        from the rating and the calorific value &mdash; the greyed figure is
+        what that comes to. Type over it for a zone run richer than its rating
+        implies. Untick <em>Zone</em> for a standalone burner &mdash; it is
+        sized like the rest but the firing rate is not divided into it.
       </div>
       <table class="sz-table">
         <thead><tr><th>Name</th><th>Burner (kW)</th><th>Burners</th><th>Fuel/burner (Nm&sup3;/hr)</th><th>Zone</th><th></th></tr></thead>
@@ -414,7 +415,7 @@ function zoneRow(z){
   tr.innerHTML=`<td><input class="z-name" type="text" value="${z.name}"/></td>
     <td><input class="z-kw" type="number" step="any" value="${z.burner_kw}"/></td>
     <td><input class="z-n" type="number" step="1" value="${z.burner_count}"/></td>
-    <td><input class="z-fuel" type="number" step="any" value="${z.fuel_per_burner_nm3hr}"/></td>
+    <td><input class="z-fuel" type="number" step="any" placeholder="auto" value="${z.fuel_per_burner_nm3hr||''}"/></td>
     <td style="text-align:center"><input class="z-is" type="checkbox" ${z.is_zone?"checked":""}/></td>
     <td><button class="btn-back" type="button" onclick="removeZone(this)">&times;</button></td>`;
   return tr;
@@ -571,6 +572,16 @@ function renderDuty(sz){
     tile("Blower", cm(d.blower_hp,2), "HP")+
     tile("Total Burners", cm(d.total_burners), "")+
     tile("Fuel, all zones", cm(d.total_fuel_nm3hr), "Nm³/hr");
+
+  // The fuel each burner takes, resolved: what was typed, or what the rating
+  // and the calorific value come to. Shown as the placeholder so a derived
+  // row keeps deriving — filling the box in would freeze it at today's
+  // calorific value.
+  const rows=document.querySelectorAll("#sz-zones tr");
+  (sz.zones||[]).forEach((z,i)=>{
+    const box=rows[i]&&rows[i].querySelector(".z-fuel");
+    if(box) box.placeholder=cm(z.fuel_per_burner_nm3hr,0);
+  });
 
   const w=document.getElementById("duty-work");
   if(w) w.textContent=[
