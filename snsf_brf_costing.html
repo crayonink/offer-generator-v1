@@ -161,46 +161,52 @@
 <div class="page">
 
   <!-- ═══ STEP 1: Customer & Enquiry ═══
-       The same fields the Vertical Ladle Preheater page collects, so a quote
-       carries the same details whichever product it is for. The reference is
-       fetched from /api/next-quote-ref rather than assembled here. -->
+       The Vertical Ladle Preheater's panel-1, field for field and in its
+       order: Contact Person, Company, Enquiry — with the ENCON contacts
+       inside Enquiry as they are there, not in a section of their own. -->
   <div class="step active" id="step-1">
     <div class="card">
       <div class="card-title">Contact Person</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Full name</label>
+        <div class="sz-f"><label>Full name <span style="color:var(--red)">*</span></label>
           <div style="display:flex; gap:6px">
             <select id="c-salutation" style="flex:0 0 82px">
               <option value="">&mdash;</option><option value="Mr." selected>Mr.</option>
               <option value="Mrs.">Mrs.</option><option value="Miss">Miss</option>
               <option value="Dr.">Dr.</option>
             </select>
-            <input id="c-name" type="text" placeholder="Full Name" style="flex:1"/>
+            <input id="c-name" type="text" value="Ashish Gautam" placeholder="Full Name" style="flex:1"/>
           </div></div>
-        <div class="sz-f"><label>Designation / department</label><input id="c-designation" type="text" placeholder="Purchase Manager"/></div>
-        <div class="sz-f"><label>Email address</label><input id="c-email" type="email" placeholder="name@company.com"/></div>
-        <div class="sz-f"><label>Phone / mobile</label><input id="c-phone" type="tel" placeholder="+91 98765 43210"/></div>
+        <div class="sz-f"><label>Email address <span style="color:var(--red)">*</span></label>
+          <input id="c-email" type="email" value="purchasebop@pprm.in" placeholder="name@company.com"/></div>
+        <div class="sz-f"><label>Phone / mobile <span style="color:var(--red)">*</span></label>
+          <input id="c-phone" type="tel" value="+91 8287155900" placeholder="+91 98765 43210"/></div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-title">Company</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Company name</label><input id="c-company" type="text" placeholder="ABC Steel Ltd"/></div>
-        <div class="sz-f"><label>City</label><input id="c-city" type="text" placeholder="Mumbai"/></div>
-        <div class="sz-f"><label>State</label><input id="c-state" type="text" placeholder="Maharashtra"/></div>
-        <div class="sz-f"><label>PIN code</label><input id="c-pin" type="text" placeholder="400001"/></div>
-        <div class="sz-f"><label>GSTIN</label><input id="c-gstin" type="text" placeholder="27AAACX0000X1Z5"/></div>
+        <div class="sz-f"><label>Company name <span style="color:var(--red)">*</span></label>
+          <input id="c-company" type="text" value="PP Rolling Mills" placeholder="ABC Steel Ltd"/></div>
+        <div class="sz-f"><label>Designation / department</label>
+          <input id="c-designation" type="text" value="Purchase Manager" placeholder="Purchase Manager"/></div>
       </div>
       <div class="sz-f" style="margin-top:14px"><label>Address</label>
-        <input id="c-address" type="text" placeholder="Street, Area, Landmark"/></div>
+        <textarea id="c-address" rows="2" placeholder="Street, Area, Landmark">Faridabad</textarea></div>
+      <div class="sz-grid" style="margin-top:14px">
+        <div class="sz-f"><label>City</label><input id="c-city" type="text" value="Faridabad" placeholder="Mumbai"/></div>
+        <div class="sz-f"><label>State</label><input id="c-state" type="text" value="Haryana" placeholder="Maharashtra"/></div>
+        <div class="sz-f"><label>PIN code</label><input id="c-pin" type="text" value="121004" placeholder="400001"/></div>
+        <div class="sz-f"><label>GSTIN</label><input id="c-gstin" type="text" value="27AAACX0000X1Z5" placeholder="27AAACX0000X1Z5"/></div>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">Enquiry</div>
       <div class="sz-grid">
         <div class="sz-f"><label>Enquiry / ref no. (auto)</label>
-          <input id="c-ref" type="text" readonly placeholder="ENCON.04026.XXX/FBD/JS DT.DD/MM/YYYY" style="background:#f8fafc"/>
+          <input id="c-ref" type="text" readonly placeholder="ENCON.04026.XXX/FBD/NK DT.DD/MM/YYYY" style="background:#f8fafc"/>
           <div class="hint" style="color:var(--muted);font-size:.74rem;">Issued by the server &mdash; follows the location and the technical contact.</div></div>
         <div class="sz-f"><label>Location</label>
           <select id="c-location">
@@ -212,11 +218,7 @@
       <div class="sz-f" style="margin-top:14px"><label>Subject</label>
         <input id="c-subject" type="text" value="Offer for Billet Reheating Furnace"
                placeholder="Supply of Billet Reheating Furnace complete with Combustion Equipment"/></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">ENCON Contacts</div>
-      <div class="sz-grid">
+      <div class="sz-grid" style="margin-top:14px">
         <div class="sz-f"><label>Marketing person</label>
           <div style="display:flex; gap:6px">
             <select id="c-marketing-salutation" style="flex:0 0 82px">
@@ -225,10 +227,6 @@
             </select>
             <input id="c-marketing" type="text" value="Shikha Sharma" placeholder="ENCON sales/marketing rep" style="flex:1"/>
           </div></div>
-        <div class="sz-f"><label>Marketing email</label><input id="c-marketing-email" type="email" value="shikha@encon.co.in"/></div>
-        <div class="sz-f"><label>Marketing phone</label><input id="c-marketing-phone" type="text" value="9871590093"/></div>
-      </div>
-      <div class="sz-grid" style="margin-top:14px">
         <div class="sz-f"><label>Technical person</label>
           <div style="display:flex; gap:6px">
             <select id="c-technical-salutation" style="flex:0 0 82px">
@@ -237,6 +235,8 @@
             </select>
             <input id="c-technical" type="text" value="Nutan Kumari" placeholder="ENCON technical contact" style="flex:1"/>
           </div></div>
+        <div class="sz-f"><label>Marketing email</label><input id="c-marketing-email" type="email" value="shikha@encon.co.in"/></div>
+        <div class="sz-f"><label>Marketing phone</label><input id="c-marketing-phone" type="text" value="9871590093"/></div>
         <div class="sz-f"><label>Technical email</label><input id="c-technical-email" type="email" value="mdo@encon.co.in"/></div>
         <div class="sz-f"><label>Technical phone</label><input id="c-technical-phone" type="text" value="9971477448"/></div>
       </div>
@@ -261,31 +261,6 @@
       <div class="hint" style="margin-top:10px;color:var(--muted);font-size:.82rem;">
         Both add their sections to the BOM on the last tab. Everything else is
         priced whether they are ticked or not.
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Commercial</div>
-      <div class="hint" style="margin:-6px 0 12px;color:var(--muted);font-size:.82rem;">
-        Each BOM line already carries its own markup from the pricelist, so
-        these apply on top of the marked-up total &mdash; there is no second
-        conversion here.
-      </div>
-      <div class="sz-grid">
-        <div class="sz-f"><label>Packing &amp; forwarding (%)</label><input id="cm-pf" type="number" step="any" value="5" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Designing (%)</label><input id="cm-design" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Negotiation (%)</label><input id="cm-nego" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Transport (&#8377;)</label><input id="cm-transport" type="number" step="any" value="0" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Order quantity (furnaces)</label><input id="cm-qty" type="number" step="1" min="1" value="1" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Currency</label>
-          <select id="cm-currency" onchange="commercialPreview()">
-            <option value="INR" selected>&#8377; INR</option>
-            <option value="USD">$ USD</option>
-          </select></div>
-      </div>
-      <div class="fn-out" id="cm-out" style="margin-top:16px"></div>
-      <div class="hint" id="cm-note" style="margin-top:8px;color:var(--muted);font-size:.8rem;">
-        Calculate on the Firing &amp; Air tab to price it.
       </div>
     </div>
 
@@ -483,6 +458,31 @@
       </table>
       <div style="margin-top:16px">
         <button onclick="downloadExcel()" style="width:100%;padding:11px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">&#8659; Download Excel</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Commercial</div>
+      <div class="hint" style="margin:-6px 0 12px;color:var(--muted);font-size:.82rem;">
+        Each BOM line already carries its own markup from the pricelist, so
+        these apply on top of the marked-up total &mdash; there is no second
+        conversion here.
+      </div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Packing &amp; forwarding (%)</label><input id="cm-pf" type="number" step="any" value="5" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Designing (%)</label><input id="cm-design" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Negotiation (%)</label><input id="cm-nego" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Transport (&#8377;)</label><input id="cm-transport" type="number" step="any" value="0" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Order quantity (furnaces)</label><input id="cm-qty" type="number" step="1" min="1" value="1" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Currency</label>
+          <select id="cm-currency" onchange="commercialPreview()">
+            <option value="INR" selected>&#8377; INR</option>
+            <option value="USD">$ USD</option>
+          </select></div>
+      </div>
+      <div class="fn-out" id="cm-out" style="margin-top:16px"></div>
+      <div class="hint" id="cm-note" style="margin-top:8px;color:var(--muted);font-size:.8rem;">
+        Calculate on the Firing &amp; Air tab to price it.
       </div>
     </div>
 
