@@ -145,11 +145,10 @@
 <nav>
   <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
   <div class="step-tabs">
-    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Config</div>
-    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace</div>
-    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Firing &amp; Air</div>
-    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>Calculations</div>
-    <div class="step-tab" id="tab-5" onclick="goStep(5)"><span class="tab-n">5</span>BOM &amp; Costing</div>
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Furnace</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Firing &amp; Air</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Calculations</div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>BOM &amp; Costing</div>
   </div>
   <div class="topnav-links">
     <a href="/pricelist">Pricelist</a>
@@ -159,10 +158,14 @@
 
 <div class="page">
 
-  <!-- ═══ STEP 1 ═══ -->
+  <!-- ═══ STEP 2: Furnace ═══
+       Section 1 of the Furnace sheet — the billet, the hearth it needs, and
+       the box that goes round it once refractory, sheet and channel are added.
+       Inputs are the cells the workbook shades peach; everything in the
+       Derived panel is what it shades yellow. -->
   <div class="step active" id="step-1">
     <div class="card">
-      <div class="card-title">Billet Reheating Furnace</div>
+      <div class="card-title">Scope</div>
       <div class="field">
         <label class="toggle"><input type="checkbox" id="chk-ng"/> Include NG Optional (Pilot Burner + UV Sensor)</label>
       </div>
@@ -171,32 +174,6 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Zones &amp; Burners</div>
-      <div class="hint" style="margin:-6px 0 10px;color:var(--muted);font-size:.82rem;">
-        One row per fired zone. Leave fuel per burner at 0 to derive it from the
-        rating and the calorific value. Untick <em>Zone</em> for a standalone
-        burner &mdash; it is sized like the rest but the firing rate is not
-        divided into it.
-      </div>
-      <table class="sz-table">
-        <thead><tr><th>Name</th><th>Burner (kW)</th><th>Burners</th><th>Fuel/burner (Nm&sup3;/hr)</th><th>Zone</th><th></th></tr></thead>
-        <tbody id="sz-zones"></tbody>
-      </table>
-      <button class="btn-back" type="button" onclick="addZone()" style="margin-top:10px;">+ Add zone</button>
-    </div>
-    <div class="error-box" id="error-box"></div>
-    <div class="step-nav">
-      <button class="btn-primary" onclick="calculate()">Calculate &amp; Build BOM</button>
-    </div>
-  </div>
-
-  <!-- ═══ STEP 2: Furnace ═══
-       Section 1 of the Furnace sheet — the billet, the hearth it needs, and
-       the box that goes round it once refractory, sheet and channel are added.
-       Inputs are the cells the workbook shades peach; everything in the
-       Derived panel is what it shades yellow. -->
-  <div class="step" id="step-2">
     <div class="card">
       <div class="card-title">Billet</div>
       <div class="sz-grid">
@@ -253,8 +230,7 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(1)">← Back to Config</button>
-      <button class="btn-primary" onclick="goStep(3)">Next: Firing &amp; Air →</button>
+      <button class="btn-primary" onclick="goStep(2)">Next: Firing &amp; Air →</button>
     </div>
   </div>
 
@@ -262,7 +238,7 @@
        The calculation sheet's duty chain. The inputs decide what the furnace
        fires; the Derived panel is what falls out of them — firing rate,
        combustion air, the share each zone carries, and the blower. -->
-  <div class="step" id="step-3">
+  <div class="step" id="step-2">
     <!-- Furnace duty. These drive the firing rate, the combustion air, the
          per-zone line sizes and the blower, through calculations/brf.py.
          The refractory and structure sheets are still fixed data. -->
@@ -280,6 +256,21 @@
     </div>
 
     <div class="card">
+      <div class="card-title">Zones &amp; Burners</div>
+      <div class="hint" style="margin:-6px 0 10px;color:var(--muted);font-size:.82rem;">
+        One row per fired zone. Leave fuel per burner at 0 to derive it from the
+        rating and the calorific value. Untick <em>Zone</em> for a standalone
+        burner &mdash; it is sized like the rest but the firing rate is not
+        divided into it.
+      </div>
+      <table class="sz-table">
+        <thead><tr><th>Name</th><th>Burner (kW)</th><th>Burners</th><th>Fuel/burner (Nm&sup3;/hr)</th><th>Zone</th><th></th></tr></thead>
+        <tbody id="sz-zones"></tbody>
+      </table>
+      <button class="btn-back" type="button" onclick="addZone()" style="margin-top:10px;">+ Add zone</button>
+    </div>
+
+    <div class="card">
       <div class="card-title">Derived</div>
       <div class="fn-out" id="duty-out"></div>
       <div class="calc-work" id="duty-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
@@ -290,13 +281,13 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(2)">&larr; Back to Furnace</button>
+      <button class="btn-back" onclick="goStep(1)">&larr; Back to Furnace</button>
       <button class="btn-primary" onclick="calculate()">Calculate &amp; Build BOM</button>
     </div>
   </div>
 
   <!-- ═══ STEP 4: All Calculations in Excel Workbook ═══ -->
-  <div class="step" id="step-4">
+  <div class="step" id="step-3">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b2-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b2-cost">--</div></div>
@@ -328,13 +319,13 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(3)">← Back to Firing &amp; Air</button>
-      <button class="btn-primary" onclick="goStep(5)">Next: BOM &amp; Costing →</button>
+      <button class="btn-back" onclick="goStep(2)">← Back to Firing &amp; Air</button>
+      <button class="btn-primary" onclick="goStep(4)">Next: BOM &amp; Costing →</button>
     </div>
   </div>
 
   <!-- ═══ STEP 3: BOM ═══ -->
-  <div class="step" id="step-5">
+  <div class="step" id="step-4">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b3-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b3-cost">--</div><div class="banner-sub" id="b3-main">Main Sell: --</div></div>
@@ -367,7 +358,7 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(4)">← Back to Calculations</button>
+      <button class="btn-back" onclick="goStep(3)">← Back to Calculations</button>
     </div>
   </div>
 
@@ -378,7 +369,7 @@ const API="";
 const fmt=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
 const fmt2=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:2}).format(n);
 let lastData=null;
-const STEPS=[1,2,3,4,5];
+const STEPS=[1,2,3,4];
 
 function goStep(n){
   STEPS.forEach(i=>{
@@ -600,7 +591,7 @@ async function calculate(){
     const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
     if(data.error){err.textContent=data.error;err.style.display="block";return;}
-    lastData=data;renderAll(data,ng,cl);goStep(4);
+    lastData=data;renderAll(data,ng,cl);goStep(3);
   }catch(e){err.textContent="API error: "+e.message;err.style.display="block";}
 }
 
