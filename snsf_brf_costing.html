@@ -45,6 +45,12 @@
       text-transform:uppercase; color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--border); }
     .sz-table td { padding:6px 8px; vertical-align:middle; }
     .xl-num { text-align:right; }
+    /* Derived panel on the Furnace tab — the cells the workbook shades yellow */
+    .fn-out { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+    .fn-tile { border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:#fffdf3; }
+    .fn-l { font-size:.68rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+    .fn-v { font-size:1.15rem; font-weight:800; color:#0f172a; margin-top:4px; }
+    .fn-u { font-size:.72rem; font-weight:600; color:var(--muted); margin-left:4px; }
     /* The worked calculation under the Sizing sheet — monospace so the columns
        line up and the numbers can be read off against the workbook. */
     .calc-work { border-top:1px solid var(--border); margin-top:4px; padding:16px 18px;
@@ -140,8 +146,9 @@
   <div class="brand"><div class="brand-mark">EN</div>ENCON</div>
   <div class="step-tabs">
     <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="tab-n">1</span>Config</div>
-    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Calculations</div>
-    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>BOM &amp; Costing</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="tab-n">2</span>Furnace</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="tab-n">3</span>Calculations</div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="tab-n">4</span>BOM &amp; Costing</div>
   </div>
   <div class="topnav-links">
     <a href="/pricelist">Pricelist</a>
@@ -199,8 +206,75 @@
     </div>
   </div>
 
-  <!-- ═══ STEP 2: All Calculations in Excel Workbook ═══ -->
+  <!-- ═══ STEP 2: Furnace ═══
+       Section 1 of the Furnace sheet — the billet, the hearth it needs, and
+       the box that goes round it once refractory, sheet and channel are added.
+       Inputs are the cells the workbook shades peach; everything in the
+       Derived panel is what it shades yellow. -->
   <div class="step" id="step-2">
+    <div class="card">
+      <div class="card-title">Billet</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Length (mm)</label><input id="fn-blen" type="number" step="any" value="12000" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Width (mm)</label><input id="fn-bwid" type="number" step="any" value="130" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Height (mm)</label><input id="fn-bhgt" type="number" step="any" value="130" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Density of MS (kg/m&sup3;)</label><input id="fn-dens" type="number" step="any" value="7850" oninput="furnacePreview()"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Hearth</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Furnace capacity (Ton/hr)</label><input id="fn-cap" type="number" step="any" value="60" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Top fired hearth load (kg/hr/m&sup2;)</label><input id="fn-hl-top" type="number" step="any" value="300" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Top &amp; bottom fired (kg/hr/m&sup2;)</label><input id="fn-hl-both" type="number" step="any" value="600" oninput="furnacePreview()"/></div>
+      </div>
+      <div class="hint" style="margin-top:4px;color:var(--muted);font-size:.8rem;">
+        The hearth area is worked out from the top-fired figure. The top &amp;
+        bottom figure is carried because the sheet asks for it, but nothing on
+        this sheet consumes it.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Overall Width with Refractory</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Right refractory (mm)</label><input id="fn-right" type="number" step="any" value="510" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Left refractory (mm)</label><input id="fn-left" type="number" step="any" value="510" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Sheet (mm)</label><input id="fn-wsheet" type="number" step="any" value="16" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Channel (mm)</label><input id="fn-wchan" type="number" step="any" value="500" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Effective width override (mm)</label><input id="fn-ewid" type="number" step="any" value="0" oninput="furnacePreview()"/>
+          <div class="hint" style="color:var(--muted);font-size:.74rem;">0 = billet length + 0.3 m</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Overall Length with Refractory</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Discharge side (mm)</label><input id="fn-disch" type="number" step="any" value="2010" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Charge side (mm)</label><input id="fn-charge" type="number" step="any" value="1500" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Sheet, charging side (mm)</label><input id="fn-lsheet1" type="number" step="any" value="6" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Sheet, refractory side (mm)</label><input id="fn-lsheet2" type="number" step="any" value="6" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Channel (mm)</label><input id="fn-lchan" type="number" step="any" value="300" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Effective length override (mm)</label><input id="fn-elen" type="number" step="any" value="0" oninput="furnacePreview()"/>
+          <div class="hint" style="color:var(--muted);font-size:.74rem;">0 = hearth area ÷ billet length</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Derived</div>
+      <div class="fn-out" id="fn-out"></div>
+      <div class="calc-work" id="fn-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-back" onclick="goStep(1)">← Back to Config</button>
+      <button class="btn-primary" onclick="calculate()">Calculate &amp; Build BOM</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3: All Calculations in Excel Workbook ═══ -->
+  <div class="step" id="step-3">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b2-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b2-cost">--</div></div>
@@ -232,13 +306,13 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(1)">← Back</button>
-      <button class="btn-primary" onclick="goStep(3)">Next: BOM &amp; Costing →</button>
+      <button class="btn-back" onclick="goStep(2)">← Back to Furnace</button>
+      <button class="btn-primary" onclick="goStep(4)">Next: BOM &amp; Costing →</button>
     </div>
   </div>
 
   <!-- ═══ STEP 3: BOM ═══ -->
-  <div class="step" id="step-3">
+  <div class="step" id="step-4">
     <div class="cost-banner">
       <div class="banner-block"><div class="banner-label">Grand Total Sell</div><div class="banner-value" id="b3-sell">--</div></div>
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b3-cost">--</div><div class="banner-sub" id="b3-main">Main Sell: --</div></div>
@@ -271,7 +345,7 @@
     </div>
 
     <div class="step-nav">
-      <button class="btn-back" onclick="goStep(2)">← Back to Calculations</button>
+      <button class="btn-back" onclick="goStep(3)">← Back to Calculations</button>
     </div>
   </div>
 
@@ -282,7 +356,7 @@ const API="";
 const fmt=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(n);
 const fmt2=n=>new Intl.NumberFormat("en-IN",{maximumFractionDigits:2}).format(n);
 let lastData=null;
-const STEPS=[1,2,3];
+const STEPS=[1,2,3,4];
 
 function goStep(n){
   STEPS.forEach(i=>{
@@ -351,6 +425,85 @@ window.addEventListener("DOMContentLoaded",()=>{
   if(body) DEFAULT_ZONES.forEach(z=>body.appendChild(zoneRow(z)));
 });
 
+// ── Furnace geometry ───────────────────────────────────────────────────────
+// The inputs the workbook shades peach. Everything the Derived panel shows is
+// what it shades yellow, and all of it comes back from calculations/brf.py —
+// this page does no geometry of its own.
+const FN_FIELDS={
+  billet_length_mm:"fn-blen", billet_width_mm:"fn-bwid", billet_height_mm:"fn-bhgt",
+  ms_density_kg_m3:"fn-dens", furnace_capacity_tph:"fn-cap",
+  hearth_load_top_kg_hr_m2:"fn-hl-top", hearth_load_top_bottom_kg_hr_m2:"fn-hl-both",
+  right_refractory_mm:"fn-right", left_refractory_mm:"fn-left",
+  width_sheet_mm:"fn-wsheet", width_channel_mm:"fn-wchan",
+  discharge_refractory_mm:"fn-disch", charge_refractory_mm:"fn-charge",
+  sheet_charging_side_mm:"fn-lsheet1", sheet_refractory_side_mm:"fn-lsheet2",
+  length_channel_mm:"fn-lchan",
+  effective_width_mm_override:"fn-ewid", effective_length_mm_override:"fn-elen",
+};
+function furnacePayload(){
+  const o={};
+  for(const [k,id] of Object.entries(FN_FIELDS)){
+    const el=document.getElementById(id);
+    o[k]=el?(parseFloat(el.value)||0):0;
+  }
+  return o;
+}
+
+// The capacity lives on this tab, so keep the Config tab's copy in step with
+// it — they are the same number and the sizing chain reads the other one.
+function furnacePreview(){
+  const cap=document.getElementById("fn-cap"), szCap=document.getElementById("sz-cap");
+  if(cap&&szCap) szCap.value=cap.value;
+  clearTimeout(furnacePreview._t);
+  furnacePreview._t=setTimeout(runFurnace,250);
+}
+
+async function runFurnace(){
+  try{
+    const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(Object.assign({},furnacePayload(),{zones:readZones()}))});
+    const data=await res.json();
+    if(data&&data.furnace) renderFurnace(data.furnace);
+  }catch(e){ /* offline — leave the last good figures */ }
+}
+
+function renderFurnace(f){
+  const el=document.getElementById("fn-out");
+  if(!el) return;
+  const n=(v,p=2)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  el.innerHTML=
+    tile("Volume of Billet", n(f.billet_volume_m3,4), "m³")+
+    tile("Weight of a Billet", n(f.billet_weight_kg), "kg")+
+    tile("Hearth Area", n(f.hearth_area_m2), "m²")+
+    tile("Effective Length", n(f.effective_length_m), "m")+
+    tile("Effective Width", n(f.effective_width_m,1), "m")+
+    tile("Overall Width", n(f.overall_width_m,3), "m")+
+    tile("Overall Length", n(f.overall_length_m,3), "m")+
+    tile("Preheating Zone", n(f.zone_preheating_m,3), "m")+
+    tile("Heating Zone", n(f.zone_heating_m,3), "m")+
+    tile("Soaking Zone", n(f.zone_soaking_m,3), "m");
+
+  const w=document.getElementById("fn-work");
+  if(w) w.textContent=[
+    `Volume         = ${n(f.billet_length_mm/1000,3)} × ${n(f.billet_width_mm/1000,3)} × ${n(f.billet_height_mm/1000,3)} = ${n(f.billet_volume_m3,4)} m³`,
+    `Billet weight  = ${n(f.billet_volume_m3,4)} × ${n(f.ms_density_kg_m3,0)} = ${n(f.billet_weight_kg)} kg`,
+    `Hearth area    = capacity × 1000 ÷ top-fired load = ${n(f.hearth_area_m2)} m²`,
+    `Eff. length    = ${n(f.hearth_area_m2)} ÷ billet length, rounded = ${n(f.effective_length_m)} m`,
+    `Eff. width     = billet length + 0.3 = ${n(f.effective_width_m,1)} m`,
+    ``,
+    `Overall width  = ${n(f.effective_width_mm,0)} + right + left + sheet + channel = ${n(f.overall_width_mm,0)} mm = ${n(f.overall_width_m,3)} m`,
+    `Overall length = ${n(f.effective_length_mm,0)} + discharge + charge + both sheets + channel = ${n(f.overall_length_mm,0)} mm = ${n(f.overall_length_m,3)} m`,
+    ``,
+    `Preheating     = overall length × 0.2 = ${n(f.zone_preheating_m,3)} m`,
+    `Heating        = overall length × 0.5 − 0.23 − 0.05 = ${n(f.zone_heating_m,3)} m`,
+    `Soaking        = (eff. length + 1500 + 1500 + 230) ÷ 1000 × 0.3 = ${n(f.zone_soaking_m,3)} m`,
+  ].join("\n");
+}
+
+window.addEventListener("DOMContentLoaded",()=>{ setTimeout(runFurnace,0); });
+
 async function calculate(){
   const ng=document.getElementById("chk-ng").checked;
   const cl=document.getElementById("chk-client").checked;
@@ -363,11 +516,12 @@ async function calculate(){
     preheat_air_temp_C:n("sz-preheat"), air_velocity_ms:n("sz-vair"),
     gas_velocity_ms:n("sz-vgas"), zones:readZones(),
   };
+  Object.assign(payload, furnacePayload());   // the Furnace tab's own inputs
   try{
     const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
     if(data.error){err.textContent=data.error;err.style.display="block";return;}
-    lastData=data;renderAll(data,ng,cl);goStep(2);
+    lastData=data;renderAll(data,ng,cl);goStep(3);
   }catch(e){err.textContent="API error: "+e.message;err.style.display="block";}
 }
 
@@ -491,6 +645,7 @@ function renderAll(data,showNG,showCL){
 
   // ═══ SHEET 0: Sizing — computed, not stored ═══
   renderSizing(data.sizing);
+  if(data.furnace) renderFurnace(data.furnace);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
   const ff=sp.furnace_full||[];

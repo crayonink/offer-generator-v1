@@ -5688,6 +5688,24 @@ class SNSFBRFCalcRequest(BaseModel):
     # column count, which the automatic search will not choose.
     recup_rows:             int = 28
     recup_cols:             int = 27
+    # ── Furnace geometry (Furnace sheet, section 1) ─────────────────
+    billet_length_mm:       float = 12000.0
+    billet_width_mm:        float = 130.0
+    billet_height_mm:       float = 130.0
+    ms_density_kg_m3:       float = 7850.0
+    hearth_load_top_kg_hr_m2:        float = 300.0
+    hearth_load_top_bottom_kg_hr_m2: float = 600.0
+    right_refractory_mm:    float = 510.0
+    left_refractory_mm:     float = 510.0
+    width_sheet_mm:         float = 16.0
+    width_channel_mm:       float = 500.0
+    discharge_refractory_mm:  float = 2010.0
+    charge_refractory_mm:     float = 1500.0
+    sheet_charging_side_mm:   float = 6.0
+    sheet_refractory_side_mm: float = 6.0
+    length_channel_mm:        float = 300.0
+    effective_width_mm_override:  float = 0.0
+    effective_length_mm_override: float = 0.0
 
 
 @app.post("/api/snsf-brf-calculate")
@@ -5739,11 +5757,36 @@ def snsf_brf_calculate(req: SNSFBRFCalcRequest):
                 cols_override=req.recup_cols,
             ),
         )
+        # Furnace geometry — the billet, the hearth it needs and the box that
+        # goes round it. Its own block: it is what the refractory take-off will
+        # be built on when that half is ported.
+        from calculations.brf import BRFFurnaceInputs, calculate_furnace
+        furnace = calculate_furnace(BRFFurnaceInputs(
+            billet_length_mm=req.billet_length_mm,
+            billet_width_mm=req.billet_width_mm,
+            billet_height_mm=req.billet_height_mm,
+            ms_density_kg_m3=req.ms_density_kg_m3,
+            furnace_capacity_tph=req.furnace_capacity_tph,
+            hearth_load_top_kg_hr_m2=req.hearth_load_top_kg_hr_m2,
+            hearth_load_top_bottom_kg_hr_m2=req.hearth_load_top_bottom_kg_hr_m2,
+            right_refractory_mm=req.right_refractory_mm,
+            left_refractory_mm=req.left_refractory_mm,
+            width_sheet_mm=req.width_sheet_mm,
+            width_channel_mm=req.width_channel_mm,
+            discharge_refractory_mm=req.discharge_refractory_mm,
+            charge_refractory_mm=req.charge_refractory_mm,
+            sheet_charging_side_mm=req.sheet_charging_side_mm,
+            sheet_refractory_side_mm=req.sheet_refractory_side_mm,
+            length_channel_mm=req.length_channel_mm,
+            effective_width_mm_override=req.effective_width_mm_override,
+            effective_length_mm_override=req.effective_length_mm_override,
+        ))
         return {
             "bom": bom,
             "cost_summary": summary,
             "supplementary": get_supplementary(),
             "sizing": sizing,
+            "furnace": vars(furnace),
         }
     except Exception as e:
         import traceback

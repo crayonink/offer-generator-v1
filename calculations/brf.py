@@ -234,3 +234,126 @@ def brf_60tph_12m() -> BRFInputs:
             BRFZone("Burner", 1000, 1, is_zone=False),
         ],
     )
+
+
+# ── Furnace geometry ────────────────────────────────────────────────────────
+# Section 1 of the Furnace sheet: the billet, the hearth it needs, and the
+# overall box that comes out once the refractory, sheet and channel are added
+# round it. Cells named as the workbook writes them.
+#
+#   C7  Volume of billet     -> L * W * H, in metres
+#   C9  Weight of a billet   -> volume * density
+#   C13 Hearth area          -> capacity * 1000 / top-fired hearth load
+#   C14 Effective length     -> ROUND(area / billet length, 0)
+#   D17 Effective width      -> billet length + 0.3
+#   D24 Overall width        -> effective width + right + left + sheet + channel
+#   G25 Overall length       -> effective length + discharge + charge
+#                               + both sheets + channel
+#   C28/F28/H28 Zone lengths -> shares of the overall length
+
+@dataclass
+class BRFFurnaceInputs:
+    # ── Billet ──────────────────────────────────────────────────────
+    billet_length_mm:   float = 12000.0   # C4
+    billet_width_mm:    float = 130.0     # C5
+    billet_height_mm:   float = 130.0     # C6
+    ms_density_kg_m3:   float = 7850.0    # C8
+    # ── Duty ────────────────────────────────────────────────────────
+    furnace_capacity_tph:      float = 60.0    # C10
+    hearth_load_top_kg_hr_m2:  float = 300.0   # C11
+    # Carried because the sheet asks for it, though the hearth area is worked
+    # out from the top-fired figure alone.
+    hearth_load_top_bottom_kg_hr_m2: float = 600.0   # C12
+    # ── Around the width (mm) ───────────────────────────────────────
+    right_refractory_mm: float = 510.0    # D20
+    left_refractory_mm:  float = 510.0    # D21
+    width_sheet_mm:      float = 16.0     # D22
+    width_channel_mm:    float = 500.0    # D23
+    # ── Around the length (mm) ──────────────────────────────────────
+    discharge_refractory_mm: float = 2010.0  # G20
+    charge_refractory_mm:    float = 1500.0  # G21
+    sheet_charging_side_mm:  float = 6.0     # G22
+    sheet_refractory_side_mm: float = 6.0    # G23
+    length_channel_mm:       float = 300.0   # G24
+    # ── Overrides (0 = derive) ──────────────────────────────────────
+    # The sheet types the two effective dimensions into the overall-size block
+    # rather than referring to the cells above. They agree here, but a furnace
+    # whose box was set on the drawing can say so.
+    effective_width_mm_override:  float = 0.0   # D19
+    effective_length_mm_override: float = 0.0   # G19
+
+
+@dataclass
+class BRFFurnaceResults:
+    # Echoed so the working can quote the figures it was computed from rather
+    # than whatever the input boxes hold when it is painted.
+    billet_length_mm:    float
+    billet_width_mm:     float
+    billet_height_mm:    float
+    ms_density_kg_m3:    float
+    billet_volume_m3:    float
+    billet_weight_kg:    float
+    hearth_area_m2:      float
+    effective_length_m:  float
+    effective_width_m:   float
+    effective_length_mm: float
+    effective_width_mm:  float
+    overall_width_mm:    float
+    overall_width_m:     float
+    overall_length_mm:   float
+    overall_length_m:    float
+    zone_preheating_m:   float
+    zone_heating_m:      float
+    zone_soaking_m:      float
+    zone_heating_soaking_m: float
+
+
+def calculate_furnace(inp: BRFFurnaceInputs) -> BRFFurnaceResults:
+    L_m = inp.billet_length_mm / 1000.0
+    W_m = inp.billet_width_mm  / 1000.0
+    H_m = inp.billet_height_mm / 1000.0
+
+    volume = L_m * W_m * H_m                                   # C7
+    weight = volume * inp.ms_density_kg_m3                     # C9
+    area   = (inp.furnace_capacity_tph * 1000.0
+              / inp.hearth_load_top_kg_hr_m2)                  # C13
+    # ROUND, not ceiling: the sheet rounds 16.67 to 17 and would round 16.4
+    # down to 16. Python's round() is banker's rounding, so do it explicitly.
+    eff_len_m = math.floor(area / L_m + 0.5) if L_m else 0.0   # C14
+    eff_wid_m = L_m + 0.3                                      # D17
+
+    eff_len_mm = inp.effective_length_mm_override or eff_len_m * 1000.0   # G19
+    eff_wid_mm = inp.effective_width_mm_override  or eff_wid_m * 1000.0   # D19
+
+    overall_w_mm = (eff_wid_mm + inp.right_refractory_mm + inp.left_refractory_mm
+                    + inp.width_sheet_mm + inp.width_channel_mm)          # D24
+    overall_l_mm = (eff_len_mm + inp.discharge_refractory_mm
+                    + inp.charge_refractory_mm + inp.sheet_charging_side_mm
+                    + inp.sheet_refractory_side_mm + inp.length_channel_mm)  # G24/25
+    overall_l_m = overall_l_mm / 1000.0
+
+    preheating = overall_l_m * 0.2                                        # C28
+    heating    = overall_l_m * 0.5 - 0.23 - 0.05                          # F28
+    soaking    = (eff_len_mm + 1500 + 1500 + 230) / 1000.0 * 0.3          # H28
+
+    return BRFFurnaceResults(
+        billet_length_mm    = inp.billet_length_mm,
+        billet_width_mm     = inp.billet_width_mm,
+        billet_height_mm    = inp.billet_height_mm,
+        ms_density_kg_m3    = inp.ms_density_kg_m3,
+        billet_volume_m3    = round(volume, 6),
+        billet_weight_kg    = round(weight, 2),
+        hearth_area_m2      = round(area, 2),
+        effective_length_m  = round(eff_len_m, 2),
+        effective_width_m   = round(eff_wid_m, 3),
+        effective_length_mm = round(eff_len_mm, 1),
+        effective_width_mm  = round(eff_wid_mm, 1),
+        overall_width_mm    = round(overall_w_mm, 1),
+        overall_width_m     = round(overall_w_mm / 1000.0, 3),
+        overall_length_mm   = round(overall_l_mm, 1),
+        overall_length_m    = round(overall_l_m, 3),
+        zone_preheating_m   = round(preheating, 3),
+        zone_heating_m      = round(heating, 3),
+        zone_soaking_m      = round(soaking, 3),
+        zone_heating_soaking_m = round(heating + soaking, 3),
+    )
