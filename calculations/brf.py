@@ -48,7 +48,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-from calculations.pipes import round_up_to_nb
+from calculations.pipes import round_up_to_nb, select_oil_pipe_nb
 
 
 # The workbook's own constants, named. All are overridable per quote.
@@ -77,6 +77,15 @@ class BRFZone:
     fuel_per_burner_nm3hr: float = 0.0
 
 
+# Oil-side constants, the same ones bom/regen_builder.py sizes its fans on, so
+# an oil-fired furnace and an oil-fired regen system agree about the air.
+OIL_AFR_KG_PER_KG = 15.0      # kg combustion air per kg of oil
+RHO_AIR_KG_NM3    = 1.293     # kg/Nm3
+
+GAS_FUELS = ("natural gas", "coke oven gas", "producer gas", "blast furnace gas")
+OIL_FUELS = ("oil", "furnace oil", "fo", "hsd", "ldo", "hdo", "sko", "cfo", "lshs")
+
+
 @dataclass
 class BRFInputs:
     # ── Furnace duty (calculation sheet) ────────────────────────────
@@ -84,6 +93,16 @@ class BRFInputs:
     fuel_per_ton_scm:       float = 45.0     # D4
     cv_kcal_nm3:            float = 8600.0   # D6
     combustion_air_per_nm3: float = 10.5     # D7
+    # ── Fuel ────────────────────────────────────────────────────────
+    # "Natural Gas", "Oil", or "Dual Fuel". A dual-fuel furnace fires either,
+    # so both fuels are sized and each gets its own line; the air main is sized
+    # on whichever of the two asks for more.
+    fuel:                 str   = "Natural Gas"
+    oil_per_ton_litre:    float = 40.0       # the oil equivalent of D4
+    oil_cv_kcal_kg:       float = 10000.0    # furnace oil
+    oil_density_kg_l:     float = 0.92
+    oil_afr:              float = OIL_AFR_KG_PER_KG
+    rho_air_kg_nm3:       float = RHO_AIR_KG_NM3
     # ── Line sizing (Sizing Zone sheet) ─────────────────────────────
     preheat_pressure_barg:  float = 0.05     # J2
     preheat_air_temp_C:     float = 300.0    # J3
@@ -116,6 +135,11 @@ class BRFZoneResult:
     # module docstring. Not used for anything downstream.
     gas_line_bore_as_sheet_mm: float
     gas_line_nb_as_sheet:      int
+    # Oil side, on an oil or dual-fuel furnace. An oil line is sized by flow
+    # band rather than velocity — it is a small bore carrying a liquid, not a
+    # duct carrying a gas — so it comes from select_oil_pipe_nb.
+    oil_flow_lph:         float = 0.0
+    oil_line_nb:          int = 0
 
 
 @dataclass
@@ -143,6 +167,15 @@ class BRFResults:
     gas_main_area_m2:       float
     gas_main_bore_mm:       float
     gas_main_nb:            int
+    # Fuel
+    fuel:                   str = "Natural Gas"
+    uses_gas:               bool = True
+    uses_oil:               bool = False
+    oil_firing_lph:         float = 0.0
+    oil_firing_kghr:        float = 0.0
+    oil_air_nm3hr:          float = 0.0
+    gas_air_nm3hr:          float = 0.0
+    oil_main_nb:            int = 0
 
 
 def _bore_mm(area_m2: float) -> float:
@@ -178,11 +211,25 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
         if not value or value <= 0:
             raise ValueError(f"The {what} cannot be zero — nothing can be sized from it.")
 
-    # ── D5: firing rate ────────────────────────────────────────────
-    firing_rate = inp.furnace_capacity_tph * inp.fuel_per_ton_scm
+    fuel_l = (inp.fuel or "Natural Gas").strip().lower()
+    uses_oil = fuel_l in OIL_FUELS or fuel_l == "dual fuel"
+    uses_gas = fuel_l not in OIL_FUELS or fuel_l == "dual fuel"
 
-    # ── D8: combustion air for that firing rate ────────────────────
-    combustion_air = firing_rate * inp.combustion_air_per_nm3
+    # ── D5: firing rate ────────────────────────────────────────────
+    firing_rate = (inp.furnace_capacity_tph * inp.fuel_per_ton_scm) if uses_gas else 0.0
+
+    # ── The oil side, when there is one ────────────────────────────
+    # Oil is metered by volume and burnt by mass, so the litres go to kilograms
+    # before the air is worked out: air is a mass ratio, not a volume one.
+    oil_lph = (inp.furnace_capacity_tph * inp.oil_per_ton_litre) if uses_oil else 0.0
+    oil_kghr = oil_lph * inp.oil_density_kg_l
+    oil_air = (oil_kghr * inp.oil_afr / inp.rho_air_kg_nm3) if inp.rho_air_kg_nm3 else 0.0
+
+    # ── D8: combustion air ─────────────────────────────────────────
+    # A dual-fuel furnace fires one or the other, never both, so the air side
+    # is sized on whichever asks for more rather than on their sum.
+    gas_air = firing_rate * inp.combustion_air_per_nm3
+    combustion_air = max(gas_air, oil_air)
 
     # ── D9: firing rate per zone, rounded up to a whole Nm3/hr ─────
     zone_count = sum(1 for z in inp.zones if z.is_zone and z.burner_count > 0)
@@ -203,8 +250,12 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
 
     zones: list[BRFZoneResult] = []
     for z in inp.zones:
-        per_burner = (z.fuel_per_burner_nm3hr
-                      or (z.burner_kw * KCAL_PER_KWH / inp.cv_kcal_nm3))
+        # No gas line on an oil-fired furnace: the burners are the same burners
+        # and take the same air, but nothing gas flows through them.
+        per_burner = 0.0
+        if uses_gas:
+            per_burner = (z.fuel_per_burner_nm3hr
+                          or (z.burner_kw * KCAL_PER_KWH / inp.cv_kcal_nm3))
         fuel_flow = per_burner * z.burner_count
         air_flow = z.burner_kw * z.burner_count
         air_hot = air_flow * expansion
@@ -216,6 +267,12 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
         gas_area = fuel_flow / inp.gas_velocity_ms / 3600 if inp.gas_velocity_ms else 0.0
         gas_bore = _bore_mm(gas_area)
         gas_nb = _nb_or_zero(gas_bore)
+
+        # The same burners on oil: rating -> kcal/hr -> kg/hr -> litres/hr.
+        oil_lph_zone = 0.0
+        if uses_oil and inp.oil_cv_kcal_kg and inp.oil_density_kg_l:
+            oil_lph_zone = (z.burner_kw * KCAL_PER_KWH / inp.oil_cv_kcal_kg
+                            / inp.oil_density_kg_l) * z.burner_count
 
         # The workbook's own formula, kept only so the two can be compared.
         sheet_area = air_nb / inp.gas_velocity_ms / 3600 if inp.gas_velocity_ms else 0.0
@@ -237,6 +294,8 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
             gas_line_nb           = gas_nb,
             gas_line_bore_as_sheet_mm = round(sheet_bore, 2),
             gas_line_nb_as_sheet      = _nb_or_zero(sheet_bore),
+            oil_flow_lph              = round(oil_lph_zone, 2),
+            oil_line_nb               = select_oil_pipe_nb(oil_lph_zone) if oil_lph_zone > 0 else 0,
         ))
 
     # ── The mains ──────────────────────────────────────────────────
@@ -277,6 +336,14 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
         gas_main_area_m2           = round(gas_main_area, 6),
         gas_main_bore_mm           = round(gas_main_bore, 2),
         gas_main_nb                = _nb_or_zero(gas_main_bore),
+        fuel                       = inp.fuel,
+        uses_gas                   = uses_gas,
+        uses_oil                   = uses_oil,
+        oil_firing_lph             = round(oil_lph, 2),
+        oil_firing_kghr            = round(oil_kghr, 2),
+        oil_air_nm3hr              = round(oil_air, 2),
+        gas_air_nm3hr              = round(gas_air, 2),
+        oil_main_nb                = select_oil_pipe_nb(oil_lph) if oil_lph > 0 else 0,
     )
 
 

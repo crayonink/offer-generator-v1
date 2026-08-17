@@ -76,6 +76,42 @@
     .banner-sub { font-size:.8rem; opacity:.6; margin-top:2px; }
 
     /* ── Excel Workbook UI ── */
+    /* Fuel picker — three cards, one chosen. Bigger than a dropdown because
+       it is the decision the rest of the furnace hangs off. */
+    .fuel-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
+    .fuel-opt { position:relative; border:1.5px solid var(--border); border-radius:14px;
+                padding:16px 18px; cursor:pointer; background:var(--card);
+                transition:border-color .15s, box-shadow .15s, background .15s; }
+    .fuel-opt:hover { border-color:#cbd5e1; background:#fcfdfe; }
+    .fuel-opt input { position:absolute; opacity:0; pointer-events:none; }
+    .fuel-opt .fo-name { font-size:.95rem; font-weight:700; color:#0f172a; letter-spacing:-.01em; }
+    .fuel-opt .fo-sub { font-size:.78rem; color:var(--muted); margin-top:4px; line-height:1.45; }
+    .fuel-opt .fo-tick { position:absolute; top:14px; right:14px; width:18px; height:18px;
+                         border-radius:50%; border:1.5px solid var(--border); background:#fff;
+                         display:flex; align-items:center; justify-content:center;
+                         font-size:.7rem; color:#fff; transition:all .15s; }
+    .fuel-opt.sel { border-color:var(--navy); background:#f7fafd;
+                    box-shadow:0 0 0 3px rgba(26,58,92,.08); }
+    .fuel-opt.sel .fo-tick { background:var(--navy); border-color:var(--navy); }
+    .fuel-opt.sel .fo-tick::after { content:"\2713"; }
+
+    /* Scope switches, as switches rather than default checkboxes. */
+    .opt-row { display:flex; align-items:flex-start; gap:14px; padding:14px 2px;
+               border-bottom:1px solid var(--border); }
+    .opt-row:last-child { border-bottom:0; }
+    .opt-row .opt-text { flex:1; }
+    .opt-row .opt-name { font-size:.9rem; font-weight:600; color:#0f172a; }
+    .opt-row .opt-sub { font-size:.78rem; color:var(--muted); margin-top:3px; }
+    .switch { position:relative; width:42px; height:24px; flex:0 0 42px; margin-top:2px; }
+    .switch input { opacity:0; width:0; height:0; }
+    .switch span { position:absolute; inset:0; background:#cbd5e1; border-radius:999px;
+                   cursor:pointer; transition:background .18s; }
+    .switch span::before { content:""; position:absolute; height:18px; width:18px; left:3px; top:3px;
+                           background:#fff; border-radius:50%; transition:transform .18s;
+                           box-shadow:0 1px 3px rgba(15,23,42,.25); }
+    .switch input:checked + span { background:var(--navy); }
+    .switch input:checked + span::before { transform:translateX(18px); }
+
     /* ── Calculation sheets ────────────────────────────────────────────────
        These were drawn as a spreadsheet — green title bar, formula bar, A/B/C
        column letters, row numbers, a border round every cell. None of it was
@@ -290,19 +326,70 @@
   </div>
 
   <!-- ═══ STEP 2: Config ═══
-       What is in the quote, before anything is sized. -->
+       What the furnace burns, and what is in the quote. Both decided before
+       anything is sized: the fuel sets the firing rate and the air, and the
+       two scope switches decide what the BOM carries. -->
   <div class="step" id="step-2">
     <div class="card">
-      <div class="card-title">Billet Reheating Furnace</div>
-      <div class="field">
-        <label class="toggle"><input type="checkbox" id="chk-ng"/> Include NG Optional (Pilot Burner + UV Sensor)</label>
+      <div class="card-title">Fuel</div>
+      <div class="fuel-grid">
+        <label class="fuel-opt sel" data-fuel="Natural Gas">
+          <input type="radio" name="brf-fuel" value="Natural Gas" checked onchange="fuelChanged()"/>
+          <span class="fo-tick"></span>
+          <div class="fo-name">Natural Gas</div>
+          <div class="fo-sub">Fired on gas alone. Firing rate in Nm&sup3;/hr, air at
+            10.5 Nm&sup3; per Nm&sup3; of gas.</div>
+        </label>
+        <label class="fuel-opt" data-fuel="Oil">
+          <input type="radio" name="brf-fuel" value="Oil" onchange="fuelChanged()"/>
+          <span class="fo-tick"></span>
+          <div class="fo-name">Oil</div>
+          <div class="fo-sub">Furnace oil. Metered in litres, burnt by mass &mdash;
+            air comes off the air-to-fuel ratio.</div>
+        </label>
+        <label class="fuel-opt" data-fuel="Dual Fuel">
+          <input type="radio" name="brf-fuel" value="Dual Fuel" onchange="fuelChanged()"/>
+          <span class="fo-tick"></span>
+          <div class="fo-name">Dual Fuel</div>
+          <div class="fo-sub">Either fuel, never both. Each gets its own line;
+            the air is sized on whichever asks for more.</div>
+        </label>
       </div>
-      <div class="field">
-        <label class="toggle"><input type="checkbox" id="chk-client"/> Include Client Scope (Mild Steel + Refractory)</label>
+
+      <div class="sz-grid" id="fuel-gas-params" style="margin-top:18px">
+        <div class="sz-f"><label>Gas per ton (SCM)</label><input id="sz-fuel-cfg" type="number" step="any" value="45" oninput="fuelChanged()"/></div>
+        <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label><input id="sz-cv-cfg" type="number" step="any" value="8600" oninput="fuelChanged()"/></div>
+        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air-cfg" type="number" step="any" value="10.5" oninput="fuelChanged()"/></div>
       </div>
-      <div class="hint" style="margin-top:10px;color:var(--muted);font-size:.82rem;">
+      <div class="sz-grid" id="fuel-oil-params" style="margin-top:14px; display:none">
+        <div class="sz-f"><label>Oil per ton (litres)</label><input id="oil-per-ton" type="number" step="any" value="40" oninput="fuelChanged()"/></div>
+        <div class="sz-f"><label>Calorific value (kcal/kg)</label><input id="oil-cv" type="number" step="any" value="10000" oninput="fuelChanged()"/></div>
+        <div class="sz-f"><label>Density (kg/litre)</label><input id="oil-density" type="number" step="any" value="0.92" oninput="fuelChanged()"/></div>
+      </div>
+
+      <div class="fn-out" id="fuel-out" style="margin-top:18px"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Scope</div>
+      <div class="opt-row">
+        <label class="switch"><input type="checkbox" id="chk-ng"/><span></span></label>
+        <div class="opt-text">
+          <div class="opt-name">NG Optional</div>
+          <div class="opt-sub">Pilot burner and UV sensor on every burner.</div>
+        </div>
+      </div>
+      <div class="opt-row">
+        <label class="switch"><input type="checkbox" id="chk-client"/><span></span></label>
+        <div class="opt-text">
+          <div class="opt-name">Client Scope</div>
+          <div class="opt-sub">Mild steel and refractory, when they are in our scope
+            rather than the client&rsquo;s.</div>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:12px;color:var(--muted);font-size:.8rem;">
         Both add their sections to the BOM on the last tab. Everything else is
-        priced whether they are ticked or not.
+        priced whether they are on or not.
       </div>
     </div>
 
@@ -880,6 +967,56 @@ function renderRefractory(f){
   ].join("\n");
 }
 
+
+// ── Fuel ───────────────────────────────────────────────────────────────────
+// The fuel decides the firing rate and the air, so it is settled on Config
+// before anything is sized. Gas and oil each keep their own parameters; a
+// dual-fuel furnace shows both, because it is sized for both.
+function selectedFuel(){
+  const r=document.querySelector('input[name="brf-fuel"]:checked');
+  return r ? r.value : "Natural Gas";
+}
+
+function fuelChanged(){
+  const f=selectedFuel();
+  document.querySelectorAll(".fuel-opt").forEach(o=>
+    o.classList.toggle("sel", o.dataset.fuel===f));
+  const gas=f!=="Oil", oil=f!=="Natural Gas";
+  const show=(id,on)=>{const e=document.getElementById(id); if(e) e.style.display=on?"":"none";};
+  show("fuel-gas-params", gas);
+  show("fuel-oil-params", oil);
+  // Config owns these now; the Firing & Air boxes follow so one number is
+  // typed in one place.
+  const mirror=(from,to)=>{const a=document.getElementById(from),b=document.getElementById(to);
+                           if(a&&b) b.value=a.value;};
+  mirror("sz-fuel-cfg","sz-fuel"); mirror("sz-cv-cfg","sz-cv"); mirror("sz-air-cfg","sz-air");
+  clearTimeout(fuelChanged._t);
+  fuelChanged._t=setTimeout(runDuty,250);
+}
+
+function fuelPayload(){
+  const n=id=>parseFloat((document.getElementById(id)||{}).value)||0;
+  return {fuel:selectedFuel(), oil_per_ton_litre:n("oil-per-ton"),
+          oil_cv_kcal_kg:n("oil-cv"), oil_density_kg_l:n("oil-density")};
+}
+
+function renderFuel(d){
+  const el=document.getElementById("fuel-out");
+  if(!el||!d) return;
+  const cm=(v,p=0)=>v==null?"\u2014":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  let h="";
+  if(d.uses_gas) h+=tile("Gas Firing Rate", cm(d.firing_rate_nm3hr), "Nm\u00b3/hr");
+  if(d.uses_oil) h+=tile("Oil Firing Rate", cm(d.oil_firing_lph), "L/hr")+
+                    tile("Oil, by mass", cm(d.oil_firing_kghr), "kg/hr");
+  h+=tile("Combustion Air", cm(d.combustion_air_nm3hr), "Nm\u00b3/hr");
+  if(d.uses_gas&&d.uses_oil)
+    h+=tile("Air on gas", cm(d.gas_air_nm3hr), "Nm\u00b3/hr")+
+       tile("Air on oil", cm(d.oil_air_nm3hr), "Nm\u00b3/hr");
+  if(d.uses_oil&&d.oil_main_nb) h+=tile("Oil Main", `${d.oil_main_nb} NB`, "");
+  el.innerHTML=h;
+}
+
 // ── Firing & air ───────────────────────────────────────────────────────────
 // The duty chain, worked out as the inputs change rather than only on
 // Calculate. Same rule as everywhere else on this page: the engine computes,
@@ -901,9 +1038,9 @@ async function runDuty(){
         cv_kcal_nm3:n("sz-cv"), combustion_air_per_nm3:n("sz-air"),
         preheat_air_temp_C:n("sz-preheat"), air_velocity_ms:n("sz-vair"),
         gas_velocity_ms:n("sz-vgas"), zones:readZones(),
-      }, furnacePayload()))});
+      }, furnacePayload(), fuelPayload()))});
     const data=await res.json();
-    if(data&&data.sizing) renderDuty(data.sizing);
+    if(data&&data.sizing){ renderDuty(data.sizing); renderFuel(data.sizing.duty); }
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
@@ -958,7 +1095,7 @@ function renderDuty(sz){
   ].join("\n");
 }
 
-window.addEventListener("DOMContentLoaded",()=>{ setTimeout(runFurnace,0); setTimeout(runDuty,0); });
+window.addEventListener("DOMContentLoaded",()=>{ fuelChanged(); setTimeout(runFurnace,0); setTimeout(runDuty,0); });
 
 async function calculate(){
   const ng=!!(document.getElementById("chk-ng")||{}).checked;
@@ -978,7 +1115,7 @@ async function calculate(){
     preheat_air_temp_C:n("sz-preheat"), air_velocity_ms:n("sz-vair"),
     gas_velocity_ms:n("sz-vgas"), zones:readZones(),
   };
-  Object.assign(payload, furnacePayload());   // the Furnace tab's own inputs
+  Object.assign(payload, furnacePayload(), fuelPayload());  // Furnace and Config
   try{
     const res=await fetch(`${API}/api/brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
@@ -1115,6 +1252,7 @@ function renderAll(data,showNG,showCL){
   // ═══ SHEET 0: Sizing — computed, not stored ═══
   renderSizing(data.sizing);
   renderDuty(data.sizing);
+  renderFuel(data.sizing.duty);
   commercialPreview();
   if(data.furnace) renderFurnace(data.furnace);
   if(data.refractory) renderRefractory(data.refractory);

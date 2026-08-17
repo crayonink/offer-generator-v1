@@ -603,6 +603,14 @@ def build_brf_sizing(brf_inputs, recup_inputs, equipment_prices=None) -> dict:
             "total_fuel_nm3hr":       brf.total_fuel_nm3hr,
             "total_air_nm3hr":        brf.total_air_nm3hr,
             "preheat_air_temp_C":     brf_inputs.preheat_air_temp_C,
+            "fuel":                   brf.fuel,
+            "uses_gas":               brf.uses_gas,
+            "uses_oil":               brf.uses_oil,
+            "oil_firing_lph":         brf.oil_firing_lph,
+            "oil_firing_kghr":        brf.oil_firing_kghr,
+            "oil_air_nm3hr":          brf.oil_air_nm3hr,
+            "gas_air_nm3hr":          brf.gas_air_nm3hr,
+            "oil_main_nb":            brf.oil_main_nb,
             # The mains, sized on the whole furnace rather than a zone's share.
             # nb 0 means the bore is past the largest standard pipe — a header
             # that size is ducted, not piped.

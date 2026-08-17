@@ -5701,6 +5701,11 @@ class BRFCalcRequest(BaseModel):
     fuel_per_ton_scm:       float = 45.0
     cv_kcal_nm3:            float = 8600.0
     combustion_air_per_nm3: float = 10.5
+    # ── Fuel ────────────────────────────────────────────────────────
+    fuel:                   str = "Natural Gas"    # or "Oil" / "Dual Fuel"
+    oil_per_ton_litre:      float = 40.0
+    oil_cv_kcal_kg:         float = 10000.0
+    oil_density_kg_l:       float = 0.92
     # ── Line sizing ─────────────────────────────────────────────────
     preheat_air_temp_C:     float = 300.0
     air_velocity_ms:        float = 12.0
@@ -5775,6 +5780,10 @@ def brf_calculate(req: BRFCalcRequest):
                 fuel_per_ton_scm=req.fuel_per_ton_scm,
                 cv_kcal_nm3=req.cv_kcal_nm3,
                 combustion_air_per_nm3=req.combustion_air_per_nm3,
+                fuel=req.fuel,
+                oil_per_ton_litre=req.oil_per_ton_litre,
+                oil_cv_kcal_kg=req.oil_cv_kcal_kg,
+                oil_density_kg_l=req.oil_density_kg_l,
                 preheat_air_temp_C=req.preheat_air_temp_C,
                 air_velocity_ms=req.air_velocity_ms,
                 gas_velocity_ms=req.gas_velocity_ms,
