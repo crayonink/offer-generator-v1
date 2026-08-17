@@ -1242,7 +1242,10 @@ let _legacyRefractoryHtml = "";
 
 function renderRefractorySheet(f){
   const el=document.getElementById("xl-refractory");
-  if(!el||!f) return;
+  if(!el) return;
+  // Same as the structure sheet: this renderer owns the element, so a missing
+  // take-off means fall back to the costed list, not leave the tab blank.
+  if(!f){ el.innerHTML=_legacyRefractoryHtml||""; return; }
   const n=(v,p=0)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
   const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
@@ -1457,7 +1460,10 @@ let _legacyMildSteelHtml = "";
 
 function renderStructureSheet(s){
   const el=document.getElementById("xl-mildsteel");
-  if(!el||!s) return;
+  if(!el) return;
+  // No take-off yet — the engine has not run, or an older backend is answering.
+  // The costed list still has to be drawn: this renderer owns the element.
+  if(!s){ el.innerHTML=_legacyMildSteelHtml||""; return; }
   const n=(v,p=0)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
   const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
@@ -1867,8 +1873,11 @@ function renderAll(data,showNG,showCL){
   // The costed list is kept, but it no longer owns the sheet — the computed
   // take-off is rendered above it. Writing straight to the element here is
   // what made the new table invisible: it was drawn first and then replaced.
+  // Unconditional: the renderer owns the element now, so it has to be called
+  // whether or not the engine returned a take-off. Guarding it here is what
+  // left the sheet blank — nothing else writes it.
   _legacyRefractoryHtml = rf;
-  if(lastData && lastData.refractory) renderRefractorySheet(lastData.refractory);
+  renderRefractorySheet(data.refractory);
 
   // ═══ SHEET 3: Mild Steel ═══
   n=0;
@@ -1886,7 +1895,7 @@ function renderAll(data,showNG,showCL){
   // Same as Refractory: the fixed costed list keeps its place, but the
   // computed take-off is drawn above it rather than under it.
   _legacyMildSteelHtml = ml;
-  if(lastData && lastData.structure) renderStructureSheet(lastData.structure);
+  renderStructureSheet(data.structure);
 
   // ═══ SHEET 4: Mass Flow Control ═══
   n=0;
