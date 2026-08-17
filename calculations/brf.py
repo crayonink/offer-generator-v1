@@ -133,6 +133,16 @@ class BRFResults:
     total_burners:          int
     total_fuel_nm3hr:       float
     total_air_nm3hr:        float
+    # Mains — the air header from the blower and the gas header from the train,
+    # sized on the whole furnace rather than a zone's share
+    air_main_flow_m3hr:     float
+    air_main_area_m2:       float
+    air_main_bore_mm:       float
+    air_main_nb:            int
+    gas_main_flow_nm3hr:    float
+    gas_main_area_m2:       float
+    gas_main_bore_mm:       float
+    gas_main_nb:            int
 
 
 def _bore_mm(area_m2: float) -> float:
@@ -140,6 +150,23 @@ def _bore_mm(area_m2: float) -> float:
     if area_m2 <= 0:
         return 0.0
     return math.sqrt(4 * area_m2 / SHEET_PI) * 1000
+
+
+def _nb_or_zero(bore_mm: float) -> int:
+    """Next standard NB at or above the bore, or 0 when there is no pipe that
+    big.
+
+    The ladder in calculations/pipes.py stops at 600 NB, and it raises rather
+    than returning something. That is right for a burner line, but a reheating
+    furnace's air header is a duct, not a pipe: 28,350 Nm3/hr of preheated air
+    at 12 m/s wants a 1,293 mm bore, and the whole calculation used to die on
+    it. 0 means "past the ladder" — the bore is still reported, and whatever
+    displays it can say so instead of showing a pipe size that does not exist.
+    """
+    try:
+        return round_up_to_nb(bore_mm) if bore_mm > 0 else 0
+    except ValueError:
+        return 0
 
 
 def calculate_brf(inp: BRFInputs) -> BRFResults:
@@ -184,11 +211,11 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
 
         air_area = air_hot / inp.air_velocity_ms / 3600 if inp.air_velocity_ms else 0.0
         air_bore = _bore_mm(air_area)
-        air_nb = round_up_to_nb(air_bore) if air_bore > 0 else 0
+        air_nb = _nb_or_zero(air_bore)
 
         gas_area = fuel_flow / inp.gas_velocity_ms / 3600 if inp.gas_velocity_ms else 0.0
         gas_bore = _bore_mm(gas_area)
-        gas_nb = round_up_to_nb(gas_bore) if gas_bore > 0 else 0
+        gas_nb = _nb_or_zero(gas_bore)
 
         # The workbook's own formula, kept only so the two can be compared.
         sheet_area = air_nb / inp.gas_velocity_ms / 3600 if inp.gas_velocity_ms else 0.0
@@ -209,8 +236,27 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
             gas_line_bore_mm      = round(gas_bore, 2),
             gas_line_nb           = gas_nb,
             gas_line_bore_as_sheet_mm = round(sheet_bore, 2),
-            gas_line_nb_as_sheet      = round_up_to_nb(sheet_bore) if sheet_bore > 0 else 0,
+            gas_line_nb_as_sheet      = _nb_or_zero(sheet_bore),
         ))
+
+    # ── The mains ──────────────────────────────────────────────────
+    # The 4 TPH sheet sizes these in a block of its own (B13:B19 for gas,
+    # E13:E19 with J14:K19 for air); the 60 TPH sheet sizes only the branches.
+    # Same method as a zone, on the whole furnace: the air header carries all
+    # the combustion air at the preheat temperature, the gas header the whole
+    # firing rate.
+    #
+    # That sheet expands the air by (T_preheat + 273.15) / (T_ambient + 273)
+    # where the zone columns use 1/(P+1) x (T+273)/273. Ours uses the zone
+    # expansion throughout, so a header and the branches off it are sized on
+    # the same physics — on the 4 TPH job both land on 300 NB either way.
+    # Its K18 also adds T_ambient/293 to the flow, about 1 Nm3/hr on 1890,
+    # which looks like a slip and changes nothing; it is not carried here.
+    air_main_flow = combustion_air * expansion
+    air_main_area = air_main_flow / inp.air_velocity_ms / 3600 if inp.air_velocity_ms else 0.0
+    air_main_bore = _bore_mm(air_main_area)
+    gas_main_area = firing_rate / inp.gas_velocity_ms / 3600 if inp.gas_velocity_ms else 0.0
+    gas_main_bore = _bore_mm(gas_main_area)
 
     return BRFResults(
         firing_rate_nm3hr          = round(firing_rate, 2),
@@ -223,6 +269,14 @@ def calculate_brf(inp: BRFInputs) -> BRFResults:
         total_burners              = sum(z.burner_count for z in inp.zones),
         total_fuel_nm3hr           = round(sum(z.fuel_flow_nm3hr for z in zones), 2),
         total_air_nm3hr            = round(sum(z.air_flow_nm3hr for z in zones), 2),
+        air_main_flow_m3hr         = round(air_main_flow, 2),
+        air_main_area_m2           = round(air_main_area, 6),
+        air_main_bore_mm           = round(air_main_bore, 2),
+        air_main_nb                = _nb_or_zero(air_main_bore),
+        gas_main_flow_nm3hr        = round(firing_rate, 2),
+        gas_main_area_m2           = round(gas_main_area, 6),
+        gas_main_bore_mm           = round(gas_main_bore, 2),
+        gas_main_nb                = _nb_or_zero(gas_main_bore),
     )
 
 

@@ -864,7 +864,11 @@ function renderDuty(sz){
     tile("Blower", cm(d.blower_cfm), "CFM")+
     tile("Blower", cm(d.blower_hp,2), "HP")+
     tile("Total Burners", cm(d.total_burners), "")+
-    tile("Fuel, all zones", cm(d.total_fuel_nm3hr), "Nm³/hr");
+    tile("Fuel, all zones", cm(d.total_fuel_nm3hr), "Nm³/hr")+
+    tile("Air Header", d.air_main_nb ? `${d.air_main_nb} NB` : `${cm(d.air_main_bore_mm)} mm`,
+         d.air_main_nb ? "" : "duct")+
+    tile("Gas Header", d.gas_main_nb ? `${d.gas_main_nb} NB` : `${cm(d.gas_main_bore_mm)} mm`,
+         d.gas_main_nb ? "" : "duct");
 
   // The fuel each burner takes, resolved: what was typed, or what the rating
   // and the calorific value come to. Shown as the placeholder so a derived
@@ -884,6 +888,13 @@ function renderDuty(sz){
     ``,
     `Blower volume  = ${cm(d.combustion_air_nm3hr)} ÷ ${d.cfm_per_nm3hr} = ${cm(d.blower_cfm)} CFM`,
     `Blower power   = ${cm(d.blower_cfm)} × ${d.blower_head_factor} ÷ ${cm(d.blower_constant)} = ${cm(d.blower_hp,2)} HP`,
+    ``,
+    `Air header    = ${cm(d.combustion_air_nm3hr)} Nm³/hr expanded = ${cm(d.air_main_flow_m3hr)} m³/hr`,
+    `                ÷ ${d.air_velocity_ms} m/s ÷ 3600 → ${cm(d.air_main_bore_mm)} mm bore → ` +
+      (d.air_main_nb ? `${d.air_main_nb} NB` : `past the largest standard pipe — duct it`),
+    `Gas header    = ${cm(d.gas_main_flow_nm3hr)} Nm³/hr ÷ ${d.gas_velocity_ms} m/s ÷ 3600 → ` +
+      `${cm(d.gas_main_bore_mm)} mm bore → ` +
+      (d.gas_main_nb ? `${d.gas_main_nb} NB` : `past the largest standard pipe — duct it`),
     ``,
     `The calorific value sets the fuel each burner takes where the zone table`,
     `does not name it: rating × 860 ÷ ${cm(d.cv_kcal_nm3)}.`,
@@ -1006,6 +1017,13 @@ function sizingBreakdown(sz){
     L.push(`     Gas area      = ${cm(z.fuel_flow_nm3hr)} ÷ ${d.gas_velocity_ms} ÷ 3600 = ${n2(z.gas_line_area_m2,5)} m²`);
     L.push(`     Gas bore      = √(4 × ${n2(z.gas_line_area_m2,5)} ÷ 3.14) × 1000 = ${n2(z.gas_line_bore_mm)} mm  →  ${z.gas_line_nb} NB`);
   });
+
+  const d2=sz.duty;
+  L.push("");
+  L.push(`   Air header    ${cm(d2.air_main_flow_m3hr)} m³/hr → ${n2(d2.air_main_bore_mm)} mm → `
+       + (d2.air_main_nb ? `${d2.air_main_nb} NB` : "past the largest standard pipe — duct it"));
+  L.push(`   Gas header    ${cm(d2.gas_main_flow_nm3hr)} Nm³/hr → ${n2(d2.gas_main_bore_mm)} mm → `
+       + (d2.gas_main_nb ? `${d2.gas_main_nb} NB` : "past the largest standard pipe — duct it"));
 
   const r=sz.recuperator||{};
   h("RECUPERATOR");
