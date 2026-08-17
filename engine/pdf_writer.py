@@ -506,6 +506,16 @@ def generate_quote_pdf(quote_data: dict, output_path: str) -> None:
         else:
             flow.append(Paragraph(body, st["Body"]))
 
+    import os
+    sen_img = os.path.join(os.path.dirname(os.path.dirname(output_path)), "static", "sen_preheater_photo.jpg")
+    if not os.path.exists(sen_img):
+        sen_img = os.path.join("static", "sen_preheater_photo.jpg")
+    if os.path.exists(sen_img) and ("sen" in str(customer.get("subject","")).lower() or "sen" in str(customer.get("project_name","")).lower() or any("sen" in str(i.get("product_type","")).lower() for i in items)):
+        from reportlab.platypus import Image as RLImage
+        flow.append(Spacer(1, 0.2 * cm))
+        flow.append(RLImage(sen_img, width=9.5 * cm, height=6.8 * cm))
+        flow.append(Spacer(1, 0.2 * cm))
+
     # 2. Combustion Air Line table
     flow.append(Paragraph("COMBUSTION AIR LINE", st["H2"]))
     flow.append(Paragraph("The airline will consist of the following Items:", st["Body"]))

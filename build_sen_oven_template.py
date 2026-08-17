@@ -1,8 +1,7 @@
 """
-build_sen_preheater_template.py — v6
-Builds SEN_Preheater_Offer_Template.docx from Burner_Offer_Template.docx.
-Cleanly formats tables, TOC, Technical Specifications, Scope Narrative, Price Schedule,
-and embeds the SEN Preheater photo in Annexure I (Scope of Supply).
+build_sen_oven_template.py
+Builds SEN_Oven_Offer_Template.docx from Burner_Offer_Template.docx.
+Generates template for SEN Preheating Oven / SES Preheating Oven offers.
 """
 from __future__ import annotations
 import os, shutil
@@ -14,7 +13,7 @@ from docx.shared import Pt, Cm, RGBColor
 
 BASE   = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(BASE, "Burner_Offer_Template.docx")
-TARGET = os.path.join(BASE, "SEN_Preheater_Offer_Template.docx")
+TARGET = os.path.join(BASE, "SEN_Oven_Offer_Template.docx")
 IMG_PATH = os.path.join(BASE, "static", "sen_preheater_photo.jpg")
 
 shutil.copy2(SOURCE, TARGET)
@@ -43,12 +42,16 @@ def _set_cell(cell, text, bold=False, size=9, bg=None, color=None, align=None):
         shd.set(qn("w:fill"), bg)
         tcPr.append(shd)
 
-def _new_para(text, bold=False, underline=False, size=9.5, italic=False, color=None):
+def _new_para(text, bold=False, underline=False, size=9.5, italic=False, color=None, space_before=0, space_after=4, line_spacing=1.15):
     """Create a bare w:p element with font, size, spacing, and styling."""
     p_el = OxmlElement("w:p")
     pPr  = OxmlElement("w:pPr")
-    sp   = OxmlElement("w:spacing")
-    sp.set(qn("w:after"), "80")  # 80 dxa = 4pt
+    
+    sp = OxmlElement("w:spacing")
+    sp.set(qn("w:before"), str(int(space_before * 20)))
+    sp.set(qn("w:after"), str(int(space_after * 20)))
+    sp.set(qn("w:lineRule"), "auto")
+    sp.set(qn("w:line"), str(int(line_spacing * 240)))
     pPr.append(sp)
     
     rPr  = OxmlElement("w:rPr")
@@ -91,8 +94,8 @@ def _new_img_para(doc_obj, img_path, width_cm=14.0):
     p = doc_obj.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     sp = OxmlElement("w:spacing")
-    sp.set(qn("w:before"), "160")  # 8pt
-    sp.set(qn("w:after"), "160")   # 8pt
+    sp.set(qn("w:before"), "160")
+    sp.set(qn("w:after"), "160")
     p._element.get_or_add_pPr().append(sp)
     run = p.add_run()
     run.add_picture(img_path, width=Cm(width_cm))
@@ -132,24 +135,23 @@ for i, (a, b, c_) in enumerate(ann_data):
 
 # ── TABLE 5: Tech Spec ─────────────────────────────────────────────────────────
 spec = doc.tables[5]
-SEN_ROWS = [
+SEN_OVEN_ROWS = [
+    ("Equipment Type",                  "SEN / SES Preheating Oven"),
     ("Heating Medium",                  "{{ fuel_name }} Fired Burners"),
     ("Quantity",                        "{{ sen_quantity }}"),
-    ("Minimum Temperature",             "Ambient to 1200\u00B0C"),
-    ("Heating Time",                    "{{ heating_time }}"),
+    ("Operating Temperature",           "1200\u00B0C"),
+    ("Heating Cycle Time",              "{{ heating_time }}"),
+    ("Insulation Lining",               "200 mm Ceramic Fiber Module (1260\u00B0C)"),
     ("{{ gas_line }} Burner Capacity",  "{{ burner_capacity_sen }}"),
     ("No. of Burners",                  "{{ num_burners_sen }}"),
-    ("Ignition of Burner",              "Manual"),
 ]
-# Header - Merge cells
 if spec.rows:
     hdr = spec.rows[0]
     hdr.cells[0].merge(hdr.cells[1])
-    _set_cell(hdr.cells[0], "TECHNICAL SPECIFICATIONS: SEN PREHEATER", bold=True, size=10, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.CENTER)
+    _set_cell(hdr.cells[0], "TECHNICAL SPECIFICATIONS: SEN PREHEATING OVEN", bold=True, size=10, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.CENTER)
 
-# Data rows
 existing = list(spec.rows[1:])
-for i, (lbl, val) in enumerate(SEN_ROWS):
+for i, (lbl, val) in enumerate(SEN_OVEN_ROWS):
     bg_color = "F8FAFC" if i % 2 == 1 else "FFFFFF"
     if i < len(existing):
         _set_cell(existing[i].cells[0], lbl, bold=True, size=9, bg="EEF2F7")
@@ -159,8 +161,7 @@ for i, (lbl, val) in enumerate(SEN_ROWS):
         _set_cell(nr.cells[0], lbl, bold=True, size=9, bg="EEF2F7")
         _set_cell(nr.cells[1], val, size=9, bg=bg_color)
 
-# Remove excess rows
-for row in existing[len(SEN_ROWS):]:
+for row in existing[len(SEN_OVEN_ROWS):]:
     row._element.getparent().remove(row._element)
 
 # ── TABLE 6: Price Schedule ────────────────────────────────────────────────────
@@ -176,14 +177,13 @@ def _rebuild_price_schedule(table):
         for idx, (cell, txt) in enumerate(zip(r.cells, vals)):
             _set_cell(cell, txt, bold=bold, size=9, bg=bg, align=aligns[idx])
 
-    # Header styling
     _set_cell(table.rows[0].cells[0], "S. No.", bold=True, size=9.5, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.CENTER)
     _set_cell(table.rows[0].cells[1], "Item Description", bold=True, size=9.5, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.LEFT)
     _set_cell(table.rows[0].cells[2], "Qty", bold=True, size=9.5, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.CENTER)
     _set_cell(table.rows[0].cells[3], "Unit Price (INR)", bold=True, size=9.5, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.RIGHT)
     _set_cell(table.rows[0].cells[4], "Total Price (INR)", bold=True, size=9.5, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.RIGHT)
 
-    add("1.", "SEN Preheater ({{ gas_line }} Line)", "{{ item_qty }}", "{{ unit_price }}", "{{ total_price }}")
+    add("1.", "SEN Preheating Oven ({{ gas_line }} Line)", "{{ item_qty }}", "{{ unit_price }}", "{{ total_price }}")
     add("", "TOTAL", "", "", "{{ grand_total }}", bold=True, bg="EEF2F7")
 
     col_widths = [Cm(1.2), Cm(6.0), Cm(2.0), Cm(3.5), Cm(4.0)]
@@ -211,16 +211,13 @@ if scope_start is not None and ann2_idx is not None:
     to_remove = [p._element for p in paras[scope_start:ann2_idx]]
     ann2_el = paras[ann2_idx]._element
 
-    # Image paragraph
     img_el = None
     if os.path.exists(IMG_PATH):
         img_el = _new_img_para(doc, IMG_PATH, width_cm=14.0)
 
     new_paras = [
-        # Scope intro
         _new_para("{{ pipeline_scope_text }}", size=9.5),
         _new_para(""),
-        # OBJECTIVE
         _new_para("OBJECTIVE", bold=True, underline=True, size=10, color="1A3A5C"),
         _new_para("{{ sen_objective }}", size=9.5),
         _new_para(""),
@@ -229,36 +226,31 @@ if scope_start is not None and ann2_idx is not None:
         new_paras.extend([img_el, _new_para("")])
 
     new_paras.extend([
-        # SCOPE OF SUPPLY
         _new_para("SCOPE OF SUPPLY", bold=True, underline=True, size=10, color="1A3A5C"),
-        _new_para("Our scope of supply will cover design, engineering, manufacture supply, supervision of commissioning & erection of the following main components:", size=9.5),
+        _new_para("Our scope of supply will cover design, engineering, manufacture supply, supervision of commissioning & erection of the following main components for SEN Preheating Oven:", size=9.5),
         _new_para(""),
-        # ENCON BURNERS
-        _new_para("{{ sen_burners_heading }}", bold=True, underline=True, size=9.5, color="1A3A5C"),
+        _new_para("1. OVEN CHAMBER & STEEL STRUCTURE", bold=True, underline=True, size=9.5, color="1A3A5C"),
+        _new_para("Fabricated heavy-duty mild steel casing with structural reinforcement to form a rigid heating enclosure designed for 1200\u00B0C operating temperature.", size=9.5),
+        _new_para(""),
+        _new_para("2. CERAMIC FIBER INSULATION LINING", bold=True, underline=True, size=9.5, color="1A3A5C"),
+        _new_para("The internal walls and roof will be lined with 200 mm thick Ceramic Fiber Modules (1260\u00B0C grade) anchored with SS-304 hardware to minimize heat loss and maximize energy efficiency.", size=9.5),
+        _new_para(""),
+        _new_para("3. {{ sen_burners_heading }}", bold=True, underline=True, size=9.5, color="1A3A5C"),
         _new_para("{{ sen_burners_body }}", size=9.5),
         _new_para(""),
-        # GAS LINE
-        _new_para("{{ gas_line }} LINE FOR BURNERS", bold=True, underline=True, size=9.5, color="1A3A5C"),
-        _new_para("The {{ gas_line }} line for main burners shall be routed from the main gas train and will consist of the following main components:", size=9.5),
-        # gas line items loop
+        _new_para("4. {{ gas_line }} LINE FOR BURNERS", bold=True, underline=True, size=9.5, color="1A3A5C"),
+        _new_para("The {{ gas_line }} line for main burners shall consist of the following components:", size=9.5),
         _new_para("{%p for x in fuel1_line_items %}"),
         _new_para("\u2022  {{ x.item }}", size=9.5),
         _new_para("{%p endfor %}"),
         _new_para(""),
-        # AIR LINE
-        _new_para("AIR LINE FOR MAIN BURNERS:", bold=True, underline=True, size=9.5, color="1A3A5C"),
-        # air line items loop
+        _new_para("5. AIR LINE FOR MAIN BURNERS", bold=True, underline=True, size=9.5, color="1A3A5C"),
         _new_para("{%p for x in air_pipeline_items %}"),
         _new_para("\u2022  {{ x.item }}", size=9.5),
         _new_para("{%p endfor %}"),
         _new_para(""),
-        # TROLLEY
-        _new_para("TROLLEY", bold=True, underline=True, size=9.5, color="1A3A5C"),
+        _new_para("6. DOOR & TROLLEY RACK ASSEMBLY", bold=True, underline=True, size=9.5, color="1A3A5C"),
         _new_para("{{ sen_trolley_text }}", size=9.5),
-        _new_para(""),
-        # ROLLER RACK
-        _new_para("ROLLER SUPPORTED RACK WITH HANDLE", bold=True, underline=True, size=9.5, color="1A3A5C"),
-        _new_para("{{ sen_roller_rack_text }}", size=9.5),
         _new_para(""),
     ])
 
@@ -277,17 +269,15 @@ for p in doc.paragraphs:
     if txt == "ENCON BURNER":
         for run in p.runs:
             run.text = ""
-        p.add_run("SEN PREHEATER")
+        p.add_run("SEN PREHEATING OVEN")
     elif "ANNEXURE I" in txt.upper() and ("SCOPE" in txt.upper() or "EXCLUSION" in txt.upper() or "BURNER" in txt.upper()):
         for run in p.runs:
             run.text = ""
-        p.add_run("ANNEXURE I \u2014 SCOPE OF SUPPLY: SEN PREHEATER")
+        p.add_run("ANNEXURE I \u2014 SCOPE OF SUPPLY: SEN PREHEATING OVEN")
 
-# ── Save ───────────────────────────────────────────────────────────────────────
 doc.save(TARGET)
 print(f"Saved: {TARGET}")
 
-# ── Verify ─────────────────────────────────────────────────────────────────────
 from docxtpl import DocxTemplate
 tpl = DocxTemplate(TARGET)
 try:

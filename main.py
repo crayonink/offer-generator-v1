@@ -3447,9 +3447,12 @@ def tundish_cooling_options():
     conn.close()
     return out
 
+@app.get("/sen-oven", response_class=HTMLResponse)
 @app.get("/sen-stove", response_class=HTMLResponse)
-def sen_stove_costing_form():
-    html_path = os.path.join(BASE_DIR, "sen_stove_costing.html")
+def sen_oven_costing_form():
+    html_path = os.path.join(BASE_DIR, "sen_oven_costing.html")
+    if not os.path.exists(html_path):
+        html_path = os.path.join(BASE_DIR, "sen_stove_costing.html")
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
@@ -3742,6 +3745,373 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
             "total_price":  total,
         }
 
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+
+@app.get("/api/sen-oven/burner-options")
+def sen_oven_burner_options():
+    """Returns available Burner options with prices queried live from vlph.db component_price_master."""
+    options = [
+        {"val": "10", "label": "LPG / NG Burner 10 kW", "kw": 10.0, "fallback": 6111.11},
+        {"val": "15", "label": "LPG / NG Burner 15 kW", "kw": 15.0, "fallback": 7500.00},
+        {"val": "20", "label": "LPG / NG Burner 20 kW", "kw": 20.0, "fallback": 9000.00},
+        {"val": "25", "label": "LPG / NG Burner 25 kW", "kw": 25.0, "fallback": 10500.00},
+        {"val": "30", "label": "LPG / NG Burner 30 kW", "kw": 30.0, "fallback": 12000.00},
+    ]
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        for opt in options:
+            r = conn.execute(
+                "SELECT price FROM component_price_master WHERE category='Pilot Burner' AND item LIKE ? ORDER BY price ASC LIMIT 1",
+                (f"%{int(opt['kw'])}KW%",)
+            ).fetchone()
+            if r and r[0] is not None and float(r[0]) > 0:
+                opt["price"] = float(r[0])
+            else:
+                opt["price"] = opt["fallback"]
+        conn.close()
+    except Exception as e:
+        print(f"WARN: Failed to query burner-options from DB: {e}")
+        for opt in options:
+            opt["price"] = opt["fallback"]
+
+    return {"options": options}
+
+
+@app.get("/api/sen-oven/blower-options")
+def sen_oven_blower_options():
+    """Returns available Combustion Air Blower options (minimum 3.0 HP) with prices queried live from vlph.db component_price_master."""
+    options = [
+        {"val": "3.0",  "label": "3.0 HP High Pressure Blower (ENCON 28/3)",   "hp": 3.0,  "ref": "ENCON 28/3 (3.0 HP)",  "pattern": "%28/3%", "fallback": 28000.0},
+        {"val": "5.0",  "label": "5.0 HP Heavy Duty Blower (ENCON 40/5)",      "hp": 5.0,  "ref": "ENCON 40/5 (5.0 HP)",  "pattern": "%40/5%", "fallback": 31360.0},
+        {"val": "7.5",  "label": "7.5 HP High Capacity Blower (ENCON 40/7.5)", "hp": 7.5,  "ref": "ENCON 40/7.5 (7.5 HP)","pattern": "%40/7.5%", "fallback": 33600.0},
+        {"val": "10.0", "label": "10.0 HP Heavy Industrial Blower (ENCON 40/10)","hp": 10.0,"ref": "ENCON 40/10 (10.0 HP)","pattern": "%40/10%", "fallback": 39200.0},
+    ]
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        for opt in options:
+            r = conn.execute(
+                "SELECT price FROM component_price_master WHERE category LIKE '%Blower Alone%' AND item LIKE ? ORDER BY price ASC LIMIT 1",
+                (opt["pattern"],)
+            ).fetchone()
+            if r and r[0] is not None and float(r[0]) > 0:
+                opt["price"] = float(r[0])
+            else:
+                opt["price"] = opt["fallback"]
+        conn.close()
+    except Exception as e:
+        print(f"WARN: Failed to query blower-options from DB: {e}")
+        for opt in options:
+            opt["price"] = opt["fallback"]
+
+    return {"options": options}
+
+
+@app.get("/api/sen-oven/bom")
+def sen_oven_bom():
+    """
+    Returns itemized BOM for SEN Oven with basic rates queried LIVE
+    from the SQLite database table `component_price_master` in `vlph.db`.
+    """
+    master_spec = [
+        {
+            "sno": 1, "section": "bought", "media": "COMB AIR", "item": "Air Blower",
+            "ref": "ENCON 28/3", "qty": 1, "unit": "Nos", "make": "ENCON",
+            "category": "Blower Alone (28 inch)", "item_like": "%28/3%", "fallback": 28000.0
+        },
+        {
+            "sno": 2, "section": "bought", "media": "COMB AIR", "item": "Pressure Gauge",
+            "ref": "RANGE- 0-2000 mm WC, Dial-4\"", "qty": 1, "unit": "Nos", "make": "WIKA",
+            "category": "Bought Out", "item_like": "%PRESSURE GAUGE%", "fallback": 1200.0
+        },
+        {
+            "sno": 3, "section": "bought", "media": "COMB AIR", "item": "Pressure Switch Low",
+            "ref": "RANGE- 5-150 mBAR", "qty": 1, "unit": "Nos", "make": "SWITZER",
+            "category": "Pressure Switch", "item_like": "%PRESSURE SWITCH LOW%", "fallback": 3000.0
+        },
+        {
+            "sno": 4, "section": "bought", "media": "COMB AIR", "item": "Butterfly Valve",
+            "ref": "50 NB", "qty": 1, "unit": "Nos", "make": "L&T",
+            "category": "Butterfly Valve", "item_like": "%50 NB%", "fallback": 2169.2
+        },
+        {
+            "sno": 5, "section": "bought", "media": "COMB AIR", "item": "Ball Valve for Individual Burner",
+            "ref": "20 NB", "qty": 2, "unit": "Nos", "make": "L&T",
+            "category": "Ball Valve", "item_like": "%20 NB%", "fallback": 2016.0
+        },
+        {
+            "sno": 6, "section": "bought", "media": "LPG LINE", "item": "BALL VALVE for Individual torch",
+            "ref": "20 NB", "qty": 2, "unit": "Nos", "make": "L&T",
+            "category": "Ball Valve", "item_like": "%20 NB%", "fallback": 2016.0
+        },
+        {
+            "sno": 7, "section": "bought", "media": "LPG LINE", "item": "Gas Burner",
+            "ref": "LPG 10 kW", "qty": 2, "unit": "Nos", "make": "ENCON",
+            "category": "Pilot Burner", "item_like": "%10KW%", "fallback": 11000.0
+        },
+        {
+            "sno": 8, "section": "bought", "media": "LPG LINE", "item": "LPG Skid",
+            "ref": "20 Nm3/hr", "qty": 1, "unit": "Nos", "make": "MADAS",
+            "category": "Gas Train", "item_like": "%Packaged Gas Train%", "fallback": 46333.0
+        },
+        {
+            "sno": 9, "section": "bought", "media": "LPG LINE", "item": "Flexible Hose",
+            "ref": "20 NB", "qty": 2, "unit": "Nos", "make": "BIG",
+            "category": "Flexible Hose", "item_like": "%20NB%", "fallback": 1000.0
+        },
+        {
+            "sno": 10, "section": "bought", "media": "MISC ITEMS", "item": "Thermocouple",
+            "ref": "R-Type", "qty": 1, "unit": "Nos", "make": "TEMPSENS",
+            "category": None, "item_like": "%Thermocouple%", "fallback": 5000.0
+        },
+        {
+            "sno": 11, "section": "bought", "media": "MISC ITEMS", "item": "Temp Transmitter",
+            "ref": "Standard", "qty": 1, "unit": "Nos", "make": "HONEYWELL",
+            "category": "Transmitters (DPT / TT / PT)", "item_like": "%TEMPERATURE TRANSMITTER%", "fallback": 13000.0
+        },
+        {
+            "sno": 12, "section": "bought", "media": "MISC ITEMS", "item": "Control Panel",
+            "ref": "Mcc", "qty": 1, "unit": "Nos", "make": "ENCON",
+            "category": "Control Panel", "item_like": "%Control Panel%", "fallback": 75000.0
+        },
+        {
+            "sno": 13, "section": "bought", "media": "MISC ITEMS", "item": "HT Cable",
+            "ref": "50 Mtr", "qty": 50, "unit": "Mtr", "make": "ENCON",
+            "category": None, "item_like": "%HT CABLE%", "fallback": 200.0
+        },
+        {
+            "sno": 14, "section": "bought", "media": "MISC ITEMS", "item": "Compensating Lead",
+            "ref": "For Temperature Transmitter", "qty": 1, "unit": "Roll", "make": "TEMPSENS",
+            "category": None, "item_like": "%COMPENSATING LEAD%", "fallback": 6000.0
+        },
+        {
+            "sno": 15, "section": "encon", "media": "MISC ITEMS", "item": "MS structure for frame",
+            "ref": "Heavy Structural MS", "qty": 1500, "unit": "kgs", "make": "MILD STEEL",
+            "category": "Raw Material", "item_like": "%M.S. Plate%", "fallback": 51.0
+        },
+        {
+            "sno": 16, "section": "encon", "media": "MISC ITEMS", "item": "Castables 2700 kg/m3",
+            "ref": "Refractory Castable", "qty": 3000, "unit": "kgs", "make": "REFRACTORY",
+            "category": None, "item_like": "%Castable%", "fallback": 58.0
+        },
+    ]
+
+    rows = []
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        for spec in master_spec:
+            cat = spec.get("category")
+            pattern = spec.get("item_like", "")
+            fb = spec.get("fallback", 0.0)
+            row_db = None
+            if cat and pattern:
+                row_db = conn.execute(
+                    "SELECT price FROM component_price_master WHERE category=? AND item LIKE ? ORDER BY price ASC LIMIT 1",
+                    (cat, pattern)
+                ).fetchone()
+            elif pattern:
+                row_db = conn.execute(
+                    "SELECT price FROM component_price_master WHERE item LIKE ? ORDER BY price ASC LIMIT 1",
+                    (pattern,)
+                ).fetchone()
+
+            price = float(row_db[0]) if (row_db and row_db[0] is not None and float(row_db[0]) > 0) else fb
+            qty = spec["qty"]
+            rows.append({
+                "sno": spec["sno"],
+                "section": spec["section"],
+                "media": spec["media"],
+                "item": spec["item"],
+                "ref": spec["ref"],
+                "qty": qty,
+                "unit": spec["unit"],
+                "make": spec["make"],
+                "basic": price,
+                "total": qty * price
+            })
+        conn.close()
+    except Exception as e:
+        print(f"WARN: DB price resolution error in SEN Oven: {e}")
+        rows = [
+            {
+                "sno": s["sno"], "section": s["section"], "media": s["media"],
+                "item": s["item"], "ref": s["ref"], "qty": s["qty"], "unit": s["unit"],
+                "make": s["make"], "basic": s["fallback"], "total": s["qty"] * s["fallback"]
+            }
+            for s in master_spec
+        ]
+
+    return {"success": True, "rows": rows, "markup": 1.8}
+
+
+class SenOvenQuotePayload(BaseModel):
+    customer: dict = {}
+    gas_line: str = "NG"
+    sen_qty: int = 4
+    kw_rating: float = 100.0
+    control_mode: str = "Manual"
+    bom: list = []
+    unit_sell: float = 0.0
+    qty: int = 1
+    pf_pct: float = 0.0
+    design_pct: float = 0.0
+    neg_pct: float = 0.0
+    transport_amt: float = 0.0
+    final_total: float = 0.0
+
+
+@app.post("/api/generate-sen-oven-quote")
+def generate_sen_oven_quote(payload: SenOvenQuotePayload, req: Request):
+    try:
+        tpl_path = os.path.join(BASE_DIR, "SEN_Oven_Offer_Template.docx")
+        if not os.path.exists(tpl_path):
+            raise RuntimeError(f"SEN Oven offer template not found at {tpl_path}")
+
+        from docxtpl import DocxTemplate
+        tpl = DocxTemplate(tpl_path)
+        c = payload.customer or {}
+        gas_line = payload.gas_line or "NG"
+        gas_label = "Natural Gas" if gas_line == "NG" else ("LPG" if gas_line == "LPG" else "Coke Oven Gas")
+
+        seq = next_quote_seq()
+        _form_ref = (c.get("ref_no") or "").strip()
+        auto_ref = _form_ref or build_enquiry_ref(seq, c.get("technical", ""), c.get("location", ""))
+
+        unit_sell = payload.unit_sell or 0.0
+        qty = payload.qty or 1
+        total = payload.final_total or (unit_sell * qty)
+
+        try:
+            total_words = num2words(int(round(total)), lang="en_IN").title()
+        except Exception:
+            total_words = f"{int(round(total)):,}"
+
+        bom_list = [r.dict() if hasattr(r, "dict") else dict(r) for r in payload.bom]
+        fuel1_items = [{"item": r.get("item", "")} for r in bom_list if r.get("media") in ("GAS TRAIN", "BURNERS", "LPG LINE")]
+        if not fuel1_items:
+            fuel1_items = [{"item": f"Packaged {gas_label} Gas Train Assembly"}, {"item": f"High-Efficiency Gas Burners ({payload.kw_rating} kW)"}]
+
+        air_items = [{"item": r.get("item", "")} for r in bom_list if r.get("media") in ("AIR LINE", "COMB AIR")]
+        if not air_items:
+            air_items = [{"item": "Centrifugal Combustion Air Blower (3 HP)"}, {"item": "Air Pipeline Valves & Fittings"}]
+
+        ctx = {
+            "poc_greeting": f"Dear {c.get('salutation', 'Mr.')} {c.get('name', 'Customer')},",
+            "poc_name": _with_salutation(c.get("salutation", ""), c.get("name", "")),
+            "poc_designation": c.get("designation", ""),
+            "company_name": c.get("company", ""),
+            "company_address": c.get("address", ""),
+            "mobile_no": c.get("phone", ""),
+            "email": c.get("email", ""),
+            "enquiry_ref": auto_ref,
+            "enquiry_ref_short": auto_ref,
+            "enquiry_date_str": datetime.now().strftime("%d/%m/%Y"),
+            "subject": c.get("subject", "") or f"Offer for ENCON SEN Preheating Oven ({gas_label})",
+            "equipment_name": f"SEN Preheating Oven ({gas_label})",
+            "marketing_person": _with_salutation(c.get("marketing_salutation", ""), c.get("marketing", "Mrs. Archana Sharma")),
+            "marketing_phone": c.get("marketing_phone", "+91 93122 17822"),
+            "marketing_email": c.get("marketing_email", "archana@encon.in"),
+            "technical_person": _with_salutation(c.get("technical_salutation", ""), c.get("technical", "Mr. J. K. Sharma")),
+            "technical_phone": c.get("technical_phone", "+91 98110 59918"),
+            "technical_email": c.get("technical_email", "jksharma@encon.in"),
+            "gas_line": gas_line,
+            "fuel_name": gas_label,
+            "sen_quantity": f"{payload.qty} Set",
+            "burner_capacity_sen": f"{payload.kw_rating} kW",
+            "num_burners_sen": str(payload.sen_qty),
+            "heating_time": "60 min",
+            "pipeline_scope_text": "We are pleased to submit our technical and commercial offer for the design, manufacture, testing, supply, and supervision of erection and commissioning of ENCON SEN Preheating Oven System.",
+            "sen_objective": f"The SEN Preheating Oven is designed to uniformly preheat {payload.sen_qty} Submerged Entry Nozzles (SEN) / SES to 1200°C within 60 minutes prior to casting, preventing thermal shock and clogging during steel pouring.",
+            "sen_burners_heading": f"ENCON {gas_label.upper()} BURNERS",
+            "sen_burners_body": f"The oven is equipped with {payload.sen_qty} high-efficiency ENCON gas burners rated for {payload.kw_rating} kW total capacity, designed for uniform heating across all SEN nozzle positions.",
+            "fuel1_line_items": fuel1_items,
+            "air_pipeline_items": air_items,
+            "sen_trolley_text": f"Insulated hinged / sliding door assembly with heavy-duty structural frame and internal tray rack for holding {payload.sen_qty} SEN nozzles securely in position inside the heating chamber.",
+            "item_qty": str(qty),
+            "unit_price": f"{unit_sell:,.2f}",
+            "total_price": f"{unit_sell*qty:,.2f}",
+            "grand_total": f"{total:,.2f}",
+            "total_in_words": total_words,
+            "tnc_prices": c.get("tnc_prices", "Ex Works Bhagola, Dist: Palwal, Haryana — unpacked"),
+            "tnc_delivery": c.get("tnc_delivery", "12–16 weeks from receipt of advance"),
+            "tnc_gst": c.get("tnc_gst", "18 % Extra"),
+            "tnc_hsn_code": c.get("tnc_hsn_code", "84541000"),
+            "tnc_pan_gst": "AAACE0327M / 06AAACE0327M1ZV",
+            "tnc_payment_terms": c.get("tnc_payment_terms", "30 % advance with PO; 70 % against proforma invoice prior to dispatch"),
+            "tnc_validity": c.get("tnc_validity", "45 days"),
+            "tnc_freight": c.get("tnc_freight", "Extra at actuals"),
+            "tnc_transit_insurance": c.get("tnc_transit_insurance", "In Client scope"),
+            "tnc_packing_forwarding": "Extra at actuals",
+            "tnc_guarantee": c.get("tnc_guarantee", "12 months from commissioning / 18 months from dispatch"),
+            "tnc_inspection": "At our works prior to dispatch",
+        }
+
+        tpl.render(ctx)
+        _safe_co = "".join(ch for ch in (c.get("company", "Client")) if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        docx_name = f"SEN_Oven_Offer_{_safe_co}_{seq}.docx"
+        docx_path = os.path.join(QUOTES_FOLDER, docx_name)
+        tpl.save(docx_path)
+
+        pdf_name = docx_name.replace(".docx", ".pdf")
+        pdf_path = os.path.join(QUOTES_FOLDER, pdf_name)
+        pdf_ok = _docx_to_pdf(docx_path, pdf_path)
+        if not pdf_ok:
+            try:
+                from engine.pdf_writer import generate_quote_pdf
+                qp = {
+                    "quote_no": auto_ref,
+                    "date": datetime.now().strftime("%d/%m/%Y"),
+                    "grand_total": total,
+                    "subtotal": total,
+                    "items": [{"product_type": "SEN Preheating Oven", "model": f"SEN Oven ({gas_line} Line)", "qty": qty, "unit_price": unit_sell, "total": total}],
+                    "customer": {
+                        "company_name": c.get("company", ""),
+                        "company_city": c.get("city", ""),
+                        "company_state": c.get("state", ""),
+                        "poc_name": _with_salutation(c.get("salutation", ""), c.get("name", "")),
+                        "poc_designation": c.get("designation", ""),
+                        "mobile_no": c.get("phone", ""),
+                        "email": c.get("email", ""),
+                        "subject": c.get("subject", "") or f"Offer for ENCON SEN Preheating Oven ({gas_label})",
+                        "project_name": c.get("subject", "") or f"SEN Preheating Oven ({gas_label})",
+                        "bom_items": bom_list,
+                        "fuel_name": gas_label,
+                        "total_in_words": total_words,
+                    }
+                }
+                generate_quote_pdf(qp, pdf_path)
+                pdf_ok = os.path.exists(pdf_path)
+            except Exception as _pe:
+                print(f"WARN: ReportLab fallback PDF generation failed for SEN Oven: {_pe}")
+
+        # Drive upload
+        try:
+            from engine.drive_uploader import upload_offer_async
+            upload_offer_async(docx_path, docx_name, "sen_oven")
+            if pdf_ok: upload_offer_async(pdf_path, pdf_name, "sen_oven")
+        except Exception as _de:
+            print(f"WARN: SEN Oven drive upload failed: {_de}")
+
+        # Log to quotes_log
+        _log_equipment_quote(
+            HpuCustomer(
+                name=c.get("name",""), email=c.get("email",""), phone=c.get("phone",""),
+                company=c.get("company",""), location=c.get("location",""),
+                technical=c.get("technical",""),
+            ),
+            "SEN Preheating Oven", total, docx_path)
+
+        return {
+            "success": True,
+            "filename": docx_name,
+            "download_url": f"/api/download-quote/{docx_name}",
+            "preview_url": f"/api/preview-quote/{docx_name}",
+            "pdf_url": f"/api/pdf-quote/{pdf_name}" if pdf_ok else None,
+            "quote_no": auto_ref,
+            "total_price": total,
+        }
     except Exception as e:
         import traceback
         return {"error": str(e), "trace": traceback.format_exc()}
