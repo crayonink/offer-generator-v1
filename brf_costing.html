@@ -212,6 +212,13 @@
                            font-variant-numeric:tabular-nums; }
     .rf-tot .rf-grand td:first-child { text-align:left; letter-spacing:.02em; }
     .rf-tot .rf-grand:hover td { background:#1a3a5c; }
+    /* The structure take-off carries six columns, so it needs the room the
+       refractory summary does not. */
+    .rf-total.st-total { max-width:none; }
+    .st-total .rf-tot td { font-size:.8rem; }
+    .st-total .rf-grand td:first-child { text-align:left; }
+    .st-note { padding:10px 12px; font-size:.76rem; line-height:1.5; color:var(--muted);
+               background:#f8fafc; border-top:1px solid var(--border); }
     /* Spreadsheet furniture, gone — the row numbers down the side and the
        A/B/C letters across the top carried nothing. Real column headings use
        .xl-head and stay. */
@@ -522,6 +529,14 @@
       <div class="card-title">Refractory</div>
       <div class="fn-out" id="rf-out"></div>
       <div class="calc-work" id="rf-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
+    </div>
+
+    <!-- The steel that box is built in: the channel band round the outside,
+         the roof and bottom beams, and the plate on the walls and doors. -->
+    <div class="card">
+      <div class="card-title">Structure</div>
+      <div class="fn-out" id="st-out"></div>
+      <div class="calc-work" id="st-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
     </div>
 
     <div class="step-nav">
@@ -940,6 +955,8 @@ async function runFurnace(){
     if(data&&data.furnace) renderFurnace(data.furnace);
     if(data&&data.refractory){ renderRefractory(data.refractory);
                                renderRefractorySheet(data.refractory); }
+    if(data&&data.structure){ renderStructure(data.structure);
+                              renderStructureSheet(data.structure); }
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
@@ -1041,6 +1058,53 @@ function renderRefractory(f){
     `  Duct castable   ${cm(f.duct1_castable_kg)} kg before the recuperator, ${cm(f.duct2_castable_kg)} kg after`,
     ``,
     `TOTAL WEIGHT OF REFRACTORY = ${cm(f.total_refractory_kg)} kg = ${cm(f.total_refractory_tonne,2)} metric tonne`,
+  ].join("\n");
+}
+
+
+// The structure take-off — the steel the brickwork sits in. Same rule as the
+// refractory card: everything printed is what the engine returned.
+function renderStructure(s){
+  const el=document.getElementById("st-out");
+  if(!el||!s) return;
+  const cm=(v,p=0)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  el.innerHTML=
+    tile("Total Structure", cm(s.order_weight_tonne,2), "MT")+
+    tile("Design Weight", cm(s.design_weight_tonne,2), "MT")+
+    tile("C-Channel", cm(s.c_channel_total_m), "m")+
+    tile("C-Channel Weight", cm(s.c_channel_weight_kg), "kg")+
+    tile("Roof Beam 500x180", cm(s.beam_roof_total_m), "m")+
+    tile("Roof Beam Weight", cm(s.beam_roof_weight_kg), "kg")+
+    tile("Beam 200x100", cm(s.beam_tb_total_m), "m")+
+    tile("Beam 200x100 Weight", cm(s.beam_tb_weight_kg), "kg")+
+    tile("Joining Plates", cm(s.join_plate_count), "nos")+
+    tile("Wall Plate Weight", cm(s.wall_plate_weight_kg), "kg")+
+    tile("Charging Door Plate", cm(s.charge_door_kg), "kg")+
+    tile("Bottom Tie Rod Plate", cm(s.tie_plate_kg), "kg");
+
+  const w=document.getElementById("st-work");
+  if(w) w.textContent=[
+    `C-CHANNEL, 250 x 80 x 7.2`,
+    `  ${cm(s.c_channel_single_m,2)} m single + ${cm(s.c_channel_length_m,2)} m over 4 lengths`,
+    `  + ${cm(s.c_channel_width_m,2)} m over 7 widths + ${cm(s.c_channel_cross_m)} m across`,
+    `  = ${cm(s.c_channel_total_m,2)} m at 30.6 kg/m x 1.1 = ${cm(s.c_channel_weight_kg)} kg`,
+    ``,
+    `I-BEAM`,
+    `  500 x 180 roof   ${cm(s.beam_roof_count,2)} beams x ${cm(s.beam_roof_width_m,2)} m = ${cm(s.beam_roof_total_m,2)} m = ${cm(s.beam_roof_weight_kg)} kg`,
+    `  200 x 100 top    ${cm(s.beam_top_count)} beams x ${cm(s.beam_top_length_m,2)} m = ${cm(s.beam_top_total_m,2)} m`,
+    `  200 x 100 bottom ${cm(s.beam_bottom_count,2)} beams x ${cm(s.beam_top_length_m,2)} m = ${cm(s.beam_bottom_total_m,2)} m`,
+    `                   ${cm(s.beam_tb_total_m,2)} m together = ${cm(s.beam_tb_weight_kg)} kg`,
+    ``,
+    `MS PLATE`,
+    `  Joining, 200x250x12   ${cm(s.join_plate_count,2)} nos at ${cm(s.join_plate_kg,2)} kg = ${cm(s.join_plate_weight_kg)} kg`,
+    `  Side walls            ${cm(s.wall_plate_count,2)} sheets at ${cm(s.wall_plate_kg,2)} kg, both walls = ${cm(s.wall_plate_weight_kg)} kg`,
+    `  Charging door, 16 mm  ${cm(s.charge_door_kg)} kg      Discharge side ${cm(s.discharge_plate_kg)} kg`,
+    `  Bottom tie rod, 8 mm  ${cm(s.tie_plate_kg)} kg`,
+    ``,
+    `DESIGN WEIGHT = ${cm(s.design_weight_kg)} kg = ${cm(s.design_weight_tonne,2)} metric tonne`,
+    `TOTAL WEIGHT OF THE STRUCTURE FOR FURNACE (as ordered) = ${cm(s.order_weight_kg)} kg`,
+    `                                                       = ${cm(s.order_weight_tonne,2)} metric tonne`,
   ].join("\n");
 }
 
@@ -1379,6 +1443,131 @@ function renderRefractorySheet(f){
   el.innerHTML=h;
 }
 
+
+// ── The structure sheet ────────────────────────────────────────────────────
+// The steel the brickwork sits in. Two tables: the working, section by
+// section, and then the take-off the vendor breakups price against — the one
+// that ends on TOTAL WEIGHT OF THE STRUCTURE FOR FURNACE.
+//
+// The two totals differ and both are shown. The design weight is what the
+// furnace weighs; the ordered weight rounds every length up to a whole metre
+// and buys the roof and bottom beams as 350 x 180 and 350 x 140 at 53 kg/m,
+// which is heavier than the 500 x 180 the design is worked out on.
+let _legacyMildSteelHtml = "";
+
+function renderStructureSheet(s){
+  const el=document.getElementById("xl-mildsteel");
+  if(!el||!s) return;
+  const n=(v,p=0)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+  const chan=[
+    ["C-Channel, 250 x 80 x 7.2 Thk."],
+    ["Wt. per metre", n(s.c_channel_kg_per_m||30.6,1), "kg"],
+    ["Single size required for furnace", n(s.c_channel_single_m,2), "metre"],
+    ["Overall length, 4 sides", n(s.c_channel_length_m,2), "metre"],
+    ["Overall width, 7 sides", n(s.c_channel_width_m,2), "metre"],
+    ["3 m pieces b/w outers", n(s.c_channel_cross_m,2), "metre"],
+    ["*Total C-channel required", n(s.c_channel_total_m,2), "metre"],
+    ["*Total Wt. of the C-channel", n(s.c_channel_weight_kg,2), "kg"],
+  ];
+  const beam=[
+    ["I-Beam 500 x 180, over the roof"],
+    ["Qty. required on roof", n(s.beam_roof_count,2), "Nos"],
+    ["Required width", n(s.beam_roof_width_m,2), "metre"],
+    ["Total 500 x 180 beam required", n(s.beam_roof_total_m,2), "Metre"],
+    ["*Total Wt.", n(s.beam_roof_weight_kg,2), "Kg"],
+    ["I-Beam 200 x 100, top and bottom"],
+    ["Qty. required on roof", n(s.beam_top_count), "Nos"],
+    ["Required length", n(s.beam_top_length_m,2), "metre"],
+    ["200 x 100 beam required for top", n(s.beam_top_total_m,2), "Metre"],
+    ["Total Wt.", n(s.beam_top_weight_kg,2), "Kg"],
+    ["Qty. required on bottom", n(s.beam_bottom_count,2), "Nos"],
+    ["200 x 100 required for bottom", n(s.beam_bottom_total_m,2), "Metre"],
+    ["Total Wt.", n(s.beam_bottom_weight_kg,2), "kg"],
+    ["Total 200 x 100 I-beam required", n(s.beam_tb_total_m,2), "Metre"],
+    ["*Total 200 x 100 I-beam Wt.", n(s.beam_tb_weight_kg,2), "Kg"],
+  ];
+  const plate=[
+    ["MS Plate to join beam, 200 x 250 x 12 Thk."],
+    ["Volume of plate", n(s.join_plate_volume_m3,4), "m³"],
+    ["Wt. of each plate", n(s.join_plate_kg,2), "kg"],
+    ["Qty. required for roof", n(s.join_plate_count,2), "Nos"],
+    ["*Total Wt.", n(s.join_plate_weight_kg,2), "kg"],
+    ["MS Plate on side walls, 1500 x 6300 x 8"],
+    ["Volume of the plate", n(s.wall_plate_volume_m3,4), "m³"],
+    ["Wt. of each plate", n(s.wall_plate_kg,2), "kg"],
+    ["Qty. of sheet required", n(s.wall_plate_count,2), "Nos"],
+    ["Wt. of plate on each side", n(s.wall_plate_side_kg,2), "kg"],
+    ["*Total wt. on both side walls", n(s.wall_plate_weight_kg,2), "kg"],
+    ["Doors, discharge side and bottom tie rod"],
+    ["Flat at the charging door", n(s.charge_flat_kg,2), "Kg"],
+    ["*Charging door plate, 16 mm", n(s.charge_door_kg,2), "Kg"],
+    ["*Plate on the discharge side", n(s.discharge_plate_kg,2), "kg"],
+    ["*Plate for bottom tie rod, 8 mm", n(s.tie_plate_kg,2), "kg"],
+    [],
+    ["*Total Weight of structure (design)", n(s.design_weight_tonne,2), "Tonne"],
+  ];
+
+  const cells=(r)=>{
+    if(!r||!r.length) return '<tr class="rf-spacer"><td colspan="3">&nbsp;</td></tr>';
+    if(r.length===1) return `<tr><td class="rf-sub" colspan="3">${esc(r[0])}</td></tr>`;
+    const key=String(r[0]).startsWith("*");
+    const label=key?String(r[0]).slice(1):r[0];
+    return `<tr${key?' class="rf-keyrow"':''}>`
+         + `<td class="rf-label">${esc(label)}</td>`
+         + `<td class="rf-val xl-num">${esc(r[1])}</td>`
+         + `<td class="rf-unit">${esc(r[2])}</td></tr>`;
+  };
+  const block=(title, list)=>
+    `<div class="rf-block"><table class="xl-grid rf-tbl">`
+    + `<colgroup><col style="width:58%"><col style="width:27%"><col style="width:15%"></colgroup>`
+    + `<tr><td class="rf-head" colspan="3">${title}</td></tr>`
+    + list.map(cells).join("") + `</table></div>`;
+
+  let h='<div class="rf-cols">'
+      + block("C-CHANNEL", chan)
+      + block("I-BEAM", beam)
+      + block("MS PLATE", plate)
+      + '</div>';
+
+  // The take-off itself, laid out the way the breakup sheets lay it out.
+  if(s.take_off && s.take_off.length){
+    const kg=v=>Number(v).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+    let t='<div class="rf-total st-total"><table class="xl-grid rf-tot">'
+        + '<colgroup><col style="width:22%"><col style="width:26%"><col style="width:13%">'
+        + '<col style="width:8%"><col style="width:13%"><col style="width:18%"></colgroup>'
+        + '<tr><td class="rf-head">ITEM</td><td class="rf-head">STANDARD SIZE</td>'
+        + '<td class="rf-head xl-num">QTY.</td><td class="rf-head">UOM</td>'
+        + '<td class="rf-head xl-num">WEIGHT</td><td class="rf-head xl-num">TOTAL Wt. (kg)</td></tr>';
+    s.take_off.forEach(([item,size,qty,uom,unit,unitUom,total])=>{
+      t+=`<tr><td class="rf-label">${esc(item)}</td><td class="rf-label">${esc(size)}</td>`
+        +`<td class="rf-val xl-num">${n(qty)}</td><td class="rf-unit">${esc(uom)}</td>`
+        +`<td class="rf-val xl-num">${n(unit)} ${esc(unitUom)}</td>`
+        +`<td class="rf-val xl-num">${kg(total)}</td></tr>`;
+    });
+    t+='<tr class="rf-grand"><td colspan="4">Total Weight of the Structure for Furnace</td>'
+      +`<td class="xl-num">${kg(s.order_weight_kg)} kg</td>`
+      +`<td class="xl-num">${kg(s.order_weight_tonne)} MT</td></tr>`;
+    t+='</table>'
+      +'<div class="st-note">Design weight, on the 500 x 180 section the sizing is '
+      +`worked out for, is ${n(s.design_weight_tonne,2)} MT. The take-off above is `
+      +'heavier: it rounds every length up to a whole metre and orders the roof and '
+      +'bottom beams as 350 x 180 and 350 x 140 at 53 kg/m. The joining plate is '
+      +'billed at the furnace length in kg, which is how the workbook has it.</div>'
+      +'</div>';
+    h+=t;
+  }
+
+  // The fixed costed list keeps its place underneath, labelled as such.
+  if(_legacyMildSteelHtml){
+    h+='<div class="rf-legacy">Costed mild steel &mdash; fixed data, not from the '
+     + 'take-off above. Rates and quantities are the 30 T job’s.</div>'
+     + _legacyMildSteelHtml;
+  }
+  el.innerHTML=h;
+}
+
 // ── Firing & air ───────────────────────────────────────────────────────────
 // The duty chain, worked out as the inputs change rather than only on
 // Calculate. Same rule as everywhere else on this page: the engine computes,
@@ -1634,6 +1823,7 @@ function renderAll(data,showNG,showCL){
   if(data.furnace) renderFurnace(data.furnace);
   if(data.refractory){ renderRefractory(data.refractory);
                        renderRefractorySheet(data.refractory); }
+  if(data.structure) renderStructure(data.structure);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
   const ff=sp.furnace_full||[];
@@ -1693,7 +1883,10 @@ function renderAll(data,showNG,showCL){
   ml+=R(++n,[["PIPELINE & CASTING",""],["",""],["",""],["",""],["",""]],"xl-section");
   pc.forEach(p=>{ml+=R(++n,[[p.item,""],[p.qty||"",true],[p.wt,true],[p.rate,true],[fmt(p.cost),true]]);});
   ml+=`</table>`;
-  document.getElementById("xl-mildsteel").innerHTML=ml;
+  // Same as Refractory: the fixed costed list keeps its place, but the
+  // computed take-off is drawn above it rather than under it.
+  _legacyMildSteelHtml = ml;
+  if(lastData && lastData.structure) renderStructureSheet(lastData.structure);
 
   // ═══ SHEET 4: Mass Flow Control ═══
   n=0;

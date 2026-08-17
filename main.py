@@ -5814,7 +5814,7 @@ def brf_calculate(req: BRFCalcRequest):
         # goes round it. Its own block: it is what the refractory take-off will
         # be built on when that half is ported.
         from calculations.brf import (BRFFurnaceInputs, calculate_furnace,
-                                      calculate_refractory)
+                                      calculate_refractory, calculate_structure)
         furnace_inputs = BRFFurnaceInputs(
             billet_length_mm=req.billet_length_mm,
             billet_width_mm=req.billet_width_mm,
@@ -5839,6 +5839,10 @@ def brf_calculate(req: BRFCalcRequest):
         # The brick counts that follow from that box — roof, side walls and the
         # discharge end. Still off the geometry only; nothing prices them yet.
         refractory = calculate_refractory(furnace, furnace_inputs)
+        # The steel that box is built in — the channel band, the roof and
+        # bottom beams and the plate. It needs the roof brick pitch, so it
+        # follows the refractory rather than standing beside it.
+        structure = calculate_structure(furnace, furnace_inputs, refractory)
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -5846,6 +5850,7 @@ def brf_calculate(req: BRFCalcRequest):
             "sizing": sizing,
             "furnace": vars(furnace),
             "refractory": vars(refractory),
+            "structure": vars(structure),
         }
     except Exception as e:
         import traceback

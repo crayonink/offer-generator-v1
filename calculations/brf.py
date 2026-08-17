@@ -905,3 +905,254 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
         total_refractory_kg=_2(total_kg),
         total_refractory_tonne=_2(total_kg / 1000),
     )
+
+
+# ── Structure ───────────────────────────────────────────────────────────────
+# Furnace sheet, section 3 (rows 81-99). The steel the refractory sits in: the
+# C-channel band round the outside, the roof and bottom beams, and the plate on
+# the walls, the two doors and the bottom tie rod.
+#
+# Two totals come out of this, and they are not the same number:
+#
+#   - the Furnace sheet's own L99, 66.59 t, the design weight. It weighs the
+#     sections its own headings name — 500 x 180 at 87 kg/m — and carries 10%
+#     for wastage;
+#   - the Ref.+Str. take-off's L55, 72,172 kg, which is what the vendor
+#     breakups quote against. It rounds every quantity up to a whole metre or
+#     a whole piece and orders the roof and bottom beams as 350 x 180 and
+#     350 x 140 at 53 kg/m — the sections actually stocked.
+#
+# Both are carried, because both are real: the first is what the furnace
+# weighs, the second is what gets bought.
+
+@dataclass
+class BRFStructureInputs:
+    ms_density: float = 7850.0            # L85, kg/m3
+    wastage:    float = 1.1               # the 1.1 on the fabricated weights
+    # C-channel, 250 x 80 x 7.2 thk                              C83..C90
+    c_channel_kg_per_m:    float = 30.6                          # C84
+    c_channel_single_mm:   float = 780 + 1500 + 460 + 115 + 145  # C85, 3.0 m
+    c_channel_length_runs: float = 4.0                           # C86
+    c_channel_width_runs:  float = 7.0                           # C87
+    c_channel_cross_m:     float = (40 + 12) * 3                 # C88, 156 m
+    # I-beam over the roof, 500 x 180                            G83..G88
+    beam_roof_kg_per_m: float = 87.0      # G84
+    beam_pitch_m:       float = 1.5       # G85, one beam per 1.5 m of length
+    # I-beam top and bottom, 200 x 100                           G90..G99
+    beam_tb_kg_per_m: float = 24.5        # G90
+    # Plate joining the beams, 200 x 250 x 12                    L83..L87
+    join_plate_l_m: float = 0.2
+    join_plate_w_m: float = 0.25
+    join_plate_t_m: float = 0.012
+    join_plate_spare: float = 10.0        # L87
+    # Plate on the side walls, 1500 x 6300 x 8                   L89..L94
+    wall_plate_l_m: float = 1.5
+    wall_plate_w_m: float = 6.3
+    wall_plate_t_m: float = 0.008
+    # Charging door                                              C92..C96
+    charge_flat_t_m:  float = 0.008       # C92, the flat round the opening
+    charge_flat_half: float = 0.5
+    charge_door_t_m:  float = 0.016       # C95, the sliding plate
+    charge_door_h_m:  float = 1.0
+    # Plate on the discharge side                                L96/L97
+    discharge_plate_t_m: float = 0.008
+    # Plate for the bottom tie rod, 8036 x 250 x 8               C99
+    tie_plate_w_m: float = 0.25
+    tie_plate_t_m: float = 0.008
+    # What the take-off orders the roof and bottom sections at, kg/m
+    order_beam_350x180_kg_per_m: float = 53.0
+    order_beam_350x140_kg_per_m: float = 53.0
+
+
+@dataclass
+class BRFStructureResults:
+    # C-channel                                                  C85..C90
+    c_channel_single_m:    float
+    c_channel_length_m:    float
+    c_channel_width_m:     float
+    c_channel_cross_m:     float
+    c_channel_total_m:     float   # C89
+    c_channel_weight_kg:   float   # C90
+    # Roof beam, 500 x 180                                       G85..G88
+    beam_roof_count:       float   # G85
+    beam_roof_width_m:     float   # G86
+    beam_roof_total_m:     float   # G87
+    beam_roof_weight_kg:   float   # G88
+    # Top and bottom beam, 200 x 100                             G91..G99
+    beam_top_count:        float   # G91
+    beam_top_length_m:     float   # G92
+    beam_top_total_m:      float   # G93
+    beam_top_weight_kg:    float   # G94
+    beam_bottom_count:     float   # G95
+    beam_bottom_total_m:   float   # G96
+    beam_bottom_weight_kg: float   # G97
+    beam_tb_total_m:       float   # G98
+    beam_tb_weight_kg:     float   # G99
+    # Plate joining the beams                                    L84..L87
+    join_plate_volume_m3:  float   # L84
+    join_plate_kg:         float   # L86
+    join_plate_count:      float   # L87
+    join_plate_weight_kg:  float   # L87 x L86
+    # Plate on the side walls                                    L90..L94
+    wall_plate_volume_m3:  float   # L90
+    wall_plate_kg:         float   # L91
+    wall_plate_count:      float   # L92
+    wall_plate_side_kg:    float   # L93
+    wall_plate_weight_kg:  float   # L94, both walls
+    # The doors and the bottom tie rod                      C92..C99, L96/L97
+    charge_flat_volume_m3: float      # C92
+    charge_flat_kg:        float      # C93
+    charge_door_volume_m3: float      # C95
+    charge_door_kg:        float      # C96
+    discharge_plate_volume_m3: float  # L96
+    discharge_plate_kg:    float      # L97
+    tie_plate_kg:          float      # C99
+    # The two totals
+    design_weight_kg:      float   # L99 x 1000
+    design_weight_tonne:   float   # L99
+    take_off: list = field(default_factory=list)   # Ref.+Str. rows 45-53
+    order_weight_kg:    float = 0.0    # Ref.+Str. L55
+    order_weight_tonne: float = 0.0
+    # Carried so the sheet can show the rate the weight was worked out at
+    c_channel_kg_per_m: float = 0.0    # C84
+
+
+def calculate_structure(fur, fin, ref, inp=None) -> BRFStructureResults:
+    """The furnace steel, off the furnace box and the roof brick pitch.
+
+    fur — BRFFurnaceResults, fin — BRFFurnaceInputs,
+    ref — BRFRefractoryResults (for the roof brick pitch), inp — inputs.
+    """
+    s = inp or BRFStructureInputs()
+    rho, w = s.ms_density, s.wastage
+    len_m = fur.overall_length_mm / 1000.0      # G25
+    wid_m = fur.overall_width_mm / 1000.0       # D25
+    # The refractory length the channel runs along, same G19+G20+G21
+    ref_len_m = (fur.effective_length_mm + fin.discharge_refractory_mm
+                 + fin.charge_refractory_mm) / 1000.0
+
+    # ── C-channel band round the outside ───────────────────────────
+    c_single = s.c_channel_single_mm / 1000.0                        # C85
+    c_len = ref_len_m * s.c_channel_length_runs                      # C86
+    c_wid = wid_m * s.c_channel_width_runs                           # C87
+    c_total = c_single + c_len + c_wid + s.c_channel_cross_m         # C89
+    c_wt = c_total * s.c_channel_kg_per_m * w                        # C90
+
+    # ── Roof beam: one per 1.5 m of length, spanning the width ─────
+    b_roof_n = len_m / s.beam_pitch_m                                # G85
+    b_roof_m = b_roof_n * wid_m                                      # G87
+    b_roof_wt = b_roof_m * s.beam_roof_kg_per_m * w                  # G88
+
+    # ── Top and bottom beam: one top beam per hanging-brick row ────
+    b_top_n = ref.hanging_bricks_per_width                           # G91
+    b_top_m = b_top_n * len_m                                        # G93
+    b_top_wt = b_top_m * s.beam_tb_kg_per_m * w                      # G94
+    b_bot_n = b_roof_n                                               # G95
+    b_bot_m = len_m * b_bot_n                                        # G96
+    b_bot_wt = b_bot_m * s.beam_tb_kg_per_m                          # G97
+    b_tb_m = b_bot_m + b_top_m                                       # G98
+    b_tb_wt = (b_bot_wt + b_top_wt) * w                              # G99
+
+    # ── Plate joining the beams: two per beam per brick row ────────
+    jp_vol = s.join_plate_l_m * s.join_plate_w_m * s.join_plate_t_m  # L84
+    jp_kg = jp_vol * rho                                             # L86
+    jp_n = b_roof_n * ref.hanging_bricks_per_width * 2 + s.join_plate_spare  # L87
+
+    # ── Plate on the side walls ────────────────────────────────────
+    wp_vol = s.wall_plate_l_m * s.wall_plate_w_m * s.wall_plate_t_m  # L90
+    wp_kg = wp_vol * rho                                             # L91
+    wp_n = (c_single * len_m * s.wall_plate_t_m) / wp_vol            # L92
+    wp_side = wp_n * wp_kg                                           # L93
+    wp_wt = wp_side * 2                                              # L94
+
+    # ── Charging door: the flat round the opening, then the plate ──
+    cf_vol = s.charge_flat_t_m * (c_single * 2 + wid_m) * s.charge_flat_half  # C92
+    cf_kg = rho * cf_vol                                             # C93
+    cd_vol = ((fur.effective_width_mm + fin.right_refractory_mm) * s.charge_door_h_m
+              * s.charge_door_t_m / 1000.0)                          # C95
+    cd_kg = cd_vol * rho * w                                         # C96
+
+    # ── Plate on the discharge side, and the bottom tie rod ────────
+    dp_vol = c_single * wid_m * s.discharge_plate_t_m                # L96
+    dp_kg = dp_vol * rho                                             # L97
+    tie_kg = wid_m * s.tie_plate_w_m * s.tie_plate_t_m * b_roof_n * rho * w  # C99
+
+    design_kg = (dp_kg + wp_wt + jp_n * jp_kg + b_tb_wt + b_roof_wt
+                 + tie_kg + cd_kg + c_wt)                            # L99
+
+    # ── The take-off the vendors price against ─────────────────────
+    # Ref.+Str. rows 45-53. Every quantity rounds up to a whole metre or a
+    # whole piece, and the beams are ordered as sections that are stocked.
+    #
+    # The joining plate is billed at 21 kg apiece, which is the furnace length
+    # rounded up: the workbook reads G92 where the plate's own 4.71 kg (L86)
+    # belongs. It is kept as the sheet has it so the take-off ties out to the
+    # 72,172 kg the breakups price, but it is flagged rather than left silent.
+    up = math.ceil
+    rows = [
+        ("C-Channel",         "250 x 80 x 7.5 Thk.",   up(c_total),  "Metre",
+                              up(s.c_channel_kg_per_m), "Kg/m"),
+        ("I-Beam",            "350 x 180",             up(b_roof_m), "Metre",
+                              s.order_beam_350x180_kg_per_m, "Kg/m"),
+        ("I-Beam",            "200 x 100",             up(b_top_m),  "Metre",
+                              up(s.beam_tb_kg_per_m), "Kg/m"),
+        ("I-Beam",            "350 x 140",             up(b_bot_m),  "Metre",
+                              s.order_beam_350x140_kg_per_m, "Kg/m"),
+        ("Plate for Joining", "250 x 200 x 12 Thk.",   up(jp_n),     "Nos",
+                              up(len_m), "Kg"),
+        ("Plate for Walls",   "1500 x 6300 x 8 Thk.",  up(wp_n * 2), "Nos",
+                              up(wp_kg), "Kg"),
+        ("Plate for Door",    "7000 x 1000 x 16 Thk.", up(cd_kg),    "Kg", 1, "No"),
+        ("Plate for Walls",   "3000 x 8000 x 8 Thk.",  up(dp_kg),    "Kg", 1, "No"),
+        ("Plate for Bottom",  "8036 x 250 x 8 Thk.",   up(tie_kg),   "Kg", 1, "No"),
+    ]
+    take_off = [(item, size, qty, uom, unit, unit_uom, round(qty * unit, 2))
+                for item, size, qty, uom, unit, unit_uom in rows]
+    order_kg = sum(r[-1] for r in take_off)
+
+    def _2(x):
+        return round(x, 2)
+
+    return BRFStructureResults(
+        c_channel_single_m=_2(c_single),
+        c_channel_length_m=_2(c_len),
+        c_channel_width_m=_2(c_wid),
+        c_channel_cross_m=_2(s.c_channel_cross_m),
+        c_channel_total_m=_2(c_total),
+        c_channel_weight_kg=_2(c_wt),
+        beam_roof_count=_2(b_roof_n),
+        beam_roof_width_m=_2(wid_m),
+        beam_roof_total_m=_2(b_roof_m),
+        beam_roof_weight_kg=_2(b_roof_wt),
+        beam_top_count=b_top_n,
+        beam_top_length_m=_2(len_m),
+        beam_top_total_m=_2(b_top_m),
+        beam_top_weight_kg=_2(b_top_wt),
+        beam_bottom_count=_2(b_bot_n),
+        beam_bottom_total_m=_2(b_bot_m),
+        beam_bottom_weight_kg=_2(b_bot_wt),
+        beam_tb_total_m=_2(b_tb_m),
+        beam_tb_weight_kg=_2(b_tb_wt),
+        join_plate_volume_m3=round(jp_vol, 6),
+        join_plate_kg=_2(jp_kg),
+        join_plate_count=_2(jp_n),
+        join_plate_weight_kg=_2(jp_n * jp_kg),
+        wall_plate_volume_m3=round(wp_vol, 4),
+        wall_plate_kg=_2(wp_kg),
+        wall_plate_count=_2(wp_n),
+        wall_plate_side_kg=_2(wp_side),
+        wall_plate_weight_kg=_2(wp_wt),
+        charge_flat_volume_m3=round(cf_vol, 4),
+        charge_flat_kg=_2(cf_kg),
+        charge_door_volume_m3=round(cd_vol, 4),
+        charge_door_kg=_2(cd_kg),
+        discharge_plate_volume_m3=round(dp_vol, 4),
+        discharge_plate_kg=_2(dp_kg),
+        tie_plate_kg=_2(tie_kg),
+        design_weight_kg=_2(design_kg),
+        design_weight_tonne=_2(design_kg / 1000),
+        take_off=take_off,
+        order_weight_kg=_2(order_kg),
+        order_weight_tonne=_2(order_kg / 1000),
+        c_channel_kg_per_m=s.c_channel_kg_per_m,
+    )
