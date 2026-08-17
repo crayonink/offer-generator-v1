@@ -95,6 +95,13 @@
     .fuel-opt.sel .fo-tick { background:var(--navy); border-color:var(--navy); }
     .fuel-opt.sel .fo-tick::after { content:"\2713"; }
 
+    .fuel-opt .fo-cv { width:72px; padding:2px 6px; margin-right:2px; font:inherit;
+                       font-size:.78rem; font-weight:600; color:#0f172a; text-align:right;
+                       border:1px solid transparent; border-radius:6px; background:transparent;
+                       font-variant-numeric:tabular-nums; }
+    .fuel-opt .fo-cv:hover { border-color:var(--border); background:#fff; }
+    .fuel-opt .fo-cv:focus { outline:none; border-color:var(--navy); background:#fff;
+                             box-shadow:0 0 0 3px rgba(26,58,92,.08); }
     /* Scope switches, as switches rather than default checkboxes. */
     .opt-row { display:flex; align-items:flex-start; gap:14px; padding:14px 2px;
                border-bottom:1px solid var(--border); }
@@ -337,31 +344,35 @@
           <input type="radio" name="brf-fuel" value="Natural Gas" checked onchange="fuelChanged()"/>
           <span class="fo-tick"></span>
           <div class="fo-name">Natural Gas</div>
-          <div class="fo-sub">8,600 kcal/Nm&sup3;</div>
+          <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Natural Gas"
+                 value="8600" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
         </label>
         <label class="fuel-opt" data-fuel="Coke Oven Gas">
           <input type="radio" name="brf-fuel" value="Coke Oven Gas" onchange="fuelChanged()"/>
           <span class="fo-tick"></span>
           <div class="fo-name">Coke Oven Gas</div>
-          <div class="fo-sub">4,000 kcal/Nm&sup3;</div>
+          <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Coke Oven Gas"
+                 value="4000" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
         </label>
         <label class="fuel-opt" data-fuel="Producer Gas">
           <input type="radio" name="brf-fuel" value="Producer Gas" onchange="fuelChanged()"/>
           <span class="fo-tick"></span>
           <div class="fo-name">Producer Gas</div>
-          <div class="fo-sub">1,250 kcal/Nm&sup3;</div>
+          <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Producer Gas"
+                 value="1250" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
         </label>
         <label class="fuel-opt" data-fuel="Blast Furnace Gas">
           <input type="radio" name="brf-fuel" value="Blast Furnace Gas" onchange="fuelChanged()"/>
           <span class="fo-tick"></span>
           <div class="fo-name">Blast Furnace Gas</div>
-          <div class="fo-sub">720 kcal/Nm&sup3;</div>
+          <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Blast Furnace Gas"
+                 value="720" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
         </label>
       </div>
 
+      <input id="sz-cv-cfg" type="hidden" value="8600"/>
       <div class="sz-grid" id="fuel-gas-params" style="margin-top:18px">
         <div class="sz-f"><label>Gas per ton (SCM)</label><input id="sz-fuel-cfg" type="number" step="any" value="45" oninput="fuelChanged(false)"/></div>
-        <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label><input id="sz-cv-cfg" type="number" step="any" value="8600" oninput="fuelChanged(false)"/></div>
         <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air-cfg" type="number" step="any" value="10.5" oninput="fuelChanged(false)"/></div>
       </div>
 
@@ -488,9 +499,18 @@
       <div class="card-title">Furnace Duty</div>
       <div class="sz-grid">
         <div class="sz-f"><label>Capacity (t/hr)</label><input id="sz-cap" type="number" step="any" oninput="dutyPreview()" value="60"/></div>
-        <div class="sz-f"><label>Fuel per ton (SCM)</label><input id="sz-fuel" type="number" step="any" oninput="dutyPreview()" value="45"/></div>
-        <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label><input id="sz-cv" type="number" step="any" oninput="dutyPreview()" value="8600"/></div>
-        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air" type="number" step="any" oninput="dutyPreview()" value="10.5"/></div>
+        <!-- Set on Config, with the fuel. Shown here because the duty reads
+             from them, read-only because two boxes holding one number is how
+             an edit gets silently overwritten. -->
+        <div class="sz-f"><label>Fuel per ton (SCM)</label>
+          <input id="sz-fuel" type="number" step="any" value="45" readonly style="background:#f8fafc"/>
+          <div class="hint" style="color:var(--muted);font-size:.72rem;">From Config</div></div>
+        <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label>
+          <input id="sz-cv" type="number" step="any" value="8600" readonly style="background:#f8fafc"/>
+          <div class="hint" style="color:var(--muted);font-size:.72rem;">From the fuel on Config</div></div>
+        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label>
+          <input id="sz-air" type="number" step="any" value="10.5" readonly style="background:#f8fafc"/>
+          <div class="hint" style="color:var(--muted);font-size:.72rem;">From Config</div></div>
         <div class="sz-f"><label>Preheated air temp (&deg;C)</label><input id="sz-preheat" type="number" step="any" oninput="dutyPreview()" value="300"/></div>
         <div class="sz-f"><label>Air velocity (m/s)</label><input id="sz-vair" type="number" step="any" oninput="dutyPreview()" value="12"/></div>
         <div class="sz-f"><label>Gas velocity (m/s)</label><input id="sz-vgas" type="number" step="any" oninput="dutyPreview()" value="30"/></div>
@@ -974,13 +994,16 @@ function renderRefractory(f){
 // scaled from natural gas's 10.5 — air demand tracks calorific value closely
 // enough for a first pass — and both boxes stay editable, because a works gas
 // is whatever the analysis says it is, not what a table says.
-const GAS_FUELS={
-  "Natural Gas":       8600,
-  "Coke Oven Gas":     4000,
-  "Producer Gas":      1250,
-  "Blast Furnace Gas":  720,
-};
 const AIR_PER_KCAL = 10.5 / 8600;
+
+// Each card carries its own calorific value, and each is editable: a works gas
+// is whatever the analysis says it is. Reading them off the cards rather than a
+// table in here means a corrected figure sticks with its fuel, so switching
+// away and back does not quietly restore the book value.
+function cvFor(fuel){
+  const box=document.querySelector(`.fo-cv[data-fuel="${CSS.escape(fuel)}"]`);
+  return box ? (parseFloat(box.value)||0) : 0;
+}
 
 function selectedFuel(){
   const r=document.querySelector('input[name="brf-fuel"]:checked');
@@ -994,17 +1017,22 @@ function fuelChanged(fromCard){
   // Picking a fuel refills the calorific value and the air ratio; typing in
   // either box afterwards is an override and is left alone until another fuel
   // is picked.
-  if(fromCard!==false && GAS_FUELS[f]!==undefined){
+  const newCv=cvFor(f);
+  if(fromCard!==false && newCv>0){
     const cv=document.getElementById("sz-cv-cfg"), air=document.getElementById("sz-air-cfg"),
           per=document.getElementById("sz-fuel-cfg");
     // The furnace needs the same heat per ton whatever it burns, so the volume
     // per ton follows the calorific value. Without this, switching to a 1,250
     // kcal gas left 45 SCM/ton in the box and under-stated the firing rate
     // nearly sevenfold: the same heat needs nearly seven times the gas.
-    const heatPerTon=(parseFloat(cv&&cv.value)||0)*(parseFloat(per&&per.value)||0);
-    if(cv) cv.value=GAS_FUELS[f];
-    if(air) air.value=(GAS_FUELS[f]*AIR_PER_KCAL).toFixed(2);
-    if(per && heatPerTon>0) per.value=(heatPerTon/GAS_FUELS[f]).toFixed(1);
+    const oldCv=parseFloat(cv&&cv.value)||0;
+    const heatPerTon=oldCv*(parseFloat(per&&per.value)||0);
+    // Only refill the air ratio if it is still the one derived from the old
+    // calorific value — a ratio somebody typed is theirs to keep.
+    const airUntouched=air && Math.abs((parseFloat(air.value)||0)-oldCv*AIR_PER_KCAL)<0.005;
+    if(cv) cv.value=newCv;
+    if(airUntouched) air.value=(newCv*AIR_PER_KCAL).toFixed(2);
+    if(per && heatPerTon>0) per.value=(heatPerTon/newCv).toFixed(1);
   }
   // Config owns these; the Firing & Air boxes follow so one number is typed in
   // one place.
@@ -1013,6 +1041,23 @@ function fuelChanged(fromCard){
   mirror("sz-fuel-cfg","sz-fuel"); mirror("sz-cv-cfg","sz-cv"); mirror("sz-air-cfg","sz-air");
   clearTimeout(fuelChanged._t);
   fuelChanged._t=setTimeout(runDuty,250);
+}
+
+
+// Editing the calorific value on a card. If it is the fuel in use, the air
+// ratio follows it — unless somebody has typed their own, which stands. The
+// volume per ton is left alone on purpose: correcting a calorific value is a
+// statement about the gas, not about how much of it the furnace gets through.
+function cvEdited(box){
+  const fuel=box.dataset.fuel;
+  if(fuel!==selectedFuel()) return;          // a card that is not in use
+  const cv=document.getElementById("sz-cv-cfg"), air=document.getElementById("sz-air-cfg");
+  const oldCv=parseFloat(cv&&cv.value)||0, newCv=parseFloat(box.value)||0;
+  if(!newCv) return;
+  const airUntouched=air && Math.abs((parseFloat(air.value)||0)-oldCv*AIR_PER_KCAL)<0.005;
+  if(cv) cv.value=newCv;
+  if(airUntouched) air.value=(newCv*AIR_PER_KCAL).toFixed(2);
+  fuelChanged(false);
 }
 
 function fuelPayload(){
