@@ -378,6 +378,14 @@
       <div class="calc-work" id="fn-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
     </div>
 
+    <!-- Counted off the box above: the roof it hangs from, the walls either
+         side and the discharge end. Nothing prices these yet. -->
+    <div class="card">
+      <div class="card-title">Refractory</div>
+      <div class="fn-out" id="rf-out"></div>
+      <div class="calc-work" id="rf-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
+    </div>
+
     <div class="step-nav">
       <button class="btn-primary" onclick="goStep(4)">Next: Firing &amp; Air →</button>
     </div>
@@ -783,6 +791,7 @@ async function runFurnace(){
       body:JSON.stringify(Object.assign({},furnacePayload(),{zones:readZones()}))});
     const data=await res.json();
     if(data&&data.furnace) renderFurnace(data.furnace);
+    if(data&&data.refractory) renderRefractory(data.refractory);
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
@@ -820,6 +829,54 @@ function renderFurnace(f){
     `Preheating     = overall length × 0.2 = ${n(f.zone_preheating_m,3)} m`,
     `Heating        = overall length × 0.5 − 0.23 − 0.05 = ${n(f.zone_heating_m,3)} m`,
     `Soaking        = (eff. length + 1500 + 1500 + 230) ÷ 1000 × 0.3 = ${n(f.zone_soaking_m,3)} m`,
+  ].join("\n");
+}
+
+
+// The refractory take-off — brick counts and weights off the furnace box.
+// Roof, side walls, discharge end. Everything printed is what the engine
+// returned; nothing is recomputed here.
+function renderRefractory(f){
+  const el=document.getElementById("rf-out");
+  if(!el||!f) return;
+  const cm=(v,p=0)=>v==null?"\u2014":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  el.innerHTML=
+    tile("Hanging Brick", cm(f.hanging_bricks_soak_heat+f.hanging_bricks_preheat), "nos")+
+    tile("Hanging Brick Weight", cm(f.hanging_brick_weight_kg), "kg")+
+    tile("Holding Brick", cm(f.holding_bricks_soak_heat+f.holding_bricks_preheat), "nos")+
+    tile("Holding Brick Weight", cm(f.holding_brick_60_weight_kg+f.holding_brick_40_weight_kg), "kg")+
+    tile("Ceramic Fibre", cm(f.fibre_rolls), "rolls")+
+    tile("Fibre Weight", cm(f.fibre_weight_kg), "kg")+
+    tile("Castable", cm(f.castable_total_kg), "kg")+
+    tile("Castable Bags", cm(f.castable_bags), "nos")+
+    tile("Side Wall Bricks", cm(f.side_wall_cold_face_bricks+f.side_wall_hot_face_bricks), "nos")+
+    tile("Side Wall Fire Brick", cm(f.side_wall_fire_bricks_60), "nos")+
+    tile("Discharge Wall Bricks", cm(f.discharge_cold_face_bricks+f.discharge_hot_face_bricks), "nos")+
+    tile("Discharge HAY", cm(f.discharge_hay_pieces), "nos");
+
+  const w=document.getElementById("rf-work");
+  if(w) w.textContent=[
+    `ROOF`,
+    `  Hanging brick   ${f.hanging_bricks_per_width} per width, ${cm(f.hanging_bricks_soak_heat)} over soaking + heating,`,
+    `                  ${cm(f.hanging_bricks_preheat)} over preheating = ${cm(f.hanging_brick_weight_kg)} kg`,
+    `  Holding brick   ${f.holding_bricks_per_width} per width, ${cm(f.holding_bricks_soak_heat)} + ${cm(f.holding_bricks_preheat)} nos`,
+    `                  = ${cm(f.holding_brick_60_weight_kg)} kg at 60% + ${cm(f.holding_brick_40_weight_kg)} kg at 40%`,
+    `  Ceramic fibre   ${cm(f.fibre_rolls_raw,2)} rolls, rounded up plus 10 spare = ${f.fibre_rolls} rolls = ${cm(f.fibre_weight_kg)} kg`,
+    `  Castable        ${cm(f.castable_volume_m3,3)} m\u00b3 = ${cm(f.castable_weight_kg)} kg per row,`,
+    `                  x ${f.holding_bricks_per_width + 2} rows x 1.1 = ${cm(f.castable_total_kg)} kg = ${cm(f.castable_bags)} bags`,
+    ``,
+    `SIDE WALLS (right and left), ${cm(f.side_wall_length_m,2)} m long`,
+    `  Cold face       ${cm(f.side_wall_cold_face_bricks)} nos      Hot face ${cm(f.side_wall_hot_face_bricks)} nos`,
+    `  60% fire brick  ${cm(f.side_wall_fire_bricks_60)} nos, two layers`,
+    `  Preheating wall ${cm(f.preheat_wall_length_m,2)} m: ${cm(f.preheat_cold_face_bricks)} cold + ${cm(f.preheat_hot_face_bricks)} hot,`,
+    `                  ${cm(f.preheat_fire_bricks_40)} nos at 40%`,
+    `  Tapered portion ${cm(f.tapered_wall_length_m,2)} m: ${cm(f.tapered_fire_bricks_40)} nos at 40%`,
+    ``,
+    `DISCHARGE END WALL`,
+    `  Cold face       ${cm(f.discharge_cold_face_bricks)} nos      Hot face ${cm(f.discharge_hot_face_bricks)} nos`,
+    `  60% fire brick  ${cm(f.discharge_fire_bricks_60)} nos, two layers`,
+    `  HAY             ${cm(f.discharge_hay_pieces)} nos`,
   ].join("\n");
 }
 
@@ -1060,6 +1117,7 @@ function renderAll(data,showNG,showCL){
   renderDuty(data.sizing);
   commercialPreview();
   if(data.furnace) renderFurnace(data.furnace);
+  if(data.refractory) renderRefractory(data.refractory);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
   const ff=sp.furnace_full||[];

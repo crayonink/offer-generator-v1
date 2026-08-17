@@ -414,8 +414,197 @@ def calculate_furnace(inp: BRFFurnaceInputs) -> BRFFurnaceResults:
         overall_width_m     = round(overall_w_mm / 1000.0, 3),
         overall_length_mm   = round(overall_l_mm, 1),
         overall_length_m    = round(overall_l_m, 3),
-        zone_preheating_m   = round(preheating, 3),
-        zone_heating_m      = round(heating, 3),
-        zone_soaking_m      = round(soaking, 3),
-        zone_heating_soaking_m = round(heating + soaking, 3),
+        # Six places, not three. These feed the refractory take-off, where a
+        # zone length is multiplied by a brick row every 100 mm — about 180x —
+        # so rounding here to what the screen shows moved brick counts by a
+        # whole brick and the roof weight by 2.6 kg. Display rounds; the engine
+        # keeps the number.
+        zone_preheating_m   = round(preheating, 6),
+        zone_heating_m      = round(heating, 6),
+        zone_soaking_m      = round(soaking, 6),
+        zone_heating_soaking_m = round(heating + soaking, 6),
+    )
+
+
+# ── Refractory ──────────────────────────────────────────────────────────────
+# Furnace sheet, section 2. The brick counts and weights that follow from the
+# box worked out above: the roof it hangs from, the side walls either side, and
+# the discharge-end wall. Cells are named as the workbook writes them.
+#
+# All of it is counted off the zone lengths and the effective width, so it
+# moves with the billet and the capacity like the rest of the furnace.
+
+@dataclass
+class BRFRefractoryInputs:
+    # Standard brick, (230 x 115 x 75) mm                            H35
+    brick_l_mm: float = 230.0
+    brick_w_mm: float = 115.0
+    brick_h_mm: float = 75.0
+    # Hanging brick spacing: one per 750 mm of (width + 460)         C35
+    hanging_pitch_mm:  float = 750.0
+    hanging_margin_mm: float = 460.0
+    # Brick weights, high alumina                            C37/C39/C43/C46
+    hanging_brick_60_kg: float = 39.36
+    hanging_brick_40_kg: float = 36.85
+    holding_brick_60_kg: float = 23.60
+    holding_brick_40_kg: float = 22.10
+    # Ceramic fibre, (7300 x 600 x 25) mm                    C48/C49/C51
+    fibre_roll_length_mm: float = 7300.0
+    fibre_roll_kg:        float = 15.0
+    fibre_spare_rolls:    int   = 10
+    # Castable                                               C53..C58
+    castable_depth_mm:   float = 650.0
+    castable_thick_mm:   float = 100.0
+    castable_density:    float = 550.0
+    castable_wastage:    float = 1.1
+    castable_bag_kg:     float = 25.0
+    # Wall heights, as the sheet builds them up              G37/G42/G47/G53
+    side_wall_height_mm:          float = 1500 + 230 + 230 + 150   # 2110
+    side_wall_internal_height_mm: float = 1500 + 230               # 1730
+    preheat_wall_height_mm:       float = 400 + 230 + 230 + 150    # 1010
+    preheat_wall_40_height_mm:    float = 400 + 115                # 515
+    wall_thickness_mm:            float = 115.0
+    # HAY, (600 x 900 x 50) mm                               L45/L46
+    hay_l_mm: float = 600.0
+    hay_w_mm: float = 900.0
+    hay_t_mm: float = 50.0
+
+
+@dataclass
+class BRFRefractoryResults:
+    brick_volume_mm3:           float   # H35
+    # Roof
+    hanging_bricks_per_width:   int     # D35
+    hanging_bricks_soak_heat:   float   # C36
+    hanging_bricks_preheat:     float   # C38
+    hanging_brick_weight_kg:    float   # C40
+    holding_bricks_per_width:   int     # C41
+    holding_bricks_soak_heat:   float   # C42
+    holding_brick_60_weight_kg: float   # C44
+    holding_bricks_preheat:     float   # C45
+    holding_brick_40_weight_kg: float   # C47
+    fibre_rolls_raw:            float   # C50
+    fibre_rolls:                int     # C51
+    fibre_weight_kg:            float   # C52
+    castable_volume_m3:         float   # C53
+    castable_weight_kg:         float   # C54
+    castable_total_kg:          float   # C56
+    castable_bags:              float   # C58
+    # Side walls, right and left
+    side_wall_length_m:         float   # G36
+    side_wall_cold_face_bricks: float   # G39
+    side_wall_hot_face_bricks:  float   # G40
+    side_wall_fire_bricks_60:   float   # G44
+    preheat_wall_length_m:      float   # G46
+    preheat_cold_face_bricks:   float   # G49
+    preheat_hot_face_bricks:    float   # G51
+    preheat_fire_bricks_40:     float   # G55
+    tapered_wall_length_m:      float   # G58
+    tapered_fire_bricks_40:     float   # G60
+    # Discharge-end wall
+    discharge_cold_face_bricks: float   # L37
+    discharge_hot_face_bricks:  float   # L39
+    discharge_fire_bricks_60:   float   # L44
+    discharge_hay_pieces:       float   # L47
+
+
+def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
+    """Brick counts and weights for the roof, the side walls and the discharge
+    wall, off the furnace geometry.
+
+    fur — BRFFurnaceResults, fin — BRFFurnaceInputs, inp — BRFRefractoryInputs.
+    """
+    r = inp or BRFRefractoryInputs()
+    brick_vol = r.brick_l_mm * r.brick_w_mm * r.brick_h_mm             # H35
+    t = r.wall_thickness_mm
+
+    # ── Roof ───────────────────────────────────────────────────────
+    hang_per_width = math.ceil(
+        (fur.effective_width_mm + r.hanging_margin_mm) / r.hanging_pitch_mm)   # D35
+    soak_heat = fur.zone_heating_m + fur.zone_soaking_m                        # G36
+    hang_soak = (soak_heat + 0.23) * hang_per_width / 100 * 1000 + 50          # C36
+    hang_pre = fur.zone_preheating_m * hang_per_width / 100 * 1000 + 25        # C38
+    hang_wt = hang_soak * r.hanging_brick_60_kg + hang_pre * r.hanging_brick_40_kg  # C40
+
+    hold_per_width = hang_per_width - 1                                        # C41
+    hold_soak = hold_per_width * soak_heat * 1000 / 100 + 50                   # C42
+    hold_wt60 = hold_soak * r.holding_brick_60_kg                              # C44
+    hold_pre = fur.zone_preheating_m * 1000 / 100 * hold_per_width + 30        # C45
+    hold_wt40 = hold_pre * r.holding_brick_40_kg                               # C47
+
+    # The fibre runs the length of the furnace less the sheet and channel at
+    # the ends, one run per holding-brick row plus the two edges.
+    fibre_run_mm = (fur.overall_length_mm - (fin.sheet_charging_side_mm
+                                             + fin.sheet_refractory_side_mm
+                                             + fin.length_channel_mm))
+    fibre_raw = fibre_run_mm / r.fibre_roll_length_mm * (hold_per_width + 2)   # C50
+    fibre_rolls = math.ceil(fibre_raw) + r.fibre_spare_rolls                   # C51
+    fibre_wt = fibre_rolls * r.fibre_roll_kg                                   # C52
+
+    cast_vol = ((fur.effective_length_mm + fin.discharge_refractory_mm
+                 + fin.charge_refractory_mm)
+                * r.castable_depth_mm * r.castable_thick_mm / 1e9)             # C53
+    cast_wt = cast_vol * r.castable_density                                    # C54
+    cast_total = cast_wt * (hold_per_width + 2) * r.castable_wastage           # C56
+    cast_bags = cast_total / r.castable_bag_kg                                 # C58
+
+    # ── Side walls, right and left ─────────────────────────────────
+    sw_vol = soak_heat * 1000 * r.side_wall_height_mm * t                      # G38
+    sw_cold = sw_vol / brick_vol + 50                                          # G39
+    sw_vol2 = soak_heat * 1000 * r.side_wall_internal_height_mm * t            # G43
+    sw_fire = ((sw_vol2 / brick_vol) + 50) * 2 + 20                            # G44
+
+    pre_len = fur.zone_preheating_m - 1.5                                      # G46
+    pre_vol = pre_len * 1000 * r.preheat_wall_height_mm * t                    # G48
+    pre_cold = pre_vol / brick_vol + 20                                        # G49
+    pre_vol40 = pre_len * 1000 * r.preheat_wall_40_height_mm * t               # G54
+    pre_fire40 = pre_vol40 / brick_vol * 2 + 20                                # G55
+
+    tap_len = fur.zone_preheating_m - pre_len                                  # G58
+    tap_vol = r.side_wall_height_mm * tap_len * 1000 * t                       # G59
+    tap_fire = (tap_vol / brick_vol) * 2 + 50                                  # G60
+
+    # ── Discharge-end wall ─────────────────────────────────────────
+    dis_vol = fur.effective_width_mm * r.side_wall_height_mm * t               # L36
+    dis_cold = dis_vol / brick_vol + 50                                        # L37
+    dis_vol2 = fur.effective_width_mm * r.side_wall_internal_height_mm * t     # L43
+    dis_fire = dis_vol2 / brick_vol * 2 + 50                                   # L44
+    hay_vol = r.hay_l_mm * r.hay_w_mm * r.hay_t_mm                             # L46
+    dis_hay = fur.effective_width_mm * r.side_wall_height_mm * r.hay_t_mm / hay_vol  # L47
+
+    def _2(x):
+        return round(x, 2)
+
+    return BRFRefractoryResults(
+        brick_volume_mm3=brick_vol,
+        hanging_bricks_per_width=hang_per_width,
+        hanging_bricks_soak_heat=_2(hang_soak),
+        hanging_bricks_preheat=_2(hang_pre),
+        hanging_brick_weight_kg=_2(hang_wt),
+        holding_bricks_per_width=hold_per_width,
+        holding_bricks_soak_heat=_2(hold_soak),
+        holding_brick_60_weight_kg=_2(hold_wt60),
+        holding_bricks_preheat=_2(hold_pre),
+        holding_brick_40_weight_kg=_2(hold_wt40),
+        fibre_rolls_raw=_2(fibre_raw),
+        fibre_rolls=fibre_rolls,
+        fibre_weight_kg=_2(fibre_wt),
+        castable_volume_m3=round(cast_vol, 4),
+        castable_weight_kg=_2(cast_wt),
+        castable_total_kg=_2(cast_total),
+        castable_bags=_2(cast_bags),
+        side_wall_length_m=_2(soak_heat),
+        side_wall_cold_face_bricks=_2(sw_cold),
+        side_wall_hot_face_bricks=_2(sw_cold),
+        side_wall_fire_bricks_60=_2(sw_fire),
+        preheat_wall_length_m=_2(pre_len),
+        preheat_cold_face_bricks=_2(pre_cold),
+        preheat_hot_face_bricks=_2(pre_cold),
+        preheat_fire_bricks_40=_2(pre_fire40),
+        tapered_wall_length_m=_2(tap_len),
+        tapered_fire_bricks_40=_2(tap_fire),
+        discharge_cold_face_bricks=_2(dis_cold),
+        discharge_hot_face_bricks=_2(dis_cold),
+        discharge_fire_bricks_60=_2(dis_fire),
+        discharge_hay_pieces=_2(dis_hay),
     )

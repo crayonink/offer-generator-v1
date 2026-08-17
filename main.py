@@ -5804,8 +5804,9 @@ def brf_calculate(req: BRFCalcRequest):
         # Furnace geometry — the billet, the hearth it needs and the box that
         # goes round it. Its own block: it is what the refractory take-off will
         # be built on when that half is ported.
-        from calculations.brf import BRFFurnaceInputs, calculate_furnace
-        furnace = calculate_furnace(BRFFurnaceInputs(
+        from calculations.brf import (BRFFurnaceInputs, calculate_furnace,
+                                      calculate_refractory)
+        furnace_inputs = BRFFurnaceInputs(
             billet_length_mm=req.billet_length_mm,
             billet_width_mm=req.billet_width_mm,
             billet_height_mm=req.billet_height_mm,
@@ -5824,13 +5825,18 @@ def brf_calculate(req: BRFCalcRequest):
             length_channel_mm=req.length_channel_mm,
             effective_width_mm_override=req.effective_width_mm_override,
             effective_length_mm_override=req.effective_length_mm_override,
-        ))
+        )
+        furnace = calculate_furnace(furnace_inputs)
+        # The brick counts that follow from that box — roof, side walls and the
+        # discharge end. Still off the geometry only; nothing prices them yet.
+        refractory = calculate_refractory(furnace, furnace_inputs)
         return {
             "bom": bom,
             "cost_summary": summary,
             "supplementary": get_supplementary(),
             "sizing": sizing,
             "furnace": vars(furnace),
+            "refractory": vars(refractory),
         }
     except Exception as e:
         import traceback
