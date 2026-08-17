@@ -393,6 +393,7 @@
 
       <input id="sz-cv-cfg" type="hidden" value="8600" autocomplete="off"/>
       <div class="sz-grid" id="fuel-gas-params" style="margin-top:18px">
+        <div class="sz-f"><label>Furnace capacity (t/hr)</label><input id="cfg-cap" type="number" step="any" value="60" oninput="capacityChanged()" autocomplete="off"/></div>
         <div class="sz-f"><label>Gas per ton (SCM)</label><input id="sz-fuel-cfg" type="number" step="any" value="45" oninput="fuelChanged(false)" autocomplete="off"/></div>
         <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air-cfg" type="number" step="any" value="10.5" oninput="fuelChanged(false)" autocomplete="off"/></div>
       </div>
@@ -453,7 +454,9 @@
     <div class="card">
       <div class="card-title">Hearth</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Furnace capacity (Ton/hr)</label><input id="fn-cap" type="number" step="any" value="60" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Furnace capacity (Ton/hr)</label>
+          <input id="fn-cap" type="number" step="any" value="60" readonly style="background:#f8fafc" autocomplete="off"/>
+          <div class="hint" style="color:var(--muted);font-size:.72rem;">From Config</div></div>
         <div class="sz-f"><label>Top fired hearth load (kg/hr/m&sup2;)</label><input id="fn-hl-top" type="number" step="any" value="300" oninput="furnacePreview()" autocomplete="off"/></div>
         <div class="sz-f"><label>Top &amp; bottom fired (kg/hr/m&sup2;)</label><input id="fn-hl-both" type="number" step="any" value="600" oninput="furnacePreview()" autocomplete="off"/></div>
       </div>
@@ -519,7 +522,9 @@
     <div class="card">
       <div class="card-title">Furnace Duty</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Capacity (t/hr)</label><input id="sz-cap" type="number" step="any" oninput="dutyPreview()" value="60" autocomplete="off"/></div>
+        <div class="sz-f"><label>Capacity (t/hr)</label>
+          <input id="sz-cap" type="number" step="any" value="60" readonly style="background:#f8fafc" autocomplete="off"/>
+          <div class="hint" style="color:var(--muted);font-size:.72rem;">From Config</div></div>
         <!-- Set on Config, with the fuel. Shown here because the duty reads
              from them, read-only because two boxes holding one number is how
              an edit gets silently overwritten. -->
@@ -904,8 +909,6 @@ function furnacePayload(){
 // The capacity lives on this tab, so keep the Config tab's copy in step with
 // it — they are the same number and the sizing chain reads the other one.
 function furnacePreview(){
-  const cap=document.getElementById("fn-cap"), szCap=document.getElementById("sz-cap");
-  if(cap&&szCap) szCap.value=cap.value;
   clearTimeout(furnacePreview._t);
   furnacePreview._t=setTimeout(runFurnace,250);
 }
@@ -1069,6 +1072,7 @@ function fuelChanged(fromCard){
   const mirror=(from,to)=>{const a=document.getElementById(from),b=document.getElementById(to);
                            if(a&&b) b.value=a.value;};
   mirror("sz-fuel-cfg","sz-fuel"); mirror("sz-cv-cfg","sz-cv"); mirror("sz-air-cfg","sz-air");
+  mirror("cfg-cap","sz-cap"); mirror("cfg-cap","fn-cap");
   clearTimeout(fuelChanged._t);
   fuelChanged._t=setTimeout(runDuty,250);
 }
@@ -1088,6 +1092,22 @@ function cvEdited(box){
   if(cv) cv.value=newCv;
   if(airUntouched) air.value=(newCv*AIR_PER_KCAL).toFixed(2);
   fuelChanged(false);
+}
+
+
+// Capacity is typed on Config, beside the fuel, because the firing rate is the
+// first thing it decides. The hearth on Furnace and the duty on Firing & Air
+// both need it, and both used to be typeable — three boxes for one number,
+// each able to disagree. They mirror it now.
+function capacityChanged(){
+  const src=document.getElementById("cfg-cap");
+  if(!src) return;
+  ["sz-cap","fn-cap"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value=src.value;
+  });
+  clearTimeout(capacityChanged._t);
+  capacityChanged._t=setTimeout(()=>{ runDuty(); runFurnace(); }, 250);
 }
 
 function fuelPayload(){
@@ -1247,8 +1267,6 @@ function renderRefractorySheet(f){
 // Calculate. Same rule as everywhere else on this page: the engine computes,
 // this paints.
 function dutyPreview(){
-  const cap=document.getElementById("sz-cap"), fnCap=document.getElementById("fn-cap");
-  if(cap&&fnCap) fnCap.value=cap.value;      // capacity is one number, two tabs
   clearTimeout(dutyPreview._t);
   dutyPreview._t=setTimeout(runDuty,250);
 }
