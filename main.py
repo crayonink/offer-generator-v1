@@ -1680,6 +1680,37 @@ def _startup_seed_idfan_catalog():
 _startup_seed_idfan_catalog()
 
 
+def _startup_rename_brf_table():
+    """snsf_brf_price_master -> brf_price_master, on whatever database is open.
+
+    Renaming it in the committed vlph.db was not enough: production runs off a
+    volume that was seeded once, so the live database kept the old name and
+    every renamed query came back "no such table: brf_price_master". This runs
+    the rename where it actually has to happen.
+
+    Idempotent and safe in any order — it does nothing once the new name is
+    there, and if both somehow exist it leaves them alone rather than guessing
+    which one holds the current prices.
+    """
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        names = {r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' "
+            "AND name IN ('snsf_brf_price_master','brf_price_master')")}
+        if 'snsf_brf_price_master' in names and 'brf_price_master' not in names:
+            conn.execute("ALTER TABLE snsf_brf_price_master RENAME TO brf_price_master")
+            conn.commit()
+            print("[db] renamed snsf_brf_price_master -> brf_price_master")
+        elif names == {'snsf_brf_price_master', 'brf_price_master'}:
+            print("[db] both BRF price tables exist - leaving them; check which is current")
+        conn.close()
+    except Exception as e:
+        print(f"WARN: startup rename of the BRF price table failed: {e}")
+
+
+_startup_rename_brf_table()
+
+
 def _startup_purge_regen_pricelist():
     """Regen prices live in code (bom/regen_builder), NOT the Pricelist. Remove
     any REGEN_* rows from component_price_master on startup so they never show
