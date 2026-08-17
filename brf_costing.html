@@ -366,35 +366,35 @@
           <span class="fo-tick"></span>
           <div class="fo-name">Natural Gas</div>
           <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Natural Gas"
-                 value="8600" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
+                 value="8600" onclick="event.stopPropagation()" oninput="cvEdited(this)" autocomplete="off"/> kcal/Nm&sup3;</div>
         </label>
         <label class="fuel-opt" data-fuel="Coke Oven Gas">
           <input type="radio" name="brf-fuel" value="Coke Oven Gas" onchange="fuelChanged()"/>
           <span class="fo-tick"></span>
           <div class="fo-name">Coke Oven Gas</div>
           <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Coke Oven Gas"
-                 value="4000" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
+                 value="4000" onclick="event.stopPropagation()" oninput="cvEdited(this)" autocomplete="off"/> kcal/Nm&sup3;</div>
         </label>
         <label class="fuel-opt" data-fuel="Producer Gas">
           <input type="radio" name="brf-fuel" value="Producer Gas" onchange="fuelChanged()"/>
           <span class="fo-tick"></span>
           <div class="fo-name">Producer Gas</div>
           <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Producer Gas"
-                 value="1250" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
+                 value="1250" onclick="event.stopPropagation()" oninput="cvEdited(this)" autocomplete="off"/> kcal/Nm&sup3;</div>
         </label>
         <label class="fuel-opt" data-fuel="Blast Furnace Gas">
           <input type="radio" name="brf-fuel" value="Blast Furnace Gas" onchange="fuelChanged()"/>
           <span class="fo-tick"></span>
           <div class="fo-name">Blast Furnace Gas</div>
           <div class="fo-sub"><input class="fo-cv" type="number" step="any" data-fuel="Blast Furnace Gas"
-                 value="720" onclick="event.stopPropagation()" oninput="cvEdited(this)"/> kcal/Nm&sup3;</div>
+                 value="720" onclick="event.stopPropagation()" oninput="cvEdited(this)" autocomplete="off"/> kcal/Nm&sup3;</div>
         </label>
       </div>
 
-      <input id="sz-cv-cfg" type="hidden" value="8600"/>
+      <input id="sz-cv-cfg" type="hidden" value="8600" autocomplete="off"/>
       <div class="sz-grid" id="fuel-gas-params" style="margin-top:18px">
-        <div class="sz-f"><label>Gas per ton (SCM)</label><input id="sz-fuel-cfg" type="number" step="any" value="45" oninput="fuelChanged(false)"/></div>
-        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air-cfg" type="number" step="any" value="10.5" oninput="fuelChanged(false)"/></div>
+        <div class="sz-f"><label>Gas per ton (SCM)</label><input id="sz-fuel-cfg" type="number" step="any" value="45" oninput="fuelChanged(false)" autocomplete="off"/></div>
+        <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label><input id="sz-air-cfg" type="number" step="any" value="10.5" oninput="fuelChanged(false)" autocomplete="off"/></div>
       </div>
 
       <div class="fn-out" id="fuel-out" style="margin-top:18px"></div>
@@ -438,10 +438,10 @@
     <div class="card">
       <div class="card-title">Billet</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Length (mm)</label><input id="fn-blen" type="number" step="any" value="12000" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Width (mm)</label><input id="fn-bwid" type="number" step="any" value="130" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Height (mm)</label><input id="fn-bhgt" type="number" step="any" value="130" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Density of MS (kg/m&sup3;)</label><input id="fn-dens" type="number" step="any" value="7850" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Length (mm)</label><input id="fn-blen" type="number" step="any" value="12000" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Width (mm)</label><input id="fn-bwid" type="number" step="any" value="130" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Height (mm)</label><input id="fn-bhgt" type="number" step="any" value="130" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Density of MS (kg/m&sup3;)</label><input id="fn-dens" type="number" step="any" value="7850" oninput="furnacePreview()" autocomplete="off"/></div>
       </div>
       <!-- The two figures the rest of the furnace is set out from, shown where
            the billet that decides them is typed rather than at the foot of the
@@ -453,9 +453,9 @@
     <div class="card">
       <div class="card-title">Hearth</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Furnace capacity (Ton/hr)</label><input id="fn-cap" type="number" step="any" value="60" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Top fired hearth load (kg/hr/m&sup2;)</label><input id="fn-hl-top" type="number" step="any" value="300" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Top &amp; bottom fired (kg/hr/m&sup2;)</label><input id="fn-hl-both" type="number" step="any" value="600" oninput="furnacePreview()"/></div>
+        <div class="sz-f"><label>Furnace capacity (Ton/hr)</label><input id="fn-cap" type="number" step="any" value="60" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Top fired hearth load (kg/hr/m&sup2;)</label><input id="fn-hl-top" type="number" step="any" value="300" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Top &amp; bottom fired (kg/hr/m&sup2;)</label><input id="fn-hl-both" type="number" step="any" value="600" oninput="furnacePreview()" autocomplete="off"/></div>
       </div>
       <div class="hint" style="margin-top:4px;color:var(--muted);font-size:.8rem;">
         The hearth area is worked out from the top-fired figure. The top &amp;
@@ -467,11 +467,11 @@
     <div class="card">
       <div class="card-title">Overall Width with Refractory</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Right refractory (mm)</label><input id="fn-right" type="number" step="any" value="510" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Left refractory (mm)</label><input id="fn-left" type="number" step="any" value="510" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Sheet (mm)</label><input id="fn-wsheet" type="number" step="any" value="16" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Channel (mm)</label><input id="fn-wchan" type="number" step="any" value="500" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Effective width override (mm)</label><input id="fn-ewid" type="number" step="any" value="0" oninput="furnacePreview()"/>
+        <div class="sz-f"><label>Right refractory (mm)</label><input id="fn-right" type="number" step="any" value="510" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Left refractory (mm)</label><input id="fn-left" type="number" step="any" value="510" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Sheet (mm)</label><input id="fn-wsheet" type="number" step="any" value="16" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Channel (mm)</label><input id="fn-wchan" type="number" step="any" value="500" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Effective width override (mm)</label><input id="fn-ewid" type="number" step="any" value="0" oninput="furnacePreview()" autocomplete="off"/>
           <div class="hint" style="color:var(--muted);font-size:.74rem;">0 = billet length + 0.3 m</div></div>
       </div>
     </div>
@@ -479,12 +479,12 @@
     <div class="card">
       <div class="card-title">Overall Length with Refractory</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Discharge side (mm)</label><input id="fn-disch" type="number" step="any" value="2010" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Charge side (mm)</label><input id="fn-charge" type="number" step="any" value="1500" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Sheet, charging side (mm)</label><input id="fn-lsheet1" type="number" step="any" value="6" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Sheet, refractory side (mm)</label><input id="fn-lsheet2" type="number" step="any" value="6" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Channel (mm)</label><input id="fn-lchan" type="number" step="any" value="300" oninput="furnacePreview()"/></div>
-        <div class="sz-f"><label>Effective length override (mm)</label><input id="fn-elen" type="number" step="any" value="0" oninput="furnacePreview()"/>
+        <div class="sz-f"><label>Discharge side (mm)</label><input id="fn-disch" type="number" step="any" value="2010" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Charge side (mm)</label><input id="fn-charge" type="number" step="any" value="1500" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Sheet, charging side (mm)</label><input id="fn-lsheet1" type="number" step="any" value="6" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Sheet, refractory side (mm)</label><input id="fn-lsheet2" type="number" step="any" value="6" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Channel (mm)</label><input id="fn-lchan" type="number" step="any" value="300" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Effective length override (mm)</label><input id="fn-elen" type="number" step="any" value="0" oninput="furnacePreview()" autocomplete="off"/>
           <div class="hint" style="color:var(--muted);font-size:.74rem;">0 = hearth area ÷ billet length</div></div>
       </div>
     </div>
@@ -519,22 +519,22 @@
     <div class="card">
       <div class="card-title">Furnace Duty</div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Capacity (t/hr)</label><input id="sz-cap" type="number" step="any" oninput="dutyPreview()" value="60"/></div>
+        <div class="sz-f"><label>Capacity (t/hr)</label><input id="sz-cap" type="number" step="any" oninput="dutyPreview()" value="60" autocomplete="off"/></div>
         <!-- Set on Config, with the fuel. Shown here because the duty reads
              from them, read-only because two boxes holding one number is how
              an edit gets silently overwritten. -->
         <div class="sz-f"><label>Fuel per ton (SCM)</label>
-          <input id="sz-fuel" type="number" step="any" value="45" readonly style="background:#f8fafc"/>
+          <input id="sz-fuel" type="number" step="any" value="45" readonly style="background:#f8fafc" autocomplete="off"/>
           <div class="hint" style="color:var(--muted);font-size:.72rem;">From Config</div></div>
         <div class="sz-f"><label>Calorific value (kcal/Nm&sup3;)</label>
-          <input id="sz-cv" type="number" step="any" value="8600" readonly style="background:#f8fafc"/>
+          <input id="sz-cv" type="number" step="any" value="8600" readonly style="background:#f8fafc" autocomplete="off"/>
           <div class="hint" style="color:var(--muted);font-size:.72rem;">From the fuel on Config</div></div>
         <div class="sz-f"><label>Combustion air (Nm&sup3; per Nm&sup3;)</label>
-          <input id="sz-air" type="number" step="any" value="10.5" readonly style="background:#f8fafc"/>
+          <input id="sz-air" type="number" step="any" value="10.5" readonly style="background:#f8fafc" autocomplete="off"/>
           <div class="hint" style="color:var(--muted);font-size:.72rem;">From Config</div></div>
-        <div class="sz-f"><label>Preheated air temp (&deg;C)</label><input id="sz-preheat" type="number" step="any" oninput="dutyPreview()" value="300"/></div>
-        <div class="sz-f"><label>Air velocity (m/s)</label><input id="sz-vair" type="number" step="any" oninput="dutyPreview()" value="12"/></div>
-        <div class="sz-f"><label>Gas velocity (m/s)</label><input id="sz-vgas" type="number" step="any" oninput="dutyPreview()" value="30"/></div>
+        <div class="sz-f"><label>Preheated air temp (&deg;C)</label><input id="sz-preheat" type="number" step="any" oninput="dutyPreview()" value="300" autocomplete="off"/></div>
+        <div class="sz-f"><label>Air velocity (m/s)</label><input id="sz-vair" type="number" step="any" oninput="dutyPreview()" value="12" autocomplete="off"/></div>
+        <div class="sz-f"><label>Gas velocity (m/s)</label><input id="sz-vgas" type="number" step="any" oninput="dutyPreview()" value="30" autocomplete="off"/></div>
       </div>
     </div>
 
@@ -650,11 +650,11 @@
         conversion here.
       </div>
       <div class="sz-grid">
-        <div class="sz-f"><label>Packing &amp; forwarding (%)</label><input id="cm-pf" type="number" step="any" value="5" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Designing (%)</label><input id="cm-design" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Negotiation (%)</label><input id="cm-nego" type="number" step="any" value="10" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Transport (&#8377;)</label><input id="cm-transport" type="number" step="any" value="0" oninput="commercialPreview()"/></div>
-        <div class="sz-f"><label>Order quantity (furnaces)</label><input id="cm-qty" type="number" step="1" min="1" value="1" oninput="commercialPreview()"/></div>
+        <div class="sz-f"><label>Packing &amp; forwarding (%)</label><input id="cm-pf" type="number" step="any" value="5" oninput="commercialPreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Designing (%)</label><input id="cm-design" type="number" step="any" value="10" oninput="commercialPreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Negotiation (%)</label><input id="cm-nego" type="number" step="any" value="10" oninput="commercialPreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Transport (&#8377;)</label><input id="cm-transport" type="number" step="any" value="0" oninput="commercialPreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Order quantity (furnaces)</label><input id="cm-qty" type="number" step="1" min="1" value="1" oninput="commercialPreview()" autocomplete="off"/></div>
         <div class="sz-f"><label>Currency</label>
           <select id="cm-currency" onchange="commercialPreview()">
             <option value="INR" selected>&#8377; INR</option>
@@ -1018,6 +1018,14 @@ function renderRefractory(f){
 // is whatever the analysis says it is, not what a table says.
 const AIR_PER_KCAL = 10.5 / 8600;
 
+// What each gas is quoted at. The cards carry their own editable value; this
+// is only the fallback for a card that has come up blank — which a browser
+// will do after the markup changes under a restored form.
+const FUEL_BOOK_CV = {
+  "Natural Gas": 8600, "Coke Oven Gas": 4000,
+  "Producer Gas": 1250, "Blast Furnace Gas": 720,
+};
+
 // Each card carries its own calorific value, and each is editable: a works gas
 // is whatever the analysis says it is. Reading them off the cards rather than a
 // table in here means a corrected figure sticks with its fuel, so switching
@@ -1312,7 +1320,24 @@ function renderDuty(sz){
   ].join("\n");
 }
 
-window.addEventListener("DOMContentLoaded",()=>{ fuelChanged(); setTimeout(runFurnace,0); setTimeout(runDuty,0); });
+// A browser restores form values by position when a page reloads, so changing
+// the markup can leave values on the wrong fields — blank calorific values on
+// the new card inputs, and a stale figure sitting in gas-per-ton. Anything
+// blank is put back to its book value before the first calculation runs.
+function normaliseFuelInputs(){
+  document.querySelectorAll(".fo-cv").forEach(box=>{
+    const book=FUEL_BOOK_CV[box.dataset.fuel];
+    if(book && !(parseFloat(box.value)>0)) box.value=book;
+  });
+  const cv=document.getElementById("sz-cv-cfg");
+  if(cv && !(parseFloat(cv.value)>0)) cv.value=FUEL_BOOK_CV[selectedFuel()]||8600;
+}
+
+window.addEventListener("DOMContentLoaded",()=>{
+  normaliseFuelInputs();
+  fuelChanged(false);          // false: do not rescale off a restored value
+  setTimeout(runFurnace,0); setTimeout(runDuty,0);
+});
 
 async function calculate(){
   const ng=!!(document.getElementById("chk-ng")||{}).checked;
