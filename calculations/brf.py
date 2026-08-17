@@ -573,6 +573,29 @@ class BRFRefractoryResults:
     discharge_hot_face_bricks:  float   # L39
     discharge_fire_bricks_60:   float   # L44
     discharge_hay_pieces:       float   # L47
+    # The wall volumes and heights the counts are read off. Carried so the
+    # sheet can be laid out the way the workbook lays it out, showing the
+    # working rather than only the answer.
+    side_wall_height_mm:        float = 0.0   # G37
+    side_wall_volume_mm3:       float = 0.0   # G38
+    side_wall_internal_height_mm: float = 0.0 # G42
+    side_wall_volume_60_mm3:    float = 0.0   # G43
+    preheat_wall_height_mm:     float = 0.0   # G47
+    preheat_wall_volume_mm3:    float = 0.0   # G48
+    preheat_wall_40_height_mm:  float = 0.0   # G53
+    preheat_wall_40_volume_mm3: float = 0.0   # G54
+    tapered_wall_volume_mm3:    float = 0.0   # G59
+    discharge_volume_mm3:       float = 0.0   # L36
+    discharge_volume_60_mm3:    float = 0.0   # L43
+    hay_volume_mm3:             float = 0.0   # L46
+    hanging_bricks_per_width_raw: float = 0.0 # C35
+    fibre_roll_kg:              float = 0.0   # C49
+    castable_bag_kg:            float = 0.0   # C57
+    hanging_brick_60_kg:        float = 0.0
+    hanging_brick_40_kg:        float = 0.0
+    holding_brick_60_kg:        float = 0.0
+    holding_brick_40_kg:        float = 0.0
+    discharge_effective_width_mm: float = 0.0
 
 
 def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
@@ -674,4 +697,25 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
         discharge_hot_face_bricks=_2(dis_cold),
         discharge_fire_bricks_60=_2(dis_fire),
         discharge_hay_pieces=_2(dis_hay),
+        side_wall_height_mm=r.side_wall_height_mm,
+        side_wall_volume_mm3=sw_vol,
+        side_wall_internal_height_mm=r.side_wall_internal_height_mm,
+        side_wall_volume_60_mm3=sw_vol2,
+        preheat_wall_height_mm=r.preheat_wall_height_mm,
+        preheat_wall_volume_mm3=pre_vol,
+        preheat_wall_40_height_mm=r.preheat_wall_40_height_mm,
+        preheat_wall_40_volume_mm3=pre_vol40,
+        tapered_wall_volume_mm3=tap_vol,
+        discharge_volume_mm3=dis_vol,
+        discharge_volume_60_mm3=dis_vol2,
+        hay_volume_mm3=hay_vol,
+        hanging_bricks_per_width_raw=round(
+            (fur.effective_width_mm + r.hanging_margin_mm) / r.hanging_pitch_mm, 6),
+        fibre_roll_kg=r.fibre_roll_kg,
+        castable_bag_kg=r.castable_bag_kg,
+        hanging_brick_60_kg=r.hanging_brick_60_kg,
+        hanging_brick_40_kg=r.hanging_brick_40_kg,
+        holding_brick_60_kg=r.holding_brick_60_kg,
+        holding_brick_40_kg=r.holding_brick_40_kg,
+        discharge_effective_width_mm=fur.effective_width_mm,
     )

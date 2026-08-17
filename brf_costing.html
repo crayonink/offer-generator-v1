@@ -173,6 +173,18 @@
     .xl-grid td:nth-child(4):last-child { text-align:left; color:var(--muted);
                                           font-weight:500; width:110px; padding-left:14px; }
 
+    /* The refractory sheet: three blocks read side by side, as the workbook
+       has them. Narrow gutters between, headings across each block. */
+    .rf-grid td { vertical-align:top; }
+    .rf-grid .rf-head { background:#ede9fe; color:#4c1d95; font-weight:700; text-align:center;
+                        font-size:.72rem; letter-spacing:.05em; text-transform:uppercase;
+                        padding:10px 12px; border-bottom:1px solid var(--border); }
+    .rf-grid .rf-sub { background:#f8fafc; font-weight:700; color:#0f172a; font-size:.78rem; }
+    .rf-grid .rf-unit { color:var(--muted); font-size:.78rem; white-space:nowrap; }
+    .rf-grid .rf-key { background:#fffbeb; font-weight:700; color:#0f172a; }
+    .rf-grid .rf-gap { width:22px; background:#f8fafc; border-bottom:0; padding:0; }
+    .rf-grid .rf-pad { height:1px; }
+    .rf-grid td:first-child, .rf-grid .rf-gap + td { white-space:normal; max-width:260px; }
     /* Spreadsheet furniture, gone — the row numbers down the side and the
        A/B/C letters across the top carried nothing. Real column headings use
        .xl-head and stay. */
@@ -896,7 +908,8 @@ async function runFurnace(){
       body:JSON.stringify(Object.assign({},furnacePayload(),{zones:readZones()}))});
     const data=await res.json();
     if(data&&data.furnace) renderFurnace(data.furnace);
-    if(data&&data.refractory) renderRefractory(data.refractory);
+    if(data&&data.refractory){ renderRefractory(data.refractory);
+                               renderRefractorySheet(data.refractory); }
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
@@ -1078,6 +1091,122 @@ function renderFuel(d){
     tile("Calorific Value", cm(d.cv_kcal_nm3), "kcal/Nm\u00b3")+
     tile("Air Ratio", cm(d.combustion_air_per_nm3,2), "Nm\u00b3/Nm\u00b3")+
     tile("Heat per Ton", cm(d.cv_kcal_nm3*d.fuel_per_ton_scm), "kcal/ton");
+}
+
+
+// ── The refractory sheet, as the workbook lays it out ──────────────────────
+// Three blocks side by side — roof, side walls, discharge end — each with the
+// workbook's own row labels, in its order, with the intermediate volumes and
+// heights the counts are read off rather than only the counts. Cell letters in
+// the comments are the Furnace sheet's.
+//
+// Laid out as three parallel columns because that is how it is read: a wall's
+// height, its volume and its brick count belong together, and the three walls
+// are compared across.
+function renderRefractorySheet(f){
+  const el=document.getElementById("xl-refractory");
+  if(!el||!f) return;
+  const n=(v,p=0)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+  // Each block is [label, value, unit]; a lone [label] is a sub-heading, and
+  // [] is a spacer.
+  const roof=[
+    ["Hanging and holding Brick (High Alumina)"],
+    ["Material", "High Alumina Grade", ""],
+    ["Hanging Brick Per width", n(f.hanging_bricks_per_width_raw,3), n(f.hanging_bricks_per_width)],
+    ["Total Hanging Brick Quantity on Soaking and heating zone (60% H/A)", n(f.hanging_bricks_soak_heat,1), "Nos"],
+    ["Wt. of Each Hanging Brick (60% H/A)", n(f.hanging_brick_60_kg,2), "kg"],
+    ["Total Hanging Brick in Preheating zone (40% H/A)", n(f.hanging_bricks_preheat,2), "Nos"],
+    ["Wt. of Each Hanging Brick (40% H/A)", n(f.hanging_brick_40_kg,2), "kg"],
+    ["*Total Hanging Brick Wt.", n(f.hanging_brick_weight_kg,2), "kg"],
+    ["Holding Brick per width", n(f.holding_bricks_per_width), "Nos"],
+    ["Total Holding Brick in soaking and heating (60%)", n(f.holding_bricks_soak_heat), "Nos"],
+    ["Wt. of Each Holding Brick (60% H/A)", n(f.holding_brick_60_kg,2), "kg"],
+    ["*Total Wt. of holding Brick (60% H/A)", n(f.holding_brick_60_weight_kg,2), "kg"],
+    ["Total Holding Brick in Preheating (40%)", n(f.holding_bricks_preheat,2), "Nos"],
+    ["Wt. of Each Holding brick (40%)", n(f.holding_brick_40_kg,2), "Kg"],
+    ["*Total Wt. of holding Brick (40% H/A)", n(f.holding_brick_40_weight_kg,2), "kg"],
+    [],
+    ["STD. Ceramic Fiber", "(7300 x 600 x 25)", "mm"],
+    ["Wt. of Each Fiber", n(f.fibre_roll_kg), "kg"],
+    ["Total Ceramic Fibre rolls required", n(f.fibre_rolls_raw,2), "Rolls"],
+    ["Total Rolls", n(f.fibre_rolls), "Rolls"],
+    ["*Total Ceramic Weight", n(f.fibre_weight_kg), "kg"],
+    [],
+    ["Castable volume", n(f.castable_volume_m3,3), "m\u00b3"],
+    ["Castable Wt.", n(f.castable_weight_kg,2), "Kg"],
+    ["*Total Castable wt.", n(f.castable_total_kg,2), "Kg"],
+    ["Standard Bag wt.", n(f.castable_bag_kg), "kg"],
+    ["Total Bag Required", n(f.castable_bags,2), "Nos"],
+  ];
+  const side=[
+    ["50mm HAY + Cold face + hot Face + 60% Fire Brick"],
+    ["Cold & Hot Face + 60% for (Soaking + heating) zone"],
+    ["Std. Size and volume in (mm3)", "(230 x 115 x 75) mm", n(f.brick_volume_mm3)],
+    ["Wall Size Calculation", n(f.side_wall_length_m,2), "Metre"],
+    ["Height of Wall", n(f.side_wall_height_mm), "mm"],
+    ["Volume of wall", n(f.side_wall_volume_mm3), "mm3"],
+    ["No. of bricks for cold Face", n(f.side_wall_cold_face_bricks,2), "Nos"],
+    ["No. of bricks for Hot Face", n(f.side_wall_hot_face_bricks,2), "Nos"],
+    ["Total 60% Fire Brick Required"],
+    ["Height of Wall internal Furnace including one brick add at bottom", n(f.side_wall_internal_height_mm), "mm"],
+    ["Volume of wall", n(f.side_wall_volume_60_mm3), "mm3"],
+    ["*No. of 60% Fire bricks having 2 layers", n(f.side_wall_fire_bricks_60,2), "Nos"],
+    ["Cold Face for (Pre-heating) zone & 40% Alumina used"],
+    ["Wall Size Calculation", n(f.preheat_wall_length_m,4), "Metre"],
+    ["Height of Wall", n(f.preheat_wall_height_mm), "mm"],
+    ["Volume of wall for preheating", n(f.preheat_wall_volume_mm3), "mm3"],
+    ["No. of bricks for cold Face", n(f.preheat_cold_face_bricks,2), "Nos"],
+    ["No. of bricks for Hot Face", n(f.preheat_hot_face_bricks,2), "Nos"],
+    ["Total 40% Fire Brick Required"],
+    ["Height of the wall", n(f.preheat_wall_40_height_mm), "mm"],
+    ["Volume of wall", n(f.preheat_wall_40_volume_mm3), "mm3"],
+    ["*No. of 40% Fire bricks", n(f.preheat_fire_bricks_40,2), "Nos"],
+    ["Left Tapered Portion in Preheating zone"],
+    ["Height of the wall", n(f.side_wall_height_mm), "mm"],
+    ["Length of the wall", n(f.tapered_wall_length_m,2), "metre"],
+    ["Volume of wall", n(f.tapered_wall_volume_mm3), "mm3"],
+    ["*No. of 40% Fire bricks", n(f.tapered_fire_bricks_40,2), "Nos"],
+  ];
+  const disc=[
+    ["50mm HAY + Cold face + hot Face + (60%+60%) Fire Brick"],
+    ["Effective Width", n(f.discharge_effective_width_mm), "mm"],
+    ["Height of wall", n(f.side_wall_height_mm), "mm"],
+    ["Volume of wall for cold Face and hot Face", n(f.discharge_volume_mm3), "mm3"],
+    ["No. of bricks for Cold Face", n(f.discharge_cold_face_bricks,2), "Nos"],
+    ["No. of bricks for Hot Face", n(f.discharge_hot_face_bricks,2), "Nos"],
+    ["Total 60% Fire Brick Required"],
+    ["Height of the wall", n(f.side_wall_internal_height_mm), "mm"],
+    ["Volume of wall", n(f.discharge_volume_60_mm3), "mm3"],
+    ["*No. of 60% Fire bricks having 2 layers", n(f.discharge_fire_bricks_60,2), "Nos"],
+    [],
+    ["HEAISYL Std. size and Vol. (mm3)", "(600 x 900 x 50)", n(f.hay_volume_mm3)],
+    ["*Qty. For Furnace", n(f.discharge_hay_pieces,2), "Nos"],
+  ];
+
+  const rows=Math.max(roof.length, side.length, disc.length);
+  const cells=(r)=>{
+    if(!r||!r.length) return '<td class="rf-pad"></td><td></td><td></td>';
+    if(r.length===1) return `<td class="rf-sub" colspan="3">${esc(r[0])}</td>`;
+    const total=String(r[0]).startsWith("*");
+    const label=total?String(r[0]).slice(1):r[0];
+    const cls=total?' class="rf-key"':'';
+    return `<td${cls}>${esc(label)}</td>`
+         + `<td${total?' class="rf-key xl-num"':' class="xl-num"'}>${esc(r[1])}</td>`
+         + `<td class="rf-unit">${esc(r[2])}</td>`;
+  };
+
+  let h='<table class="xl-grid rf-grid">';
+  h+='<tr><td class="rf-head" colspan="3">ROOF REFRACTORY</td><td class="rf-gap"></td>'
+   + '<td class="rf-head" colspan="3">SIDE WALL REFRACTORY (R&amp;L)</td><td class="rf-gap"></td>'
+   + '<td class="rf-head" colspan="3">DISCHARGE SIDE WALL REFRACTORY</td></tr>';
+  for(let i=0;i<rows;i++){
+    h+='<tr>'+cells(roof[i])+'<td class="rf-gap"></td>'+cells(side[i])
+      +'<td class="rf-gap"></td>'+cells(disc[i])+'</tr>';
+  }
+  h+='</table>';
+  el.innerHTML=h;
 }
 
 // ── Firing & air ───────────────────────────────────────────────────────────
@@ -1318,7 +1447,8 @@ function renderAll(data,showNG,showCL){
   renderFuel(data.sizing.duty);
   commercialPreview();
   if(data.furnace) renderFurnace(data.furnace);
-  if(data.refractory) renderRefractory(data.refractory);
+  if(data.refractory){ renderRefractory(data.refractory);
+                       renderRefractorySheet(data.refractory); }
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
   const ff=sp.furnace_full||[];
