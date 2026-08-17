@@ -5623,11 +5623,11 @@ def btf_calculate(req: BTFCalcRequest):
         return {"error": str(e), "detail": traceback.format_exc()}
 
 
-# ── SNSF BRF (Billet Reheating Furnace) ─────────────────────────────────────
+# ── BRF (Billet Reheating Furnace) ──────────────────────────────────────────
 
-@app.get("/snsf-brf", response_class=HTMLResponse)
-def snsf_brf_costing_form():
-    html_path = os.path.join(BASE_DIR, "snsf_brf_costing.html")
+@app.get("/brf", response_class=HTMLResponse)
+def brf_costing_form():
+    html_path = os.path.join(BASE_DIR, "brf_costing.html")
     with open(html_path, "r", encoding="utf-8") as f:
         return f.read()
 
@@ -5655,7 +5655,14 @@ def _brf_default_zones() -> list:
     ]
 
 
-class SNSFBRFCalcRequest(BaseModel):
+@app.get("/snsf-brf", response_class=HTMLResponse)
+def snsf_brf_costing_form_legacy():
+    """The page was called SNSF BRF until the name was shortened. Anything
+    bookmarked or linked to the old path still lands on it."""
+    return RedirectResponse(url="/brf", status_code=307)
+
+
+class BRFCalcRequest(BaseModel):
     include_ng_optional: bool = False
     include_client_scope: bool = False
     # ── Furnace duty ────────────────────────────────────────────────
@@ -5709,14 +5716,20 @@ class SNSFBRFCalcRequest(BaseModel):
 
 
 @app.post("/api/snsf-brf-calculate")
-def snsf_brf_calculate(req: SNSFBRFCalcRequest):
+def snsf_brf_calculate_legacy(req: BRFCalcRequest):
+    """Old endpoint name, kept so a page loaded before the rename keeps working."""
+    return brf_calculate(req)
+
+
+@app.post("/api/brf-calculate")
+def brf_calculate(req: BRFCalcRequest):
     try:
-        from bom.snsf_brf_builder import (build_snsf_brf_df, get_supplementary,
-                                          build_brf_sizing)
+        from bom.brf_builder import (build_brf_df, get_supplementary,
+                                     build_brf_sizing)
         from calculations.brf import BRFInputs, BRFZone
         from calculations.recup import RecupInputs
         import json
-        df, summary = build_snsf_brf_df(
+        df, summary = build_brf_df(
             include_ng_optional=req.include_ng_optional,
             include_client_scope=req.include_client_scope,
         )
@@ -9975,9 +9988,9 @@ def export_excel(req: ExcelExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{fname}"'})
 
     # ════════════════════════════════════════════════════════════════════════
-    #  BTF / SNSF BRF path
+    #  BTF / BRF path
     # ════════════════════════════════════════════════════════════════════════
-    if req.equipment_type in ("BTF", "SNSF BRF"):
+    if req.equipment_type in ("BTF", "BRF", "SNSF BRF"):
         ws = wb.active
         ws.title = req.equipment_type
         ws.column_dimensions["A"].width = 36
@@ -10006,7 +10019,7 @@ def export_excel(req: ExcelExportRequest):
         r1 += 2
 
         # BOM header
-        is_brf = req.equipment_type == "SNSF BRF"
+        is_brf = req.equipment_type in ("BRF", "SNSF BRF")
         bom_cols = ["SECTION", "ITEM", "QTY", "UNIT", "UNIT PRICE", "COST PRICE",
                     "MARKUP" if is_brf else "", "SELL PRICE"]
         for ci, col in enumerate(bom_cols, 1):
@@ -10350,8 +10363,8 @@ def export_excel(req: ExcelExportRequest):
             costing_title = "Costing with Mass flow" if comb_mode == "massflow" else "Costing with Pulse Firing"
             ws.title = costing_title
 
-        # ── Additional sheets for SNSF BRF (match legacy 7-sheet workbook) ──
-        if supp and req.equipment_type == "SNSF BRF":
+        # ── Additional sheets for the BRF (match legacy 7-sheet workbook) ──
+        if supp and req.equipment_type in ("BRF", "SNSF BRF"):
             # Sheet: Furnace (2) — full 110 rows from legacy
             ws2 = wb.create_sheet("Furnace (2)", 0)
             for ci, w in enumerate([4, 44, 18, 14, 4, 44, 18, 14, 4, 44], 1):

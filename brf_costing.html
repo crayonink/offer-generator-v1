@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ENCON — SNSF BRF 30 Ton Costing</title>
+  <title>ENCON — Billet Reheating Furnace — Costing</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
@@ -92,13 +92,25 @@
        each edge so a vertical scrollbar cannot push the page sideways. */
     .xl-workbook { width:calc(100vw - 32px); max-width:calc(100vw - 32px);
                    margin-left:calc(50% - 50vw + 16px); }
+    /* Wide sheets still get the window; narrow ones stop at a readable width
+       so a three-column table is not adrift in it. */
+    .xl-content > .xl-sheet > table.xl-grid:only-child { margin:0; }
 
     /* Row numbers stay put when scrolling right, the column letters when
        scrolling down — otherwise you lose your place in a wide sheet. */
     .xl-grid .xl-row-num { position:sticky; left:0; z-index:2; }
     .xl-grid tr:first-child .xl-col-header { position:sticky; top:0; z-index:3; }
     .xl-grid tr:first-child .xl-col-header:first-child { left:0; z-index:4; }
-    .xl-grid { border-collapse:collapse; font-size:.8rem; font-family:'Calibri',sans-serif; width:100%; min-width:600px; }
+    /* Columns hug their contents. At width:100% on a full-window workbook the
+       three columns of a duty sheet were stretched across 1900px, so a label
+       sat at the far left and its value 900px away with nothing between them.
+       auto keeps them together and readable; the sheet is left-aligned in the
+       pane rather than filling it. */
+    .xl-grid { border-collapse:collapse; font-size:.8rem; font-family:'Calibri',sans-serif;
+               width:auto; min-width:min(100%,760px); table-layout:auto; }
+    /* A label column that can breathe, and value columns that do not sprawl. */
+    .xl-grid td:first-child + td { min-width:260px; }
+    .xl-grid td { max-width:520px; overflow:hidden; text-overflow:ellipsis; }
     .xl-grid .xl-col-header { background:#f2f2f2; color:#666; font-weight:600; font-size:.72rem; text-align:center; border:1px solid #d0d0d0; padding:2px 8px; min-width:40px; }
     .xl-grid .xl-row-num { background:#f2f2f2; color:#666; font-size:.72rem; text-align:right; border:1px solid #d0d0d0; padding:2px 6px; min-width:32px; user-select:none; }
     .xl-grid td { border:1px solid #d0d0d0; padding:2px 8px; white-space:nowrap; height:20px; vertical-align:middle; }
@@ -403,7 +415,7 @@
     </div>
 
     <div class="xl-workbook">
-      <div class="xl-titlebar"><span class="xl-logo">X</span><span>SNSF BRF 30T Calculation — ENCON</span></div>
+      <div class="xl-titlebar"><span class="xl-logo">X</span><span>Billet Reheating Furnace — ENCON</span></div>
       <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
       <div class="xl-content">
         <div class="xl-sheet active" id="xl-sizing"></div>
@@ -441,7 +453,7 @@
     </div>
 
     <div class="xl-workbook">
-      <div class="xl-titlebar"><span class="xl-logo">X</span><span>SNSF BRF Bill of Materials — ENCON</span></div>
+      <div class="xl-titlebar"><span class="xl-logo">X</span><span>BRF Bill of Materials — ENCON</span></div>
       <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
       <div class="xl-content"><div class="xl-sheet active" id="xl-bom2"></div></div>
       <div class="xl-tabs"><div class="xl-tab active">Breakup</div></div>
@@ -736,7 +748,7 @@ function furnacePreview(){
 
 async function runFurnace(){
   try{
-    const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",
+    const res=await fetch(`${API}/api/brf-calculate`,{method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify(Object.assign({},furnacePayload(),{zones:readZones()}))});
     const data=await res.json();
@@ -795,7 +807,7 @@ function dutyPreview(){
 async function runDuty(){
   const n=id=>parseFloat((document.getElementById(id)||{}).value)||0;
   try{
-    const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",
+    const res=await fetch(`${API}/api/brf-calculate`,{method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify(Object.assign({
         furnace_capacity_tph:n("sz-cap"), fuel_per_ton_scm:n("sz-fuel"),
@@ -870,7 +882,7 @@ async function calculate(){
   };
   Object.assign(payload, furnacePayload());   // the Furnace tab's own inputs
   try{
-    const res=await fetch(`${API}/api/snsf-brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const res=await fetch(`${API}/api/brf-calculate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await res.json();
     if(data.error){fail(data.error);return;}
     lastData=data;renderAll(data,ng,cl);goStep(5);
@@ -1148,9 +1160,9 @@ function renderAll(data,showNG,showCL){
 
 async function downloadExcel(){
   if(!lastData)return;
-  const res=await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({equipment_type:"SNSF BRF",customer:customerPayload(),bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}}, commercialExportPayload()))});
+  const res=await fetch(`${API}/api/export-excel`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({equipment_type:"BRF",customer:customerPayload(),bom:lastData.bom,cost_summary:lastData.cost_summary,equipment:{supplementary:lastData.supplementary}}, commercialExportPayload()))});
   const blob=await res.blob();const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-  a.download=`SNSF_BRF_Costing_${new Date().toISOString().slice(0,10)}.xlsx`;a.click();
+  a.download=`BRF_Costing_${new Date().toISOString().slice(0,10)}.xlsx`;a.click();
 }
 </script>
   <script src="/static/rfq_prefill.js"></script>

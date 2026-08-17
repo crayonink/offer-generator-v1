@@ -1,8 +1,8 @@
-# bom/snsf_brf_builder.py
+# bom/brf_builder.py
 """
-BOM builder for SNSF BRF (Billet Reheating Furnace, 30 Ton).
+BOM builder for BRF (Billet Reheating Furnace, 30 Ton).
 Per-item markup multipliers as per the costing breakup sheet.
-All prices read from snsf_brf_price_master DB table.
+All prices read from brf_price_master DB table.
 """
 
 import math
@@ -14,8 +14,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "vlph.db")
 
 
-def _load_snsf_items(include_ng=False, include_client=False) -> list:
-    """Load items from snsf_brf_price_master."""
+def _load_brf_items(include_ng=False, include_client=False) -> list:
+    """Load items from brf_price_master."""
     conn = sqlite3.connect(DB_PATH)
     exclude = []
     if not include_ng:
@@ -26,22 +26,22 @@ def _load_snsf_items(include_ng=False, include_client=False) -> list:
     if exclude:
         placeholders = ",".join("?" * len(exclude))
         rows = conn.execute(
-            f"SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master WHERE category NOT IN ({placeholders}) ORDER BY rowid",
+            f"SELECT category, item, qty, unit, unit_price, markup FROM brf_price_master WHERE category NOT IN ({placeholders}) ORDER BY rowid",
             exclude
         ).fetchall()
     else:
         rows = conn.execute(
-            "SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master ORDER BY rowid"
+            "SELECT category, item, qty, unit, unit_price, markup FROM brf_price_master ORDER BY rowid"
         ).fetchall()
 
     if include_ng:
         ng_rows = conn.execute(
-            "SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master WHERE category='NG Optional' ORDER BY rowid"
+            "SELECT category, item, qty, unit, unit_price, markup FROM brf_price_master WHERE category='NG Optional' ORDER BY rowid"
         ).fetchall()
         rows = list(rows) + list(ng_rows)
     if include_client:
         cl_rows = conn.execute(
-            "SELECT category, item, qty, unit, unit_price, markup FROM snsf_brf_price_master WHERE category='Client Scope' ORDER BY rowid"
+            "SELECT category, item, qty, unit, unit_price, markup FROM brf_price_master WHERE category='Client Scope' ORDER BY rowid"
         ).fetchall()
         rows = list(rows) + list(cl_rows)
 
@@ -444,12 +444,12 @@ def get_supplementary():
     }
 
 
-def build_snsf_brf_df(
+def build_brf_df(
     include_ng_optional: bool = False,
     include_client_scope: bool = False,
 ) -> pd.DataFrame:
     # Load from DB, fallback to hardcoded
-    db_items = _load_snsf_items(include_ng=include_ng_optional, include_client=include_client_scope)
+    db_items = _load_brf_items(include_ng=include_ng_optional, include_client=include_client_scope)
     if db_items:
         items = db_items
     else:
