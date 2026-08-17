@@ -390,9 +390,12 @@ class BRFFurnaceInputs:
     # ── Duty ────────────────────────────────────────────────────────
     furnace_capacity_tph:      float = 60.0    # C10
     hearth_load_top_kg_hr_m2:  float = 300.0   # C11
-    # Carried because the sheet asks for it, though the hearth area is worked
-    # out from the top-fired figure alone.
     hearth_load_top_bottom_kg_hr_m2: float = 600.0   # C12
+    # Which of the two the hearth area is worked out from. The sheet asks for
+    # both loads but C13 only ever reads C11, so a furnace fired top and bottom
+    # comes out twice the hearth it needs — at 60 t/hr with a 6 m billet, 33 m
+    # long instead of 17. Default is the sheet's own behaviour.
+    top_and_bottom_fired: bool = False
     # ── Around the width (mm) ───────────────────────────────────────
     right_refractory_mm: float = 510.0    # D20
     left_refractory_mm:  float = 510.0    # D21
@@ -435,6 +438,11 @@ class BRFFurnaceResults:
     zone_heating_m:      float
     zone_soaking_m:      float
     zone_heating_soaking_m: float
+    # Which hearth load the area was worked out from, and which it was
+    # (300 top fired, 600 top and bottom), so the page can say so rather than
+    # leave a doubled furnace looking like arithmetic.
+    hearth_load_kg_hr_m2: float = 0.0
+    top_and_bottom_fired: bool  = False
 
 
 def calculate_furnace(inp: BRFFurnaceInputs) -> BRFFurnaceResults:
@@ -444,8 +452,9 @@ def calculate_furnace(inp: BRFFurnaceInputs) -> BRFFurnaceResults:
 
     volume = L_m * W_m * H_m                                   # C7
     weight = volume * inp.ms_density_kg_m3                     # C9
-    area   = (inp.furnace_capacity_tph * 1000.0
-              / inp.hearth_load_top_kg_hr_m2)                  # C13
+    hearth_load = (inp.hearth_load_top_bottom_kg_hr_m2 if inp.top_and_bottom_fired
+                   else inp.hearth_load_top_kg_hr_m2)          # C11 or C12
+    area   = inp.furnace_capacity_tph * 1000.0 / hearth_load   # C13
     # ROUND, not ceiling: the sheet rounds 16.67 to 17 and would round 16.4
     # down to 16. Python's round() is banker's rounding, so do it explicitly.
     eff_len_m = math.floor(area / L_m + 0.5) if L_m else 0.0   # C14
@@ -490,6 +499,8 @@ def calculate_furnace(inp: BRFFurnaceInputs) -> BRFFurnaceResults:
         zone_heating_m      = round(heating, 6),
         zone_soaking_m      = round(soaking, 6),
         zone_heating_soaking_m = round(heating + soaking, 6),
+        hearth_load_kg_hr_m2   = hearth_load,
+        top_and_bottom_fired   = inp.top_and_bottom_fired,
     )
 
 

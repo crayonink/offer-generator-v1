@@ -5738,6 +5738,9 @@ class BRFCalcRequest(BaseModel):
     ms_density_kg_m3:       float = 7850.0
     hearth_load_top_kg_hr_m2:        float = 300.0
     hearth_load_top_bottom_kg_hr_m2: float = 600.0
+    # Which of the two loads sizes the hearth. False keeps the workbook's
+    # behaviour, where only the top-fired figure is ever read.
+    top_and_bottom_fired: bool = False
     right_refractory_mm:    float = 510.0
     left_refractory_mm:     float = 510.0
     width_sheet_mm:         float = 16.0
@@ -5823,6 +5826,7 @@ def brf_calculate(req: BRFCalcRequest):
             furnace_capacity_tph=req.furnace_capacity_tph,
             hearth_load_top_kg_hr_m2=req.hearth_load_top_kg_hr_m2,
             hearth_load_top_bottom_kg_hr_m2=req.hearth_load_top_bottom_kg_hr_m2,
+            top_and_bottom_fired=req.top_and_bottom_fired,
             right_refractory_mm=req.right_refractory_mm,
             left_refractory_mm=req.left_refractory_mm,
             width_sheet_mm=req.width_sheet_mm,
