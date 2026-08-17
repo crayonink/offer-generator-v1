@@ -194,6 +194,24 @@
     .rf-tbl .rf-spacer td { padding:4px; border-bottom:0; }
     .rf-tbl tr:hover td { background:#f8fafc; }
     .rf-tbl .rf-keyrow:hover td { background:#fef3c7; }
+    /* The take-off: what the whole sheet adds up to. Sits under the blocks,
+       narrower than the page, because it is a summary and not another block. */
+    .rf-total { max-width:620px; margin:6px 12px 14px; border:1px solid var(--border);
+                border-radius:12px; overflow:hidden; background:var(--card); }
+    .rf-tot { width:100%; table-layout:fixed; font-size:.84rem; }
+    .rf-tot .rf-head { background:#f1f5f9; color:#0f172a; font-weight:700;
+                       font-size:.7rem; letter-spacing:.06em; text-transform:uppercase;
+                       padding:11px 12px; border-bottom:1px solid var(--border); }
+    .rf-tot td { padding:7px 12px; line-height:1.35; }
+    .rf-tot .rf-label { color:#334155; }
+    .rf-tot .rf-val { text-align:right; font-variant-numeric:tabular-nums;
+                      font-weight:600; color:#0f172a; white-space:nowrap; }
+    .rf-tot tr:hover td { background:#f8fafc; }
+    .rf-tot .rf-grand td { background:#1a3a5c; color:#fff; font-weight:700;
+                           font-size:.9rem; padding:12px; text-align:right;
+                           font-variant-numeric:tabular-nums; }
+    .rf-tot .rf-grand td:first-child { text-align:left; letter-spacing:.02em; }
+    .rf-tot .rf-grand:hover td { background:#1a3a5c; }
     /* Spreadsheet furniture, gone — the row numbers down the side and the
        A/B/C letters across the top carried nothing. Real column headings use
        .xl-head and stay. */
@@ -972,6 +990,7 @@ function renderRefractory(f){
   const cm=(v,p=0)=>v==null?"\u2014":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
   const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
   el.innerHTML=
+    tile("Total Refractory", cm(f.total_refractory_tonne,2), "MT")+
     tile("Hanging Brick", cm(f.hanging_bricks_soak_heat+f.hanging_bricks_preheat), "nos")+
     tile("Hanging Brick Weight", cm(f.hanging_brick_weight_kg), "kg")+
     tile("Holding Brick", cm(f.holding_bricks_soak_heat+f.holding_bricks_preheat), "nos")+
@@ -983,7 +1002,10 @@ function renderRefractory(f){
     tile("Side Wall Bricks", cm(f.side_wall_cold_face_bricks+f.side_wall_hot_face_bricks), "nos")+
     tile("Side Wall Fire Brick", cm(f.side_wall_fire_bricks_60), "nos")+
     tile("Discharge Wall Bricks", cm(f.discharge_cold_face_bricks+f.discharge_hot_face_bricks), "nos")+
-    tile("Discharge HAY", cm(f.discharge_hay_pieces), "nos");
+    tile("Discharge HAY", cm(f.discharge_hay_pieces), "nos")+
+    tile("Hearth Bricks", cm(f.hearth_cold_face_bricks+f.hearth_hot_face_bricks+f.hearth_is8_bricks
+                             +f.hearth_fire_bricks_50+f.hearth_fire_bricks_60+f.hearth_fire_bricks_40), "nos")+
+    tile("Flue Duct Castable", cm(f.duct1_castable_kg+f.duct2_castable_kg), "kg");
 
   const w=document.getElementById("rf-work");
   if(w) w.textContent=[
@@ -1007,6 +1029,18 @@ function renderRefractory(f){
     `  Cold face       ${cm(f.discharge_cold_face_bricks)} nos      Hot face ${cm(f.discharge_hot_face_bricks)} nos`,
     `  60% fire brick  ${cm(f.discharge_fire_bricks_60)} nos, two layers`,
     `  HAY             ${cm(f.discharge_hay_pieces)} nos`,
+    ``,
+    `HEARTH, ${cm(f.hearth_overall_width_mm)} mm wide`,
+    `  Cold face       ${cm(f.hearth_cold_face_bricks)} nos      Hot face ${cm(f.hearth_hot_face_bricks)} nos`,
+    `  IS-8            ${cm(f.hearth_is8_bricks)} nos, clear of the walls and the HAY behind them`,
+    `  Fire brick      ${cm(f.hearth_fire_bricks_50)} at 50%, ${cm(f.hearth_fire_bricks_60)} at 60%, ${cm(f.hearth_fire_bricks_40)} at 40%`,
+    `  Ground block    ${cm(f.block_pieces)} nos at ${cm(f.block_kg)} kg`,
+    ``,
+    `FOIL AND FLUE DUCT`,
+    `  Aluminium foil  ${cm(f.foil_length_m)} m at ${cm(f.foil_piece_kg,2)} kg/m = ${cm(f.foil_weight_kg)} kg`,
+    `  Duct castable   ${cm(f.duct1_castable_kg)} kg before the recuperator, ${cm(f.duct2_castable_kg)} kg after`,
+    ``,
+    `TOTAL WEIGHT OF REFRACTORY = ${cm(f.total_refractory_kg)} kg = ${cm(f.total_refractory_tonne,2)} metric tonne`,
   ].join("\n");
 }
 
@@ -1223,6 +1257,53 @@ function renderRefractorySheet(f){
     ["HEAISYL Std. size and Vol. (mm3)", "(600 x 900 x 50)", n(f.hay_volume_mm3)],
     ["*Qty. For Furnace", n(f.discharge_hay_pieces,2), "Nos"],
   ];
+  const hearth=[
+    ["Cold face + hot Face + IS-8 + (50% + 60% + 40%) Fire Brick"],
+    ["Overall Width", n(f.hearth_overall_width_mm), "mm"],
+    ["Volume of Bottom for CF", n(f.hearth_cf_volume_mm3), "mm3"],
+    ["No. of Bricks for CF", n(f.hearth_cold_face_bricks,2), "Nos"],
+    ["No. of Bricks for HF", n(f.hearth_hot_face_bricks,2), "Nos"],
+    ["Calculation for IS-8"],
+    ["Volume of Bottom for IS-8", n(f.hearth_is8_volume_mm3), "mm3"],
+    ["*No. of Bricks for IS-8", n(f.hearth_is8_bricks,2), "Nos"],
+    ["Calculation for 50% Brick (soaking + heating)"],
+    ["Volume of Bottom for 50%", n(f.hearth_50_volume_mm3), "mm3"],
+    ["*No. of Bricks for 50%", n(f.hearth_fire_bricks_50,2), "Nos"],
+    ["Calculation for 60% Brick (soaking)"],
+    ["Volume of Bottom for 60%", n(f.hearth_60_volume_mm3), "mm3"],
+    ["*No. of Bricks for 60%", n(f.hearth_fire_bricks_60,2), "Nos"],
+    ["Calculation for 40% Brick on Pre Heating zone"],
+    ["Volume of Bottom for 40%", n(f.hearth_40_volume_mm3), "mm3"],
+    ["*No. of Bricks for 40%", n(f.hearth_fire_bricks_40,2), "Nos"],
+    [],
+    ["Refractory Block on Ground near Door", "(600 x 200 x 150)", "mm"],
+    ["Single Lane near Dis. Door", n(f.block_lane_discharge,2), "Nos"],
+    ["4 line soaking of 600 mm size", n(f.block_lane_soaking,2), "Nos"],
+    ["*Total Qty. Required", n(f.block_pieces,2), "Nos"],
+    ["Single Block weight", n(f.block_kg), "kg"],
+  ];
+  const ducts=[
+    ["Aluminium Foil (density 2.7 g/cm³)"],
+    ["STD. Al Foil Size", "(1000 x 600 x 0.5 Thk.)", "mm"],
+    ["Volume", n(f.foil_piece_volume_m3,4), "m³"],
+    ["Wt. of STD. Size", n(f.foil_piece_kg,2), "Kg/m"],
+    ["Total Al. Foil Required", n(f.foil_length_m,2), "metre"],
+    ["*Al. Foil Weight", n(f.foil_weight_kg,2), "kg"],
+    [],
+    ["Flue Duct before Recuperator (LC40 castable, 2300 kg/m³)"],
+    ["Internal / Outer Dia.", "1.9 / 2.2", "metre"],
+    ["Length of the Duct", "14", "metre"],
+    ["Volume of Castable used as a duct", n(f.duct1_volume_m3,3), "m3"],
+    ["*Castable (LC40) Wt.", n(f.duct1_castable_kg,2), "kg"],
+    ["Total 25 kg Bag Required", n(f.duct1_bags,2), "Nos"],
+    [],
+    ["Flue Duct after Recuperator"],
+    ["Internal / Outer Dia.", "1.9 / 2.1", "metre"],
+    ["Length of the Duct", "7.5", "metre"],
+    ["Volume of Castable used as a duct", n(f.duct2_volume_m3,3), "m3"],
+    ["*Castable (LC40) Wt.", n(f.duct2_castable_kg,2), "kg"],
+    ["Total 25 kg Bag Required", n(f.duct2_bags,2), "Nos"],
+  ];
 
   // Three tables side by side rather than one table of eleven columns. In a
   // single table every row is as tall as its tallest cell, so one long label —
@@ -1250,7 +1331,43 @@ function renderRefractorySheet(f){
       + block("ROOF REFRACTORY", roof)
       + block("SIDE WALL REFRACTORY (R&amp;L)", side)
       + block("DISCHARGE SIDE WALL REFRACTORY", disc)
+      + block("REFRACTORY ON THE HEARTH", hearth)
+      + block("AL. FOIL &amp; FLUE DUCT CASTABLE", ducts)
       + '</div>';
+
+  // The take-off itself: every item gathered across all five blocks, its count
+  // and its weight, ending in the tonnage the vendors quote against. The
+  // roof's fibre, castable, hanging and holding brick come through as weights
+  // already, so they join the total without a count beside them.
+  if(f.take_off && f.take_off.length){
+    const kg=v=>Number(v).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+    let t='<div class="rf-total"><table class="xl-grid rf-tot">'
+        + '<colgroup><col style="width:52%"><col style="width:24%"><col style="width:24%"></colgroup>'
+        + '<tr><td class="rf-head">ITEM</td><td class="rf-head xl-num">QTY (Nos)</td>'
+        + '<td class="rf-head xl-num">WT. (kg)</td></tr>';
+    f.take_off.forEach(([item,qty,wt])=>{
+      t+=`<tr><td class="rf-label">${esc(item)}</td>`
+        +`<td class="rf-val xl-num">${kg(qty)}</td>`
+        +`<td class="rf-val xl-num">${kg(wt)}</td></tr>`;
+    });
+    // The roof items, already weighed
+    [["Hanging Brick", f.hanging_brick_weight_kg],
+     ["Holding Brick (60%)", f.holding_brick_60_weight_kg],
+     ["Holding Brick (40%)", f.holding_brick_40_weight_kg],
+     ["Ceramic Fibre", f.fibre_weight_kg],
+     ["Roof Castable", f.castable_total_kg],
+     ["Aluminium Foil", f.foil_weight_kg],
+     ["Flue Duct Castable, before recuperator", f.duct1_castable_kg],
+     ["Flue Duct Castable, after recuperator", f.duct2_castable_kg]].forEach(([l,w])=>{
+      t+=`<tr><td class="rf-label">${esc(l)}</td><td class="rf-val xl-num">&mdash;</td>`
+        +`<td class="rf-val xl-num">${kg(w)}</td></tr>`;
+    });
+    t+='<tr class="rf-grand"><td>Total Weight of Refractory</td>'
+      +`<td class="xl-num">${kg(f.total_refractory_kg)} kg</td>`
+      +`<td class="xl-num">${kg(f.total_refractory_tonne)} MT</td></tr>`;
+    t+='</table></div>';
+    h+=t;
+  }
   // Underneath, the costed refractory list. It is still the fixed data from
   // the 30 T job — rates and amounts the take-off above does not have — so it
   // is labelled rather than left to look computed.

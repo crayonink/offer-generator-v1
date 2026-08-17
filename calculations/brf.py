@@ -535,6 +535,43 @@ class BRFRefractoryInputs:
     hay_l_mm: float = 600.0
     hay_w_mm: float = 900.0
     hay_t_mm: float = 50.0
+    # Hearth: one brick on edge under the whole floor           L52..L71
+    hearth_thickness_mm:  float = 115.0
+    side_wall_cf_hf_mm:   float = 460.0   # K59, taken off the width for IS-8
+    side_wall_hay_mm:     float = 100.0   # K60, likewise
+    # Refractory block on the ground near the discharge door     L74..L79
+    block_lane_pitch_mm:  float = 200.0
+    block_soak_lanes:     float = 4.0
+    block_length_m:       float = 0.6
+    block_spare:          float = 2.0
+    block_kg:             float = 55.0
+    # Aluminium foil, (1000 x 600 x 0.5) mm                      C59..C64
+    foil_l_m:      float = 1.0
+    foil_w_m:      float = 0.6
+    foil_t_m:      float = 0.0005
+    foil_density:  float = 2700.0    # kg/m³
+    foil_spare_m:  float = 10.0
+    # Flue ducts, castable annulus around the pipe               C65..C80
+    duct1_id_m: float = 1.9
+    duct1_od_m: float = 2.2
+    duct1_len_m: float = 14.0
+    duct2_id_m: float = 1.9
+    duct2_od_m: float = 2.1
+    duct2_len_m: float = 7.5
+    duct_castable_density: float = 2300.0   # LC40
+    duct_castable_wastage: float = 1.1
+    # Weight of one piece of each item, kg                       H68..H78
+    kg_cold_face:  float = 1.8
+    kg_hot_face:   float = 2.0
+    kg_brick_60:   float = 5.0
+    kg_brick_50:   float = 4.8
+    kg_brick_40:   float = 4.3
+    kg_is8:        float = 3.8
+    kg_hysil:      float = 8.0
+    # Mortar: one 50 kg bag per 200 bricks                       G75/G76
+    bricks_per_mortar_bag: float = 200.0
+    mortar_bag_kg:         float = 50.0
+    firecreat_bags:        float = 10.0   # G78, for the gaps
 
 
 @dataclass
@@ -596,6 +633,42 @@ class BRFRefractoryResults:
     holding_brick_60_kg:        float = 0.0
     holding_brick_40_kg:        float = 0.0
     discharge_effective_width_mm: float = 0.0
+    # ── Hearth ─────────────────────────────────────────  L53..L71
+    hearth_overall_width_mm:    float = 0.0   # K58
+    hearth_cf_volume_mm3:       float = 0.0   # L53
+    hearth_cold_face_bricks:    float = 0.0   # L54
+    hearth_hot_face_bricks:     float = 0.0   # L55
+    hearth_is8_volume_mm3:      float = 0.0   # L61
+    hearth_is8_bricks:          float = 0.0   # L62
+    hearth_50_volume_mm3:       float = 0.0   # L64
+    hearth_fire_bricks_50:      float = 0.0   # L65
+    hearth_60_volume_mm3:       float = 0.0   # L67
+    hearth_fire_bricks_60:      float = 0.0   # L68
+    hearth_40_volume_mm3:       float = 0.0   # L70
+    hearth_fire_bricks_40:      float = 0.0   # L71
+    # ── Ground block near the discharge door ───────────  L75..L79
+    block_lane_discharge:       float = 0.0   # L75
+    block_lane_soaking:         float = 0.0   # L76
+    block_pieces:               float = 0.0   # L78
+    block_kg:                   float = 0.0   # L79
+    # ── Aluminium foil ────────────────────────────────  C61..C64
+    foil_piece_volume_m3:       float = 0.0   # C61
+    foil_piece_kg:              float = 0.0   # C62
+    foil_length_m:              float = 0.0   # C63
+    foil_weight_kg:             float = 0.0   # C64
+    # ── Flue duct castable ────────────────────────────  C69..C80
+    duct1_volume_m3:            float = 0.0   # C69
+    duct1_castable_kg:          float = 0.0   # C71
+    duct1_bags:                 float = 0.0   # C72
+    duct2_volume_m3:            float = 0.0   # C77
+    duct2_castable_kg:          float = 0.0   # C79
+    duct2_bags:                 float = 0.0   # C80
+    # ── The take-off: every item, its count and its weight ──  F67..H79
+    # [item, qty (nos), weight (kg)] in the workbook's own order.
+    take_off:                   list  = field(default_factory=list)
+    side_wall_hay_pieces:       float = 0.0   # G62
+    total_refractory_kg:        float = 0.0
+    total_refractory_tonne:     float = 0.0   # H79
 
 
 def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
@@ -607,6 +680,10 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
     r = inp or BRFRefractoryInputs()
     brick_vol = r.brick_l_mm * r.brick_w_mm * r.brick_h_mm             # H35
     t = r.wall_thickness_mm
+    # The length the refractory actually runs: the hot box plus the walled
+    # ends, short of the sheet and channel that close the shell.  G19+G20+G21
+    ref_len = (fur.effective_length_mm + fin.discharge_refractory_mm
+               + fin.charge_refractory_mm)
 
     # ── Roof ───────────────────────────────────────────────────────
     hang_per_width = math.ceil(
@@ -631,9 +708,7 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
     fibre_rolls = math.ceil(fibre_raw) + r.fibre_spare_rolls                   # C51
     fibre_wt = fibre_rolls * r.fibre_roll_kg                                   # C52
 
-    cast_vol = ((fur.effective_length_mm + fin.discharge_refractory_mm
-                 + fin.charge_refractory_mm)
-                * r.castable_depth_mm * r.castable_thick_mm / 1e9)             # C53
+    cast_vol = ref_len * r.castable_depth_mm * r.castable_thick_mm / 1e9       # C53
     cast_wt = cast_vol * r.castable_density                                    # C54
     cast_total = cast_wt * (hold_per_width + 2) * r.castable_wastage           # C56
     cast_bags = cast_total / r.castable_bag_kg                                 # C58
@@ -661,6 +736,87 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
     dis_fire = dis_vol2 / brick_vol * 2 + 50                                   # L44
     hay_vol = r.hay_l_mm * r.hay_w_mm * r.hay_t_mm                             # L46
     dis_hay = fur.effective_width_mm * r.side_wall_height_mm * r.hay_t_mm / hay_vol  # L47
+    # HAY behind the side walls, both of them, over the refractory length  G62
+    sw_hay = ref_len * r.side_wall_height_mm * r.hay_t_mm / hay_vol
+
+    # ── Hearth ─────────────────────────────────────────────────────
+    # One brick course over the whole floor, then the same floor again in
+    # IS-8 and in fire brick graded by zone. The 50 in every count is the
+    # sheet's own spare allowance.
+    ov_width = (fur.effective_width_mm + fin.right_refractory_mm
+                + fin.left_refractory_mm)                                      # K58
+    hth = r.hearth_thickness_mm
+    he_cf_vol = ref_len * ov_width * hth                                       # L53
+    he_cf = he_cf_vol / brick_vol + 50                                         # L54
+    # IS-8 stops short of the side walls and the HAY behind them
+    is8_width = ov_width - r.side_wall_cf_hf_mm - r.side_wall_hay_mm
+    he_is8_vol = is8_width * ref_len * hth                                     # L61
+    he_is8 = he_is8_vol / brick_vol + 50                                       # L62
+    he_50_vol = is8_width * soak_heat * 1000 * hth                             # L64
+    he_50 = he_50_vol / brick_vol + 50                                         # L65
+    he_60_vol = fur.zone_soaking_m * 1000 * fur.effective_width_mm * hth       # L67
+    he_60 = he_60_vol / brick_vol + 50                                         # L68
+    he_40_vol = fur.zone_preheating_m * 1000 * hth * fur.effective_width_mm    # L70
+    he_40 = he_40_vol / brick_vol + 50                                         # L71
+
+    # ── Refractory block on the ground near the discharge door ─────
+    blk_dis = ov_width / r.block_lane_pitch_mm                                 # L75
+    blk_soak = (fur.zone_soaking_m * r.block_soak_lanes / r.block_length_m
+                + r.block_spare)                                               # L76
+    blk_qty = blk_dis + blk_soak                                               # L78
+
+    # ── Aluminium foil, one run per holding-brick row ──────────────
+    foil_piece_vol = r.foil_l_m * r.foil_w_m * r.foil_t_m                      # C61
+    foil_piece_kg = foil_piece_vol * r.foil_density                            # C62
+    foil_len = ref_len * hold_per_width / 1000 + r.foil_spare_m                # C63
+    foil_wt = foil_len * foil_piece_kg                                         # C64
+
+    # ── Flue ducts: castable in the annulus, before and after the recuperator
+    def _duct(id_m, od_m, length_m):
+        vol = 3.14 * (od_m ** 2 - id_m ** 2) / 4 * length_m                    # C69/C77
+        wt = vol * r.duct_castable_density * r.duct_castable_wastage           # C71/C79
+        return vol, wt, wt / r.castable_bag_kg                                 # C72/C80
+
+    d1_vol, d1_wt, d1_bags = _duct(r.duct1_id_m, r.duct1_od_m, r.duct1_len_m)
+    d2_vol, d2_wt, d2_bags = _duct(r.duct2_id_m, r.duct2_od_m, r.duct2_len_m)
+
+    # ── The take-off ───────────────────────────────────────────────
+    # Each item gathered across roof, both side walls, discharge wall and
+    # hearth, then multiplied by the weight of one piece. The doubled terms
+    # are the right and left walls, which are the same wall twice.
+    cf_qty = sw_cold * 2 + dis_cold + pre_cold * 2 + he_cf                     # G68
+    hf_qty = cf_qty                                                            # G69, same count
+    b60_qty = sw_fire * 2 + dis_fire + he_60                                   # G70
+    b50_qty = he_50                                                            # G71
+    b40_qty = pre_fire40 * 2 + he_40 + tap_fire * 2                            # G72
+    is8_qty = he_is8                                                           # G73
+    hysil_qty = dis_hay + sw_hay * 2                                           # G74
+    # Mortar follows the bricks it beds: one bag per 200.
+    accosset_qty = (b60_qty + b50_qty + b40_qty + is8_qty) / r.bricks_per_mortar_bag
+    fireclay_qty = (cf_qty + hf_qty) / r.bricks_per_mortar_bag                 # G76
+
+    take_off = [
+        ("CF",                          cf_qty,       cf_qty * r.kg_cold_face),
+        ("HF",                          hf_qty,       hf_qty * r.kg_hot_face),
+        ("60%",                         b60_qty,      b60_qty * r.kg_brick_60),
+        ("50%",                         b50_qty,      b50_qty * r.kg_brick_50),
+        ("40%",                         b40_qty,      b40_qty * r.kg_brick_40),
+        ("IS-8",                        is8_qty,      is8_qty * r.kg_is8),
+        ("HYSIL",                       hysil_qty,    hysil_qty * r.kg_hysil),
+        ("ACCOSSET 50",                 accosset_qty, accosset_qty * r.mortar_bag_kg),
+        ("FIRE CLAY for (CF & HF) paste", fireclay_qty, fireclay_qty * r.mortar_bag_kg),
+        ("Block",                       blk_qty,      blk_qty * r.block_kg),
+        ("FireCreat castable for gaps",  r.firecreat_bags,
+                                        r.firecreat_bags * r.mortar_bag_kg),
+    ]
+    # The roof items are already weights, so they join the total directly
+    # rather than as a count times a piece weight.
+    total_kg = (sum(w for _, _, w in take_off)
+                + hang_wt + hold_wt60 + hold_wt40      # C40, C44, C47
+                + fibre_wt + cast_total                # C52, C56
+                + foil_wt + d1_wt + d2_wt)             # C64, C71, C79
+
+    take_off = [(name, round(q, 2), round(w, 2)) for name, q, w in take_off]
 
     def _2(x):
         return round(x, 2)
@@ -718,4 +874,34 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
         holding_brick_60_kg=r.holding_brick_60_kg,
         holding_brick_40_kg=r.holding_brick_40_kg,
         discharge_effective_width_mm=fur.effective_width_mm,
+        hearth_overall_width_mm=ov_width,
+        hearth_cf_volume_mm3=he_cf_vol,
+        hearth_cold_face_bricks=_2(he_cf),
+        hearth_hot_face_bricks=_2(he_cf),
+        hearth_is8_volume_mm3=he_is8_vol,
+        hearth_is8_bricks=_2(he_is8),
+        hearth_50_volume_mm3=he_50_vol,
+        hearth_fire_bricks_50=_2(he_50),
+        hearth_60_volume_mm3=he_60_vol,
+        hearth_fire_bricks_60=_2(he_60),
+        hearth_40_volume_mm3=he_40_vol,
+        hearth_fire_bricks_40=_2(he_40),
+        block_lane_discharge=_2(blk_dis),
+        block_lane_soaking=_2(blk_soak),
+        block_pieces=_2(blk_qty),
+        block_kg=r.block_kg,
+        foil_piece_volume_m3=round(foil_piece_vol, 6),
+        foil_piece_kg=round(foil_piece_kg, 4),
+        foil_length_m=_2(foil_len),
+        foil_weight_kg=_2(foil_wt),
+        duct1_volume_m3=round(d1_vol, 3),
+        duct1_castable_kg=_2(d1_wt),
+        duct1_bags=_2(d1_bags),
+        duct2_volume_m3=round(d2_vol, 3),
+        duct2_castable_kg=_2(d2_wt),
+        duct2_bags=_2(d2_bags),
+        take_off=take_off,
+        side_wall_hay_pieces=_2(sw_hay),
+        total_refractory_kg=_2(total_kg),
+        total_refractory_tonne=_2(total_kg / 1000),
     )
