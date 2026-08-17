@@ -575,6 +575,21 @@
       <div class="calc-work" id="st-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
     </div>
 
+    <!-- The cast iron: a hanger per hanging brick, the skids through the
+         preheating zone, and the doors. The hangers and skids follow the
+         furnace; the doors are cast to the drawing, so they are typed. -->
+    <div class="card">
+      <div class="card-title">Casting</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Discharge doors (nos)</label><input id="ca-dd-nos" type="number" step="any" value="2" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Discharge door, each (kg)</label><input id="ca-dd-kg" type="number" step="any" value="375" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Inspection doors (nos)</label><input id="ca-id-nos" type="number" step="any" value="6" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Inspection door, each (kg)</label><input id="ca-id-kg" type="number" step="any" value="225" oninput="furnacePreview()" autocomplete="off"/></div>
+      </div>
+      <div class="fn-out" id="ca-out" style="margin-top:16px"></div>
+      <div class="calc-work" id="ca-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
+    </div>
+
     <div class="step-nav">
       <button class="btn-primary" onclick="goStep(4)">Next: Firing &amp; Air →</button>
     </div>
@@ -965,6 +980,8 @@ const FN_FIELDS={
   sheet_charging_side_mm:"fn-lsheet1", sheet_refractory_side_mm:"fn-lsheet2",
   length_channel_mm:"fn-lchan",
   effective_width_mm_override:"fn-ewid", effective_length_mm_override:"fn-elen",
+  discharge_door_nos:"ca-dd-nos", discharge_door_kg:"ca-dd-kg",
+  inspection_door_nos:"ca-id-nos", inspection_door_kg:"ca-id-kg",
 };
 function furnacePayload(){
   const o={};
@@ -1019,6 +1036,7 @@ async function runFurnace(){
                                renderRefractorySheet(data.refractory); }
     if(data&&data.structure){ renderStructure(data.structure);
                               renderStructureSheet(data.structure); }
+    if(data&&data.casting) renderCasting(data.casting);
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
@@ -1175,6 +1193,43 @@ function renderStructure(s){
   ].join("\n");
 }
 
+
+
+// The cast iron. Hangers and skids follow the furnace; the doors are whatever
+// the drawing says, so they come back exactly as they were typed.
+function renderCasting(c){
+  const el=document.getElementById("ca-out");
+  if(!el||!c) return;
+  const cm=(v,p=0)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  el.innerHTML=
+    tile("Total Casting", cm(c.total_casting_tonne,2), "MT")+
+    tile("CI Hangers", cm(c.hanger_qty), "nos")+
+    tile("Hanger Weight", cm(c.hanger_weight_kg), "kg")+
+    tile("CI Skids", cm(c.skid_qty,2), "nos")+
+    tile("Skid Weight", cm(c.skid_weight_kg), "kg")+
+    tile("Door Weight", cm(c.door_weight_kg), "kg");
+
+  const w=document.getElementById("ca-work");
+  if(w) w.textContent=[
+    `CI HANGER FOR HANGING BRICK`,
+    `  Qty required    = hanging brick, soaking + heating + preheating, less 75`,
+    `                  = ${cm(c.hanger_qty,3)} nos at ${cm(c.hanger_kg)} kg = ${cm(c.hanger_weight_kg,2)} kg`,
+    ``,
+    `CI SKID FOR THE PREHEATING ZONE`,
+    `  Std. length     = preheating + heating = ${cm(c.skid_length_m,4)} m`,
+    `  Lines           = (preheating + 0.7) ÷ ${cm(c.skid_length_m,4)} + 1 = ${cm(c.skid_lines_raw,6)}`,
+    `  Total skid      = ${cm(c.skid_lines_raw,6)} × 6 = ${cm(c.skid_qty,6)} nos`,
+    `                  at ${cm(c.skid_each_kg)} kg each = ${cm(c.skid_weight_kg,2)} kg`,
+    ``,
+    `DOORS`,
+    `  Discharge       ${cm(c.discharge_door_nos)} nos at ${cm(c.discharge_door_kg)} kg`,
+    `  Inspection      ${cm(c.inspection_door_nos)} nos at ${cm(c.inspection_door_kg)} kg`,
+    `  Total weight    = ${cm(c.door_weight_kg)} kg`,
+    ``,
+    `TOTAL WEIGHT OF CASTING = ${cm(c.total_casting_kg,2)} kg = ${cm(c.total_casting_tonne,4)} tonne`,
+  ].join("\n");
+}
 
 // ── Fuel ───────────────────────────────────────────────────────────────────
 // The fuel decides the firing rate and the air, so it is settled on Config
@@ -1897,6 +1952,7 @@ function renderAll(data,showNG,showCL){
   if(data.refractory){ renderRefractory(data.refractory);
                        renderRefractorySheet(data.refractory); }
   if(data.structure) renderStructure(data.structure);
+  if(data.casting) renderCasting(data.casting);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
   const ff=sp.furnace_full||[];

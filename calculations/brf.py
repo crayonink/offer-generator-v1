@@ -1167,3 +1167,96 @@ def calculate_structure(fur, fin, ref, inp=None) -> BRFStructureResults:
         order_weight_tonne=_2(order_kg / 1000),
         c_channel_kg_per_m=s.c_channel_kg_per_m,
     )
+
+
+# ── Casting ─────────────────────────────────────────────────────────────────
+# Furnace sheet, section 4 (rows 100-107). The cast iron: a hanger for every
+# hanging brick in the roof, the skids that carry the billet through the
+# preheating zone, and the doors.
+#
+# Small next to the refractory and the steel — about 25 t against 607 and 72 —
+# but it is the fourth term in the sheet's TOTAL WEIGHT OF THE FURNACE (T108),
+# so the furnace does not add up without it.
+
+@dataclass
+class BRFCastingInputs:
+    # CI hanger for the hanging brick                            C103/C104
+    hanger_kg:     float = 3.0     # weight of one hanger
+    hanger_spare:  float = 75.0    # the -75 on the brick count
+    # CI skid through the preheating zone                        G103..G106
+    skid_extra_m:  float = 0.7     # the +0.7 on the preheating length
+    skid_lines:    float = 6.0     # the x6 on the count. The sheet's own label
+                                   # says "use of 5 lines skid" and then
+                                   # multiplies by 6; the formula wins.
+    skid_kg:       float = 1500.0  # weight of one skid
+    # Doors                                                      L102..L105
+    discharge_door_nos: float = 2.0
+    discharge_door_kg:  float = 375.0
+    inspection_door_nos: float = 6.0
+    inspection_door_kg:  float = 225.0
+
+
+@dataclass
+class BRFCastingResults:
+    hanger_qty:          float   # C103
+    hanger_kg:           float   # C104
+    hanger_weight_kg:    float   # C105
+    skid_length_m:       float   # G103
+    skid_lines_raw:      float   # G104
+    skid_qty:            float   # G105
+    skid_each_kg:        float   # G106
+    skid_weight_kg:      float   # G107
+    discharge_door_nos:  float   # L102
+    discharge_door_kg:   float   # L103
+    inspection_door_nos: float   # L104
+    inspection_door_kg:  float   # L105
+    door_weight_kg:      float   # L106
+    total_casting_kg:    float
+    total_casting_tonne: float   # C107
+
+
+def calculate_casting(fur, ref, inp=None) -> BRFCastingResults:
+    """The cast iron: hangers, preheating-zone skids and the doors.
+
+    fur — BRFFurnaceResults (for the zone lengths),
+    ref — BRFRefractoryResults (for the hanging-brick count), inp — inputs.
+    """
+    c = inp or BRFCastingInputs()
+
+    # One hanger per hanging brick, less the sheet's own 75.            C103
+    hanger_qty = (ref.hanging_bricks_soak_heat + ref.hanging_bricks_preheat
+                  - c.hanger_spare)
+    hanger_wt = hanger_qty * c.hanger_kg                                # C105
+
+    # The skid runs the preheating and heating zones together.          G103
+    skid_len = fur.zone_preheating_m + fur.zone_heating_m
+    skid_raw = ((fur.zone_preheating_m + c.skid_extra_m) / skid_len + 1
+                if skid_len else 0.0)                                   # G104
+    skid_qty = skid_raw * c.skid_lines                                  # G105
+    skid_wt  = c.skid_kg * skid_qty                                     # G107
+
+    door_wt = (c.discharge_door_kg * c.discharge_door_nos
+               + c.inspection_door_nos * c.inspection_door_kg)          # L106
+
+    total = hanger_wt + skid_wt + door_wt                               # C107
+
+    def _2(x):
+        return round(x, 2)
+
+    return BRFCastingResults(
+        hanger_qty=round(hanger_qty, 3),
+        hanger_kg=c.hanger_kg,
+        hanger_weight_kg=round(hanger_wt, 3),
+        skid_length_m=round(skid_len, 4),
+        skid_lines_raw=round(skid_raw, 6),
+        skid_qty=round(skid_qty, 6),
+        skid_each_kg=c.skid_kg,
+        skid_weight_kg=round(skid_wt, 3),
+        discharge_door_nos=c.discharge_door_nos,
+        discharge_door_kg=c.discharge_door_kg,
+        inspection_door_nos=c.inspection_door_nos,
+        inspection_door_kg=c.inspection_door_kg,
+        door_weight_kg=_2(door_wt),
+        total_casting_kg=_2(total),
+        total_casting_tonne=round(total / 1000, 4),
+    )

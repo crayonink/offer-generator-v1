@@ -6111,6 +6111,12 @@ class BRFCalcRequest(BaseModel):
     # Which of the two loads sizes the hearth. False keeps the workbook's
     # behaviour, where only the top-fired figure is ever read.
     top_and_bottom_fired: bool = False
+    # Doors, cast per job rather than to a standard — how many and how
+    # heavy is a question for the drawing, not the workbook.
+    discharge_door_nos:  float = 2.0
+    discharge_door_kg:   float = 375.0
+    inspection_door_nos: float = 6.0
+    inspection_door_kg:  float = 225.0
     right_refractory_mm:    float = 510.0
     left_refractory_mm:     float = 510.0
     width_sheet_mm:         float = 16.0
@@ -6186,8 +6192,9 @@ def brf_calculate(req: BRFCalcRequest):
         # Furnace geometry — the billet, the hearth it needs and the box that
         # goes round it. Its own block: it is what the refractory take-off will
         # be built on when that half is ported.
-        from calculations.brf import (BRFFurnaceInputs, calculate_furnace,
-                                      calculate_refractory, calculate_structure)
+        from calculations.brf import (BRFFurnaceInputs, BRFCastingInputs,
+                                      calculate_furnace, calculate_refractory,
+                                      calculate_structure, calculate_casting)
         furnace_inputs = BRFFurnaceInputs(
             billet_length_mm=req.billet_length_mm,
             billet_width_mm=req.billet_width_mm,
@@ -6217,6 +6224,14 @@ def brf_calculate(req: BRFCalcRequest):
         # bottom beams and the plate. It needs the roof brick pitch, so it
         # follows the refractory rather than standing beside it.
         structure = calculate_structure(furnace, furnace_inputs, refractory)
+        # The cast iron: a hanger per hanging brick, the preheating-zone skids
+        # and the doors. Fourth term in the sheet's total furnace weight.
+        casting = calculate_casting(furnace, refractory, BRFCastingInputs(
+            discharge_door_nos=req.discharge_door_nos,
+            discharge_door_kg=req.discharge_door_kg,
+            inspection_door_nos=req.inspection_door_nos,
+            inspection_door_kg=req.inspection_door_kg,
+        ))
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -6225,6 +6240,7 @@ def brf_calculate(req: BRFCalcRequest):
             "furnace": vars(furnace),
             "refractory": vars(refractory),
             "structure": vars(structure),
+            "casting": vars(casting),
         }
     except Exception as e:
         import traceback
