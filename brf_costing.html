@@ -746,7 +746,7 @@
         <div class="xl-tab active" onclick="xlTab('xl-sizing',this)">Sizing</div>
         <div class="xl-tab" onclick="xlTab('xl-furnace',this)">Furnace (2)</div>
         <div class="xl-tab" onclick="xlTab('xl-refractory',this)">Refractory</div>
-        <div class="xl-tab" onclick="xlTab('xl-mildsteel',this)">Mild Steel</div>
+        <div class="xl-tab" onclick="xlTab('xl-mildsteel',this)">Structure &amp; Casting</div>
         <div class="xl-tab" onclick="xlTab('xl-massflow',this)">Mass Flow Control</div>
         <div class="xl-tab" onclick="xlTab('xl-combustion',this)">Combustion</div>
         <div class="xl-tab" onclick="xlTab('xl-recup',this)">Recuperator1</div>
@@ -1104,7 +1104,7 @@ async function runFurnace(){
     if(data&&data.refractory){ renderRefractory(data.refractory);
                                renderRefractorySheet(data.refractory); }
     if(data&&data.structure){ renderStructure(data.structure);
-                              renderStructureSheet(data.structure); }
+                              renderStructureSheet(data.structure, data.casting); }
     if(data&&data.casting) renderCasting(data.casting);
     if(data&&data.equipment) renderEquipment(data.equipment);
     if(data&&data.totals) renderTotals(data.totals);
@@ -1743,7 +1743,10 @@ function renderRefractorySheet(f){
 // which is heavier than the 500 x 180 the design is worked out on.
 let _legacyMildSteelHtml = "";
 
-function renderStructureSheet(s){
+// Takes the casting alongside the structure because one element cannot have
+// two writers — that is what left this sheet blank once already. Both blocks
+// are drawn in one pass.
+function renderStructureSheet(s, c){
   const el=document.getElementById("xl-mildsteel");
   if(!el) return;
   // No take-off yet — the engine has not run, or an older backend is answering.
@@ -1821,6 +1824,44 @@ function renderStructureSheet(s){
       + block("I-BEAM", beam)
       + block("MS PLATE", plate)
       + '</div>';
+
+  // ── CASTING MATERIAL CALCULATION ────────────────────────────────
+  // The sheet's section 4, in its own three columns: the hanger for every
+  // hanging brick, the skids through the preheating zone, and the doors.
+  if(c){
+    const hang=[
+      ["CI hanger for hanging brick"],
+      ["Qty. required (hanging brick less the spare)", n(c.hanger_qty,3), "Nos"],
+      ["Deducted from the brick count", n(c.hanger_spare), "Nos"],
+      ["Wt. of single piece", n(c.hanger_kg), "kg"],
+      ["*Total Wt. of Hanger", n(c.hanger_weight_kg,3), "Kg"],
+    ];
+    const skid=[
+      ["CI skid for preheating zone, like block in soaking"],
+      ["Std. length of the skid used (preheating + heating)", n(c.skid_length_m,4), "Metre"],
+      ["Added to the preheating length", n(c.skid_extra_m,1), "Metre"],
+      ["Use of skid lines in preheating", n(c.skid_lines_raw,6), "Nos"],
+      ["Lines of skid", n(c.skid_lines), "Nos"],
+      ["*Total Skid", n(c.skid_qty,6), "Nos"],
+      ["Wt. of each skid", n(c.skid_each_kg), "kg"],
+      ["*Total Skid weight", n(c.skid_weight_kg,3), "kg"],
+    ];
+    const door=[
+      ["Doors"],
+      ["Discharge door", n(c.discharge_door_nos), "Nos"],
+      ["As per our standard, each", n(c.discharge_door_kg), "Kg"],
+      ["Inspection door", n(c.inspection_door_nos), "Nos"],
+      ["As per our standard, each", n(c.inspection_door_kg), "Kg"],
+      ["*Total Weight of Door", n(c.door_weight_kg), "Kg"],
+      [],
+      ["*Total Weight of Casting", n(c.total_casting_tonne,4), "Tonne"],
+    ];
+    h+='<div class="rf-cols">'
+     + block("CI HANGER", hang)
+     + block("CI SKID", skid)
+     + block("DOORS &amp; TOTAL", door)
+     + '</div>';
+  }
 
   // The take-off itself, laid out the way the breakup sheets lay it out.
   if(s.take_off && s.take_off.length){
@@ -2183,7 +2224,7 @@ function renderAll(data,showNG,showCL){
   // Same as Refractory: the fixed costed list keeps its place, but the
   // computed take-off is drawn above it rather than under it.
   _legacyMildSteelHtml = ml;
-  renderStructureSheet(data.structure);
+  renderStructureSheet(data.structure, data.casting);
 
   // ═══ SHEET 4: Mass Flow Control ═══
   n=0;
