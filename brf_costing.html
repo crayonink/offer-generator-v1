@@ -238,6 +238,15 @@
     .rf-tbl .rf-sub { background:#f8fafc; font-weight:700; color:#0f172a; font-size:.78rem; }
     .rf-tbl .rf-keyrow td { background:#fffbeb; font-weight:700; color:#0f172a; }
     .rf-tbl .rf-spacer td { padding:4px; border-bottom:0; }
+    /* Cells on a sheet that are typed rather than read. Kept quiet until
+       hovered, so the sheet still reads as a sheet. */
+    .rf-tbl .rf-edit { width:100%; padding:3px 7px; font:inherit; font-size:.8rem;
+                       font-weight:600; color:#0f172a; text-align:right;
+                       background:#fff; border:1px solid var(--border);
+                       border-radius:6px; font-variant-numeric:tabular-nums; }
+    .rf-tbl .rf-edit:hover { border-color:#94a3b8; }
+    .rf-tbl .rf-edit:focus { outline:none; border-color:var(--navy);
+                             box-shadow:0 0 0 3px rgba(26,58,92,.08); }
     .rf-tbl tr:hover td { background:#f8fafc; }
     .rf-tbl .rf-keyrow:hover td { background:#fef3c7; }
     /* The take-off: what the whole sheet adds up to. Sits under the blocks,
@@ -1743,6 +1752,17 @@ function renderRefractorySheet(f){
 // which is heavier than the 500 x 180 the design is worked out on.
 let _legacyMildSteelHtml = "";
 
+// A door typed on the Calculations sheet is the same number as the one on the
+// Casting card, so it is written back to that field rather than kept here.
+// The card stays the single place the payload is read from; this is a second
+// way in, not a second copy.
+function castingEdit(box){
+  const target=document.getElementById(box.dataset.target);
+  if(!target) return;
+  target.value=box.value;
+  furnacePreview();
+}
+
 // Takes the casting alongside the structure because one element cannot have
 // two writers — that is what left this sheet blank once already. Both blocks
 // are drawn in one pass.
@@ -1804,6 +1824,9 @@ function renderStructureSheet(s, c){
   ];
 
   const cells=(r)=>{
+    // A row given as a string is already built — used where a cell has to be
+    // typed into rather than read.
+    if(typeof r==="string") return r;
     if(!r||!r.length) return '<tr class="rf-spacer"><td colspan="3">&nbsp;</td></tr>';
     if(r.length===1) return `<tr><td class="rf-sub" colspan="3">${esc(r[0])}</td></tr>`;
     const key=String(r[0]).startsWith("*");
@@ -1846,12 +1869,25 @@ function renderStructureSheet(s, c){
       ["Wt. of each skid", n(c.skid_each_kg), "kg"],
       ["*Total Skid weight", n(c.skid_weight_kg,3), "kg"],
     ];
+    // The doors are the one part of this sheet that is typed rather than
+    // derived, so they are typed here too — the same fields as the Casting
+    // card, mirrored, so either place can be used.
+    //
+    // They commit on change rather than on every keystroke: a keystroke
+    // triggers a recalculation, the recalculation redraws this table, and the
+    // redraw would take the caret out of the box being typed into.
+    const edit=(label,val,unit,target)=>
+      `<tr><td class="rf-label">${esc(label)}</td>`
+      + `<td class="rf-val"><input class="rf-edit" type="number" step="any" `
+      + `value="${val}" data-target="${target}" onchange="castingEdit(this)" `
+      + `autocomplete="off"/></td>`
+      + `<td class="rf-unit">${esc(unit)}</td></tr>`;
     const door=[
       ["Doors"],
-      ["Discharge door", n(c.discharge_door_nos), "Nos"],
-      ["As per our standard, each", n(c.discharge_door_kg), "Kg"],
-      ["Inspection door", n(c.inspection_door_nos), "Nos"],
-      ["As per our standard, each", n(c.inspection_door_kg), "Kg"],
+      edit("Discharge door", c.discharge_door_nos, "Nos", "ca-dd-nos"),
+      edit("As per our standard, each", c.discharge_door_kg, "Kg", "ca-dd-kg"),
+      edit("Inspection door", c.inspection_door_nos, "Nos", "ca-id-nos"),
+      edit("As per our standard, each", c.inspection_door_kg, "Kg", "ca-id-kg"),
       ["*Total Weight of Door", n(c.door_weight_kg), "Kg"],
       [],
       ["*Total Weight of Casting", n(c.total_casting_tonne,4), "Tonne"],
