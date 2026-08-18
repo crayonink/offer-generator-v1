@@ -443,6 +443,21 @@ class BRFFurnaceResults:
     # leave a doubled furnace looking like arithmetic.
     hearth_load_kg_hr_m2: float = 0.0
     top_and_bottom_fired: bool  = False
+    # The margins echoed back, so the sheet can show the overall dimensions
+    # being built up the way the workbook builds them rather than only the
+    # answer.
+    right_refractory_mm:      float = 0.0   # D20
+    left_refractory_mm:       float = 0.0   # D21
+    width_sheet_mm:           float = 0.0   # D22
+    width_channel_mm:         float = 0.0   # D23
+    discharge_refractory_mm:  float = 0.0   # G20
+    charge_refractory_mm:     float = 0.0   # G21
+    sheet_charging_side_mm:   float = 0.0   # G22
+    sheet_refractory_side_mm: float = 0.0   # G23
+    length_channel_mm:        float = 0.0   # G24
+    furnace_capacity_tph:            float = 0.0   # C10
+    hearth_load_top_kg_hr_m2:        float = 0.0   # C11
+    hearth_load_top_bottom_kg_hr_m2: float = 0.0   # C12
 
 
 def calculate_furnace(inp: BRFFurnaceInputs) -> BRFFurnaceResults:
@@ -501,6 +516,18 @@ def calculate_furnace(inp: BRFFurnaceInputs) -> BRFFurnaceResults:
         zone_heating_soaking_m = round(heating + soaking, 6),
         hearth_load_kg_hr_m2   = hearth_load,
         top_and_bottom_fired   = inp.top_and_bottom_fired,
+        right_refractory_mm      = inp.right_refractory_mm,
+        left_refractory_mm       = inp.left_refractory_mm,
+        width_sheet_mm           = inp.width_sheet_mm,
+        width_channel_mm         = inp.width_channel_mm,
+        discharge_refractory_mm  = inp.discharge_refractory_mm,
+        charge_refractory_mm     = inp.charge_refractory_mm,
+        sheet_charging_side_mm   = inp.sheet_charging_side_mm,
+        sheet_refractory_side_mm = inp.sheet_refractory_side_mm,
+        length_channel_mm        = inp.length_channel_mm,
+        furnace_capacity_tph     = inp.furnace_capacity_tph,
+        hearth_load_top_kg_hr_m2 = inp.hearth_load_top_kg_hr_m2,
+        hearth_load_top_bottom_kg_hr_m2 = inp.hearth_load_top_bottom_kg_hr_m2,
     )
 
 

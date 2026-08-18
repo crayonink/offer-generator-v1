@@ -1569,7 +1569,7 @@ function renderRefractorySheet(f, priced){
   if(!el) return;
   // Same as the structure sheet: this renderer owns the element, so a missing
   // take-off means fall back to the costed list, not leave the tab blank.
-  if(!f){ el.innerHTML=_legacyRefractoryHtml||""; return; }
+  if(!f){ el.innerHTML=""; return; }
   const n=(v,p=0)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
   const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
@@ -1773,14 +1773,6 @@ function renderRefractorySheet(f, priced){
       + "one is what the furnace weighs, this is what gets ordered. "
       + (others?`At the other rates &mdash; ${others}.`:""));
   }
-  // Underneath, the costed refractory list. It is still the fixed data from
-  // the 30 T job — rates and amounts the take-off above does not have — so it
-  // is labelled rather than left to look computed.
-  if(_legacyRefractoryHtml){
-    h+='<div class="rf-legacy">Costed refractory &mdash; fixed data, not from the '
-     + 'take-off above. Rates and quantities are the 30 T job’s.</div>'
-     + _legacyRefractoryHtml;
-  }
   el.innerHTML=h;
 }
 
@@ -1800,6 +1792,93 @@ let _legacyMildSteelHtml = "";
 // Casting card, so it is written back to that field rather than kept here.
 // The card stays the single place the payload is read from; this is a second
 // way in, not a second copy.
+// ── The Furnace sheet, section 1 ───────────────────────────────────────────
+// The billet, the hearth it needs, the box that goes round it and the zones
+// it splits into — laid out as the workbook lays it out, and computed. This
+// sheet used to be 110 rows of stored text from the 30 T job: a different
+// billet, a different capacity, numbers that never moved whatever was typed.
+function renderFurnaceSheet(f, tot){
+  const el=document.getElementById("xl-furnace");
+  if(!el||!f) return;
+  const n=(v,p=0)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+  const billet=[
+    ["Billet dimension in metre"],
+    ["Length", n(f.billet_length_mm), "mm"],
+    ["Width", n(f.billet_width_mm), "mm"],
+    ["Height", n(f.billet_height_mm), "mm"],
+    ["Volume of billet", n(f.billet_volume_m3,4), "m³"],
+    ["Density of MS", n(f.ms_density_kg_m3), "kg/m³"],
+    ["*Wt. of a billet", n(f.billet_weight_kg,2), "kg"],
+    [],
+    ["Furnace Cap.", n(f.furnace_capacity_tph||0), "Ton/hr"],
+    ["Top fired hearth load", n(f.hearth_load_top_kg_hr_m2), "kg/hr/m²"],
+    ["Top & bottom fired hearth load", n(f.hearth_load_top_bottom_kg_hr_m2), "kg/hr/m²"],
+    ["Sized on", f.top_and_bottom_fired?"top & bottom":"top fired", ""],
+    ["*Area", n(f.hearth_area_m2,2), "m²"],
+    ["*Effective length of the furnace", n(f.effective_length_m), "m"],
+    ["*Effective width", n(f.effective_width_m,1), "m"],
+  ];
+  const width=[
+    ["Overall width with refractory"],
+    ["Effective width", n(f.effective_width_mm), "mm"],
+    ["Right refractory", n(f.right_refractory_mm), "mm"],
+    ["Left refractory", n(f.left_refractory_mm), "mm"],
+    ["Sheet", n(f.width_sheet_mm), "mm"],
+    ["Channel", n(f.width_channel_mm), "mm"],
+    ["*Overall width", n(f.overall_width_mm), "mm"],
+    ["*Overall width", n(f.overall_width_m,3), "metre"],
+    [],
+    ["Zone lengths, off the overall length"],
+    ["Preheating zone", n(f.zone_preheating_m,4), "m"],
+    ["Heating zone", n(f.zone_heating_m,3), "m"],
+    ["Soaking zone", n(f.zone_soaking_m,3), "m"],
+  ];
+  const length=[
+    ["Overall length with refractory"],
+    ["Effective length", n(f.effective_length_mm), "mm"],
+    ["Discharge side with refractory", n(f.discharge_refractory_mm), "mm"],
+    ["Charge side with refractory", n(f.charge_refractory_mm), "mm"],
+    ["Sheet on charging side", n(f.sheet_charging_side_mm), "mm"],
+    ["Sheet on refractory side", n(f.sheet_refractory_side_mm), "mm"],
+    ["Channel", n(f.length_channel_mm), "mm"],
+    ["*Overall length", n(f.overall_length_mm), "mm"],
+    ["*Overall length", n(f.overall_length_m,3), "metre"],
+  ];
+  if(tot){
+    length.push([], ["Total weight of the furnace"],
+      ["Refractory", n(tot.refractory_tonne,2), "T"],
+      ["Structure, design", n(tot.structure_tonne,2), "T"],
+      ["Equipment", n(tot.equipment_tonne,2), "T"],
+      ["Casting", n(tot.casting_tonne,2), "T"],
+      ["*TOTAL", n(tot.total_tonne,2), "Tonne"]);
+  }
+
+  const cells=(r)=>{
+    if(!r||!r.length) return '<tr class="rf-spacer"><td colspan="3">&nbsp;</td></tr>';
+    if(r.length===1) return `<tr><td class="rf-sub" colspan="3">${esc(r[0])}</td></tr>`;
+    const key=String(r[0]).startsWith("*");
+    const label=key?String(r[0]).slice(1):r[0];
+    return `<tr${key?' class="rf-keyrow"':''}>`
+         + `<td class="rf-label">${esc(label)}</td>`
+         + `<td class="rf-val xl-num">${esc(r[1])}</td>`
+         + `<td class="rf-unit">${esc(r[2])}</td></tr>`;
+  };
+  const block=(title,list)=>
+    `<div class="rf-block"><table class="xl-grid rf-tbl">`
+    + `<colgroup><col style="width:58%"><col style="width:27%"><col style="width:15%"></colgroup>`
+    + `<tr><td class="rf-head" colspan="3">${title}</td></tr>`
+    + list.map(cells).join("") + `</table></div>`;
+
+  el.innerHTML='<div class="rf-cols">'
+    + block("BILLET &amp; HEARTH", billet)
+    + block("OVERALL WIDTH &amp; ZONES", width)
+    + block("OVERALL LENGTH &amp; TOTAL", length)
+    + '</div>';
+}
+
+
 // ── The priced take-off ────────────────────────────────────────────────────
 // Ref.+Str. as it is actually billed: every quantity rounded up to a whole
 // piece or bag, at one vendor's rates. Built here and handed to whichever
@@ -1858,7 +1937,7 @@ function renderStructureSheet(s, c, priced){
   if(!el) return;
   // No take-off yet — the engine has not run, or an older backend is answering.
   // The costed list still has to be drawn: this renderer owns the element.
-  if(!s){ el.innerHTML=_legacyMildSteelHtml||""; return; }
+  if(!s){ el.innerHTML=""; return; }
   const n=(v,p=0)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
   const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
@@ -2020,12 +2099,6 @@ function renderStructureSheet(s, c, priced){
       "Piping is a lump sum of &#8377; "
       + Number(priced.piping_lump||0).toLocaleString("en-IN")
       + ", included in the total but not weighed.");
-  }
-  // The fixed costed list keeps its place underneath, labelled as such.
-  if(_legacyMildSteelHtml){
-    h+='<div class="rf-legacy">Costed mild steel &mdash; fixed data, not from the '
-     + 'take-off above. Rates and quantities are the 30 T job’s.</div>'
-     + _legacyMildSteelHtml;
   }
   el.innerHTML=h;
 }
@@ -2290,70 +2363,17 @@ function renderAll(data,showNG,showCL){
   if(data.equipment) renderEquipment(data.equipment);
   if(data.totals) renderTotals(data.totals);
 
-  // ═══ SHEET 1: Furnace (2) — full legacy data ═══
-  const ff=sp.furnace_full||[];
-  const SECTION_KEYWORDS=['REHEATING','1.','2.','FLUE DUCT','STRUCTURAL','CASTING','PIPE CALC','PREHEATING ZONE','ROOF','CHARGING'];
-  let n=0;
-  // Max cols needed
-  const maxC=ff.reduce((m,r)=>Math.max(m,r.length),0);
-  const colHdrF='<tr><td class="xl-col-header"></td>'+Array.from({length:maxC},(_,i)=>`<td class="xl-col-header">${String.fromCharCode(65+i)}</td>`).join('')+'</tr>';
-  let fh=`<table class="xl-grid">${colHdrF}`;
-  ff.forEach(row=>{
-    n++;
-    const first=String(row[0]||'').trim();
-    const isSec=SECTION_KEYWORDS.some(k=>first.toUpperCase().startsWith(k));
-    const isNum=typeof row[1]==='number';
-    const cls=isSec?'xl-section':(first.startsWith('Total')||first.startsWith('EFFECTIVE')||first.startsWith('Overall'))? 'xl-highlight':'';
-    const cells=[];
-    for(let i=0;i<maxC;i++){
-      const v=row[i]!==undefined?row[i]:'';
-      const isR=typeof v==='number';
-      cells.push([v,isR]);
-    }
-    fh+=R(n,cells,cls);
-  });
-  fh+=`</table>`;
-  document.getElementById("xl-furnace").innerHTML=fh;
+  // ═══ SHEET 1: Furnace (2) — computed, like every other sheet ═══
+  renderFurnaceSheet(data.furnace, data.totals);
 
   // ═══ SHEET 2: Refractory ═══
-  n=0;
-  const ref=sp.refractory_items||[];
-  const refExtra=sp.refractory_extra||[];
-  let rf=`<table class="xl-grid">${C5}`;
-  rf+=R(++n,[["REFRACTORY WITH MAHA KOSAL/BHILWARA/TRL",""],["",""],["",""],["",""],["",""]],"xl-section");
-  rf+=R(++n,[["Item",""],["Qty",true],["Weight (Kg)",true],["Rate",true],["Cost",true]],"xl-label");
-  ref.forEach(r=>{rf+=R(++n,[[r.item,""],[fmt(r.qty),true],[fmt(r.weight_kg),true],[fmt(r.rate),true],[fmt(r.cost),true]]);});
-  rf+=R(++n,[["Subtotal",""],["",""],["",""],["",""],[fmt(ref.reduce((s,r)=>s+r.cost,0)),true]],"xl-total");
-  rf+=R(++n,[["",""],["",""],["",""],["",""],["",""]]);
-  rf+=R(++n,[["ADDITIONAL REFRACTORY",""],["",""],["",""],["",""],["",""]],"xl-section");
-  refExtra.forEach(r=>{rf+=R(++n,[[r.item,""],[r.qty,true],[fmt(r.wt),true],[r.rate,true],[fmt(r.cost),true]]);});
-  rf+=R(++n,[["Total Refractory",""],["",""],["",""],["",""],[fmt(ref.reduce((s,r)=>s+r.cost,0)+refExtra.reduce((s,r)=>s+r.cost,0)),true]],"xl-highlight");
-  rf+=`</table>`;
-  // The costed list is kept, but it no longer owns the sheet — the computed
-  // take-off is rendered above it. Writing straight to the element here is
-  // what made the new table invisible: it was drawn first and then replaced.
-  // Unconditional: the renderer owns the element now, so it has to be called
-  // whether or not the engine returned a take-off. Guarding it here is what
-  // left the sheet blank — nothing else writes it.
-  _legacyRefractoryHtml = rf;
+  // The costed list that used to sit under this sheet is gone. It was the
+  // 30 T job's — a different furnace, fixed quantities and rates — and once
+  // the take-off above it was computed and priced, a second table showing
+  // other numbers under the same heading could only mislead.
   renderRefractorySheet(data.refractory, data.priced);
 
-  // ═══ SHEET 3: Mild Steel ═══
-  n=0;
-  const ms=sp.mild_steel||[];
-  const pc=sp.pipeline_casting||[];
-  let ml=`<table class="xl-grid">${C5}`;
-  ml+=R(++n,[["MILD STEEL",""],["",""],["",""],["",""],["",""]],"xl-section");
-  ml+=R(++n,[["Description",""],["Qty (m/kg)",true],["Wt/qty",true],["Total Wt",true],["Cost",true]],"xl-label");
-  ms.forEach(m=>{ml+=R(++n,[[m.item,""],[m.qty_m,true],[m.wt_per_m,true],[fmt(m.total_wt),true],[fmt(m.cost),true]]);});
-  ml+=R(++n,[["Structure Total",""],["",""],["",""],[fmt(sp.mild_steel_total_wt||0),true],[fmt(sp.mild_steel_total_cost||0),true]],"xl-total");
-  ml+=R(++n,[["",""],["",""],["",""],["",""],["",""]]);
-  ml+=R(++n,[["PIPELINE & CASTING",""],["",""],["",""],["",""],["",""]],"xl-section");
-  pc.forEach(p=>{ml+=R(++n,[[p.item,""],[p.qty||"",true],[p.wt,true],[p.rate,true],[fmt(p.cost),true]]);});
-  ml+=`</table>`;
-  // Same as Refractory: the fixed costed list keeps its place, but the
-  // computed take-off is drawn above it rather than under it.
-  _legacyMildSteelHtml = ml;
+  // ═══ SHEET 3: Structure & Casting ═══
   renderStructureSheet(data.structure, data.casting, data.priced);
 
   // ═══ SHEET 4: Mass Flow Control ═══
