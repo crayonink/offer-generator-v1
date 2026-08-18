@@ -6111,8 +6111,14 @@ class BRFCalcRequest(BaseModel):
     # Which of the two loads sizes the hearth. False keeps the workbook's
     # behaviour, where only the top-fired figure is ever read.
     top_and_bottom_fired: bool = False
-    # Doors, cast per job rather than to a standard — how many and how
-    # heavy is a question for the drawing, not the workbook.
+    # Casting. The counts follow the furnace; every piece weight and
+    # allowance is typed, because they are foundry standards rather than
+    # anything the geometry decides.
+    hanger_kg:     float = 3.0
+    hanger_spare:  float = 75.0
+    skid_extra_m:  float = 0.7
+    skid_lines:    float = 6.0
+    skid_kg:       float = 1500.0
     discharge_door_nos:  float = 2.0
     discharge_door_kg:   float = 375.0
     inspection_door_nos: float = 6.0
@@ -6227,6 +6233,11 @@ def brf_calculate(req: BRFCalcRequest):
         # The cast iron: a hanger per hanging brick, the preheating-zone skids
         # and the doors. Fourth term in the sheet's total furnace weight.
         casting = calculate_casting(furnace, refractory, BRFCastingInputs(
+            hanger_kg=req.hanger_kg,
+            hanger_spare=req.hanger_spare,
+            skid_extra_m=req.skid_extra_m,
+            skid_lines=req.skid_lines,
+            skid_kg=req.skid_kg,
             discharge_door_nos=req.discharge_door_nos,
             discharge_door_kg=req.discharge_door_kg,
             inspection_door_nos=req.inspection_door_nos,

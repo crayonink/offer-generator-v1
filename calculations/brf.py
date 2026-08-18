@@ -1213,6 +1213,11 @@ class BRFCastingResults:
     door_weight_kg:      float   # L106
     total_casting_kg:    float
     total_casting_tonne: float   # C107
+    # The allowances, carried so the working can print what it actually used
+    # rather than the constants they were before they became inputs.
+    hanger_spare:        float = 0.0
+    skid_extra_m:        float = 0.0
+    skid_lines:          float = 0.0
 
 
 def calculate_casting(fur, ref, inp=None) -> BRFCastingResults:
@@ -1259,4 +1264,7 @@ def calculate_casting(fur, ref, inp=None) -> BRFCastingResults:
         door_weight_kg=_2(door_wt),
         total_casting_kg=_2(total),
         total_casting_tonne=round(total / 1000, 4),
+        hanger_spare=c.hanger_spare,
+        skid_extra_m=c.skid_extra_m,
+        skid_lines=c.skid_lines,
     )

@@ -31,6 +31,11 @@
     .step { display:none; } .step.active { display:block; }
     .card { background:var(--card); border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,.05),0 4px 20px rgba(0,0,0,.04); padding:28px 30px; margin-bottom:20px; }
     .card-title { font-size:.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:20px; }
+    /* Groups inside a card, where one card covers several blocks of the sheet
+       and the fields would otherwise run together. */
+    .sub-label { font-size:.72rem; font-weight:700; color:#334155; letter-spacing:.4px;
+                 text-transform:uppercase; margin:18px 0 10px; }
+    .sub-label:first-of-type { margin-top:0; }
 
     .field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
     /* Furnace duty inputs and the zone table */
@@ -576,10 +581,27 @@
     </div>
 
     <!-- The cast iron: a hanger per hanging brick, the skids through the
-         preheating zone, and the doors. The hangers and skids follow the
-         furnace; the doors are cast to the drawing, so they are typed. -->
+         preheating zone, and the doors. The counts follow the furnace; every
+         piece weight and allowance is typed, because they are foundry
+         standards rather than anything the geometry decides. -->
     <div class="card">
       <div class="card-title">Casting</div>
+
+      <div class="sub-label">CI hanger for the hanging brick</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Wt. of single piece (kg)</label><input id="ca-hang-kg" type="number" step="any" value="3" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Deducted from brick count (nos)</label><input id="ca-hang-spare" type="number" step="any" value="75" oninput="furnacePreview()" autocomplete="off"/></div>
+      </div>
+
+      <div class="sub-label">CI skid through the preheating zone</div>
+      <div class="sz-grid">
+        <div class="sz-f"><label>Added to preheating length (m)</label><input id="ca-skid-extra" type="number" step="any" value="0.7" oninput="furnacePreview()" autocomplete="off"/></div>
+        <div class="sz-f"><label>Lines of skid</label><input id="ca-skid-lines" type="number" step="any" value="6" oninput="furnacePreview()" autocomplete="off"/>
+          <div class="hint" style="color:var(--muted);font-size:.72rem;">Sheet says 5, multiplies by 6</div></div>
+        <div class="sz-f"><label>Wt. of each skid (kg)</label><input id="ca-skid-kg" type="number" step="any" value="1500" oninput="furnacePreview()" autocomplete="off"/></div>
+      </div>
+
+      <div class="sub-label">Doors</div>
       <div class="sz-grid">
         <div class="sz-f"><label>Discharge doors (nos)</label><input id="ca-dd-nos" type="number" step="any" value="2" oninput="furnacePreview()" autocomplete="off"/></div>
         <div class="sz-f"><label>Discharge door, each (kg)</label><input id="ca-dd-kg" type="number" step="any" value="375" oninput="furnacePreview()" autocomplete="off"/></div>
@@ -980,6 +1002,8 @@ const FN_FIELDS={
   sheet_charging_side_mm:"fn-lsheet1", sheet_refractory_side_mm:"fn-lsheet2",
   length_channel_mm:"fn-lchan",
   effective_width_mm_override:"fn-ewid", effective_length_mm_override:"fn-elen",
+  hanger_kg:"ca-hang-kg", hanger_spare:"ca-hang-spare",
+  skid_extra_m:"ca-skid-extra", skid_lines:"ca-skid-lines", skid_kg:"ca-skid-kg",
   discharge_door_nos:"ca-dd-nos", discharge_door_kg:"ca-dd-kg",
   inspection_door_nos:"ca-id-nos", inspection_door_kg:"ca-id-kg",
 };
@@ -1213,13 +1237,13 @@ function renderCasting(c){
   const w=document.getElementById("ca-work");
   if(w) w.textContent=[
     `CI HANGER FOR HANGING BRICK`,
-    `  Qty required    = hanging brick, soaking + heating + preheating, less 75`,
+    `  Qty required    = hanging brick, soaking + heating + preheating, less ${cm(c.hanger_spare)}`,
     `                  = ${cm(c.hanger_qty,3)} nos at ${cm(c.hanger_kg)} kg = ${cm(c.hanger_weight_kg,2)} kg`,
     ``,
     `CI SKID FOR THE PREHEATING ZONE`,
     `  Std. length     = preheating + heating = ${cm(c.skid_length_m,4)} m`,
-    `  Lines           = (preheating + 0.7) ÷ ${cm(c.skid_length_m,4)} + 1 = ${cm(c.skid_lines_raw,6)}`,
-    `  Total skid      = ${cm(c.skid_lines_raw,6)} × 6 = ${cm(c.skid_qty,6)} nos`,
+    `  Lines           = (preheating + ${cm(c.skid_extra_m,1)}) ÷ ${cm(c.skid_length_m,4)} + 1 = ${cm(c.skid_lines_raw,6)}`,
+    `  Total skid      = ${cm(c.skid_lines_raw,6)} × ${cm(c.skid_lines)} = ${cm(c.skid_qty,6)} nos`,
     `                  at ${cm(c.skid_each_kg)} kg each = ${cm(c.skid_weight_kg,2)} kg`,
     ``,
     `DOORS`,
