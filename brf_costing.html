@@ -286,6 +286,8 @@
     .vendor-bar .hint { color:var(--muted); font-size:.78rem; }
     .st-total .rf-tot td { font-size:.8rem; }
     .st-total .rf-grand td:first-child { text-align:left; }
+    .est { font-size:.68rem; font-weight:700; color:#b45309; background:#fef3c7;
+           padding:1px 5px; border-radius:4px; letter-spacing:.03em; }
     .st-note { padding:10px 12px; font-size:.76rem; line-height:1.5; color:var(--muted);
                background:#f8fafc; border-top:1px solid var(--border); }
     /* Spreadsheet furniture, gone — the row numbers down the side and the
@@ -1879,6 +1881,44 @@ function renderFurnaceSheet(f, tot){
 }
 
 
+
+// Mass flow control. One air line and one gas line per fired zone, each valve
+// and orifice sized as the line is sized rather than typed in — so a furnace
+// with different zones gets different valves.
+function renderMassFlowSheet(m){
+  const el=document.getElementById("xl-massflow");
+  if(!el) return;
+  if(!m||!m.rows||!m.rows.length){ el.innerHTML=""; return; }
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const n=(v,p=2)=>Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  let h='<div class="rf-total pr-total"><table class="xl-grid rf-tot">'
+      + '<colgroup><col style="width:40%"><col style="width:12%"><col style="width:9%">'
+      + '<col style="width:19%"><col style="width:20%"></colgroup>'
+      + '<tr><td class="rf-head" colspan="5">MASS FLOW CONTROL SYSTEM</td></tr>';
+  let section="";
+  m.rows.forEach(([sec,item,size,qty,rate,total,est])=>{
+    if(sec!==section){
+      section=sec;
+      h+=`<tr><td class="rf-sub" colspan="5">${esc(sec)}</td></tr>`;
+    }
+    h+=`<tr><td class="rf-label">${esc(item)}${est?' <span class="est">est.</span>':''}</td>`
+      +`<td class="rf-val xl-num">${esc(size)}</td>`
+      +`<td class="rf-val xl-num">${n(qty,0)}</td>`
+      +`<td class="rf-val xl-num">${n(rate)}</td>`
+      +`<td class="rf-val xl-num">${n(total)}</td></tr>`;
+  });
+  h+='<tr class="rf-grand"><td colspan="4">Total Mass Flow Control</td>'
+   + `<td class="xl-num">&#8377; ${n(m.total_price)}</td></tr></table>`;
+  if(m.estimated_lines){
+    h+='<div class="st-note">'+m.estimated_lines+' line'+(m.estimated_lines===1?'':'s')
+     + ' marked <b>est.</b> — the sheet’s rate ladder has four points for a valve '
+     + 'and four for an orifice, so a size falling between them is interpolated. '
+     + 'Worth replacing with real vendor rates.</div>';
+  }
+  h+='</div>';
+  el.innerHTML=h;
+}
+
 // ── The priced take-off ────────────────────────────────────────────────────
 // Ref.+Str. as it is actually billed: every quantity rounded up to a whole
 // piece or bag, at one vendor's rates. Built here and handed to whichever
@@ -2376,19 +2416,8 @@ function renderAll(data,showNG,showCL){
   // ═══ SHEET 3: Structure & Casting ═══
   renderStructureSheet(data.structure, data.casting, data.priced);
 
-  // ═══ SHEET 4: Mass Flow Control ═══
-  n=0;
-  const mfc=sp.mass_flow_control||[];
-  let mf=`<table class="xl-grid">${C3}`;
-  mf+=R(++n,[["MASS FLOW CONTROL SYSTEM",""],["",""],["",""]],"xl-section");
-  mfc.forEach(z=>{
-    mf+=R(++n,[[z.zone,""],["",""],["",""]],"xl-label");
-    z.items.forEach(it=>{mf+=R(++n,[[it.item,""],[it.qty,true],[fmt(it.price*it.qty),true]]);});
-  });
-  const mfcTotal=mfc.reduce((s,z)=>s+z.items.reduce((s2,it)=>s2+it.price*it.qty,0),0);
-  mf+=R(++n,[["TOTAL MASS FLOW CONTROL",""],["",""],[fmt(mfcTotal),true]],"xl-total");
-  mf+=`</table>`;
-  document.getElementById("xl-massflow").innerHTML=mf;
+  // ═══ SHEET 4: Mass Flow Control — off the zone line sizing ═══
+  renderMassFlowSheet(data.mass_flow);
 
   // ═══ SHEET 5: Combustion ═══
   n=0;

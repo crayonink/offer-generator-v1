@@ -6340,6 +6340,13 @@ def brf_calculate(req: BRFCalcRequest):
         # The take-off billed: quantities rounded up to whole pieces and bags,
         # at one of the three vendors' rates.
         priced = price_takeoff(refractory, structure, req.vendor)
+        # Mass flow control follows the zone line sizing: a valve and an
+        # orifice per line, sized as the line is sized.
+        from calculations.brf_massflow import calculate_mass_flow
+        mass_flow = calculate_mass_flow(
+            sizing.get("zones") or [],
+            burner_count=(sizing.get("duty") or {}).get("total_burners", 0),
+            zone_count=(sizing.get("duty") or {}).get("zone_count"))
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -6352,6 +6359,7 @@ def brf_calculate(req: BRFCalcRequest):
             "equipment": vars(equipment),
             "totals": vars(totals),
             "priced": vars(priced),
+            "mass_flow": vars(mass_flow),
         }
     except Exception as e:
         import traceback
