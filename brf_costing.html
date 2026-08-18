@@ -269,7 +269,21 @@
     .rf-tot .rf-grand:hover td { background:#1a3a5c; }
     /* The structure take-off carries six columns, so it needs the room the
        refractory summary does not. */
-    .rf-total.st-total { max-width:none; }
+    .rf-total.st-total, .rf-total.pr-total { max-width:none; }
+    .pr-total .rf-tot td { font-size:.78rem; padding:6px 10px; }
+    /* Which vendor's rates are in force. Sits above the workbook, not inside
+       a sheet, so redrawing a sheet cannot reset it. */
+    .vendor-bar { display:flex; align-items:center; gap:12px; margin:0 0 14px;
+                  padding:12px 16px; background:var(--card); border:1px solid var(--border);
+                  border-radius:12px; }
+    .vendor-bar label { font-size:.72rem; font-weight:700; color:var(--muted);
+                        text-transform:uppercase; letter-spacing:.6px; }
+    .vendor-bar select { padding:7px 12px; font:inherit; font-size:.86rem; font-weight:600;
+                         color:#0f172a; background:#fff; border:1.5px solid var(--border);
+                         border-radius:8px; cursor:pointer; }
+    .vendor-bar select:focus { outline:none; border-color:var(--navy);
+                               box-shadow:0 0 0 3px rgba(26,58,92,.08); }
+    .vendor-bar .hint { color:var(--muted); font-size:.78rem; }
     .st-total .rf-tot td { font-size:.8rem; }
     .st-total .rf-grand td:first-child { text-align:left; }
     .st-note { padding:10px 12px; font-size:.76rem; line-height:1.5; color:var(--muted);
@@ -738,6 +752,18 @@
       <div class="banner-block"><div class="banner-label">Total Cost</div><div class="banner-value sell" id="b2-cost">--</div></div>
     </div>
 
+    <!-- Whose rates price the refractory. Kept outside the sheets so it is
+         not redrawn — and so it holds its value — when they are. -->
+    <div class="vendor-bar">
+      <label for="pr-vendor">Refractory rates</label>
+      <select id="pr-vendor" onchange="vendorChanged()">
+        <option value="trl">TRL</option>
+        <option value="raj">Rajhans</option>
+        <option value="bhil">Bhilwari</option>
+      </select>
+      <span class="hint" id="pr-compare">&nbsp;</span>
+    </div>
+
     <div class="xl-workbook">
       <div class="xl-titlebar"><span class="xl-logo">X</span><span>Billet Reheating Furnace — ENCON</span></div>
       <div class="xl-formulabar"><div class="xl-namebox">A1</div><div class="xl-fx">fx</div><div class="xl-formulainput">&nbsp;</div></div>
@@ -1068,6 +1094,7 @@ function furnacePayload(){
   o.top_and_bottom_fired = firedTopAndBottom();
   const eq = readEquipment();
   if(eq) o.equipment = eq;
+  o.vendor = selectedVendor();
   return o;
 }
 
@@ -1111,9 +1138,9 @@ async function runFurnace(){
     const data=await res.json();
     if(data&&data.furnace) renderFurnace(data.furnace);
     if(data&&data.refractory){ renderRefractory(data.refractory);
-                               renderRefractorySheet(data.refractory); }
+                               renderRefractorySheet(data.refractory, data.priced); }
     if(data&&data.structure){ renderStructure(data.structure);
-                              renderStructureSheet(data.structure, data.casting); }
+                              renderStructureSheet(data.structure, data.casting, data.priced); }
     if(data&&data.casting) renderCasting(data.casting);
     if(data&&data.equipment) renderEquipment(data.equipment);
     if(data&&data.totals) renderTotals(data.totals);
@@ -1534,7 +1561,7 @@ function renderFuel(d){
 // are compared across.
 let _legacyRefractoryHtml = "";
 
-function renderRefractorySheet(f){
+function renderRefractorySheet(f, priced){
   const el=document.getElementById("xl-refractory");
   if(!el) return;
   // Same as the structure sheet: this renderer owns the element, so a missing
@@ -1729,6 +1756,20 @@ function renderRefractorySheet(f){
     t+='</table></div>';
     h+=t;
   }
+  // The priced take-off — what the vendor breakups quote against.
+  if(priced && priced.refractory_rows){
+    const by=priced.refractory_cost_by_vendor||{};
+    const others=Object.keys(by).filter(k=>k!==priced.vendor)
+      .map(k=>`${VENDOR_LABEL[k]||k} ₹ ${Number(by[k]).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}`)
+      .join(" · ");
+    h+=pricedTable(priced.refractory_rows, priced.refractory_kg,
+      priced.refractory_cost,
+      `REFRACTORY, PRICED &mdash; ${VENDOR_LABEL[priced.vendor]||priced.vendor}`,
+      "Quantities are rounded up to whole pieces and bags before billing, which "
+      + "is why this weight sits a little above the take-off's own total: that "
+      + "one is what the furnace weighs, this is what gets ordered. "
+      + (others?`At the other rates &mdash; ${others}.`:""));
+  }
   // Underneath, the costed refractory list. It is still the fixed data from
   // the 30 T job — rates and amounts the take-off above does not have — so it
   // is labelled rather than left to look computed.
@@ -1756,6 +1797,49 @@ let _legacyMildSteelHtml = "";
 // Casting card, so it is written back to that field rather than kept here.
 // The card stays the single place the payload is read from; this is a second
 // way in, not a second copy.
+// ── The priced take-off ────────────────────────────────────────────────────
+// Ref.+Str. as it is actually billed: every quantity rounded up to a whole
+// piece or bag, at one vendor's rates. Built here and handed to whichever
+// sheet renderer owns the element, so nothing writes an element twice.
+const VENDOR_LABEL={trl:"TRL", raj:"Rajhans", bhil:"Bhilwari"};
+
+function selectedVendor(){
+  const s=document.getElementById("pr-vendor");
+  return s ? s.value : "trl";
+}
+
+function vendorChanged(){ furnacePreview(); }
+
+function pricedTable(rows, totalKg, totalCost, heading, note){
+  if(!rows||!rows.length) return "";
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const num=(v,p=2)=>Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  let h='<div class="rf-total pr-total"><table class="xl-grid rf-tot">'
+      + '<colgroup><col style="width:17%"><col style="width:14%"><col style="width:11%">'
+      + '<col style="width:17%"><col style="width:9%"><col style="width:8%">'
+      + '<col style="width:11%"><col style="width:13%"></colgroup>'
+      + `<tr><td class="rf-head" colspan="8">${heading}</td></tr>`
+      + '<tr><td class="rf-head">ITEM</td><td class="rf-head">MATERIAL</td>'
+      + '<td class="rf-head">PLACE</td><td class="rf-head">STANDARD SIZE</td>'
+      + '<td class="rf-head xl-num">QTY</td><td class="rf-head xl-num">Wt.</td>'
+      + '<td class="rf-head xl-num">TOTAL Wt.</td><td class="rf-head xl-num">COST</td></tr>';
+  rows.forEach(([item,mat,place,zone,size,qty,wt,twt,rate,cost])=>{
+    h+=`<tr><td class="rf-label">${esc(item)}</td><td class="rf-label">${esc(mat)}</td>`
+      +`<td class="rf-label">${esc(place)}</td><td class="rf-label">${esc(size)}</td>`
+      +`<td class="rf-val xl-num">${num(qty,0)}</td>`
+      +`<td class="rf-val xl-num">${num(wt)}</td>`
+      +`<td class="rf-val xl-num">${num(twt)}</td>`
+      +`<td class="rf-val xl-num">${num(cost)}</td></tr>`;
+  });
+  h+='<tr class="rf-grand"><td colspan="6">Total</td>'
+   + `<td class="xl-num">${num(totalKg)} kg</td>`
+   + `<td class="xl-num">&#8377; ${num(totalCost)}</td></tr>`
+   + '</table>'
+   + (note?`<div class="st-note">${note}</div>`:"")
+   + '</div>';
+  return h;
+}
+
 function castingEdit(box){
   const target=document.getElementById(box.dataset.target);
   if(!target) return;
@@ -1766,7 +1850,7 @@ function castingEdit(box){
 // Takes the casting alongside the structure because one element cannot have
 // two writers — that is what left this sheet blank once already. Both blocks
 // are drawn in one pass.
-function renderStructureSheet(s, c){
+function renderStructureSheet(s, c, priced){
   const el=document.getElementById("xl-mildsteel");
   if(!el) return;
   // No take-off yet — the engine has not run, or an older backend is answering.
@@ -1927,6 +2011,13 @@ function renderStructureSheet(s, c){
     h+=t;
   }
 
+  if(priced && priced.structure_rows){
+    h+=pricedTable(priced.structure_rows, priced.structure_kg,
+      priced.structure_cost, "STRUCTURE, PRICED",
+      "Piping is a lump sum of &#8377; "
+      + Number(priced.piping_lump||0).toLocaleString("en-IN")
+      + ", included in the total but not weighed.");
+  }
   // The fixed costed list keeps its place underneath, labelled as such.
   if(_legacyMildSteelHtml){
     h+='<div class="rf-legacy">Costed mild steel &mdash; fixed data, not from the '
@@ -2190,7 +2281,7 @@ function renderAll(data,showNG,showCL){
   commercialPreview();
   if(data.furnace) renderFurnace(data.furnace);
   if(data.refractory){ renderRefractory(data.refractory);
-                       renderRefractorySheet(data.refractory); }
+                       renderRefractorySheet(data.refractory, data.priced); }
   if(data.structure) renderStructure(data.structure);
   if(data.casting) renderCasting(data.casting);
   if(data.equipment) renderEquipment(data.equipment);
@@ -2242,7 +2333,7 @@ function renderAll(data,showNG,showCL){
   // whether or not the engine returned a take-off. Guarding it here is what
   // left the sheet blank — nothing else writes it.
   _legacyRefractoryHtml = rf;
-  renderRefractorySheet(data.refractory);
+  renderRefractorySheet(data.refractory, data.priced);
 
   // ═══ SHEET 3: Mild Steel ═══
   n=0;
@@ -2260,7 +2351,7 @@ function renderAll(data,showNG,showCL){
   // Same as Refractory: the fixed costed list keeps its place, but the
   // computed take-off is drawn above it rather than under it.
   _legacyMildSteelHtml = ml;
-  renderStructureSheet(data.structure, data.casting);
+  renderStructureSheet(data.structure, data.casting, data.priced);
 
   // ═══ SHEET 4: Mass Flow Control ═══
   n=0;

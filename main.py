@@ -6134,6 +6134,9 @@ class BRFCalcRequest(BaseModel):
     # The equipment around the furnace. None uses the standard list; the page
     # sends it back with whatever has been typed over.
     equipment: Optional[List[BRFEquipmentIn]] = None
+    # Whose rates price the refractory: trl, raj or bhil. The structure has
+    # only the one rate set in the sheet, so it is unaffected.
+    vendor: str = "trl"
     right_refractory_mm:    float = 510.0
     left_refractory_mm:     float = 510.0
     width_sheet_mm:         float = 16.0
@@ -6212,7 +6215,8 @@ def brf_calculate(req: BRFCalcRequest):
         from calculations.brf import (BRFFurnaceInputs, BRFCastingInputs,
                                       calculate_furnace, calculate_refractory,
                                       calculate_structure, calculate_casting,
-                                      calculate_equipment, calculate_totals)
+                                      calculate_equipment, calculate_totals,
+                                      price_takeoff)
         furnace_inputs = BRFFurnaceInputs(
             billet_length_mm=req.billet_length_mm,
             billet_width_mm=req.billet_width_mm,
@@ -6261,6 +6265,9 @@ def brf_calculate(req: BRFCalcRequest):
             [(e.item, e.qty, e.weight_t) for e in req.equipment]
             if req.equipment else None)
         totals = calculate_totals(refractory, structure, casting, equipment)
+        # The take-off billed: quantities rounded up to whole pieces and bags,
+        # at one of the three vendors' rates.
+        priced = price_takeoff(refractory, structure, req.vendor)
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -6272,6 +6279,7 @@ def brf_calculate(req: BRFCalcRequest):
             "casting": vars(casting),
             "equipment": vars(equipment),
             "totals": vars(totals),
+            "priced": vars(priced),
         }
     except Exception as e:
         import traceback

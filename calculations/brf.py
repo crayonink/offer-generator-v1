@@ -678,6 +678,11 @@ class BRFRefractoryResults:
     # [item, qty (nos), weight (kg)] in the workbook's own order.
     take_off:                   list  = field(default_factory=list)
     side_wall_hay_pieces:       float = 0.0   # G62
+    # The mortar and gap-filling bag counts, named as well as being rows in
+    # take_off, because the priced take-off bills them by the bag.
+    take_off_accosset_qty:      float = 0.0   # G75
+    take_off_fireclay_qty:      float = 0.0   # G76
+    take_off_firecreat_qty:     float = 0.0   # G78
     total_refractory_kg:        float = 0.0
     total_refractory_tonne:     float = 0.0   # H79
 
@@ -830,7 +835,12 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
     take_off = [(name, round(q, 2), round(w, 2)) for name, q, w in take_off]
 
     def _2(x):
-        return round(x, 2)
+        # Six places, not two. These counts are billed by the piece, and the
+        # billing rounds each one UP: the preheating wall's cold face is
+        # 176.00255 bricks, which orders 177. Rounded to two places first it
+        # becomes 176.0 and orders 176, one brick short on four lines of the
+        # take-off. The screen formats to two places regardless.
+        return round(x, 6)
 
     return BRFRefractoryResults(
         brick_volume_mm3=brick_vol,
@@ -913,6 +923,9 @@ def calculate_refractory(fur, fin, inp=None) -> BRFRefractoryResults:
         duct2_bags=_2(d2_bags),
         take_off=take_off,
         side_wall_hay_pieces=_2(sw_hay),
+        take_off_accosset_qty=_2(accosset_qty),
+        take_off_fireclay_qty=_2(fireclay_qty),
+        take_off_firecreat_qty=r.firecreat_bags,
         total_refractory_kg=_2(total_kg),
         total_refractory_tonne=_2(total_kg / 1000),
     )
@@ -1024,8 +1037,10 @@ class BRFStructureResults:
     take_off: list = field(default_factory=list)   # Ref.+Str. rows 45-53
     order_weight_kg:    float = 0.0    # Ref.+Str. L55
     order_weight_tonne: float = 0.0
-    # Carried so the sheet can show the rate the weight was worked out at
+    # Carried so the sheet can show the rates the weights were worked out at,
+    # and so the priced take-off can bill the sections by the metre.
     c_channel_kg_per_m: float = 0.0    # C84
+    beam_tb_kg_per_m:   float = 0.0    # G90
 
 
 def calculate_structure(fur, fin, ref, inp=None) -> BRFStructureResults:
@@ -1166,6 +1181,7 @@ def calculate_structure(fur, fin, ref, inp=None) -> BRFStructureResults:
         order_weight_kg=_2(order_kg),
         order_weight_tonne=_2(order_kg / 1000),
         c_channel_kg_per_m=s.c_channel_kg_per_m,
+        beam_tb_kg_per_m=s.beam_tb_kg_per_m,
     )
 
 
@@ -1364,4 +1380,91 @@ def calculate_totals(ref, st, cast, equip) -> BRFTotals:
         equipment_tonne=equip.total_tonne,
         total_tonne=round(total, 2),
         structure_ordered_tonne=st.order_weight_tonne,
+    )
+
+
+# ── Pricing the take-off ────────────────────────────────────────────────────
+# Ref.+Str. columns H..T. The blocks above weigh the furnace; this bills it.
+#
+# Two things separate a priced line from the weights already computed:
+#
+#   * every quantity rounds UP to a whole piece or bag before it is billed.
+#     That is why the sheet's own L43 sits a little above the H79 the
+#     refractory block totals — about 214 kg on the 60 TPH job. Both are in
+#     the workbook and neither is wrong; H79 is what the furnace weighs and
+#     L43 is what gets ordered.
+#   * a rate is either per piece or per kilogram, and the sheet mixes them
+#     freely — brick by the piece, castable and the pastes by the kilo.
+#
+# Three vendors are priced side by side, as the three Breakup sheets do.
+
+VENDORS = ("trl", "raj", "bhil")
+VENDOR_LABELS = {"trl": "TRL", "raj": "Rajhans", "bhil": "Bhilwari"}
+
+
+@dataclass
+class BRFPricedResults:
+    # [item, material, place, zone, size, qty, unit wt, total wt, rate, cost]
+    refractory_rows:   list = field(default_factory=list)
+    structure_rows:    list = field(default_factory=list)
+    refractory_kg:     float = 0.0   # L43 — the ordered weight, rounded
+    refractory_cost:   float = 0.0   # N43 / Q43 / T43
+    structure_kg:      float = 0.0   # L55
+    structure_cost:    float = 0.0   # N55, piping included
+    piping_lump:       float = 0.0   # N54
+    vendor:            str = "trl"
+    # What the same take-off costs from each vendor, for comparison.
+    refractory_cost_by_vendor: dict = field(default_factory=dict)
+
+
+def _line(spec, obj, vendor):
+    """One priced line: quantity off the engine, rounded up, times its rate."""
+    qty = float(getattr(obj, spec["qty_attr"], 0.0) or 0.0)
+    if spec.get("qty_x2"):
+        qty *= 2
+    if spec.get("roundup", True):
+        qty = math.ceil(qty - 1e-9)
+    wt = (float(getattr(obj, spec["wt_attr"], 0.0) or 0.0)
+          if spec.get("wt_attr") else float(spec.get("wt") or 0.0))
+    # Four structure lines round the piece weight up too — a 30.6 kg/m channel
+    # is ordered as 31 kg/m — so the rounding is not only on the quantity.
+    if spec.get("wt_roundup"):
+        wt = math.ceil(wt - 1e-9)
+    total_wt = qty * wt
+    rate = spec.get(f"rate_{vendor}")
+    if rate is None:
+        rate = spec.get("rate_trl") or 0.0
+    cost = rate * (total_wt if spec.get("basis") == "kg" else qty)
+    return [spec["item"], spec["material"], spec["place"], spec["zone"],
+            spec["size"], qty, round(wt, 4), round(total_wt, 2),
+            round(float(rate), 4), round(cost, 2)]
+
+
+def price_takeoff(ref, st, vendor="trl") -> BRFPricedResults:
+    """Bill the refractory and the steel at one vendor's rates.
+
+    ref — BRFRefractoryResults, st — BRFStructureResults.
+    """
+    from bom.brf_takeoff import (REFRACTORY_TAKEOFF, STRUCTURE_TAKEOFF,
+                                 PIPING_LUMP)
+    vendor = vendor if vendor in VENDORS else "trl"
+
+    r_rows = [_line(s, ref, vendor) for s in REFRACTORY_TAKEOFF]
+    s_rows = [_line(s, st, "trl") for s in STRUCTURE_TAKEOFF]   # one rate set
+
+    by_vendor = {}
+    for v_ in VENDORS:
+        by_vendor[v_] = round(
+            sum(_line(s, ref, v_)[9] for s in REFRACTORY_TAKEOFF), 2)
+
+    return BRFPricedResults(
+        refractory_rows=r_rows,
+        structure_rows=s_rows,
+        refractory_kg=round(sum(r[7] for r in r_rows), 2),
+        refractory_cost=round(sum(r[9] for r in r_rows), 2),
+        structure_kg=round(sum(r[7] for r in s_rows), 2),
+        structure_cost=round(sum(r[9] for r in s_rows) + PIPING_LUMP, 2),
+        piping_lump=PIPING_LUMP,
+        vendor=vendor,
+        refractory_cost_by_vendor=by_vendor,
     )
