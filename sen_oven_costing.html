@@ -166,7 +166,7 @@
 
 		/* ── Layout ── */
 		.page {
-			max-width: 820px;
+			max-width: 950px;
 			margin: 0 auto;
 			padding: 48px 24px 80px;
 		}
@@ -537,6 +537,47 @@
 			padding: 8px 14px;
 		}
 
+		/* ── BOM Input Fields ── */
+		table.bom input[type=number]::-webkit-inner-spin-button,
+		table.bom input[type=number]::-webkit-outer-spin-button {
+			-webkit-appearance: none;
+			margin: 0;
+		}
+
+		table.bom input[type=number] {
+			-moz-appearance: textfield;
+		}
+
+		.bom-input {
+			width: 78px;
+			padding: 5px 8px;
+			border: 1.5px solid #cbd5e1;
+			border-radius: 6px;
+			font-family: inherit;
+			font-size: 0.84rem;
+			font-weight: 600;
+			color: var(--navy);
+			background: #f8fafc;
+			text-align: right;
+			transition: all 0.15s ease;
+		}
+
+		.bom-input:hover {
+			border-color: #94a3b8;
+			background: #ffffff;
+		}
+
+		.bom-input:focus {
+			outline: none;
+			border-color: var(--navy);
+			background: #ffffff;
+			box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.12);
+		}
+
+		.bom-input.wide {
+			width: 95px;
+		}
+
 		.bom-footer {
 			background: #f8fafc;
 			padding: 16px 24px;
@@ -628,9 +669,9 @@
 		<!-- ══ STEP 1: Customer Details ══ -->
 		<div class="step-panel active" id="panel-1">
 			<div class="hero">
-				<h1>SEN / SES Preheating Oven Generator</h1>
+				<h1>SEN / SES Oven Generator</h1>
 				<p>
-					Generate a detailed cost sheet and offer proposal for SEN / SES Preheating Oven systems.
+					Generate a detailed cost sheet and offer proposal for SEN / SES Oven systems.
 					Insulated chamber (1200 °C), gas train (NG / LPG / COG), burner controls, tray rack &amp; door
 					mechanism.
 				</p>
@@ -690,7 +731,7 @@
 				</div>
 				<div class="field" style="grid-column: span 2">
 					<label>Subject</label>
-					<input id="c-subject" value="Offer for ENCON SEN Preheating Oven" />
+					<input id="c-subject" value="Offer for ENCON SEN Oven" />
 				</div>
 			</div>
 
@@ -859,19 +900,11 @@
 								<td colspan="2" style="border-top: 1px solid #e2e8f0; padding: 6px 0 2px;"></td>
 							</tr>
 							<tr>
-								<td style="padding: 4px 0; color: #64748b;">Burner Capacity</td>
-								<td style="font-weight: 600;" id="cd-burner-cap">120 kW (Total)</td>
-							</tr>
-							<tr>
 								<td style="padding: 4px 0; color: #64748b;">Burner Size</td>
 								<td style="font-weight: 600;" id="cd-burner-size">10.00 kW (2 Nos / set)</td>
 							</tr>
 							<tr>
 								<td colspan="2" style="border-top: 1px solid #e2e8f0; padding: 6px 0 2px;"></td>
-							</tr>
-							<tr>
-								<td style="padding: 4px 0; color: #64748b;">Blower Size</td>
-								<td style="font-weight: 600;" id="cd-blower">121.78 Nm³/hr</td>
 							</tr>
 							<tr>
 								<td style="padding: 4px 0; color: #64748b;">Blower CFM</td>
@@ -926,7 +959,7 @@
 			<div class="calc-grid">
 				<!-- Left: Burner Calculation -->
 				<div class="result-section" style="margin-bottom: 0;">
-					<div class="result-title">Burner Calculation — SEN Preheating Oven</div>
+					<div class="result-title">Burner Calculation — SEN Oven</div>
 					<div class="result-card">
 						<table class="ct">
 							<tr class="ch">
@@ -986,6 +1019,11 @@
 								<td class="unit">kcal/hr</td>
 							</tr>
 							<tr>
+								<td class="lbl">Firing Rate in kW</td>
+								<td class="val" id="r-firing-rate-kw">120.00</td>
+								<td class="unit">kW</td>
+							</tr>
+							<tr>
 								<td class="lbl">Total Air Required</td>
 								<td class="val" id="r-air-flow-nm3">121.78</td>
 								<td class="unit">Nm³/hr</td>
@@ -1000,21 +1038,7 @@
 								<td class="val" id="r-calc-blower-hp">0.63</td>
 								<td class="unit">HP</td>
 							</tr>
-							<tr class="ch">
-								<td colspan="3">Equipment Selected</td>
-							</tr>
-							<tr>
-								<td class="lbl">Blower</td>
-								<td class="val" id="r-selected-blower" colspan="2">3.0 HP — ENCON 28/3</td>
-							</tr>
-							<tr>
-								<td class="lbl">Burner Model</td>
-								<td class="val" id="r-selected-burner" colspan="2">LPG 10 kW (2 Nos per set)</td>
-							</tr>
-							<tr>
-								<td class="lbl">Gas Train / Skid</td>
-								<td class="val" id="r-selected-gastrain" colspan="2">50 NB MADAS (20 Nm³/hr)</td>
-							</tr>
+
 						</table>
 					</div>
 				</div>
@@ -1083,7 +1107,7 @@
 
 			<!-- VLPH-style Equipment Item Selection Dropdowns -->
 			<div class="sec-label">Equipment Item Selection (Options)</div>
-			<div class="fg fg-3" style="margin-bottom: 20px;">
+			<div class="fg fg-4" style="margin-bottom: 20px;">
 				<div class="field">
 					<label>Combustion Air Blower Package</label>
 					<select id="sel-blower" onchange="_userSetBlower = true; onItemSelectionChange();">
@@ -1091,6 +1115,16 @@
 						<option value="5.0">5.0 HP Heavy Duty Blower (ENCON 40/5)</option>
 						<option value="7.5">7.5 HP High Capacity Blower (ENCON 40/7.5)</option>
 						<option value="10.0">10.0 HP Heavy Industrial Blower (ENCON 40/10)</option>
+					</select>
+				</div>
+				<div class="field">
+					<label>ENCON Burner Package (LPG / NG / COG)</label>
+					<select id="sel-burner" onchange="_userSetBurner = true; onItemSelectionChange();">
+						<option value="ENCON-PB-LPG-10KW" selected>ENCON-PB-LPG-10KW</option>
+						<option value="ENCON-PB NG 10 KW">ENCON-PB NG 10 KW</option>
+						<option value="ENCON-PB LPG 100 KW">ENCON-PB LPG 100 KW</option>
+						<option value="ENCON-PB NG 100 KW">ENCON-PB NG 100 KW</option>
+						<option value="ENCON PB COG 100 KW">ENCON PB COG 100 KW</option>
 					</select>
 				</div>
 				<div class="field">
@@ -1252,7 +1286,9 @@
 		let _rows = [];
 		let _gasLine = "LPG";
 		let _inputMode = "calc";
+		let _blowerOptions = [];
 		let _userSetBlower = false;
+		let _userSetBurner = false;
 		let _userSetGasTrain = false;
 
 		function setInputMode(m) {
@@ -1327,7 +1363,7 @@
 			calcThermal();
 		}
 
-		let _blowerOptions = [];
+		let _burnerOptions = [];
 
 		async function _loadBlowerOptions() {
 			try {
@@ -1351,6 +1387,29 @@
 			}
 		}
 
+		async function _loadBurnerOptions() {
+			try {
+				const r = await fetch("/api/sen-oven/burner-options");
+				const d = await r.json();
+				if (d.options && d.options.length) {
+					_burnerOptions = d.options;
+					const sel = document.getElementById("sel-burner");
+					if (sel) {
+						const currentVal = sel.value || d.options[0].val;
+						let html = "";
+						d.options.forEach(opt => {
+							html += `<option value="${opt.val}">${opt.label} — ₹ ${Math.round(opt.price).toLocaleString("en-IN")}</option>`;
+						});
+						sel.innerHTML = html;
+						if (d.options.some(o => o.val === currentVal)) sel.value = currentVal;
+					}
+					calcThermal();
+				}
+			} catch (e) {
+				console.error("Burner options load error:", e);
+			}
+		}
+
 		async function _loadBom() {
 			try {
 				const r = await fetch("/api/sen-oven/bom");
@@ -1362,9 +1421,42 @@
 			}
 		}
 
+		let _bvOptions = [];
+		async function _loadButterflyOptions() {
+			try {
+				const r = await fetch("/api/sen-oven/butterfly-options");
+				const d = await r.json();
+				if (d && d.options) _bvOptions = d.options;
+			} catch (e) {
+				console.error("Butterfly options load error:", e);
+			}
+		}
+
+		let _gasTrainOptions = [];
+		async function _loadGasTrainOptions() {
+			try {
+				const r = await fetch("/api/sen-oven/gastrain-options");
+				const d = await r.json();
+				if (d && d.options) _gasTrainOptions = d.options;
+			} catch (e) {
+				console.error("Gas Train options load error:", e);
+			}
+		}
+
+		let _lastCalculatedAirPipeNb = "50 NB";
+
+		function _getButterflyValveSpec(airPipeNbStr) {
+			if (!_bvOptions.length) return null;
+			const num = parseInt((airPipeNbStr || "50").replace(/\D/g, ""), 10) || 50;
+			let match = _bvOptions.find(m => m.nb >= num);
+			if (!match) match = _bvOptions[_bvOptions.length - 1];
+			return match;
+		}
+
 		function onItemSelectionChange() {
 			if (!_rows.length) return;
 			const blowerHp = (document.getElementById("sel-blower") ? document.getElementById("sel-blower").value : "3.0");
+			const burnerKw = (document.getElementById("sel-burner") ? document.getElementById("sel-burner").value : "10");
 			const gasTrainSize = (document.getElementById("sel-gastrain") ? document.getElementById("sel-gastrain").value : "50NB");
 
 			_rows.forEach(r => {
@@ -1373,27 +1465,67 @@
 					const matchedOpt = _blowerOptions.find(o => String(o.val) === String(blowerHp));
 					if (matchedOpt) {
 						r.ref = matchedOpt.ref;
+						r.make = "ENCON";
 						r.basic = matchedOpt.price;
-					} else {
-						if (blowerHp === "10.0") { r.ref = "ENCON 40/10 (10.0 HP)"; r.basic = 39200.0; }
-						else if (blowerHp === "7.5") { r.ref = "ENCON 40/7.5 (7.5 HP)"; r.basic = 33600.0; }
-						else if (blowerHp === "5.0") { r.ref = "ENCON 40/5 (5.0 HP)"; r.basic = 31360.0; }
-						else { r.ref = "ENCON 28/3 (3.0 HP)"; r.basic = 28000.0; }
+					}
+				}
+				if (r.item && (r.item === "Gas Burner" || r.item.includes("Gas Burner") || r.item.includes("PILOT BURNER")) && !r.item.includes("Valve")) {
+					const matchedOpt = _burnerOptions.find(o => String(o.val) === String(burnerKw));
+					if (matchedOpt) {
+						r.ref = `${_gasLine} ${matchedOpt.kw} kW`;
+						if (matchedOpt.make) r.make = matchedOpt.make;
+						r.basic = matchedOpt.price;
+					}
+				}
+				if (r.item && r.item.includes("Butterfly Valve")) {
+					const bvSpec = _getButterflyValveSpec(_lastCalculatedAirPipeNb);
+					if (bvSpec) {
+						r.ref = bvSpec.ref;
+						if (bvSpec.make) r.make = bvSpec.make;
+						if (!r.userSetBasic) {
+							r.basic = bvSpec.price;
+						}
 					}
 				}
 				if (r.item && (r.item.includes("LPG Skid") || r.item.includes("Gas Train"))) {
 					if (gasTrainSize === "65NB") {
+						const match = _gasTrainOptions.find(o => o.item.includes("DN50") || o.item.includes("DN65") || o.item.includes("65"));
 						r.item = "LPG Skid";
 						r.ref = "35 Nm3/hr (65 NB)";
-						r.basic = 115000;
+						if (match && match.price) {
+							r.basic = match.price;
+							if (match.make) r.make = match.make;
+						}
 					} else {
+						const match = _gasTrainOptions.find(o => o.item.includes("DN25") || o.item.includes("20") || o.item.includes("SKID") || o.item.includes("Packaged"));
 						r.item = "LPG Skid";
 						r.ref = "20 Nm3/hr";
-						r.basic = 88500;
+						if (match && match.price) {
+							r.basic = match.price;
+							if (match.make) r.make = match.make;
+						}
 					}
 				}
 			});
 			recalcBom();
+		}
+
+		function _getAutoSelectedBurnerVal(gasLine, targetKw) {
+			if (!_burnerOptions.length) return "";
+			const glUpper = (gasLine || "LPG").toUpperCase();
+			let candidates = _burnerOptions.filter(o => o.label.toUpperCase().includes(glUpper));
+			if (!candidates.length) candidates = _burnerOptions;
+
+			let best = candidates[0];
+			let bestDiff = Math.abs(best.kw - targetKw);
+			for (let i = 1; i < candidates.length; i++) {
+				let diff = Math.abs(candidates[i].kw - targetKw);
+				if (diff < bestDiff) {
+					best = candidates[i];
+					bestDiff = diff;
+				}
+			}
+			return best.val;
 		}
 
 		/* ── Thermal Sizing Logic (Calculate or Direct Input) ── */
@@ -1415,6 +1547,7 @@
 			const timeHr = parseFloat(document.getElementById("param-time")?.value || "0.67") || 0.67;
 			const extraPct = parseFloat(document.getElementById("param-safety-pct")?.value || "10") || 10;
 
+			const selBurnerEl = document.getElementById("sel-burner");
 			if (_inputMode === "calc") {
 				burnerKw = 10.0;
 				qtyPerSen = 2.0;
@@ -1489,6 +1622,12 @@
 			const activeGasTrainVal = selGasTrainEl ? selGasTrainEl.value : recGasTrainVal;
 			const selGasTrainTxt = activeGasTrainVal === "65NB" ? "65 NB High Capacity Skid (35 Nm³/hr)" : "50 NB MADAS (20 Nm³/hr)";
 
+			// 3. Automatic Burner Auto-Selection based on fuel & calculated kW
+			let recBurnerVal = _getAutoSelectedBurnerVal(_gasLine, burnerKw);
+			if (selBurnerEl && !_userSetBurner && recBurnerVal) {
+				selBurnerEl.value = recBurnerVal;
+			}
+
 			// 3. User Air & Gas Pipe Inner Diameter (mm) Equations:
 			// Air Pipe: d = Math.sqrt((Q_air * 4) / (Math.PI * 15.0 * 3600)) * 1000   (V_air = 15.0 m/s)
 			// Gas Pipe: d = Math.sqrt((Q_gas * 4) / (Math.PI * 12.7 * 3600)) * 1000   (V_gas = 12.7 m/s)
@@ -1513,6 +1652,7 @@
 			};
 
 			const airPipeNb = _getNbFromDia(calcAirD);
+			_lastCalculatedAirPipeNb = airPipeNb;
 			const gasPipeNb = _getNbFromDia(calcGasD);
 
 			const totalKw = Math.round(burnerKw * qtyPerSen * strands);
@@ -1542,6 +1682,8 @@
 			_setTxt("r-total-heat-load", Math.round(totalHeatLoadKcal).toLocaleString("en-IN"));
 			_setTxt("r-extra-firing-rate", extraFiringRate.toFixed(2));
 			_setTxt("r-total-heat", Math.round(totalHeatOutput).toLocaleString("en-IN"));
+			const firingRateKw = totalHeatOutput / 860.0;
+			_setTxt("r-firing-rate-kw", firingRateKw.toFixed(2));
 			_setTxt("r-air-flow-nm3", totalAirNm3.toFixed(2));
 			_setTxt("r-air-flow-cfm", totalAirCfm.toFixed(2));
 			_setTxt("r-calc-blower-hp", calcBlowerHp.toFixed(2));
@@ -1571,38 +1713,57 @@
 		}
 
 		function recalcBom() {
-			if (!_rows.length) return;
-			let bSum = 0, eSum = 0;
 			const tbody = document.getElementById("bom-tbody");
-			let html = "";
+			if (tbody && _rows.length) {
+				let html = "";
+				let currentSec = "";
+				_rows.forEach((r, idx) => {
+					const sec = r.section || "bought";
+					if (sec !== currentSec) {
+						currentSec = sec;
+						html += `<tr class="grp"><td colspan="9">${sec === "encon" ? "ENCON-built items" : "Bought-out items"}</td></tr>`;
+					}
+					const qty = r.qty != null ? r.qty : 1;
+					const basic = r.basic != null ? r.basic : 0;
+					const tot = qty * basic;
+					r.total = tot;
+					const isMisc = (r.media || "").toUpperCase().includes("MISC");
 
-			let currentSec = "";
-			_rows.forEach((r, idx) => {
+					html += `<tr>
+							<td>${idx + 1}</td>
+							<td>${r.media || "LINE"}</td>
+							<td>${r.item}</td>
+							<td>${r.ref || "Standard"}</td>
+							<td class="r">
+								<input class="bom-input" type="number" min="0" step="any" value="${qty}" oninput="onCellEdit(${idx},'qty',this.value)" />
+							</td>
+							<td>${r.unit || "No"}</td>
+							<td>${r.make || "ENCON"}</td>
+							<td class="r">
+								${isMisc ? `<input id="row-basic-${idx}" class="bom-input wide" type="number" min="0" step="any" value="${Math.round(basic)}" oninput="onCellEdit(${idx},'basic',this.value)" />` : Math.round(basic).toLocaleString("en-IN")}
+							</td>
+							<td class="r" id="row-total-${idx}">${Math.round(tot).toLocaleString("en-IN")}</td>
+						</tr>`;
+				});
+
+				tbody.innerHTML = html;
+			}
+			return updateBomTotals();
+		}
+
+		function updateBomTotals() {
+			let bSum = 0;
+			let eSum = 0;
+			_rows.forEach(r => {
 				const sec = r.section || "bought";
-				if (sec !== currentSec) {
-					currentSec = sec;
-					html += `<tr class="grp"><td colspan="9">${sec === "encon" ? "ENCON-built items" : "Bought-out items"}</td></tr>`;
-				}
 				const qty = r.qty != null ? r.qty : 1;
 				const basic = r.basic != null ? r.basic : 0;
 				const tot = qty * basic;
 				r.total = tot;
 				if (sec === "encon") eSum += tot;
 				else bSum += tot;
-				html += `<tr>
-						<td>${idx + 1}</td>
-						<td>${r.media || "LINE"}</td>
-						<td>${r.item}</td>
-						<td>${r.ref || "Standard"}</td>
-						<td class="r">${qty}</td>
-						<td>${r.unit || "No"}</td>
-						<td>${r.make || "ENCON"}</td>
-						<td class="r">${Math.round(basic).toLocaleString("en-IN")}</td>
-						<td class="r">${Math.round(tot).toLocaleString("en-IN")}</td>
-					</tr>`;
 			});
 
-			tbody.innerHTML = html;
 			const mk = parseFloat(document.getElementById("markup").value || "1.8") || 1.8;
 			const boughtMk = Math.round(bSum * mk);
 			const unitSell = Math.round(bSum * mk + eSum);
@@ -1610,18 +1771,45 @@
 			const pf = parseFloat(document.getElementById("pf-pct").value || "0") || 0;
 			const des = parseFloat(document.getElementById("design-pct").value || "0") || 0;
 			const neg = parseFloat(document.getElementById("neg-pct").value || "0") || 0;
-			const trn = parseFloat(document.getElementById("transport-amt").value || "0") || 0;
+			const trn = parseFloat((document.getElementById("transport-amt") || {}).value || "0") || 0;
 			const sub = unitSell * qtyUnits;
 			let finalTotal = sub + (sub * pf) / 100 + (sub * des) / 100 - (sub * neg) / 100 + trn;
 
-			document.getElementById("ft-bought").textContent = "₹ " + Math.round(bSum).toLocaleString("en-IN");
-			document.getElementById("ft-bought-mk").textContent = "₹ " + boughtMk.toLocaleString("en-IN");
-			document.getElementById("ft-encon").textContent = "₹ " + Math.round(eSum).toLocaleString("en-IN");
-			document.getElementById("ft-unit-sell").textContent = "₹ " + unitSell.toLocaleString("en-IN");
-			document.getElementById("cs-final").textContent = "₹ " + Math.round(finalTotal).toLocaleString("en-IN");
+			const _setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+			_setTxt("ft-bought", "₹ " + Math.round(bSum).toLocaleString("en-IN"));
+			_setTxt("ft-bought-mk", "₹ " + boughtMk.toLocaleString("en-IN"));
+			_setTxt("ft-encon", "₹ " + Math.round(eSum).toLocaleString("en-IN"));
+			_setTxt("ft-unit-sell", "₹ " + unitSell.toLocaleString("en-IN"));
+			_setTxt("cs-final", "₹ " + Math.round(finalTotal).toLocaleString("en-IN"));
 
 			return { bSum, eSum, unitSell, sub, finalTotal };
 		}
+
+		function onCellEdit(idx, field, val) {
+			if (!_rows[idx]) return;
+			const parsed = parseFloat(val);
+			const numVal = isNaN(parsed) ? 0 : parsed;
+
+			if (field === "qty") {
+				_rows[idx].qty = numVal;
+			} else if (field === "basic") {
+				_rows[idx].basic = numVal;
+				_rows[idx].userSetBasic = true;
+			}
+
+			const qty = _rows[idx].qty != null ? _rows[idx].qty : 1;
+			const basic = _rows[idx].basic != null ? _rows[idx].basic : 0;
+			const tot = qty * basic;
+			_rows[idx].total = tot;
+
+			const rowTotEl = document.getElementById("row-total-" + idx);
+			if (rowTotEl) rowTotEl.textContent = Math.round(tot).toLocaleString("en-IN");
+
+			updateBomTotals();
+		}
+
+
+
 
 		function _customerPayload() {
 			const v = id => (document.getElementById(id) || {}).value || "";
@@ -1663,37 +1851,38 @@
 		async function generateOffer() {
 			const errEl = document.getElementById("gen-error");
 			const btn = document.getElementById("gen-btn");
-			errEl.style.display = "none";
-			btn.disabled = true;
-			btn.querySelector(".btn-txt").textContent = "Generating…";
-
-			if (!_rows.length) {
-				errEl.textContent = "Please complete Step 3 (Results & BOM) first.";
-				errEl.style.display = "block";
-				btn.disabled = false;
-				btn.querySelector(".btn-txt").textContent = "Generate Word Offer (.docx) →";
-				return;
+			if (errEl) errEl.style.display = "none";
+			if (btn) {
+				btn.disabled = true;
+				const txtEl = btn.querySelector(".btn-txt");
+				if (txtEl) txtEl.textContent = "Generating…";
+				else btn.textContent = "Generating…";
 			}
 
-			const { unitSell, finalTotal } = recalcBom();
-			const qty = Math.max(1, parseInt(document.getElementById("qty-units").value || "1", 10));
-
-			const payload = {
-				customer: _customerPayload(),
-				gas_line: _gasLine,
-				sen_qty: parseInt(document.getElementById("param-strands").value || "6", 10),
-				kw_rating: parseFloat(document.getElementById("param-burner-size").value || "10") || 10,
-				bom: _rows,
-				unit_sell: unitSell,
-				qty: qty,
-				pf_pct: parseFloat(document.getElementById("pf-pct").value || "0") || 0,
-				design_pct: parseFloat(document.getElementById("design-pct").value || "0") || 0,
-				neg_pct: parseFloat(document.getElementById("neg-pct").value || "0") || 0,
-				transport_amt: parseFloat(document.getElementById("transport-amt").value || "0") || 0,
-				final_total: Math.round(finalTotal),
-			};
-
 			try {
+				if (!_rows.length) {
+					throw new Error("Please complete Step 3 (Results & BOM) first.");
+				}
+
+				const { unitSell = 0, finalTotal = 0 } = recalcBom() || {};
+				const qty = Math.max(1, parseInt(document.getElementById("qty-units")?.value || "1", 10));
+				const kwRating = parseFloat(document.getElementById("sel-burner")?.value || document.getElementById("param-burner-size")?.value || "10") || 10;
+
+				const payload = {
+					customer: _customerPayload(),
+					gas_line: _gasLine,
+					sen_qty: parseInt(document.getElementById("param-strands")?.value || "6", 10),
+					kw_rating: kwRating,
+					bom: _rows,
+					unit_sell: unitSell,
+					qty: qty,
+					pf_pct: parseFloat(document.getElementById("pf-pct")?.value || "0") || 0,
+					design_pct: parseFloat(document.getElementById("design-pct")?.value || "0") || 0,
+					neg_pct: parseFloat(document.getElementById("neg-pct")?.value || "0") || 0,
+					transport_amt: parseFloat(document.getElementById("transport-amt")?.value || "0") || 0,
+					final_total: Math.round(finalTotal),
+				};
+
 				const r = await fetch("/api/generate-sen-oven-quote", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -1705,21 +1894,30 @@
 				if (j.download_url) {
 					const a = document.createElement("a");
 					a.href = j.download_url;
-					a.download = "";
+					a.setAttribute("download", j.filename || "Offer.docx");
 					document.body.appendChild(a);
 					a.click();
-					a.remove();
+					setTimeout(() => a.remove(), 2000);
 				}
 				if (j.preview_url) {
-					document.getElementById("preview-iframe").src = j.preview_url;
-					document.getElementById("preview-box").style.display = "block";
+					const pBox = document.getElementById("preview-box");
+					const pFrame = document.getElementById("preview-iframe");
+					if (pFrame) pFrame.src = j.preview_url;
+					if (pBox) pBox.style.display = "block";
 				}
 			} catch (e) {
-				errEl.textContent = "Error: " + (e.message || e);
-				errEl.style.display = "block";
+				console.error("Generate offer error:", e);
+				if (errEl) {
+					errEl.textContent = "Error: " + (e.message || e);
+					errEl.style.display = "block";
+				}
 			} finally {
-				btn.disabled = false;
-				btn.querySelector(".btn-txt").textContent = "Generate Word Offer (.docx) →";
+				if (btn) {
+					btn.disabled = false;
+					const txtEl = btn.querySelector(".btn-txt");
+					if (txtEl) txtEl.textContent = "Generate Word Offer (.docx) →";
+					else btn.textContent = "Generate Word Offer (.docx) →";
+				}
 			}
 		}
 
@@ -1727,7 +1925,7 @@
 			const errEl = document.getElementById("gen-error");
 			const btn = document.getElementById("xlsx-btn");
 			errEl.style.display = "none";
-			const { unitSell, finalTotal } = recalcBom();
+			const { unitSell = 0, finalTotal = 0 } = recalcBom() || {};
 			const qty = Math.max(1, parseInt(document.getElementById("qty-units").value || "1", 10));
 			const sub = unitSell * qty;
 			const pf = parseFloat(document.getElementById("pf-pct").value || "0") || 0;
@@ -1736,8 +1934,8 @@
 			const trn = parseFloat(document.getElementById("transport-amt").value || "0") || 0;
 
 			const payload = {
-				product: "SEN Preheating Oven",
-				project_name: document.getElementById("c-subject").value || "SEN Preheating Oven",
+				product: "SEN Oven",
+				project_name: document.getElementById("c-subject").value || "SEN Oven",
 				company_name: document.getElementById("c-company").value || "",
 				bom: _rows.map(r => ({ item: r.item, qty: r.qty, unit_price: Math.round(r.basic), total: Math.round(r.total) })),
 				summary: {
@@ -1791,16 +1989,16 @@
 				const total = unitSell * qty;
 				const senQty = parseInt(document.getElementById("param-strands").value || "6", 10);
 				const specRows = [
-					{ label: "Equipment Type", value: "SEN Preheating Oven" },
+					{ label: "Equipment Type", value: "SEN Oven" },
 					{ label: "Heating Medium", value: `${_gasLine} Fired Burners` },
 					{ label: "SEN Positions", value: `${senQty} Strands` },
 					{ label: "Temperature", value: "1200 °C" },
 					{ label: "Combustion Air Blower", value: (document.getElementById("sel-blower") ? document.getElementById("sel-blower").value : "3.0") + ' HP' },
 				];
-				const name = `SEN Preheating Oven (${_gasLine} Line)`;
+				const name = `SEN Oven (${_gasLine} Line)`;
 				parent.postMessage({
 					source: "encon-combined-equipment",
-					type: "SEN Preheating Oven",
+					type: "SEN Oven",
 					name: name,
 					specs: specRows.slice(0, 3).map(s => s.value).join(" · "),
 					spec_rows: specRows,
@@ -1834,8 +2032,11 @@
 		}
 
 		document.addEventListener("DOMContentLoaded", () => {
-			_initEmbed("SEN Preheating Oven", "SEN Preheating Oven");
+			_initEmbed("SEN Oven", "SEN Oven");
 			_loadBlowerOptions();
+			_loadBurnerOptions();
+			_loadButterflyOptions();
+			_loadGasTrainOptions();
 			_loadBom();
 		});
 	</script>

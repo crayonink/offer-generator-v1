@@ -20,7 +20,7 @@
     .step.active .n { background:var(--navy); color:#fff; } .step.done .n { background:var(--green); color:#fff; }
     .top-r { margin-left:auto; font-size:.78rem; color:var(--muted); }
     .top-r b { color:var(--navy); }
-    .page { max-width:980px; margin:0 auto; padding:32px 24px 90px; }
+    .page { max-width:1240px; margin:0 auto; padding:32px 24px 90px; }
     .panel { display:none; } .panel.active { display:block; }
     h2 { font-size:1.5rem; font-weight:900; letter-spacing:-.02em; }
     .lead { color:var(--muted); font-size:.88rem; margin:6px 0 22px; }
@@ -226,7 +226,7 @@ const EMBED_SRC = {
   'Tundish Cooling System':'/tundish-cooling?embed=1',
   'SEN Preheater':'/sen-preheater?embed=1',
   'SEN Preheating Stove':'/sen-oven?embed=1',
-  'SEN Preheating Oven':'/sen-oven?embed=1',
+  'SEN Oven':'/sen-oven?embed=1',
   'SES Preheating Oven':'/sen-oven?embed=1&kind=oven',
 };
 const TYPE_DESC = {
@@ -236,6 +236,7 @@ const TYPE_DESC = {
   'Tundish Cooling System':'Cooling fans × 2 + MS frame + damper',
   'SEN Preheater':'SEN Preheater config + BOM (1200 °C)',
   'SEN Preheating Stove':'Compressed-air + NG lines + pilot burners (1200 °C)',
+  'SEN Oven':'Insulated chamber preheating oven (1200 °C)',
   'SES Preheating Oven':'Same build as the stove — oven variant (1200 °C)',
   'HPU':'Pick variant + kW · auto price', 'Pumping Unit':'Pick variant + kW · auto price',
   'Blower':'Pick a model · auto price', 'Burner':'Pick a model · auto price', 'Other':'Manual line item',
@@ -259,11 +260,11 @@ function goStep(n) {
 }
 
 /* ── Step 2: selection ── */
-const TUNDISH_SYSTEM = ['Tundish Preheater', 'Tundish Dryer', 'Tundish Cooling System', 'SEN Preheater', 'SES Preheating Oven'];
+const TUNDISH_SYSTEM = ['Tundish Preheater', 'Tundish Dryer', 'Tundish Cooling System', 'SEN Preheater', 'SEN Preheating Stove', 'SEN Oven', 'SES Preheating Oven'];
 function renderTypes() {
   const combo = `<div class="type" onclick="addTundishSystem()" style="border:2px solid var(--navy);background:#f0f6ff;grid-column:1/-1">
       <div class="t">Complete Tundish System <span style="font-size:.7rem;font-weight:700;color:var(--navy);background:#dbeafe;padding:2px 8px;border-radius:20px;margin-left:6px">Full line</span></div>
-      <div class="d">Tundish Preheater + Dryer + Cooling System + SEN Preheating Stove + SES Preheating Oven. Preheating can be stove, oven, or both — remove the one you don't need.</div>
+      <div class="d">Tundish Preheater + Dryer + Cooling System + SEN Preheating Stove + SEN Oven + SES Preheating Oven. Preheating can be stove, oven, or both — remove the one you don't need.</div>
       <div class="add">+ Add full line</div></div>`;
   document.getElementById('types').innerHTML = combo + Object.keys(EMBED_SRC).concat(['HPU','Pumping Unit','Blower','Burner','Other']).map(t =>
     `<div class="type" onclick="addEquipment('${t}')"><div class="t">${t}</div><div class="d">${TYPE_DESC[t]||''}</div><div class="add">+ Add</div></div>`).join('');

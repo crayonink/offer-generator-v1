@@ -148,7 +148,7 @@ SEN_OVEN_ROWS = [
 if spec.rows:
     hdr = spec.rows[0]
     hdr.cells[0].merge(hdr.cells[1])
-    _set_cell(hdr.cells[0], "TECHNICAL SPECIFICATIONS: SEN PREHEATING OVEN", bold=True, size=10, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.CENTER)
+    _set_cell(hdr.cells[0], "TECHNICAL SPECIFICATIONS: SEN OVEN", bold=True, size=10, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.CENTER)
 
 existing = list(spec.rows[1:])
 for i, (lbl, val) in enumerate(SEN_OVEN_ROWS):
@@ -183,7 +183,7 @@ def _rebuild_price_schedule(table):
     _set_cell(table.rows[0].cells[3], "Unit Price (INR)", bold=True, size=9.5, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.RIGHT)
     _set_cell(table.rows[0].cells[4], "Total Price (INR)", bold=True, size=9.5, bg="1A3A5C", color=RGBColor(255,255,255), align=WD_ALIGN_PARAGRAPH.RIGHT)
 
-    add("1.", "SEN Preheating Oven ({{ gas_line }} Line)", "{{ item_qty }}", "{{ unit_price }}", "{{ total_price }}")
+    add("1.", "SEN Oven ({{ gas_line }} Line)", "{{ item_qty }}", "{{ unit_price }}", "{{ total_price }}")
     add("", "TOTAL", "", "", "{{ grand_total }}", bold=True, bg="EEF2F7")
 
     col_widths = [Cm(1.2), Cm(6.0), Cm(2.0), Cm(3.5), Cm(4.0)]
@@ -227,7 +227,7 @@ if scope_start is not None and ann2_idx is not None:
 
     new_paras.extend([
         _new_para("SCOPE OF SUPPLY", bold=True, underline=True, size=10, color="1A3A5C"),
-        _new_para("Our scope of supply will cover design, engineering, manufacture supply, supervision of commissioning & erection of the following main components for SEN Preheating Oven:", size=9.5),
+        _new_para("Our scope of supply will cover design, engineering, manufacture supply, supervision of commissioning & erection of the following main components for SEN Oven:", size=9.5),
         _new_para(""),
         _new_para("1. OVEN CHAMBER & STEEL STRUCTURE", bold=True, underline=True, size=9.5, color="1A3A5C"),
         _new_para("Fabricated heavy-duty mild steel casing with structural reinforcement to form a rigid heating enclosure designed for 1200\u00B0C operating temperature.", size=9.5),
@@ -269,11 +269,11 @@ for p in doc.paragraphs:
     if txt == "ENCON BURNER":
         for run in p.runs:
             run.text = ""
-        p.add_run("SEN PREHEATING OVEN")
+        p.add_run("SEN OVEN")
     elif "ANNEXURE I" in txt.upper() and ("SCOPE" in txt.upper() or "EXCLUSION" in txt.upper() or "BURNER" in txt.upper()):
         for run in p.runs:
             run.text = ""
-        p.add_run("ANNEXURE I \u2014 SCOPE OF SUPPLY: SEN PREHEATING OVEN")
+        p.add_run("ANNEXURE I \u2014 SCOPE OF SUPPLY: SEN OVEN")
 
 doc.save(TARGET)
 print(f"Saved: {TARGET}")

@@ -545,6 +545,39 @@
 				box-shadow: 0 0 0 2px rgba(31, 58, 95, 0.12);
 			}
 			/* Inline editable BOM qty / basic */
+			input[type=number]::-webkit-inner-spin-button,
+			input[type=number]::-webkit-outer-spin-button {
+				-webkit-appearance: none;
+				margin: 0;
+			}
+			table.bom input[type=number] {
+				-moz-appearance: textfield;
+			}
+			.bom-input {
+				width: 68px;
+				padding: 5px 8px;
+				border: 1px solid #cbd5e1;
+				border-radius: 6px;
+				background: #f8fafc;
+				color: var(--navy);
+				font-weight: 600;
+				font-size: 0.88rem;
+				text-align: right;
+				transition: all 0.15s ease;
+			}
+			.bom-input:hover {
+				border-color: #94a3b8;
+				background: #ffffff;
+			}
+			.bom-input:focus {
+				outline: none;
+				border-color: var(--navy);
+				box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.12);
+				background: #ffffff;
+			}
+			.bom-input.wide {
+				width: 95px;
+			}
 			.editable-cell {
 				background: transparent;
 				border: none;
@@ -1038,7 +1071,7 @@
 								<td id="cs-design">—</td>
 							</tr>
 							<tr>
-								<td>− Negotiation</td>
+								<td>+ Negotiation</td>
 								<td id="cs-neg">—</td>
 							</tr>
 							<tr>
@@ -1398,7 +1431,8 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 					sno = 0;
 				let curSection = null;
 
-				rows.forEach((r, idx) => {
+				rows.forEach((r) => {
+					const realIdx = _rows.indexOf(r);
 					const sec =
 						r.section === "encon" ? "ENCON Items" : "Bought-out Items";
 					if (sec !== curSection) {
@@ -1408,20 +1442,23 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 					sno++;
 					const qty = r._qty != null ? r._qty : r.qty;
 					const basic = r._basic != null ? r._basic : r.basic;
+					const isMisc = (r.media || "").toUpperCase().includes("MISC");
+
 					html += `<tr>
       <td>${sno}</td>
       <td>${_displayMedia(r)}</td>
       <td>${r.item || ""}</td>
       <td>${r.ref || ""}</td>
-      <td class="r"><input class="editable-cell" type="number" min="0" step="0.5"
-          value="${qty}" oninput="onCellEdit(${idx},'qty',this.value)"
-          style="width:52px;text-align:right;background:transparent;border:none;font:inherit;"/></td>
+      <td class="r">
+        <input class="bom-input" type="number" min="0" step="any"
+          value="${qty}" oninput="onCellEdit(${realIdx},'qty',this.value)" />
+      </td>
       <td>${r.unit || ""}</td>
       <td>${r.make || ""}</td>
-      <td class="r"><input class="editable-cell" type="number" min="0" step="100"
-          value="${Math.round(basic)}" oninput="onCellEdit(${idx},'basic',this.value)"
-          style="width:80px;text-align:right;background:transparent;border:none;font:inherit;"/></td>
-      <td class="r" id="row-total-${idx}">${inr(qty * basic)}</td>
+      <td class="r">
+        ${isMisc ? `<input id="row-basic-${realIdx}" class="bom-input wide" type="number" min="0" step="any" value="${Math.round(basic)}" oninput="onCellEdit(${realIdx},'basic',this.value)" />` : Math.round(basic).toLocaleString("en-IN")}
+      </td>
+      <td class="r" id="row-total-${realIdx}">${inr(qty * basic)}</td>
     </tr>`;
 				});
 
@@ -1429,25 +1466,35 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 				recalcBom();
 			}
 
-			function onCellEdit(idx, field, val) {
-				_rows[idx]["_" + field] = parseFloat(val) || 0;
-				const qty = _rows[idx]._qty != null ? _rows[idx]._qty : _rows[idx].qty;
+			function onCellEdit(realIdx, field, val) {
+				if (!_rows[realIdx]) return;
+				const parsed = parseFloat(val);
+				const numVal = isNaN(parsed) ? 0 : parsed;
+
+				_rows[realIdx]["_" + field] = numVal;
+				const qty = _rows[realIdx]._qty != null ? _rows[realIdx]._qty : _rows[realIdx].qty;
 				const basic =
-					_rows[idx]._basic != null ? _rows[idx]._basic : _rows[idx].basic;
-				const tot = document.getElementById("row-total-" + idx);
+					_rows[realIdx]._basic != null ? _rows[realIdx]._basic : _rows[realIdx].basic;
+				const tot = document.getElementById("row-total-" + realIdx);
 				if (tot) tot.textContent = inr(qty * basic);
 				// Sync param inputs if a weight/qty row was edited directly
-				const item = (_rows[idx].item || "").toLowerCase();
+				const item = (_rows[realIdx].item || "").toLowerCase();
 				if (field === "qty") {
-					if (item.includes("pilot burner"))
-						document.getElementById("param-pilot-qty").value = qty;
-					if (item.includes("fabrication"))
-						document.getElementById("param-fab-kg").value = qty;
+					if (item.includes("pilot burner")) {
+						const el = document.getElementById("param-pilot-qty");
+						if (el) el.value = qty;
+					}
+					if (item.includes("fabrication")) {
+						const el = document.getElementById("param-fab-kg");
+						if (el) el.value = qty;
+					}
 					if (
 						item.includes("air-gas pipeline") ||
 						item.includes("air gas pipeline")
-					)
-						document.getElementById("param-pipe-kg").value = qty;
+					) {
+						const el = document.getElementById("param-pipe-kg");
+						if (el) el.value = qty;
+					}
 				}
 				recalcBom();
 			}
@@ -1497,7 +1544,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 				const pfA = (sub * pf) / 100;
 				const desA = (sub * des) / 100;
 				const negA = (sub * neg) / 100;
-				let total = sub + pfA + desA - negA + trn;
+				let total = sub + pfA + desA + negA + trn;
 				if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
 
 				const set = (id, v) => {
@@ -1509,7 +1556,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 				set("cs-subtotal", fmt(sub));
 				set("cs-pf", fmt(pfA));
 				set("cs-design", fmt(desA));
-				set("cs-neg", "− " + fmt(negA));
+				set("cs-neg", "+ " + fmt(negA));
 				set("cs-trans", fmt(trn));
 				set("cs-total", fmt(total));
 			}
@@ -1595,7 +1642,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 					parseFloat(document.getElementById("transport-amt").value) || 0;
 				const sub = unitSell * qty;
 				let total =
-					sub + (sub * pf) / 100 + (sub * des) / 100 - (sub * neg) / 100 + trn;
+					sub + (sub * pf) / 100 + (sub * des) / 100 + (sub * neg) / 100 + trn;
 				if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
 
 				const cust = _customerPayload();
@@ -1696,7 +1743,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 					parseFloat(document.getElementById("transport-amt").value) || 0;
 				const sub = unitSell * qty;
 				let total =
-					sub + (sub * pf) / 100 + (sub * des) / 100 - (sub * neg) / 100 + trn;
+					sub + (sub * pf) / 100 + (sub * des) / 100 + (sub * neg) / 100 + trn;
 				if (pf || des || neg || trn) total = Math.round(total / 1000) * 1000;
 
 				const payload = {

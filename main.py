@@ -3752,60 +3752,127 @@ def generate_sen_preheater_quote(payload: SenPreheaterQuotePayload, request: Req
 
 @app.get("/api/sen-oven/burner-options")
 def sen_oven_burner_options():
-    """Returns available Burner options with prices queried live from vlph.db component_price_master."""
-    options = [
-        {"val": "10", "label": "LPG / NG Burner 10 kW", "kw": 10.0, "fallback": 6111.11},
-        {"val": "15", "label": "LPG / NG Burner 15 kW", "kw": 15.0, "fallback": 7500.00},
-        {"val": "20", "label": "LPG / NG Burner 20 kW", "kw": 20.0, "fallback": 9000.00},
-        {"val": "25", "label": "LPG / NG Burner 25 kW", "kw": 25.0, "fallback": 10500.00},
-        {"val": "30", "label": "LPG / NG Burner 30 kW", "kw": 30.0, "fallback": 12000.00},
-    ]
+    """Returns available LPG, NG, and COG Burner options dynamically queried live from vlph.db database."""
+    import re
+    options = []
+    seen = set()
     try:
         conn = sqlite3.connect(DB_PATH)
-        for opt in options:
-            r = conn.execute(
-                "SELECT price FROM component_price_master WHERE category='Pilot Burner' AND item LIKE ? ORDER BY price ASC LIMIT 1",
-                (f"%{int(opt['kw'])}KW%",)
-            ).fetchone()
-            if r and r[0] is not None and float(r[0]) > 0:
-                opt["price"] = float(r[0])
-            else:
-                opt["price"] = opt["fallback"]
+        rows = conn.execute(
+            "SELECT item, price FROM component_price_master WHERE "
+            "(category LIKE '%Pilot Burner%' OR category LIKE '%Gas Burner%' OR item LIKE '%ENCON-PB%') "
+            "AND price IS NOT NULL AND price > 0 ORDER BY price ASC"
+        ).fetchall()
+
+        for item_name, price in rows:
+            if not item_name or item_name in seen:
+                continue
+            uname = item_name.upper()
+            if any(x in uname for x in ["ELECTRODE", "BLOCK", "SPACER", "SPARE", "PACKAGED", "CASTING", "RESISTOR"]):
+                continue
+            if not any(fuel in uname for fuel in ["LPG", "NG", "COG"]):
+                continue
+            seen.add(item_name)
+            kw_match = re.search(r'(\d+)\s*KW', item_name, re.I)
+            kw_val = float(kw_match.group(1)) if kw_match else 10.0
+            options.append({
+                "val": item_name,
+                "label": f"{item_name}",
+                "kw": kw_val,
+                "price": float(price)
+            })
+
         conn.close()
     except Exception as e:
         print(f"WARN: Failed to query burner-options from DB: {e}")
-        for opt in options:
-            opt["price"] = opt["fallback"]
+
+    if not options:
+        options = [
+            {"val": "ENCON-PB-LPG-10KW", "label": "ENCON-PB-LPG-10KW", "kw": 10.0, "price": 11000.0},
+            {"val": "ENCON-PB NG 10 KW", "label": "ENCON-PB NG 10 KW", "kw": 10.0, "price": 11000.0},
+            {"val": "ENCON-PB LPG 100 KW", "label": "ENCON-PB LPG 100 KW", "kw": 100.0, "price": 21000.0},
+            {"val": "ENCON-PB NG 100 KW", "label": "ENCON-PB NG 100 KW", "kw": 100.0, "price": 21000.0},
+            {"val": "ENCON PB COG 100 KW", "label": "ENCON PB COG 100 KW", "kw": 100.0, "price": 21000.0},
+        ]
 
     return {"options": options}
 
 
 @app.get("/api/sen-oven/blower-options")
 def sen_oven_blower_options():
-    """Returns available Combustion Air Blower options (minimum 3.0 HP) with prices queried live from vlph.db component_price_master."""
+    """Returns available Combustion Air Blower options with prices queried live from internal costing (bom.blower_pricelist)."""
     options = [
-        {"val": "3.0",  "label": "3.0 HP High Pressure Blower (ENCON 28/3)",   "hp": 3.0,  "ref": "ENCON 28/3 (3.0 HP)",  "pattern": "%28/3%", "fallback": 28000.0},
-        {"val": "5.0",  "label": "5.0 HP Heavy Duty Blower (ENCON 40/5)",      "hp": 5.0,  "ref": "ENCON 40/5 (5.0 HP)",  "pattern": "%40/5%", "fallback": 31360.0},
-        {"val": "7.5",  "label": "7.5 HP High Capacity Blower (ENCON 40/7.5)", "hp": 7.5,  "ref": "ENCON 40/7.5 (7.5 HP)","pattern": "%40/7.5%", "fallback": 33600.0},
-        {"val": "10.0", "label": "10.0 HP Heavy Industrial Blower (ENCON 40/10)","hp": 10.0,"ref": "ENCON 40/10 (10.0 HP)","pattern": "%40/10%", "fallback": 39200.0},
+        {"val": "3.0",  "label": "3.0 HP High Pressure Blower (ENCON 28/3)",   "hp": 3.0,  "ref": "ENCON 28/3 (3.0 HP)",  "model": "ENCON 28/3",  "fallback": 69150.0},
+        {"val": "5.0",  "label": "5.0 HP Heavy Duty Blower (ENCON 40/5)",      "hp": 5.0,  "ref": "ENCON 40/5 (5.0 HP)",  "model": "ENCON 40/5",  "fallback": 80748.0},
+        {"val": "7.5",  "label": "7.5 HP High Capacity Blower (ENCON 40/7.5)", "hp": 7.5,  "ref": "ENCON 40/7.5 (7.5 HP)","model": "ENCON 40/7.5", "fallback": 99180.0},
+        {"val": "10.0", "label": "10.0 HP Heavy Industrial Blower (ENCON 40/10)","hp": 10.0,"ref": "ENCON 40/10 (10.0 HP)","model": "ENCON 40/10","fallback": 111060.0},
     ]
     try:
         conn = sqlite3.connect(DB_PATH)
+        from bom.blower_pricelist import blower_price
         for opt in options:
-            r = conn.execute(
-                "SELECT price FROM component_price_master WHERE category LIKE '%Blower Alone%' AND item LIKE ? ORDER BY price ASC LIMIT 1",
-                (opt["pattern"],)
-            ).fetchone()
-            if r and r[0] is not None and float(r[0]) > 0:
-                opt["price"] = float(r[0])
+            p = blower_price(conn, opt["model"], with_motor=True)
+            if p and float(p) > 0:
+                opt["price"] = float(p)
             else:
                 opt["price"] = opt["fallback"]
         conn.close()
     except Exception as e:
-        print(f"WARN: Failed to query blower-options from DB: {e}")
+        print(f"WARN: Failed to query internal costing blower-options from DB: {e}")
         for opt in options:
             opt["price"] = opt["fallback"]
 
+    return {"options": options}
+
+
+@app.get("/api/sen-oven/butterfly-options")
+def sen_oven_butterfly_options():
+    """Returns available Butterfly Valve sizes, makes, and prices queried LIVE from component_price_master."""
+    options = []
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            "SELECT item, company, price FROM component_price_master WHERE category='Butterfly Valve' ORDER BY price ASC"
+        ).fetchall()
+        conn.close()
+        import re
+        for r in rows:
+            item_str = r[0] or ""
+            make_str = (r[1] or "L&T").strip()
+            price_val = float(r[2]) if (r[2] and float(r[2]) > 0) else 0.0
+            m = re.search(r"(\d+)\s*NB", item_str, re.IGNORECASE)
+            if m:
+                nb_val = int(m.group(1))
+                options.append({
+                    "nb": nb_val,
+                    "label": f"{nb_val} NB",
+                    "ref": f"{nb_val} NB",
+                    "make": make_str,
+                    "price": price_val
+                })
+    except Exception as e:
+        print(f"WARN: Failed to query butterfly-options: {e}")
+    return {"options": options}
+
+
+@app.get("/api/sen-oven/gastrain-options")
+def sen_oven_gastrain_options():
+    """Returns available Gas Train / Skid options with prices queried LIVE from component_price_master."""
+    options = []
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute(
+            "SELECT item, company, price FROM component_price_master WHERE category='Gas Train' OR item LIKE '%SKID%' ORDER BY price ASC"
+        ).fetchall()
+        conn.close()
+        for r in rows:
+            options.append({
+                "item": r[0],
+                "make": (r[1] or "MADAS").strip(),
+                "price": float(r[2]) if (r[2] and float(r[2]) > 0) else 0.0
+            })
+    except Exception as e:
+        print(f"WARN: Failed to query gastrain-options: {e}")
     return {"options": options}
 
 
@@ -3819,12 +3886,12 @@ def sen_oven_bom():
         {
             "sno": 1, "section": "bought", "media": "COMB AIR", "item": "Air Blower",
             "ref": "ENCON 28/3", "qty": 1, "unit": "Nos", "make": "ENCON",
-            "category": "Blower Alone (28 inch)", "item_like": "%28/3%", "fallback": 28000.0
+            "category": "Blower Alone (28 inch)", "item_like": "%28/3%", "fallback": 69150.0
         },
         {
             "sno": 2, "section": "bought", "media": "COMB AIR", "item": "Pressure Gauge",
-            "ref": "RANGE- 0-2000 mm WC, Dial-4\"", "qty": 1, "unit": "Nos", "make": "WIKA",
-            "category": "Bought Out", "item_like": "%PRESSURE GAUGE%", "fallback": 1200.0
+            "ref": "RANGE- 0-2000 mm WC, Dial-4\"", "qty": 1, "unit": "Nos", "make": "H GURU",
+            "category": "Instrumentation", "item_like": "%PRESSURE GAUGE WITH TNV (HGURU)%", "fallback": 3000.0
         },
         {
             "sno": 3, "section": "bought", "media": "COMB AIR", "item": "Pressure Switch Low",
@@ -3838,61 +3905,56 @@ def sen_oven_bom():
         },
         {
             "sno": 5, "section": "bought", "media": "COMB AIR", "item": "Ball Valve for Individual Burner",
-            "ref": "20 NB", "qty": 2, "unit": "Nos", "make": "L&T",
-            "category": "Ball Valve", "item_like": "%20 NB%", "fallback": 2016.0
+            "ref": "20 NB", "qty": 2, "unit": "Nos", "make": "AUDCO / SANT",
+            "category": "Ball Valve", "item_like": "%20 NB%", "fallback": 650.0
         },
         {
-            "sno": 6, "section": "bought", "media": "LPG LINE", "item": "BALL VALVE for Individual torch",
-            "ref": "20 NB", "qty": 2, "unit": "Nos", "make": "L&T",
-            "category": "Ball Valve", "item_like": "%20 NB%", "fallback": 2016.0
+            "sno": 6, "section": "bought", "media": "LPG LINE", "item": "LPG Skid",
+            "ref": "20 Nm3/hr", "qty": 1, "unit": "Set", "make": "MADAS",
+            "category": None, "item_like": "%SKID%", "fallback": 88500.0
         },
         {
             "sno": 7, "section": "bought", "media": "LPG LINE", "item": "Gas Burner",
-            "ref": "LPG 10 kW", "qty": 2, "unit": "Nos", "make": "ENCON",
+            "ref": "ENCON LPG 10 kW", "qty": 2, "unit": "Nos", "make": "ENCON",
             "category": "Pilot Burner", "item_like": "%10KW%", "fallback": 11000.0
         },
         {
-            "sno": 8, "section": "bought", "media": "LPG LINE", "item": "LPG Skid",
-            "ref": "20 Nm3/hr", "qty": 1, "unit": "Nos", "make": "MADAS",
-            "category": "Gas Train", "item_like": "%Packaged Gas Train%", "fallback": 46333.0
-        },
-        {
-            "sno": 9, "section": "bought", "media": "LPG LINE", "item": "Flexible Hose",
+            "sno": 8, "section": "bought", "media": "LPG LINE", "item": "Flexible Hose",
             "ref": "20 NB", "qty": 2, "unit": "Nos", "make": "BIG",
             "category": "Flexible Hose", "item_like": "%20NB%", "fallback": 1000.0
         },
         {
-            "sno": 10, "section": "bought", "media": "MISC ITEMS", "item": "Thermocouple",
+            "sno": 9, "section": "bought", "media": "MISC ITEMS", "item": "Thermocouple",
             "ref": "R-Type", "qty": 1, "unit": "Nos", "make": "TEMPSENS",
-            "category": None, "item_like": "%Thermocouple%", "fallback": 5000.0
+            "category": "Bought Out", "item_like": "THERMOCOUPLE", "fallback": 36000.0
         },
         {
-            "sno": 11, "section": "bought", "media": "MISC ITEMS", "item": "Temp Transmitter",
+            "sno": 10, "section": "bought", "media": "MISC ITEMS", "item": "Temp Transmitter",
             "ref": "Standard", "qty": 1, "unit": "Nos", "make": "HONEYWELL",
             "category": "Transmitters (DPT / TT / PT)", "item_like": "%TEMPERATURE TRANSMITTER%", "fallback": 13000.0
         },
         {
-            "sno": 12, "section": "bought", "media": "MISC ITEMS", "item": "Control Panel",
+            "sno": 11, "section": "bought", "media": "MISC ITEMS", "item": "Control Panel",
             "ref": "Mcc", "qty": 1, "unit": "Nos", "make": "ENCON",
             "category": "Control Panel", "item_like": "%Control Panel%", "fallback": 75000.0
         },
         {
-            "sno": 13, "section": "bought", "media": "MISC ITEMS", "item": "HT Cable",
+            "sno": 12, "section": "bought", "media": "MISC ITEMS", "item": "HT Cable",
             "ref": "50 Mtr", "qty": 50, "unit": "Mtr", "make": "ENCON",
             "category": None, "item_like": "%HT CABLE%", "fallback": 200.0
         },
         {
-            "sno": 14, "section": "bought", "media": "MISC ITEMS", "item": "Compensating Lead",
+            "sno": 13, "section": "bought", "media": "MISC ITEMS", "item": "Compensating Lead",
             "ref": "For Temperature Transmitter", "qty": 1, "unit": "Roll", "make": "TEMPSENS",
             "category": None, "item_like": "%COMPENSATING LEAD%", "fallback": 6000.0
         },
         {
-            "sno": 15, "section": "encon", "media": "MISC ITEMS", "item": "MS structure for frame",
+            "sno": 14, "section": "encon", "media": "MISC ITEMS", "item": "MS structure for frame",
             "ref": "Heavy Structural MS", "qty": 1500, "unit": "kgs", "make": "MILD STEEL",
             "category": "Raw Material", "item_like": "%M.S. Plate%", "fallback": 51.0
         },
         {
-            "sno": 16, "section": "encon", "media": "MISC ITEMS", "item": "Castables 2700 kg/m3",
+            "sno": 15, "section": "encon", "media": "MISC ITEMS", "item": "Castables 2700 kg/m3",
             "ref": "Refractory Castable", "qty": 3000, "unit": "kgs", "make": "REFRACTORY",
             "category": None, "item_like": "%Castable%", "fallback": 58.0
         },
@@ -3901,23 +3963,33 @@ def sen_oven_bom():
     rows = []
     try:
         conn = sqlite3.connect(DB_PATH)
+        from bom.blower_pricelist import blower_price
         for spec in master_spec:
             cat = spec.get("category")
             pattern = spec.get("item_like", "")
             fb = spec.get("fallback", 0.0)
             row_db = None
-            if cat and pattern:
+            if spec["item"] == "Air Blower":
+                try:
+                    p = blower_price(conn, "ENCON 28/3", with_motor=True)
+                    if p and float(p) > 0:
+                        row_db = (p, "ENCON")
+                except Exception:
+                    pass
+            elif cat and pattern:
                 row_db = conn.execute(
-                    "SELECT price FROM component_price_master WHERE category=? AND item LIKE ? ORDER BY price ASC LIMIT 1",
+                    "SELECT price, company FROM component_price_master WHERE category=? AND item LIKE ? ORDER BY price ASC LIMIT 1",
                     (cat, pattern)
                 ).fetchone()
             elif pattern:
                 row_db = conn.execute(
-                    "SELECT price FROM component_price_master WHERE item LIKE ? ORDER BY price ASC LIMIT 1",
+                    "SELECT price, company FROM component_price_master WHERE item LIKE ? ORDER BY price ASC LIMIT 1",
                     (pattern,)
                 ).fetchone()
 
             price = float(row_db[0]) if (row_db and row_db[0] is not None and float(row_db[0]) > 0) else fb
+            db_make = (row_db[1].strip() if (row_db and len(row_db) > 1 and row_db[1] and row_db[1].strip()) else spec["make"])
+
             qty = spec["qty"]
             rows.append({
                 "sno": spec["sno"],
@@ -3927,7 +3999,7 @@ def sen_oven_bom():
                 "ref": spec["ref"],
                 "qty": qty,
                 "unit": spec["unit"],
-                "make": spec["make"],
+                "make": db_make,
                 "basic": price,
                 "total": qty * price
             })
@@ -4008,8 +4080,8 @@ def generate_sen_oven_quote(payload: SenOvenQuotePayload, req: Request):
             "enquiry_ref": auto_ref,
             "enquiry_ref_short": auto_ref,
             "enquiry_date_str": datetime.now().strftime("%d/%m/%Y"),
-            "subject": c.get("subject", "") or f"Offer for ENCON SEN Preheating Oven ({gas_label})",
-            "equipment_name": f"SEN Preheating Oven ({gas_label})",
+            "subject": c.get("subject", "") or f"Offer for ENCON SEN Oven ({gas_label})",
+            "equipment_name": f"SEN Oven ({gas_label})",
             "marketing_person": _with_salutation(c.get("marketing_salutation", ""), c.get("marketing", "Mrs. Archana Sharma")),
             "marketing_phone": c.get("marketing_phone", "+91 93122 17822"),
             "marketing_email": c.get("marketing_email", "archana@encon.in"),
@@ -4022,8 +4094,8 @@ def generate_sen_oven_quote(payload: SenOvenQuotePayload, req: Request):
             "burner_capacity_sen": f"{payload.kw_rating} kW",
             "num_burners_sen": str(payload.sen_qty),
             "heating_time": "60 min",
-            "pipeline_scope_text": "We are pleased to submit our technical and commercial offer for the design, manufacture, testing, supply, and supervision of erection and commissioning of ENCON SEN Preheating Oven System.",
-            "sen_objective": f"The SEN Preheating Oven is designed to uniformly preheat {payload.sen_qty} Submerged Entry Nozzles (SEN) / SES to 1200°C within 60 minutes prior to casting, preventing thermal shock and clogging during steel pouring.",
+            "pipeline_scope_text": "We are pleased to submit our technical and commercial offer for the design, manufacture, testing, supply, and supervision of erection and commissioning of ENCON SEN Oven System.",
+            "sen_objective": f"The SEN Oven is designed to uniformly preheat {payload.sen_qty} Submerged Entry Nozzles (SEN) / SES to 1200°C within 60 minutes prior to casting, preventing thermal shock and clogging during steel pouring.",
             "sen_burners_heading": f"ENCON {gas_label.upper()} BURNERS",
             "sen_burners_body": f"The oven is equipped with {payload.sen_qty} high-efficiency ENCON gas burners rated for {payload.kw_rating} kW total capacity, designed for uniform heating across all SEN nozzle positions.",
             "fuel1_line_items": fuel1_items,
@@ -4065,7 +4137,7 @@ def generate_sen_oven_quote(payload: SenOvenQuotePayload, req: Request):
                     "date": datetime.now().strftime("%d/%m/%Y"),
                     "grand_total": total,
                     "subtotal": total,
-                    "items": [{"product_type": "SEN Preheating Oven", "model": f"SEN Oven ({gas_line} Line)", "qty": qty, "unit_price": unit_sell, "total": total}],
+                    "items": [{"product_type": "SEN Oven", "model": f"SEN Oven ({gas_line} Line)", "qty": qty, "unit_price": unit_sell, "total": total}],
                     "customer": {
                         "company_name": c.get("company", ""),
                         "company_city": c.get("city", ""),
@@ -4074,8 +4146,8 @@ def generate_sen_oven_quote(payload: SenOvenQuotePayload, req: Request):
                         "poc_designation": c.get("designation", ""),
                         "mobile_no": c.get("phone", ""),
                         "email": c.get("email", ""),
-                        "subject": c.get("subject", "") or f"Offer for ENCON SEN Preheating Oven ({gas_label})",
-                        "project_name": c.get("subject", "") or f"SEN Preheating Oven ({gas_label})",
+                        "subject": c.get("subject", "") or f"Offer for ENCON SEN Oven ({gas_label})",
+                        "project_name": c.get("subject", "") or f"SEN Oven ({gas_label})",
                         "bom_items": bom_list,
                         "fuel_name": gas_label,
                         "total_in_words": total_words,
@@ -4101,7 +4173,7 @@ def generate_sen_oven_quote(payload: SenOvenQuotePayload, req: Request):
                 company=c.get("company",""), location=c.get("location",""),
                 technical=c.get("technical",""),
             ),
-            "SEN Preheating Oven", total, docx_path)
+            "SEN Oven", total, docx_path)
 
         return {
             "success": True,
