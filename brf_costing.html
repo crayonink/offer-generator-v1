@@ -1407,11 +1407,14 @@ function renderTotals(t){
   if(!el||!t) return;
   const cm=(v,p=2)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
   const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  // No Equipment tile: it is the one term nothing derives — two dozen typed
+  // weights — and it has its own table right above this card. It still counts
+  // towards the total, and the working underneath still shows it, so the four
+  // terms can be seen to add up.
   el.innerHTML=
     tile("Total Furnace Weight", cm(t.total_tonne), "MT")+
     tile("Refractory", cm(t.refractory_tonne), "MT")+
     tile("Structure", cm(t.structure_tonne), "MT")+
-    tile("Equipment", cm(t.equipment_tonne), "MT")+
     tile("Casting", cm(t.casting_tonne), "MT");
 
   const w=document.getElementById("tot-work");
