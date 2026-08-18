@@ -1268,3 +1268,100 @@ def calculate_casting(fur, ref, inp=None) -> BRFCastingResults:
         skid_extra_m=c.skid_extra_m,
         skid_lines=c.skid_lines,
     )
+
+
+# ── Equipment, and the furnace total ────────────────────────────────────────
+# Furnace sheet, columns O..T rows 82-108. Unlike everything above it, none of
+# this is derived: it is a list of standard weights somebody types, covering
+# what sits around the furnace — the handling line, the recuperator structure,
+# the piping and the instruments.
+#
+# It is carried anyway, because T108 adds it to the refractory, the structure
+# and the casting to give TOTAL WEIGHT OF THE FURNACE. Without it the furnace
+# does not total.
+
+# item, qty, weight of one in tonne. The sheet's own figures.
+BRF_EQUIPMENT_STANDARD = [
+    ("Structure for recuperator",     1.0,  6.0),
+    ("Supporting Structure",          1.0,  4.5),
+    ("Charging Grate",                1.0, 28.0),
+    ("Roller Table-1",                1.0,  4.0),
+    ("Roller Table-2",                1.0, 10.0),
+    ("Disappearing Stopper",          1.0,  2.0),
+    ("Fixed Stopper",                 1.0,  1.0),
+    ("Pinch Roll",                    1.0,  4.0),
+    ("Weighing Station",              1.0,  5.0),
+    ("Discharge Roller Table",        1.0,  8.0),
+    ("Elevator Kick off",             1.0, 16.0),
+    ("Elevator run out",              1.0,  8.0),
+    ("Foundation Bolt",               1.0,  4.0),
+    ("Piping",                        1.0, 12.0),
+    ("Instrument",                    1.0,  2.0),
+    ("HP Unit",                       1.0,  1.0),
+    ("Blower",                        1.0,  4.0),
+    ("Oil Day Tank",                  1.0,  2.0),
+    ("Dilution Blower",               1.0,  0.2),
+    ("Flue Duct + Support Structure", 1.0,  7.5),
+    ("Ejector",                       1.0,  7.0),
+    ("Pusher",                        1.0,  9.5),
+    # The sheet enters 15.4 t against the recuperator and leaves the quantity
+    # cell empty, so T105 multiplies out to nothing and its own total is 15.4 t
+    # light. Kept at zero so the furnace totals to the 848.97 the sheet prints;
+    # the row is on the page with its weight, ready to be set to 1.
+    ("Recuperator",                   0.0, 15.4),
+    ("Burner",                        1.0,  4.0),
+]
+
+
+@dataclass
+class BRFEquipmentResults:
+    # [item, qty, weight of one (t), total (t)]
+    rows:          list = field(default_factory=list)
+    total_tonne:   float = 0.0   # T107
+
+
+def calculate_equipment(items=None) -> BRFEquipmentResults:
+    """The standard equipment list. items is a sequence of
+    (name, qty, weight_tonne); None uses the sheet's own."""
+    src = items if items is not None else BRF_EQUIPMENT_STANDARD
+    rows = []
+    for entry in src:
+        try:
+            name, qty, wt = entry
+        except (TypeError, ValueError):
+            name = entry.get("item", "")
+            qty = float(entry.get("qty", 0) or 0)
+            wt = float(entry.get("weight_t", 0) or 0)
+        qty, wt = float(qty or 0), float(wt or 0)
+        rows.append((str(name), qty, wt, round(qty * wt, 4)))
+    return BRFEquipmentResults(rows=rows,
+                               total_tonne=round(sum(r[3] for r in rows), 4))
+
+
+@dataclass
+class BRFTotals:
+    refractory_tonne: float   # H79
+    structure_tonne:  float   # L99 — the design weight, which is what T108 adds
+    casting_tonne:    float   # C107
+    equipment_tonne:  float   # T107
+    total_tonne:      float   # T108
+    # The ordered structure weight sits beside the design weight rather than in
+    # the total, because T108 adds L99. Carried so the page can show both.
+    structure_ordered_tonne: float = 0.0
+
+
+def calculate_totals(ref, st, cast, equip) -> BRFTotals:
+    """TOTAL WEIGHT OF THE FURNACE — Furnace!T108 = L99 + T107 + H79 + C107."""
+    # Added in kilograms, not in the rounded tonnages the tiles show. Summing
+    # what is on screen loses 10 kg against the sheet and prints 848.96 where
+    # it prints 848.97.
+    total = (st.design_weight_kg + equip.total_tonne * 1000.0
+             + ref.total_refractory_kg + cast.total_casting_kg) / 1000.0
+    return BRFTotals(
+        refractory_tonne=ref.total_refractory_tonne,
+        structure_tonne=st.design_weight_tonne,
+        casting_tonne=cast.total_casting_tonne,
+        equipment_tonne=equip.total_tonne,
+        total_tonne=round(total, 2),
+        structure_ordered_tonne=st.order_weight_tonne,
+    )

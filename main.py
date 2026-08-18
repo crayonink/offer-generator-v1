@@ -6033,6 +6033,14 @@ def brf_costing_form():
         return f.read()
 
 
+class BRFEquipmentIn(BaseModel):
+    """One line of the standard equipment list — what sits around the furnace
+    rather than anything the geometry decides."""
+    item:     str = ""
+    qty:      float = 0.0
+    weight_t: float = 0.0
+
+
 class BRFZoneIn(BaseModel):
     name:          str = "Zone"
     burner_kw:     float = 1000.0
@@ -6123,6 +6131,9 @@ class BRFCalcRequest(BaseModel):
     discharge_door_kg:   float = 375.0
     inspection_door_nos: float = 6.0
     inspection_door_kg:  float = 225.0
+    # The equipment around the furnace. None uses the standard list; the page
+    # sends it back with whatever has been typed over.
+    equipment: Optional[List[BRFEquipmentIn]] = None
     right_refractory_mm:    float = 510.0
     left_refractory_mm:     float = 510.0
     width_sheet_mm:         float = 16.0
@@ -6200,7 +6211,8 @@ def brf_calculate(req: BRFCalcRequest):
         # be built on when that half is ported.
         from calculations.brf import (BRFFurnaceInputs, BRFCastingInputs,
                                       calculate_furnace, calculate_refractory,
-                                      calculate_structure, calculate_casting)
+                                      calculate_structure, calculate_casting,
+                                      calculate_equipment, calculate_totals)
         furnace_inputs = BRFFurnaceInputs(
             billet_length_mm=req.billet_length_mm,
             billet_width_mm=req.billet_width_mm,
@@ -6243,6 +6255,12 @@ def brf_calculate(req: BRFCalcRequest):
             inspection_door_nos=req.inspection_door_nos,
             inspection_door_kg=req.inspection_door_kg,
         ))
+        # What sits around the furnace — a typed list rather than a
+        # calculation, but the fourth term in the total furnace weight.
+        equipment = calculate_equipment(
+            [(e.item, e.qty, e.weight_t) for e in req.equipment]
+            if req.equipment else None)
+        totals = calculate_totals(refractory, structure, casting, equipment)
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -6252,6 +6270,8 @@ def brf_calculate(req: BRFCalcRequest):
             "refractory": vars(refractory),
             "structure": vars(structure),
             "casting": vars(casting),
+            "equipment": vars(equipment),
+            "totals": vars(totals),
         }
     except Exception as e:
         import traceback

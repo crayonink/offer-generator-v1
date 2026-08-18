@@ -36,6 +36,27 @@
     .sub-label { font-size:.72rem; font-weight:700; color:#334155; letter-spacing:.4px;
                  text-transform:uppercase; margin:18px 0 10px; }
     .sub-label:first-of-type { margin-top:0; }
+    /* The equipment list — a typed table rather than a grid of labelled
+       boxes, because it is two dozen rows of the same two numbers. */
+    .eq-wrap { border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .eq-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:.84rem; }
+    .eq-table th { background:#f1f5f9; color:#0f172a; font-weight:700; font-size:.68rem;
+                   letter-spacing:.06em; text-transform:uppercase; text-align:left;
+                   padding:10px 12px; border-bottom:1px solid var(--border); }
+    .eq-table th.xl-num { text-align:right; }
+    .eq-table td { padding:5px 12px; border-bottom:1px solid #f1f5f9; color:#334155; }
+    .eq-table td.xl-num { text-align:right; font-variant-numeric:tabular-nums;
+                          font-weight:600; color:#0f172a; }
+    .eq-table input { width:100%; padding:5px 8px; font:inherit; font-size:.82rem;
+                      text-align:right; color:#0f172a; background:#fff;
+                      border:1px solid var(--border); border-radius:6px;
+                      font-variant-numeric:tabular-nums; }
+    .eq-table input:focus { outline:none; border-color:var(--navy);
+                            box-shadow:0 0 0 3px rgba(26,58,92,.08); }
+    .eq-table tr:hover td { background:#f8fafc; }
+    .eq-table .eq-total td { background:#1a3a5c; color:#fff; font-weight:700;
+                             font-size:.9rem; padding:11px 12px; border-bottom:0; }
+    .eq-table .eq-total:hover td { background:#1a3a5c; }
 
     .field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
     /* Furnace duty inputs and the zone table */
@@ -612,6 +633,25 @@
       <div class="calc-work" id="ca-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
     </div>
 
+    <!-- What sits around the furnace. None of it is derived — it is a list of
+         standard weights, and every one is typed. It is here because the
+         sheet's total furnace weight adds it to the other three. -->
+    <div class="card">
+      <div class="card-title">Equipment</div>
+      <div class="hint" style="margin:-10px 0 14px;color:var(--muted);font-size:.8rem;">
+        Standard weights, not calculated. Change a quantity or a weight and the
+        furnace total follows.
+      </div>
+      <div class="eq-wrap"><table class="eq-table" id="eq-table"></table></div>
+    </div>
+
+    <!-- The four weights the sheet adds up. -->
+    <div class="card">
+      <div class="card-title">Total Weight of the Furnace</div>
+      <div class="fn-out" id="tot-out"></div>
+      <div class="calc-work" id="tot-work" style="margin-top:14px;border-top:1px solid var(--border);"></div>
+    </div>
+
     <div class="step-nav">
       <button class="btn-primary" onclick="goStep(4)">Next: Firing &amp; Air →</button>
     </div>
@@ -983,6 +1023,9 @@ async function refreshRef(){
 
 window.addEventListener("DOMContentLoaded",()=>{
   refreshRef();
+  // The equipment rows have to exist before the first request, or the payload
+  // goes out without them and the engine falls back to the standard list.
+  buildEquipmentTable();
   const loc=document.getElementById("c-location"), tech=document.getElementById("c-technical");
   if(loc) loc.addEventListener("change",refreshRef);
   if(tech) tech.addEventListener("input",refreshRef);
@@ -1014,6 +1057,8 @@ function furnacePayload(){
     o[k]=el?(parseFloat(el.value)||0):0;
   }
   o.top_and_bottom_fired = firedTopAndBottom();
+  const eq = readEquipment();
+  if(eq) o.equipment = eq;
   return o;
 }
 
@@ -1061,6 +1106,8 @@ async function runFurnace(){
     if(data&&data.structure){ renderStructure(data.structure);
                               renderStructureSheet(data.structure); }
     if(data&&data.casting) renderCasting(data.casting);
+    if(data&&data.equipment) renderEquipment(data.equipment);
+    if(data&&data.totals) renderTotals(data.totals);
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
@@ -1254,6 +1301,98 @@ function renderCasting(c){
     `TOTAL WEIGHT OF CASTING = ${cm(c.total_casting_kg,2)} kg = ${cm(c.total_casting_tonne,4)} tonne`,
   ].join("\n");
 }
+
+// ── Equipment, and the furnace total ───────────────────────────────────────
+// The standard weights of what sits around the furnace. Nothing here is
+// derived, so the page owns the list and sends it with every request; the
+// engine only multiplies and adds. Same figures as the sheet's O..T block.
+//
+// The recuperator carries a weight and no quantity, which is how the sheet has
+// it — its own total is 15.4 t light as a result. The row is here with the
+// weight filled in, so setting the quantity to 1 is one keystroke.
+const EQUIPMENT_STANDARD=[
+  ["Structure for recuperator",1,6],["Supporting Structure",1,4.5],
+  ["Charging Grate",1,28],["Roller Table-1",1,4],["Roller Table-2",1,10],
+  ["Disappearing Stopper",1,2],["Fixed Stopper",1,1],["Pinch Roll",1,4],
+  ["Weighing Station",1,5],["Discharge Roller Table",1,8],
+  ["Elevator Kick off",1,16],["Elevator run out",1,8],["Foundation Bolt",1,4],
+  ["Piping",1,12],["Instrument",1,2],["HP Unit",1,1],["Blower",1,4],
+  ["Oil Day Tank",1,2],["Dilution Blower",1,0.2],
+  ["Flue Duct + Support Structure",1,7.5],["Ejector",1,7],["Pusher",1,9.5],
+  ["Recuperator",0,15.4],["Burner",1,4],
+];
+
+function buildEquipmentTable(){
+  const el=document.getElementById("eq-table");
+  if(!el||el.dataset.built) return;
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  let h='<colgroup><col style="width:46%"><col style="width:16%">'
+      + '<col style="width:20%"><col style="width:18%"></colgroup>'
+      + '<tr><th>Item</th><th class="xl-num">Qty</th>'
+      + '<th class="xl-num">Wt. each (T)</th><th class="xl-num">Total (T)</th></tr>';
+  EQUIPMENT_STANDARD.forEach(([item,qty,wt],i)=>{
+    h+=`<tr data-i="${i}"><td>${esc(item)}</td>`
+      +`<td><input class="eq-q" type="number" step="any" value="${qty}" oninput="furnacePreview()" autocomplete="off"/></td>`
+      +`<td><input class="eq-w" type="number" step="any" value="${wt}" oninput="furnacePreview()" autocomplete="off"/></td>`
+      +`<td class="eq-line xl-num">${(qty*wt).toFixed(2)}</td></tr>`;
+  });
+  h+='<tr class="eq-total"><td>Total</td><td></td><td></td>'
+   + '<td class="xl-num" id="eq-total">&mdash;</td></tr>';
+  el.innerHTML=h;
+  el.dataset.built="1";
+}
+
+function readEquipment(){
+  const el=document.getElementById("eq-table");
+  if(!el||!el.dataset.built) return null;
+  return EQUIPMENT_STANDARD.map(([item],i)=>{
+    const row=el.querySelector(`tr[data-i="${i}"]`);
+    const n=sel=>{const b=row&&row.querySelector(sel);
+                  return b?(parseFloat(b.value)||0):0;};
+    return {item, qty:n(".eq-q"), weight_t:n(".eq-w")};
+  });
+}
+
+// The engine multiplies and totals; this only paints what came back, so a row
+// and the total can never disagree with each other.
+function renderEquipment(e){
+  const el=document.getElementById("eq-table");
+  if(!el||!e||!e.rows) return;
+  e.rows.forEach((r,i)=>{
+    const cell=el.querySelector(`tr[data-i="${i}"] .eq-line`);
+    if(cell) cell.textContent=Number(r[3]).toFixed(2);
+  });
+  const t=document.getElementById("eq-total");
+  if(t) t.textContent=Number(e.total_tonne).toFixed(2);
+}
+
+function renderTotals(t){
+  const el=document.getElementById("tot-out");
+  if(!el||!t) return;
+  const cm=(v,p=2)=>v==null?"—":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
+  el.innerHTML=
+    tile("Total Furnace Weight", cm(t.total_tonne), "MT")+
+    tile("Refractory", cm(t.refractory_tonne), "MT")+
+    tile("Structure", cm(t.structure_tonne), "MT")+
+    tile("Equipment", cm(t.equipment_tonne), "MT")+
+    tile("Casting", cm(t.casting_tonne), "MT");
+
+  const w=document.getElementById("tot-work");
+  if(w) w.textContent=[
+    `Refractory   ${cm(t.refractory_tonne).padStart(9)} t`,
+    `Structure    ${cm(t.structure_tonne).padStart(9)} t   design weight, on the sections the sizing is worked out for`,
+    `Equipment    ${cm(t.equipment_tonne).padStart(9)} t   standard weights, typed`,
+    `Casting      ${cm(t.casting_tonne).padStart(9)} t`,
+    `             ${"".padStart(9,"-")}`,
+    `TOTAL        ${cm(t.total_tonne).padStart(9)} t`,
+    ``,
+    `The structure enters at its design weight, which is what the sheet adds.`,
+    `Ordered, with lengths rounded up and the beams bought as stocked sections,`,
+    `it is ${cm(t.structure_ordered_tonne)} t — ${cm(t.structure_ordered_tonne-t.structure_tonne)} t more.`,
+  ].join("\n");
+}
+
 
 // ── Fuel ───────────────────────────────────────────────────────────────────
 // The fuel decides the firing rate and the air, so it is settled on Config
@@ -1977,6 +2116,8 @@ function renderAll(data,showNG,showCL){
                        renderRefractorySheet(data.refractory); }
   if(data.structure) renderStructure(data.structure);
   if(data.casting) renderCasting(data.casting);
+  if(data.equipment) renderEquipment(data.equipment);
+  if(data.totals) renderTotals(data.totals);
 
   // ═══ SHEET 1: Furnace (2) — full legacy data ═══
   const ff=sp.furnace_full||[];
