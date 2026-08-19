@@ -1168,6 +1168,13 @@ async function runFurnace(){
     if(data&&data.casting) renderCasting(data.casting);
     if(data&&data.equipment) renderEquipment(data.equipment);
     if(data&&data.totals) renderTotals(data.totals);
+    // These three were only drawn on Calculate, so a change made here fetched
+    // the new answer and then painted none of it — picking pneumatic valves
+    // left the sheet reading MOTORISED. Every sheet the response carries is
+    // repainted from the same response.
+    if(data&&data.mass_flow) renderMassFlowSheet(data.mass_flow);
+    if(data&&data.combustion_calc) renderCombustionSheet(data.combustion_calc);
+    if(data&&data.recuperator_calc) renderRecupSheet(data.recuperator_calc);
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
