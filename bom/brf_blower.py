@@ -16,9 +16,51 @@ import sqlite3
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.environ.get("VLPH_DB_PATH") or os.path.join(BASE_DIR, "vlph.db")
 
-# The sheet's blowers are 40" W.G., which is the high pressure range.
-DEFAULT_CLASS = "HIGH PRESSURE"
-PRESSURE_CLASSES = {"40": "HIGH PRESSURE", "28": "MEDIUM PRESSURE"}
+# The reheating furnace runs bigger machines than the standard ENCON ranges
+# carry, so it has a section of its own — quoted PCBLZ centrifugal blowers.
+BRF_CLASS = "BRF CENTRIFUGAL"
+DEFAULT_CLASS = BRF_CLASS
+PRESSURE_CLASSES = {"brf": BRF_CLASS, "40": "HIGH PRESSURE",
+                    "28": "MEDIUM PRESSURE"}
+
+# Quotation Q26-ET-0227, 27 March 2026, ENCON Thermal Engineers. Air quantity
+# is CMH at NTP, which is Nm3/hr; CFM follows the same 1.7 the rest of the app
+# converts on. The price is the whole set — blower, motor, coupling and
+# anti-vibration pads — because that is what gets bought.
+#
+#   PCBLZ-105-130   68,000 CMH   620 mm WC   212.14 BHP   180 kW / 240 HP motor
+#       blower 4,15,000 + motor 6,80,000 + coupling 14,000 + pads 12,500
+#   PCBLZ-100-130   60,000 CMH   620 mm WC   184.69 BHP   160 kW / 215 HP motor
+#       blower 3,77,000 + motor 4,80,000 + coupling 14,000 + pads 10,500
+BRF_CATALOGUE = [
+    # model, motor HP, Nm3/hr, pressure, blower only, whole set, motor
+    ("PCBLZ-100-130", 215.0, 60000.0, "620 mm WC", 377000.0, 881500.0, 480000.0),
+    ("PCBLZ-105-130", 240.0, 68000.0, "620 mm WC", 415000.0, 1121500.0, 680000.0),
+]
+CFM_PER_NM3HR = 1.7
+
+
+def seed_brf_blowers(conn):
+    """Put the quoted machines in blower_pricelist_master. Idempotent, and it
+    leaves an edited row alone — a price corrected in the UI stays corrected."""
+    have = {r[0] for r in conn.execute(
+        "SELECT model FROM blower_pricelist_master WHERE section = ?",
+        (BRF_CLASS,))}
+    n = 0
+    for model, hp, nm3, press, wo_motor, w_motor, motor in BRF_CATALOGUE:
+        if model in have:
+            continue
+        conn.execute(
+            "INSERT INTO blower_pricelist_master "
+            "(section, model, hp, cfm, nm3_per_hr, pressure, "
+            " price_without_motor, price_with_motor, motor_price_abb) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            (BRF_CLASS, model, hp, round(nm3 / CFM_PER_NM3HR, 2), nm3, press,
+             wo_motor, w_motor, motor))
+        n += 1
+    if n:
+        conn.commit()
+    return n
 
 
 def _catalogue(pressure_class):

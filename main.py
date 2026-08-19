@@ -1680,6 +1680,24 @@ def _startup_seed_idfan_catalog():
 _startup_seed_idfan_catalog()
 
 
+def _startup_seed_brf_blowers():
+    """Load the quoted PCBLZ centrifugal blowers (Q26-ET-0227) so the furnace
+    prices real machines. Idempotent; reaches the persistent volume on deploy,
+    and leaves an edited price alone."""
+    try:
+        from bom.brf_blower import seed_brf_blowers
+        conn = sqlite3.connect(DB_PATH)
+        n = seed_brf_blowers(conn)
+        conn.close()
+        if n:
+            print(f"[db] seeded {n} BRF blower rows")
+    except Exception as e:
+        print(f"WARN: startup seed_brf_blowers failed: {e}")
+
+
+_startup_seed_brf_blowers()
+
+
 def _startup_rename_brf_table():
     """snsf_brf_price_master -> brf_price_master, on whatever database is open.
 
@@ -6221,7 +6239,7 @@ class BRFCalcRequest(BaseModel):
     # They are priced from different ladders and are far apart.
     valve_type:        str   = "motorised"
     # Which blower range the air header runs at: 40 (high) or 28 (medium) W.G.
-    blower_pressure_wg: str  = "40"
+    blower_pressure_wg: str  = "brf"
     recup_auto_bank:   bool  = True
     recup_rows:        int   = 28
     recup_cols:        int   = 27
