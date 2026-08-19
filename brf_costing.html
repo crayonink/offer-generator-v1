@@ -1125,6 +1125,7 @@ async function runFurnace(){
     if(data&&data.mass_flow) renderMassFlowSheet(data.mass_flow);
     if(data&&data.combustion_calc) renderCombustionSheet(data.combustion_calc);
     if(data&&data.recuperator_calc) renderRecupSheet(data.recuperator_calc);
+    if(data&&data.breakup) renderBreakupSheet(data.breakup);
   }catch(e){ /* offline — leave the last good figures */ }
 }
 
@@ -2023,6 +2024,61 @@ function renderCombustionSheet(c){
   el.innerHTML=h;
 }
 
+
+// The commercial breakup. Every item at its cost, the markup that line
+// carries, and the selling price — read off the blocks that computed them
+// rather than a stored list. The markup is per line: 1.8 on most of it, 1.5
+// on the blower and the movers, 1.3 on the gas train and the refractory.
+function renderBreakupSheet(b){
+  const el=document.getElementById("xl-breakup");
+  if(!el) return;
+  if(!b||!b.rows||!b.rows.length) return;      // leave the BOM in place
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const n=(v,p=2)=>Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  let h='<div class="rf-total pr-total"><table class="xl-grid rf-tot">'
+      + '<colgroup><col style="width:30%"><col style="width:11%"><col style="width:7%">'
+      + '<col style="width:15%"><col style="width:15%"><col style="width:7%">'
+      + '<col style="width:15%"></colgroup>'
+      + '<tr><td class="rf-head" colspan="7">BREAKUP</td></tr>'
+      + '<tr><td class="rf-head">DESCRIPTION</td><td class="rf-head xl-num">QTY</td>'
+      + '<td class="rf-head">UOM</td><td class="rf-head xl-num">UNIT PRICE</td>'
+      + '<td class="rf-head xl-num">COST PRICE</td><td class="rf-head xl-num">MK</td>'
+      + '<td class="rf-head xl-num">SELL PRICE</td></tr>';
+  let group="";
+  b.rows.forEach(([g,item,qty,uom,unit,cost,mk,sell])=>{
+    if(g!==group){ group=g; h+=`<tr><td class="rf-sub" colspan="7">${esc(g)}</td></tr>`; }
+    const dim = cost===0 ? ' style="opacity:.5"' : '';
+    h+=`<tr${dim}><td class="rf-label">${esc(item)}</td>`
+      +`<td class="rf-val xl-num">${n(qty)}</td><td class="rf-unit">${esc(uom)}</td>`
+      +`<td class="rf-val xl-num">${n(unit)}</td>`
+      +`<td class="rf-val xl-num">${n(cost)}</td>`
+      +`<td class="rf-unit xl-num">${n(mk,1)}</td>`
+      +`<td class="rf-val xl-num" style="color:#1d4ed8">${n(sell)}</td></tr>`;
+  });
+  h+='<tr class="rf-grand"><td colspan="4">Total</td>'
+   + `<td class="xl-num">&#8377; ${n(b.cost_total)}</td><td></td>`
+   + `<td class="xl-num">&#8377; ${n(b.sell_total)}</td></tr></table>`;
+
+  if(b.summary && b.summary.length){
+    h+='<table class="xl-grid rf-tot" style="margin-top:2px">'
+     + '<colgroup><col style="width:56%"><col style="width:22%"><col style="width:22%"></colgroup>'
+     + '<tr><td class="rf-head">GROUP</td><td class="rf-head xl-num">COST PRICE</td>'
+     + '<td class="rf-head xl-num">SELL PRICE</td></tr>';
+    b.summary.forEach(([g,c,se])=>{
+      h+=`<tr${c===0?' style="opacity:.5"':''}><td class="rf-label">${esc(g)}</td>`
+        +`<td class="rf-val xl-num">${n(c)}</td>`
+        +`<td class="rf-val xl-num" style="color:#1d4ed8">${n(se)}</td></tr>`;
+    });
+    h+='<tr><td class="rf-label">Transportation</td><td class="rf-unit xl-num">As actuals</td>'
+     + '<td class="rf-unit xl-num">As actuals</td></tr></table>';
+  }
+  h+='<div class="st-note">Every figure here is read from the block that computed '
+   + 'it — the recuperator, the mass flow list, the gas train, the castings and the '
+   + 'priced take-offs. The markup is per line, so the blend follows what the job '
+   + 'is actually made of.</div></div>';
+  el.innerHTML=h;
+}
+
 // ── The priced take-off ────────────────────────────────────────────────────
 // Ref.+Str. as it is actually billed: every quantity rounded up to a whole
 // piece or bag, at one vendor's rates. Built here and handed to whichever
@@ -2547,8 +2603,9 @@ function renderAll(data,showNG,showCL){
     }).join("")}
   </table>`;
 
-  // Step 3 BOM copy
+  // The BOM keeps its own tab; the Breakup tab shows the computed roll-up.
   document.getElementById("xl-bom2").innerHTML=document.getElementById("xl-breakup").innerHTML;
+  renderBreakupSheet(data.breakup);
 
   document.getElementById("s-main-cost").textContent="\u20B9 "+fmt(s.main_cost);
   document.getElementById("s-main-sell").textContent="\u20B9 "+fmt(s.main_sell);

@@ -6454,6 +6454,11 @@ def brf_calculate(req: BRFCalcRequest):
             burner_count=_duty.get("total_burners", 0) or 0,
             blower_hp=_duty.get("blower_hp", 0.0) or 0.0,
             firing_rate_nm3hr=_duty.get("firing_rate_nm3hr", 0.0) or 0.0)
+        # The commercial roll-up. Reads every block above it, as the sheet's
+        # own formulas do, and applies the markup each line carries.
+        from calculations.brf_breakup import build_breakup
+        breakup = build_breakup(combustion, recup, mass_flow, _gas_train,
+                                casting, priced)
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -6470,6 +6475,7 @@ def brf_calculate(req: BRFCalcRequest):
             "recuperator_calc": vars(recup),
             "combustion_calc": vars(combustion),
             "gas_train": _gas_train,
+            "breakup": vars(breakup),
         }
     except Exception as e:
         import traceback
