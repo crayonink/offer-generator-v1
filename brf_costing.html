@@ -322,6 +322,17 @@
     .summary-card td { padding:6px 0; font-size:.88rem; }
     .summary-card td:last-child { text-align:right; font-weight:700; }
     .summary-card .grand td { border-top:2px solid var(--navy); padding-top:10px; font-size:1rem; color:var(--navy); }
+    /* Inline adjustments inside the summary, as the vertical page has them:
+       the percentage sits with its label, the money in the right column. */
+    .summary-card input.pct, .summary-card input.amt, .summary-card select.cur {
+      padding:2px 6px; margin:0 4px; font:inherit; font-size:.84rem;
+      border:1px solid var(--border); border-radius:5px; background:#fff;
+      color:#0f172a; font-variant-numeric:tabular-nums; }
+    .summary-card input.pct { width:52px; text-align:center; }
+    .summary-card input.amt { width:86px; text-align:right; }
+    .summary-card select.cur { padding:2px 4px; }
+    .summary-card input:focus, .summary-card select:focus {
+      outline:none; border-color:var(--navy); box-shadow:0 0 0 2px rgba(26,58,92,.10); }
     .summary-card .sub-head td { color:var(--muted); font-size:.72rem; padding-top:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
 
     .error-box { background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px 18px; color:var(--red); font-size:.88rem; margin-top:12px; display:none; }
@@ -817,6 +828,33 @@
         <tr id="cl-s" style="display:none"><td>Sell</td><td id="s-cl-sell">--</td></tr>
         <tr class="grand"><td><b>Grand Cost</b></td><td id="s-grand-cost">--</td></tr>
         <tr class="grand"><td><b>Grand Sell</b></td><td id="s-grand-sell">--</td></tr>
+        <tr><td>Packing &amp; Forwarding
+          <input id="cm-pf" class="pct" type="number" step="0.5" min="0" value="5"
+                 oninput="commercialPreview()" autocomplete="off"/>%</td>
+          <td id="s-pf">--</td></tr>
+        <tr><td>Designing
+          <input id="cm-design" class="pct" type="number" step="0.5" min="0" value="10"
+                 oninput="commercialPreview()" autocomplete="off"/>%</td>
+          <td id="s-design">--</td></tr>
+        <tr><td>Negotiation
+          <input id="cm-nego" class="pct" type="number" step="0.5" min="0" value="10"
+                 oninput="commercialPreview()" autocomplete="off"/>%</td>
+          <td id="s-nego">--</td></tr>
+        <tr><td>Transport
+          <input id="cm-transport" class="amt" type="number" step="1000" min="0" value="0"
+                 oninput="commercialPreview()" autocomplete="off"/> &#8377;</td>
+          <td id="s-transport">--</td></tr>
+        <tr><td>Order quantity
+          <input id="cm-qty" class="pct" type="number" step="1" min="1" value="1"
+                 oninput="commercialPreview()" autocomplete="off"/> furnaces</td>
+          <td id="s-qty-note" style="color:var(--muted);font-weight:400">--</td></tr>
+        <tr class="grand"><td><b>Final per Furnace</b></td><td id="s-final">--</td></tr>
+        <tr class="grand"><td><b>Order Total</b></td><td id="s-order">--</td></tr>
+        <tr><td>Currency
+          <select id="cm-currency" class="cur" onchange="commercialPreview()">
+            <option value="INR" selected>&#8377; INR</option>
+            <option value="USD">$ USD</option>
+          </select></td><td id="s-cur-note" style="color:var(--muted);font-weight:400">--</td></tr>
       </table>
       <div style="margin-top:16px">
         <button onclick="generateOffer()" id="btn-offer" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%);color:#fff;font-size:.9rem;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 10px rgba(26,58,92,.32);margin-bottom:10px;">&#128196; Generate Offer</button>
@@ -825,30 +863,6 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Commercial</div>
-      <div class="hint" style="margin:-6px 0 12px;color:var(--muted);font-size:.82rem;">
-        Each BOM line already carries its own markup from the pricelist, so
-        these apply on top of the marked-up total &mdash; there is no second
-        conversion here.
-      </div>
-      <div class="sz-grid">
-        <div class="sz-f"><label>Packing &amp; forwarding (%)</label><input id="cm-pf" type="number" step="any" value="5" oninput="commercialPreview()" autocomplete="off"/></div>
-        <div class="sz-f"><label>Designing (%)</label><input id="cm-design" type="number" step="any" value="10" oninput="commercialPreview()" autocomplete="off"/></div>
-        <div class="sz-f"><label>Negotiation (%)</label><input id="cm-nego" type="number" step="any" value="10" oninput="commercialPreview()" autocomplete="off"/></div>
-        <div class="sz-f"><label>Transport (&#8377;)</label><input id="cm-transport" type="number" step="any" value="0" oninput="commercialPreview()" autocomplete="off"/></div>
-        <div class="sz-f"><label>Order quantity (furnaces)</label><input id="cm-qty" type="number" step="1" min="1" value="1" oninput="commercialPreview()" autocomplete="off"/></div>
-        <div class="sz-f"><label>Currency</label>
-          <select id="cm-currency" onchange="commercialPreview()">
-            <option value="INR" selected>&#8377; INR</option>
-            <option value="USD">$ USD</option>
-          </select></div>
-      </div>
-      <div class="fn-out" id="cm-out" style="margin-top:16px"></div>
-      <div class="hint" id="cm-note" style="margin-top:8px;color:var(--muted);font-size:.8rem;">
-        Calculate on the Firing &amp; Air tab to price it.
-      </div>
-    </div>
 
     <div class="step-nav">
       <button class="btn-back" onclick="goStep(5)">← Back to Calculations</button>
@@ -969,26 +983,27 @@ function commercialTotals(){
           cost, sell, pf, design, nego, final, order:final*c.qty};
 }
 
+// The adjustments read down the summary card, each beside the money it adds,
+// the way the vertical page does it — rather than a grid of boxes above a grid
+// of tiles saying the same thing twice.
 function commercialPreview(){
-  const out=document.getElementById("cm-out"), note=document.getElementById("cm-note");
-  if(!out) return;
+  const put=(id,txt)=>{const e=document.getElementById(id); if(e) e.textContent=txt;};
   const t=commercialTotals();
-  if(!t){ out.innerHTML=""; if(note) note.textContent="Calculate on the Firing & Air tab to price it."; return; }
+  if(!t){
+    ["s-pf","s-design","s-nego","s-transport","s-final","s-order"].forEach(i=>put(i,"--"));
+    put("s-qty-note","Calculate first"); put("s-cur-note","");
+    return;
+  }
   const sym=t.currency==="USD"?"$ ":"₹ ";
   const m=v=>sym+Math.round(v).toLocaleString("en-IN");
-  const tile=(l,v,u)=>`<div class="fn-tile"><div class="fn-l">${l}</div><div class="fn-v">${v}<span class="fn-u">${u||""}</span></div></div>`;
-  out.innerHTML=
-    tile("Total Cost", m(t.cost),"")+
-    tile("After Markup", m(t.sell),"")+
-    tile("P &amp; F", m(t.pf), `@ ${t.pf_pct}%`)+
-    tile("Designing", m(t.design), `@ ${t.design_pct}%`)+
-    tile("Negotiation", m(t.nego), `@ ${t.nego_pct}%`)+
-    tile("Transport", m(t.transport),"")+
-    tile("Final per Furnace", m(t.final),"")+
-    tile("Order Total", m(t.order), t.qty>1?`× ${t.qty}`:"");
-  if(note) note.textContent = t.qty>1
-    ? `Final is rounded up to the nearest thousand, then multiplied by ${t.qty}.`
-    : "Final is rounded up to the nearest thousand.";
+  put("s-pf", m(t.pf));
+  put("s-design", m(t.design));
+  put("s-nego", m(t.nego));
+  put("s-transport", m(t.transport));
+  put("s-final", m(t.final));
+  put("s-order", m(t.order));
+  put("s-qty-note", t.qty>1 ? `× ${t.qty}` : "");
+  put("s-cur-note", t.currency==="USD" ? "converted" : "");
 }
 
 
