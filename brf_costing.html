@@ -1423,7 +1423,6 @@ function renderTotals(t){
   if(w) w.textContent=[
     `Refractory   ${cm(t.refractory_tonne).padStart(9)} t`,
     `Structure    ${cm(t.structure_tonne).padStart(9)} t   design weight, on the sections the sizing is worked out for`,
-    `Equipment    ${cm(t.equipment_tonne).padStart(9)} t   standard weights, typed`,
     `Casting      ${cm(t.casting_tonne).padStart(9)} t`,
     `             ${"".padStart(9,"-")}`,
     `TOTAL        ${cm(t.total_tonne).padStart(9)} t`,
@@ -1852,7 +1851,6 @@ function renderFurnaceSheet(f, tot){
     length.push([], ["Total weight of the furnace"],
       ["Refractory", n(tot.refractory_tonne,2), "T"],
       ["Structure, design", n(tot.structure_tonne,2), "T"],
-      ["Equipment", n(tot.equipment_tonne,2), "T"],
       ["Casting", n(tot.casting_tonne,2), "T"],
       ["*TOTAL", n(tot.total_tonne,2), "Tonne"]);
   }
