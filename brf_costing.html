@@ -1919,6 +1919,90 @@ function renderMassFlowSheet(m){
   el.innerHTML=h;
 }
 
+
+// The recuperator: flue gas gives up heat, combustion air takes it. Duty,
+// LMTD, the surface that needs, then the bank that provides it and what it
+// costs. Laid out as the workbook lays it out.
+function renderRecupSheet(c){
+  const el=document.getElementById("xl-recup");
+  if(!el) return;
+  if(!c){ el.innerHTML=""; return; }
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const n=(v,p=2)=>v==null?"":Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+
+  const duty=[
+    ["Recuperator calculation"],
+    ["Total flue gas", n(c.flue_gas_nm3hr||0,0), "Nm³/hr"],
+    ["Total mass of flue gas", n(c.flue_mass_kghr,0), "kg/hr"],
+    ["Initial temp. of flue gas", n(c.flue_temp_in_C||650,0), "°C"],
+    ["Final temp. of flue gas", n(c.flue_temp_out_C,2), "°C"],
+    ["Combustion air to be preheated", n(c.air_nm3hr||0,0), "Nm³/hr"],
+    ["Air, in / out", `${n(c.air_temp_in_C||30,0)} / ${n(c.air_temp_out_C||300,0)}`, "°C"],
+    ["*Heat required by combustion air", n(c.heat_required_kcal,0), "kcal"],
+    ["*Logarithmic mean temp. diff.", n(c.lmtd_C,2), "°C"],
+    ["*Surface area of recuperator", n(c.surface_area_m2,2), "m²"],
+  ];
+  const bank=[
+    ["The tube bank"],
+    ["Pipes required for that surface", n(c.pipes_required,1), "Nos"],
+    ["Pipes in the row", n(c.rows,0), "Nos"],
+    ["Pipes in the column", n(c.cols,0), "Nos"],
+    ["*Pipes provided", n(c.pipes_provided,0), "Nos"],
+    ["Length of each bank", n(c.bank_length_mm,2), "mm"],
+    ["Width of each bank", n(c.bank_width_mm,2), "mm"],
+    [],
+    ["Hot bank — boiler tube"],
+    ["Wt. per metre", n(c.hot_pipe_kg_per_m,4), "kg/m"],
+    ["Wt. of each pipe", n(c.hot_pipe_kg,4), "kg"],
+    ["Cold bank — plain tube"],
+    ["Wt. of each pipe", n(c.cold_pipe_kg,2), "kg"],
+    ["*Total weight of all the pipes", n(c.total_pipe_kg,2), "kg"],
+  ];
+  const cost=[
+    ["Cost of recuperator"],
+    ["Price of all the pipes", n(c.pipe_cost), "₹"],
+    ["MS outer shell", n(c.outer_shell_kg,2), "kg"],
+    ["MS combustion air inlet duct", n(c.air_inlet_duct_kg,2), "kg"],
+    ["MS hot air outlet duct", n(c.hot_air_duct_kg,2), "kg"],
+    ["Pipe holding plate", n(c.holding_plate_kg,2), "kg"],
+    ["SS bottom box", n(c.bottom_box_kg,2), "kg"],
+    ["Cost of the fabricated parts", n(c.ms_parts_cost), "₹"],
+    ["*Total material cost", n(c.material_cost), "₹"],
+    ["Bending of pipes", n(c.bending_cost), "₹"],
+    ["Welding rod", n(c.welding_cost), "₹"],
+    ["Hole fabrication", n(c.hole_cost), "₹"],
+    ["*Total cost of recuperator", n(c.total_cost), "₹"],
+    ["*Selling price", n(c.selling_price), "₹"],
+  ];
+
+  const cells=(r)=>{
+    if(!r||!r.length) return '<tr class="rf-spacer"><td colspan="3">&nbsp;</td></tr>';
+    if(r.length===1) return `<tr><td class="rf-sub" colspan="3">${esc(r[0])}</td></tr>`;
+    const key=String(r[0]).startsWith("*");
+    const label=key?String(r[0]).slice(1):r[0];
+    return `<tr${key?' class="rf-keyrow"':''}><td class="rf-label">${esc(label)}</td>`
+         + `<td class="rf-val xl-num">${esc(r[1])}</td>`
+         + `<td class="rf-unit">${esc(r[2])}</td></tr>`;
+  };
+  const block=(t,l)=>`<div class="rf-block"><table class="xl-grid rf-tbl">`
+    + `<colgroup><col style="width:56%"><col style="width:29%"><col style="width:15%"></colgroup>`
+    + `<tr><td class="rf-head" colspan="3">${t}</td></tr>`+l.map(cells).join("")+`</table></div>`;
+
+  let h='<div class="rf-cols">'+block("DUTY",duty)+block("BANK",bank)+block("COST",cost)+'</div>';
+  // The bank is typed, so the cost does not move with the duty. Say so.
+  h+='<div class="st-note" style="margin:0 12px 14px;border:1px solid var(--border);border-radius:12px;">'
+   + `The bank is ${n(c.pipes_provided,0)} pipes against the ${n(c.pipes_required,1)} the surface `
+   + 'area calls for, and the cost follows the bank, not the duty — change the rows '
+   + 'and columns to move the price. '
+   + (c.inputs_linked
+      ? 'Flue and air volumes are taken from the furnace.'
+      : `Flue and air volumes are the sheet's typed ${n(c.flue_gas_nm3hr||0,0)} and `
+        + `${n(c.air_nm3hr||0,0)} Nm³/hr; the furnace itself implies `
+        + `${n(c.furnace_flue_nm3hr,0)} and ${n(c.furnace_air_nm3hr,0)}.`)
+   + '</div>';
+  el.innerHTML=h;
+}
+
 // ── The priced take-off ────────────────────────────────────────────────────
 // Ref.+Str. as it is actually billed: every quantity rounded up to a whole
 // piece or bag, at one vendor's rates. Built here and handed to whichever
@@ -2431,41 +2515,8 @@ function renderAll(data,showNG,showCL){
   cb+=`</table>`;
   document.getElementById("xl-combustion").innerHTML=cb;
 
-  // ═══ SHEET 6: Recuperator1 ═══
-  n=0;
-  let rp=`<table class="xl-grid">${C3}`;
-  rp+=R(++n,[[rc.title||"Recuperator Calculation",""],["",""],["",""]],"xl-section");
-  [["Total Flue Gas",fmt(rc.total_flue_gas_nm3hr),"Nm\u00B3/Hr"],["Total Mass of Flue Gas",fmt(rc.total_mass_flue_gas_kghr),"Kg/Hr"],
-   ["Specific Heat of Flue Gas",rc.specific_heat_flue_gas,"Kcal/Kg-C"],["Initial Temp of Flue Gas",rc.initial_temp_flue_gas_c,"\u00B0C"],
-   ["Final Temp of Flue Gas",rc.final_temp_flue_gas_c,"\u00B0C"],["Heat Transfer Coefficient",rc.heat_transfer_coeff,"Kcal/m\u00B2-C"],
-   ["Air Volume",fmt(rc.air_volume_nm3hr),"Nm\u00B3/Hr"],["Initial Temp of Air",rc.initial_air_temp_c,"\u00B0C"],["Final Temp of Air",rc.final_air_temp_c,"\u00B0C"],
-   ["Specific Heat of Air",rc.specific_heat_air,"Kcal/Kg-C"],["Heat Required",fmt(rc.heat_required_kcal),"Kcal"],
-   ["LMTD",rc.lmtd_c,"\u00B0C"],["Surface Area",rc.surface_area_m2,"mtr2"],
-   ["Pipes",`${rc.pipes_per_row}\u00D7${rc.pipes_per_column} = ${rc.pipes_total}`,""],
-  ].forEach(([l,v,u])=>{rp+=R(++n,[[l,""],[v,true],[u,true]],l.includes("Surface")?"xl-highlight":"");});
-  rp+=R(++n,[["",""],["",""],["",""]]);
-  rp+=R(++n,[["HOT BANK ("+rc.material+")",""],["",""],["",""]],"xl-section");
-  [["Pipe Diameter",rc.pipe_dia_mm,"mm"],["Pipe Length",rc.pipe_length_m,"mtr"],["Pipe Thickness",rc.pipe_thickness_mm,"mm"],
-   ["Weight per Pipe",rc.pipe_weight_kg_m,"Kg/Mtr"],["Total Weight Hot Bank",rc.hot_bank_weight_kg,"Kg"],
-  ].forEach(([l,v,u])=>{rp+=R(++n,[[l,""],[v,true],[u,true]]);});
-  rp+=R(++n,[["",""],["",""],["",""]]);
-  rp+=R(++n,[["COLD BANK ("+rcCost.cold_bank_material+")",""],["",""],["",""]],"xl-section");
-  [["Pipe Diameter",rcCost.cold_bank_dia_mm,"mm"],["Pipe Length",rcCost.cold_bank_length_m,"mtr"],["Pipe Thickness",rcCost.cold_bank_thickness_mm,"mm"],
-   ["Weight per Pipe",rcCost.cold_bank_weight_kg_m,"Kg/Mtr"],["Total Weight Cold Bank",rcCost.cold_bank_total_wt_kg,"Kg"],
-  ].forEach(([l,v,u])=>{rp+=R(++n,[[l,""],[v,true],[u,true]]);});
-  rp+=R(++n,[["",""],["",""],["",""]]);
-  rp+=R(++n,[["COST OF RECUPERATOR",""],["Rs",""],["",""]],"xl-section");
-  [["Cost of All Pipes",fmt(rcCost.cost_all_pipes)],["MS Outer Shell",fmt(rcCost.cost_ms_outer_shell)],
-   ["MS Combustion Air Inlet",fmt(rcCost.cost_ms_combustion_air_inlet)],["MS Channel 150\u00D775",fmt(rcCost.cost_ms_channel_150x75)],
-   ["Angle 65\u00D725",fmt(rcCost.cost_angle_65)],["Angle 75\u00D710",fmt(rcCost.cost_angle_75)],["Angle 50\u00D715",fmt(rcCost.cost_angle_50)],
-  ].forEach(([l,v])=>{rp+=R(++n,[[l,""],[v,true],["Rs",true]]);});
-  rp+=R(++n,[["Total Material Cost",""],[""+fmt(rcCost.cost_total_material),true],["Rs",true]],"xl-total");
-  [["Bending of Pipes",fmt(rcCost.cost_pipe_bending)],["Welding Rod",fmt(rcCost.cost_welding_rod)],
-   ["Hole Fabrication",fmt(rcCost.cost_hole_fabrication)],["Thermocouple with TT",fmt(rcCost.cost_thermocouple_tt)],
-  ].forEach(([l,v])=>{rp+=R(++n,[[l,""],[v,true],["Rs",true]]);});
-  rp+=R(++n,[["Total Cost of Recuperator",""],[""+fmt(rcCost.cost_total_recuperator),true],["Rs",true]],"xl-highlight");
-  rp+=`</table>`;
-  document.getElementById("xl-recup").innerHTML=rp;
+  // ═══ SHEET 6: Recuperator1 — computed ═══
+  renderRecupSheet(data.recuperator_calc);
 
   // ═══ SHEET 7: Breakup (BOM with markups) ═══
   let lastSec="",bn=0;

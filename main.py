@@ -6209,6 +6209,14 @@ class BRFCalcRequest(BaseModel):
     # Whose rates price the refractory: trl, raj or bhil. The structure has
     # only the one rate set in the sheet, so it is unaffected.
     vendor: str = "trl"
+    # The recuperator's two duty inputs. The sheet types them and they do not
+    # agree with the furnace beside them, so they stay typed by default;
+    # link_recup_to_furnace drives them off the computed duty instead.
+    recup_flue_nm3hr:  float = 13200.0
+    recup_air_nm3hr:   float = 20400.0
+    recup_rows:        int   = 28
+    recup_cols:        int   = 27
+    link_recup_to_furnace: bool = False
     right_refractory_mm:    float = 510.0
     left_refractory_mm:     float = 510.0
     width_sheet_mm:         float = 16.0
@@ -6347,6 +6355,26 @@ def brf_calculate(req: BRFCalcRequest):
             sizing.get("zones") or [],
             burner_count=(sizing.get("duty") or {}).get("total_burners", 0),
             zone_count=(sizing.get("duty") or {}).get("zone_count"))
+        # The recuperator. Its flue and air volumes are typed on the sheet and
+        # disagree with the furnace, so both figures travel: what was quoted
+        # and what the furnace implies.
+        from calculations.brf_recup import (BRFRecupInputs,
+                                            calculate_recuperator)
+        _duty = sizing.get("duty") or {}
+        f_air = _duty.get("combustion_air_nm3hr", 0.0) or 0.0
+        f_flue = ((_duty.get("firing_rate_nm3hr", 0.0) or 0.0)
+                  * (1.0 + (_duty.get("combustion_air_per_nm3", 0.0) or 0.0)))
+        recup = calculate_recuperator(
+            BRFRecupInputs(
+                flue_gas_nm3hr=(f_flue if req.link_recup_to_furnace
+                                else req.recup_flue_nm3hr),
+                air_nm3hr=(f_air if req.link_recup_to_furnace
+                           else req.recup_air_nm3hr),
+                pipes_per_row=req.recup_rows,
+                pipes_per_column=req.recup_cols,
+            ),
+            furnace_air_nm3hr=f_air, furnace_flue_nm3hr=f_flue)
+        recup.inputs_linked = bool(req.link_recup_to_furnace)
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -6360,6 +6388,7 @@ def brf_calculate(req: BRFCalcRequest):
             "totals": vars(totals),
             "priced": vars(priced),
             "mass_flow": vars(mass_flow),
+            "recuperator_calc": vars(recup),
         }
     except Exception as e:
         import traceback
