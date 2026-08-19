@@ -2005,9 +2005,14 @@ function renderRecupSheet(c){
   let h='<div class="rf-cols">'+block("DUTY",duty)+block("BANK",bank)+block("COST",cost)+'</div>';
   // The bank is typed, so the cost does not move with the duty. Say so.
   h+='<div class="st-note" style="margin:0 12px 14px;border:1px solid var(--border);border-radius:12px;">'
-   + `The bank is ${n(c.pipes_provided,0)} pipes against the ${n(c.pipes_required,1)} the surface `
-   + 'area calls for, and the cost follows the bank, not the duty — change the rows '
-   + 'and columns to move the price. '
+   + (c.bank_auto
+      ? `The bank is sized to the duty: ${c.rows} × ${c.cols} = ${n(c.pipes_provided,0)} pipes `
+        + `for the ${n(c.pipes_required,1)} the surface area calls for, ${n(c.bank_spare_pipes,1)} spare. `
+        + 'Everything downstream — tube weight, material, fabrication, price — follows from it, '
+        + 'so the flue gas reaches the selling price. '
+      : `The bank is typed at ${c.rows} × ${c.cols} = ${n(c.pipes_provided,0)} pipes against the `
+        + `${n(c.pipes_required,1)} the surface area calls for, so the cost follows the bank and `
+        + 'not the duty. ')
    + (c.inputs_linked
       ? 'Flue and air volumes are taken from the furnace.'
       : `Flue and air volumes are the sheet's typed ${n(c.flue_gas_nm3hr||0,0)} and `

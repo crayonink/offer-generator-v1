@@ -44,7 +44,14 @@ class BRFRecupInputs:
     air_specific_heat:   float = 0.247     # E13
     lmtd_factor:         float = 0.9       # the sheet's radiative correction
     # ── Bank ────────────────────────────────────────────────────────
-    pipes_per_row:       int   = 28        # E21
+    # The bank. The sheet types these, which is where the chain used to break:
+    # the duty worked out how many pipes it needed and then the bank was told
+    # 28 x 27 regardless, so nothing downstream — weight, material, price —
+    # felt the duty at all. auto_bank sizes the bank to the requirement
+    # instead, near-square as the sheet's own is; set it False to type them.
+    auto_bank:           bool  = True
+    bank_spare_factor:   float = 1.0       # >1 to carry deliberate spare tube
+    pipes_per_row:       int   = 28        # E21, used when auto_bank is off
     pipes_per_column:    int   = 27        # E22
     bank_gap_mm:         float = 250.0     # E19
     pipe_pitch_mm:       float = 32.0      # the 32 in E17/E18
@@ -113,6 +120,8 @@ class BRFRecupResults:
     air_temp_out_C:      float = 0.0   # E12
     rows:                int   = 0     # E21
     cols:                int   = 0     # E22
+    bank_auto:           bool  = False # was the bank sized, or typed?
+    bank_spare_pipes:    float = 0.0   # provided less required
 
 
 def calculate_recuperator(inp=None, furnace_air_nm3hr=0.0,
@@ -135,14 +144,24 @@ def calculate_recuperator(inp=None, furnace_air_nm3hr=0.0,
     area = heat / (lmtd * r.htc_kcal_m2C) if lmtd else 0.0                # E16
 
     # ── Bank ────────────────────────────────────────────────────────
-    rows, cols = r.pipes_per_row, r.pipes_per_column
+    # How many pipes that surface needs. This does not depend on the bank, so
+    # it is worked out first and the bank is then built to cover it.
+    pipes_req = (area / (SHEET_PI * (r.pipe_dia_mm / 1000.0)
+                         * (r.pipe_length_m + r.pipe_end_allow_m))
+                 if area else 0.0)                                         # E20
+
+    if r.auto_bank and pipes_req > 0:
+        needed = math.ceil(pipes_req * r.bank_spare_factor - 1e-9)
+        # Near-square, like the sheet's 28 x 27, and never short.
+        cols = math.ceil(math.sqrt(needed))
+        rows = math.ceil(needed / cols)
+    else:
+        rows, cols = r.pipes_per_row, r.pipes_per_column                   # E21/E22
+
     bank_len = (((rows - 1) / 2) * r.pipe_pitch_mm
                 + (rows / 2) * r.pipe_dia_mm + r.bank_margin_mm)           # E17
     bank_wid = ((cols / 2) * r.pipe_dia_mm
                 + ((cols - 1) / 2) * r.pipe_pitch_mm + r.bank_margin_mm)   # E18
-    pipes_req = (area / (SHEET_PI * (r.pipe_dia_mm / 1000.0)
-                         * (r.pipe_length_m + r.pipe_end_allow_m))
-                 if area else 0.0)                                         # E20
 
     # ── Pipes ───────────────────────────────────────────────────────
     hot_kg_m = (SHEET_PI * r.pipe_dia_mm * (r.pipe_length_m * 1000.0)
@@ -202,4 +221,5 @@ def calculate_recuperator(inp=None, furnace_air_nm3hr=0.0,
         flue_gas_nm3hr=r.flue_gas_nm3hr, flue_temp_in_C=r.flue_temp_in_C,
         air_nm3hr=r.air_nm3hr, air_temp_in_C=r.air_temp_in_C,
         air_temp_out_C=r.air_temp_out_C, rows=rows, cols=cols,
+        bank_auto=bool(r.auto_bank), bank_spare_pipes=round(rows * cols - pipes_req, 2),
     )

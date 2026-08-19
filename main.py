@@ -6214,6 +6214,10 @@ class BRFCalcRequest(BaseModel):
     # link_recup_to_furnace drives them off the computed duty instead.
     recup_flue_nm3hr:  float = 13200.0
     recup_air_nm3hr:   float = 20400.0
+    # The bank is sized from the duty by default. Set recup_auto_bank false to
+    # use the typed rows and columns instead — for a job where the bank is
+    # already fixed.
+    recup_auto_bank:   bool  = True
     recup_rows:        int   = 28
     recup_cols:        int   = 27
     # Flue gas is the firing rate plus the combustion air — everything that
@@ -6373,6 +6377,7 @@ def brf_calculate(req: BRFCalcRequest):
                                 else req.recup_flue_nm3hr),
                 air_nm3hr=(f_air if req.link_recup_to_furnace
                            else req.recup_air_nm3hr),
+                auto_bank=req.recup_auto_bank,
                 pipes_per_row=req.recup_rows,
                 pipes_per_column=req.recup_cols,
             ),
