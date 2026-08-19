@@ -748,9 +748,13 @@
         <option value="pneumatic">Pneumatic</option>
       </select>
       <label for="pr-blower" style="margin-left:8px">Blower range</label>
+      <!-- The quoted PCBLZ machines first, because they are the ones sized for
+           this furnace. The ENCON ranges top out at 60 HP and are here for a
+           small job, not a 60 TPH one. -->
       <select id="pr-blower" onchange="vendorChanged()">
-        <option value="40">40&quot; W.G. (high)</option>
-        <option value="28">28&quot; W.G. (medium)</option>
+        <option value="brf" selected>PCBLZ (quoted)</option>
+        <option value="40">ENCON 40&quot; W.G. (high)</option>
+        <option value="28">ENCON 28&quot; W.G. (medium)</option>
       </select>
       <span class="hint" id="pr-compare">&nbsp;</span>
     </div>
