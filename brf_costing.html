@@ -137,25 +137,6 @@
     .fuel-opt.sel .fo-tick { background:var(--navy); border-color:var(--navy); }
     .fuel-opt.sel .fo-tick::after { content:"\2713"; }
 
-    /* Top fired / top & bottom fired — the same card, smaller, because it is a
-       pair of choices rather than a family of fuels. */
-    .fire-pick { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-                 gap:12px; margin-top:16px; }
-    .fire-opt { position:relative; border:1.5px solid var(--border); border-radius:12px;
-                padding:12px 14px; cursor:pointer; background:var(--card);
-                transition:border-color .15s, box-shadow .15s, background .15s; }
-    .fire-opt:hover { border-color:#cbd5e1; background:#fcfdfe; }
-    .fire-opt input { position:absolute; opacity:0; pointer-events:none; }
-    .fire-opt .fo-name { font-size:.86rem; font-weight:700; color:#0f172a; }
-    .fire-opt .fo-sub { font-size:.74rem; color:var(--muted); margin-top:3px; }
-    .fire-opt .fo-tick { position:absolute; top:11px; right:12px; width:16px; height:16px;
-                         border-radius:50%; border:1.5px solid var(--border); background:#fff;
-                         display:flex; align-items:center; justify-content:center;
-                         font-size:.62rem; color:#fff; transition:all .15s; }
-    .fire-opt.sel { border-color:var(--navy); background:#f7fafd;
-                    box-shadow:0 0 0 3px rgba(26,58,92,.08); }
-    .fire-opt.sel .fo-tick { background:var(--navy); border-color:var(--navy); }
-    .fire-opt.sel .fo-tick::after { content:"\2713"; }
 
     .fuel-opt .fo-cv { width:72px; padding:2px 6px; margin-right:2px; font:inherit;
                        font-size:.78rem; font-weight:600; color:#0f172a; text-align:right;
@@ -570,28 +551,10 @@
           <input id="fn-cap" type="number" step="any" value="60" readonly style="background:#f8fafc" autocomplete="off"/>
           <div class="hint" style="color:var(--muted);font-size:.72rem;">From Config</div></div>
         <div class="sz-f"><label>Top fired hearth load (kg/hr/m&sup2;)</label><input id="fn-hl-top" type="number" step="any" value="300" oninput="furnacePreview()" autocomplete="off"/></div>
-        <div class="sz-f"><label>Top &amp; bottom fired (kg/hr/m&sup2;)</label><input id="fn-hl-both" type="number" step="any" value="600" oninput="furnacePreview()" autocomplete="off"/></div>
       </div>
-      <!-- Which of the two loads sizes the hearth. The workbook only ever
-           reads the top-fired one, so a furnace fired top and bottom came out
-           twice the hearth it needs. -->
-      <div class="fire-pick">
-        <label class="fire-opt sel">
-          <input type="radio" name="fn-fired" value="top" checked onchange="firedChanged()"/>
-          <span class="fo-tick"></span>
-          <div class="fo-name">Top fired</div>
-          <div class="fo-sub">hearth from the 300 figure</div>
-        </label>
-        <label class="fire-opt">
-          <input type="radio" name="fn-fired" value="both" onchange="firedChanged()"/>
-          <span class="fo-tick"></span>
-          <div class="fo-name">Top &amp; bottom fired</div>
-          <div class="fo-sub">hearth from the 600 figure</div>
-        </label>
-      </div>
-      <div class="hint" style="margin-top:10px;color:var(--muted);font-size:.8rem;" id="fn-hl-hint">
-        The hearth area is worked out from the top-fired figure, as the
-        workbook does it.
+      <div class="hint" style="margin-top:10px;color:var(--muted);font-size:.8rem;">
+        The hearth area is capacity &divide; the top-fired load, as the workbook
+        does it. Every furnace we build is top fired.
       </div>
     </div>
 
@@ -1101,7 +1064,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 const FN_FIELDS={
   billet_length_mm:"fn-blen", billet_width_mm:"fn-bwid", billet_height_mm:"fn-bhgt",
   ms_density_kg_m3:"fn-dens", furnace_capacity_tph:"fn-cap",
-  hearth_load_top_kg_hr_m2:"fn-hl-top", hearth_load_top_bottom_kg_hr_m2:"fn-hl-both",
+  hearth_load_top_kg_hr_m2:"fn-hl-top",
   right_refractory_mm:"fn-right", left_refractory_mm:"fn-left",
   width_sheet_mm:"fn-wsheet", width_channel_mm:"fn-wchan",
   discharge_refractory_mm:"fn-disch", charge_refractory_mm:"fn-charge",
@@ -1119,7 +1082,6 @@ function furnacePayload(){
     const el=document.getElementById(id);
     o[k]=el?(parseFloat(el.value)||0):0;
   }
-  o.top_and_bottom_fired = firedTopAndBottom();
   const eq = readEquipment();
   if(eq) o.equipment = eq;
   o.vendor = selectedVendor();
@@ -1129,30 +1091,7 @@ function furnacePayload(){
   return o;
 }
 
-// Which hearth load sizes the furnace. The workbook always reads the top-fired
-// one; a furnace fired top and bottom carries twice the load, so sizing it off
-// 300 gives twice the hearth it needs — a 6 m billet at 60 t/hr came out 33 m
-// long instead of 17.
-function firedTopAndBottom(){
-  const r=document.querySelector('input[name="fn-fired"]:checked');
-  return !!r && r.value==="both";
-}
 
-function firedChanged(){
-  const both=firedTopAndBottom();
-  document.querySelectorAll(".fire-opt").forEach(o=>{
-    const r=o.querySelector('input[name="fn-fired"]');
-    o.classList.toggle("sel", !!r && r.checked);
-  });
-  const h=document.getElementById("fn-hl-hint");
-  if(h) h.textContent = both
-    ? "The hearth area is worked out from the top & bottom fired figure. The "
-      + "workbook only ever reads the top-fired one, so this departs from it "
-      + "deliberately."
-    : "The hearth area is worked out from the top-fired figure, as the "
-      + "workbook does it.";
-  furnacePreview();
-}
 
 // The capacity lives on this tab, so keep the Config tab's copy in step with
 // it — they are the same number and the sizing chain reads the other one.
@@ -1199,10 +1138,7 @@ function renderFurnace(f){
     tile("Volume of Billet", n(f.billet_volume_m3,4), "m³")+
     tile("Weight of a Billet", n(f.billet_weight_kg), "kg")+
     tile("Hearth Area", n(f.hearth_area_m2), "m²")+
-    // Named, because the same capacity gives two different furnaces depending
-    // on which load sized it.
-    tile("Hearth Load Used", n(f.hearth_load_kg_hr_m2,0),
-         f.top_and_bottom_fired?"kg/hr/m² top &amp; btm":"kg/hr/m² top")+
+    tile("Hearth Load", n(f.hearth_load_kg_hr_m2,0), "kg/hr/m²")+
     tile("Overall Width", n(f.overall_width_m,3), "m")+
     tile("Overall Length", n(f.overall_length_m,3), "m")+
     tile("Preheating Zone", n(f.zone_preheating_m,3), "m")+
@@ -1213,8 +1149,7 @@ function renderFurnace(f){
   if(w) w.textContent=[
     `Volume         = ${n(f.billet_length_mm/1000,3)} × ${n(f.billet_width_mm/1000,3)} × ${n(f.billet_height_mm/1000,3)} = ${n(f.billet_volume_m3,4)} m³`,
     `Billet weight  = ${n(f.billet_volume_m3,4)} × ${n(f.ms_density_kg_m3,0)} = ${n(f.billet_weight_kg)} kg`,
-    `Hearth area    = capacity × 1000 ÷ ${f.top_and_bottom_fired?"top & bottom fired":"top-fired"} load `
-      + `(${n(f.hearth_load_kg_hr_m2,0)}) = ${n(f.hearth_area_m2)} m²`,
+    `Hearth area    = capacity × 1000 ÷ top-fired load (${n(f.hearth_load_kg_hr_m2,0)}) = ${n(f.hearth_area_m2)} m²`,
     `Eff. length    = ${n(f.hearth_area_m2)} ÷ billet length, rounded = ${n(f.effective_length_m)} m`,
     `Eff. width     = billet length + 0.3 = ${n(f.effective_width_m,1)} m`,
     ``,
@@ -1851,8 +1786,6 @@ function renderFurnaceSheet(f, tot){
     [],
     ["Furnace Cap.", n(f.furnace_capacity_tph||0), "Ton/hr"],
     ["Top fired hearth load", n(f.hearth_load_top_kg_hr_m2), "kg/hr/m²"],
-    ["Top & bottom fired hearth load", n(f.hearth_load_top_bottom_kg_hr_m2), "kg/hr/m²"],
-    ["Sized on", f.top_and_bottom_fired?"top & bottom":"top fired", ""],
     ["*Area", n(f.hearth_area_m2,2), "m²"],
     ["*Effective length of the furnace", n(f.effective_length_m), "m"],
     ["*Effective width", n(f.effective_width_m,1), "m"],
