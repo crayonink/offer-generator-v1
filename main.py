@@ -6287,6 +6287,93 @@ def snsf_brf_calculate_legacy(req: BRFCalcRequest):
     return brf_calculate(req)
 
 
+class BRFQuoteRequest(BRFCalcRequest):
+    """Everything the calculation needs, plus who the offer is for."""
+    company_name:    str = ""
+    company_address: str = ""
+    company_city:    str = ""
+    company_state:   str = ""
+    company_pin:     str = ""
+    company_gstin:   str = ""
+    poc_salutation:  str = ""
+    poc_name:        str = ""
+    poc_designation: str = ""
+    email:           str = ""
+    mobile_no:       str = ""
+    your_ref:        str = ""
+    ref_no:          str = ""
+    project_name:    str = ""
+    location:        str = ""
+    marketing_salutation: str = ""
+    marketing_person: str = ""
+    marketing_phone:  str = ""
+    marketing_email:  str = ""
+    technical_person: str = ""
+    currency:         str = "INR"
+
+
+@app.post("/api/generate-brf-quote")
+def generate_brf_quote(req: BRFQuoteRequest):
+    """The billet reheating furnace offer, off the same numbers the
+    Calculations tab shows — the price schedule is the breakup, itemised."""
+    try:
+        from engine.brf_quote_writer import generate_brf_quote_docx
+        import datetime
+
+        data = brf_calculate(req)
+        if "error" in data:
+            return data
+
+        seq = next_quote_seq()
+        ref = (req.ref_no or "").strip() or build_enquiry_ref(
+            seq, req.technical_person or "", req.location or "")
+        data["customer"] = {
+            "company_name": req.company_name,
+            "company_address": req.company_address,
+            "company_city": req.company_city,
+            "company_state": req.company_state,
+            "poc_name": _with_salutation(req.poc_salutation, req.poc_name),
+            "email": req.email,
+            "mobile_no": req.mobile_no,
+            "your_ref": req.your_ref or ref,
+            "ref_no": ref,
+            "quote_date": datetime.date.today().strftime("%d/%m/%Y"),
+            "marketing_person": _with_salutation(req.marketing_salutation,
+                                                 req.marketing_person),
+            "marketing_phone": req.marketing_phone,
+            "marketing_email": req.marketing_email,
+            "currency": req.currency or "INR",
+        }
+
+        safe_company = "".join(
+            ch for ch in (req.company_name or "Client")
+            if ch.isalnum() or ch in " _-").strip().replace(" ", "_") or "Client"
+        docx_name = f"BRF_Offer_{safe_company}_{seq}.docx"
+        os.makedirs(QUOTES_FOLDER, exist_ok=True)
+        out = os.path.join(QUOTES_FOLDER, docx_name)
+        generate_brf_quote_docx(data, out)
+
+        _log_quote(quote_no=str(seq), ref_no=ref,
+                   company_name=req.company_name, poc_name=req.poc_name,
+                   email=req.email, mobile_no=req.mobile_no,
+                   project_name=req.project_name or "Billet Reheating Furnace",
+                   equipment_type="BRF", location=req.location,
+                   ladle_tons=req.furnace_capacity_tph,
+                   grand_total=(data.get("cost_summary") or {}).get("grand_sell", 0),
+                   marketing_person=req.marketing_person,
+                   technical_person=req.technical_person, file_path=out)
+        return {
+            "success": True,
+            "ref_no": ref,
+            "filename": docx_name,
+            "download_url": f"/api/download-quote/{docx_name}",
+            "cost_summary": data.get("cost_summary"),
+        }
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "detail": traceback.format_exc()}
+
+
 @app.post("/api/brf-calculate")
 def brf_calculate(req: BRFCalcRequest):
     try:

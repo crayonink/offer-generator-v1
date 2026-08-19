@@ -819,6 +819,8 @@
         <tr class="grand"><td><b>Grand Sell</b></td><td id="s-grand-sell">--</td></tr>
       </table>
       <div style="margin-top:16px">
+        <button onclick="generateOffer()" id="btn-offer" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%);color:#fff;font-size:.9rem;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 10px rgba(26,58,92,.32);margin-bottom:10px;">&#128196; Generate Offer</button>
+        <div id="offer-msg" style="display:none;font-size:.82rem;margin-bottom:10px;padding:10px 12px;border-radius:8px;"></div>
         <button onclick="downloadExcel()" style="width:100%;padding:11px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">&#8659; Download Excel</button>
       </div>
     </div>
@@ -1314,6 +1316,53 @@ function renderCasting(c){
     ``,
     `TOTAL WEIGHT OF CASTING = ${cm(c.total_casting_kg,2)} kg = ${cm(c.total_casting_tonne,4)} tonne`,
   ].join("\n");
+}
+
+
+// ── The offer ──────────────────────────────────────────────────────────────
+// Same payload the Calculations tab is built from, plus who it is for, so the
+// document and the sheets can never disagree about a number.
+async function generateOffer(){
+  const btn=document.getElementById("btn-offer");
+  const msg=document.getElementById("offer-msg");
+  const val=id=>{const e=document.getElementById(id); return e?e.value.trim():"";};
+  const show=(text,ok)=>{
+    msg.style.display="block";
+    msg.style.background=ok?"#f0fdf4":"#fef2f2";
+    msg.style.color=ok?"#15803d":"#b91c1c";
+    msg.style.border="1px solid "+(ok?"#bbf7d0":"#fecaca");
+    msg.innerHTML=text;
+  };
+  if(!val("c-company")){ show("Company name is needed before an offer can go out.",false); return; }
+
+  const payload=Object.assign({}, furnacePayload(), fuelPayload(), {
+    zones:readZones(),
+    company_name:val("c-company"), company_address:val("c-address"),
+    company_city:val("c-city"), company_state:val("c-state"),
+    company_pin:val("c-pin"), company_gstin:val("c-gstin"),
+    poc_salutation:val("c-salutation"), poc_name:val("c-name"),
+    poc_designation:val("c-designation"), email:val("c-email"),
+    mobile_no:val("c-phone"), ref_no:val("c-ref"), location:val("c-location"),
+    project_name:val("c-subject"),
+    marketing_salutation:val("c-marketing-salutation"),
+    marketing_person:val("c-marketing"), marketing_email:val("c-marketing-email"),
+    marketing_phone:val("c-marketing-phone"),
+    technical_person:val("c-technical"),
+  });
+
+  btn.disabled=true; const label=btn.innerHTML; btn.innerHTML="Generating…";
+  try{
+    const res=await fetch(`${API}/api/generate-brf-quote`,{method:"POST",
+      headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+    const d=await res.json();
+    if(d.error){ show("Could not generate: "+d.error, false); }
+    else{
+      show(`Offer ready — <b>${d.ref_no}</b><br>`
+         + `<a href="${API}${d.download_url}" style="color:#15803d;font-weight:700">`
+         + `⇓ Download ${d.filename}</a>`, true);
+    }
+  }catch(e){ show("Could not reach the server: "+e.message, false); }
+  finally{ btn.disabled=false; btn.innerHTML=label; }
 }
 
 // ── Equipment, and the furnace total ───────────────────────────────────────
