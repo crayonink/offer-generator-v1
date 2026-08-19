@@ -90,53 +90,63 @@ def _catalogue(pressure_class):
                  pressure=r[4], price=r[5], fan_bhp=r[6]) for r in rows]
 
 
-def select_blowers(cfm_required, pressure_class=DEFAULT_CLASS, hp_required=0.0):
+# The duty figure the app computes is CFM x 40 / 3200, i.e. CFM / 80. A fan at
+# 40" SP and 65% efficiency draws CFM / 103, so the workbook's constant already
+# carries efficiency plus about 29% headroom: 16,676 CFM is 161.5 BHP at the
+# fan and 208.46 by this formula. That makes it a motor-selection figure, and
+# it belongs against the motor rating.
+#
+# Measuring it against the vendor's quoted fan BHP instead double-counts the
+# margin — their own quotes size the motor 13-16% above the fan (184.69 -> 215,
+# 212.14 -> 240), so the headroom is in the figure twice.
+MOTOR_MARGIN = 1.0        # raise to demand more motor than the duty figure
+
+
+def select_blowers(cfm_required, pressure_class=DEFAULT_CLASS, hp_required=0.0,
+                   motor_margin=MOTOR_MARGIN):
     """The machine to use and how many.
 
-    Chosen on shaft power where the catalogue quotes it, otherwise on air.
-
-    Power is the better test and it is what the vendor quotes against: a fan
-    curve trades flow for pressure, so two machines of the same power move
-    very different volumes at different static pressures. Comparing our
-    16,676 CFM at 40" W.G. against 60,000 CMH at 620 mm WC made the quoted
-    machines look twice the size they are — same power, different duty point.
+    Chosen on motor rating against the computed duty power, then on air for
+    ranges that quote no power at all.
     """
     models = _catalogue(pressure_class)
     if not models:
         return None
 
-    rated = [m for m in models if m.get("fan_bhp")]
-    if hp_required > 0 and rated:
-        rated.sort(key=lambda m: m["fan_bhp"])
+    need = hp_required * (motor_margin or 1.0)
+    rated = [m for m in models if m.get("hp")]
+    if need > 0 and rated:
+        rated.sort(key=lambda m: m["hp"])
         for m in rated:
-            if m["fan_bhp"] >= hp_required:
+            if m["hp"] >= need:
                 return _result(m, 1, cfm_required, pressure_class, True,
-                               hp_required, "power")
+                               hp_required, "motor", need)
         # Nothing single covers it: the largest, and as many as it takes.
         big = rated[-1]
-        count = int(-(-hp_required // big["fan_bhp"]))
+        count = int(-(-need // big["hp"]))
         return _result(big, count, cfm_required, pressure_class, False,
-                       hp_required, "power")
+                       hp_required, "motor", need)
 
     if cfm_required <= 0:
         return None
     for m in models:
         if m["cfm"] >= cfm_required:
             return _result(m, 1, cfm_required, pressure_class, True,
-                           hp_required, "air")
+                           hp_required, "air", need)
     big = models[-1]
     count = int(-(-cfm_required // big["cfm"]))          # ceil
     return _result(big, count, cfm_required, pressure_class, False,
-                   hp_required, "air")
+                   hp_required, "air", need)
 
 
 def _result(m, count, cfm_required, pressure_class, single,
-            hp_required=0.0, basis="air"):
+            hp_required=0.0, basis="air", hp_demanded=0.0):
     provided = m["cfm"] * count
     return {
         "fan_bhp_each": m.get("fan_bhp") or 0.0,
         "fan_bhp_total": round((m.get("fan_bhp") or 0.0) * count, 2),
         "hp_required": round(hp_required, 2),
+        "hp_demanded": round(hp_demanded, 2),
         "basis": basis,
         "model": m["model"], "hp_each": m["hp"], "cfm_each": m["cfm"],
         "nm3hr_each": m["nm3_per_hr"], "pressure": m["pressure"],

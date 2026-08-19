@@ -2009,9 +2009,9 @@ function renderCombustionSheet(c){
    + '<div class="st-note">The recuperator and the mass flow control carry their '
    + 'own computed totals, the burner count is the zone table’s, and the '
    + (c.blower_model
-      ? `the blowers are picked from the catalogue by capacity: ${c.blower_count} × `
-        + `${c.blower_model} moving ${n(c.blower_cfm_provided,0)} CFM for the `
-        + `${n(c.blower_cfm_required,0)} the furnace needs, ${n(c.blower_installed_hp,0)} HP installed. `
+      ? `the blowers come from the catalogue: ${c.blower_count} × ${c.blower_model}, `
+        + `${n(c.blower_installed_hp,0)} HP of motor for the ${n(c.blower_hp_required,2)} HP `
+        + `the duty asks` + (c.blower_fan_bhp?`, fan ${n(c.blower_fan_bhp,2)} BHP`:``) + `. `
       : `the blower count is the duty over one blower’s rating. `)
    + `${c.burner_count} burners here. The unit prices, the door count, the pusher `
    + 'and the ejector are still typed.</div></div>';

@@ -52,6 +52,8 @@ class BRFCombustionResults:
     blower_cfm_required: float = 0.0
     blower_cfm_provided: float = 0.0
     blower_installed_hp: float = 0.0
+    blower_hp_required:  float = 0.0
+    blower_fan_bhp:      float = 0.0
 
 
 def calculate_combustion(inp=None, recup_cost=0.0, mass_flow_cost=0.0,
@@ -102,4 +104,6 @@ def calculate_combustion(inp=None, recup_cost=0.0, mass_flow_cost=0.0,
         blower_cfm_required=(blower or {}).get("cfm_required", 0.0),
         blower_cfm_provided=(blower or {}).get("cfm_provided", 0.0),
         blower_installed_hp=(blower or {}).get("installed_hp", 0.0),
+        blower_hp_required=(blower or {}).get("hp_required", 0.0),
+        blower_fan_bhp=(blower or {}).get("fan_bhp_each", 0.0),
     )

@@ -6240,6 +6240,9 @@ class BRFCalcRequest(BaseModel):
     valve_type:        str   = "motorised"
     # Which blower range the air header runs at: 40 (high) or 28 (medium) W.G.
     blower_pressure_wg: str  = "brf"
+    # How much motor to demand over the computed duty power. 1.0 takes the
+    # figure as it stands, which already carries the workbook's headroom.
+    blower_motor_margin: float = 1.0
     recup_auto_bank:   bool  = True
     recup_rows:        int   = 28
     recup_cols:        int   = 27
@@ -6417,7 +6420,8 @@ def brf_calculate(req: BRFCalcRequest):
         _blower = select_blowers(
             _duty.get("blower_cfm", 0.0) or 0.0,
             PRESSURE_CLASSES.get(str(req.blower_pressure_wg), "HIGH PRESSURE"),
-            hp_required=_duty.get("blower_hp", 0.0) or 0.0)
+            hp_required=_duty.get("blower_hp", 0.0) or 0.0,
+            motor_margin=req.blower_motor_margin or 1.0)
         combustion = calculate_combustion(
             blower=_blower,
             recup_cost=recup.total_cost,
