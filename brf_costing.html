@@ -2012,6 +2012,11 @@ function renderCombustionSheet(c){
       ? `the blowers come from the catalogue: ${c.blower_count} × ${c.blower_model}, `
         + `${n(c.blower_installed_hp,0)} HP of motor for the ${n(c.blower_hp_required,2)} HP `
         + `the duty asks` + (c.blower_fan_bhp?`, fan ${n(c.blower_fan_bhp,2)} BHP`:``) + `. `
+        + (c.blower_price_bare
+           ? `Its price is the complete set — machine ${n(c.blower_price_bare)} plus `
+             + `motor ${n(c.blower_motor_price)}, coupling and pads — because nothing `
+             + `else in the bill of material buys a motor. `
+           : ``)
       : `the blower count is the duty over one blower’s rating. `)
    + `${c.burner_count} burners here. The unit prices, the door count, the pusher `
    + 'and the ejector are still typed.</div></div>';

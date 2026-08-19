@@ -79,7 +79,8 @@ def _catalogue(pressure_class):
         conn = sqlite3.connect(DB_PATH)
         rows = conn.execute(
             "SELECT model, hp, cfm, nm3_per_hr, pressure, price_with_motor, "
-            "       COALESCE(fan_bhp, 0) "
+            "       COALESCE(fan_bhp, 0), COALESCE(price_without_motor, 0), "
+            "       COALESCE(motor_price_abb, 0) "
             "FROM blower_pricelist_master "
             "WHERE section = ? AND cfm IS NOT NULL AND price_with_motor IS NOT NULL "
             "ORDER BY cfm", (pressure_class,)).fetchall()
@@ -87,7 +88,8 @@ def _catalogue(pressure_class):
     except Exception:
         return []
     return [dict(model=r[0], hp=r[1], cfm=r[2], nm3_per_hr=r[3],
-                 pressure=r[4], price=r[5], fan_bhp=r[6]) for r in rows]
+                 pressure=r[4], price=r[5], fan_bhp=r[6],
+                 price_bare=r[7], motor_price=r[8]) for r in rows]
 
 
 # The duty figure the app computes is CFM x 40 / 3200, i.e. CFM / 80. A fan at
@@ -144,6 +146,10 @@ def _result(m, count, cfm_required, pressure_class, single,
     provided = m["cfm"] * count
     return {
         "fan_bhp_each": m.get("fan_bhp") or 0.0,
+        # The set price is what the line carries, because nothing else in the
+        # BOM buys a motor. Both halves travel so the sheet can show the split.
+        "price_bare_each": m.get("price_bare") or 0.0,
+        "motor_price_each": m.get("motor_price") or 0.0,
         "fan_bhp_total": round((m.get("fan_bhp") or 0.0) * count, 2),
         "hp_required": round(hp_required, 2),
         "hp_demanded": round(hp_demanded, 2),
