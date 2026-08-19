@@ -784,6 +784,11 @@
         <option value="motorised">Motorised</option>
         <option value="pneumatic">Pneumatic</option>
       </select>
+      <label for="pr-blower" style="margin-left:8px">Blower range</label>
+      <select id="pr-blower" onchange="vendorChanged()">
+        <option value="40">40&quot; W.G. (high)</option>
+        <option value="28">28&quot; W.G. (medium)</option>
+      </select>
       <span class="hint" id="pr-compare">&nbsp;</span>
     </div>
 
@@ -1119,6 +1124,8 @@ function furnacePayload(){
   if(eq) o.equipment = eq;
   o.vendor = selectedVendor();
   o.valve_type = selectedValveType();
+  const bl=document.getElementById("pr-blower");
+  if(bl) o.blower_pressure_wg = bl.value;
   return o;
 }
 
@@ -2064,9 +2071,13 @@ function renderCombustionSheet(c){
    + `<td class="xl-num">&#8377; ${n(c.total_price)}</td></tr></table>`
    + '<div class="st-note">The recuperator and the mass flow control carry their '
    + 'own computed totals, the burner count is the zone table’s, and the '
-   + `blower count is the duty over one blower’s rating — ${c.blower_count} `
-   + `blower${c.blower_count===1?'':'s'} for ${c.burner_count} burners here. The unit `
-   + 'prices, the door count, the pusher and the ejector are still typed.</div></div>';
+   + (c.blower_model
+      ? `the blowers are picked from the catalogue by capacity: ${c.blower_count} × `
+        + `${c.blower_model} moving ${n(c.blower_cfm_provided,0)} CFM for the `
+        + `${n(c.blower_cfm_required,0)} the furnace needs, ${n(c.blower_installed_hp,0)} HP installed. `
+      : `the blower count is the duty over one blower’s rating. `)
+   + `${c.burner_count} burners here. The unit prices, the door count, the pusher `
+   + 'and the ejector are still typed.</div></div>';
   el.innerHTML=h;
 }
 

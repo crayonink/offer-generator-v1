@@ -9,8 +9,10 @@ Four of them stop being typed here:
     sheet does (E5 reads Recuperator!F55);
   * the mass flow control likewise (E9 reads 'Mass Flow Control'!H61);
   * the burner count is the zone table's own total rather than a typed 25;
-  * the blower count is the computed duty divided by one blower's rating and
-    rounded up — 208.46 HP over 100 HP a blower is the 3 the sheet types.
+  * the blowers are selected from the catalogue by capacity — how much air
+    one machine moves, not how much power the set draws. Dividing the shaft
+    HP by a motor rating was never a capacity calculation; it agreed with the
+    sheet's 3 by coincidence on this job and would not on another.
 
 The gas train carries the firing rate in its name, so that follows the duty
 too. What is left typed is what nobody derives: the unit prices, the number
@@ -46,11 +48,19 @@ class BRFCombustionResults:
     total_price: float = 0.0    # F13
     blower_count: int = 0
     burner_count: int = 0
+    blower_model: str = ""
+    blower_cfm_required: float = 0.0
+    blower_cfm_provided: float = 0.0
+    blower_installed_hp: float = 0.0
 
 
 def calculate_combustion(inp=None, recup_cost=0.0, mass_flow_cost=0.0,
                          burner_count=0, blower_hp=0.0,
-                         firing_rate_nm3hr=0.0) -> BRFCombustionResults:
+                         firing_rate_nm3hr=0.0,
+                         blower=None) -> BRFCombustionResults:
+    """blower — a dict from bom.brf_blower.select_blowers. When it is absent
+    the sheet's typed machine and count are used, so the caller can still
+    reproduce the workbook."""
     c = inp or BRFCombustionInputs()
     rows = []
 
@@ -58,15 +68,22 @@ def calculate_combustion(inp=None, recup_cost=0.0, mass_flow_cost=0.0,
         rows.append([item, float(qty), round(float(price), 2),
                      round(float(qty) * float(price), 2), bool(derived)])
 
-    # One blower per rating's worth of duty, rounded up.
-    blowers = (math.ceil(blower_hp / c.blower_hp_each - 1e-9)
-               if blower_hp and c.blower_hp_each else 0)
+    # Selected by capacity when the catalogue could offer something.
+    if blower and blower.get("count"):
+        blowers = int(blower["count"])
+        blower_price = float(blower["price_each"])
+        blower_label = (f"Blower {blower['model']} — {blower['hp_each']:g}HP / "
+                        f"{blower['cfm_each']:,.0f} CFM")
+    else:
+        blowers = (math.ceil(blower_hp / c.blower_hp_each - 1e-9)
+                   if blower_hp and c.blower_hp_each else 0)
+        blower_price = c.blower_price
+        blower_label = f"Blower {c.blower_hp_each:g}HP / {c.blower_size_label}"
     burners = int(burner_count or 0)
     burner_cost = (c.burner_list_price / c.burner_markup) if c.burner_markup else 0.0
 
     add("Recuperator", 1, recup_cost, True)
-    add(f"Blower {c.blower_hp_each:g}HP / {c.blower_size_label}", blowers,
-        c.blower_price, True)
+    add(blower_label, blowers, blower_price, True)
     add(f"Burner Set {c.burner_label}", burners, burner_cost, True)
     add(f"Gas Train ({firing_rate_nm3hr:,.0f} Nm³/hr)", 1,
         c.gas_train_price, True)
@@ -81,4 +98,8 @@ def calculate_combustion(inp=None, recup_cost=0.0, mass_flow_cost=0.0,
         total_price=round(sum(r[3] for r in rows), 2),
         blower_count=blowers,
         burner_count=burners,
+        blower_model=(blower or {}).get("model", ""),
+        blower_cfm_required=(blower or {}).get("cfm_required", 0.0),
+        blower_cfm_provided=(blower or {}).get("cfm_provided", 0.0),
+        blower_installed_hp=(blower or {}).get("installed_hp", 0.0),
     )

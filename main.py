@@ -6220,6 +6220,8 @@ class BRFCalcRequest(BaseModel):
     # How the flow control valves are actuated: "motorised" or "pneumatic".
     # They are priced from different ladders and are far apart.
     valve_type:        str   = "motorised"
+    # Which blower range the air header runs at: 40 (high) or 28 (medium) W.G.
+    blower_pressure_wg: str  = "40"
     recup_auto_bank:   bool  = True
     recup_rows:        int   = 28
     recup_cols:        int   = 27
@@ -6391,7 +6393,14 @@ def brf_calculate(req: BRFCalcRequest):
         # flow total the way the sheet does, and takes its burner and blower
         # counts from the duty rather than typing them.
         from calculations.brf_combustion import calculate_combustion
+        from bom.brf_blower import select_blowers, PRESSURE_CLASSES
+        # Blowers by capacity: the air the furnace needs over what one machine
+        # moves, not the shaft power over a motor rating.
+        _blower = select_blowers(
+            _duty.get("blower_cfm", 0.0) or 0.0,
+            PRESSURE_CLASSES.get(str(req.blower_pressure_wg), "HIGH PRESSURE"))
         combustion = calculate_combustion(
+            blower=_blower,
             recup_cost=recup.total_cost,
             mass_flow_cost=mass_flow.total_price,
             burner_count=_duty.get("total_burners", 0) or 0,
