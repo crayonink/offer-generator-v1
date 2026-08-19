@@ -6416,7 +6416,8 @@ def brf_calculate(req: BRFCalcRequest):
         # moves, not the shaft power over a motor rating.
         _blower = select_blowers(
             _duty.get("blower_cfm", 0.0) or 0.0,
-            PRESSURE_CLASSES.get(str(req.blower_pressure_wg), "HIGH PRESSURE"))
+            PRESSURE_CLASSES.get(str(req.blower_pressure_wg), "HIGH PRESSURE"),
+            hp_required=_duty.get("blower_hp", 0.0) or 0.0)
         combustion = calculate_combustion(
             blower=_blower,
             recup_cost=recup.total_cost,

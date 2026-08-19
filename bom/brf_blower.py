@@ -33,9 +33,9 @@ PRESSURE_CLASSES = {"brf": BRF_CLASS, "40": "HIGH PRESSURE",
 #   PCBLZ-100-130   60,000 CMH   620 mm WC   184.69 BHP   160 kW / 215 HP motor
 #       blower 3,77,000 + motor 4,80,000 + coupling 14,000 + pads 10,500
 BRF_CATALOGUE = [
-    # model, motor HP, Nm3/hr, pressure, blower only, whole set, motor
-    ("PCBLZ-100-130", 215.0, 60000.0, "620 mm WC", 377000.0, 881500.0, 480000.0),
-    ("PCBLZ-105-130", 240.0, 68000.0, "620 mm WC", 415000.0, 1121500.0, 680000.0),
+    # model, motor HP, fan BHP, Nm3/hr, pressure, blower only, set, motor
+    ("PCBLZ-100-130", 215.0, 184.69, 60000.0, "620 mm WC", 377000.0, 881500.0, 480000.0),
+    ("PCBLZ-105-130", 240.0, 212.14, 68000.0, "620 mm WC", 415000.0, 1121500.0, 680000.0),
 ]
 CFM_PER_NM3HR = 1.7
 
@@ -43,21 +43,31 @@ CFM_PER_NM3HR = 1.7
 def seed_brf_blowers(conn):
     """Put the quoted machines in blower_pricelist_master. Idempotent, and it
     leaves an edited row alone — a price corrected in the UI stays corrected."""
+    # The fan's shaft power at its duty point. It is what a blower is actually
+    # chosen on: air alone cannot be compared across machines quoted at
+    # different static pressures.
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(blower_pricelist_master)")}
+    if "fan_bhp" not in cols:
+        conn.execute("ALTER TABLE blower_pricelist_master ADD COLUMN fan_bhp REAL")
     have = {r[0] for r in conn.execute(
         "SELECT model FROM blower_pricelist_master WHERE section = ?",
         (BRF_CLASS,))}
     n = 0
-    for model, hp, nm3, press, wo_motor, w_motor, motor in BRF_CATALOGUE:
+    for model, hp, bhp, nm3, press, wo_motor, w_motor, motor in BRF_CATALOGUE:
         if model in have:
+            conn.execute("UPDATE blower_pricelist_master SET fan_bhp = ? "
+                         "WHERE section = ? AND model = ? AND fan_bhp IS NULL",
+                         (bhp, BRF_CLASS, model))
             continue
         conn.execute(
             "INSERT INTO blower_pricelist_master "
-            "(section, model, hp, cfm, nm3_per_hr, pressure, "
+            "(section, model, hp, fan_bhp, cfm, nm3_per_hr, pressure, "
             " price_without_motor, price_with_motor, motor_price_abb) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
-            (BRF_CLASS, model, hp, round(nm3 / CFM_PER_NM3HR, 2), nm3, press,
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (BRF_CLASS, model, hp, bhp, round(nm3 / CFM_PER_NM3HR, 2), nm3, press,
              wo_motor, w_motor, motor))
         n += 1
+    conn.commit()
     if n:
         conn.commit()
     return n
@@ -68,7 +78,8 @@ def _catalogue(pressure_class):
     try:
         conn = sqlite3.connect(DB_PATH)
         rows = conn.execute(
-            "SELECT model, hp, cfm, nm3_per_hr, pressure, price_with_motor "
+            "SELECT model, hp, cfm, nm3_per_hr, pressure, price_with_motor, "
+            "       COALESCE(fan_bhp, 0) "
             "FROM blower_pricelist_master "
             "WHERE section = ? AND cfm IS NOT NULL AND price_with_motor IS NOT NULL "
             "ORDER BY cfm", (pressure_class,)).fetchall()
@@ -76,33 +87,57 @@ def _catalogue(pressure_class):
     except Exception:
         return []
     return [dict(model=r[0], hp=r[1], cfm=r[2], nm3_per_hr=r[3],
-                 pressure=r[4], price=r[5]) for r in rows]
+                 pressure=r[4], price=r[5], fan_bhp=r[6]) for r in rows]
 
 
-def select_blowers(cfm_required, pressure_class=DEFAULT_CLASS):
-    """The machine to use and how many, for a required air flow in CFM.
+def select_blowers(cfm_required, pressure_class=DEFAULT_CLASS, hp_required=0.0):
+    """The machine to use and how many.
 
-    Returns a dict, or None when the catalogue has nothing to offer.
+    Chosen on shaft power where the catalogue quotes it, otherwise on air.
+
+    Power is the better test and it is what the vendor quotes against: a fan
+    curve trades flow for pressure, so two machines of the same power move
+    very different volumes at different static pressures. Comparing our
+    16,676 CFM at 40" W.G. against 60,000 CMH at 620 mm WC made the quoted
+    machines look twice the size they are — same power, different duty point.
     """
     models = _catalogue(pressure_class)
-    if not models or cfm_required <= 0:
+    if not models:
         return None
 
-    # One machine if one will do — the smallest that covers it, so a small
-    # furnace is not handed the largest blower in the range.
+    rated = [m for m in models if m.get("fan_bhp")]
+    if hp_required > 0 and rated:
+        rated.sort(key=lambda m: m["fan_bhp"])
+        for m in rated:
+            if m["fan_bhp"] >= hp_required:
+                return _result(m, 1, cfm_required, pressure_class, True,
+                               hp_required, "power")
+        # Nothing single covers it: the largest, and as many as it takes.
+        big = rated[-1]
+        count = int(-(-hp_required // big["fan_bhp"]))
+        return _result(big, count, cfm_required, pressure_class, False,
+                       hp_required, "power")
+
+    if cfm_required <= 0:
+        return None
     for m in models:
         if m["cfm"] >= cfm_required:
-            return _result(m, 1, cfm_required, pressure_class, single=True)
-
-    # Otherwise the largest in the class, and as many as it takes.
+            return _result(m, 1, cfm_required, pressure_class, True,
+                           hp_required, "air")
     big = models[-1]
     count = int(-(-cfm_required // big["cfm"]))          # ceil
-    return _result(big, count, cfm_required, pressure_class, single=False)
+    return _result(big, count, cfm_required, pressure_class, False,
+                   hp_required, "air")
 
 
-def _result(m, count, cfm_required, pressure_class, single):
+def _result(m, count, cfm_required, pressure_class, single,
+            hp_required=0.0, basis="air"):
     provided = m["cfm"] * count
     return {
+        "fan_bhp_each": m.get("fan_bhp") or 0.0,
+        "fan_bhp_total": round((m.get("fan_bhp") or 0.0) * count, 2),
+        "hp_required": round(hp_required, 2),
+        "basis": basis,
         "model": m["model"], "hp_each": m["hp"], "cfm_each": m["cfm"],
         "nm3hr_each": m["nm3_per_hr"], "pressure": m["pressure"],
         "price_each": m["price"], "count": count,
