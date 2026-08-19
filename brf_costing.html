@@ -63,9 +63,25 @@
     .sz-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
     .sz-f { display:flex; flex-direction:column; gap:6px; }
     .sz-f label { font-size:.72rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
-    .sz-f input, .sz-table input[type=text], .sz-table input[type=number] {
-      padding:9px 11px; border:1px solid var(--border); border-radius:8px;
-      font:inherit; font-size:.9rem; color:#0f172a; background:#fff; width:100%; box-sizing:border-box; }
+    /* Selects and textareas were never in this rule, so they fell back to the
+       browser's own square corners and sat oddly beside the rounded inputs.
+       They are the same control as far as a reader is concerned, so they get
+       the same shape, padding and focus ring. */
+    .sz-f input, .sz-f select, .sz-f textarea,
+    .sz-table input[type=text], .sz-table input[type=number] {
+      padding:9px 11px; border:1px solid var(--border); border-radius:10px;
+      font:inherit; font-size:.9rem; color:#0f172a; background:#fff; width:100%;
+      box-sizing:border-box; transition:border-color .15s, box-shadow .15s; }
+    .sz-f textarea { resize:vertical; min-height:44px; line-height:1.45; }
+    /* A select keeps its own arrow, which needs room on the right. */
+    .sz-f select { appearance:none; -webkit-appearance:none; cursor:pointer;
+      padding-right:32px;
+      background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 11px center; }
+    .sz-f input:hover, .sz-f select:hover, .sz-f textarea:hover { border-color:#cbd5e1; }
+    .sz-f input:focus, .sz-f select:focus, .sz-f textarea:focus {
+      outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(26,58,92,.10); }
+    .sz-f input[readonly] { color:#475569; }
     .sz-table { width:100%; border-collapse:collapse; }
     .sz-table th { text-align:left; font-size:.72rem; font-weight:600; letter-spacing:.04em;
       text-transform:uppercase; color:var(--muted); padding:6px 8px; border-bottom:1px solid var(--border); }
