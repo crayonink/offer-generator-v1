@@ -6459,6 +6459,35 @@ def brf_calculate(req: BRFCalcRequest):
         from calculations.brf_breakup import build_breakup
         breakup = build_breakup(combustion, recup, mass_flow, _gas_train,
                                 casting, priced)
+
+        # The costing follows the breakup. What brf_price_master held was a
+        # 13-line list that never carried the refractory or the structure —
+        # the two biggest items on the job — so it came to 1.64 Cr against
+        # the 4.72 Cr the furnace actually costs. The breakup reads every
+        # block that computed something, so it is the one that adds up.
+        #
+        # The NG-optional and client-scope rows have no equivalent in the
+        # breakup and are carried across from the price master unchanged, so
+        # asking for them still works.
+        extras = [r for r in bom
+                  if str(r.get("SECTION", "")).strip() in
+                  ("NG Optional", "Client Scope")]
+        bom = [{"SECTION": r[0], "ITEM": r[1], "QTY": r[2], "UNIT": r[3],
+                "UNIT PRICE": r[4], "COST PRICE": r[5], "MARKUP": r[6],
+                "SELL PRICE": r[7]}
+               for r in breakup.rows] + extras
+        _x_cost = sum(float(r.get("COST PRICE") or 0) for r in extras)
+        _x_sell = sum(float(r.get("SELL PRICE") or 0) for r in extras)
+        summary = {
+            "main_cost": breakup.cost_total,
+            "main_sell": breakup.sell_total,
+            "ng_optional_cost": round(_x_cost, 2),
+            "ng_optional_sell": round(_x_sell, 2),
+            "client_scope_cost": 0.0,
+            "client_scope_sell": 0.0,
+            "grand_cost": round(breakup.cost_total + _x_cost, 2),
+            "grand_sell": round(breakup.sell_total + _x_sell, 2),
+        }
         return {
             "bom": bom,
             "cost_summary": summary,
