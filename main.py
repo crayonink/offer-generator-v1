@@ -1698,6 +1698,24 @@ def _startup_seed_brf_blowers():
 _startup_seed_brf_blowers()
 
 
+def _startup_seed_brf_gas_train():
+    """Load the assembled gas train components (IAPL, 27-07-2026) so the train
+    is priced from its parts. Idempotent; reaches the persistent volume on
+    deploy, and leaves an edited price alone."""
+    try:
+        from bom.brf_gas_train import seed_gas_train
+        conn = sqlite3.connect(DB_PATH)
+        n = seed_gas_train(conn)
+        conn.close()
+        if n:
+            print(f"[db] seeded {n} gas train component rows")
+    except Exception as e:
+        print(f"WARN: startup seed_brf_gas_train failed: {e}")
+
+
+_startup_seed_brf_gas_train()
+
+
 def _startup_rename_brf_table():
     """snsf_brf_price_master -> brf_price_master, on whatever database is open.
 
@@ -6422,8 +6440,15 @@ def brf_calculate(req: BRFCalcRequest):
             PRESSURE_CLASSES.get(str(req.blower_pressure_wg), "HIGH PRESSURE"),
             hp_required=_duty.get("blower_hp", 0.0) or 0.0,
             motor_margin=req.blower_motor_margin or 1.0)
+        # The gas train, priced from its parts: one assembled train per fired
+        # zone, as the quotation's quantity of five was raised for.
+        from bom.brf_gas_train import price_gas_train
+        _gas_train = price_gas_train(
+            _duty.get("zone_count", 0) or 0,
+            _duty.get("firing_rate_nm3hr", 0.0) or 0.0)
         combustion = calculate_combustion(
             blower=_blower,
+            gas_train=_gas_train,
             recup_cost=recup.total_cost,
             mass_flow_cost=mass_flow.total_price,
             burner_count=_duty.get("total_burners", 0) or 0,
@@ -6444,6 +6469,7 @@ def brf_calculate(req: BRFCalcRequest):
             "mass_flow": vars(mass_flow),
             "recuperator_calc": vars(recup),
             "combustion_calc": vars(combustion),
+            "gas_train": _gas_train,
         }
     except Exception as e:
         import traceback

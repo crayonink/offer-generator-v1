@@ -61,7 +61,7 @@ class BRFCombustionResults:
 def calculate_combustion(inp=None, recup_cost=0.0, mass_flow_cost=0.0,
                          burner_count=0, blower_hp=0.0,
                          firing_rate_nm3hr=0.0,
-                         blower=None) -> BRFCombustionResults:
+                         blower=None, gas_train=None) -> BRFCombustionResults:
     """blower — a dict from bom.brf_blower.select_blowers. When it is absent
     the sheet's typed machine and count are used, so the caller can still
     reproduce the workbook."""
@@ -89,8 +89,13 @@ def calculate_combustion(inp=None, recup_cost=0.0, mass_flow_cost=0.0,
     add("Recuperator", 1, recup_cost, True)
     add(blower_label, blowers, blower_price, True)
     add(f"Burner Set {c.burner_label}", burners, burner_cost, True)
-    add(f"Gas Train ({firing_rate_nm3hr:,.0f} Nm³/hr)", 1,
-        c.gas_train_price, True)
+    if gas_train and gas_train.get("train_count"):
+        add(f"Gas Train, assembled ({gas_train['flow_per_train_nm3hr']:,.0f} "
+            f"Nm³/hr each)", gas_train["train_count"],
+            gas_train["per_train"], True)
+    else:
+        add(f"Gas Train ({firing_rate_nm3hr:,.0f} Nm³/hr)", 1,
+            c.gas_train_price, True)
     add("Mass flow control", 1, mass_flow_cost, True)
     add("Pneumatically operated doors", c.door_count, c.door_price)
     add("Pusher", 1, c.pusher_price)
