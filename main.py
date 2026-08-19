@@ -6217,6 +6217,9 @@ class BRFCalcRequest(BaseModel):
     # The bank is sized from the duty by default. Set recup_auto_bank false to
     # use the typed rows and columns instead — for a job where the bank is
     # already fixed.
+    # How the flow control valves are actuated: "motorised" or "pneumatic".
+    # They are priced from different ladders and are far apart.
+    valve_type:        str   = "motorised"
     recup_auto_bank:   bool  = True
     recup_rows:        int   = 28
     recup_cols:        int   = 27
@@ -6361,7 +6364,8 @@ def brf_calculate(req: BRFCalcRequest):
         mass_flow = calculate_mass_flow(
             sizing.get("zones") or [],
             burner_count=(sizing.get("duty") or {}).get("total_burners", 0),
-            zone_count=(sizing.get("duty") or {}).get("zone_count"))
+            zone_count=(sizing.get("duty") or {}).get("zone_count"),
+            valve_type=req.valve_type)
         # The recuperator. Its flue and air volumes are typed on the sheet and
         # disagree with the furnace, so both figures travel: what was quoted
         # and what the furnace implies.

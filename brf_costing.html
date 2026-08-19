@@ -779,6 +779,11 @@
         <option value="raj">Rajhans</option>
         <option value="bhil">Bhilwari</option>
       </select>
+      <label for="pr-valve" style="margin-left:8px">Flow control valves</label>
+      <select id="pr-valve" onchange="vendorChanged()">
+        <option value="motorised">Motorised</option>
+        <option value="pneumatic">Pneumatic</option>
+      </select>
       <span class="hint" id="pr-compare">&nbsp;</span>
     </div>
 
@@ -1113,6 +1118,7 @@ function furnacePayload(){
   const eq = readEquipment();
   if(eq) o.equipment = eq;
   o.vendor = selectedVendor();
+  o.valve_type = selectedValveType();
   return o;
 }
 
@@ -1908,7 +1914,8 @@ function renderMassFlowSheet(m){
   let h='<div class="rf-total pr-total"><table class="xl-grid rf-tot">'
       + '<colgroup><col style="width:40%"><col style="width:12%"><col style="width:9%">'
       + '<col style="width:19%"><col style="width:20%"></colgroup>'
-      + '<tr><td class="rf-head" colspan="5">MASS FLOW CONTROL SYSTEM</td></tr>';
+      + `<tr><td class="rf-head" colspan="5">MASS FLOW CONTROL SYSTEM &mdash; `
+      + `${m.valve_type==="pneumatic"?"PNEUMATIC":"MOTORISED"} VALVES</td></tr>`;
   let section="";
   m.rows.forEach(([sec,item,size,qty,rate,total,est])=>{
     if(sec!==section){
@@ -2065,6 +2072,11 @@ const VENDOR_LABEL={trl:"TRL", raj:"Rajhans", bhil:"Bhilwari"};
 function selectedVendor(){
   const s=document.getElementById("pr-vendor");
   return s ? s.value : "trl";
+}
+
+function selectedValveType(){
+  const s=document.getElementById("pr-valve");
+  return s ? s.value : "motorised";
 }
 
 function vendorChanged(){ furnacePreview(); }

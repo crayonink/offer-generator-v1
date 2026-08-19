@@ -20,9 +20,27 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 
-# NB -> rupees, from the Mass Flow Control sheet.
-VALVE_RATES = {65: 17000.0, 80: 17200.0, 450: 105300.0, 600: 190500.0}
-ORIFICE_RATES = {80: 5500.0, 100: 5500.0, 500: 47000.0, 600: 61400.0}
+# Two ways to actuate the flow control valve, and they are not close in price:
+# a pneumatic 80 NB is 105,000 where a motorised one is 17,200. The motorised
+# ladder is the 60 TPH workbook's own; the pneumatic one is the 30 T job's,
+# which is where the office last quoted pneumatic. The orifice plate differs
+# between them too, so it switches with the valve.
+VALVE_TYPES = ("motorised", "pneumatic")
+VALVE_LABEL = {"motorised": "Motorized Flow Control Valve",
+               "pneumatic": "Pneumatic Flow Control Valve"}
+
+VALVE_RATES_BY_TYPE = {
+    "motorised": {65: 17000.0, 80: 17200.0, 450: 105300.0, 600: 190500.0},
+    "pneumatic": {80: 105000.0, 150: 189540.0, 200: 213240.0},
+}
+ORIFICE_RATES_BY_TYPE = {
+    "motorised": {80: 5500.0, 100: 5500.0, 500: 47000.0, 600: 61400.0},
+    "pneumatic": {80: 7000.0, 100: 7000.0, 200: 15000.0, 250: 19000.0},
+}
+
+# Kept for anything still importing them; the motorised set is the default.
+VALVE_RATES = VALVE_RATES_BY_TYPE["motorised"]
+ORIFICE_RATES = ORIFICE_RATES_BY_TYPE["motorised"]
 
 # Flat-rate items, no size against them.
 RATE_DPT = 45000.0
@@ -72,9 +90,11 @@ class BRFMassFlowResults:
     total_price: float = 0.0     # H61
     zone_count:  int = 0
     estimated_lines: int = 0     # rows priced off the ladder rather than on it
+    valve_type:  str = "motorised"
 
 
-def calculate_mass_flow(zones, burner_count=0, zone_count=None) -> BRFMassFlowResults:
+def calculate_mass_flow(zones, burner_count=0, zone_count=None,
+                       valve_type="motorised") -> BRFMassFlowResults:
     """zones — the sizing chain's zone list, as objects or as dicts.
 
     zone_count trims it to the fired zones: the sizing table carries a
@@ -82,6 +102,10 @@ def calculate_mass_flow(zones, burner_count=0, zone_count=None) -> BRFMassFlowRe
     loop of its own to bill.
     """
     rows = []
+    vt = valve_type if valve_type in VALVE_TYPES else "motorised"
+    valve_rates = VALVE_RATES_BY_TYPE[vt]
+    orifice_rates = ORIFICE_RATES_BY_TYPE[vt]
+    valve_name = VALVE_LABEL[vt]
 
     def add(section, item, nb, qty, rate, est=False):
         rows.append([section, item, (f"{int(nb)} NB" if nb else ""),
@@ -101,16 +125,16 @@ def calculate_mass_flow(zones, burner_count=0, zone_count=None) -> BRFMassFlowRe
         air = get(z, "air_line_nb", 0) or 0
         gas = get(z, "gas_line_nb", 0) or 0
         sec = f"{name} (Air Line)"
-        r, e = rate_for(VALVE_RATES, air)
-        add(sec, "Motorized Flow Control Valve", air, 1, r, e)
-        r, e = rate_for(ORIFICE_RATES, air)
+        r, e = rate_for(valve_rates, air)
+        add(sec, valve_name, air, 1, r, e)
+        r, e = rate_for(orifice_rates, air)
         add(sec, "Orifice Plate", air, 1, r, e)
         add(sec, "DPT", 0, 1, RATE_DPT)
         add(sec, "Thermocouple with TT — R type", 0, 1, RATE_THERMOCOUPLE)
         sec = f"{name} (Gas Line)"
-        r, e = rate_for(VALVE_RATES, gas)
-        add(sec, "Motorized Flow Control Valve", gas, 1, r, e)
-        r, e = rate_for(ORIFICE_RATES, gas)
+        r, e = rate_for(valve_rates, gas)
+        add(sec, valve_name, gas, 1, r, e)
+        r, e = rate_for(orifice_rates, gas)
         add(sec, "Orifice Plate", gas, 1, r, e)
         add(sec, "DPT", 0, 1, RATE_DPT)
 
@@ -133,4 +157,5 @@ def calculate_mass_flow(zones, burner_count=0, zone_count=None) -> BRFMassFlowRe
         total_price=round(sum(r[5] for r in rows), 2),
         zone_count=len(fired),
         estimated_lines=sum(1 for r in rows if r[6]),
+        valve_type=vt,
     )
