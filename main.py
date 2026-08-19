@@ -6375,6 +6375,16 @@ def brf_calculate(req: BRFCalcRequest):
             ),
             furnace_air_nm3hr=f_air, furnace_flue_nm3hr=f_flue)
         recup.inputs_linked = bool(req.link_recup_to_furnace)
+        # The combustion equipment list. It reads the recuperator and the mass
+        # flow total the way the sheet does, and takes its burner and blower
+        # counts from the duty rather than typing them.
+        from calculations.brf_combustion import calculate_combustion
+        combustion = calculate_combustion(
+            recup_cost=recup.total_cost,
+            mass_flow_cost=mass_flow.total_price,
+            burner_count=_duty.get("total_burners", 0) or 0,
+            blower_hp=_duty.get("blower_hp", 0.0) or 0.0,
+            firing_rate_nm3hr=_duty.get("firing_rate_nm3hr", 0.0) or 0.0)
         return {
             "bom": bom,
             "cost_summary": summary,
@@ -6389,6 +6399,7 @@ def brf_calculate(req: BRFCalcRequest):
             "priced": vars(priced),
             "mass_flow": vars(mass_flow),
             "recuperator_calc": vars(recup),
+            "combustion_calc": vars(combustion),
         }
     except Exception as e:
         import traceback

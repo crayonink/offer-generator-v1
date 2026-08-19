@@ -2003,6 +2003,40 @@ function renderRecupSheet(c){
   el.innerHTML=h;
 }
 
+
+// The combustion equipment list. The recuperator and the mass flow control
+// carry their own computed totals in, as the sheet's own formulas do, and the
+// burner and blower counts come from the duty. Rows marked from the furnace
+// are the ones that follow it; the rest are prices nobody derives.
+function renderCombustionSheet(c){
+  const el=document.getElementById("xl-combustion");
+  if(!el) return;
+  if(!c||!c.rows||!c.rows.length){ el.innerHTML=""; return; }
+  const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  const n=(v,p=2)=>Number(v).toLocaleString("en-IN",{minimumFractionDigits:p,maximumFractionDigits:p});
+  let h='<div class="rf-total pr-total"><table class="xl-grid rf-tot">'
+      + '<colgroup><col style="width:46%"><col style="width:10%">'
+      + '<col style="width:22%"><col style="width:22%"></colgroup>'
+      + '<tr><td class="rf-head" colspan="4">COMBUSTION EQUIPMENT</td></tr>'
+      + '<tr><td class="rf-head">DESCRIPTION</td><td class="rf-head xl-num">QTY</td>'
+      + '<td class="rf-head xl-num">UNIT PRICE</td><td class="rf-head xl-num">COST PRICE</td></tr>';
+  c.rows.forEach(([item,qty,price,total,derived])=>{
+    h+=`<tr><td class="rf-label">${esc(item)}`
+      +(derived?' <span class="est" style="background:#dcfce7;color:#166534">from the furnace</span>':'')
+      +`</td><td class="rf-val xl-num">${n(qty,0)}</td>`
+      +`<td class="rf-val xl-num">${n(price)}</td>`
+      +`<td class="rf-val xl-num">${n(total)}</td></tr>`;
+  });
+  h+='<tr class="rf-grand"><td colspan="3">Total Combustion Equipment</td>'
+   + `<td class="xl-num">&#8377; ${n(c.total_price)}</td></tr></table>`
+   + '<div class="st-note">The recuperator and the mass flow control carry their '
+   + 'own computed totals, the burner count is the zone table’s, and the '
+   + `blower count is the duty over one blower’s rating — ${c.blower_count} `
+   + `blower${c.blower_count===1?'':'s'} for ${c.burner_count} burners here. The unit `
+   + 'prices, the door count, the pusher and the ejector are still typed.</div></div>';
+  el.innerHTML=h;
+}
+
 // ── The priced take-off ────────────────────────────────────────────────────
 // Ref.+Str. as it is actually billed: every quantity rounded up to a whole
 // piece or bag, at one vendor's rates. Built here and handed to whichever
@@ -2503,17 +2537,8 @@ function renderAll(data,showNG,showCL){
   // ═══ SHEET 4: Mass Flow Control — off the zone line sizing ═══
   renderMassFlowSheet(data.mass_flow);
 
-  // ═══ SHEET 5: Combustion ═══
-  n=0;
-  const comb=sp.combustion_items||[];
-  let cb=`<table class="xl-grid">
-    <tr><td class="xl-col-header"></td><td class="xl-col-header">A</td><td class="xl-col-header">B</td><td class="xl-col-header">C</td><td class="xl-col-header">D</td></tr>`;
-  cb+=R(++n,[["COMBUSTION EQUIPMENT",""],["",""],["",""],["",""]],"xl-section");
-  cb+=R(++n,[["S.No.",""],["Description",""],["Qty",true],["Cost Price",true]],"xl-label");
-  comb.forEach((c,i)=>{n++;cb+=R(n,[[(i+1)+"",""],[c.item,""],[c.qty,true],[fmt(c.qty*c.price),true]]);});
-  cb+=R(++n,[["",""],["TOTAL",""],["",""],[fmt(comb.reduce((s,c)=>s+c.qty*c.price,0)),true]],"xl-total");
-  cb+=`</table>`;
-  document.getElementById("xl-combustion").innerHTML=cb;
+  // ═══ SHEET 5: Combustion — computed ═══
+  renderCombustionSheet(data.combustion_calc);
 
   // ═══ SHEET 6: Recuperator1 — computed ═══
   renderRecupSheet(data.recuperator_calc);
