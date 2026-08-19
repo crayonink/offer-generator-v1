@@ -8,13 +8,14 @@ weighs and costs.
 Two of its inputs are typed on the sheet rather than linked to the furnace,
 and they do not agree with the furnace they sit beside:
 
-    E4  total flue gas          13,200 Nm3/hr   furnace implies ~31,050
-    E10 combustion air          20,400 Nm3/hr   furnace computes  28,350
+    E4  total flue gas          13,200 Nm3/hr   furnace gives 31,050
+    E10 combustion air          20,400 Nm3/hr   furnace gives 28,350
 
-Both are carried as inputs here, defaulting to the sheet's figures so a quote
-reproduces what the office has always quoted. calculate_recuperator also
-returns what the furnace would imply, so the two can be seen side by side and
-the difference settled deliberately rather than by a default nobody chose.
+Both come from the furnace now. The flue gas is the firing rate plus the
+combustion air — what goes in comes out — and the air to preheat is the air
+the burners are getting. The defaults on this dataclass are still the sheet's
+figures, so calling it bare reproduces the workbook; main.py passes the
+computed pair in, and link_recup_to_furnace=False reverts to the typed ones.
 
 Cells are named as the workbook writes them.
 """

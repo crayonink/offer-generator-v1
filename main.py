@@ -6216,7 +6216,10 @@ class BRFCalcRequest(BaseModel):
     recup_air_nm3hr:   float = 20400.0
     recup_rows:        int   = 28
     recup_cols:        int   = 27
-    link_recup_to_furnace: bool = False
+    # Flue gas is the firing rate plus the combustion air — everything that
+    # goes in comes out — so it is computed, not typed. Set this false to fall
+    # back to the sheet's typed figures.
+    link_recup_to_furnace: bool = True
     right_refractory_mm:    float = 510.0
     left_refractory_mm:     float = 510.0
     width_sheet_mm:         float = 16.0
@@ -6362,8 +6365,8 @@ def brf_calculate(req: BRFCalcRequest):
                                             calculate_recuperator)
         _duty = sizing.get("duty") or {}
         f_air = _duty.get("combustion_air_nm3hr", 0.0) or 0.0
-        f_flue = ((_duty.get("firing_rate_nm3hr", 0.0) or 0.0)
-                  * (1.0 + (_duty.get("combustion_air_per_nm3", 0.0) or 0.0)))
+        # What goes in comes out: the gas burnt plus the air burnt with it.
+        f_flue = (_duty.get("firing_rate_nm3hr", 0.0) or 0.0) + f_air
         recup = calculate_recuperator(
             BRFRecupInputs(
                 flue_gas_nm3hr=(f_flue if req.link_recup_to_furnace
