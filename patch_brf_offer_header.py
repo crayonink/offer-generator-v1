@@ -76,9 +76,14 @@ def build_header(section, logo_path):
     for p in list(hdr.paragraphs):
         for r in list(p.runs):
             r._r.getparent().remove(r._r)
+    # Word will not open a header that ends with a table, so there has to be a
+    # paragraph after it. add_table appends, so make the closing paragraph now
+    # and move the table in front of it once it exists.
+    closer = hdr.paragraphs[-1] if hdr.paragraphs else hdr.add_paragraph()
 
     table = hdr.add_table(rows=1, cols=2, width=section.page_width
                           - section.left_margin - section.right_margin)
+    closer._p.addprevious(table._tbl)          # the paragraph closes the header
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = True
     left, right = table.rows[0].cells

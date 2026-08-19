@@ -73,6 +73,30 @@ def _replace_in_paragraph(p, old, new):
     return True
 
 
+# The two email addresses are hyperlinks. python-docx's paragraph.runs does not
+# return runs inside a hyperlink, so those are replaced in the package XML.
+HYPERLINK_SUBS = [("dalmiayk@gmail.com", "{{ email }}"),
+                  ("west@encon.co.in", "{{ marketing_email }}")]
+
+
+def _templatise_hyperlinks(path):
+    import zipfile
+    tmp = path + ".tmp"
+    zin = zipfile.ZipFile(path, "r")
+    zout = zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED)
+    for item in zin.infolist():
+        data = zin.read(item.filename)
+        if item.filename.endswith(".xml"):
+            txt = data.decode("utf-8")
+            for old, new in HYPERLINK_SUBS:
+                txt = txt.replace(old, new)
+            data = txt.encode("utf-8")
+        zout.writestr(item, data)
+    zin.close()
+    zout.close()
+    shutil.move(tmp, path)
+
+
 def main():
     shutil.copyfile(SRC, OUT)
     doc = Document(OUT)
@@ -104,6 +128,7 @@ def main():
                     break
 
     doc.save(OUT)
+    _templatise_hyperlinks(OUT)
 
     print(f"wrote {os.path.basename(OUT)}")
     missed = [o for o, _ in SUBS if o not in hits]
