@@ -254,3 +254,26 @@ def idfan_price_for_hp(hp: float, conn: sqlite3.Connection = None) -> dict | Non
                     "price_motor": m["price_motor"],
                     "price_total": m["price_total"]}
     return None
+
+
+def select_id_fan_for(flow_m3hr: float, motor_kw: float,
+                      conn: sqlite3.Connection = None) -> dict | None:
+    """The smallest complete machine that carries both the volume and the power.
+
+    A fan and its motor are bought together, so a duty that needs more motor
+    than the model it fits on takes the next model up rather than that model
+    with someone else's motor bolted to it. Capacity and motor size rise
+    together down this list, so the binding constraint simply wins.
+
+    Returns None when nothing on the list satisfies both, so the caller can say
+    so rather than quote the largest and hope.
+    """
+    if (not flow_m3hr or flow_m3hr <= 0) and (not motor_kw or motor_kw <= 0):
+        return None
+    for m in idfan_models(conn):
+        if (m["air_cap_cmh"] or 0) + 1e-9 < (flow_m3hr or 0):
+            continue
+        if (m["motor_kw"] or 0) + 1e-9 < (motor_kw or 0):
+            continue
+        return m
+    return None
