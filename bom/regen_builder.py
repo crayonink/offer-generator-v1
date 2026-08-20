@@ -625,7 +625,13 @@ def _fan_selection(comb_air, id_air, conn=None):
     # the duty rather than what picks the frame. The blower catalogue it used
     # to borrow from priced a different machine and stopped at 60 HP.
     from bom.idfan_pricelist import select_id_fan
-    _idsel = select_id_fan(id_air, conn)
+    # The catalogue is rated in ACTUAL m3/hr — its 12,000 CMH machine draws the
+    # 31 BHP its own row states only at that actual volume. id_air is Nm3/hr,
+    # and at 300 C those differ by 2.1x, so passing it straight in chose a fan
+    # roughly half the size the duty needs. _i["q_act_m3s"] is the same flow
+    # already expanded for the shaft-power calculation, so use that.
+    _id_actual_m3hr = _i["q_act_m3s"] * 3600.0
+    _idsel = select_id_fan(_id_actual_m3hr, conn)
     ihpB   = _idsel["motor_hp"]    if _idsel else None
     ipriceB = _idsel["price_total"] if _idsel else None
     # Option A (VFD, hot-rated motor) is quoted on the same fan — the machine
@@ -642,6 +648,8 @@ def _fan_selection(comb_air, id_air, conn=None):
         # id fan (Option A drives the BOM line; B shown alongside)
         idfan_dp_mmwc=_IDFAN_DP_MMWC, idfan_gas_c=_IDFAN_GAS_C, idfan_cold_c=_IDFAN_COLD_C,
         idfan_q_act=_i["q_act_m3s"], idfan_air_kw=_i["air_kw"],
+        # what the catalogue is actually matched against
+        idfan_actual_m3hr=_id_actual_m3hr,
         idfan_shaft_hot_kw=_i["shaft_duty_kw"], idfan_shaft_tb_kw=_i["shaft_tb_kw"],
         idfan_shaft_cold_kw=_shaft_cold, idfan_dens_ratio=_dens_ratio,
         id_motor_kw_A=id_motor_kw_A, id_hp_A=ihpA, id_price_A=ipriceA,
