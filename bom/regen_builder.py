@@ -489,7 +489,11 @@ BLOWER_CATALOGUE = [
 _BLOWER_HP = {500:"10HP", 1000:"10HP", 1500:"15HP", 2000:"20HP", 2500:"25HP", 3000:"25HP", 4500:"40HP", 6000:"60HP"}
 
 # Standard frames we quote above the priced catalogue (no catalogue price yet)
-_EXTRA_FRAMES = (75.0, 100.0)
+# Frames above the blower catalogue's 60 HP top. They carry no blower rate, so
+# the price comes from the ID fan list at the same horsepower — which means the
+# rungs have to be ones that list actually has, or the duty rounds up to a
+# number like 129 HP that no motor is built at and nothing can price.
+_EXTRA_FRAMES = (75.0, 100.0, 120.0, 150.0)
 
 def _live_blower_price(conn, hp):
     """Live 'with motor' blower price for the ENCON 40" model at this HP, from the
@@ -609,6 +613,15 @@ def _fan_selection(comb_air, id_air, conn=None):
     _b = _fan_shaft_kw(comb_air, _BLOWER_DP_INWC * _INWC_TO_PA, _BLOWER_INLET_C)
     blower_motor_kw = _b["motor_kw"]
     bhp, bprice = _frame_from_hp(blower_motor_kw * _HP_PER_KW, conn)
+    # Above 60 HP the blower catalogue has nothing, and the line was pricing at
+    # zero — which under-totals a quote instead of refusing it. Stand the ID fan
+    # list in at the same horsepower until real blower rates exist up there.
+    _b_from_idfan = None
+    if bprice is None and bhp:
+        from bom.idfan_pricelist import idfan_price_for_hp
+        _b_from_idfan = idfan_price_for_hp(bhp, conn)
+        if _b_from_idfan:
+            bprice = _b_from_idfan["price_total"]
 
     # ID FAN — hot flue gas 300 °C, 500 mmWC. Cold start draws ~2× power:
     #   Option A = hot test-block motor (VFD + temp interlock);
@@ -661,6 +674,10 @@ def _fan_selection(comb_air, id_air, conn=None):
         blower_q_act=_b["q_act_m3s"], blower_air_kw=_b["air_kw"],
         blower_shaft_duty_kw=_b["shaft_duty_kw"], blower_shaft_tb_kw=_b["shaft_tb_kw"],
         blower_motor_kw=blower_motor_kw, blower_hp=bhp, blower_price=bprice,
+        # Named so the sheet can say where an above-60 HP price came from,
+        # rather than passing off a fan rate as a blower rate.
+        blower_price_from_idfan=bool(_b_from_idfan),
+        blower_idfan_model=(_b_from_idfan or {}).get("model"),
         # id fan (Option A drives the BOM line; B shown alongside)
         idfan_dp_mmwc=_IDFAN_DP_MMWC, idfan_gas_c=_IDFAN_GAS_C, idfan_cold_c=_IDFAN_COLD_C,
         idfan_q_act=_i["q_act_m3s"], idfan_air_kw=_i["air_kw"],
@@ -1034,7 +1051,13 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # (_fan is computed above — the damper is sized off the same ID-fan flow.)
     _bhp2, _bprice, _bkw = _fan['blower_hp'], _fan['blower_price'], _fan['blower_motor_kw']
     _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_B']
-    _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price above 60 HP)'
+    if _bprice is None:
+        _b_note = ' — price ?? (no catalogue price above 60 HP)'
+    elif _fan.get('blower_price_from_idfan'):
+        _b_note = (' — priced from the ID fan list at %g HP (%s), no blower rate above 60 HP'
+                   % (_bhp2, _fan.get('blower_idfan_model')))
+    else:
+        _b_note = ''
     _i_note = ''
     if _iprice is None:
         _i_note = (' — price ?? (cold-start motor above the largest on the list, '

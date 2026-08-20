@@ -233,3 +233,24 @@ def idfan_motor_for_kw(kw: float, conn: sqlite3.Connection = None) -> dict | Non
             return {"motor_hp": hp, "motor_kw": m["motor_kw"],
                     "price_motor": m["price_motor"], "hp_required": hp_needed}
     return None
+
+
+def idfan_price_for_hp(hp: float, conn: sqlite3.Connection = None) -> dict | None:
+    """The fan-plus-motor price at a given motor HP.
+
+    The blower catalogue stops at 60 HP, so a duty above that had no price at
+    all and the BOM line came out at zero — which quietly under-totals a quote
+    rather than refusing it. These are the same class of machine at the same
+    horsepower, so the ID fan list stands in until real blower rates exist
+    above 60 HP.
+    """
+    if not hp or hp <= 0:
+        return None
+    for m in idfan_models(conn):
+        if abs(float(m["motor_hp"]) - float(hp)) < 1e-9:
+            return {"model": m["model"], "motor_hp": m["motor_hp"],
+                    "motor_kw": m["motor_kw"],
+                    "price_fan_unit": m["price_fan_unit"],
+                    "price_motor": m["price_motor"],
+                    "price_total": m["price_total"]}
+    return None
