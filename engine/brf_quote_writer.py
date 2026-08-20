@@ -172,7 +172,15 @@ def generate_brf_quote_docx(data: dict, output_path: str,
     billet = (f"{fur.get('billet_width_mm', 0):,.0f}mm² x "
               f"{fur.get('billet_length_mm', 0):,.0f}mm long")
 
+    cap = fur.get("furnace_capacity_tph", 0) or 0
+    equipment_name = (cust.get("equipment_name")
+                      or f"Billet Reheating Furnace — {cap:,.0f} TPH")
+
     mapping = {
+        # what the offer is for — the cover names it twice, as the vertical
+        # offer does: once as the title and once in the detail table.
+        "equipment_name": equipment_name,
+        "project_name": cust.get("project_name") or "Billet Re-heating Furnace",
         # the parties
         "company_name": cust.get("company_name", ""),
         "company_address": cust.get("company_address", ""),
@@ -181,7 +189,9 @@ def generate_brf_quote_docx(data: dict, output_path: str,
         "poc_name": cust.get("poc_name", ""),
         "email": cust.get("email", ""),
         "mobile_no": cust.get("mobile_no", ""),
-        "your_ref": cust.get("your_ref", ""),
+        # The customer's own enquiry, when they gave one. Falling back to our
+        # reference put the same number on both lines of the cover.
+        "your_ref": cust.get("your_ref") or "—",
         "ref_no": cust.get("ref_no", ""),
         "quote_date": cust.get("quote_date", ""),
         "marketing_person": cust.get("marketing_person", ""),
