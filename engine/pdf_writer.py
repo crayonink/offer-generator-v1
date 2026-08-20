@@ -93,6 +93,7 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
         seen[key].add(entry)
         bucket.append(entry)
 
+    added_skid_subitems = False
     for x in bom_items or []:
         item = (x.get("item") or "").strip()
         if not item or item in ("BOUGHT OUT ITEMS", "ENCON ITEMS", "GRAND TOTAL"):
@@ -117,6 +118,21 @@ def _split_bom(bom_items: Iterable[dict]) -> dict:
         elif media.endswith(" LINE"):
             main_media = main_media or media
             _add(gas_main, "gas", entry)
+            if ("GAS TRAIN" in upper_item or "SKID" in upper_item) and not added_skid_subitems:
+                added_skid_subitems = True
+                for sub in [
+                    "Manual Inlet valve",
+                    "Filter",
+                    "Slam Shutoff Valve",
+                    "Pressure Gauge with isolation valve",
+                    "Pressure Regulator (2 Nos)",
+                    "Pressure Transmitter",
+                    "Solenoid valve/ shut of valve",
+                    "Safety relief valve for excess gas pressure relief",
+                    "Orifice plate & DPT",
+                    "Flow Control valve",
+                ]:
+                    _add(gas_main, "gas", f"  • {sub}")
 
     # Friendly labels for the gas/oil-train heading. Both short codes
     # ("BG LINE", "MG LINE") and full names ("FURNACE OIL LINE") accepted.

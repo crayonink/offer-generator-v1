@@ -3326,6 +3326,8 @@ class VLPHCalcRequest(BaseModel):
     hood_type: str = "up_down"                   # "up_down" | "swivel_manual" | "swivel_geared"
     special_auto_ignition: bool = False            # Special Requirements: auto-ignition requested
     special_auto_controls: bool = False            # Special Requirements: auto-controls requested
+    use_oxygen: bool = False                       # Oxygen enrichment option
+    oxygen_enrichment_pct: float = 50.0            # Oxygen enrichment percentage (default 50%)
 
 
 class QuoteItem(BaseModel):
@@ -4935,6 +4937,25 @@ def vlph_calculate(req: VLPHCalcRequest):
         # --- Fuel 2 calculation (if dual fuel) ---
         is_dual = req.fuel2_type != "none" and req.fuel2_cv > 0
 
+        # --- Oxygen Enrichment Calculation ---
+        use_oxygen = bool(req.use_oxygen)
+        oxygen_enrichment_pct = float(req.oxygen_enrichment_pct or 50.0)
+        o2_gas_train = None
+        o2_flow_rate = 0.0
+        air_firing_rate = 0.0
+        contained_air_o2 = 0.0
+        o2_required = 0.0
+
+        if use_oxygen:
+            air_firing_rate = (ng_flow * f1_cv) / 860.0
+            contained_air_o2 = air_firing_rate * 0.21
+            o2_required = contained_air_o2 * (oxygen_enrichment_pct / 100.0)
+            o2_flow_rate = o2_required
+            reduced_air_o2 = contained_air_o2 * (1.0 - oxygen_enrichment_pct / 100.0)
+            air_flow = reduced_air_o2 / 0.21
+            from bom.selectors.oxygen_gas_train import select_oxygen_gas_train
+            o2_gas_train = select_oxygen_gas_train(o2_flow_rate)
+
         # Burner pressure derived from blower pressure: 28" -> 24" w.g., 40" -> 36" w.g.
         burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
 
@@ -5086,6 +5107,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 pilot_line_fuel=req.pilot_line_fuel,
                 hood_type=req.hood_type,
                 ceramic_rolls_override=_ceramic_rolls,
+                use_oxygen=use_oxygen,
+                o2_gas_train=o2_gas_train,
             )
         else:
             bom_df = build_vlph_120t_df(
@@ -5109,6 +5132,8 @@ def vlph_calculate(req: VLPHCalcRequest):
                 ceramic_rolls_override=_ceramic_rolls,
                 hood_type=req.hood_type,
                 special_auto_ignition=req.special_auto_ignition,
+                use_oxygen=use_oxygen,
+                o2_gas_train=o2_gas_train,
             )
 
         # Split summary rows from detail rows
@@ -5157,6 +5182,15 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "air_qty_nm3hr":                  round(air_flow, 2),
                 "cfm":                            round(cfm, 2),
                 "blower_hp_calc":                 round(blower_hp_calc, 2),
+                "use_oxygen":                     use_oxygen,
+                "oxygen_enrichment_pct":          oxygen_enrichment_pct if use_oxygen else 0,
+                "air_firing_rate":                round(air_firing_rate, 2) if use_oxygen else 0,
+                "contained_air_o2":               round(contained_air_o2, 2) if use_oxygen else 0,
+                "o2_required":                    round(o2_required, 2) if use_oxygen else 0,
+                "o2_flow_rate":                   round(o2_flow_rate, 2) if use_oxygen else 0,
+                "o2_gas_train_flow":              round(o2_gas_train["max_flow"], 0) if (use_oxygen and o2_gas_train) else None,
+                "o2_gas_train_model":             f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]}' if (use_oxygen and o2_gas_train) else None,
+                "o2_gas_train_nb":                f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]} NB' if (use_oxygen and o2_gas_train) else None,
             },
             "pipes": {
                 "fuel1_label": FUEL_NAMES.get(req.fuel1_type, "Fuel 1"),
@@ -5176,6 +5210,10 @@ def vlph_calculate(req: VLPHCalcRequest):
                 # (hydraulic pipe size, floored to 125 & air duct) — see selection_engine.
                 "air_line_nb":  equip1.get("air_line_nb") or pipes1.air_pipe_nb,
                 "air_line_flow": equip1.get("air_line_flow") or round(air_flow),
+                "use_oxygen": use_oxygen,
+                "o2_flow": round(o2_flow_rate, 2) if use_oxygen else None,
+                "o2_gas_train_flow": round(o2_gas_train["max_flow"], 0) if (use_oxygen and o2_gas_train) else None,
+                "o2_gas_train_model": f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]}' if (use_oxygen and o2_gas_train) else None,
             },
             "equipment": {
                 "burner_model":   equip1["burner"]["model"],
@@ -5186,6 +5224,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 "blower_airflow": equip1["blower"]["airflow_nm3hr"],
                 "blower_cfm":     equip1["blower"].get("cfm", 0),
                 "ng_gas_train":   f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB',
+                "o2_gas_train":   f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]} NB' if (use_oxygen and o2_gas_train) else None,
                 # In dual-fuel offers the HPU may live on equip2 instead of
                 # equip1 (e.g. fuel 1 = NG gas, fuel 2 = LDO oil). Pick whichever
                 # side actually carries it so the Step-4 'Pumping Unit' row is
@@ -5671,6 +5710,25 @@ def hlph_calculate(req: VLPHCalcRequest):
             ng_flow = br.extra_firing_rate_nm3hr
             air_flow = br.air_qty_nm3hr
 
+        # --- Oxygen Enrichment Calculation ---
+        use_oxygen = bool(req.use_oxygen)
+        oxygen_enrichment_pct = float(req.oxygen_enrichment_pct or 50.0)
+        o2_gas_train = None
+        o2_flow_rate = 0.0
+        air_firing_rate = 0.0
+        contained_air_o2 = 0.0
+        o2_required = 0.0
+
+        if use_oxygen:
+            air_firing_rate = (ng_flow * f1_cv) / 860.0
+            contained_air_o2 = air_firing_rate * 0.21
+            o2_required = contained_air_o2 * (oxygen_enrichment_pct / 100.0)
+            o2_flow_rate = o2_required
+            reduced_air_o2 = contained_air_o2 * (1.0 - oxygen_enrichment_pct / 100.0)
+            air_flow = reduced_air_o2 / 0.21
+            from bom.selectors.oxygen_gas_train import select_oxygen_gas_train
+            o2_gas_train = select_oxygen_gas_train(o2_flow_rate)
+
         burner_pressure_wg = 36 if req.blower_pressure == "40" else 24
 
         # Dual fuel: blower sized for max(air1, air2)
@@ -5774,6 +5832,8 @@ def hlph_calculate(req: VLPHCalcRequest):
                 include_pilot=req.manual_pilot_burner == "yes",
                 pilot_line_fuel=req.pilot_line_fuel,
                 ceramic_rolls_override=_ceramic_rolls_h,
+                use_oxygen=use_oxygen,
+                o2_gas_train=o2_gas_train,
             )
         else:
             bom_df = build_hlph_df(
@@ -5791,6 +5851,8 @@ def hlph_calculate(req: VLPHCalcRequest):
                 ms_structure_kg_override=_ms_override_h,
                 ceramic_rolls_override=_ceramic_rolls_h,
                 special_auto_ignition=req.special_auto_ignition,
+                use_oxygen=use_oxygen,
+                o2_gas_train=o2_gas_train,
             )
 
         detail = bom_df[bom_df["MEDIA"] != ""].copy()
@@ -5835,6 +5897,15 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "air_qty_nm3hr":              round(air_flow, 2),
                 "cfm": round(cfm, 2),
                 "blower_hp_calc": round(blower_hp_calc, 2),
+                "use_oxygen":                     use_oxygen,
+                "oxygen_enrichment_pct":          oxygen_enrichment_pct if use_oxygen else 0,
+                "air_firing_rate":                round(air_firing_rate, 2) if use_oxygen else 0,
+                "contained_air_o2":               round(contained_air_o2, 2) if use_oxygen else 0,
+                "o2_required":                    round(o2_required, 2) if use_oxygen else 0,
+                "o2_flow_rate":                   round(o2_flow_rate, 2) if use_oxygen else 0,
+                "o2_gas_train_flow":              round(o2_gas_train["max_flow"], 0) if (use_oxygen and o2_gas_train) else None,
+                "o2_gas_train_model":             f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]}' if (use_oxygen and o2_gas_train) else None,
+                "o2_gas_train_nb":                f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]} NB' if (use_oxygen and o2_gas_train) else None,
             },
             "pipes": {
                 "fuel1_label": FUEL_NAMES.get(req.fuel1_type, "Fuel 1"),
@@ -5848,6 +5919,10 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "air_line_flow": equip1.get("air_line_flow") or round(air_flow),
                 "gas_train_flow": round(equip1["ng_gas_train"]["max_flow"], 0) if equip1.get("ng_gas_train") else 0,
                 "gas_train_model": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]}' if equip1.get("ng_gas_train") else "",
+                "use_oxygen": use_oxygen,
+                "o2_flow": round(o2_flow_rate, 2) if use_oxygen else None,
+                "o2_gas_train_flow": round(o2_gas_train["max_flow"], 0) if (use_oxygen and o2_gas_train) else None,
+                "o2_gas_train_model": f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]}' if (use_oxygen and o2_gas_train) else None,
             },
             "equipment": {
                 "burner_model": equip1["burner"]["model"],
@@ -5858,6 +5933,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 "blower_airflow": equip1["blower"]["airflow_nm3hr"],
                 "blower_cfm":   equip1["blower"].get("cfm", 0),
                 "ng_gas_train": f'{equip1["ng_gas_train"]["inlet_nb"]} x {equip1["ng_gas_train"]["outlet_nb"]} NB' if equip1.get("ng_gas_train") else "",
+                "o2_gas_train": f'{o2_gas_train["inlet_nb"]} x {o2_gas_train["outlet_nb"]} NB' if (use_oxygen and o2_gas_train) else None,
                 # In dual-fuel offers the HPU may live on equip2 (e.g. fuel 1 NG
                 # + fuel 2 LDO). Pick whichever side actually carries it.
                 "hpu": (

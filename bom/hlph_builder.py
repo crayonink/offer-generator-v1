@@ -75,6 +75,8 @@ def build_hlph_df(
     ms_structure_kg_override: float = 0.0,
     ceramic_rolls_override: int = 0,
     special_auto_ignition: bool = False,
+    use_oxygen: bool = False,
+    o2_gas_train: dict = None,
 ) -> pd.DataFrame:
     """
     Builds HLPH BOM DataFrame (automatic mode).
@@ -87,6 +89,16 @@ def build_hlph_df(
 
     rows = []
     params = get_hlph_params(ladle_tons)
+
+    if use_oxygen and o2_gas_train:
+        o2_model = o2_gas_train.get("model") or f'OXYGEN GAS TRAIN {int(round(o2_gas_train.get("max_flow", 0)))} NM3/Hr'
+        o2_ref = o2_gas_train.get("flow_cap") or f'{o2_gas_train.get("inlet_nb")} x {o2_gas_train.get("outlet_nb")} NB'
+        o2_make = o2_gas_train.get("make") or "NIRMAL"
+        rows.append(_row(
+            "OXYGEN LINE", o2_model,
+            o2_ref,
+            1, unit_price_override=o2_gas_train.get("price", 0), make=o2_make,
+        ))
 
     pg_vendor = pressure_gauge_vendor.upper()
     # Clean display name; vendor only in MAKE column
@@ -348,6 +360,8 @@ def build_hlph_manual_df(
     include_pilot: bool = True,
     pilot_line_fuel: str = "lpg",
     ceramic_rolls_override: int = 0,
+    use_oxygen: bool = False,
+    o2_gas_train: dict = None,
 ) -> pd.DataFrame:
     """
     Manual / simplified HLPH BOM.
@@ -362,6 +376,15 @@ def build_hlph_manual_df(
     params = get_hlph_params(ladle_tons)
 
     rows = []
+    if use_oxygen and o2_gas_train:
+        o2_model = o2_gas_train.get("model") or f'OXYGEN GAS TRAIN {int(round(o2_gas_train.get("max_flow", 0)))} NM3/Hr'
+        o2_ref = o2_gas_train.get("flow_cap") or f'{o2_gas_train.get("inlet_nb")} x {o2_gas_train.get("outlet_nb")} NB'
+        o2_make = o2_gas_train.get("make") or "NIRMAL"
+        rows.append(_row(
+            "OXYGEN LINE", o2_model,
+            o2_ref,
+            1, unit_price_override=o2_gas_train.get("price", 0), make=o2_make,
+        ))
     air_nb = equipment.get("air_line_nb") or max(125, equipment["air_duct"]["nb"])
 
     # ── BOUGHT OUT ITEMS ──────────────────────────────────────────────────

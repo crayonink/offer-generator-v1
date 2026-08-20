@@ -835,6 +835,8 @@ def build_vlph_120t_df(
     ceramic_rolls_override: int = 0,
     hood_type: str = "up_down",
     special_auto_ignition: bool = False,
+    use_oxygen: bool = False,
+    o2_gas_train: dict = None,
 ) -> pd.DataFrame:
     """
     Builds VLPH BOM DataFrame.
@@ -851,6 +853,17 @@ def build_vlph_120t_df(
 
     # Get ladle params (for ceramic rolls count, etc.)
     params = get_vlph_params(ladle_tons)
+
+    # ── OXYGEN LINE (when oxygen enrichment enabled) ──────────────────────
+    if use_oxygen and o2_gas_train:
+        o2_model = o2_gas_train.get("model") or f'OXYGEN GAS TRAIN {o2_gas_train.get("max_flow", 0):.0f} NM3/Hr'
+        o2_ref = o2_gas_train.get("flow_cap") or f'{o2_gas_train.get("inlet_nb")} x {o2_gas_train.get("outlet_nb")} NB'
+        o2_make = o2_gas_train.get("make") or "NIRMAL"
+        rows.append(_row(
+            "OXYGEN LINE", o2_model,
+            o2_ref,
+            1, unit_price_override=o2_gas_train.get("price", 0), make=o2_make,
+        ))
 
     # ── COMBUSTION AIR LINE ─────────────────────────────────────────────────
     is_plc = control_mode == "automatic" and auto_control_type == "plc"
@@ -1202,6 +1215,8 @@ def build_vlph_manual_df(
     pilot_line_fuel: str = "lpg",
     hood_type: str = "up_down",
     ceramic_rolls_override: int = 0,
+    use_oxygen: bool = False,
+    o2_gas_train: dict = None,
 ) -> pd.DataFrame:
     """
     Manual / simplified VLPH BOM — matches the Lloyds manual costing format.
@@ -1226,6 +1241,17 @@ def build_vlph_manual_df(
     is_dual = fuel2_type != "none" and equipment2 is not None
 
     rows = []
+
+    # ── OXYGEN LINE (when oxygen enrichment enabled) ──────────────────────
+    if use_oxygen and o2_gas_train:
+        o2_model = o2_gas_train.get("model") or f'OXYGEN GAS TRAIN {o2_gas_train.get("max_flow", 0):.0f} NM3/Hr'
+        o2_ref = o2_gas_train.get("flow_cap") or f'{o2_gas_train.get("inlet_nb")} x {o2_gas_train.get("outlet_nb")} NB'
+        o2_make = o2_gas_train.get("make") or "NIRMAL"
+        rows.append(_row(
+            "OXYGEN LINE", o2_model,
+            o2_ref,
+            1, unit_price_override=o2_gas_train.get("price", 0), make=o2_make,
+        ))
 
     # ── BOUGHT OUT ITEMS ──────────────────────────────────────────────────
     air_nb = equipment.get("air_line_nb") or max(125, equipment["air_duct"]["nb"])

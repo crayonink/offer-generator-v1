@@ -637,17 +637,18 @@ def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "") ->
     # Packaged 'Gas Train' (NG / LPG / RLNG) keeps its top-level bullet but
     # gains a list of sub_items so the template can render the 10 internal
     # components as nested sub-bullets right under it.
-    PACKAGED_GAS_TRAIN_LINES = ("NG LINE", "LPG LINE", "RLNG LINE")
+    PACKAGED_GAS_TRAIN_LINES = ("NG LINE", "LPG LINE", "RLNG LINE", "COG LINE", "MG LINE", "BFG LINE", "GAS LINE", "OXYGEN LINE")
     GAS_TRAIN_INTERNALS = [
-        "Ball valve",
-        "Pressure gauge with TNV",
-        "Gas filter",
-        "Slam shut-off valve",
-        "Gas pressure regulator",
-        "Safety relief valve",
-        "Pressure Switch Low",
-        "Pressure Switch High",
-        "Solenoid valve",
+        "Manual Inlet valve",
+        "Filter",
+        "Slam Shutoff Valve",
+        "Pressure Gauge with isolation valve",
+        "Pressure Regulator (2 Nos)",
+        "Pressure Transmitter",
+        "Solenoid valve/ shut of valve",
+        "Safety relief valve for excess gas pressure relief",
+        "Orifice plate & DPT",
+        "Flow Control valve",
     ]
     INTERNALS_AS_DICTS = [{"item": x} for x in GAS_TRAIN_INTERNALS]
 
@@ -661,26 +662,45 @@ def _control_system_sections(bom_items: list, fuel1_fallback_label: str = "") ->
                 return "CONTROL VALVE"
         return ""
 
-    def _attach_sub_items(items_list, attach):
-        """For every GAS TRAIN entry in items_list, attach the gas-train
-        internals as its sub_items list. Other items get empty sub_items.
-
-        The BOM prefixes the gas-train name with the fuel for LPG/RLNG
-        ('LPG GAS TRAIN ...', 'RLNG GAS TRAIN ...'), so we substring-match
-        rather than startswith to catch all variants."""
+    def _attach_sub_items(items_list):
+        """For every GAS TRAIN / SKID entry in items_list, attach the gas-train
+        internals as its sub_items list. Other items get empty sub_items."""
         for it in items_list:
             it.setdefault("sub_items", [])
-            if attach and "GAS TRAIN" in it.get("item", "").strip().upper():
+            item_upper = it.get("item", "").strip().upper()
+            if "GAS TRAIN" in item_upper or "SKID" in item_upper:
                 it["sub_items"] = list(INTERNALS_AS_DICTS)
 
-    _attach_sub_items(gas,   fuel1_media in PACKAGED_GAS_TRAIN_LINES
-                              or fuel2_media in PACKAGED_GAS_TRAIN_LINES)
-    _attach_sub_items(fuel1, fuel1_media in PACKAGED_GAS_TRAIN_LINES)
-    _attach_sub_items(fuel2, fuel2_media in PACKAGED_GAS_TRAIN_LINES)
-    _attach_sub_items(air,            False)
-    _attach_sub_items(pilot,          False)
-    _attach_sub_items(temp,           False)
-    _attach_sub_items(purging,        False)
+    def _clean_skid_line_items(items_list):
+        """When a Skid or Gas Train is present on a line:
+        1. If a specific Skid (e.g. NIRMAL Oxygen Skid) is present, filter out any redundant generic 'GAS TRAIN' row.
+        2. Since the Skid/Gas Train contains the 10 internal components (including Orifice plate, DPT, & Flow Control valve),
+           filter out separate standalone rows for ORIFICE PLATE, DPT, or CONTROL VALVE on that line.
+        """
+        has_specific_skid = any("SKID" in (it.get("item") or "").upper() for it in items_list)
+        has_skid_or_train = any(("SKID" in (it.get("item") or "").upper() or "GAS TRAIN" in (it.get("item") or "").upper()) for it in items_list)
+
+        cleaned = []
+        for it in items_list:
+            item_upper = (it.get("item") or "").strip().upper()
+            if has_specific_skid and item_upper == "GAS TRAIN":
+                continue
+            if has_skid_or_train and item_upper in ("ORIFICE PLATE", "DPT", "CONTROL VALVE"):
+                continue
+            cleaned.append(it)
+        return cleaned
+
+    gas   = _clean_skid_line_items(gas)
+    fuel1 = _clean_skid_line_items(fuel1)
+    fuel2 = _clean_skid_line_items(fuel2)
+
+    _attach_sub_items(gas)
+    _attach_sub_items(fuel1)
+    _attach_sub_items(fuel2)
+    _attach_sub_items(air)
+    _attach_sub_items(pilot)
+    _attach_sub_items(temp)
+    _attach_sub_items(purging)
 
     return {
         "gas_pipeline_items":     gas,
