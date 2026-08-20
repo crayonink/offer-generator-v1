@@ -114,3 +114,53 @@ def select_id_fan(flow_m3hr: float, conn: sqlite3.Connection = None) -> dict | N
         if row["air_cap_cmh"] >= flow_m3hr:
             return row
     return None
+
+
+# ── The same list, on the pricelist page, keyed by HP ────────────────────────
+# The catalogue above is selected on air capacity, which is how a fan is
+# actually chosen. But the pricelist is read by people pricing a motor frame,
+# and every other rotating item on it is filed by horsepower — "Blower Alone
+# (40 inch)" and "Blower Motor" both are. So the fan and its motor go on in the
+# same shape, split the same way, and can be corrected there like any other
+# rate.
+PM_FAN_CATEGORY = "ID Fan (500 mmWC)"
+PM_MOTOR_CATEGORY = "ID Fan Motor"
+PM_COMPANY = "ENCON"
+PM_SOURCE = "Q26-ETPL-0803"
+
+
+def seed_idfan_price_master(conn: sqlite3.Connection) -> int:
+    """Put the ID fan and its motor on component_price_master, HP against price.
+
+    Idempotent, and it leaves an edited rate alone: a row already present is
+    not rewritten, so a redeploy cannot undo a correction made on /pricelist.
+    """
+    rows = idfan_models(conn)
+    if not rows:
+        return 0
+    have = {
+        r[0] for r in conn.execute(
+            "SELECT item FROM component_price_master WHERE category IN (?, ?)",
+            (PM_FAN_CATEGORY, PM_MOTOR_CATEGORY))
+    }
+    added = []
+    for r in rows:
+        hp = r["motor_hp"]
+        spec = f"{hp:g} HP \u00b7 {r['air_cap_cmh']:,.0f} CMH \u00b7 500 mmWC"
+        fan_item = r["model"]
+        motor_item = f"ID Fan Motor {hp:g} HP"
+        if fan_item not in have:
+            added.append((fan_item, PM_FAN_CATEGORY, "nos", r["price_fan_unit"],
+                          PM_COMPANY, PM_SOURCE, spec))
+        if motor_item not in have:
+            added.append((motor_item, PM_MOTOR_CATEGORY, "nos", r["price_motor"],
+                          PM_COMPANY, PM_SOURCE, f"{hp:g} HP \u00b7 {r['motor_kw']:g} kW"))
+            have.add(motor_item)          # models can share a motor size
+    if not added:
+        return 0
+    conn.executemany(
+        "INSERT INTO component_price_master "
+        "(item, category, unit, price, company, type, specification) "
+        "VALUES (?,?,?,?,?,?,?)", added)
+    conn.commit()
+    return len(added)

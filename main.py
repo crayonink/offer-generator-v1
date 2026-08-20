@@ -1667,12 +1667,18 @@ def _startup_seed_idfan_catalog():
     its own catalogue instead of borrowing the blower's. Idempotent; reaches the
     persistent volume on deploy, and leaves an edited list alone."""
     try:
-        from bom.idfan_pricelist import seed_idfan_catalog
+        from bom.idfan_pricelist import (seed_idfan_catalog,
+                                         seed_idfan_price_master)
         conn = sqlite3.connect(DB_PATH)
         n = seed_idfan_catalog(conn)
+        # The same fans on the pricelist page, HP against price, so a rate can
+        # be corrected there like any other.
+        m = seed_idfan_price_master(conn)
         conn.close()
         if n:
             print(f"[db] seeded {n} ID fan catalogue rows")
+        if m:
+            print(f"[db] seeded {m} ID fan pricelist rows")
     except Exception as e:
         print(f"WARN: startup seed_idfan_catalog failed: {e}")
 
