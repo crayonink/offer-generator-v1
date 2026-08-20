@@ -16,6 +16,7 @@ class BurnerInputs:
     time_taken_hr: float           # Hours
     refractory_heat_factor: float = 0.25   # Can vary
     efficiency: float = 0.52               # Can vary
+    fuel_type: str = "ng"                  # Fuel type code
 
 
 @dataclass
@@ -81,10 +82,12 @@ def calculate_burner(inputs: BurnerInputs) -> BurnerResults:
         extra_firing_rate_nm3hr * inputs.fuel_cv
     ) / (860 * 1000)
 
-    # Air quantity (Nm3/hr)
-    air_qty_nm3hr = (
-        inputs.fuel_cv * extra_firing_rate_nm3hr * 118
-    ) / 100000
+    # Air quantity (Nm3/hr): NG uses FR * 10.5; all other fuels use FR * CV * 118 / 100000
+    ft = (getattr(inputs, "fuel_type", "") or "ng").strip().lower()
+    if ft == "ng":
+        air_qty_nm3hr = extra_firing_rate_nm3hr * 10.5
+    else:
+        air_qty_nm3hr = (inputs.fuel_cv * extra_firing_rate_nm3hr * 118) / 100000
 
     # CFM = air flow / 1.7
     cfm = air_qty_nm3hr / 1.7

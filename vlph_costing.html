@@ -2088,10 +2088,10 @@ Plot No 70, sector- 25, Ballabhgarh</textarea>
 								<td class="val" id="r-lph">—</td>
 								<td class="unit">ltr/hr</td>
 							</tr>
-							<tr>
-								<td class="lbl">Burner Firing Rate</td>
-								<td class="val" id="r-mw">—</td>
-								<td class="unit">MW</td>
+							<tr id="row-air">
+								<td class="lbl">Air Quantity</td>
+								<td class="val" id="r-air">—</td>
+								<td class="unit">Nm³/hr</td>
 							</tr>
 							<tr>
 								<td class="lbl">CFM</td>
@@ -2954,7 +2954,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 			if (c.final_firing_rate_mw)
 				_push(
 					"Burner Firing Rate",
-					Math.round(c.final_firing_rate_mw * 1000) / 1000 + " MW",
+					Math.round(c.final_firing_rate_mw * 1000) + " KW",
 				);
 			if (p.ng_flow)
 				_push("Fuel Consumption Rate", _r0(p.ng_flow) + " Nm³/hr");
@@ -3718,7 +3718,7 @@ Materials are guaranteed for 18 months from the date of dispatch, or 12 months f
 			set("r-fc", fmt(c.fuel_consumption_nm3, 2));
 			set("r-cfr", fmt(c.calculated_firing_rate_nm3hr, 2));
 			set("r-efr", fmt(c.extra_firing_rate_nm3hr, 2));
-			set("r-mw", fmt(c.final_firing_rate_mw, 3));
+			if (document.getElementById("r-mw")) set("r-mw", fmt(c.final_firing_rate_mw * 1000, 0));
 			set("r-air", fmt(c.air_qty_nm3hr, 2));
 			set("r-cfm", fmt(c.cfm, 2));
 			set("r-bhp", fmt(c.blower_hp_calc, 2));

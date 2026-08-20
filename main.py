@@ -4919,7 +4919,10 @@ def vlph_calculate(req: VLPHCalcRequest):
                 heat_kcal_hr = req.direct_burner_capacity * 860 * n_burners
             # Each fuel's flow = heat / its CV
             ng_flow = heat_kcal_hr / f1_cv
-            air_flow = heat_kcal_hr * 118 / 100000
+            if req.fuel1_type.lower() == "ng":
+                air_flow = ng_flow * 10.5
+            else:
+                air_flow = heat_kcal_hr * 118 / 100000
             br1 = None
         else:
             # --- Calc mode: calculate from process params ---
@@ -4930,6 +4933,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                 time_taken_hr=req.time_taken_hr,
                 refractory_heat_factor=req.refractory_heat_factor,
                 efficiency=req.efficiency,
+                fuel_type=req.fuel1_type,
             ))
             ng_flow = br1.extra_firing_rate_nm3hr
             air_flow = br1.air_qty_nm3hr
@@ -4947,12 +4951,11 @@ def vlph_calculate(req: VLPHCalcRequest):
         o2_required = 0.0
 
         if use_oxygen:
-            air_firing_rate = (ng_flow * f1_cv) / 860.0
+            air_firing_rate = air_flow
             contained_air_o2 = air_firing_rate * 0.21
             o2_required = contained_air_o2 * (oxygen_enrichment_pct / 100.0)
             o2_flow_rate = o2_required
-            reduced_air_o2 = contained_air_o2 * (1.0 - oxygen_enrichment_pct / 100.0)
-            air_flow = reduced_air_o2 / 0.21
+            o2_reduced_air_flow = air_firing_rate * (1.0 - oxygen_enrichment_pct / 100.0)
             from bom.selectors.oxygen_gas_train import select_oxygen_gas_train
             o2_gas_train = select_oxygen_gas_train(o2_flow_rate)
 
@@ -4979,6 +4982,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                     time_taken_hr=req.time_taken_hr,
                     refractory_heat_factor=req.refractory_heat_factor,
                     efficiency=req.efficiency,
+                    fuel_type=req.fuel2_type,
                 ))
                 air_flow2_pre = br2_pre.air_qty_nm3hr
             blower_air_flow = max(air_flow, air_flow2_pre)
@@ -5048,7 +5052,10 @@ def vlph_calculate(req: VLPHCalcRequest):
             if req.mode == "direct":
                 # Same heat, different CV → different flow
                 ng_flow2 = heat_kcal_hr / req.fuel2_cv
-                air_flow2 = air_flow  # air is CV-independent (same heat)
+                if req.fuel2_type.lower() == "ng":
+                    air_flow2 = ng_flow2 * 10.5
+                else:
+                    air_flow2 = (ng_flow2 * req.fuel2_cv) * 118 / 100000
             else:
                 br2 = calculate_burner(BurnerInputs(
                     Ti=req.Ti, Tf=req.Tf,
@@ -5057,6 +5064,7 @@ def vlph_calculate(req: VLPHCalcRequest):
                     time_taken_hr=req.time_taken_hr,
                     refractory_heat_factor=req.refractory_heat_factor,
                     efficiency=req.efficiency,
+                    fuel_type=req.fuel2_type,
                 ))
                 ng_flow2 = br2.extra_firing_rate_nm3hr
                 air_flow2 = br2.air_qty_nm3hr
@@ -5695,7 +5703,10 @@ def hlph_calculate(req: VLPHCalcRequest):
             else:
                 heat_kcal_hr = req.direct_burner_capacity * 860
             ng_flow  = heat_kcal_hr / f1_cv
-            air_flow = heat_kcal_hr * 118 / 100000
+            if req.fuel1_type.lower() == "ng":
+                air_flow = ng_flow * 10.5
+            else:
+                air_flow = heat_kcal_hr * 118 / 100000
             br = None
         else:
             burner_inputs = BurnerInputs(
@@ -5705,6 +5716,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                 time_taken_hr=req.time_taken_hr,
                 refractory_heat_factor=req.refractory_heat_factor,
                 efficiency=req.efficiency,
+                fuel_type=req.fuel1_type,
             )
             br = calculate_burner(burner_inputs)
             ng_flow = br.extra_firing_rate_nm3hr
@@ -5720,12 +5732,11 @@ def hlph_calculate(req: VLPHCalcRequest):
         o2_required = 0.0
 
         if use_oxygen:
-            air_firing_rate = (ng_flow * f1_cv) / 860.0
+            air_firing_rate = air_flow
             contained_air_o2 = air_firing_rate * 0.21
             o2_required = contained_air_o2 * (oxygen_enrichment_pct / 100.0)
             o2_flow_rate = o2_required
-            reduced_air_o2 = contained_air_o2 * (1.0 - oxygen_enrichment_pct / 100.0)
-            air_flow = reduced_air_o2 / 0.21
+            o2_reduced_air_flow = air_firing_rate * (1.0 - oxygen_enrichment_pct / 100.0)
             from bom.selectors.oxygen_gas_train import select_oxygen_gas_train
             o2_gas_train = select_oxygen_gas_train(o2_flow_rate)
 
@@ -5735,7 +5746,10 @@ def hlph_calculate(req: VLPHCalcRequest):
         blower_air_flow = air_flow
         if is_dual:
             if req.mode == "direct":
-                air_flow2_pre = air_flow
+                if req.fuel2_type.lower() == "ng":
+                    air_flow2_pre = (heat_kcal_hr / req.fuel2_cv) * 10.5
+                else:
+                    air_flow2_pre = heat_kcal_hr * 118 / 100000
             else:
                 br2_pre = calculate_burner(BurnerInputs(
                     Ti=req.Ti, Tf=req.Tf,
@@ -5744,6 +5758,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                     time_taken_hr=req.time_taken_hr,
                     refractory_heat_factor=req.refractory_heat_factor,
                     efficiency=req.efficiency,
+                    fuel_type=req.fuel2_type,
                 ))
                 air_flow2_pre = br2_pre.air_qty_nm3hr
             blower_air_flow = max(air_flow, air_flow2_pre)
@@ -5779,9 +5794,12 @@ def hlph_calculate(req: VLPHCalcRequest):
         br2, equip2, ng_flow2, air_flow2 = None, None, 0, 0
         if is_dual:
             if req.mode == "direct":
-                # Same heat output, fuel2 flow at fuel2 CV; air is CV-independent
+                # Same heat output, fuel2 flow at fuel2 CV
                 ng_flow2  = heat_kcal_hr / req.fuel2_cv
-                air_flow2 = air_flow
+                if req.fuel2_type.lower() == "ng":
+                    air_flow2 = ng_flow2 * 10.5
+                else:
+                    air_flow2 = (ng_flow2 * req.fuel2_cv) * 118 / 100000
             else:
                 br2 = calculate_burner(BurnerInputs(
                     Ti=req.Ti, Tf=req.Tf,
@@ -5790,6 +5808,7 @@ def hlph_calculate(req: VLPHCalcRequest):
                     time_taken_hr=req.time_taken_hr,
                     refractory_heat_factor=req.refractory_heat_factor,
                     efficiency=req.efficiency,
+                    fuel_type=req.fuel2_type,
                 ))
                 ng_flow2  = br2.extra_firing_rate_nm3hr
                 air_flow2 = br2.air_qty_nm3hr
