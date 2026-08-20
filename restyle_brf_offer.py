@@ -133,19 +133,20 @@ def main():
     # The cover page. The vertical offer sets the company name at 15pt in
     # ENCON orange; this one had it at 27pt in a different orange, with the
     # tagline in red and the phone line larger than the address above it.
+    # Matched on the whole line, not on a substring. Keyed on "Techno-Commercial"
+    # this caught the letter's own sentence — "our most competitive and
+    # comprehensive Techno-Commercial offer" — and set a paragraph of prose at
+    # 15pt bold in the middle of the covering letter.
     COVER_FIX = {
         "ENCON Thermal Engineers (P) Ltd": (H1_PT, ORANGE, True),
-        "ENERGY – CONSERVATION": (H2_PT, ORANGE, True),
-        "Techno-Commercial": (H1_PT, SLATE, True),
-        "Tel:": (BODY_PT, None, None),
     }
     for p in doc.paragraphs:
         text = (p.text or "").strip()
-        for needle, (size, colour, bold) in COVER_FIX.items():
-            if needle in text:
-                for r in p.runs:
-                    restyle_run(r, size, colour, bold)
-                break
+        spec = COVER_FIX.get(text)
+        if spec:
+            size, colour, bold = spec
+            for r in p.runs:
+                restyle_run(r, size, colour, bold)
 
     for tb in doc.tables:
         for row in tb.rows:

@@ -146,6 +146,18 @@ def write_price_schedule(doc, rows, sell_total, currency="INR"):
     return written
 
 
+def _address_line(cust):
+    """Address, city, state, pin — each part once, in order."""
+    seen, parts = set(), []
+    for key in ("company_address", "company_city", "company_state", "company_pin"):
+        val = (cust.get(key) or "").strip()
+        low = val.lower()
+        if val and low not in seen:
+            seen.add(low)
+            parts.append(val)
+    return ", ".join(parts)
+
+
 def generate_brf_quote_docx(data: dict, output_path: str,
                             template_path: str | None = None) -> str:
     """data — customer details plus the computed blocks from /api/brf-calculate."""
@@ -172,16 +184,30 @@ def generate_brf_quote_docx(data: dict, output_path: str,
     billet = (f"{fur.get('billet_width_mm', 0):,.0f}mm² x "
               f"{fur.get('billet_length_mm', 0):,.0f}mm long")
 
+    cap = fur.get("furnace_capacity_tph", 0) or 0
+    equipment_name = (cust.get("equipment_name")
+                      or f"Billet Reheating Furnace — {cap:,.0f} TPH")
+
     mapping = {
+        # what the offer is for — the cover names it twice, as the vertical
+        # offer does: once as the title and once in the detail table.
+        "equipment_name": equipment_name,
+        "project_name": cust.get("project_name") or "Billet Re-heating Furnace",
         # the parties
         "company_name": cust.get("company_name", ""),
-        "company_address": cust.get("company_address", ""),
-        "company_city_state": ", ".join(
-            x for x in (cust.get("company_city"), cust.get("company_state")) if x),
+        # One address line, and the same word not twice: the address field and
+        # the city field are often both "Faridabad", which printed it on two
+        # consecutive lines.
+        "company_address": _address_line(cust),
+        "company_city_state": "",
         "poc_name": cust.get("poc_name", ""),
+        "poc_designation_paren": (f" ({cust['poc_designation']})"
+                                  if cust.get("poc_designation") else ""),
         "email": cust.get("email", ""),
         "mobile_no": cust.get("mobile_no", ""),
-        "your_ref": cust.get("your_ref", ""),
+        # The customer's own enquiry, when they gave one. Falling back to our
+        # reference put the same number on both lines of the cover.
+        "your_ref": cust.get("your_ref") or "—",
         "ref_no": cust.get("ref_no", ""),
         "quote_date": cust.get("quote_date", ""),
         "marketing_person": cust.get("marketing_person", ""),
