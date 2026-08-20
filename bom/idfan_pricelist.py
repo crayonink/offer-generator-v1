@@ -90,7 +90,45 @@ def idfan_models(conn: sqlite3.Connection = None) -> list:
             ).fetchall()
         except sqlite3.Error:
             rows = None
-    return [dict(zip(COLUMNS, r)) for r in (rows or CATALOGUE)]
+    models = [dict(zip(COLUMNS, r)) for r in (rows or CATALOGUE)]
+    _apply_pricelist(models, conn)
+    return models
+
+
+def _apply_pricelist(models, conn):
+    """Let the pricelist rates win over the catalogue's.
+
+    The catalogue is the engineering data — capacity, BHP, motor size — and
+    that stays put. The money is a rate like any other, and a rate lives on
+    /pricelist where the office can correct it. Without this the two would
+    drift apart the moment anyone edited one: the pricelist would show the new
+    figure and every BOM would keep quoting the old.
+
+    Anything the pricelist does not carry keeps the catalogue's price, so a
+    part-filled list cannot leave a fan with no money against it.
+    """
+    if conn is None:
+        return
+    try:
+        fan = {r[0]: r[1] for r in conn.execute(
+            "SELECT item, price FROM component_price_master "
+            "WHERE category = ? AND price IS NOT NULL", (PM_FAN_CATEGORY,))}
+        motor = {r[0]: r[1] for r in conn.execute(
+            "SELECT item, price FROM component_price_master "
+            "WHERE category = ? AND price IS NOT NULL", (PM_MOTOR_CATEGORY,))}
+    except sqlite3.Error:
+        return
+    if not fan and not motor:
+        return
+    for m in models:
+        f = fan.get(m["model"])
+        if f is not None:
+            m["price_fan_unit"] = float(f)
+        mo = motor.get(f"ID Fan Motor {m['motor_hp']:g} HP")
+        if mo is not None:
+            m["price_motor"] = float(mo)
+        m["price_total"] = round((m["price_fan_unit"] or 0)
+                                 + (m["price_motor"] or 0), 2)
 
 
 def select_id_fan(flow_m3hr: float, conn: sqlite3.Connection = None) -> dict | None:
