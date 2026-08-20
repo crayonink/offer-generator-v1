@@ -202,3 +202,34 @@ def seed_idfan_price_master(conn: sqlite3.Connection) -> int:
         "VALUES (?,?,?,?,?,?,?)", added)
     conn.commit()
     return len(added)
+
+
+# ── Motor for a required shaft power ────────────────────────────────────────
+# The fan is chosen on air volume; its motor is chosen on kilowatts. Those are
+# two different questions, and the catalogue only answers the first — the motor
+# it lists is the one the supplier matched to the hot running duty. A cold-start
+# rating asks for more, and taking the catalogue's HP for it said 75 HP against
+# a figure that works out at 113.
+MOTOR_HP_LADDER = (20, 30, 40, 50, 60, 75, 100, 120, 150)
+_HP_PER_KW = 1 / 0.746
+
+
+def idfan_motor_for_kw(kw: float, conn: sqlite3.Connection = None) -> dict | None:
+    """Smallest ID-fan motor that covers `kw`, with its price.
+
+    Returns None past the largest motor on the list, so the caller can say so
+    rather than quietly quoting the biggest one.
+    """
+    if not kw or kw <= 0:
+        return None
+    hp_needed = kw * _HP_PER_KW
+    models = idfan_models(conn)
+    by_hp = {}
+    for m in models:
+        by_hp.setdefault(m["motor_hp"], m)
+    for hp in MOTOR_HP_LADDER:
+        if hp + 1e-9 >= hp_needed and hp in by_hp:
+            m = by_hp[hp]
+            return {"motor_hp": hp, "motor_kw": m["motor_kw"],
+                    "price_motor": m["price_motor"], "hp_required": hp_needed}
+    return None

@@ -632,11 +632,27 @@ def _fan_selection(comb_air, id_air, conn=None):
     # already expanded for the shaft-power calculation, so use that.
     _id_actual_m3hr = _i["q_act_m3s"] * 3600.0
     _idsel = select_id_fan(_id_actual_m3hr, conn)
-    ihpB   = _idsel["motor_hp"]    if _idsel else None
-    ipriceB = _idsel["price_total"] if _idsel else None
-    # Option A (VFD, hot-rated motor) is quoted on the same fan — the machine
-    # does not change, only how its motor is rated and driven.
-    ihpA, ipriceA = ihpB, ipriceB
+
+    # Option A is the fan as the supplier ships it: their motor covers the hot
+    # running duty and a VFD holds it back until the gas is hot.
+    ihpA    = _idsel["motor_hp"]    if _idsel else None
+    ipriceA = _idsel["price_total"] if _idsel else None
+
+    # Option B starts cold, so its motor comes from its OWN kilowatts, not from
+    # the catalogue. Taking the catalogue's HP put 75 HP against a figure that
+    # works out at 113 — the fan's motor answering a question about a different
+    # duty. Convert the kW, step to a real motor, and price the fan with that
+    # motor instead of the one it ships with.
+    from bom.idfan_pricelist import idfan_motor_for_kw
+    _bmotor = idfan_motor_for_kw(id_motor_kw_B, conn) if _idsel else None
+    if _bmotor:
+        ihpB = _bmotor["motor_hp"]
+        ipriceB = round((_idsel["price_fan_unit"] or 0)
+                        + (_bmotor["price_motor"] or 0), 2)
+    else:
+        # Past the largest motor on the list — say so rather than quote the
+        # supplier's, which is not the motor being asked for.
+        ihpB, ipriceB = None, None
 
     return dict(
         comb_air=comb_air, id_air=id_air,
@@ -667,7 +683,21 @@ def _fan_selection(comb_air, id_air, conn=None):
         # running duty only. Our Option B sizes for a cold start, so where that
         # comes out larger the quoted motor is not the one being asked for.
         id_catalogue_motor_kw=(_idsel or {}).get("motor_kw"),
-        id_motor_short=(bool(_idsel) and id_motor_kw_B > (_idsel.get("motor_kw") or 0)),
+        # The motor actually being bought and priced — Option B's, sized from
+        # its own kilowatts. The catalogue's is the supplier's hot-duty match
+        # and is no longer what the BOM line describes.
+        id_motor_kw_fitted=(_bmotor or {}).get("motor_kw"),
+        # True only when the motor being priced still cannot start cold. Now
+        # that Option B buys a motor sized from its own kilowatts that is
+        # normally false — the warning belonged to the days when the line
+        # quoted the supplier's motor against a cold-start duty it could not
+        # meet.
+        id_motor_short=(bool(_bmotor)
+                        and id_motor_kw_B > (_bmotor.get("motor_kw") or 0)),
+        # The fan fits but no motor on the list is big enough — a different
+        # problem from the flow being past the largest fan, and it reads
+        # differently on the sheet.
+        id_motor_over_list=(bool(_idsel) and not _bmotor),
         # furnace-pressure damper — sized off this same ID-fan flow, so the
         # costing sheet can show its working next to the two fans
         damper=damper_from_id_flow(id_air))
@@ -1005,7 +1035,11 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     _bhp2, _bprice, _bkw = _fan['blower_hp'], _fan['blower_price'], _fan['blower_motor_kw']
     _ihp2, _iprice, _ikw = _fan['id_hp'],     _fan['id_price'],     _fan['id_motor_kw_B']
     _b_note = '' if _bprice is not None else ' — price ?? (no catalogue price above 60 HP)'
-    _i_note = '' if _iprice is not None else ' — price ?? (flow above the largest ID fan, 48,000 CMH)'
+    _i_note = ''
+    if _iprice is None:
+        _i_note = (' — price ?? (cold-start motor above the largest on the list, '
+                   '150 HP)' if _fan.get('id_motor_over_list')
+                   else ' — price ?? (flow above the largest ID fan, 48,000 CMH)')
     _i_model = _fan.get('id_model')
     add("BLOWER", "Combustion Blower (40\" WG)",
         f'ENCON 40/{_bhp2:g}, {_bhp2:g}HP ({_bkw:.1f} kW motor), with motor{_b_note}',
@@ -1013,7 +1047,8 @@ def build_regen_df(kw: int, markup: float = None, num_pairs: int = 1,
     # ID fan sits directly under the blower (both are fans, same section).
     # Quote the motor the catalogue price buys, not the one our cold-start
     # sizing asks for — the two differ, and the price follows the catalogue.
-    _icat_kw = _fan.get('id_catalogue_motor_kw')
+    # Describe the motor the price buys, not the one the fan ships with.
+    _icat_kw = _fan.get('id_motor_kw_fitted') or _fan.get('id_catalogue_motor_kw')
     _i_cold = (f' — cold start needs {_ikw:.0f} kW, VFD or damped'
                if _fan.get('id_motor_short') else '')
     add("BLOWER", "ID Fan",
