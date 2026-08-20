@@ -6408,6 +6408,8 @@ def generate_brf_quote(req: BRFQuoteRequest):
             "company_address": req.company_address,
             "company_city": req.company_city,
             "company_state": req.company_state,
+            "company_pin": req.company_pin,
+            "poc_designation": req.poc_designation,
             "poc_name": _with_salutation(req.poc_salutation, req.poc_name),
             "email": req.email,
             "mobile_no": req.mobile_no,
