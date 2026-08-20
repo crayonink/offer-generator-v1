@@ -317,23 +317,53 @@
        carry their own header row of plain cells. */
     .xl-grid td.xl-num { text-align:right; font-variant-numeric:tabular-nums; }
 
-    .summary-card { background:var(--card); border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,.05); padding:24px; margin-top:20px; max-width:450px; margin-left:auto; }
-    .summary-card table { width:100%; }
-    .summary-card td { padding:6px 0; font-size:.88rem; }
-    .summary-card td:last-child { text-align:right; font-weight:700; }
-    .summary-card .grand td { border-top:2px solid var(--navy); padding-top:10px; font-size:1rem; color:var(--navy); }
-    /* Inline adjustments inside the summary, as the vertical page has them:
-       the percentage sits with its label, the money in the right column. */
-    .summary-card input.pct, .summary-card input.amt, .summary-card select.cur {
+    /* The commercial block, laid out as the vertical page lays it out: a grey
+       band under the pricing table with the totals in a narrow right-hand
+       column, then the currency panel, then one row of actions. It used to be
+       a floating white card with the buttons inside it, which is what made
+       this page read as a different application from the vertical one. */
+    .bom-footer { background:#f8fafc; border:1px solid var(--border); border-radius:16px;
+      padding:16px 22px; margin-top:16px; }
+    .bom-footer table { width:100%; max-width:320px; margin-left:auto; font-size:.88rem; }
+    .bom-footer td { padding:5px 0; }
+    .bom-footer td:last-child { text-align:right; font-weight:600;
+      font-variant-numeric:tabular-nums; }
+    .bom-footer tr.grand td { border-top:2px solid var(--navy); padding-top:9px;
+      font-size:1rem; color:var(--navy); font-weight:800; }
+    .bom-footer tr.sub-head td { color:var(--muted); font-size:.72rem; padding-top:12px;
+      font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+    /* The percentage sits with its label, the money in the right column. */
+    .bom-footer input.pct, .bom-footer input.amt {
       padding:2px 6px; margin:0 4px; font:inherit; font-size:.84rem;
       border:1px solid var(--border); border-radius:5px; background:#fff;
       color:#0f172a; font-variant-numeric:tabular-nums; }
-    .summary-card input.pct { width:52px; text-align:center; }
-    .summary-card input.amt { width:86px; text-align:right; }
-    .summary-card select.cur { padding:2px 4px; }
-    .summary-card input:focus, .summary-card select:focus {
-      outline:none; border-color:var(--navy); box-shadow:0 0 0 2px rgba(26,58,92,.10); }
-    .summary-card .sub-head td { color:var(--muted); font-size:.72rem; padding-top:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+    .bom-footer input.pct { width:52px; text-align:center; }
+    .bom-footer input.amt { width:86px; text-align:right; }
+    .bom-footer input:focus { outline:none; border-color:var(--navy);
+      box-shadow:0 0 0 2px rgba(26,58,92,.10); }
+
+    .cur-panel { margin-top:14px; padding:12px 16px; background:#f0fdf4;
+      border:1px solid #bbf7d0; border-radius:10px; font-size:.9rem;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; flex-wrap:wrap; }
+    .cur-panel label { display:flex; align-items:center; gap:8px; font-weight:600; }
+    .cur-panel select { padding:3px 6px; border:1px solid var(--border);
+      border-radius:6px; font:inherit; background:#fff; }
+    .cur-panel .note { color:var(--muted); }
+
+    .action-row { margin-top:24px; display:flex; gap:12px; align-items:center;
+      flex-wrap:wrap; }
+    .action-row .btn-primary { flex:1; padding:14px 24px; }
+    .btn-outline { padding:14px 24px; background:#fff; color:var(--navy);
+      border:1.5px solid #cbd5e1; border-radius:10px; font-size:.92rem;
+      font-weight:600; cursor:pointer; font-family:inherit;
+      box-shadow:0 1px 3px rgba(0,0,0,.07); transition:all .2s; }
+    .btn-outline:hover { background:#f8fafc; border-color:var(--navy);
+      box-shadow:0 3px 8px rgba(0,0,0,.1); transform:translateY(-1px); }
+    .qty-field { display:inline-flex; align-items:center; gap:6px;
+      font-size:.86rem; color:var(--muted); }
+    .qty-field input { width:58px; padding:4px 6px; border:1px solid var(--border);
+      border-radius:6px; font:inherit; text-align:center; }
 
     .error-box { background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:14px 18px; color:var(--red); font-size:.88rem; margin-top:12px; display:none; }
 
@@ -815,7 +845,7 @@
       <div class="xl-tabs"><div class="xl-tab active">Breakup</div></div>
     </div>
 
-    <div class="summary-card">
+    <div class="bom-footer">
       <table>
         <tr class="sub-head"><td colspan="2">Main Scope</td></tr>
         <tr><td>Cost</td><td id="s-main-cost">--</td></tr>
@@ -844,29 +874,36 @@
           <input id="cm-transport" class="amt" type="number" step="1000" min="0" value="0"
                  oninput="commercialPreview()" autocomplete="off"/> &#8377;</td>
           <td id="s-transport">--</td></tr>
-        <tr><td>Order quantity
-          <input id="cm-qty" class="pct" type="number" step="1" min="1" value="1"
-                 oninput="commercialPreview()" autocomplete="off"/> furnaces</td>
-          <td id="s-qty-note" style="color:var(--muted);font-weight:400">--</td></tr>
         <tr class="grand"><td><b>Final per Furnace</b></td><td id="s-final">--</td></tr>
         <tr class="grand"><td><b>Order Total</b></td><td id="s-order">--</td></tr>
-        <tr><td>Currency
-          <select id="cm-currency" class="cur" onchange="commercialPreview()">
-            <option value="INR" selected>&#8377; INR</option>
-            <option value="USD">$ USD</option>
-          </select></td><td id="s-cur-note" style="color:var(--muted);font-weight:400">--</td></tr>
       </table>
-      <div style="margin-top:16px">
-        <button onclick="generateOffer()" id="btn-offer" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--navy) 0%,#1e4a7a 100%);color:#fff;font-size:.9rem;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 10px rgba(26,58,92,.32);margin-bottom:10px;">&#128196; Generate Offer</button>
-        <div id="offer-msg" style="display:none;font-size:.82rem;margin-bottom:10px;padding:10px 12px;border-radius:8px;"></div>
-        <button onclick="downloadExcel()" style="width:100%;padding:11px;border:1.5px solid #bbf7d0;border-radius:10px;background:#f0fdf4;color:#15803d;font-size:.88rem;font-weight:700;font-family:inherit;cursor:pointer;">&#8659; Download Excel</button>
-      </div>
     </div>
 
-
-    <div class="step-nav">
-      <button class="btn-back" onclick="goStep(5)">← Back to Calculations</button>
+    <!-- Currency sits in its own panel, as it does on the vertical page, rather
+         than as one more row in the middle of the money. -->
+    <div class="cur-panel">
+      <label>Currency
+        <select id="cm-currency" onchange="commercialPreview()">
+          <option value="INR" selected>&#8377; INR</option>
+          <option value="USD">$ USD</option>
+        </select>
+      </label>
+      <span class="note" id="s-cur-note">--</span>
     </div>
+
+    <div class="action-row">
+      <button class="btn-outline" onclick="goStep(5)">&larr; Back</button>
+      <label class="qty-field">Order Qty
+        <input id="cm-qty" type="number" step="1" min="1" value="1"
+               oninput="commercialPreview()" autocomplete="off"/>
+        <span id="s-qty-note"></span>
+      </label>
+      <button class="btn-outline" onclick="downloadExcel()"
+              style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d">
+        &#8659; Download Excel</button>
+      <button class="btn-primary" id="btn-offer" onclick="generateOffer()">Generate Offer</button>
+    </div>
+    <div id="offer-msg" style="display:none;font-size:.82rem;margin-top:12px;padding:10px 12px;border-radius:8px;"></div>
   </div>
 
 </div>
