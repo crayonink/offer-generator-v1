@@ -146,6 +146,39 @@ def write_price_schedule(doc, rows, sell_total, currency="INR"):
     return written
 
 
+# The vertical offer's terms, verbatim, so both documents answer a commercial
+# question the same way. A quote that sets its own overrides these.
+TNC_DEFAULTS = {
+    "tnc_prices":   "Ex-works Bhagola, Dist. Palwal, Haryana, India.",
+    "tnc_gst":      "18% extra, as applicable.",
+    "tnc_validity": "45 days from the date of our offer.",
+}
+
+# The vertical offer's make list is a fixed vendor table by business rule, not
+# something read off the BOM; this borrows it and adds what only a reheating
+# furnace has.
+BRF_EXTRA_MAKES = [
+    ("REFRACTORY BRICKS & CASTABLES", "TRL / RAJHANS / BHILWARI"),
+    ("CERAMIC FIBRE",                 "UNIFRAX / LLOYDS"),
+    ("RECUPERATOR",                   "ENCON"),
+    ("GAS TRAIN",                     "IAPL / MADAS"),
+    ("ID FAN",                        "ENCON"),
+    ("PLC & HMI",                     "SIEMENS"),
+    ("ORIFICE PLATE WITH DPT",        "HONEYWELL"),
+    ("MOTORISED CONTROL VALVE",       "DEMBLA / AIRA"),
+]
+
+
+def make_list_rows():
+    """The vertical offer's fixed vendor table, plus what only a furnace has."""
+    from engine.quote_writer import STATIC_MAKE_LIST
+    rows = [dict(m) for m in STATIC_MAKE_LIST]
+    have = {m["item"].strip().upper() for m in rows}
+    rows += [{"item": i, "make": mk} for i, mk in BRF_EXTRA_MAKES
+             if i.upper() not in have]
+    return rows
+
+
 def _address_line(cust):
     """Address, city, state, pin — each part once, in order."""
     seen, parts = set(), []
@@ -201,6 +234,7 @@ def generate_brf_quote_docx(data: dict, output_path: str,
         "company_address": _address_line(cust),
         "company_city_state": "",
         "poc_name": cust.get("poc_name", ""),
+        "poc_designation": cust.get("poc_designation", ""),
         "poc_designation_paren": (f" ({cust['poc_designation']})"
                                   if cust.get("poc_designation") else ""),
         "email": cust.get("email", ""),
@@ -226,6 +260,11 @@ def generate_brf_quote_docx(data: dict, output_path: str,
         "zone_count": _words(zone_count),
         "zone_split": _zone_split(fired),
     }
+    # The commercial terms table came across from the vertical offer, and with
+    # it the placeholders the vertical offer fills. Same keys, same defaults —
+    # a term edited on the form reaches both documents.
+    for key, fallback in TNC_DEFAULTS.items():
+        mapping[key] = cust.get(key) or fallback
     for i in range(1, 6):
         z = fired[i - 1] if i - 1 < len(fired) else None
         mapping[f"zone{i}_burners"] = (z or {}).get("burner_count", "") if z else ""
@@ -237,6 +276,11 @@ def generate_brf_quote_docx(data: dict, output_path: str,
 
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     doc.save(output_path)
+    # ANNEXURE V, filled by the vertical offer's own appender rather than a
+    # second implementation of it — it already knows to strip the header row's
+    # shading and its repeat-on-every-page flag off the clones.
+    from engine.quote_writer import _append_make_list
+    _append_make_list(output_path, make_list_rows())
     return output_path
 
 

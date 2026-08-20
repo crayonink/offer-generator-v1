@@ -41,28 +41,20 @@ PAGE_W, PAGE_H = Inches(8.27), Inches(11.69)          # A4
 MARGINS = dict(left=Inches(0.75), right=Inches(0.75),
                top=Inches(1.00), bottom=Inches(1.00))
 
-# The sections that carry their own weight. Everything else that is currently
-# a heading becomes a subheading under one of these.
-MAJOR = {
-    "SCOPE OF SUPPLY",
-    "REFRACTORY LINING",
-    "MATERIAL HANDLING EQUIPMENT HYDRAULIC PUSHER",
-    "PRICE SCHEDULE",
-    "SUPERVISION CHARGES FOR ERECTION & COMMISSIONING",
-    "EXCLUSION",
-    "TERMS AND CONDITIONS",
-}
 # Letterhead lines that are styled as headings but are not headings at all.
 NOT_A_HEADING = re.compile(
     r"^(297, Sector|E-mail:|Tel:|ENCON YOUR ANSWER)", re.I)
 
 
-def _is_major(text):
-    t = re.sub(r"\s+", " ", text).strip().upper()
-    if t in MAJOR:
-        return True
-    # "Basic Parameters For {{ capacity }} Ton/Hr..." opens the technical part
-    return t.startswith("BASIC PARAMETERS")
+def _is_major(par):
+    """Heading 1 is a section; Heading 2 and 3 are what sits under one.
+
+    This used to be a hand-kept list of section titles, because every heading
+    in the document was Heading 1 and the level said nothing. restructure_brf_offer
+    gives them real levels, so the level is the answer and the list can go —
+    along with the risk of a renamed section quietly dropping off it.
+    """
+    return (par.style.name if par.style is not None else "") == "Heading 1"
 
 
 def restyle_run(run, size_pt, colour=None, bold=None):
@@ -106,7 +98,7 @@ def main():
         style = p.style.name if p.style is not None else ""
         heading = style.startswith("Heading") and text and not NOT_A_HEADING.match(text)
 
-        if heading and _is_major(text):
+        if heading and _is_major(p):
             for r in p.runs:
                 restyle_run(r, H1_PT, SLATE, True)
             h1 += 1
